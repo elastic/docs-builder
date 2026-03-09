@@ -1362,4 +1362,88 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
 	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_LoadsCorrectly()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  match: any
+			  bundle:
+			    exclude_products:
+			      - elasticsearch
+			      - kibana
+			    match_products: all
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Bundle.Should().NotBeNull();
+		config.Rules.Bundle!.ExcludeProducts.Should().BeEquivalentTo(["elasticsearch", "kibana"]);
+		config.Rules.Bundle.MatchProducts.Should().Be(MatchMode.All);
+		config.Rules.Bundle.IncludeProducts.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_BothExcludeAndInclude_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products: elasticsearch
+			    include_products: kibana
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot have both 'exclude_products' and 'include_products'"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_UnknownProductId_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products: not-a-real-product
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
+	}
 }
