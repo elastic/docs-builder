@@ -130,10 +130,10 @@ pivot:
 #   - Comma-separated string: "value1, value2, value3"
 #   - YAML list: [value1, value2, value3]
 #
-# Global match default for multi-valued fields (labels, areas).
+# Global match default for multi-valued fields (labels, areas, products).
 #   any (default) = match if ANY item matches the list
 #   all           = match only if ALL items match the list
-# Inherited by create, publish, and all product overrides.
+# Inherited by create, bundle, publish, and all product overrides.
 rules:
   # match: any
 
@@ -154,6 +154,26 @@ rules:
   #       exclude: ">test"
   #     'cloud-serverless':
   #       exclude: "ILM"
+
+  # Bundle — secondary product filter applied during 'changelog bundle'.
+  # Applied after the primary filter (--prs, --issues, --all) has matched entries.
+  # Ignored when the primary filter is --input-products (product filter already applied).
+  # Note: does not apply to 'changelog gh-release' (resolved in a future release).
+  #
+  #   exclude_products / include_products (string or list)
+  # Cannot specify both.
+  # match_products inherits from rules.match if not specified.
+  #
+  # bundle:
+  #   # match_products: any
+  #   exclude_products: "cloud-enterprise"
+  #   # Or equivalently:
+  #   # exclude_products:
+  #   #   - cloud-enterprise
+  #   # Or include only certain products:
+  #   # include_products:
+  #   #   - cloud-serverless
+  #   #   - cloud-hosted
 
   # Publish — controls which entries appear in rendered output.
   #   exclude_types / include_types (string or list)

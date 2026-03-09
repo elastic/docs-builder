@@ -217,6 +217,17 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
+			// Apply rules.bundle secondary product filter (skipped when primary filter is InputProducts)
+			var filteredEntries = matchResult.Entries;
+			if (config?.Rules?.Bundle != null && !(input.InputProducts is { Count: > 0 }))
+				filteredEntries = ApplyBundleProductFilter(collector, filteredEntries, config.Rules.Bundle);
+
+			if (filteredEntries.Count == 0)
+			{
+				collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle product filter");
+				return false;
+			}
+
 			// Load feature IDs to hide
 			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
 			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
@@ -227,7 +238,7 @@ public partial class ChangelogBundlingService(
 			var bundleBuilder = new BundleBuilder();
 			var buildResult = bundleBuilder.BuildBundle(
 				collector,
-				matchResult.Entries,
+				filteredEntries,
 				input.OutputProducts,
 				input.Resolve ?? false,
 				input.Repo,
@@ -604,5 +615,53 @@ public partial class ChangelogBundlingService(
 			return $"{defaultOwner}/{defaultRepo}#{issueNumber}".ToLowerInvariant();
 
 		return issue.ToLowerInvariant();
+	}
+
+	private IReadOnlyList<MatchedChangelogFile> ApplyBundleProductFilter(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<MatchedChangelogFile> entries,
+		BundleRules bundleRules)
+	{
+		if (bundleRules.ExcludeProducts is not { Count: > 0 } && bundleRules.IncludeProducts is not { Count: > 0 })
+			return entries;
+
+		var filtered = new List<MatchedChangelogFile>();
+		foreach (var entry in entries)
+		{
+			var entryProducts = entry.Data.Products?.Select(p => p.ProductId).ToList() ?? [];
+			if (ShouldExcludeByBundleProductFilter(entryProducts, bundleRules))
+			{
+				var label = string.Join(", ", entryProducts.Count > 0 ? entryProducts : ["(no product)"]);
+				if (bundleRules.ExcludeProducts is { Count: > 0 })
+					collector.EmitWarning(entry.FilePath, $"[-bundle-exclude] Excluding entry '{entry.FileName}' from bundle: product [{label}] matches rules.bundle.exclude_products.");
+				else
+					collector.EmitWarning(entry.FilePath, $"[-bundle-include] Excluding entry '{entry.FileName}' from bundle: product [{label}] does not match rules.bundle.include_products.");
+			}
+			else
+			{
+				filtered.Add(entry);
+			}
+		}
+		return filtered;
+	}
+
+	private static bool ShouldExcludeByBundleProductFilter(IReadOnlyList<string> entryProducts, BundleRules bundleRules)
+	{
+		if (bundleRules.ExcludeProducts is { Count: > 0 } excludeList)
+		{
+			return bundleRules.MatchProducts == MatchMode.All
+				? excludeList.All(p => entryProducts.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: excludeList.Any(p => entryProducts.Contains(p, StringComparer.OrdinalIgnoreCase));
+		}
+
+		if (bundleRules.IncludeProducts is { Count: > 0 } includeList)
+		{
+			var matchesSome = bundleRules.MatchProducts == MatchMode.All
+				? includeList.All(p => entryProducts.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: includeList.Any(p => entryProducts.Contains(p, StringComparer.OrdinalIgnoreCase));
+			return !matchesSome;
+		}
+
+		return false;
 	}
 }

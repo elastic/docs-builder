@@ -203,6 +203,7 @@ The `changelog remove` command reads the same `bundle.profiles` configuration as
 | `output` | No | Ignored — removal does not write any output files. |
 | `output_products` | No | Ignored. |
 | `hide_features` | No | Ignored. |
+| `rules.bundle` | No | Ignored — bundle-time product filtering is not applied during removal. |
 
 ### Remove by product
 

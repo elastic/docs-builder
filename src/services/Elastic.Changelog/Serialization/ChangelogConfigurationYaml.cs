@@ -65,9 +65,35 @@ internal record RulesConfigurationYaml
 	public CreateRulesYaml? Create { get; set; }
 
 	/// <summary>
+	/// Bundle rules controlling which entries are included in a bundle file.
+	/// </summary>
+	public BundleRulesYaml? Bundle { get; set; }
+
+	/// <summary>
 	/// Publish rules controlling which entries appear in rendered output.
 	/// </summary>
 	public PublishRulesYaml? Publish { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for bundle rules in YAML.
+/// </summary>
+internal record BundleRulesYaml
+{
+	/// <summary>
+	/// Product IDs to exclude from the bundle (string or list). Cannot be combined with IncludeProducts.
+	/// </summary>
+	public YamlLenientList? ExcludeProducts { get; set; }
+
+	/// <summary>
+	/// Product IDs to include in the bundle (string or list). Cannot be combined with ExcludeProducts.
+	/// </summary>
+	public YamlLenientList? IncludeProducts { get; set; }
+
+	/// <summary>
+	/// Match mode for products ("any" or "all"). Inherits from rules.match if not set.
+	/// </summary>
+	public string? MatchProducts { get; set; }
 }
 
 /// <summary>

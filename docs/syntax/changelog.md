@@ -171,6 +171,16 @@ This is useful when:
 
 The product ID matching is case-insensitive.
 
+## Filtering entries with bundle rules
+
+You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file.
+
+:::{tip}
+This method will replace filtering entries with publish rules. The changelog bundle will ultimately be the source of truth for what appears in the documentation.
+:::
+
+Refer to the [`changelog bundle`](../cli/release/changelog-bundle.md) command..
+
 ## Filtering entries with publish rules
 
 You can filter changelog entries from the rendered output using the `rules.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.

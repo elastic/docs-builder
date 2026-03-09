@@ -180,6 +180,38 @@ If you specify a file path with a different extension (not `.yml` or `.yaml`), t
 Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
 :::
 
+## Rules for filtered bundles [changelog-bundle-rules]
+
+The `rules.bundle` section in the changelog configuration file lets you apply a secondary product filter during bundling, independent of the primary filter (`--prs`, `--issues`, `--all`). It is applied after entries are matched by the primary filter, and excludes or includes entries based on their `products` field and the filter.
+
+`rules.bundle` is ignored when the primary filter is `--input-products` (or `bundle.profiles.<name>.products`), because product-based primary filters already provide a complete product constraint.
+
+:::{note}
+`rules.bundle` does not apply to bundles created by `changelog gh-release`. This limitation will be resolved in a future release.
+:::
+
+The following fields are supported:
+
+`exclude_products`
+:   A product ID or list of product IDs to exclude from the bundle. Cannot be combined with `include_products`.
+
+`include_products`
+:   A product ID or list of product IDs to include in the bundle (all others are excluded). Cannot be combined with `exclude_products`.
+
+`match_products`
+:   Match mode for the product filter (`any` or `all`). Inherits from `rules.match` when not specified.
+
+```yaml
+rules:
+  bundle:
+    exclude_products: cloud-enterprise
+    # Or:
+    # include_products:
+    #   - cloud-serverless
+    #   - cloud-hosted
+    # match_products: any
+```
+
 ## Repository name in bundles [changelog-bundle-repo]
 
 The repository name is stored in each bundle product entry to ensure that PR and issue links are generated correctly when the bundle is rendered.
