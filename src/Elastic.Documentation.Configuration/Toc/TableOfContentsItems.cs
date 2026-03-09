@@ -143,7 +143,8 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 }
 
 /// <param name="Sort">Raw YAML sort value, parsed and validated during resolution via <see cref="SortOrderExtensions.TryParse"/>.</param>
-public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, string? Sort = null)
+/// <param name="Exclude">File names to exclude from auto-discovery (e.g. ["draft.md", "internal.md"]).</param>
+public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, string? Sort = null, IReadOnlyCollection<string>? Exclude = null)
 	: ITableOfContentsItem;
 
 public record IsolatedTableOfContentsRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)

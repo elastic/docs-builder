@@ -497,14 +497,14 @@ public class DocumentationSetFile : TableOfContentsFile
 		// No children defined - auto-discover .md files in the folder
 		// null preserves the default alphabetical sorting; non-null enables natural sort for version numbers
 		var explicitSortOrder = folderRef.Sort is not null ? sortOrder : (SortOrder?)null;
-		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, explicitSortOrder);
-		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort);
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, explicitSortOrder, folderRef.Exclude);
+		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort, folderRef.Exclude);
 	}
 
 	/// <summary>
 	/// Auto-discovers .md files in a folder directory and creates FileRef items for them.
 	/// If index.md exists, it's placed first. Other files are sorted according to the specified sort order.
-	/// Files starting with '_' or '.' are excluded.
+	/// Files starting with '_' or '.' are excluded, as well as any files listed in <paramref name="exclude"/>.
 	/// </summary>
 	private static TableOfContents AutoDiscoverFolderFiles(
 		IDiagnosticsCollector collector,
@@ -513,7 +513,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string context,
-		SortOrder? sortOrder)
+		SortOrder? sortOrder,
+		IReadOnlyCollection<string>? exclude)
 	{
 		var directoryPath = fileSystem.Path.Combine(baseDirectory.FullName, folderPath);
 		var directory = fileSystem.DirectoryInfo.New(directoryPath);
@@ -522,10 +523,14 @@ public class DocumentationSetFile : TableOfContentsFile
 			return [];
 
 		// Find all .md files in the directory (not recursive)
+		var excludeSet = exclude is { Count: > 0 }
+			? new HashSet<string>(exclude, StringComparer.OrdinalIgnoreCase)
+			: null;
 		var mdFiles = fileSystem.Directory
 			.GetFiles(directoryPath, "*.md")
 			.Select(f => fileSystem.FileInfo.New(f))
 			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
+			.Where(f => excludeSet is null || !excludeSet.Contains(f.Name))
 			.ToList();
 
 		if (mdFiles.Count == 0)
