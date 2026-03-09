@@ -495,7 +495,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		}
 
 		// No children defined - auto-discover .md files in the folder
-		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, sortOrder);
+		// null preserves the default alphabetical sorting; non-null enables natural sort for version numbers
+		var explicitSortOrder = folderRef.Sort is not null ? sortOrder : (SortOrder?)null;
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, explicitSortOrder);
 		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort);
 	}
 
@@ -511,7 +513,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
 		string context,
-		SortOrder sortOrder = SortOrder.Ascending)
+		SortOrder? sortOrder)
 	{
 		var directoryPath = fileSystem.Path.Combine(baseDirectory.FullName, folderPath);
 		var directory = fileSystem.DirectoryInfo.New(directoryPath);
@@ -533,10 +535,14 @@ public class DocumentationSetFile : TableOfContentsFile
 		var indexFile = mdFiles.FirstOrDefault(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
 		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
 
-		// Sort other files according to the specified sort order
-		var sortedFiles = sortOrder == SortOrder.Descending
-			? otherFiles.OrderByDescending(f => f.Name).ToList()
-			: otherFiles.OrderBy(f => f.Name).ToList();
+		// When sort is explicitly set (non-null), use natural sort order (handles version numbers correctly, e.g. 3_2 < 3_10)
+		// When null, preserve the original alphabetical sorting behavior
+		var sortedFiles = sortOrder switch
+		{
+			SortOrder.Descending => otherFiles.OrderByDescending(f => f.Name, NaturalStringComparer.Instance).ToList(),
+			SortOrder.Ascending => otherFiles.OrderBy(f => f.Name, NaturalStringComparer.Instance).ToList(),
+			_ => otherFiles.OrderBy(f => f.Name).ToList()
+		};
 
 		var children = new TableOfContents();
 

@@ -133,7 +133,7 @@ When auto-discovering files (no explicit `children`), you can control the sort o
     sort: desc
 ```
 
-Valid values are `asc`, `ascending`, `desc`, and `descending`. The default is ascending (A-Z). When set to descending, files are listed Z-A, which is useful for version-numbered folders where the newest version should appear first. `index.md` is always placed first regardless of sort order.
+Valid values are `asc`, `ascending`, `desc`, and `descending`. The default is ascending (A-Z). When set to descending, files are listed Z-A, which is useful for version-numbered folders where the newest version should appear first. Sorting uses natural order, so version numbers sort correctly (e.g. `3_2_0` comes before `3_10_0`). `index.md` is always placed first regardless of sort order.
 
 The `sort` option has no effect when `children` are explicitly defined, since the order is determined by the `children` list.
 

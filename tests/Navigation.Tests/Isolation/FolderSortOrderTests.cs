@@ -226,4 +226,66 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 			d.Severity == Severity.Error &&
 			d.Message.Contains("Unknown sort order 'newest'"));
 	}
+
+	[Fact]
+	public void FolderSortUsesNaturalOrderForVersionNumbers()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: api-versions
+		               sort: asc
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		fileSystem.AddDirectory("/docs/api-versions");
+		fileSystem.AddFile("/docs/api-versions/3_0_0.md", new MockFileData("# 3.0.0"));
+		fileSystem.AddFile("/docs/api-versions/3_1_0.md", new MockFileData("# 3.1.0"));
+		fileSystem.AddFile("/docs/api-versions/3_2_0.md", new MockFileData("# 3.2.0"));
+		fileSystem.AddFile("/docs/api-versions/3_10_0.md", new MockFileData("# 3.10.0"));
+
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		fileNames.Should().BeEquivalentTo(
+			["api-versions/3_0_0.md", "api-versions/3_1_0.md", "api-versions/3_2_0.md", "api-versions/3_10_0.md"],
+			options => options.WithStrictOrdering()
+		);
+	}
+
+	[Fact]
+	public void FolderSortDescendingUsesNaturalOrderForVersionNumbers()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: api-versions
+		               sort: desc
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		fileSystem.AddDirectory("/docs/api-versions");
+		fileSystem.AddFile("/docs/api-versions/3_0_0.md", new MockFileData("# 3.0.0"));
+		fileSystem.AddFile("/docs/api-versions/3_1_0.md", new MockFileData("# 3.1.0"));
+		fileSystem.AddFile("/docs/api-versions/3_2_0.md", new MockFileData("# 3.2.0"));
+		fileSystem.AddFile("/docs/api-versions/3_10_0.md", new MockFileData("# 3.10.0"));
+
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		fileNames.Should().BeEquivalentTo(
+			["api-versions/3_10_0.md", "api-versions/3_2_0.md", "api-versions/3_1_0.md", "api-versions/3_0_0.md"],
+			options => options.WithStrictOrdering()
+		);
+	}
 }
