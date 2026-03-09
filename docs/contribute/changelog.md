@@ -522,7 +522,11 @@ The second argument accepts a version string, a promotion report URL/path, or a 
 For example:
 
 ```sh
-docs-builder changelog bundle elasticsearch-release 9.2.0
+# Standard profile: lifecycle is inferred from the version string
+docs-builder changelog bundle elasticsearch-release 9.2.0        # {lifecycle} → "ga"
+docs-builder changelog bundle elasticsearch-release 9.2.0-beta.1 # {lifecycle} → "beta"
+
+# Standard profile: filter by a promotion report (version used for {version})
 docs-builder changelog bundle elasticsearch-release ./promotion-report.html
 docs-builder changelog bundle elasticsearch-release 9.2.0 ./promotion-report.html
 ```
@@ -547,10 +551,11 @@ Profile configuration fields in `bundle.profiles`:
 
 | Field | Description |
 |---|---|
-| `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. |
+| `source` | Optional. Set to `github_release` to fetch the PR list from a GitHub release. Mutually exclusive with `products`. Requires `repo` at the profile or `bundle` level. |
+| `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. Required when filtering by product metadata. Not used when the filter comes from a promotion report, URL list file, or `source: github_release`. |
 | `output` | Output file path pattern with `{version}` and `{lifecycle}` placeholders. |
 | `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should have a single product ID though it's filtered from many or have a different lifecycle or version than the filter. |
-| `repo` | Optional. Overrides `bundle.repo` for this profile only. |
+| `repo` | Optional. Overrides `bundle.repo` for this profile only. Required when `source: github_release` is used and no `bundle.repo` is set. |
 | `owner` | Optional. Overrides `bundle.owner` for this profile only. |
 | `hide_features` | List of feature IDs to embed in the bundle as hidden. |
 
@@ -575,6 +580,60 @@ bundle:
       output_products: "cloud-serverless {version}"
       # inherits repo: elasticsearch and owner: elastic from bundle level
 ```
+
+#### Bundle changelogs from a GitHub release [changelog-bundle-profile-github-release]
+
+Set `source: github_release` on a profile to make `changelog bundle` fetch the PR list directly from a published GitHub release.
+
+This is equivalent to running `changelog bundle --release-version <version>`, but fully configured in `changelog.yml` so you don't have to remember command-line flags.
+
+```yaml
+bundle:
+  owner: elastic
+  profiles:
+    agent-gh-release:
+      source: github_release
+      repo: apm-agent-dotnet
+      output: "my-agents-{version}.yaml"
+      output_products: "apm-agent-dotnet {version} {lifecycle}"
+```
+
+Invoke the profile with a version tag or `latest`:
+
+```sh
+docs-builder changelog bundle agent-gh-release 1.34.0
+docs-builder changelog bundle agent-gh-release latest
+```
+
+The `{version}` placeholder is substituted with the clean base version extracted from the release tag (for example, `v1.34.0` → `1.34.0`, `v1.34.0-beta.1` → `1.34.0`). The `{lifecycle}` placeholder is inferred from the **release tag** returned by GitHub, not from the argument you pass to the command:
+
+| Release tag | `{version}` | `{lifecycle}` |
+|-------------|-------------|---------------|
+| `v1.2.3` | `1.2.3` | `ga` |
+| `v1.2.3-beta.1` | `1.2.3` | `beta` |
+| `v1.2.3-preview.1` | `1.2.3` | `preview` |
+
+This differs from standard profiles, where `{lifecycle}` is inferred from the version string you type at the command line.
+
+`output_products` is optional. When omitted, the bundle products array is derived from the matched changelog files' own `products` fields — the same fallback used by all other profile types. Set `output_products` when you want a single clean product entry that reflects the release identity rather than the diverse metadata across individual changelog files, or to hardcode a lifecycle that cannot be inferred from the tag format:
+
+```yaml
+# Produce one authoritative product entry instead of inheriting from changelog files
+agent-gh-release:
+  source: github_release
+  repo: apm-agent-dotnet
+  output: "apm-agent-dotnet-{version}.yaml"
+  output_products: "apm-agent-dotnet {version} {lifecycle}"
+
+# Or hardcode the lifecycle when the tag format doesn't encode it
+agent-gh-release-preview:
+  source: github_release
+  repo: apm-agent-dotnet
+  output: "apm-agent-dotnet-{version}-preview.yaml"
+  output_products: "apm-agent-dotnet {version} preview"
+```
+
+`source: github_release` is mutually exclusive with `products`, and a third positional argument (promotion report or URL list) is not accepted by this profile type.
 
 ### Filter by product [changelog-bundle-product]
 
@@ -1032,8 +1091,23 @@ docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 The command automatically discovers `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
 If no configuration file is found, the command returns an error with advice to create one or to run from the directory where the file exists.
 
-Only the `products` field from the profile configuration is used for removal.
-The `output`, `output_products`, `repo`, `owner`, and `hide_features` fields are bundle-specific and are ignored.
+The `output`, `output_products`, and `hide_features` fields are bundle-specific and are always ignored for removal.
+Which other fields are used depends on the profile type:
+
+- Standard profiles: only the `products` field is used. The `repo` and `owner` fields are ignored (they only affect bundle output metadata).
+- GitHub release profiles (`source: github_release`): `source`, `repo`, and `owner` are all used. The command fetches the PR list from the GitHub release identified by the version argument and removes changelogs whose `prs` field matches.
+
+For example, given a GitHub release profile:
+
+```sh
+docs-builder changelog remove agent-gh-release v1.34.0 --dry-run
+```
+
+This fetches the PR list from the `v1.34.0` release (using the profile's `repo`/`owner` settings) and removes matching changelogs.
+
+:::{note}
+`source: github_release` profiles require a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+:::
 
 Profile-based removal is mutually exclusive with command options.
 The only options allowed alongside a profile name are `--dry-run` and `--force`.
