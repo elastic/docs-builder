@@ -483,17 +483,17 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			// For children of folders, the container remains the same as the folder's container
 			var resolvedChildren = ResolveTableOfContents(collector, folderRef.Children, baseDirectory, fileSystem, fullPath, containerPath, context, suppressDiagnostics);
-			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context);
+			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.SortOrder);
 		}
 
 		// No children defined - auto-discover .md files in the folder
-		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context);
-		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context);
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, folderRef.SortOrder);
+		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.SortOrder);
 	}
 
 	/// <summary>
 	/// Auto-discovers .md files in a folder directory and creates FileRef items for them.
-	/// If index.md exists, it's placed first. Otherwise, files are sorted alphabetically.
+	/// If index.md exists, it's placed first. Other files are sorted according to the specified sort order.
 	/// Files starting with '_' or '.' are excluded.
 	/// </summary>
 	private static TableOfContents AutoDiscoverFolderFiles(
@@ -502,7 +502,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		string containerPath,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string context)
+		string context,
+		SortOrder sortOrder = SortOrder.Ascending)
 	{
 		var directoryPath = fileSystem.Path.Combine(baseDirectory.FullName, folderPath);
 		var directory = fileSystem.DirectoryInfo.New(directoryPath);
@@ -515,7 +516,6 @@ public class DocumentationSetFile : TableOfContentsFile
 			.GetFiles(directoryPath, "*.md")
 			.Select(f => fileSystem.FileInfo.New(f))
 			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
-			.OrderBy(f => f.Name)
 			.ToList();
 
 		if (mdFiles.Count == 0)
@@ -523,7 +523,12 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Separate index.md from other files
 		var indexFile = mdFiles.FirstOrDefault(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
-		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)).ToList();
+		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
+
+		// Sort other files according to the specified sort order
+		var sortedFiles = sortOrder == SortOrder.Descending
+			? otherFiles.OrderByDescending(f => f.Name).ToList()
+			: otherFiles.OrderBy(f => f.Name).ToList();
 
 		var children = new TableOfContents();
 
@@ -536,8 +541,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			children.Add(indexRef);
 		}
 
-		// Add other files sorted alphabetically
-		foreach (var file in otherFiles)
+		// Add other files sorted according to the specified order
+		foreach (var file in sortedFiles)
 		{
 			var fileRef = new FileRef(file.Name, file.Name, false, [], context);
 			children.Add(fileRef);

@@ -5,6 +5,23 @@
 namespace Elastic.Documentation.Configuration.Toc;
 
 /// <summary>
+/// Specifies the sort order for auto-discovered files in a folder.
+/// </summary>
+public enum SortOrder
+{
+	/// <summary>
+	/// Sort files in ascending alphabetical order (A-Z). This is the default.
+	/// </summary>
+	Ascending,
+
+	/// <summary>
+	/// Sort files in descending alphabetical order (Z-A).
+	/// Useful for version-numbered folders where newest should appear first.
+	/// </summary>
+	Descending
+}
+
+/// <summary>
 /// Represents an item in a table of contents (file, folder, or TOC reference).
 /// </summary>
 public interface ITableOfContentsItem
@@ -56,7 +73,7 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 	public string PathRelativeToContainer => CrossLinkUri.ToString();
 }
 
-public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
+public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, SortOrder SortOrder = SortOrder.Ascending)
 	: ITableOfContentsItem;
 
 public record IsolatedTableOfContentsRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)

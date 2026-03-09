@@ -105,6 +105,18 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Context will be set during LoadAndResolve, use empty string as placeholder during deserialization
 		const string placeholderContext = "";
 
+		// Parse sort order if specified
+		var sortOrder = SortOrder.Ascending;
+		if (dictionary.TryGetValue("sort", out var sortValue) && sortValue is string sortStr)
+		{
+			sortOrder = sortStr.ToLowerInvariant() switch
+			{
+				"desc" or "descending" => SortOrder.Descending,
+				"asc" or "ascending" => SortOrder.Ascending,
+				_ => SortOrder.Ascending
+			};
+		}
+
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
 		// This represents a folder with a specific index file
 		// The file becomes a child of the folder (as FolderIndexFileRef), and user-specified children follow
@@ -124,7 +136,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			// Return a FolderRef with the index file and children
 			// The folder path can be deep (e.g., "guides/getting-started"), that's OK
 			// PathRelativeToContainer will be set during resolution
-			return new FolderRef(folder, folder, folderChildren, placeholderContext);
+			return new FolderRef(folder, folder, folderChildren, placeholderContext, sortOrder);
 		}
 		if (dictionary.TryGetValue("detection_rules", out var detectionRulesObj) && detectionRulesObj is string[] detectionRulesFolders &&
 			dictionary.TryGetValue("file", out var detectionRulesFilePath) && detectionRulesFilePath is string detectionRulesFile)
@@ -159,7 +171,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Check for folder reference
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("folder", out var folderPathOnly) && folderPathOnly is string folderOnly)
-			return new FolderRef(folderOnly, folderOnly, children, placeholderContext);
+			return new FolderRef(folderOnly, folderOnly, children, placeholderContext, sortOrder);
 
 		// Check for toc reference
 		// PathRelativeToContainer will be set during resolution
