@@ -22,7 +22,14 @@ public class ElasticsearchClientAccessor : IDisposable
 	public ElasticsearchClient Client { get; }
 	public ElasticsearchEndpoint Endpoint { get; }
 	public SearchConfiguration SearchConfiguration { get; }
+
+	/// <summary>
+	/// Index target for search queries. When <c>DOCUMENTATION_ELASTIC_INDEX_OVERRIDE</c> is set,
+	/// this contains the override value (which may be comma-separated for multiple indices);
+	/// otherwise it is derived from <see cref="DocumentationEndpoints.BuildType"/> and <see cref="DocumentationEndpoints.Environment"/>.
+	/// </summary>
 	public string SearchIndex { get; }
+
 	public string? RulesetName { get; }
 	public IReadOnlyDictionary<string, string[]> SynonymBiDirectional { get; }
 	public IReadOnlyCollection<string> DiminishTerms { get; }
@@ -38,9 +45,13 @@ public class ElasticsearchClientAccessor : IDisposable
 		SynonymBiDirectional = searchConfiguration.SynonymBiDirectional;
 		DiminishTerms = searchConfiguration.DiminishTerms;
 
-		SearchIndex = DocumentationMappingContext.DocumentationDocumentSemantic
+		var computedIndex = DocumentationMappingContext.DocumentationDocumentSemantic
 			.CreateContext(type: endpoints.BuildType, env: endpoints.Environment)
 			.ResolveReadTarget();
+
+		SearchIndex = !string.IsNullOrEmpty(endpoints.SearchIndexOverride)
+			? endpoints.SearchIndexOverride
+			: computedIndex;
 
 		RulesetName = searchConfiguration.Rules.Count > 0
 			? $"docs-ruleset-{endpoints.BuildType}-{endpoints.Environment}"
