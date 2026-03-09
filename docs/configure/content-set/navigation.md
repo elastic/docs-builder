@@ -125,6 +125,18 @@ If a folder does define `children` all markdown files within that folder have to
       - file: page-two.md
 ```
 
+When auto-discovering files (no explicit `children`), you can control the sort order with `sort`:
+
+```yaml
+  ...
+  - folder: api-versions
+    sort: desc
+```
+
+Valid values are `asc`, `ascending`, `desc`, and `descending`. The default is ascending (A-Z). When set to descending, files are listed Z-A, which is useful for version-numbered folders where the newest version should appear first. `index.md` is always placed first regardless of sort order.
+
+The `sort` option has no effect when `children` are explicitly defined, since the order is determined by the `children` list.
+
 #### Virtual grouping
 
 A `file` element may include children to create a virtual grouping that 
