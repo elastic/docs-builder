@@ -353,34 +353,29 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	internal static List<ProductArgument> MapLabelsToProducts(string[] labels, IReadOnlyDictionary<string, string> labelToProductsMapping)
 	{
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var products = new List<ProductArgument>();
 
-		IEnumerable<ProductArgument> GetProducts()
+		foreach (var label in labels)
 		{
-			return labels
-				.Where(label => labelToProductsMapping.TryGetValue(label, out _))
-				.Select(label =>
-				{
-					if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
-						return null;
+			if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
+				continue;
 
-					if (!seen.Add(productSpec))
-						return null;
+			if (!seen.Add(productSpec))
+				continue;
 
-					var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-					if (parts.Length == 0)
-						return null;
+			var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+			if (parts.Length == 0)
+				continue;
 
-					return new ProductArgument
-					{
-						Product = parts[0].Replace('_', '-'),
-						Target = parts.Length > 1 ? parts[1] : null,
-						Lifecycle = parts.Length > 2 ? parts[2] : null
-					};
-				})
-				.Where(product => product is not null)!;
+		products.Add(new ProductArgument
+		{
+			Product = parts[0].Replace('_', '-'),
+			Target = parts.Length > 1 ? parts[1] : null,
+			Lifecycle = parts.Length > 2 ? parts[2] : null
+		});
 		}
 
-		return GetProducts().ToList();
+		return products;
 	}
 
 	/// <summary>
