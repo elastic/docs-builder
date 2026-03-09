@@ -540,7 +540,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		var indexFile = mdFiles.FirstOrDefault(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
 		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
 
-		// When sort is explicitly set (non-null), use natural sort order (handles version numbers correctly, e.g. 3_2 < 3_10)
+		// When sort is explicitly set (non-null), use natural sort order (handles version numbers correctly: 3_2 < 3_10)
 		// When null, preserve the original alphabetical sorting behavior
 		var sortedFiles = sortOrder switch
 		{
