@@ -478,17 +478,25 @@ public class DocumentationSetFile : TableOfContentsFile
 			? fullPath
 			: fullPath.Substring(containerPath.Length + 1);
 
+		// Parse and validate sort order
+		if (!SortOrderExtensions.TryParse(folderRef.Sort, out var sortOrder) && folderRef.Sort is not null)
+			collector.EmitError(
+				context,
+				$"Unknown sort order '{folderRef.Sort}' for folder '{folderRef.PathRelativeToDocumentationSet}'."
+				+ " Valid values are: asc, ascending, desc, descending."
+			);
+
 		// If children are explicitly defined, resolve them
 		if (folderRef.Children.Count > 0)
 		{
 			// For children of folders, the container remains the same as the folder's container
 			var resolvedChildren = ResolveTableOfContents(collector, folderRef.Children, baseDirectory, fileSystem, fullPath, containerPath, context, suppressDiagnostics);
-			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.SortOrder);
+			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.Sort);
 		}
 
 		// No children defined - auto-discover .md files in the folder
-		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, folderRef.SortOrder);
-		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.SortOrder);
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, sortOrder);
+		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort);
 	}
 
 	/// <summary>

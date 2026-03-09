@@ -21,6 +21,23 @@ public enum SortOrder
 	Descending
 }
 
+/// <summary>Parsing helpers for <see cref="SortOrder"/>.</summary>
+public static class SortOrderExtensions
+{
+	/// <summary>Tries to parse a YAML sort value (asc, ascending, desc, descending) into a <see cref="SortOrder"/>.</summary>
+	public static bool TryParse(string? value, out SortOrder result)
+	{
+		var normalized = value?.ToLowerInvariant();
+		(result, var valid) = normalized switch
+		{
+			"desc" or "descending" => (SortOrder.Descending, true),
+			"asc" or "ascending" => (SortOrder.Ascending, true),
+			_ => (SortOrder.Ascending, false)
+		};
+		return valid;
+	}
+}
+
 /// <summary>
 /// Represents an item in a table of contents (file, folder, or TOC reference).
 /// </summary>
@@ -73,7 +90,8 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 	public string PathRelativeToContainer => CrossLinkUri.ToString();
 }
 
-public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, SortOrder SortOrder = SortOrder.Ascending)
+/// <param name="Sort">Raw YAML sort value, parsed and validated during resolution via <see cref="SortOrderExtensions.TryParse"/>.</param>
+public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, string? Sort = null)
 	: ITableOfContentsItem;
 
 public record IsolatedTableOfContentsRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)

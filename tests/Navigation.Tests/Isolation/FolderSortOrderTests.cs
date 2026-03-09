@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using FluentAssertions;
 
@@ -32,7 +33,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
-		folderItem.SortOrder.Should().Be(SortOrder.Ascending);
+		folderItem.Sort.Should().BeNull();
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
 		fileNames.Should().BeEquivalentTo(["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"], options => options.WithStrictOrdering());
@@ -60,7 +61,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
-		folderItem.SortOrder.Should().Be(SortOrder.Descending);
+		folderItem.Sort.Should().Be("desc");
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
 		fileNames.Should().BeEquivalentTo(["api-versions/v3.md", "api-versions/v2.md", "api-versions/v1.md"], options => options.WithStrictOrdering());
@@ -88,7 +89,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
-		folderItem.SortOrder.Should().Be(SortOrder.Descending);
+		folderItem.Sort.Should().Be("descending");
 	}
 
 	[Fact]
@@ -113,7 +114,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
-		folderItem.SortOrder.Should().Be(SortOrder.Ascending);
+		folderItem.Sort.Should().Be("asc");
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
 		fileNames.Should().BeEquivalentTo(["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"], options => options.WithStrictOrdering());
@@ -171,7 +172,7 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
-		folderItem.SortOrder.Should().Be(SortOrder.Descending);
+		folderItem.Sort.Should().Be("desc");
 	}
 
 	[Fact]
@@ -200,5 +201,29 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
 		fileNames.Should().BeEquivalentTo(["api-versions/v1.md", "api-versions/v2.md", "api-versions/v3.md"], options => options.WithStrictOrdering());
+	}
+
+	[Fact]
+	public void FolderWithUnrecognizedSortValueEmitsError()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: api-versions
+		               sort: newest
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		fileSystem.AddDirectory("/docs/api-versions");
+		fileSystem.AddFile("/docs/api-versions/v1.md", new MockFileData("# V1"));
+
+		var context = CreateContext(fileSystem);
+		_ = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		context.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("Unknown sort order 'newest'"));
 	}
 }
