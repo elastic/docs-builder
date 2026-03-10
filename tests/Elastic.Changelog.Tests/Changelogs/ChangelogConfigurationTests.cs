@@ -1045,9 +1045,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
-			config!.LabelToProducts.Should().NotBeNull();
+			config.LabelToProducts.Should().NotBeNull();
 			config.LabelToProducts.Should().ContainKey(":stack/elasticsearch");
-			config.LabelToProducts![":stack/elasticsearch"].Should().Be("elasticsearch");
+			config.LabelToProducts[":stack/elasticsearch"].Should().Be("elasticsearch");
 			config.LabelToProducts.Should().ContainKey(":stack/kibana");
 			config.LabelToProducts[":stack/kibana"].Should().Be("kibana");
 		}
@@ -1093,8 +1093,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
-			config!.LabelToProducts.Should().NotBeNull();
-			config.LabelToProducts![":feature/new-in-9.2"].Should().Be("elasticsearch 9.2.0");
+			config.LabelToProducts.Should().NotBeNull();
+			config.LabelToProducts[":feature/new-in-9.2"].Should().Be("elasticsearch 9.2.0");
 			config.LabelToProducts[":kibana/new-in-9.2"].Should().Be("kibana 9.2.0 ga");
 		}
 		finally
