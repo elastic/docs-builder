@@ -309,28 +309,36 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 	/// <summary>
 	/// Returns true only when every product defined in the create rules would be blocked by the given labels.
-	/// When no per-product overrides exist, checks global rules only.
+	/// When per-product overrides exist without global labels, treats the override list as the complete
+	/// product universe for the purpose of this pre-flight check.
 	/// </summary>
 	internal static bool AreAllProductsBlocked(string[] prLabels, CreateRules? createRules)
 	{
 		if (createRules == null)
 			return false;
 
-		// Global rules must block (products without overrides fall back to global)
-		if (!IsBlockedByRules(prLabels, createRules))
+		var hasGlobalLabels = createRules.Labels is { Count: > 0 };
+		var hasProductOverrides = createRules.ByProduct is { Count: > 0 };
+
+		if (!hasGlobalLabels && !hasProductOverrides)
 			return false;
 
-		// Each per-product override must also block (overrides replace global entirely)
-		if (createRules.ByProduct is { Count: > 0 })
+		if (hasProductOverrides)
 		{
-			foreach (var (_, productRules) in createRules.ByProduct)
+			foreach (var (_, productRules) in createRules.ByProduct!)
 			{
 				if (!IsBlockedByRules(prLabels, productRules))
 					return false;
 			}
+
+			// Products without overrides fall back to global rules
+			if (hasGlobalLabels && !IsBlockedByRules(prLabels, createRules))
+				return false;
+
+			return true;
 		}
 
-		return true;
+		return IsBlockedByRules(prLabels, createRules);
 	}
 
 	/// <summary>Checks if a single set of create rules blocks the given labels (no diagnostics).</summary>

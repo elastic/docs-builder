@@ -379,6 +379,113 @@ public class PrInfoProcessorLabelBlockerTests
 		PrInfoProcessor.AreAllProductsBlocked(["CHANGELOG:SKIP"], rules).Should().BeTrue();
 	}
 
+	// --- ByProduct-only configs (no global labels) ---
+
+	[Fact]
+	public void AreAllProductsBlocked_ByProductOnly_AllBlocked_ReturnsTrue()
+	{
+		var rules = new CreateRules
+		{
+			Labels = null,
+			Mode = FieldMode.Exclude,
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["elasticsearch"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
+				["kibana"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
+			}
+		};
+
+		PrInfoProcessor.AreAllProductsBlocked([">test"], rules).Should().BeTrue();
+	}
+
+	[Fact]
+	public void AreAllProductsBlocked_ByProductOnly_OneNotBlocked_ReturnsFalse()
+	{
+		var rules = new CreateRules
+		{
+			Labels = null,
+			Mode = FieldMode.Exclude,
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["elasticsearch"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
+				["kibana"] = new() { Labels = ["kibana:skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
+			}
+		};
+
+		// >test blocks elasticsearch but not kibana
+		PrInfoProcessor.AreAllProductsBlocked([">test"], rules).Should().BeFalse();
+	}
+
+	[Fact]
+	public void AreAllProductsBlocked_ByProductOnly_NoMatchingLabels_ReturnsFalse()
+	{
+		var rules = new CreateRules
+		{
+			Labels = null,
+			Mode = FieldMode.Exclude,
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["elasticsearch"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
+			}
+		};
+
+		PrInfoProcessor.AreAllProductsBlocked(["type:feature"], rules).Should().BeFalse();
+	}
+
+	[Fact]
+	public void AreAllProductsBlocked_ByProductOnly_IncludeMode_AllBlocked()
+	{
+		var rules = new CreateRules
+		{
+			Labels = null,
+			Mode = FieldMode.Exclude,
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["elasticsearch"] = new() { Labels = ["@Public"], Mode = FieldMode.Include, Match = MatchMode.Any },
+				["kibana"] = new() { Labels = ["@Public"], Mode = FieldMode.Include, Match = MatchMode.Any }
+			}
+		};
+
+		// Neither product's include label is present → both blocked
+		PrInfoProcessor.AreAllProductsBlocked(["type:feature"], rules).Should().BeTrue();
+	}
+
+	[Fact]
+	public void AreAllProductsBlocked_ByProductOnly_IncludeMode_OneSatisfied()
+	{
+		var rules = new CreateRules
+		{
+			Labels = null,
+			Mode = FieldMode.Exclude,
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["elasticsearch"] = new() { Labels = ["@Public"], Mode = FieldMode.Include, Match = MatchMode.Any },
+				["kibana"] = new() { Labels = ["@Release"], Mode = FieldMode.Include, Match = MatchMode.Any }
+			}
+		};
+
+		// @Public satisfies elasticsearch but kibana needs @Release
+		PrInfoProcessor.AreAllProductsBlocked(["@Public"], rules).Should().BeFalse();
+	}
+
+	[Fact]
+	public void AreAllProductsBlocked_ByProductOnly_MixedModes_AllBlocked()
+	{
+		var rules = new CreateRules
+		{
+			Labels = null,
+			Mode = FieldMode.Exclude,
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["elasticsearch"] = new() { Labels = [">test"], Mode = FieldMode.Exclude, Match = MatchMode.Any },
+				["kibana"] = new() { Labels = ["@Release"], Mode = FieldMode.Include, Match = MatchMode.Any }
+			}
+		};
+
+		// >test blocks elasticsearch (exclude), @Release not present blocks kibana (include)
+		PrInfoProcessor.AreAllProductsBlocked([">test"], rules).Should().BeTrue();
+	}
+
 	// --- IsBlockedByRules edge cases ---
 
 	[Fact]
