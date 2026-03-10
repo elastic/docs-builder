@@ -113,7 +113,7 @@ public class GroupNavigationTests
 
 		var indexLeaf = groupNav.Index as GroupIndexLeaf;
 		indexLeaf.Should().NotBeNull();
-		indexLeaf!.Url.Should().Be("/docs/g/observability");
+		indexLeaf.Url.Should().Be("/docs/g/observability");
 		indexLeaf.NavigationTitle.Should().Be("Observability");
 		indexLeaf.NavigationRoot.Should().BeSameAs(groupNav);
 		indexLeaf.Parent.Should().BeSameAs(groupNav);
