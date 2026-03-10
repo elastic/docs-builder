@@ -43,4 +43,10 @@ public static class TelemetryConstants
 	/// Used to trace feedback submissions.
 	/// </summary>
 	public const string AskAiFeedbackSourceName = "Elastic.Documentation.Api.AskAiFeedback";
+
+	/// <summary>
+	/// ActivitySource name for MCP remote tool call operations.
+	/// Used to trace MCP tool execution and outcomes.
+	/// </summary>
+	public const string McpToolSourceName = "Elastic.Documentation.Mcp.Remote.Tools";
 }
