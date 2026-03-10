@@ -217,10 +217,18 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
-			// Apply rules.bundle secondary product filter (skipped when primary filter is InputProducts)
+			// Apply rules.bundle secondary filter.
+			// Product filtering is skipped when the primary filter is InputProducts (already constrained by product).
+			// This covers both --input-products and profile-based bundling with a products: filter.
+			// Type/area filtering always applies regardless of the primary filter.
 			var filteredEntries = matchResult.Entries;
-			if (config?.Rules?.Bundle != null && !(input.InputProducts is { Count: > 0 }))
-				filteredEntries = ApplyBundleProductFilter(collector, filteredEntries, config.Rules.Bundle);
+			if (config?.Rules?.Bundle != null)
+			{
+				var skipProductFilter = input.InputProducts is { Count: > 0 };
+				if (skipProductFilter && (config.Rules.Bundle.ExcludeProducts is { Count: > 0 } || config.Rules.Bundle.IncludeProducts is { Count: > 0 }))
+					collector.EmitWarning(string.Empty, "[rules.bundle] Product filter (exclude_products/include_products) skipped: primary filter is already product-based (--input-products or a profile with products configured). Type/area filters still apply.");
+				filteredEntries = ApplyBundleProductFilter(collector, filteredEntries, config.Rules.Bundle, skipProductFilter: skipProductFilter);
+			}
 
 			if (filteredEntries.Count == 0)
 			{
@@ -620,9 +628,10 @@ public partial class ChangelogBundlingService(
 	private IReadOnlyList<MatchedChangelogFile> ApplyBundleProductFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
-		BundleRules bundleRules)
+		BundleRules bundleRules,
+		bool skipProductFilter = false)
 	{
-		if (bundleRules.ExcludeProducts is not { Count: > 0 } && bundleRules.IncludeProducts is not { Count: > 0 })
+		if (skipProductFilter || (bundleRules.ExcludeProducts is not { Count: > 0 } && bundleRules.IncludeProducts is not { Count: > 0 }))
 			return entries;
 
 		var filtered = new List<MatchedChangelogFile>();
@@ -645,20 +654,23 @@ public partial class ChangelogBundlingService(
 		return filtered;
 	}
 
+	// match_products semantics (mirrors MatchesArea in PublishBlockerExtensions):
+	//   any  — matched if ANY entry product is in the list
+	//   all  — matched if ALL entry products are in the list
 	private static bool ShouldExcludeByBundleProductFilter(IReadOnlyList<string> entryProducts, BundleRules bundleRules)
 	{
 		if (bundleRules.ExcludeProducts is { Count: > 0 } excludeList)
 		{
 			return bundleRules.MatchProducts == MatchMode.All
-				? excludeList.All(p => entryProducts.Contains(p, StringComparer.OrdinalIgnoreCase))
-				: excludeList.Any(p => entryProducts.Contains(p, StringComparer.OrdinalIgnoreCase));
+				? entryProducts.All(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: entryProducts.Any(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase));
 		}
 
 		if (bundleRules.IncludeProducts is { Count: > 0 } includeList)
 		{
 			var matchesSome = bundleRules.MatchProducts == MatchMode.All
-				? includeList.All(p => entryProducts.Contains(p, StringComparer.OrdinalIgnoreCase))
-				: includeList.Any(p => entryProducts.Contains(p, StringComparer.OrdinalIgnoreCase));
+				? entryProducts.All(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: entryProducts.Any(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase));
 			return !matchesSome;
 		}
 
