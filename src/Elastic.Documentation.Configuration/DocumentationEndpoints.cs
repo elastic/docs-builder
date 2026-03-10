@@ -20,6 +20,14 @@ public class DocumentationEndpoints
 	/// Build type identifier (assembler, isolated, codex). Controlled by DOCS_BUILD_TYPE env var.
 	/// </summary>
 	public string BuildType { get; set; } = "isolated";
+
+	/// <summary>
+	/// Optional comma-separated list of index names that override the computed search index.
+	/// When set, search queries target these indices instead of the one derived from
+	/// <see cref="BuildType"/> and <see cref="Environment"/>.
+	/// Controlled by <c>DOCUMENTATION_ELASTIC_INDEX_OVERRIDE</c> env var.
+	/// </summary>
+	public string? SearchIndexOverride { get; set; }
 }
 
 public class ElasticsearchEndpoint

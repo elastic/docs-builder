@@ -570,19 +570,6 @@ internal sealed partial class ChangelogCommand(
 			prs = parsedNotes.PrReferences
 				.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
 				.ToArray();
-
-			// Auto-infer outputProducts from the release tag when not explicitly provided
-			if (outputProducts == null || outputProducts.Count == 0)
-			{
-				var product = configurationContext.ProductsConfiguration.GetProductByRepositoryName(resolvedRepo);
-				if (product != null)
-				{
-					var targetVersion = ChangelogTextUtilities.ExtractBaseVersion(release.TagName);
-					var lifecycle = ChangelogTextUtilities.InferLifecycleFromVersion(release.TagName);
-					outputProducts = [new ProductArgument { Product = product.Id, Target = targetVersion, Lifecycle = lifecycle }];
-					_logger.LogInformation("Auto-inferred --output-products: {Product} {Target} {Lifecycle}", product.Id, targetVersion, lifecycle);
-				}
-			}
 		}
 
 		var allPrs = ExpandCommaSeparated(prs);
@@ -893,10 +880,29 @@ internal sealed partial class ChangelogCommand(
 
 		if (isProfileMode)
 		{
-			// Profile mode: --all, --products, --prs, --issues, and --release-version must not be used
-			if (all || (products != null && products.Count > 0) || allPrs.Count > 0 || allIssues.Count > 0 || releaseVersion != null)
+			// Profile mode: filter options and --repo/--owner must not be used; all paths and filters come from config
+			var forbidden = new List<string>();
+			if (all)
+				forbidden.Add("--all");
+			if (products is { Count: > 0 })
+				forbidden.Add("--products");
+			if (allPrs.Count > 0)
+				forbidden.Add("--prs");
+			if (allIssues.Count > 0)
+				forbidden.Add("--issues");
+			if (releaseVersion != null)
+				forbidden.Add("--release-version");
+			if (!string.IsNullOrWhiteSpace(repo))
+				forbidden.Add("--repo");
+			if (!string.IsNullOrWhiteSpace(owner))
+				forbidden.Add("--owner");
+
+			if (forbidden.Count > 0)
 			{
-				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --products, --prs, --issues, or --release-version. The profile configuration determines the filter.");
+				collector.EmitError(
+					string.Empty,
+					$"When using a profile, the following options are not allowed: {string.Join(", ", forbidden)}. " +
+					"All paths and filters are derived from the changelog configuration file.");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);

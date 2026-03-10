@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Linq;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -61,11 +62,13 @@ public record BundleDependency(string ChangelogFile, string BundleFile);
 public class ChangelogRemoveService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null)
+	IFileSystem? fileSystem = null,
+	IGitHubReleaseService? releaseService = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRemoveService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
 		: null;
@@ -99,15 +102,16 @@ public class ChangelogRemoveService(
 			if (!string.IsNullOrWhiteSpace(input.Profile))
 			{
 				var filterResult = await ProfileFilterResolver.ResolveAsync(
-					collector,
-					input.Profile,
-					input.ProfileArgument,
-					config,
-					_fileSystem,
-					_logger,
-					ctx,
-					input.ProfileReport
-				);
+						collector,
+						input.Profile,
+						input.ProfileArgument,
+						config,
+						_fileSystem,
+						_logger,
+						ctx,
+						input.ProfileReport,
+						_releaseService
+					);
 
 				if (filterResult == null)
 					return false;

@@ -415,7 +415,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						OutputProducts = kvp.Value.OutputProducts,
 						Repo = kvp.Value.Repo,
 						Owner = kvp.Value.Owner,
-						HideFeatures = kvp.Value.HideFeatures?.Values
+						HideFeatures = kvp.Value.HideFeatures?.Values,
+						Source = kvp.Value.Source
 					});
 		}
 
