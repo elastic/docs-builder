@@ -310,7 +310,7 @@ public class VersionSpec : IComparable<VersionSpec>, IEquatable<VersionSpec>
 	public static explicit operator VersionSpec(string s)
 	{
 		if (TryParse(s, out var spec))
-			return spec!;
+			return spec;
 		throw new ArgumentException($"'{s}' is not a valid version specification string.");
 	}
 }

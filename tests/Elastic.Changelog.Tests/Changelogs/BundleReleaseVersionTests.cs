@@ -94,7 +94,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("pr-12345.yaml");
 		bundleContent.Should().Contain("pr-12346.yaml");
 	}
@@ -148,7 +148,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeTrue();
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output!, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("product: cloud-hosted");
 	}

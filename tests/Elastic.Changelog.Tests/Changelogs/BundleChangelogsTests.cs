@@ -3966,6 +3966,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var lines = bundleContent.Split('\n');
 		var checksumLine = lines.FirstOrDefault(l => l.Contains("checksum:"));
 		checksumLine.Should().NotBeNull("Bundle should contain a checksum line");
-		return checksumLine!.Split("checksum:")[1].Trim();
+		return checksumLine.Split("checksum:")[1].Trim();
 	}
 }

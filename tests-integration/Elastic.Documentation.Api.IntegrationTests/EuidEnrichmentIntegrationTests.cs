@@ -105,7 +105,7 @@ public class EuidEnrichmentIntegrationTests : IAsyncLifetime
 		// Verify custom AskAi span has euid (proves baggage + processor work)
 		var askAiSpan = activities.FirstOrDefault(a => a.Source.Name == TelemetryConstants.AskAiSourceName);
 		askAiSpan.Should().NotBeNull("Should have captured custom AskAi span from AskAiUsecase");
-		var askAiEuidTag = askAiSpan!.TagObjects.FirstOrDefault(t => t.Key == TelemetryConstants.UserEuidAttributeName);
+		var askAiEuidTag = askAiSpan.TagObjects.FirstOrDefault(t => t.Key == TelemetryConstants.UserEuidAttributeName);
 		askAiEuidTag.Should().NotBeNull("AskAi span should have user.euid tag from baggage");
 		askAiEuidTag.Value.Should().Be(expectedEuid, "AskAi span euid should match cookie value");
 
@@ -120,7 +120,7 @@ public class EuidEnrichmentIntegrationTests : IAsyncLifetime
 		askAiLogRecord.Should().NotBeNull("Should have logged from AskAiUsecase");
 
 		// Verify euid is present in OTEL log attributes (mirrors production exporter behavior)
-		var euidAttribute = askAiLogRecord!.Attributes?.FirstOrDefault(a => a.Key == TelemetryConstants.UserEuidAttributeName) ?? default;
+		var euidAttribute = askAiLogRecord.Attributes?.FirstOrDefault(a => a.Key == TelemetryConstants.UserEuidAttributeName) ?? default;
 		euidAttribute.Should().NotBe(default(KeyValuePair<string, object?>), "Log record should include user.euid attribute");
 		(euidAttribute.Value?.ToString() ?? string.Empty).Should().Be(expectedEuid, "Log record euid should match cookie value");
 
