@@ -180,15 +180,12 @@ If you specify a file path with a different extension (not `.yml` or `.yaml`), t
 Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
 :::
 
-## Rules for filtered bundles [changelog-bundle-rules]
+## Rules for filtered bundles [changelog-bundle-rules-bundle]
 
-The `rules.bundle` section in the changelog configuration file lets you apply a secondary product filter during bundling, independent of the primary filter (`--prs`, `--issues`, `--all`). It is applied after entries are matched by the primary filter, and excludes or includes entries based on their `products` field and the filter.
+The `rules.bundle` section in the changelog configuration file lets you filter entries during bundling. It applies to both `changelog bundle` and `changelog gh-release`, after entries are matched by the primary filter (`--prs`, `--issues`, `--all`) and before the bundle is written.
 
-`rules.bundle` is ignored when the primary filter is `--input-products` (or `bundle.profiles.<name>.products`), because product-based primary filters already provide a complete product constraint.
-
-:::{note}
-`rules.bundle` does not apply to bundles created by `changelog gh-release`. This limitation will be resolved in a future release.
-:::
+The **product filter** (`exclude_products`/`include_products`) is skipped when the primary filter is `--input-products` (or `bundle.profiles.<name>.products`), because the primary filter already constrains by product.
+The **type and area filter** (`exclude_types`/`include_types`/`exclude_areas`/`include_areas`) always applies, regardless of the primary filter.
 
 The following fields are supported:
 
@@ -201,15 +198,36 @@ The following fields are supported:
 `match_products`
 :   Match mode for the product filter (`any` or `all`). Inherits from `rules.match` when not specified.
 
+`exclude_types`
+:   A changelog type or list of types to exclude from the bundle.
+
+`include_types`
+:   Only changelogs with these types are kept; all others are excluded.
+
+`exclude_areas`
+:   A changelog area or list of areas to exclude from the bundle.
+
+`include_areas`
+:   Only changelogs with these areas are kept; all others are excluded.
+
+`match_areas`
+:   Match mode for the area filter (`any` or `all`). Inherits from `rules.match` when not specified.
+
+`products`
+:   Per-product type/area filter overrides. Keys are product IDs (or comma-separated lists). Product-specific rules override the global `rules.bundle` type/area rules for entries matching that product.
+
 ```yaml
 rules:
   bundle:
     exclude_products: cloud-enterprise
-    # Or:
-    # include_products:
-    #   - cloud-serverless
-    #   - cloud-hosted
-    # match_products: any
+    exclude_types: deprecation
+    exclude_areas:
+      - Internal
+    products:
+      cloud-serverless:
+        include_areas:
+          - "Search"
+          - "Monitoring"
 ```
 
 ## Repository name in bundles [changelog-bundle-repo]

@@ -4231,6 +4231,243 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("[-bundle-exclude]"));
 	}
 
+	[Fact]
+	public async Task BundleChangelogs_WithRulesBundleExcludeType_ExcludesMatchingType()
+	{
+		// Arrange
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types: enhancement
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var featureChangelog =
+			"""
+			title: Feature entry
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+		// language=yaml
+		var enhancementChangelog =
+			"""
+			title: Enhancement entry
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/200
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268130-feature.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268140-enhancement.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, featureChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, enhancementChangelog, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
+		bundleContent.Should().NotContain("name: 1755268140-enhancement.yaml");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithRulesBundleIncludeArea_ExcludesNonMatchingArea()
+	{
+		// Arrange
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_areas: "Search"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var searchChangelog =
+			"""
+			title: Search feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			areas:
+			  - Search
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
+			""";
+		// language=yaml
+		var internalChangelog =
+			"""
+			title: Internal fix
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			areas:
+			  - Internal
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/400
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268130-search-feature.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268140-internal-fix.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, searchChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, internalChangelog, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-search-feature.yaml");
+		bundleContent.Should().NotContain("name: 1755268140-internal-fix.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithRulesBundlePerProductOverride_AppliesProductSpecificFilter()
+	{
+		// Arrange — global rule excludes "enhancement", but cloud-serverless overrides to allow all types
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types: enhancement
+			    products:
+			      cloud-serverless:
+			        include_areas: "Search"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var esEnhancement =
+			"""
+			title: ES enhancement (excluded by global rule)
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/500
+			""";
+		// language=yaml
+		var serverlessSearch =
+			"""
+			title: Serverless search feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 9.2.0
+			    lifecycle: ga
+			areas:
+			  - Search
+			prs:
+			  - https://github.com/elastic/cloud-serverless/pull/600
+			""";
+		// language=yaml
+		var serverlessOther =
+			"""
+			title: Serverless other feature (excluded by per-product include_areas)
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 9.2.0
+			    lifecycle: ga
+			areas:
+			  - Internal
+			prs:
+			  - https://github.com/elastic/cloud-serverless/pull/700
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268130-es-enhancement.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268140-serverless-search.yaml");
+		var file3 = FileSystem.Path.Combine(changelogDir, "1755268150-serverless-other.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, esEnhancement, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, serverlessSearch, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, serverlessOther, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().NotContain("name: 1755268130-es-enhancement.yaml");
+		bundleContent.Should().Contain("name: 1755268140-serverless-search.yaml");
+		bundleContent.Should().NotContain("name: 1755268150-serverless-other.yaml");
+	}
+
 	private static string ExtractChecksum(string bundleContent)
 	{
 		var lines = bundleContent.Split('\n');

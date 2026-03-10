@@ -47,9 +47,13 @@ docs-builder changelog gh-release <repo> [version] [options...] [-h|--help]
 The command creates two types of output in the directory specified by `--output`:
 
 - One YAML changelog file per pull request found in the release notes.
-- A `changelog-bundle.yaml` file that references all created changelog files.
+- A bundle file at `{output}/bundles/{version}-{product}-bundle.yml` that references all created changelog files.
 
 The product, target version, and lifecycle are inferred automatically from the release tag and the repository name (via [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml)). For example, a tag of `v9.2.0` on `elastic/elasticsearch` creates changelogs with `product: elasticsearch`, `target: 9.2.0`, and `lifecycle: ga`.
+
+## Configuration
+
+The `rules.bundle` section of your `changelog.yml` applies to bundles created by this command. Type, area, and product filtering all apply. For details, refer to [](/cli/release/changelog-bundle.md#changelog-bundle-rules-bundle).
 
 ## Examples
 

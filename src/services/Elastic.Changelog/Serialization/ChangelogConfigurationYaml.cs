@@ -94,6 +94,36 @@ internal record BundleRulesYaml
 	/// Match mode for products ("any" or "all"). Inherits from rules.match if not set.
 	/// </summary>
 	public string? MatchProducts { get; set; }
+
+	/// <summary>
+	/// Match mode for areas ("any" or "all"). Inherits from rules.match if not set.
+	/// </summary>
+	public string? MatchAreas { get; set; }
+
+	/// <summary>
+	/// Entry types to exclude from the bundle (string or list).
+	/// </summary>
+	public YamlLenientList? ExcludeTypes { get; set; }
+
+	/// <summary>
+	/// Entry types to include in the bundle (string or list, only these types are kept).
+	/// </summary>
+	public YamlLenientList? IncludeTypes { get; set; }
+
+	/// <summary>
+	/// Entry areas to exclude from the bundle (string or list).
+	/// </summary>
+	public YamlLenientList? ExcludeAreas { get; set; }
+
+	/// <summary>
+	/// Entry areas to include in the bundle (string or list, only entries with these areas are kept).
+	/// </summary>
+	public YamlLenientList? IncludeAreas { get; set; }
+
+	/// <summary>
+	/// Per-product type/area blocker overrides. Keys can be comma-separated product IDs.
+	/// </summary>
+	public Dictionary<string, BundleRulesYaml?>? Products { get; set; }
 }
 
 /// <summary>
