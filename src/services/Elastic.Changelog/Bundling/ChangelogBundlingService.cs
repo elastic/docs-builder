@@ -628,8 +628,8 @@ public partial class ChangelogBundlingService(
 	private IReadOnlyList<MatchedChangelogFile> ApplyBundleProductFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
-	BundleRules bundleRules,
-	bool skipProductFilter = false)
+		BundleRules bundleRules,
+		bool skipProductFilter = false)
 	{
 		if (skipProductFilter || (bundleRules.ExcludeProducts is not { Count: > 0 } && bundleRules.IncludeProducts is not { Count: > 0 }))
 			return entries;

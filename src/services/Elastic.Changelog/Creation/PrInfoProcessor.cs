@@ -367,49 +367,49 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (parts.Length == 0)
 				continue;
 
-		products.Add(new ProductArgument
-		{
-			Product = parts[0].Replace('_', '-'),
-			Target = parts.Length > 1 ? parts[1] : null,
-			Lifecycle = parts.Length > 2 ? parts[2] : null
-		});
+			products.Add(new ProductArgument
+			{
+				Product = parts[0].Replace('_', '-'),
+				Target = parts.Length > 1 ? parts[1] : null,
+				Lifecycle = parts.Length > 2 ? parts[2] : null
+			});
 		}
 
 		return products;
 	}
 }
 
-	/// <summary>
-	/// Result of processing PR information
-	/// </summary>
-	public record PrProcessingResult
-	{
-		public required bool FetchFailed { get; init; }
-		public required bool ShouldSkip { get; init; }
-		public DerivedPrFields? DerivedFields { get; init; }
-		public GitHubPrInfo? PrInfo { get; init; }
-	}
+/// <summary>
+/// Result of processing PR information
+/// </summary>
+public record PrProcessingResult
+{
+	public required bool FetchFailed { get; init; }
+	public required bool ShouldSkip { get; init; }
+	public DerivedPrFields? DerivedFields { get; init; }
+	public GitHubPrInfo? PrInfo { get; init; }
+}
+
+/// <summary>
+/// Fields derived from PR or issue information
+/// </summary>
+public record DerivedPrFields
+{
+	public string? Title { get; set; }
+	public string? Type { get; set; }
+	public string? Description { get; set; }
+	public string[]? Areas { get; set; }
+	public bool? Highlight { get; set; }
+	public string[]? Issues { get; set; }
 
 	/// <summary>
-	/// Fields derived from PR or issue information
+	/// Products derived from PR/issue labels via pivot.products mapping.
+	/// Only set when labels matched and no products were explicitly provided.
 	/// </summary>
-	public record DerivedPrFields
-	{
-		public string? Title { get; set; }
-		public string? Type { get; set; }
-		public string? Description { get; set; }
-		public string[]? Areas { get; set; }
-		public bool? Highlight { get; set; }
-		public string[]? Issues { get; set; }
+	public IReadOnlyList<ProductArgument>? Products { get; set; }
 
-		/// <summary>
-		/// Products derived from PR/issue labels via pivot.products mapping.
-		/// Only set when labels matched and no products were explicitly provided.
-		/// </summary>
-		public IReadOnlyList<ProductArgument>? Products { get; set; }
-
-		/// <summary>
-		/// Linked PRs derived from issue body (when creating changelog from --issues)
-		/// </summary>
-		public string[]? Prs { get; set; }
-	}
+	/// <summary>
+	/// Linked PRs derived from issue body (when creating changelog from --issues)
+	/// </summary>
+	public string[]? Prs { get; set; }
+}

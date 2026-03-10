@@ -314,7 +314,7 @@ IFileSystem? fileSystem = null
 			return true;
 
 		if (issueResult.DerivedFields != null)
-			input = ApplyDerivedFields(input, (DerivedPrFields)issueResult.DerivedFields);
+			input = ApplyDerivedFields(input, issueResult.DerivedFields);
 		else if (!issueResult.FetchFailed)
 			return false;
 
