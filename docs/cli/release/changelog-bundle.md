@@ -88,6 +88,10 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 - `"* 9.3.* *"` - match any product with target starting with "9.3."
 - `"* * *"` - match all changelogs (equivalent to `--all`)
 
+:::{note}
+When you use the `--input-products` filtering option, the bundle command ignores any `rules.bundle.include_products` or `exclude_products` [filters](#changelog-bundle-rules). They are mutually exclusive.
+:::
+
 `--issues <string[]?>`
 :   Filter by issue URLs (comma-separated), or a path to a newline-delimited file. Can be specified multiple times.
 :   Each occurrence can be either comma-separated issues ( `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (for example `--issues /path/to/file.txt`).
@@ -180,7 +184,7 @@ If you specify a file path with a different extension (not `.yml` or `.yaml`), t
 Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
 :::
 
-## Rules for filtered bundles [changelog-bundle-rules-bundle]
+## Rules for filtered bundles [changelog-bundle-rules]
 
 The `rules.bundle` section in the changelog configuration file lets you filter entries during bundling. It applies to both `changelog bundle` and `changelog gh-release`, after entries are matched by the primary filter (`--prs`, `--issues`, `--all`) and before the bundle is written.
 
@@ -284,6 +288,9 @@ docs-builder changelog bundle \
   --output ./docs/releases/bundle.yaml
 ```
 
+By default all changelogs that match PRs in the promotion report are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).
+
 ### Bundle by GitHub release [changelog-bundle-release-version]
 
 You can use `--release-version` to fetch pull request references directly from GitHub release notes and use them as the bundle filter.
@@ -317,6 +324,9 @@ docs-builder changelog bundle \
 `--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
 :::
 
+By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).
+
 ## Profile-based examples
 
 When the changelog configuration file defines `bundle.profiles`, you can use those profiles with the `changelog bundle` command.
@@ -334,6 +344,10 @@ If you're using profile-based commands, they're affected by the following fields
 :   Not used when the filter comes from a promotion report, URL list file, or `source: github_release` — in those cases the PR or issue list determines what's included and `products` is ignored.
 :   Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
 :   Example: `"elasticsearch {version} {lifecycle}"`
+
+:::{note}
+When you use the `products` filtering method, the bundle command ignores any `rules.bundle.include_products` or `exclude_products` [filters](#changelog-bundle-rules). They are mutually exclusive.
+:::
 
 `output`
 :   Optional. The output filename pattern for the bundle file. Supports `{version}` and `{lifecycle}` placeholders.
@@ -439,6 +453,10 @@ bundle:
 
 `output_products: "elasticsearch {version} {lifecycle}"` produces a single, authoritative product entry in the bundle derived from the release tag — for example, tag `v9.2.0` gives `elasticsearch 9.2.0 ga` and tag `v9.2.0-beta.1` gives `elasticsearch 9.2.0 beta`. Without `output_products`, the bundle products array is instead derived from the matched changelog files' own `products` fields, which is the consistent fallback for all profile types. Set `output_products` when you need a single clean product entry that reflects the release identity rather than the diverse metadata across individual changelog files.
 
+:::{note}
+When you use the `products` filtering method, the bundle command ignores any `rules.bundle.include_products` or `exclude_products` [filters](#changelog-bundle-rules). They are mutually exclusive.
+:::
+
 ### Bundle by report or URL list [profile-bundle-report-examples]
 
 You can also create profiles that are equivalent to the `--prs`, `--issues`, and `--report` filter options.
@@ -458,6 +476,9 @@ bundle:
 
 1. Bundle-level defaults that apply to all profiles. Individual profiles can override these.
 2. If a profile is intended for use with a promotion report or a newline delimited file that lists the issues or pull requests, it does not need a `products` filter. If the `output` and `output_products` are omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename and product metadata.
+
+By default all changelogs that match PRs or issues in the list or report are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).
 
 ### Bundle by GitHub release profiles [changelog-bundle-github-release-profile]
 
@@ -501,3 +522,6 @@ gh-release:
   output: "apm-agent-dotnet-{version}.yaml"
   output_products: "apm-agent-dotnet {version} preview"
 ```
+
+By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).

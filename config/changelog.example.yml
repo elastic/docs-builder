@@ -159,7 +159,8 @@ rules:
   # Applied after the primary filter (--prs, --issues, --all, ...) has collected changelogs.
   #
   # Product filtering:
-  #   Skipped when the primary filter is --input-products (already constrained by product).
+  #   Skipped when the primary filter is already product-based
+  #   (--input-products option or a profile with bundle.profiles.<name>.products configured).
   #   exclude_products / include_products (string or list) — cannot specify both.
   #   match_products inherits from rules.match if not specified.
   #
