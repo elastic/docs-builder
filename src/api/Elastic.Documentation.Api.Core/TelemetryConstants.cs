@@ -48,5 +48,5 @@ public static class TelemetryConstants
 	/// ActivitySource name for MCP remote tool call operations.
 	/// Used to trace MCP tool execution and outcomes.
 	/// </summary>
-	public const string McpToolSourceName = "Elastic.Documentation.Mcp.Remote.Tools";
+	public const string McpToolSourceName = "Elastic.Documentation.Api.McpTools";
 }

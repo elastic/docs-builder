@@ -41,7 +41,7 @@ public static class McpToolTelemetry
 		_ = activity?.SetTag("mcp.payload.arg_count", argumentKeys.Length);
 		_ = activity?.SetTag("mcp.payload.arg_keys", argKeys);
 
-		foreach (var kvp in arguments)
+		foreach (var kvp in arguments.Where(kvp => kvp.Value is string))
 		{
 			if (kvp.Value is string value)
 				_ = activity?.SetTag($"mcp.payload.{kvp.Key}.length", value.Length);

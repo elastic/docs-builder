@@ -103,7 +103,7 @@ public class McpToolTelemetryTests
 	{
 		var listener = new ActivityListener
 		{
-			ShouldListenTo = source => source.Name == "Elastic.Documentation.Mcp.Remote.Tools",
+			ShouldListenTo = source => source.Name == "Elastic.Documentation.Api.McpTools",
 			Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded
 		};
 
