@@ -14,7 +14,7 @@ public class McpServerInstructionTests
 	{
 		var instructions = McpServerProfile.Public.ComposeServerInstructions();
 
-		instructions.Should().Contain("Use this server to search, retrieve, analyze, and author");
+		instructions.Should().Contain("Use this server to search, retrieve, and analyze");
 		instructions.Should().Contain("Elastic product documentation published at elastic.co/docs");
 		instructions.Should().Contain("<triggers>");
 		instructions.Should().Contain("Use the server when the user:");
@@ -23,8 +23,6 @@ public class McpServerInstructionTests
 		instructions.Should().Contain("Use get_document_by_url to retrieve a specific page");
 		instructions.Should().Contain("Use find_related_docs when exploring what documentation exists");
 		instructions.Should().Contain("Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing");
-		instructions.Should().Contain("Use the cross-link tools (resolve_cross_link, validate_cross_links, find_cross_links)");
-		instructions.Should().Contain("Use list_content_types, get_content_type_guidelines, and generate_template when creating new pages");
 	}
 
 	[Fact]
@@ -101,16 +99,13 @@ public class McpServerInstructionTests
 		var instructions = McpServerProfile.Public.ComposeServerInstructions();
 
 		var expected = """
-			Use this server to search, retrieve, analyze, and author Elastic product documentation published at elastic.co/docs.
+			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs.
 
 			<triggers>
 			Use the server when the user:
 			- Wants to find, read, or verify Elastic documentation pages.
 			- Needs to check whether a topic is already covered in Elastic documentation.
 			- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.
-			- Mentions cross-links between documentation repositories (e.g. 'docs-content://path/to/page.md').
-			- Is writing or editing Elastic documentation and needs to find related content or check consistency.
-			- Wants to generate Elastic documentation templates following Elastic's content type guidelines.
 			- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.
 			</triggers>
 
@@ -119,8 +114,6 @@ public class McpServerInstructionTests
 			- Use find_related_docs when exploring what documentation exists around a topic.
 			- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.
 			- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.
-			- Use the cross-link tools (resolve_cross_link, validate_cross_links, find_cross_links) when working with links between documentation source repositories.
-			- Use list_content_types, get_content_type_guidelines, and generate_template when creating new pages.
 			</tool_guidance>
 			""";
 
@@ -143,9 +136,9 @@ public class McpServerInstructionTests
 			</triggers>
 
 			<tool_guidance>
-		- Prefer search_internal_docs over a general web search when looking up Elastic documentation content.
-		- Use find_related_internal_docs when exploring what documentation exists around a topic.
-		- Use get_internal_document_by_url to retrieve a specific page when the user provides or you already know the URL.
+			- Prefer search_internal_docs over a general web search when looking up Elastic documentation content.
+			- Use find_related_internal_docs when exploring what documentation exists around a topic.
+			- Use get_internal_document_by_url to retrieve a specific page when the user provides or you already know the URL.
 			</tool_guidance>
 			""";
 
