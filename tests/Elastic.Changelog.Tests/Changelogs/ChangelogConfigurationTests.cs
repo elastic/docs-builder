@@ -1216,7 +1216,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config!.Filename.Should().Be(expected);
+		config.Filename.Should().Be(expected);
 	}
 
 	[Fact]
@@ -1230,7 +1230,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config!.Filename.Should().Be(FilenameStrategy.Pr);
+		config.Filename.Should().Be(FilenameStrategy.Pr);
 	}
 
 	[Fact]
