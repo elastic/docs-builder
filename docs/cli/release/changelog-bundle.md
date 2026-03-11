@@ -107,7 +107,8 @@ When you use the `--input-products` filtering option, the bundle command ignores
 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
-:   This value replaces information that would otherwise by derived from changelogs.
+:   This value replaces information that would otherwise be derived from changelogs.
+:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also sets the product context used for rule resolution. For details, refer to [Per-product rule resolution for multi-product entries](/contribute/changelog.md#changelog-bundle-multi-product-rules).
 
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
@@ -219,6 +220,7 @@ The following fields are supported:
 
 `products`
 :   Per-product type/area filter overrides. Keys are product IDs (or comma-separated lists). Product-specific rules override the global `rules.bundle` type/area rules for entries matching that product.
+:   When an entry belongs to multiple products, the applicable rule is chosen by the intersection + alphabetical first-match algorithm. For details, refer to [Per-product rule resolution for multi-product entries](/contribute/changelog.md#changelog-bundle-multi-product-rules).
 
 ```yaml
 rules:

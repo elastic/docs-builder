@@ -228,7 +228,14 @@ public partial class ChangelogBundlingService(
 				var skipProductFilter = input.InputProducts is { Count: > 0 };
 				if (skipProductFilter && (config.Rules.Bundle.ExcludeProducts is { Count: > 0 } || config.Rules.Bundle.IncludeProducts is { Count: > 0 }))
 					collector.EmitWarning(string.Empty, "[rules.bundle] Product filter (exclude_products/include_products) skipped: primary filter is already product-based (--input-products or a profile with products configured). Type/area filters still apply.");
-				filteredEntries = ApplyBundleFilter(collector, filteredEntries, config.Rules.Bundle, skipProductFilter: skipProductFilter);
+				// Extract product IDs from output_products for per-product rule resolution.
+				// When set, these IDs define the bundle's product context and drive intersection-based rule lookup.
+				var outputProductIds = input.OutputProducts
+					?.Select(p => p.Product)
+					.Where(p => !string.IsNullOrWhiteSpace(p))
+					.Select(p => p!)
+					.ToList();
+				filteredEntries = ApplyBundleFilter(collector, filteredEntries, config.Rules.Bundle, outputProductIds, skipProductFilter: skipProductFilter);
 			}
 
 			if (filteredEntries.Count == 0)
@@ -630,6 +637,7 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
+		IReadOnlyList<string>? outputProductIds = null,
 		bool skipProductFilter = false)
 	{
 		var filtered = new List<MatchedChangelogFile>();
@@ -644,8 +652,8 @@ public partial class ChangelogBundlingService(
 				continue;
 			}
 
-			// 2 — Type/area filter: always applies; check per-product blocker first, then global blocker
-			var blocker = GetBlockerForEntry(entryProducts, bundleRules);
+			// 2 — Type/area filter: always applies; resolve per-product blocker via intersection + alphabetical first-match
+			var blocker = GetBlockerForEntry(entryProducts, bundleRules, outputProductIds);
 			if (blocker != null && blocker.ShouldBlock(entry.Data))
 			{
 				collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (type/area filter).");
@@ -684,14 +692,20 @@ public partial class ChangelogBundlingService(
 		return false;
 	}
 
-	private static PublishBlocker? GetBlockerForEntry(IReadOnlyList<string> entryProducts, BundleRules bundleRules)
+	private static PublishBlocker? GetBlockerForEntry(
+		IReadOnlyList<string> entryProducts,
+		BundleRules bundleRules,
+		IReadOnlyList<string>? outputProductIds = null)
 	{
-		if (bundleRules.ByProduct is { Count: > 0 } byProduct)
-		{
-			var matchingProductId = entryProducts.FirstOrDefault(productId => byProduct.ContainsKey(productId));
-			if (matchingProductId is not null && byProduct.TryGetValue(matchingProductId, out var productBlocker))
-				return productBlocker;
-		}
-		return bundleRules.Blocker;
+		if (bundleRules.ByProduct is not { Count: > 0 } byProduct)
+			return bundleRules.Blocker;
+
+		// Context: output_products (if set) defines which products this bundle is for.
+		// Fall back to the entry's own product list when output_products is not specified.
+		var contextIds = outputProductIds is { Count: > 0 }
+			? (IEnumerable<string>)outputProductIds
+			: entryProducts;
+
+		return PublishBlockerExtensions.ResolveBlocker(contextIds, entryProducts, byProduct, bundleRules.Blocker);
 	}
 }

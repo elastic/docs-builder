@@ -119,36 +119,35 @@ The configuration can include publish rules to filter entries by type or area.
 
 Product ID for loading product-specific publish rules from `changelog.yml`. The directive resolves the product ID in this order:
 
-1. **Explicit `:product:` option** - if specified, uses that product ID
-2. **Docset's single product** - if the docset has exactly one product configured in `docset.yml`, uses that product ID automatically
-3. **Global fallback** - uses the global `rules.publish` configuration
+1. **Explicit `:product:` option** — if specified, uses that product ID
+2. **Docset's single product** — if the docset has exactly one product configured in `docset.yml`, uses that product ID automatically
+3. **Global fallback** — uses the global `rules.publish` configuration
 
-This automatic fallback means most single-product docsets don't need to specify `:product:` explicitly - the directive will automatically use the docset's product for publish rule lookup.
+:::{important}
+`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time instead of render time.
+For details, refer to [Filtering entries with publish rules](#filtering-entries-with-publish-rules).
+:::
 
-**Example docset with single product:**
+**When to set `:product:` explicitly:**
+
+Always specify `:product:` when your docset serves more than one product, or when bundle files can contain entries from multiple products and you have per-product rules configured.
+Without an explicit `:product:`, the directive falls back to global rules, which may not apply the right filtering for each product.
+
+```markdown
+:::{changelog}
+:product: kibana
+:::
+```
+
+**Single-product docsets:**
+
+If your `docset.yml` declares exactly one product, the directive uses that product ID automatically and you don't need to set `:product:`:
 
 ```yaml
 # docset.yml
 products:
   - id: kibana
-toc:
-  - file: release-notes.md
 ```
-
-```yaml
-# changelog.yml
-rules:
-  publish:
-    products:
-      kibana:
-        exclude_types:
-          - docs
-        exclude_areas:
-          - "Elastic Observability solution"
-          - "Elastic Security solution"
-```
-
-With this configuration, the directive will automatically use the `kibana` product rules:
 
 ```markdown
 :::{changelog}
@@ -157,17 +156,13 @@ With this configuration, the directive will automatically use the `kibana` produ
 
 **Explicit override:**
 
-You can override the automatic product detection by specifying `:product:` explicitly:
+You can override the automatic product detection at any time:
 
 ```markdown
 :::{changelog}
 :product: elasticsearch
 :::
 ```
-
-This is useful when:
-- The docset has multiple products and you want a specific one
-- You want to use a different product's rules than the docset default
 
 The product ID matching is case-insensitive.
 

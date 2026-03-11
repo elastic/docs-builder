@@ -126,7 +126,7 @@ Evaluated when running `docs-builder changelog add` with `--prs` or `--issues`.
 
 You cannot specify both `exclude` and `include`.
 
-**Product-specific create rules** (`rules.create.products`):
+##### Product-specific create rules (`rules.create.products`)
 
 Product keys can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`).
 Each product override supports the same `exclude`, `include`, and `match` options.
@@ -151,7 +151,7 @@ Applied during `docs-builder changelog bundle` and `docs-builder changelog gh-re
 The **product filter** (`exclude_products`/`include_products`) is skipped when the primary filter is `--input-products` (or `bundle.profiles.<name>.products`), because the primary filter already constrains by product.
 The **type and area filter** (`exclude_types`/`include_types`/`exclude_areas`/`include_areas`) always applies, regardless of the primary filter.
 
-**Product filtering:**
+##### Product filtering
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -159,7 +159,7 @@ The **type and area filter** (`exclude_types`/`include_types`/`exclude_areas`/`i
 | `include_products` | string or list | Only these product IDs are included; all others are excluded. Cannot be combined with `exclude_products`. |
 | `match_products` | string | Override `rules.match` for product matching. Values: `any`, `all`. |
 
-**Type and area filtering:**
+##### Type and area filtering
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -174,7 +174,7 @@ You cannot specify both `exclude_products` and `include_products`, both `exclude
 
 When a changelog is excluded by `rules.bundle`, the bundling service emits a warning with a `[-bundle-exclude]`, `[-bundle-include]`, or `[-bundle-type-area]` prefix.
 
-**Product-specific bundle rules** (`rules.bundle.products`):
+##### Product-specific bundle rules (`rules.bundle.products`)
 
 Product keys can be a single product ID or a comma-separated list.
 Each product override supports the same type/area options (`exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas`).
@@ -193,6 +193,27 @@ rules:
           - "Search"
           - "Monitoring"
 ```
+
+##### Per-product rule resolution for multi-product entries [changelog-bundle-multi-product-rules]
+
+When a changelog entry belongs to more than one product, the applicable per-product rule is chosen using an *intersection + alphabetical first-match* algorithm:
+
+1. Compute the **intersection** of the bundle's product context and the entry's own products.
+   - The bundle context is the set of product IDs from `--output-products` (if specified), or the entry's own products when `--output-products` is not set.
+   - The intersection restricts rule lookup to only the products the entry actually claims to belong to.
+2. **Sort the intersection alphabetically** (case-insensitive, ascending) for a deterministic result.
+3. Use the per-product rule for the **first product ID** in the sorted intersection that has a configured rule.
+4. If the intersection is empty (the entry's products are disjoint from the bundle context), fall back to the entry's own product list (alphabetically), then to the global `rules.bundle` blocker.
+
+For example, with `--output-products "kibana 9.3.0" "security 9.3.0"`:
+
+| Entry's `products` | Intersection with context | Sorted | Rule used |
+|--------------------|--------------------------|--------|-----------|
+| `[kibana]` | `{kibana}` | `[kibana]` | `kibana` rule |
+| `[security]` | `{security}` | `[security]` | `security` rule |
+| `[kibana, security]` | `{kibana, security}` | `[kibana, security]` | `kibana` rule (k < s) |
+
+When `--output-products` is not set, the entry's own product list is used as the context, so each single-product entry naturally picks its own rule. For shared entries without `--output-products`, the alphabetically-first product with a configured rule wins. To avoid ambiguity for shared entries, configure per-product rules that agree on the shared entry, or use `--output-products` to make the bundle's product context explicit.
 
 #### `rules.publish`
 
