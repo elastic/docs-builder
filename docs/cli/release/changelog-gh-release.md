@@ -53,7 +53,9 @@ The product, target version, and lifecycle are inferred automatically from the r
 
 ## Configuration
 
-The `rules.bundle` section of your `changelog.yml` applies to bundles created by this command. Type, area, and product filtering all apply. For details, refer to [](/cli/release/changelog-bundle.md#changelog-bundle-rules-bundle).
+The `rules.bundle` section of your `changelog.yml` applies to bundles created by this command.
+Type, area, and product filtering all apply.
+For details, refer to [Rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).
 
 ## Examples
 

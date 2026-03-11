@@ -175,7 +175,8 @@ The product ID matching is case-insensitive.
 
 You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
 
-`rules.bundle` supports product, type, and area filtering, and per-product overrides. For full syntax and examples, refer to [Control changelog creation](/contribute/changelog.md#rules-bundle) and the [`changelog bundle`](/cli/release/changelog-bundle.md#changelog-bundle-rules-bundle) reference.
+`rules.bundle` supports product, type, and area filtering, and per-product overrides.
+For full syntax, refer to the [rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).
 
 ## Filtering entries with publish rules
 
