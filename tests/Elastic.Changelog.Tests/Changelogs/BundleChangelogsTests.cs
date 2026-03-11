@@ -4575,7 +4575,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Arrange — entry belongs to both kibana and security (shared entry).
 		// kibana rule: exclude_areas: "Detection rules and alerts" (alphabetically first → wins)
 		// security rule: include_areas: "Detection rules and alerts"
-		// Expected: kibana rule fires (k < s alphabetically) → entry excluded
+		// Expected: kibana rule fires (k < s alphabetically) → shared entry excluded.
+		// A second kibana entry with a different area is included so the bundle succeeds.
 		// language=yaml
 		var configContent =
 			"""
@@ -4610,9 +4611,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - "400"
 			""";
 
+		// language=yaml
+		var kibanaOtherEntry =
+			"""
+			title: Kibana core feature
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			areas:
+			  - Core
+			prs:
+			  - "401"
+			""";
+
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Combine(changelogDir, "1755268160-shared.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268161-kibana-other.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, sharedEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaOtherEntry, TestContext.Current.CancellationToken);
 
 		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
@@ -4629,11 +4646,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert — kibana wins alphabetically; its exclude_areas rule fires
+		// Assert — kibana wins alphabetically; its exclude_areas rule fires for the shared entry
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 		bundleContent.Should().NotContain("name: 1755268160-shared.yaml", "kibana rule (alphabetically first) should exclude the shared entry");
+		bundleContent.Should().Contain("name: 1755268161-kibana-other.yaml", "kibana entry with a different area should pass the exclude_areas rule");
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]"));
 	}
 

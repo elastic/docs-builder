@@ -203,7 +203,7 @@ When a changelog entry belongs to more than one product, the applicable per-prod
    - The intersection restricts rule lookup to only the products the entry actually claims to belong to.
 2. **Sort the intersection alphabetically** (case-insensitive, ascending) for a deterministic result.
 3. Use the per-product rule for the **first product ID** in the sorted intersection that has a configured rule.
-4. If the intersection is empty (the entry's products are disjoint from the bundle context), fall back to the entry's own product list (alphabetically), then to the global `rules.bundle` blocker.
+4. If the intersection is empty (the entry's products are disjoint from the bundle context), fall back to the entry's own product list sorted alphabetically, then to the global `rules.bundle` blocker. This prevents context-only rules from being applied to unrelated entries.
 
 For example, with `--output-products "kibana 9.3.0" "security 9.3.0"`:
 

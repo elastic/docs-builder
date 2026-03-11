@@ -114,7 +114,7 @@ public static class PublishBlockerExtensions
 	/// <item>Sort the intersection alphabetically (case-insensitive, ascending) for a deterministic result.</item>
 	/// <item>Return the per-product rule for the first matching product ID in the sorted intersection.</item>
 	/// <item>If the intersection is empty (unusual: entry's products are disjoint from the bundle context),
-	///   fall back to <paramref name="contextIds"/> sorted alphabetically, then to <paramref name="globalBlocker"/>.</item>
+	///   fall back to <paramref name="entryOwnIds"/> sorted alphabetically, then to <paramref name="globalBlocker"/>.</item>
 	/// </list>
 	/// </remarks>
 	/// <param name="contextIds">
@@ -139,9 +139,10 @@ public static class PublishBlockerExtensions
 			.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
 			.ToList();
 
-		// Edge case: empty intersection (entry's products are disjoint from the bundle context)
+		// Edge case: empty intersection (entry's products are disjoint from the bundle context).
+		// Fall back to the entry's own products so context-only rules don't bleed across.
 		if (candidates.Count == 0)
-			candidates = contextIds
+			candidates = entrySet
 				.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
 				.ToList();
 
