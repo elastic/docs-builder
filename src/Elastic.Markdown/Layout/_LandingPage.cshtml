@@ -1,7 +1,7 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <div hx-select-oob="#main-container" hx-swap="none" class="w-full max-w-[100vw] text-ink relative text-pretty overflow-x-hidden">
 	<section class="w-full bg-grey-10" id="hero">
-		<div class="container mx-auto pt-28 pb-28 grid lg:grid-cols-[1fr_600px] items-center gap-6">
+		<div class="container mx-auto pt-28 pb-4 min-[1024px]:pb-28 grid min-[1024px]:grid-cols-[auto_420px] min-[1024px]:justify-start items-center gap-6 min-[1024px]:gap-[74px]">
 			<div class="max-w-165">
 				<h1 class="text-6xl font-bold font-sans text-black">Elastic Docs</h1>
 				<p class="mt-4">Welcome to the technical documentation for <span class="whitespace-nowrap">Elastic Stack 9.0.0</span>
@@ -35,8 +35,19 @@
 					</div>
 				}
 			</div>
-			<div class="hidden lg:flex justify-center items-center">
-				<img src="@Model.Static("hero.png")" alt="Elastic Docs" width="600">
+			<div class="flex flex-col justify-center w-full mt-14 min-[1024px]:mt-0">
+				<div class="rounded-2xl border-1 border-blue-elastic bg-white p-8 shadow-lg">
+					<p class="font-sans font-bold text-sm text-blue-elastic uppercase tracking-wide mb-3">New</p>
+					<h3 class="font-sans font-bold text-2xl text-ink-dark">Elastic skills for AI agents</h3>
+					<p class="text-base text-ink-light mt-3 leading-relaxed">Install official skills that teach AI coding agents how to work with Elasticsearch, Kibana, Fleet, and the rest of the Elastic stack.</p>
+					<a href="@Model.Link("/explore-analyze/ai-features/elastic-agent-skills")"
+					   class="inline-flex items-center mt-6 cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10">
+						Get started
+						<svg class="ml-2 size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
+						</svg>
+					</a>
+				</div>
 			</div>
 		</div>
 	</section>
