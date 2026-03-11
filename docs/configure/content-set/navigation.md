@@ -125,6 +125,8 @@ If a folder does define `children` all markdown files within that folder have to
       - file: page-two.md
 ```
 
+##### `sort`
+
 When auto-discovering files (no explicit `children`), you can control the sort order with `sort`:
 
 ```yaml
