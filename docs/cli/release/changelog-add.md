@@ -75,7 +75,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid product identifiers are listed in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 :   The valid lifecycles are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 :   **Precedence when `--products` is not specified:** products are derived from PR/issue labels via `pivot.products` label mappings (if configured), then from `products.default` in `changelog.yml`, and finally inferred from the current git repository name. An error is raised if no products can be determined by any of these means.
-:   Refer to [](#products-resolution) for more details.
+:   Refer to [Products resolution](#products-resolution) in the how-to guide for full details.
 
 `--prs <string[]?>`
 :   Optional: Pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.

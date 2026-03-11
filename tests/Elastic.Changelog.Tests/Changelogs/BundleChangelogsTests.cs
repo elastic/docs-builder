@@ -3961,6 +3961,276 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 	}
 
+	[Fact]
+	public async Task BundleChangelogs_WithRulesBundleExclude_ExcludesMatchingProducts()
+	{
+		// Arrange
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products: cloud-hosted
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var elasticsearchChangelog =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+		// language=yaml
+		var cloudChangelog =
+			"""
+			title: Cloud feature
+			type: feature
+			products:
+			  - product: cloud-hosted
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/cloud-hosted/pull/200
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268130-elasticsearch-feature.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268140-cloud-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, cloudChangelog, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
+		bundleContent.Should().NotContain("name: 1755268140-cloud-feature.yaml");
+		// Verify warning was emitted for the excluded entry
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-exclude]"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithRulesBundleInclude_IncludesOnlyMatchingProducts()
+	{
+		// Arrange
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products: elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var elasticsearchChangelog =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/300
+			""";
+		// language=yaml
+		var kibanaChangelog =
+			"""
+			title: Kibana feature
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/400
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268130-elasticsearch-feature.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268140-kibana-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaChangelog, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
+		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-include]"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithAllFilter_AppliesRulesBundle()
+	{
+		// Arrange - rules.bundle applies to --all primary filter too
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products: kibana
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var elasticsearchChangelog =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/500
+			""";
+		// language=yaml
+		var kibanaChangelog =
+			"""
+			title: Kibana feature
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/600
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268130-elasticsearch-feature.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268140-kibana-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaChangelog, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
+		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithInputProducts_IgnoresRulesBundle()
+	{
+		// Arrange - rules.bundle is bypassed when primary filter is InputProducts
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products: elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var elasticsearchChangelog =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/700
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268130-elasticsearch-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		// Use InputProducts as primary filter — rules.bundle.exclude_products should be ignored
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - elasticsearch entry is included despite exclude_products rule because InputProducts bypasses rules.bundle
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("[-bundle-exclude]"));
+	}
+
 	private static string ExtractChecksum(string bundleContent)
 	{
 		var lines = bundleContent.Split('\n');
