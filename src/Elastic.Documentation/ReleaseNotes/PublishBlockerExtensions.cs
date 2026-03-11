@@ -146,13 +146,10 @@ public static class PublishBlockerExtensions
 				.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
 				.ToList();
 
-		foreach (var id in candidates)
-		{
-			if (byProduct.TryGetValue(id, out var blocker))
-				return blocker;
-		}
-
-		return globalBlocker;
+		return candidates
+			.Select(id => byProduct.TryGetValue(id, out var blocker) ? blocker : null)
+			.FirstOrDefault(blocker => blocker is not null)
+			?? globalBlocker;
 	}
 
 	private static bool IsAreaListed(PublishBlocker blocker, string area) =>
