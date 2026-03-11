@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.Include;
@@ -56,8 +58,16 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (includePath.StartsWith('/'))
 			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
-		IncludePath = Path.Combine(includeFrom, includePath.TrimStart('/'));
+		IncludePath = Path.GetFullPath(Path.Combine(includeFrom, includePath.TrimStart('/')));
 		IncludePathRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, IncludePath);
+
+		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
+		if (!file.IsSubPathOf(Build.DocumentationSourceDirectory))
+		{
+			this.EmitError("Include path must resolve within the documentation source directory.");
+			Found = false;
+			return;
+		}
 
 		if (Build.ReadFileSystem.File.Exists(IncludePath))
 			Found = true;
@@ -67,9 +77,10 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		// literal includes may point to locations other than `_snippets` since they do not
 		// participate in emitting links
 		if (Literal)
+		{
+			ValidateIncludePath(file);
 			return;
-
-		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
+		}
 
 		if (file.Directory != null && file.Directory.FullName.IndexOf("_snippets", StringComparison.Ordinal) < 0)
 		{
@@ -84,4 +95,38 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		}
 	}
 
+	private void ValidateIncludePath(IFileInfo file)
+	{
+		if (file is { Exists: true, LinkTarget: not null })
+		{
+			this.EmitError("Include path must not point to a symlink.");
+			Found = false;
+			return;
+		}
+
+		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem
+			? StringComparison.Ordinal
+			: StringComparison.OrdinalIgnoreCase;
+
+		var docRootFullName = Build.DocumentationSourceDirectory.FullName;
+		var dir = file.Directory;
+		while (dir != null && !string.Equals(dir.FullName, docRootFullName, cmp))
+		{
+			if (dir.Name.StartsWith('.'))
+			{
+				this.EmitError("Include path must not traverse hidden directories.");
+				Found = false;
+				return;
+			}
+
+			if (dir is { Exists: true, LinkTarget: not null })
+			{
+				this.EmitError("Include path must not traverse symlinked directories.");
+				Found = false;
+				return;
+			}
+
+			dir = dir.Parent;
+		}
+	}
 }
