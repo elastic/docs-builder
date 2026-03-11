@@ -137,10 +137,13 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		{
 			if (!context.CrossLinkResolver.IsDeclaredCrossLinkScheme(uri.Scheme))
 			{
-				// Custom protocol URI (e.g. cursor://, vscode:) — not a declared cross-link scheme.
-				// Treat as an external passthrough link without validation.
-				link.SetData("isCrossLink", false);
-				return;
+				// Only known custom protocol schemes should bypass cross-link validation.
+				// Undeclared schemes still surface errors to catch cross-link typos.
+				if (IsPassthroughCustomProtocolScheme(uri.Scheme))
+				{
+					link.SetData("isCrossLink", false);
+					return;
+				}
 			}
 
 			link.SetData("isCrossLink", true);
@@ -458,4 +461,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
 		CrossLinkValidator.IsCrossLink(uri);
+
+	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
+		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase)
+		|| scheme.Equals("vscode", StringComparison.OrdinalIgnoreCase);
 }
