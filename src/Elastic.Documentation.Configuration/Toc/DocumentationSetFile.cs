@@ -554,12 +554,7 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Add index.md first if it exists
 		if (indexFile != null)
-		{
-			var indexRef = indexFile.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)
-				? new IndexFileRef(indexFile.Name, indexFile.Name, false, [], context)
-				: new FileRef(indexFile.Name, indexFile.Name, false, [], context);
-			children.Add(indexRef);
-		}
+			children.Add(new IndexFileRef(indexFile.Name, indexFile.Name, false, [], context));
 
 		// Add other files sorted according to the specified order
 		foreach (var file in sortedFiles)
