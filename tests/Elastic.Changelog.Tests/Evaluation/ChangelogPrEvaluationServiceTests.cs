@@ -67,8 +67,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 			HeadRef = "feature/test",
 			HeadSha = "abc123",
 			EventAction = eventAction,
-			TitleChanged = titleChanged,
-			Output = "/tmp/output"
+			TitleChanged = titleChanged
 		};
 	}
 

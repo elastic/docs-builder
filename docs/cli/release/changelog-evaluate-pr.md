@@ -58,10 +58,6 @@ docs-builder changelog evaluate-pr [options...] [-h|--help]
 :   Bot login name for loop detection.
 :   Default: `github-actions[bot]`
 
-`--output <string>`
-:   Output directory for metadata.
-:   Default: `.`
-
 ## GitHub Actions outputs
 
 | Output | Description |

@@ -19,5 +19,4 @@ public record EvaluatePrArguments
 	public bool TitleChanged { get; init; }
 	public bool StripTitlePrefix { get; init; }
 	public string BotName { get; init; } = "github-actions[bot]";
-	public required string Output { get; init; }
 }

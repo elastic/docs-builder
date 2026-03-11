@@ -1194,7 +1194,6 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="titleChanged">Whether the PR title changed (for edited events)</param>
 	/// <param name="stripTitlePrefix">Remove square-bracket prefixes from the PR title</param>
 	/// <param name="botName">Bot login name for loop detection</param>
-	/// <param name="output">Output directory for metadata</param>
 	/// <param name="ctx"></param>
 	[Command("evaluate-pr")]
 	public async Task<int> EvaluatePr(
@@ -1210,7 +1209,6 @@ internal sealed partial class ChangelogCommand(
 		bool titleChanged = false,
 		bool stripTitlePrefix = false,
 		string botName = "github-actions[bot]",
-		string output = ".",
 		Cancel ctx = default
 	)
 	{
@@ -1232,8 +1230,7 @@ internal sealed partial class ChangelogCommand(
 			EventAction = eventAction,
 			TitleChanged = titleChanged,
 			StripTitlePrefix = stripTitlePrefix,
-			BotName = botName,
-			Output = output
+			BotName = botName
 		};
 
 		serviceInvoker.AddCommand(service, args,
