@@ -9,7 +9,6 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
-using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
@@ -110,9 +109,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case ButtonBlock buttonBlock:
 				WriteButton(renderer, buttonBlock);
 				return;
-			case AgentSkillBlock agentSkillBlock:
-				WriteAgentSkill(renderer, agentSkillBlock);
-				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
 				// 	WriteCode(renderer, directiveBlock);
@@ -205,19 +201,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Type = block.Type,
 			Align = block.Align,
 			IsInGroup = block.IsInGroup
-		});
-		RenderRazorSlice(slice, renderer);
-	}
-
-	private static void WriteAgentSkill(HtmlRenderer renderer, AgentSkillBlock block)
-	{
-		if (string.IsNullOrEmpty(block.Url))
-			return;
-
-		var slice = AgentSkillView.Create(new AgentSkillViewModel
-		{
-			DirectiveBlock = block,
-			Url = block.Url
 		});
 		RenderRazorSlice(slice, renderer);
 	}
