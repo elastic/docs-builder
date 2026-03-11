@@ -1,9 +1,9 @@
 @layer components {
 	.agent-skill {
-		@apply mt-4 rounded-sm border-1 border-teal-40 bg-teal-10 pb-4;
+		@apply border-teal-40 bg-teal-10 mt-4 rounded-sm border-1 pb-4;
 
 		.agent-skill-header {
-			@apply flex items-center gap-2 rounded-t-sm bg-teal-20 px-4 py-2 font-bold text-teal-110;
+			@apply bg-teal-20 text-teal-110 flex items-center gap-2 rounded-t-sm px-4 py-2 font-bold;
 		}
 
 		.agent-skill-icon {
