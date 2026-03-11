@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Changelog.Configuration;
@@ -26,6 +27,7 @@ public class ChangelogPrEvaluationService(
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrEvaluationService>();
+	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
 
 	public async Task<bool> EvaluatePr(IDiagnosticsCollector collector, EvaluatePrArguments input, Cancel ctx)
@@ -52,15 +54,23 @@ public class ChangelogPrEvaluationService(
 			}
 		}
 
-		// Manual edit detection
-		var changelogFilePath = $"{changelogDir}/{input.PrNumber}.yaml";
-		var fileAuthor = await gitHubPrService.FetchLastFileCommitAuthorAsync(
-			input.Owner, input.Repo, changelogFilePath, input.HeadRef, ctx
-		);
-		if (!string.IsNullOrEmpty(fileAuthor) && !string.Equals(fileAuthor, input.BotName, StringComparison.OrdinalIgnoreCase))
+		// Find existing changelog file for this PR (handles all filename strategies)
+		var existingFilename = FindExistingChangelog(changelogDir, input.PrNumber);
+		var changelogFilePath = existingFilename != null
+			? $"{changelogDir}/{existingFilename}"
+			: null;
+
+		// Manual edit detection (only if a file exists)
+		if (changelogFilePath != null)
 		{
-			_logger.LogInformation("Skipping: changelog file manually edited by {Author}", fileAuthor);
-			return await SetOutputs(PrEvaluationResult.ManuallyEdited);
+			var fileAuthor = await gitHubPrService.FetchLastFileCommitAuthorAsync(
+				input.Owner, input.Repo, changelogFilePath, input.HeadRef, ctx
+			);
+			if (!string.IsNullOrEmpty(fileAuthor) && !string.Equals(fileAuthor, input.BotName, StringComparison.OrdinalIgnoreCase))
+			{
+				_logger.LogInformation("Skipping: changelog file {File} manually edited by {Author}", changelogFilePath, fileAuthor);
+				return await SetOutputs(PrEvaluationResult.ManuallyEdited);
+			}
 		}
 
 		// Label-based skip check
@@ -88,13 +98,12 @@ public class ChangelogPrEvaluationService(
 
 		if (resolvedType == null)
 		{
-			// Build label table for no-label case
 			_logger.LogInformation("No type label found on PR");
 			return await SetOutputs(PrEvaluationResult.NoLabel, title, labelTable: BuildLabelTable(config.LabelToType));
 		}
 
-		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}", title, resolvedType);
-		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType);
+		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, existingFile={File}", title, resolvedType, existingFilename);
+		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType, existingFilename: existingFilename);
 	}
 
 	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
@@ -104,7 +113,8 @@ public class ChangelogPrEvaluationService(
 		PrEvaluationResult status,
 		string? resolvedTitle = null,
 		string? resolvedType = null,
-		string? labelTable = null)
+		string? labelTable = null,
+		string? existingFilename = null)
 	{
 		// evaluate-pr outputs "proceed" (not "success") to signal the generate step should run
 		var statusString = status == PrEvaluationResult.Success
@@ -124,9 +134,40 @@ public class ChangelogPrEvaluationService(
 			await coreService.SetOutputAsync("type", resolvedType);
 		if (labelTable != null)
 			await coreService.SetOutputAsync("label-table", labelTable);
+		if (existingFilename != null)
+			await coreService.SetOutputAsync("existing-changelog-filename", existingFilename);
 
 		return true;
 	}
+
+	/// <summary>
+	/// Finds an existing changelog file for the given PR in the changelog directory.
+	/// Returns the filename (not the full path) if found, or null.
+	/// </summary>
+	internal string? FindExistingChangelog(string changelogDir, int prNumber)
+	{
+		if (!_fileSystem.Directory.Exists(changelogDir))
+			return null;
+
+		var prFilename = $"{prNumber}.yaml";
+		if (_fileSystem.File.Exists(_fileSystem.Path.Combine(changelogDir, prFilename)))
+			return prFilename;
+
+		var prString = prNumber.ToString(CultureInfo.InvariantCulture);
+		foreach (var filePath in _fileSystem.Directory.GetFiles(changelogDir, "*.yaml"))
+		{
+			var content = _fileSystem.File.ReadAllText(filePath);
+			if (ContentReferencesPr(content, prString))
+				return _fileSystem.Path.GetFileName(filePath);
+		}
+
+		return null;
+	}
+
+	internal static bool ContentReferencesPr(string content, string prNumber) =>
+		content.Contains($"/pull/{prNumber}", StringComparison.Ordinal) ||
+		content.Contains($"- \"{prNumber}\"", StringComparison.Ordinal) ||
+		content.Contains($"- '{prNumber}'", StringComparison.Ordinal);
 
 	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType)
 	{
