@@ -136,7 +136,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 
 		var metadata = ReadMetadata();
 		metadata.CreateRules.Should().NotBeNull();
-		metadata.CreateRules!.Labels.Should().Contain("changelog:skip");
+		metadata.CreateRules.Labels.Should().Contain("changelog:skip");
 		metadata.CreateRules.Mode.Should().Be(FieldMode.Exclude);
 	}
 
