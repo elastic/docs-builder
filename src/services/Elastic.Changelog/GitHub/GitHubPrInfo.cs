@@ -12,8 +12,8 @@ public record GitHubPrInfo
 	public string Title { get; set; } = string.Empty;
 	public string Body { get; set; } = string.Empty;
 	public IReadOnlyList<string> Labels { get; set; } = [];
-	public string? HeadSha { get; set; } = string.Empty;
-	public string? HeadRef { get; set; } = string.Empty;
+	public string? HeadSha { get; set; }
+	public string? HeadRef { get; set; }
 
 	/// <summary>
 	/// Linked issues extracted from PR body.
