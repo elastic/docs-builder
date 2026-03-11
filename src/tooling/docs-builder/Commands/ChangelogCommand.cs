@@ -70,7 +70,7 @@ internal sealed partial class ChangelogCommand(
 		IDirectoryInfo docsFolder;
 		if (Paths.TryFindDocsFolderFromKnownLocationsOnly(_fileSystem, rootDir, out var foundDocsFolder, out _))
 		{
-			docsFolder = foundDocsFolder!;
+			docsFolder = foundDocsFolder;
 		}
 		else
 		{

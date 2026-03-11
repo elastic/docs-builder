@@ -187,8 +187,8 @@ data: {"type":"conversationEnd","id":"test"}
 		// Verify the HttpClient was called with correct headers
 		mockHandler.RequestSent.Should().BeTrue();
 		mockHandler.CapturedRequest.Should().NotBeNull();
-		mockHandler.CapturedRequest!.Headers.Authorization.Should().NotBeNull();
-		mockHandler.CapturedRequest.Headers.Authorization!.Scheme.Should().Be("Bearer");
+		mockHandler.CapturedRequest.Headers.Authorization.Should().NotBeNull();
+		mockHandler.CapturedRequest.Headers.Authorization.Scheme.Should().Be("Bearer");
 		mockHandler.CapturedRequest.Headers.Authorization.Parameter.Should().Be("mock-gcp-token");
 	}
 

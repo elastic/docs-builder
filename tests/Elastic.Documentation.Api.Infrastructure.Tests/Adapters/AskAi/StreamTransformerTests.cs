@@ -103,7 +103,7 @@ public class AgentBuilderStreamTransformerTests
 		// Tool call should be SearchToolCall type with extracted query
 		var searchToolCall = events.OfType<AskAiEvent.SearchToolCall>().FirstOrDefault();
 		searchToolCall.Should().NotBeNull();
-		searchToolCall!.ToolCallId.Should().Be("tooluse_abc123");
+		searchToolCall.ToolCallId.Should().Be("tooluse_abc123");
 		searchToolCall.SearchQuery.Should().Be("semantic search");
 
 		var toolResult = events.OfType<AskAiEvent.ToolResult>().First();
@@ -403,7 +403,7 @@ public class StreamTransformerCommonBehaviorTests
 		conversationStart.Should().NotBeNull(
 			$"{transformerName} should emit ConversationStart event");
 
-		conversationStart!.Timestamp.Should().BeGreaterThan(0,
+		conversationStart.Timestamp.Should().BeGreaterThan(0,
 			$"{transformerName} ConversationStart should have a valid timestamp");
 	}
 
@@ -434,7 +434,7 @@ public class StreamTransformerCommonBehaviorTests
 		conversationStart.Should().NotBeNull(
 			$"{transformerName} should emit ConversationStart event");
 
-		conversationStart!.Id.Should().NotBeNullOrEmpty(
+		conversationStart.Id.Should().NotBeNullOrEmpty(
 			$"{transformerName} ConversationStart should have a non-empty event ID");
 	}
 

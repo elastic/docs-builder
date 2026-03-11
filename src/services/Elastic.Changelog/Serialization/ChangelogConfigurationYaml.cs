@@ -155,6 +155,13 @@ internal record PivotConfigurationYaml
 	public Dictionary<string, YamlLenientList?>? Areas { get; set; }
 
 	/// <summary>
+	/// Product definitions with labels (string or list per value).
+	/// Keys are product spec strings (e.g., "elasticsearch", "kibana 9.2.0").
+	/// Values are label strings that trigger adding the product.
+	/// </summary>
+	public Dictionary<string, YamlLenientList?>? Products { get; set; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
 	public YamlLenientList? Highlight { get; set; }

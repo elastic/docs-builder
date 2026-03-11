@@ -66,7 +66,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(2)
+		result.Types.Should().HaveCount(2)
 			.And.Contain("deprecation")
 			.And.Contain("known-issue");
 		result.TypesMode.Should().Be(FieldMode.Exclude);
@@ -90,7 +90,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.Areas.Should().HaveCount(2)
+		result.Areas.Should().HaveCount(2)
 			.And.Contain("Internal")
 			.And.Contain("Experimental");
 		result.AreasMode.Should().Be(FieldMode.Exclude);
@@ -115,7 +115,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(1).And.Contain("deprecation");
+		result.Types.Should().HaveCount(1).And.Contain("deprecation");
 		result.Areas.Should().HaveCount(1).And.Contain("Internal");
 		result.HasBlockingRules.Should().BeTrue();
 	}
@@ -161,7 +161,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(1).And.Contain("deprecation");
+		result.Types.Should().HaveCount(1).And.Contain("deprecation");
 		result.Areas.Should().BeNull();
 	}
 
@@ -186,7 +186,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml", "kibana");
 
 		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(1).And.Contain("docs");
+		result.Types.Should().HaveCount(1).And.Contain("docs");
 		result.Areas.Should().HaveCount(1).And.Contain("Elastic Security solution");
 	}
 
@@ -209,7 +209,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml", "elasticsearch");
 
 		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(1).And.Contain("regression");
+		result.Types.Should().HaveCount(1).And.Contain("regression");
 	}
 
 	[Fact]
@@ -231,7 +231,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(1).And.Contain("regression");
+		result.Types.Should().HaveCount(1).And.Contain("regression");
 	}
 
 	[Fact]
@@ -251,7 +251,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml", "KIBANA");
 
 		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(1).And.Contain("docs");
+		result.Types.Should().HaveCount(1).And.Contain("docs");
 	}
 
 	[Fact]
@@ -274,7 +274,7 @@ public class LoadPublishBlockerTests
 		// With product specified, should get product-specific blocker
 		var resultWithProduct = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml", "kibana");
 		resultWithProduct.Should().NotBeNull();
-		resultWithProduct!.Types.Should().Contain("docs");
+		resultWithProduct.Types.Should().Contain("docs");
 		resultWithProduct.Areas.Should().Contain("Elastic Observability solution");
 
 		// Without product, should get null (no global blocker)
@@ -298,7 +298,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.Areas.Should().HaveCount(2).And.Contain("Search").And.Contain("Monitoring");
+		result.Areas.Should().HaveCount(2).And.Contain("Search").And.Contain("Monitoring");
 		result.AreasMode.Should().Be(FieldMode.Include);
 	}
 
@@ -318,7 +318,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.Types.Should().HaveCount(2).And.Contain("feature").And.Contain("bug-fix");
+		result.Types.Should().HaveCount(2).And.Contain("feature").And.Contain("bug-fix");
 		result.TypesMode.Should().Be(FieldMode.Include);
 	}
 
@@ -338,7 +338,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.MatchAreas.Should().Be(MatchMode.All);
+		result.MatchAreas.Should().Be(MatchMode.All);
 	}
 
 	[Fact]
@@ -357,7 +357,7 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.MatchAreas.Should().Be(MatchMode.All);
+		result.MatchAreas.Should().Be(MatchMode.All);
 	}
 
 	[Fact]
@@ -377,6 +377,6 @@ public class LoadPublishBlockerTests
 		var result = ReleaseNotesSerialization.LoadPublishBlocker(_fileSystem, "/docs/changelog.yml");
 
 		result.Should().NotBeNull();
-		result!.MatchAreas.Should().Be(MatchMode.Any);
+		result.MatchAreas.Should().Be(MatchMode.Any);
 	}
 }
