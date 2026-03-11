@@ -75,7 +75,10 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 				Title = prData.Title,
 				Body = prData.Body ?? string.Empty,
 				Labels = prData.Labels?.Select(l => l.Name).ToList() ?? [],
-				LinkedIssues = linkedIssues
+				LinkedIssues = linkedIssues,
+				HeadSha = prData.Head?.Sha,
+				HeadRef = prData.Head?.Ref,
+				IsFork = prData.Head?.Repo?.Fork ?? false
 			};
 		}
 		catch (HttpRequestException ex)
@@ -242,6 +245,71 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 		}
 	}
 
+	/// <inheritdoc />
+	public async Task<string?> FetchCommitAuthorAsync(string owner, string repo, string sha, CancellationToken ctx = default)
+	{
+		try
+		{
+			using var request = CreateRequest(HttpMethod.Get, $"https://api.github.com/repos/{owner}/{repo}/commits/{sha}");
+			_logger.LogDebug("Fetching commit author from: {ApiUrl}", request.RequestUri);
+
+			var response = await HttpClient.SendAsync(request, ctx);
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogWarning("Failed to fetch commit info. Status: {StatusCode}", response.StatusCode);
+				return null;
+			}
+
+			var json = await response.Content.ReadAsStringAsync(ctx);
+			var commit = JsonSerializer.Deserialize(json, GitHubPrJsonContext.Default.GitHubCommitResponse);
+			return commit?.Author?.Login;
+		}
+		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+		{
+			_logger.LogWarning(ex, "Error fetching commit author for {Sha}", sha);
+			return null;
+		}
+	}
+
+	/// <inheritdoc />
+	public async Task<string?> FetchLastFileCommitAuthorAsync(string owner, string repo, string filePath, string branch, CancellationToken ctx = default)
+	{
+		try
+		{
+			var url = $"https://api.github.com/repos/{owner}/{repo}/commits?path={Uri.EscapeDataString(filePath)}&sha={Uri.EscapeDataString(branch)}&per_page=1";
+			using var request = CreateRequest(HttpMethod.Get, url);
+			_logger.LogDebug("Fetching last file commit author from: {ApiUrl}", request.RequestUri);
+
+			var response = await HttpClient.SendAsync(request, ctx);
+			if (!response.IsSuccessStatusCode)
+			{
+				_logger.LogWarning("Failed to fetch file commit history. Status: {StatusCode}", response.StatusCode);
+				return null;
+			}
+
+			var json = await response.Content.ReadAsStringAsync(ctx);
+			var commits = JsonSerializer.Deserialize(json, GitHubPrJsonContext.Default.ListGitHubCommitListItem);
+			if (commits is not { Count: > 0 })
+				return null;
+
+			return commits[0].Author?.Login;
+		}
+		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+		{
+			_logger.LogWarning(ex, "Error fetching last file commit author for {FilePath}", filePath);
+			return null;
+		}
+	}
+
+	private static HttpRequestMessage CreateRequest(HttpMethod method, string url)
+	{
+		var request = new HttpRequestMessage(method, url);
+		var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+		if (!string.IsNullOrEmpty(githubToken))
+			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
+		return request;
+	}
+
 	private static (string? owner, string? repo, int? issueNumber) ParseIssueUrl(string issueUrl, string? defaultOwner = null, string? defaultRepo = null)
 	{
 		if (issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
@@ -320,6 +388,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 		public string Title { get; set; } = string.Empty;
 		public string Body { get; set; } = string.Empty;
 		public List<GitHubLabel>? Labels { get; set; }
+		public GitHubHeadRef? Head { get; set; }
 	}
 
 	private sealed class GitHubIssueResponse
@@ -334,11 +403,47 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 		public string Name { get; set; } = string.Empty;
 	}
 
+	private sealed class GitHubHeadRef
+	{
+		public string Sha { get; set; } = string.Empty;
+		public string Ref { get; set; } = string.Empty;
+		public GitHubRepoRef? Repo { get; set; }
+	}
+
+	private sealed class GitHubRepoRef
+	{
+		[JsonPropertyName("full_name")]
+		public string FullName { get; set; } = string.Empty;
+
+		public bool Fork { get; set; }
+	}
+
+	private sealed class GitHubCommitResponse
+	{
+		public GitHubCommitAuthor? Author { get; set; }
+	}
+
+	private sealed class GitHubCommitAuthor
+	{
+		public string Login { get; set; } = string.Empty;
+	}
+
+	private sealed class GitHubCommitListItem
+	{
+		public GitHubCommitAuthor? Author { get; set; }
+	}
+
 	[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
 	[JsonSerializable(typeof(GitHubPrResponse))]
 	[JsonSerializable(typeof(GitHubIssueResponse))]
 	[JsonSerializable(typeof(GitHubLabel))]
 	[JsonSerializable(typeof(List<GitHubLabel>))]
+	[JsonSerializable(typeof(GitHubHeadRef))]
+	[JsonSerializable(typeof(GitHubRepoRef))]
+	[JsonSerializable(typeof(GitHubCommitResponse))]
+	[JsonSerializable(typeof(GitHubCommitAuthor))]
+	[JsonSerializable(typeof(GitHubCommitListItem))]
+	[JsonSerializable(typeof(List<GitHubCommitListItem>))]
 	private sealed partial class GitHubPrJsonContext : JsonSerializerContext;
 
 	[GeneratedRegex(@"https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/pull/(\d+)", RegexOptions.IgnoreCase, "en-CA")]

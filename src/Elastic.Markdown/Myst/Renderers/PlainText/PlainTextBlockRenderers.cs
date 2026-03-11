@@ -6,6 +6,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
@@ -270,6 +271,15 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
+				return;
+
+			case AgentSkillBlock agentSkillBlock:
+				renderer.EnsureBlockSpacing();
+				renderer.WriteLine("Agent skill available");
+				renderer.WriteLine("A skill is available to help AI agents with this topic.");
+				if (!string.IsNullOrEmpty(agentSkillBlock.Url))
+					renderer.WriteLine(agentSkillBlock.Url);
+				renderer.EnsureLine();
 				return;
 		}
 

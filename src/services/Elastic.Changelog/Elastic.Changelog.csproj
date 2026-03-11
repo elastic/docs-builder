@@ -16,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="GitHub.Actions.Core" />
+    <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
     <PackageReference Include="YamlDotNet" />
     <PackageReference Include="System.IO.Abstractions" />
