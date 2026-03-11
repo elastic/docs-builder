@@ -491,6 +491,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			// For children of folders, the container remains the same as the folder's container
 			var resolvedChildren = ResolveTableOfContents(collector, folderRef.Children, baseDirectory, fileSystem, fullPath, containerPath, context, suppressDiagnostics);
+			// Exclude is intentionally not passed through — it only applies to auto-discovery
 			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.Sort);
 		}
 

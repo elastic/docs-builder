@@ -151,6 +151,8 @@ When using auto-discovery (no explicit `children`), you can exclude specific fil
 
 Excluded file names are matched case-insensitively. This is useful when a folder contains files that should not appear in the navigation, like drafts or internal documentation.
 
+The `exclude` option has no effect when `children` are explicitly defined, since all files must be listed manually.
+
 #### Virtual grouping
 
 A `file` element may include children to create a virtual grouping that 
