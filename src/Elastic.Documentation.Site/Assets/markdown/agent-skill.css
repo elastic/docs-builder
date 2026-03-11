@@ -1,0 +1,39 @@
+@layer components {
+	.agent-skill {
+		@apply mt-4 rounded-sm border-1 border-teal-40 bg-teal-10 pb-4;
+
+		.agent-skill-header {
+			@apply flex items-center gap-2 rounded-t-sm bg-teal-20 px-4 py-2 font-bold text-teal-110;
+		}
+
+		.agent-skill-icon {
+			@apply size-5 shrink-0;
+		}
+
+		.agent-skill-content {
+			@apply flex items-center justify-between gap-4 px-4 pt-3;
+		}
+
+		.agent-skill-text {
+			p {
+				@apply m-0 text-base;
+			}
+
+			.agent-skill-learn-more {
+				@apply mt-1 text-sm;
+			}
+		}
+
+		.agent-skill-button {
+			@apply bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-blue-elastic-50 flex shrink-0 cursor-pointer items-center gap-1.5 rounded-sm px-6 py-2 font-sans text-sm font-semibold text-nowrap text-white! no-underline! select-none hover:text-white! focus:ring-4 focus:outline-none;
+		}
+
+		.agent-skill-button::after {
+			content: none !important;
+		}
+
+		.agent-skill-button-icon {
+			@apply size-3.5;
+		}
+	}
+}
