@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Linq;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
@@ -685,13 +686,11 @@ public partial class ChangelogBundlingService(
 
 	private static PublishBlocker? GetBlockerForEntry(IReadOnlyList<string> entryProducts, BundleRules bundleRules)
 	{
-		if (bundleRules.ByProduct is { Count: > 0 })
+		if (bundleRules.ByProduct is { Count: > 0 } byProduct)
 		{
-			foreach (var productId in entryProducts)
-			{
-				if (bundleRules.ByProduct.TryGetValue(productId, out var productBlocker))
-					return productBlocker;
-			}
+			var matchingProductId = entryProducts.FirstOrDefault(productId => byProduct.ContainsKey(productId));
+			if (matchingProductId is not null && byProduct.TryGetValue(matchingProductId, out var productBlocker))
+				return productBlocker;
 		}
 		return bundleRules.Blocker;
 	}
