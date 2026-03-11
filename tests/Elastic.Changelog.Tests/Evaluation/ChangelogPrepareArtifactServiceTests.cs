@@ -180,14 +180,14 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	}
 
 	[Theory]
-	[InlineData("proceed", "success", "success")]
-	[InlineData("proceed", "failure", "error")]
-	[InlineData("no-label", "success", "no-label")]
-	[InlineData("no-title", "success", "no-title")]
-	[InlineData("skipped", "success", "skipped")]
-	[InlineData("manually-edited", "success", "manually-edited")]
-	[InlineData("unknown", "success", "error")]
-	public void ResolveStatus_ReturnsExpected(string evaluateStatus, string generateOutcome, string expected)
+	[InlineData("proceed", "success", PrEvaluationResult.Success)]
+	[InlineData("proceed", "failure", PrEvaluationResult.Error)]
+	[InlineData("no-label", "success", PrEvaluationResult.NoLabel)]
+	[InlineData("no-title", "success", PrEvaluationResult.NoTitle)]
+	[InlineData("skipped", "success", PrEvaluationResult.Skipped)]
+	[InlineData("manually-edited", "success", PrEvaluationResult.ManuallyEdited)]
+	[InlineData("unknown", "success", PrEvaluationResult.Error)]
+	public void ResolveStatus_ReturnsExpected(string evaluateStatus, string generateOutcome, PrEvaluationResult expected)
 	{
 		var result = ChangelogPrepareArtifactService.ResolveStatus(evaluateStatus, generateOutcome);
 		result.Should().Be(expected);

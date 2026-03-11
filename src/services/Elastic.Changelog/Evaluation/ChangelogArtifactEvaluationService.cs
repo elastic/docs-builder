@@ -71,7 +71,11 @@ public class ChangelogArtifactEvaluationService(
 		var shouldCommentSuccess = false;
 		var shouldCommentFailure = false;
 
-		if (metadata.Status.Equals("success", StringComparison.OrdinalIgnoreCase))
+		var statusParsed = PrEvaluationResultExtensions.TryParse(
+			metadata.Status, out var metadataStatus, ignoreCase: true, allowMatchingMetadataAttribute: true
+		);
+
+		if (statusParsed && metadataStatus == PrEvaluationResult.Success)
 		{
 			if (input.CommentOnly || prInfo.IsFork)
 				shouldCommentSuccess = true;
@@ -79,7 +83,7 @@ public class ChangelogArtifactEvaluationService(
 				shouldCommit = true;
 		}
 
-		if (string.Equals(metadata.Status, "no-label", StringComparison.OrdinalIgnoreCase))
+		if (statusParsed && metadataStatus == PrEvaluationResult.NoLabel)
 			shouldCommentFailure = true;
 
 		await coreService.SetOutputAsync("pr-number", metadata.PrNumber.ToString(CultureInfo.InvariantCulture));

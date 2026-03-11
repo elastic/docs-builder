@@ -27,15 +27,13 @@ public class ChangelogPrepareArtifactService(
 
 	public async Task<bool> PrepareArtifact(IDiagnosticsCollector collector, PrepareArtifactArguments input, Cancel ctx)
 	{
-		// Resolve artifact status
 		var status = ResolveStatus(input.EvaluateStatus, input.GenerateOutcome);
 		_logger.LogInformation("Resolved artifact status: {Status} (evaluate={Evaluate}, generate={Generate})",
 			status, input.EvaluateStatus, input.GenerateOutcome);
 
 		_ = _fileSystem.Directory.CreateDirectory(input.OutputDir);
 
-		// If we have a changelog to emit, copy it from staging to the artifact output directory
-		if (string.Equals(status, "success", StringComparison.OrdinalIgnoreCase))
+		if (status == PrEvaluationResult.Success)
 		{
 			var sourceYaml = _fileSystem.Path.Combine(input.StagingDir, $"{input.PrNumber}.yaml");
 			var destYaml = _fileSystem.Path.Combine(input.OutputDir, $"{input.PrNumber}.yaml");
@@ -48,22 +46,25 @@ public class ChangelogPrepareArtifactService(
 			else
 			{
 				collector.EmitError(sourceYaml, "Generated changelog YAML not found in staging directory");
-				status = "error";
+				status = PrEvaluationResult.Error;
 			}
 		}
 
+		var resolvedConfigPath = input.Config
+			?? _fileSystem.Path.Combine(_fileSystem.Directory.GetCurrentDirectory(), "docs", "changelog.yml");
 		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 		var createRules = config?.Rules?.Create;
 		var changelogDir = config?.Bundle?.Directory ?? "docs/changelog";
 
+		var statusString = status.ToStringFast(true);
 		var metadata = new ChangelogArtifactMetadata
 		{
 			PrNumber = input.PrNumber,
 			HeadRef = input.HeadRef,
 			HeadSha = input.HeadSha,
-			Status = status,
+			Status = statusString,
 			LabelTable = input.LabelTable,
-			ConfigFile = input.Config,
+			ConfigFile = resolvedConfigPath,
 			ChangelogDir = changelogDir,
 			CreateRules = createRules
 		};
@@ -73,18 +74,22 @@ public class ChangelogPrepareArtifactService(
 		await _fileSystem.File.WriteAllTextAsync(metadataPath, json, ctx);
 		_logger.LogInformation("Wrote artifact metadata to {Path}", metadataPath);
 
-		await coreService.SetOutputAsync("status", status);
+		await coreService.SetOutputAsync("status", statusString);
 
 		return true;
 	}
 
-	internal static string ResolveStatus(string evaluateStatus, string generateOutcome) =>
-		evaluateStatus switch
+	internal static PrEvaluationResult ResolveStatus(string evaluateStatus, string generateOutcome)
+	{
+		if (string.Equals(evaluateStatus, ChangelogPrEvaluationService.ProceedStatus, StringComparison.OrdinalIgnoreCase))
 		{
-			"skipped" or "manually-edited" => evaluateStatus,
-			"no-title" => "no-title",
-			"no-label" => "no-label",
-			"proceed" when generateOutcome.Equals("success", StringComparison.OrdinalIgnoreCase) => "success",
-			_ => "error"
-		};
+			return generateOutcome.Equals("success", StringComparison.OrdinalIgnoreCase)
+				? PrEvaluationResult.Success
+				: PrEvaluationResult.Error;
+		}
+
+		return PrEvaluationResultExtensions.TryParse(evaluateStatus, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
+			? parsed
+			: PrEvaluationResult.Error;
+	}
 }

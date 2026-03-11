@@ -97,21 +97,19 @@ public class ChangelogPrEvaluationService(
 		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType);
 	}
 
+	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
+	internal const string ProceedStatus = "proceed";
+
 	private async Task<bool> SetOutputs(
 		PrEvaluationResult status,
 		string? resolvedTitle = null,
 		string? resolvedType = null,
 		string? labelTable = null)
 	{
-		var statusString = status switch
-		{
-			PrEvaluationResult.Success => "proceed",
-			PrEvaluationResult.NoLabel => "no-label",
-			PrEvaluationResult.NoTitle => "no-title",
-			PrEvaluationResult.Skipped => "skipped",
-			PrEvaluationResult.ManuallyEdited => "manually-edited",
-			_ => "error"
-		};
+		// evaluate-pr outputs "proceed" (not "success") to signal the generate step should run
+		var statusString = status == PrEvaluationResult.Success
+			? ProceedStatus
+			: status.ToStringFast(true);
 
 		var shouldGenerate = status == PrEvaluationResult.Success;
 		var shouldUpload = status is PrEvaluationResult.Success or PrEvaluationResult.NoLabel or PrEvaluationResult.NoTitle;
