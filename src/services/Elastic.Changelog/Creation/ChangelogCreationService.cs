@@ -125,12 +125,25 @@ IEnvironmentVariables? env = null
 		}
 	}
 
-	private static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config) =>
-		input with
+	internal static CreateChangelogArguments ApplyConfigDefaults(CreateChangelogArguments input, ChangelogConfiguration config)
+	{
+		var usePrNumber = input.UsePrNumber;
+		var useIssueNumber = input.UseIssueNumber;
+
+		if (!usePrNumber && !useIssueNumber)
+		{
+			usePrNumber = config.Filename == FilenameStrategy.Pr;
+			useIssueNumber = config.Filename == FilenameStrategy.Issue;
+		}
+
+		return input with
 		{
 			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
-			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues
+			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues,
+			UsePrNumber = usePrNumber,
+			UseIssueNumber = useIssueNumber
 		};
+	}
 
 	/// <summary>
 	/// Infers products from configuration defaults or repository name.
@@ -389,17 +402,13 @@ IEnvironmentVariables? env = null
 			? input.Prs
 			: !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
 
-		// TODO: filename strategy (use-pr-number) will move to changelog.yml configuration
-		var usePrNumber = input.UsePrNumber || (input.Prs is not { Length: > 0 } && !string.IsNullOrEmpty(prNumber));
-
 		return input with
 		{
 			Prs = enrichedPrs,
 			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
-			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,
-			UsePrNumber = usePrNumber
+			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo
 		};
 	}
 }

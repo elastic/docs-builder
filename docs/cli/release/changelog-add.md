@@ -123,10 +123,10 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
 `--use-pr-number`
-:   Optional: Use PR numbers for filenames instead of timestamp-slug. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires `--prs` or `--issues`. Mutually exclusive with `--use-issue-number`.
+:   Optional: Use PR numbers for filenames instead of the configured `filename` strategy. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires `--prs` or `--issues`. Mutually exclusive with `--use-issue-number`.
 
 `--use-issue-number`
-:   Optional: Use issue numbers for filenames instead of timestamp-slug. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
+:   Optional: Use issue numbers for filenames instead of the configured `filename` strategy. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
 
 ## CI auto-detection [ci-auto-detection]
 
@@ -142,7 +142,7 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 
 **Precedence**: explicit CLI arguments always take priority over environment variables. Environment variables are only used when the corresponding CLI argument is not provided.
 
-When `CHANGELOG_PR_NUMBER` is set and `--prs` is not provided, `--use-pr-number` is also implicitly enabled so the generated filename uses the PR number.
+The filename strategy is controlled by the `filename` option in `changelog.yml` (defaulting to `pr`). Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for details.
 
 This allows the CI action to invoke `changelog add` with a minimal command line:
 

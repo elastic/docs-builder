@@ -112,6 +112,12 @@ public record ChangelogConfiguration
 	public ProductsConfig? ProductsConfiguration { get; init; }
 
 	/// <summary>
+	/// Filename strategy for generated changelog files.
+	/// Controls how files created by 'changelog add' are named.
+	/// </summary>
+	public FilenameStrategy Filename { get; init; } = FilenameStrategy.Pr;
+
+	/// <summary>
 	/// Bundle configuration with profiles and defaults.
 	/// </summary>
 	public BundleConfiguration? Bundle { get; init; }

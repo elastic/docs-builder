@@ -10,6 +10,14 @@
 #     - value3
 # Both forms produce the same result. Choose whichever is more readable for your use case.
 
+# Filename strategy for generated changelog files.
+# Controls how files created by 'changelog add' are named.
+#   pr        — use the PR number (e.g., 12345.yaml). Default.
+#   issue     — use the issue number (e.g., 67890.yaml).
+#   timestamp — use a Unix timestamp with a title slug (e.g., 1735689600-fix-search.yaml).
+# Can be overridden per invocation with --use-pr-number or --use-issue-number CLI flags.
+filename: pr
+
 # Products configuration (optional)
 # If not specified, all products from products.yml are allowed
 products:

@@ -1203,6 +1203,51 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot have both 'exclude_products' and 'include_products'"));
 	}
 
+	[Theory]
+	[InlineData("pr", FilenameStrategy.Pr)]
+	[InlineData("issue", FilenameStrategy.Issue)]
+	[InlineData("timestamp", FilenameStrategy.Timestamp)]
+	public async Task LoadChangelogConfiguration_Filename_ParsesStrategy(string yamlValue, FilenameStrategy expected)
+	{
+		var config = await LoadConfig(
+			$"""
+			filename: {yamlValue}
+			""");
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Filename.Should().Be(expected);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToPr()
+	{
+		var config = await LoadConfig(
+			"""
+			lifecycles:
+			  - ga
+			""");
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Filename.Should().Be(FilenameStrategy.Pr);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Invalid_ReturnsError()
+	{
+		var config = await LoadConfig(
+			"""
+			filename: random-value
+			""");
+
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("filename: 'random-value' is not valid"));
+	}
+
 	[Fact]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_UnknownProductId_ReturnsError()
 	{

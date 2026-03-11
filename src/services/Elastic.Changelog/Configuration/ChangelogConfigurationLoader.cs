@@ -295,6 +295,19 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Issues = yamlConfig.Extract?.Issues ?? true
 		};
 
+		// Process filename strategy
+		var filenameStrategy = FilenameStrategy.Pr;
+		if (!string.IsNullOrWhiteSpace(yamlConfig.Filename))
+		{
+			if (!FilenameStrategyExtensions.TryParse(yamlConfig.Filename, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true))
+			{
+				var valid = string.Join(", ", FilenameStrategyExtensions.GetValues().Select(v => v.ToStringFast(true)));
+				collector.EmitError(configPath, $"filename: '{yamlConfig.Filename}' is not valid. Use one of: {valid}");
+				return null;
+			}
+			filenameStrategy = parsed;
+		}
+
 		return new ChangelogConfiguration
 		{
 			Pivot = pivot,
@@ -310,7 +323,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			HighlightLabels = highlightLabels,
 			ProductsConfiguration = productsConfig,
 			Bundle = bundleConfig,
-			Extract = extract
+			Extract = extract,
+			Filename = filenameStrategy
 		};
 	}
 

@@ -313,12 +313,23 @@ Examples:
 
 ### Filenames
 
-By default, the `docs-builder changelog add` command generates filenames using a timestamp and a sanitized version of the title:
-`{timestamp}-{sanitized-title}.yaml`
+The `docs-builder changelog add` command names generated files according to the `filename` strategy in `changelog.yml`:
 
-For example: `1735689600-fixes-enrich-and-lookup-join-resolution.yaml`
+| Strategy | Example filename | Description |
+|---|---|---|
+| `pr` (default) | `137431.yaml` | Uses the PR number. |
+| `issue` | `2571.yaml` | Uses the issue number. |
+| `timestamp` | `1735689600-fixes-enrich-and-lookup-join-resolution.yaml` | Uses a Unix timestamp with a sanitized title slug. |
 
-If you want to use PR numbers for filenames, add the `--use-pr-number` option. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers:
+Set the strategy in your changelog configuration file:
+
+```yaml
+filename: pr
+```
+
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for full documentation.
+
+You can override the configured strategy per invocation with the `--use-pr-number` or `--use-issue-number` CLI flags:
 
 ```sh
 docs-builder changelog add \
@@ -330,13 +341,13 @@ docs-builder changelog add \
   --issues https://github.com/elastic/docs-builder/issues/2571 \
   --products "elasticsearch 9.3.0" \
   --config docs/changelog.yml \
-  --use-pr-number
+  --use-issue-number
 ```
-
-For filenames that match issue numbers instead of PR numbers, specify `--use-issue-number`.
 
 :::{important}
 `--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. Each requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide, or from linked references in the issue or PR body when extraction is enabled.
+
+**Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`pr`).
 :::
 
 ### Examples
