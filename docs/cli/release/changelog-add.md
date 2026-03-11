@@ -128,6 +128,28 @@ docs-builder changelog add [options...] [-h|--help]
 `--use-issue-number`
 :   Optional: Use issue numbers for filenames instead of timestamp-slug. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
 
+## CI auto-detection [ci-auto-detection]
+
+When running inside GitHub Actions, `changelog add` automatically reads the following environment variables to fill in arguments that were not provided on the command line:
+
+| Environment variable | Fills | Set from |
+| --- | --- | --- |
+| `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
+| `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
+| `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
+| `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
+| `CHANGELOG_REPO` | `--repo` | `github.event.repository.name` |
+
+**Precedence**: explicit CLI arguments always take priority over environment variables. Environment variables are only used when the corresponding CLI argument is not provided.
+
+When `CHANGELOG_PR_NUMBER` is set and `--prs` is not provided, `--use-pr-number` is also implicitly enabled so the generated filename uses the PR number.
+
+This allows the CI action to invoke `changelog add` with a minimal command line:
+
+```sh
+docs-builder changelog add --config docs/changelog.yml --output /tmp/staging --concise --strip-title-prefix
+```
+
 ## Products resolution [products-resolution]
 
 When you run the `changelog add` command without the `--products` option, it resolves products in the following order:

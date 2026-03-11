@@ -328,7 +328,7 @@ internal sealed partial class ChangelogCommand(
 		}
 
 		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
-		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService);
+		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService, env: SystemEnvironmentVariables.Instance);
 
 		// Parse PRs: handle both comma-separated values and file paths
 		string[]? parsedPrs = null;
