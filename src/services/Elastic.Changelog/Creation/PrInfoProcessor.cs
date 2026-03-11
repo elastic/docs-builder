@@ -377,38 +377,39 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 		return products;
 	}
+}
+
+/// <summary>
+/// Result of processing PR information
+/// </summary>
+public record PrProcessingResult
+{
+	public required bool FetchFailed { get; init; }
+	public required bool ShouldSkip { get; init; }
+	public DerivedPrFields? DerivedFields { get; init; }
+	public GitHubPrInfo? PrInfo { get; init; }
+}
+
+/// <summary>
+/// Fields derived from PR or issue information
+/// </summary>
+public record DerivedPrFields
+{
+	public string? Title { get; set; }
+	public string? Type { get; set; }
+	public string? Description { get; set; }
+	public string[]? Areas { get; set; }
+	public bool? Highlight { get; set; }
+	public string[]? Issues { get; set; }
 
 	/// <summary>
-	/// Result of processing PR information
+	/// Products derived from PR/issue labels via pivot.products mapping.
+	/// Only set when labels matched and no products were explicitly provided.
 	/// </summary>
-	public record PrProcessingResult
-	{
-		public required bool FetchFailed { get; init; }
-		public required bool ShouldSkip { get; init; }
-		public DerivedPrFields? DerivedFields { get; init; }
-		public GitHubPrInfo? PrInfo { get; init; }
-	}
+	public IReadOnlyList<ProductArgument>? Products { get; set; }
 
 	/// <summary>
-	/// Fields derived from PR or issue information
+	/// Linked PRs derived from issue body (when creating changelog from --issues)
 	/// </summary>
-	public record DerivedPrFields
-	{
-		public string? Title { get; set; }
-		public string? Type { get; set; }
-		public string? Description { get; set; }
-		public string[]? Areas { get; set; }
-		public bool? Highlight { get; set; }
-		public string[]? Issues { get; set; }
-
-		/// <summary>
-		/// Products derived from PR/issue labels via pivot.products mapping.
-		/// Only set when labels matched and no products were explicitly provided.
-		/// </summary>
-		public IReadOnlyList<ProductArgument>? Products { get; set; }
-
-		/// <summary>
-		/// Linked PRs derived from issue body (when creating changelog from --issues)
-		/// </summary>
-		public string[]? Prs { get; set; }
-	}
+	public string[]? Prs { get; set; }
+}
