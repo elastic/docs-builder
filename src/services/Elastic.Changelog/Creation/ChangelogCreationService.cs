@@ -220,25 +220,24 @@ IEnvironmentVariables? env = null
 		if (!_validator.ValidatePrFormat(collector, prUrl, input.Owner, input.Repo))
 			return false;
 
-		// Process PR information if specified
-		if (!string.IsNullOrWhiteSpace(prUrl))
+		// Fetch PR info to derive missing fields unless title and type are already known
+		var hasRequiredFields = !string.IsNullOrWhiteSpace(input.Title) && !string.IsNullOrWhiteSpace(input.Type);
+		if (!string.IsNullOrWhiteSpace(prUrl) && !hasRequiredFields)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
 
 			if (prResult.ShouldSkip)
-				return true; // Return true but don't create changelog
+				return true;
 
 			prFetchFailed = prResult.FetchFailed;
 
-			// Apply derived fields if available (including label-derived products)
 			if (prResult.DerivedFields != null)
 				input = ApplyDerivedFields(input, prResult.DerivedFields);
 			else if (!prFetchFailed)
-			{
-				// DerivedFields is null and fetch didn't fail means validation error occurred
 				return false;
-			}
 		}
+		else if (!string.IsNullOrWhiteSpace(prUrl))
+			_logger.LogInformation("Title and type already provided, skipping PR API fetch for {PrUrl}", prUrl);
 
 		// If still no products, fall back to products.default or repo name inference
 		if (input.Products.Count == 0)

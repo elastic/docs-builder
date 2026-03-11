@@ -13,16 +13,8 @@ namespace Elastic.Changelog.Tests.Changelogs.Create;
 public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
 {
 	[Fact]
-	public async Task CreateChangelog_WithPrOptionButPrFetchFails_WithTitleAndType_CreatesChangelog()
+	public async Task CreateChangelog_WithPrOptionAndTitleAndType_SkipsApiFetch()
 	{
-		// Arrange
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns((GitHubPrInfo?)null);
-
 		var service = CreateService();
 
 		var input = new CreateChangelogArguments
@@ -34,16 +26,19 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			Output = CreateOutputDirectory()
 		};
 
-		// Act
 		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Failed to fetch PR information") && d.Severity == Severity.Warning);
+		Collector.Warnings.Should().Be(0);
 
-		// Verify changelog file was created with provided values
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
+				A<CancellationToken>._))
+			.MustNotHaveHappened();
+
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
