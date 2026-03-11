@@ -142,7 +142,7 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 
 **Precedence**: explicit CLI arguments always take priority over environment variables. Environment variables are only used when the corresponding CLI argument is not provided.
 
-The filename strategy is controlled by the `filename` option in `changelog.yml` (defaulting to `pr`). Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for details.
+The filename strategy is controlled by the `filename` option in `changelog.yml` (defaulting to `timestamp`). Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for details.
 
 This allows the CI action to invoke `changelog add` with a minimal command line:
 

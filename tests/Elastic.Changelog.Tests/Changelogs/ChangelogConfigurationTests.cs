@@ -1220,7 +1220,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToPr()
+	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToTimestamp()
 	{
 		var config = await LoadConfig(
 			"""
@@ -1230,7 +1230,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
-		config.Filename.Should().Be(FilenameStrategy.Pr);
+		config.Filename.Should().Be(FilenameStrategy.Timestamp);
 	}
 
 	[Fact]

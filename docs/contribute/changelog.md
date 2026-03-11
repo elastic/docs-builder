@@ -317,14 +317,14 @@ The `docs-builder changelog add` command names generated files according to the 
 
 | Strategy | Example filename | Description |
 |---|---|---|
-| `pr` (default) | `137431.yaml` | Uses the PR number. |
+| `timestamp` (default) | `1735689600-fixes-enrich-and-lookup-join-resolution.yaml` | Uses a Unix timestamp with a sanitized title slug. |
+| `pr` | `137431.yaml` | Uses the PR number. |
 | `issue` | `2571.yaml` | Uses the issue number. |
-| `timestamp` | `1735689600-fixes-enrich-and-lookup-join-resolution.yaml` | Uses a Unix timestamp with a sanitized title slug. |
 
 Set the strategy in your changelog configuration file:
 
 ```yaml
-filename: pr
+filename: timestamp
 ```
 
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for full documentation.
@@ -347,7 +347,7 @@ docs-builder changelog add \
 :::{important}
 `--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. Each requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide, or from linked references in the issue or PR body when extraction is enabled.
 
-**Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`pr`).
+**Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`timestamp`).
 :::
 
 ### Examples

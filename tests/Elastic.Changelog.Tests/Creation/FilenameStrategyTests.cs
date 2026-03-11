@@ -74,14 +74,14 @@ public class FilenameStrategyTests
 	}
 
 	[Fact]
-	public void ApplyConfigDefaults_DefaultConfig_UsePrNumber()
+	public void ApplyConfigDefaults_DefaultConfig_UsesTimestamp()
 	{
 		var config = ChangelogConfiguration.Default;
 		var input = DefaultInput();
 
 		var result = ChangelogCreationService.ApplyConfigDefaults(input, config);
 
-		result.UsePrNumber.Should().BeTrue("default FilenameStrategy is Pr");
-		result.UseIssueNumber.Should().BeFalse();
+		result.UsePrNumber.Should().BeFalse("default FilenameStrategy is Timestamp");
+		result.UseIssueNumber.Should().BeFalse("default FilenameStrategy is Timestamp");
 	}
 }

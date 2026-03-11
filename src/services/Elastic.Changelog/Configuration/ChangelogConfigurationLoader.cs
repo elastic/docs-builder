@@ -296,7 +296,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 
 		// Process filename strategy
-		var filenameStrategy = FilenameStrategy.Pr;
+		var filenameStrategy = FilenameStrategy.Timestamp;
 		if (!string.IsNullOrWhiteSpace(yamlConfig.Filename))
 		{
 			if (!FilenameStrategyExtensions.TryParse(yamlConfig.Filename, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true))
