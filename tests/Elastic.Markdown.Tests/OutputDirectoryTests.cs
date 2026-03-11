@@ -43,6 +43,35 @@ toc:
 		fileSystem.Directory.Exists(".artifacts").Should().BeTrue();
 	}
 
+	[Fact]
+	public void FilesWithSnippetsInNameNotTreatedAsSnippets()
+	{
+		var logger = new TestLoggerFactory(output);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			{ "docs/docset.yml",
+				//language=yaml
+				new MockFileData("""
+project: test
+toc:
+- file: index.md
+- file: top_snippets.md
+""") },
+			{ "docs/index.md", new MockFileData("# Test") },
+			{ "docs/top_snippets.md", new MockFileData("# Top Snippets") }
+		}, new MockFileSystemOptions
+		{
+			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
+		});
+		var collector = new TestDiagnosticsCollector(output);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var context = new BuildContext(collector, fileSystem, configurationContext);
+		var linkResolver = new TestCrossLinkResolver();
+		var set = new DocumentationSet(context, logger, linkResolver);
+
+		set.MarkdownFiles.Should().Contain(f => f.RelativePath.EndsWith("top_snippets.md"));
+	}
+
 	[Theory]
 	[MemberData(nameof(ValidFileNames))]
 	public void OutputFileValidationValidNames(string fileName)
