@@ -127,7 +127,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	public async Task EvaluatePr_ManuallyEdited_PrFilename_ReturnsManuallyEdited()
 	{
 		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/42.yaml", "title: test");
+		await FileSystem.File.WriteAllTextAsync("docs/changelog/42.yaml", "title: test", TestContext.Current.CancellationToken);
 
 		A.CallTo(() => _mockGitHub.FetchLastFileCommitAuthorAsync(
 				"elastic", "test-repo", "docs/changelog/42.yaml", "feature/test", A<CancellationToken>._))
@@ -147,7 +147,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	{
 		FileSystem.Directory.CreateDirectory("docs/changelog");
 		await FileSystem.File.WriteAllTextAsync("docs/changelog/1735689600-fix-something.yaml",
-			"title: Fix something\nprs:\n  - \"42\"");
+			"title: Fix something\nprs:\n  - \"42\"", TestContext.Current.CancellationToken);
 
 		A.CallTo(() => _mockGitHub.FetchLastFileCommitAuthorAsync(
 				"elastic", "test-repo", "docs/changelog/1735689600-fix-something.yaml", "feature/test", A<CancellationToken>._))
@@ -281,7 +281,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		await WriteMinimalConfig();
 		FileSystem.Directory.CreateDirectory("docs/changelog");
 		await FileSystem.File.WriteAllTextAsync("docs/changelog/1735689600-fix-something.yaml",
-			"title: Fix something\nprs:\n  - \"42\"");
+			"title: Fix something\nprs:\n  - \"42\"", TestContext.Current.CancellationToken);
 
 		var service = CreateService();
 		var args = DefaultArgs();
@@ -298,7 +298,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	{
 		await WriteMinimalConfig();
 		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/42.yaml", "title: Fix something");
+		await FileSystem.File.WriteAllTextAsync("docs/changelog/42.yaml", "title: Fix something", TestContext.Current.CancellationToken);
 
 		var service = CreateService();
 		var args = DefaultArgs();

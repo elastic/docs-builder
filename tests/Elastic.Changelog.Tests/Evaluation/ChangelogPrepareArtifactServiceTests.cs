@@ -154,7 +154,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 
 		result.Should().BeTrue();
 		FileSystem.File.Exists("/output/1735689600-fix-search.yaml").Should().BeTrue();
-		var content = await FileSystem.File.ReadAllTextAsync("/output/1735689600-fix-search.yaml");
+		var content = await FileSystem.File.ReadAllTextAsync("/output/1735689600-fix-search.yaml", TestContext.Current.CancellationToken);
 		content.Should().Be("title: test changelog");
 		var metadata = ReadMetadata();
 		metadata.Status.Should().Be("success");
