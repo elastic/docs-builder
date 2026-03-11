@@ -341,25 +341,22 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return IsBlockedByRules(prLabels, createRules);
 	}
 
-	/// <summary>Checks if a single set of create rules blocks the given labels (no diagnostics).</summary>
+	/// <summary>
+	/// Checks if a single set of create rules blocks the given PR labels (no diagnostics).
+	/// In exclude mode, blocked when the configured labels ARE found on the PR.
+	/// In include mode, blocked when the configured labels are NOT found on the PR.
+	/// Match mode controls whether any or all labels must satisfy the condition.
+	/// </summary>
 	internal static bool IsBlockedByRules(string[] prLabels, CreateRules rules)
 	{
 		if (rules.Labels is not { Count: > 0 })
 			return false;
 
-		return rules.Mode switch
-		{
-			FieldMode.Exclude => rules.Match switch
-			{
-				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
-				_ => rules.Labels.Any(label => prLabels.Contains(label, StringComparer.OrdinalIgnoreCase))
-			},
-			_ => rules.Match switch
-			{
-				MatchMode.All => !prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
-				_ => !prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
-			}
-		};
+		var labelsMatch = rules.Match == MatchMode.All
+			? prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+			: prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
+
+		return rules.Mode == FieldMode.Exclude ? labelsMatch : !labelsMatch;
 	}
 
 	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
