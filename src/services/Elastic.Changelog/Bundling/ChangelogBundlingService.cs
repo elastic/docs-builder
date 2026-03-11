@@ -217,6 +217,25 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
+			// Apply rules.bundle secondary filter.
+			// Product filtering is skipped when the primary filter is InputProducts (already constrained by product).
+			// This covers both --input-products and profile-based bundling with a products: filter.
+			// Type/area filtering always applies regardless of the primary filter.
+			var filteredEntries = matchResult.Entries;
+			if (config?.Rules?.Bundle != null)
+			{
+				var skipProductFilter = input.InputProducts is { Count: > 0 };
+				if (skipProductFilter && (config.Rules.Bundle.ExcludeProducts is { Count: > 0 } || config.Rules.Bundle.IncludeProducts is { Count: > 0 }))
+					collector.EmitWarning(string.Empty, "[rules.bundle] Product filter (exclude_products/include_products) skipped: primary filter is already product-based (--input-products or a profile with products configured). Type/area filters still apply.");
+				filteredEntries = ApplyBundleProductFilter(collector, filteredEntries, config.Rules.Bundle, skipProductFilter: skipProductFilter);
+			}
+
+			if (filteredEntries.Count == 0)
+			{
+				collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle product filter");
+				return false;
+			}
+
 			// Load feature IDs to hide
 			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
 			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
@@ -227,7 +246,7 @@ public partial class ChangelogBundlingService(
 			var bundleBuilder = new BundleBuilder();
 			var buildResult = bundleBuilder.BuildBundle(
 				collector,
-				matchResult.Entries,
+				filteredEntries,
 				input.OutputProducts,
 				input.Resolve ?? false,
 				input.Repo,
@@ -604,5 +623,57 @@ public partial class ChangelogBundlingService(
 			return $"{defaultOwner}/{defaultRepo}#{issueNumber}".ToLowerInvariant();
 
 		return issue.ToLowerInvariant();
+	}
+
+	private IReadOnlyList<MatchedChangelogFile> ApplyBundleProductFilter(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<MatchedChangelogFile> entries,
+		BundleRules bundleRules,
+		bool skipProductFilter = false)
+	{
+		if (skipProductFilter || (bundleRules.ExcludeProducts is not { Count: > 0 } && bundleRules.IncludeProducts is not { Count: > 0 }))
+			return entries;
+
+		var filtered = new List<MatchedChangelogFile>();
+		foreach (var entry in entries)
+		{
+			var entryProducts = entry.Data.Products?.Select(p => p.ProductId).ToList() ?? [];
+			if (ShouldExcludeByBundleProductFilter(entryProducts, bundleRules))
+			{
+				var label = string.Join(", ", entryProducts.Count > 0 ? entryProducts : ["(no product)"]);
+				if (bundleRules.ExcludeProducts is { Count: > 0 })
+					collector.EmitWarning(entry.FilePath, $"[-bundle-exclude] Excluding entry '{entry.FileName}' from bundle: product [{label}] matches rules.bundle.exclude_products.");
+				else
+					collector.EmitWarning(entry.FilePath, $"[-bundle-include] Excluding entry '{entry.FileName}' from bundle: product [{label}] does not match rules.bundle.include_products.");
+			}
+			else
+			{
+				filtered.Add(entry);
+			}
+		}
+		return filtered;
+	}
+
+	// match_products semantics (mirrors MatchesArea in PublishBlockerExtensions):
+	//   any  — matched if ANY entry product is in the list
+	//   all  — matched if ALL entry products are in the list
+	private static bool ShouldExcludeByBundleProductFilter(IReadOnlyList<string> entryProducts, BundleRules bundleRules)
+	{
+		if (bundleRules.ExcludeProducts is { Count: > 0 } excludeList)
+		{
+			return bundleRules.MatchProducts == MatchMode.All
+				? entryProducts.All(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: entryProducts.Any(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+		}
+
+		if (bundleRules.IncludeProducts is { Count: > 0 } includeList)
+		{
+			var matchesSome = bundleRules.MatchProducts == MatchMode.All
+				? entryProducts.All(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: entryProducts.Any(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			return !matchesSome;
+		}
+
+		return false;
 	}
 }

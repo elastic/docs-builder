@@ -210,7 +210,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var files = FileSystem.Directory.GetFiles(input.Output!, "*.yaml");
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(2, "multiple PRs with --use-pr-number should create one file per PR");
 
 		var fileNames = files.Select(f => Path.GetFileName(f)).ToHashSet();
@@ -267,7 +267,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var files = FileSystem.Directory.GetFiles(input.Output!, "*.yaml");
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
 		var fileName = Path.GetFileName(files[0]);

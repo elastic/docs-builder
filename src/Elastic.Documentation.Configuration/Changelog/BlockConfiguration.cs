@@ -12,7 +12,7 @@ namespace Elastic.Documentation.Configuration.Changelog;
 public record RulesConfiguration
 {
 	/// <summary>
-	/// Global match mode for multi-valued fields. Inherited by create and publish sections.
+	/// Global match mode for multi-valued fields. Inherited by create, bundle, and publish sections.
 	/// </summary>
 	public MatchMode Match { get; init; } = MatchMode.Any;
 
@@ -20,6 +20,11 @@ public record RulesConfiguration
 	/// Rules controlling which PRs generate changelog entries.
 	/// </summary>
 	public CreateRules? Create { get; init; }
+
+	/// <summary>
+	/// Rules controlling which entries are included in a bundle file.
+	/// </summary>
+	public BundleRules? Bundle { get; init; }
 
 	/// <summary>
 	/// Rules controlling which entries appear in rendered output.
@@ -51,6 +56,29 @@ public record CreateRules
 	/// Per-product create rule overrides. Keys are product IDs.
 	/// </summary>
 	public IReadOnlyDictionary<string, CreateRules>? ByProduct { get; init; }
+}
+
+/// <summary>
+/// Rules for bundle-time product filtering.
+/// Applied during <c>changelog bundle</c> after the primary filter (PR/issue/all) matches entries.
+/// Ignored when the primary filter is already product-based (<c>--input-products</c>).
+/// </summary>
+public record BundleRules
+{
+	/// <summary>
+	/// Product IDs to exclude from the bundle. Cannot be combined with <see cref="IncludeProducts"/>.
+	/// </summary>
+	public IReadOnlyList<string>? ExcludeProducts { get; init; }
+
+	/// <summary>
+	/// Product IDs to include in the bundle (all others excluded). Cannot be combined with <see cref="ExcludeProducts"/>.
+	/// </summary>
+	public IReadOnlyList<string>? IncludeProducts { get; init; }
+
+	/// <summary>
+	/// Match mode for products (any or all). Inherited from RulesConfiguration.Match if not set.
+	/// </summary>
+	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
 }
 
 /// <summary>
