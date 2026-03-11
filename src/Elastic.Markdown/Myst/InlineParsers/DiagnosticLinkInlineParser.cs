@@ -135,6 +135,14 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (IsCrossLink(uri))
 		{
+			if (!context.CrossLinkResolver.IsDeclaredCrossLinkScheme(uri.Scheme))
+			{
+				// Custom protocol URI (e.g. cursor://, vscode:) — not a declared cross-link scheme.
+				// Treat as an external passthrough link without validation.
+				link.SetData("isCrossLink", false);
+				return;
+			}
+
 			link.SetData("isCrossLink", true);
 			ProcessCrossLink(link, processor, context, uri);
 			return;
