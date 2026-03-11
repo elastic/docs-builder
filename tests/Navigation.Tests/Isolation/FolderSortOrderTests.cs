@@ -90,6 +90,9 @@ public class FolderSortOrderTests(ITestOutputHelper output) : DocumentationSetNa
 
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 		folderItem.Sort.Should().Be("descending");
+
+		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		fileNames.Should().BeEquivalentTo(["api-versions/v3.md", "api-versions/v2.md", "api-versions/v1.md"], options => options.WithStrictOrdering());
 	}
 
 	[Fact]
