@@ -128,7 +128,7 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 	}
 
 	[Fact]
-	public void FolderWithExcludePreservesIndexMd()
+	public void FolderWithExcludeCanExcludeIndexMd()
 	{
 		// language=yaml
 		var yaml = """
