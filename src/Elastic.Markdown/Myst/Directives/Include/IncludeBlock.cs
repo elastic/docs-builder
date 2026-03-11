@@ -58,7 +58,14 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (includePath.StartsWith('/'))
 			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
-		IncludePath = Path.GetFullPath(Path.Combine(includeFrom, includePath.TrimStart('/')));
+		var trimmedPath = includePath.TrimStart('/');
+		if (Path.IsPathRooted(trimmedPath))
+		{
+			this.EmitError("Include path must not be an absolute path.");
+			return;
+		}
+
+		IncludePath = Path.GetFullPath(Path.Combine(includeFrom, trimmedPath));
 		IncludePathRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, IncludePath);
 
 		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
@@ -74,13 +81,10 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");
 
-		// literal includes may point to locations other than `_snippets` since they do not
-		// participate in emitting links
+		ValidateIncludePath(file);
+
 		if (Literal)
-		{
-			ValidateIncludePath(file);
 			return;
-		}
 
 		if (file.Directory != null && file.Directory.FullName.IndexOf("_snippets", StringComparison.Ordinal) < 0)
 		{
