@@ -219,7 +219,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return derived;
 	}
 
-	private bool ShouldSkipPrDueToLabelBlockers(
+	internal static bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
@@ -328,6 +328,58 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
 			return null;
 		}
+	}
+
+	/// <summary>
+	/// Returns true only when every product defined in the create rules would be blocked by the given labels.
+	/// When per-product overrides exist without global labels, treats the override list as the complete
+	/// product universe for the purpose of this pre-flight check.
+	/// </summary>
+	internal static bool AreAllProductsBlocked(string[] prLabels, CreateRules? createRules)
+	{
+		if (createRules == null)
+			return false;
+
+		var hasGlobalLabels = createRules.Labels is { Count: > 0 };
+		var hasProductOverrides = createRules.ByProduct is { Count: > 0 };
+
+		if (!hasGlobalLabels && !hasProductOverrides)
+			return false;
+
+		if (hasProductOverrides)
+		{
+			foreach (var (_, productRules) in createRules.ByProduct!)
+			{
+				if (!IsBlockedByRules(prLabels, productRules))
+					return false;
+			}
+
+			// Products without overrides fall back to global rules
+			if (hasGlobalLabels && !IsBlockedByRules(prLabels, createRules))
+				return false;
+
+			return true;
+		}
+
+		return IsBlockedByRules(prLabels, createRules);
+	}
+
+	/// <summary>
+	/// Checks if a single set of create rules blocks the given PR labels (no diagnostics).
+	/// In exclude mode, blocked when the configured labels ARE found on the PR.
+	/// In include mode, blocked when the configured labels are NOT found on the PR.
+	/// Match mode controls whether any or all labels must satisfy the condition.
+	/// </summary>
+	internal static bool IsBlockedByRules(string[] prLabels, CreateRules rules)
+	{
+		if (rules.Labels is not { Count: > 0 })
+			return false;
+
+		var labelsMatch = rules.Match == MatchMode.All
+			? prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+			: prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
+
+		return rules.Mode == FieldMode.Exclude ? labelsMatch : !labelsMatch;
 	}
 
 	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels

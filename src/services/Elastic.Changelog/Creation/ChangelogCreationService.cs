@@ -47,6 +47,11 @@ public record CreateChangelogArguments
 	/// Whether to extract linked issues/PRs from PR/issue body. null = use config default.
 	/// </summary>
 	public bool? ExtractIssues { get; init; }
+
+	/// <summary>
+	/// When true, omit schema reference comments from generated YAML files.
+	/// </summary>
+	public bool Concise { get; init; }
 }
 
 /// <summary>
@@ -56,7 +61,8 @@ public class ChangelogCreationService(
 ILoggerFactory logFactory,
 IConfigurationContext configurationContext,
 IGitHubPrService? githubPrService = null,
-IFileSystem? fileSystem = null
+IFileSystem? fileSystem = null,
+IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
@@ -72,6 +78,8 @@ IFileSystem? fileSystem = null
 	{
 		try
 		{
+			input = EnrichFromCI(input);
+
 			// Load changelog configuration
 			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 			if (config == null)
@@ -212,25 +220,24 @@ IFileSystem? fileSystem = null
 		if (!_validator.ValidatePrFormat(collector, prUrl, input.Owner, input.Repo))
 			return false;
 
-		// Process PR information if specified
-		if (!string.IsNullOrWhiteSpace(prUrl))
+		// Fetch PR info to derive missing fields unless title and type are already known
+		var hasRequiredFields = !string.IsNullOrWhiteSpace(input.Title) && !string.IsNullOrWhiteSpace(input.Type);
+		if (!string.IsNullOrWhiteSpace(prUrl) && !hasRequiredFields)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
 
 			if (prResult.ShouldSkip)
-				return true; // Return true but don't create changelog
+				return true;
 
 			prFetchFailed = prResult.FetchFailed;
 
-			// Apply derived fields if available (including label-derived products)
 			if (prResult.DerivedFields != null)
 				input = ApplyDerivedFields(input, prResult.DerivedFields);
 			else if (!prFetchFailed)
-			{
-				// DerivedFields is null and fetch didn't fail means validation error occurred
 				return false;
-			}
 		}
+		else if (!string.IsNullOrWhiteSpace(prUrl))
+			_logger.LogInformation("Title and type already provided, skipping PR API fetch for {PrUrl}", prUrl);
 
 		// If still no products, fall back to products.default or repo name inference
 		if (input.Products.Count == 0)
@@ -356,4 +363,43 @@ IFileSystem? fileSystem = null
 			Issues = derived.Issues != null && (input.Issues == null || input.Issues.Length == 0) ? derived.Issues : input.Issues,
 			Prs = derived.Prs != null && (input.Prs == null || input.Prs.Length == 0) ? derived.Prs : input.Prs
 		};
+
+	/// <summary>
+	/// In CI, fills missing arguments from well-known CHANGELOG_* environment variables
+	/// set by the evaluate-pr step. CLI arguments always take precedence.
+	/// </summary>
+	internal CreateChangelogArguments EnrichFromCI(CreateChangelogArguments input)
+	{
+		if (env is not { IsRunningOnCI: true })
+			return input;
+
+		var prNumber = env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER");
+		var ciTitle = env.GetEnvironmentVariable("CHANGELOG_TITLE");
+		var ciType = env.GetEnvironmentVariable("CHANGELOG_TYPE");
+		var ciOwner = env.GetEnvironmentVariable("CHANGELOG_OWNER");
+		var ciRepo = env.GetEnvironmentVariable("CHANGELOG_REPO");
+
+		var hasCiData = !string.IsNullOrEmpty(prNumber) || !string.IsNullOrEmpty(ciTitle);
+		if (!hasCiData)
+			return input;
+
+		_logger.LogInformation("CI environment detected, enriching arguments from CHANGELOG_* env vars");
+
+		var enrichedPrs = input.Prs is { Length: > 0 }
+			? input.Prs
+			: !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
+
+		// TODO: filename strategy (use-pr-number) will move to changelog.yml configuration
+		var usePrNumber = input.UsePrNumber || (input.Prs is not { Length: > 0 } && !string.IsNullOrEmpty(prNumber));
+
+		return input with
+		{
+			Prs = enrichedPrs,
+			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
+			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
+			Owner = input.Owner ?? ciOwner,
+			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,
+			UsePrNumber = usePrNumber
+		};
+	}
 }
