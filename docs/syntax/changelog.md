@@ -185,6 +185,8 @@ Each field supports **exclude** (block if matches) or **include** (block if does
 
 For details, refer to the [Rules reference](/contribute/changelog.md#rules-reference).
 
+The `{changelog}` directive selects **one** product's rule using the resolved `:product:` value and applies it uniformly to all entries in the bundle. This differs from the `changelog render` command, which determines the applicable rule per entry using the bundle's top-level `products:` array as context. For details about the `changelog render` behavior for multi-product entries, refer to [Per-product rule resolution for multi-product entries](/contribute/changelog.md#changelog-bundle-multi-product-rules).
+
 ## Feature hiding from bundles
 
 When bundles contain a `hide-features` field, entries with matching `feature-id` values are automatically filtered out from the rendered output. This allows you to hide unreleased or experimental features without modifying the bundle at render time.

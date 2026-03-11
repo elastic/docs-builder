@@ -223,6 +223,10 @@ When `--output-products` is not set, the entry's own product list is used as the
 
 `rules.publish` still works for backward compatibility, but will be removed in a future release. The migration is straightforward — copy the same fields from `rules.publish` into `rules.bundle`.
 
+When a changelog entry belongs to more than one product and `rules.publish.products` per-product overrides are configured, the applicable rule is resolved using the same intersection + alphabetical first-match algorithm as `rules.bundle`.
+The difference is how the *context* is determined: for `rules.publish`, the context is the **bundle's top-level `products:` array** — the products declared in the bundle YAML file being rendered, not a CLI option.
+For details, refer to [Per-product rule resolution for multi-product entries](#changelog-bundle-multi-product-rules).
+
 **Before (deprecated):**
 
 ```yaml

@@ -28,18 +28,18 @@ public static class ChangelogRenderUtilities
 
 	private static PublishBlocker? GetPublishBlockerForEntry(ChangelogEntry entry, ChangelogRenderContext context)
 	{
-		var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry);
-		if (productIds == null || context.Configuration?.Rules?.Publish == null)
+		var bundleProducts = context.EntryToBundleProducts.GetValueOrDefault(entry);
+		if (bundleProducts == null || context.Configuration?.Rules?.Publish == null)
 			return null;
 
-		foreach (var productId in productIds)
-		{
-			var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
-			if (blocker != null)
-				return blocker;
-		}
+		var publishRules = context.Configuration.Rules.Publish;
 
-		return null;
+		// When no per-product overrides are configured, return the global blocker directly.
+		if (publishRules.ByProduct is not { Count: > 0 } byProduct)
+			return publishRules.Blocker;
+
+		var entryOwnIds = entry.Products?.Select(p => p.ProductId) ?? [];
+		return PublishBlockerExtensions.ResolveBlocker(bundleProducts, entryOwnIds, byProduct, publishRules.Blocker);
 	}
 
 	/// <summary>
@@ -72,32 +72,7 @@ public static class ChangelogRenderUtilities
 		if (context?.Configuration?.Rules?.Publish == null)
 			return false;
 
-		// Get product IDs for this entry
-		var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-		if (productIds.Count == 0)
-			return false;
-
-		// Check each product's publish configuration
-		foreach (var productId in productIds)
-		{
-			var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
-			if (blocker != null && blocker.ShouldBlock(entry))
-				return true;
-		}
-
-		return false;
-	}
-
-	/// <summary>
-	/// Gets the publish blocker configuration for a specific product, checking product-specific overrides first
-	/// </summary>
-	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
-	{
-		// Check product-specific override first
-		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
-			return productBlocker;
-
-		// Fall back to global publish blocker
-		return publishRules.Blocker;
+		var blocker = GetPublishBlockerForEntry(entry, context);
+		return blocker?.ShouldBlock(entry) ?? false;
 	}
 }
