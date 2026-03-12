@@ -43,11 +43,6 @@ on:
         type: string
         default: ''
         required: false
-      free-disk-space:
-        description: 'Free disk space before running the build'
-        type: string
-        default: 'false'
-        required: false
       disable-comments:
         description: 'Disable comments'
         type: boolean
@@ -245,16 +240,18 @@ jobs:
             core.setOutput('renamed_files', renamed.join(' '));              
 
   build:
-    if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
+    if: github.event.repository.fork == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      deployments: write
-      id-token: write
+      deployments: none
+      id-token: none
       pull-requests: none
     outputs: 
-      deployment_result: ${{ steps.deployment.outputs.result }}
       path_prefix: ${{ steps.generate-path-prefix.outputs.result }}
+      skip: ${{ steps.docs-build.outputs.skip }}
+      build_outcome: ${{ (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success') && 'success' || '' }}
+      landing_page_path: ${{ steps.docs-build.outputs.landing-page-path || steps.generate-path-prefix.outputs.result }}
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
       MATCH: ${{ needs.match.outputs.content-source-match }}
@@ -274,15 +271,165 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
-          
-      - name: Create Deployment
+
+      - name: Generate env.PATH_PREFIX
+        id: generate-path-prefix
         if: >
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
-          && (
-            contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
-            || startsWith(github.event_name, 'pull_request')
-          )
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          case "${GITHUB_EVENT_NAME}" in
+            "pull_request" | "pull_request_target")
+              path_prefix="/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+              ;;
+            "push" | "workflow_dispatch" | "merge_group")
+              path_prefix="/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}"
+              ;;
+            *)
+              echo "Unsupported event: '${GITHUB_EVENT_NAME}'";
+              exit 1;
+              ;;
+          esac
+          echo "PATH_PREFIX=${path_prefix}" >> $GITHUB_ENV
+          echo "result=${path_prefix}" >> $GITHUB_OUTPUT
+
+      - name: Bootstrap Action Workspace
+        if: >
+          env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository == 'elastic/docs-builder'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: elastic/docs-builder/.github/actions/bootstrap@main
+
+      - name: 'Validate redirect rules'
+        if: >
+          env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository == 'elastic/docs-builder'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        run: |
+          dotnet run --project src/tooling/docs-builder -- diff validate
+
+      - name: 'Validate redirect rules'
+        if: >
+          env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository != 'elastic/docs-builder'
+        uses: elastic/docs-builder/actions/diff-validate@main
+
+      # we run our artifact directly, please use the prebuild
+      # elastic/docs-builder@main GitHub Action for all other repositories!
+      - name: Build documentation
+        id: internal-docs-build
+        if: >
+          env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository == 'elastic/docs-builder'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        run: |
+          dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
+
+      - name: Build documentation
+        if: >
+          env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository != 'elastic/docs-builder'
+        uses: elastic/docs-builder@main
+        id: docs-build
+        continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
+        with:
+          prefix: ${{ env.PATH_PREFIX }}
+          strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
+          metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'false') }}
+
+      - name: 'Validate inbound links'
+        if: >
+          env.MATCH == 'true'
+          && !cancelled()
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository != 'elastic/docs-builder'
+          && steps.docs-build.outputs.skip != 'true'
+        uses: elastic/docs-builder/actions/validate-inbound-local@main
+        
+      - name: 'Validate inbound links'
+        if: >
+          env.MATCH == 'true'
+          && !cancelled()
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository == 'elastic/docs-builder'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+          && steps.internal-docs-build.outputs.skip != 'true'
+        run: |
+          dotnet run --project src/tooling/docs-builder -- inbound-links validate-link-reference
+
+      - name: 'Validate local path prefixes against those claimed by global navigation.yml'
+        if: >
+          env.MATCH == 'true'
+          && !cancelled()
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository != 'elastic/docs-builder'
+          && steps.docs-build.outputs.skip != 'true'
+          && steps.docs-build.outcome != 'skipped'
+        uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
+        
+      - name: 'Validate local path prefixes against those claimed by global navigation.yml'
+        if: >
+          env.MATCH == 'true'
+          && !cancelled()
+          && needs.check.outputs.any_modified != 'false'
+          && github.repository == 'elastic/docs-builder'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+          && steps.internal-docs-build.outputs.skip != 'true'
+          && steps.internal-docs-build.outcome != 'skipped'
+        run: |
+          dotnet run --project src/tooling/docs-builder -- assembler navigation validate-link-reference
+
+      - name: Upload build artifact
+        if: >
+          env.MATCH == 'true'
+          && !cancelled()
+          && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-html
+          path: .artifacts/docs/html
+          retention-days: 1
+
+      - name: Warn about fork PR
+        if: >
+          env.MATCH == 'true'
+          && startsWith(github.event_name, 'pull_request')
+          && github.event.pull_request.head.repo.full_name != github.repository
+          && needs.check.outputs.any_modified != 'false'
+        run: |
+          echo "::warning::Preview deployments are only available for PRs from the same repository, not from forks."
+
+  deploy:
+    if: >
+      needs.build.outputs.build_outcome == 'success'
+      && needs.build.outputs.skip != 'true'
+      && (
+        contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
+        || (
+          startsWith(github.event_name, 'pull_request')
+          && github.event.pull_request.head.repo.full_name == github.repository
+        )
+      )
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    permissions:
+      contents: none
+      deployments: write
+      id-token: write
+      pull-requests: none
+    outputs:
+      deployment_id: ${{ steps.deployment.outputs.result }}
+    steps:
+      - name: Create Deployment
         uses: actions/github-script@v8
         id: deployment
         env:
@@ -314,190 +461,18 @@ jobs:
             })
             return deployment.data.id
 
-      - name: Generate env.PATH_PREFIX
-        id: generate-path-prefix
-        if: >
-          env.MATCH == 'true'
-          && steps.deployment.outputs.result
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: |
-          case "${GITHUB_EVENT_NAME}" in
-            "merge_group" | "pull_request" | "pull_request_target")
-              path_prefix="/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
-              ;;
-            "push" | "workflow_dispatch")
-              path_prefix="/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}"
-              ;;
-            *)
-              echo "Unsupported event: '${GITHUB_EVENT_NAME}'";
-              exit 1;
-              ;;
-          esac
-          echo "PATH_PREFIX=${path_prefix}" >> $GITHUB_ENV
-          echo "result=${path_prefix}" >> $GITHUB_OUTPUT
-
-      - name: Bootstrap Action Workspace
-        if: >
-          env.MATCH == 'true'
-          && github.repository == 'elastic/docs-builder'
-          && steps.deployment.outputs.result
-          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: elastic/docs-builder/.github/actions/bootstrap@main
-
-      - name: 'Validate redirect rules'
-        if: >
-          env.MATCH == 'true'
-          && github.repository == 'elastic/docs-builder'
-          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-          && (
-            steps.deployment.outputs.result
-            || (
-              needs.check.outputs.any_modified == 'true'
-              && github.event_name == 'merge_group'
-            )
-          )
-        run: |
-          dotnet run --project src/tooling/docs-builder -- diff validate
-
-      - name: 'Validate redirect rules'
-        if: >
-          env.MATCH == 'true'
-          && (
-            github.repository != 'elastic/docs-builder'
-            && (
-              steps.deployment.outputs.result
-              || (
-                needs.check.outputs.any_modified == 'true'
-                && github.event_name == 'merge_group'
-              )
-            )
-          )
-        uses: elastic/docs-builder/actions/diff-validate@main
-
-      # we run our artifact directly, please use the prebuild
-      # elastic/docs-builder@main GitHub Action for all other repositories!
-      - name: Build documentation
-        id: internal-docs-build
-        if: >
-          env.MATCH == 'true'
-          && github.repository == 'elastic/docs-builder'
-          && steps.deployment.outputs.result
-          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        run: |
-          dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "${PATH_PREFIX}"
-
-      - name: Build documentation
-        if: >
-          env.MATCH == 'true'
-          && (
-            github.repository != 'elastic/docs-builder'
-            && (
-              steps.deployment.outputs.result
-              || (
-                needs.check.outputs.any_modified == 'true'
-                && github.event_name == 'merge_group'
-              )
-            )
-          )
-        uses: elastic/docs-builder@main
-        id: docs-build
-        continue-on-error: ${{ fromJSON(inputs.continue-on-error != '' && inputs.continue-on-error || 'false') }}
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
         with:
-          prefix: ${{ env.PATH_PREFIX }}
-          strict: ${{ fromJSON(inputs.strict != '' && inputs.strict || 'true') }}
-          metadata-only: ${{ fromJSON(inputs.metadata-only != '' && inputs.metadata-only || 'false') }}
-
-      - name: 'Validate inbound links'
-        if: >
-          env.MATCH == 'true'
-          && (
-            !cancelled()
-            && github.repository != 'elastic/docs-builder'
-            && steps.docs-build.outputs.skip != 'true' 
-            && (
-              steps.deployment.outputs.result
-              || (
-                needs.check.outputs.any_modified == 'true' 
-                && github.event_name == 'merge_group'
-              )
-            )
-          )
-        uses: elastic/docs-builder/actions/validate-inbound-local@main
-        
-      - name: 'Validate inbound links'
-        if: >
-          env.MATCH == 'true'
-          && (
-            !cancelled()
-            && github.repository == 'elastic/docs-builder'
-            && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-            && steps.internal-docs-build.outputs.skip != 'true'
-            && (
-              steps.deployment.outputs.result
-              || (
-                needs.check.outputs.any_modified == 'true'
-                && github.event_name == 'merge_group'
-              )
-            )
-          )
-        run: |
-          dotnet run --project src/tooling/docs-builder -- inbound-links validate-link-reference
-
-      - name: 'Validate local path prefixes against those claimed by global navigation.yml'
-        if: >
-          env.MATCH == 'true'
-          && (
-            !cancelled() 
-            && github.repository != 'elastic/docs-builder'
-            && steps.docs-build.outputs.skip != 'true'
-            && steps.docs-build.outcome != 'skipped'
-            && (
-              steps.deployment.outputs.result 
-              || (
-                needs.check.outputs.any_modified == 'true' 
-                && github.event_name == 'merge_group'
-              )
-            )
-          )
-        uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
-        
-      - name: 'Validate local path prefixes against those claimed by global navigation.yml'
-        if: >
-          env.MATCH == 'true'
-          && (
-            !cancelled()
-            && github.repository == 'elastic/docs-builder'
-            && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-            && steps.internal-docs-build.outputs.skip != 'true'
-            && steps.internal-docs-build.outcome != 'skipped'
-            && (
-              steps.deployment.outputs.result
-              || (
-                needs.check.outputs.any_modified == 'true'
-                && github.event_name == 'merge_group'
-              )
-            )
-          )
-        run: |
-          dotnet run --project src/tooling/docs-builder -- assembler navigation validate-link-reference
+          name: docs-html
+          path: .artifacts/docs/html
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
-        if: >
-          !cancelled() 
-          && (steps.docs-build.outputs.skip != 'true' || steps.internal-docs-build.outputs.skip != 'true')
-          && steps.deployment.outputs.result
-          && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
+
       - name: Upload to S3
         id: s3-upload
-        if: >
-          env.MATCH == 'true'
-          && !cancelled() 
-          && (steps.docs-build.outputs.skip != 'true' || steps.internal-docs-build.outputs.skip != 'true')
-          && steps.deployment.outputs.result
-          && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
         env:
+          PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
           # https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-retries.html#cli-usage-retries-configure
           AWS_RETRY_MODE: standard
           AWS_MAX_ATTEMPTS: 6
@@ -507,41 +482,54 @@ jobs:
             --distribution-id EKT7LT5PM8RKS \
             --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
 
-      - name: Update Link Index
-        if: >
-          env.MATCH == 'true'
-          && needs.check.outputs.any_modified != 'false'
-          && (
-            contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
-            && steps.s3-upload.outcome == 'success'
-          )
-        uses: elastic/docs-builder/actions/update-link-index@main
-
       - name: Update deployment status
         uses: actions/github-script@v8
-        if: >
-          env.MATCH == 'true'
-          && always() 
-          && steps.deployment.outputs.result
+        if: always() && steps.deployment.outputs.result
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path || env.PATH_PREFIX }}
+          LANDING_PAGE_PATH: ${{ needs.build.outputs.landing_page_path }}
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ steps.docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}",
+              state: "${{ steps.s3-upload.outcome == 'success' && 'success' || 'failure' }}",
               environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
+
+  update-link-index:
+    if: >
+      !cancelled()
+      && needs.deploy.result == 'success'
+      && needs.check.outputs.any_modified != 'false'
+      && contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
+    runs-on: ubuntu-latest
+    needs:
+      - deploy
+      - check
+    permissions:
+      contents: none
+      deployments: none
+      id-token: write
+      pull-requests: none
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-html
+          path: .artifacts/docs/html
+
+      - uses: elastic/docs-builder/actions/update-link-index@main
+
   comment:
     if: >
       startsWith(github.event_name, 'pull_request')
       && inputs.disable-comments != true
-      && needs.build.outputs.deployment_result
+      && needs.build.outputs.build_outcome == 'success'
+      && needs.build.outputs.skip != 'true'
       && needs.check.outputs.any_modified == 'true'
+      && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     needs:
       - check
@@ -692,7 +680,7 @@ jobs:
     needs: check
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: none
       deployments: none
       id-token: none
     steps:
@@ -709,7 +697,24 @@ jobs:
         with: 
           files: ${{ needs.check.outputs.all_changed_files }}
           include-paths: ${{ inputs.include-paths }}
+
+  vale-report:
+    if: >
+      startsWith(github.event_name, 'pull_request')
+      && inputs.enable-vale-linting == true
+      && needs.check.outputs.any_modified == 'true'
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    needs:
+      - check
+      - vale
+    permissions:
+      contents: none
+      pull-requests: write
+      deployments: none
+      id-token: none
+    steps:
       - name: Post Vale Results
         uses: elastic/vale-rules/report@main
         with:
-          download_artifacts: false
+          download_artifacts: true
