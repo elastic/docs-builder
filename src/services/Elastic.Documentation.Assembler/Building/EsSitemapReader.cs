@@ -1,0 +1,132 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using Elastic.Transport;
+using Elastic.Transport.Products.Elasticsearch;
+using Microsoft.Extensions.Logging;
+
+namespace Elastic.Documentation.Assembler.Building;
+
+public record SitemapEntry(string Url, DateTimeOffset LastUpdated);
+
+/// <summary>Reads all url + last_updated pairs from the ES lexical index using search_after with PIT.</summary>
+public class EsSitemapReader(DistributedTransport transport, ILogger logger, string indexName)
+{
+	private const int PageSize = 1000;
+	private const string PitKeepAlive = "2m";
+
+	public async IAsyncEnumerable<SitemapEntry> ReadAllAsync([EnumeratorCancellation] Cancel ct = default)
+	{
+		var pitId = await OpenPitAsync(ct);
+		try
+		{
+			object[]? lastSortValues = null;
+			var page = 0;
+			int hitCount;
+
+			do
+			{
+				var body = BuildSearchBody(pitId, lastSortValues);
+				var response = await transport.PostAsync<DynamicResponse>("/_search", PostData.String(body), ct);
+
+				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+					throw new InvalidOperationException(
+						$"ES search failed (page {page}): {response.ApiCallDetails.HttpStatusCode} {response.ApiCallDetails.DebugInformation}");
+
+				// Update PIT id — ES may return a new one on each response
+				pitId = response.Body.Get<string>("pit_id") ?? pitId;
+
+				var hits = response.Body.Get<object[]>("hits.hits");
+				hitCount = hits?.Length ?? 0;
+
+				if (hits is not null)
+				{
+					foreach (var hit in hits)
+					{
+						if (hit is not IDictionary<string, object> dict
+							|| dict["_source"] is not IDictionary<string, object> source)
+							continue;
+
+						var url = source["url"]?.ToString();
+						var lastUpdatedStr = source["last_updated"]?.ToString();
+
+						if (url is null || lastUpdatedStr is null)
+							continue;
+
+						// Use sort array from the hit for search_after cursor
+						if (dict.TryGetValue("sort", out var sortObj) && sortObj is object[] sortValues)
+							lastSortValues = sortValues;
+
+						var lastUpdated = DateTimeOffset.Parse(lastUpdatedStr, CultureInfo.InvariantCulture);
+						yield return new SitemapEntry(url, lastUpdated);
+					}
+				}
+
+				page++;
+				logger.LogInformation("Sitemap: fetched page {Page} ({Hits} hits)", page, hitCount);
+
+			} while (hitCount == PageSize);
+		}
+		finally
+		{
+			await ClosePitAsync(pitId, ct);
+		}
+	}
+
+	private async Task<string> OpenPitAsync(Cancel ct)
+	{
+		var response = await transport.PostAsync<DynamicResponse>(
+			$"/{indexName}/_pit?keep_alive={PitKeepAlive}", PostData.Empty, ct);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			throw new InvalidOperationException(
+				$"Failed to open PIT on {indexName}: {response.ApiCallDetails.HttpStatusCode} {response.ApiCallDetails.DebugInformation}");
+
+		var pitId = response.Body.Get<string>("id");
+		if (string.IsNullOrEmpty(pitId))
+			throw new InvalidOperationException("PIT response did not contain an id");
+
+		logger.LogInformation("Opened PIT on {Index}: {PitId}", indexName, pitId[..Math.Min(20, pitId.Length)] + "...");
+		return pitId;
+	}
+
+	private async Task ClosePitAsync(string pitId, Cancel ct)
+	{
+		try
+		{
+			var body = $$"""{"id":"{{pitId}}"}""";
+			_ = await transport.DeleteAsync<DynamicResponse>("/_pit", default!, PostData.String(body), ct);
+			logger.LogInformation("Closed PIT");
+		}
+		catch (Exception ex)
+		{
+			logger.LogWarning(ex, "Failed to close PIT (non-fatal)");
+		}
+	}
+
+	internal static string BuildSearchBody(string pitId, object[]? searchAfter)
+	{
+		var searchAfterClause = "";
+		if (searchAfter is { Length: > 0 })
+		{
+			var values = string.Join(",", searchAfter.Select(v => $"\"{EscapeJson(v?.ToString() ?? "")}\""));
+			searchAfterClause = $",\"search_after\":[{values}]";
+		}
+
+		return $$"""
+			{
+				"size": {{PageSize}},
+				"_source": ["url", "last_updated"],
+				"query": { "bool": { "must_not": [{ "term": { "hidden": true } }] } },
+				"pit": { "id": "{{EscapeJson(pitId)}}", "keep_alive": "{{PitKeepAlive}}" },
+				"sort": [{ "url": "asc" }]{{searchAfterClause}}
+			}
+			""";
+	}
+
+	private static string EscapeJson(string value) =>
+		value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+}
