@@ -52,6 +52,16 @@ public class McpToolTelemetryTests
 	}
 
 	[Fact]
+	public void StartActivity_UsesInternalKind()
+	{
+		using var listener = CreateListener();
+		using var activity = McpToolTelemetry.StartActivity("test_tool");
+
+		activity.Should().NotBeNull();
+		activity!.Kind.Should().Be(ActivityKind.Internal);
+	}
+
+	[Fact]
 	public void MarkSuccess_SetsSuccessTagAndOkStatus()
 	{
 		using var listener = CreateListener();

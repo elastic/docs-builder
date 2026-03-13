@@ -42,6 +42,9 @@ public class StepViewModel : DirectiveViewModel
 
 		/// <inheritdoc />
 		public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
+
+		/// <inheritdoc />
+		public bool IsDeclaredCrossLinkScheme(string scheme) => false;
 	}
 
 	/// <summary>

@@ -23,7 +23,7 @@ public static class McpToolTelemetry
 
 	public static Activity? StartActivity(string toolName)
 	{
-		var activity = McpActivitySource.StartActivity($"mcp.tool.{toolName}", ActivityKind.Server);
+		var activity = McpActivitySource.StartActivity($"mcp.tool.{toolName}", ActivityKind.Internal);
 		_ = activity?.SetTag("mcp.tool.name", toolName);
 		_ = activity?.SetTag("mcp.server.profile", ServerProfile.Name);
 		if (!string.IsNullOrWhiteSpace(ServerVersion))

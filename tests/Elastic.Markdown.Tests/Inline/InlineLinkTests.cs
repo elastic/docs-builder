@@ -344,3 +344,37 @@ public class NonExistingLinkShouldFail(ITestOutputHelper output) : LinkTestBase(
 	[Fact]
 	public void HasErrors() => Collector.Diagnostics.Should().HaveCount(3);
 }
+
+public class CursorProtocolLinkTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[Install with Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=elastic&config=eyJmb28iOiJiYXIifQ==)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		Html.Should().Contain("""href="cursor://""");
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
+}
+
+public class VscodeProtocolLinkTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[Install VS Code Extension](vscode:extension/elastic.elasticsearch)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		Html.Should().Contain("""href="vscode:""");
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
+}
