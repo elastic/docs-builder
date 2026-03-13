@@ -1526,6 +1526,367 @@ public class BlockConfigurationTests(ITestOutputHelper output) : RenderChangelog
 	}
 
 	[Fact]
+	public async Task RenderChangelogs_WithMultipleProducts_SharedEntry_UsesAlphabeticalFirstMatch()
+	{
+		// Arrange
+		// Bundle has [elasticsearch, kibana]. Entry belongs to both (shared).
+		// elasticsearch rule: exclude_areas: "Internal" (e < k alphabetically → wins)
+		// kibana rule: no area filter
+		// Expected: elasticsearch rule fires → shared entry with area "Internal" is commented out.
+		// A kibana-only entry with area "Internal" uses the kibana rule (no filter) → visible.
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
+
+		// language=yaml
+		var sharedEntry =
+			"""
+			title: Shared internal feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  - product: kibana
+			    target: 9.2.0
+			areas:
+			  - Internal
+			prs:
+			- "200"
+			""";
+
+		// language=yaml
+		var kibanaOnlyEntry =
+			"""
+			title: Kibana internal feature
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			areas:
+			  - Internal
+			prs:
+			- "201"
+			""";
+
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268200-shared.yaml");
+		var changelogFile2 = FileSystem.Path.Combine(changelogDir, "1755268201-kibana-only.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, sharedEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile2, kibanaOnlyEntry, TestContext.Current.CancellationToken);
+
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		// language=yaml
+		var bundleContent =
+			$"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  - product: kibana
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268200-shared.yaml
+			      checksum: {ComputeSha1(sharedEntry)}
+			  - file:
+			      name: 1755268201-kibana-only.yaml
+			      checksum: {ComputeSha1(kibanaOnlyEntry)}
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+		var configFile = FileSystem.Path.Combine(configDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  areas:
+			    Internal:
+			    Search:
+			lifecycles:
+			  - ga
+			rules:
+			  publish:
+			    products:
+			      elasticsearch:
+			        exclude_areas:
+			          - Internal
+			""";
+		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var input = new RenderChangelogsArguments
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "9.2.0",
+			Config = configFile
+		};
+
+		// Act
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+
+		// Shared entry: elasticsearch rule wins (e < k) → blocked
+		indexContent.Should().Contain("% * Shared internal feature",
+			"elasticsearch rule is alphabetically first and excludes Internal area for the shared entry");
+
+		// Kibana-only entry: no elasticsearch rule applies; kibana has no area rule → visible
+		indexContent.Should().Contain("* Kibana internal feature",
+			"kibana-only entry has no matching rule and should be visible");
+		indexContent.Should().NotContain("% * Kibana internal feature");
+	}
+
+	[Fact]
+	public async Task RenderChangelogs_WithMultipleProducts_SingleProductEntries_UseTheirOwnRules()
+	{
+		// Arrange
+		// Bundle has [elasticsearch, kibana].
+		// elasticsearch-only entry uses elasticsearch rule (exclude Internal).
+		// kibana-only entry uses kibana rule (no area filter) → visible even with Internal area.
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
+
+		// language=yaml
+		var esEntry =
+			"""
+			title: Elasticsearch internal feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			areas:
+			  - Internal
+			prs:
+			- "300"
+			""";
+
+		// language=yaml
+		var kibanaEntry =
+			"""
+			title: Kibana internal feature
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			areas:
+			  - Internal
+			prs:
+			- "301"
+			""";
+
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268300-es.yaml");
+		var changelogFile2 = FileSystem.Path.Combine(changelogDir, "1755268301-kibana.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, esEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile2, kibanaEntry, TestContext.Current.CancellationToken);
+
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		// language=yaml
+		var bundleContent =
+			$"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  - product: kibana
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268300-es.yaml
+			      checksum: {ComputeSha1(esEntry)}
+			  - file:
+			      name: 1755268301-kibana.yaml
+			      checksum: {ComputeSha1(kibanaEntry)}
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+		var configFile = FileSystem.Path.Combine(configDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  areas:
+			    Internal:
+			lifecycles:
+			  - ga
+			rules:
+			  publish:
+			    products:
+			      elasticsearch:
+			        exclude_areas:
+			          - Internal
+			""";
+		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var input = new RenderChangelogsArguments
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "9.2.0",
+			Config = configFile
+		};
+
+		// Act
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+
+		// elasticsearch entry: elasticsearch rule applies → blocked
+		indexContent.Should().Contain("% * Elasticsearch internal feature",
+			"elasticsearch rule excludes Internal area");
+
+		// kibana entry: kibana has no per-product rule; falls through to global (none) → visible
+		indexContent.Should().Contain("* Kibana internal feature",
+			"kibana entry has no matching per-product rule and should be visible");
+		indexContent.Should().NotContain("% * Kibana internal feature");
+	}
+
+	[Fact]
+	public async Task RenderChangelogs_WithDisjointBundleAndEntryProducts_FallsBackToGlobalBlocker()
+	{
+		// Arrange
+		// Bundle has [kibana]. Entry belongs to [elasticsearch] only (disjoint).
+		// Intersection is empty → falls back to entry's own products ([elasticsearch]).
+		// No per-product rule for elasticsearch → global blocker (exclude_areas: Internal) applies.
+		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
+
+		// language=yaml
+		var esEntry =
+			"""
+			title: Elasticsearch internal entry
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			areas:
+			  - Internal
+			prs:
+			- "400"
+			""";
+
+		// language=yaml
+		var esSearchEntry =
+			"""
+			title: Elasticsearch search entry
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			areas:
+			  - Search
+			prs:
+			- "401"
+			""";
+
+		var changelogFile1 = FileSystem.Path.Combine(changelogDir, "1755268400-es-internal.yaml");
+		var changelogFile2 = FileSystem.Path.Combine(changelogDir, "1755268401-es-search.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile1, esEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile2, esSearchEntry, TestContext.Current.CancellationToken);
+
+		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
+
+		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		// language=yaml
+		var bundleContent =
+			$"""
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268400-es-internal.yaml
+			      checksum: {ComputeSha1(esEntry)}
+			  - file:
+			      name: 1755268401-es-search.yaml
+			      checksum: {ComputeSha1(esSearchEntry)}
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+		var configFile = FileSystem.Path.Combine(configDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  areas:
+			    Internal:
+			    Search:
+			lifecycles:
+			  - ga
+			rules:
+			  publish:
+			    exclude_areas:
+			      - Internal
+			    products:
+			      kibana:
+			        exclude_types:
+			          - feature
+			""";
+		await FileSystem.File.WriteAllTextAsync(configFile, configContent, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var input = new RenderChangelogsArguments
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "9.2.0",
+			Config = configFile
+		};
+
+		// Act
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+
+		// elasticsearch Internal entry: disjoint intersection → falls back to entry's own [elasticsearch],
+		// no elasticsearch per-product rule → global blocker (exclude Internal) applies → blocked
+		indexContent.Should().Contain("% * Elasticsearch internal entry",
+			"global exclude_areas rule should apply via fallback to entry's own product");
+
+		// elasticsearch Search entry: global blocker does not match Search → visible
+		indexContent.Should().Contain("* Elasticsearch search entry",
+			"Search area is not excluded globally and kibana rule should not bleed across to elasticsearch entries");
+		indexContent.Should().NotContain("% * Elasticsearch search entry");
+	}
+
+	[Fact]
 	public async Task RenderChangelogs_WithBlockedEntries_EmitsWarnings()
 	{
 		// Arrange
