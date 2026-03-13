@@ -245,4 +245,57 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("unknown-repo"));
 	}
+
+	// -----------------------------------------------------------------------
+	// Config fallback: Output = null → service defaults to ./changelogs
+	// When the command resolves no --output and no bundle.directory from config,
+	// it passes Output = null to the service, which then uses "./changelogs".
+	// -----------------------------------------------------------------------
+
+	[Fact]
+	public async Task ReleaseVersion_OutputNull_ServiceUsesChangelogsDefault()
+	{
+		// Arrange – simulates 'changelog add --release-version' with no --output and no bundle.directory in config.
+		// The command passes Output = null to the service; the service must default to "./changelogs".
+		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._))
+			.Returns(new GitHubReleaseInfo
+			{
+				TagName = "v9.2.0",
+				Name = "9.2.0",
+				Body = "* Fix something by @contributor in #12345"
+			});
+
+		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
+			.Returns(new GitHubPrInfo { Title = "Fix something", Labels = [] });
+
+		var workDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(workDir);
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(workDir);
+
+			var service = CreateService();
+			var input = new CreateChangelogsFromReleaseArguments
+			{
+				Repository = "elastic/elasticsearch",
+				Version = "v9.2.0",
+				Output = null,   // no --output CLI and no bundle.directory in config
+				CreateBundle = false
+			};
+
+			// Act
+			var result = await service.CreateChangelogsFromRelease(Collector, input, TestContext.Current.CancellationToken);
+
+			// Assert – service resolves output to <cwd>/changelogs
+			result.Should().BeTrue();
+			var expectedOutputDir = FileSystem.Path.Combine(workDir, "changelogs");
+			FileSystem.Directory.Exists(expectedOutputDir).Should().BeTrue("service defaults Output to ./changelogs when null");
+			FileSystem.Directory.GetFiles(expectedOutputDir, "*.yaml").Should().HaveCount(1);
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
 }

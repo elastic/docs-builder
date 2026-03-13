@@ -164,7 +164,7 @@ public class HtmlWriter(
 			VersionDropdownItems = VersionDropDownItemViewModel.FromLegacyPageMappings(legacyPages?.ToArray()),
 			Products = pageProducts,
 			VersioningSystem = pageVersioning,
-			VersionsConfig = DocumentationSet.Context.VersionsConfiguration!,
+			VersionsConfig = DocumentationSet.Context.VersionsConfiguration,
 			StructuredBreadcrumbsJson = structuredBreadcrumbsJsonString,
 			// Git info for isolated header
 			GitBranch = gitBranch != "unavailable" ? gitBranch : null,

@@ -13,6 +13,7 @@ namespace Elastic.Changelog.Serialization;
 [YamlSerializable(typeof(TypeEntryYaml))]
 [YamlSerializable(typeof(RulesConfigurationYaml))]
 [YamlSerializable(typeof(CreateRulesYaml))]
+[YamlSerializable(typeof(BundleRulesYaml))]
 [YamlSerializable(typeof(PublishRulesYaml))]
 [YamlSerializable(typeof(ProductsConfigYaml))]
 [YamlSerializable(typeof(DefaultProductYaml))]

@@ -65,9 +65,35 @@ internal record RulesConfigurationYaml
 	public CreateRulesYaml? Create { get; set; }
 
 	/// <summary>
+	/// Bundle rules controlling which entries are included in a bundle file.
+	/// </summary>
+	public BundleRulesYaml? Bundle { get; set; }
+
+	/// <summary>
 	/// Publish rules controlling which entries appear in rendered output.
 	/// </summary>
 	public PublishRulesYaml? Publish { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for bundle rules in YAML.
+/// </summary>
+internal record BundleRulesYaml
+{
+	/// <summary>
+	/// Product IDs to exclude from the bundle (string or list). Cannot be combined with IncludeProducts.
+	/// </summary>
+	public YamlLenientList? ExcludeProducts { get; set; }
+
+	/// <summary>
+	/// Product IDs to include in the bundle (string or list). Cannot be combined with ExcludeProducts.
+	/// </summary>
+	public YamlLenientList? IncludeProducts { get; set; }
+
+	/// <summary>
+	/// Match mode for products ("any" or "all"). Inherits from rules.match if not set.
+	/// </summary>
+	public string? MatchProducts { get; set; }
 }
 
 /// <summary>
@@ -153,6 +179,13 @@ internal record PivotConfigurationYaml
 	/// Area definitions with labels (string or list per value).
 	/// </summary>
 	public Dictionary<string, YamlLenientList?>? Areas { get; set; }
+
+	/// <summary>
+	/// Product definitions with labels (string or list per value).
+	/// Keys are product spec strings (e.g., "elasticsearch", "kibana 9.2.0").
+	/// Values are label strings that trigger adding the product.
+	/// </summary>
+	public Dictionary<string, YamlLenientList?>? Products { get; set; }
 
 	/// <summary>
 	/// Labels that trigger the highlight flag (string or list).
@@ -266,6 +299,13 @@ internal record BundleProfileYaml
 	/// Feature IDs to mark as hidden in the bundle output (string or list).
 	/// </summary>
 	public YamlLenientList? HideFeatures { get; set; }
+
+	/// <summary>
+	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
+	/// PR references directly from a GitHub release and uses them as the bundle filter.
+	/// Mutually exclusive with <see cref="Products"/>.
+	/// </summary>
+	public string? Source { get; set; }
 }
 
 /// <summary>

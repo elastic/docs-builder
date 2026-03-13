@@ -58,7 +58,17 @@ public static class ElasticsearchEndpointFactory
 		environment ??= ResolveEnvironment(config, appConfiguration);
 		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
 
-		return new DocumentationEndpoints { Elasticsearch = endpoint, Environment = environment, BuildType = buildType };
+		var searchIndexOverride =
+			config["Parameters:DocumentationElasticIndexOverride"]
+			?? config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"];
+
+		return new DocumentationEndpoints
+		{
+			Elasticsearch = endpoint,
+			Environment = environment,
+			BuildType = buildType,
+			SearchIndexOverride = !string.IsNullOrEmpty(searchIndexOverride) ? searchIndexOverride : null
+		};
 	}
 
 	/// <summary>

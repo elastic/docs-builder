@@ -44,7 +44,7 @@ public class NavigationTestsBase : IAsyncLifetime
 	protected IFileSystem WriteFileSystem { get; set; }
 	protected DocumentationSet Set { get; }
 	protected DocumentationGenerator Generator { get; }
-	protected ConfigurationFile Configuration { get; set; } = default!;
+	protected ConfigurationFile? Configuration { get; set; }
 
 	public async ValueTask InitializeAsync()
 	{

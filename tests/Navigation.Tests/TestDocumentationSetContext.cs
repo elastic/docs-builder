@@ -63,6 +63,9 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	/// <inheritdoc />
 	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
 
+	/// <inheritdoc />
+	public bool IsDeclaredCrossLinkScheme(string scheme) => true;
+
 	private TestCrossLinkResolver() { }
 
 }

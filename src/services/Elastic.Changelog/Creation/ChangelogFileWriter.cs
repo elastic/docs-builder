@@ -33,7 +33,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var changelogData = BuildChangelogData(input);
 
 		// Generate YAML file
-		var yamlContent = GenerateYaml(changelogData, config, titleMissing, typeMissing);
+		var yamlContent = input.Concise
+			? GenerateConciseYaml(changelogData)
+			: GenerateYaml(changelogData, config, titleMissing, typeMissing);
 
 		// Determine output path
 		var outputDir = input.Output ?? fileSystem.Directory.GetCurrentDirectory();
@@ -266,5 +268,16 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			""";
 
 		return result;
+	}
+
+	private static string GenerateConciseYaml(ChangelogEntry data)
+	{
+		var serializeData = data with
+		{
+			Areas = data.Areas is { Count: 0 } ? null : data.Areas,
+			Issues = data.Issues is { Count: 0 } ? null : data.Issues
+		};
+
+		return ReleaseNotesSerialization.SerializeEntry(serializeData);
 	}
 }
