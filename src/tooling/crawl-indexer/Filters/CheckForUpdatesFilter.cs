@@ -13,7 +13,16 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs
 {
 	private static readonly string StateDirectory = Paths.ApplicationData.FullName;
 	private static readonly string StateFileName = "crawl-indexer-check.state";
-	private readonly FileInfo _stateFile = new(Path.Combine(StateDirectory, StateFileName));
+	private readonly FileInfo _stateFile = CreateStateFileInfo();
+
+	private static FileInfo CreateStateFileInfo()
+	{
+		if (Path.IsPathRooted(StateFileName))
+			throw new InvalidOperationException($"State file name must be a relative file name, but was '{StateFileName}'.");
+
+		var fullPath = Path.Combine(StateDirectory, StateFileName);
+		return new FileInfo(fullPath);
+	}
 
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{

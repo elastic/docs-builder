@@ -4,6 +4,7 @@
 
 using CrawlIndexer.Crawling;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace CrawlIndexer.Caching;
 
@@ -52,13 +53,10 @@ public class CrawlDecisionMaker(ILogger<CrawlDecisionMaker> logger)
 		IReadOnlySet<string> sitemapUrls
 	)
 	{
-		foreach (var url in cache.Keys)
+		foreach (var url in cache.Keys.Where(url => !sitemapUrls.Contains(url)))
 		{
-			if (!sitemapUrls.Contains(url))
-			{
-				logger.LogDebug("Stale URL (not in sitemap): {Url}", url);
-				yield return url;
-			}
+			logger.LogDebug("Stale URL (not in sitemap): {Url}", url);
+			yield return url;
 		}
 	}
 

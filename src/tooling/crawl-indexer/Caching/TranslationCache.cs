@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
 using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -43,7 +44,7 @@ internal sealed partial class TranslationCacheContext : JsonSerializerContext;
 public class TranslationCacheService(ILogger<TranslationCacheService> logger)
 {
 	private static readonly string CachePath =
-		Path.Combine(Path.Combine(Paths.ApplicationData.FullName, "translations"), "site-translations.json");
+		Path.Combine(Paths.ApplicationData.FullName, "translations", "site-translations.json");
 
 	/// <summary>
 	/// Loads the translation cache from disk.
@@ -123,11 +124,12 @@ public class TranslationCacheService(ILogger<TranslationCacheService> logger)
 
 		// Remove language prefix if present
 		var langPrefixes = new[] { "/de/", "/fr/", "/es/", "/jp/", "/kr/", "/cn/", "/pt/" };
-		foreach (var prefix in langPrefixes)
-		{
-			if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-				return "/" + path[prefix.Length..];
-		}
+		var matchingPrefix = langPrefixes.FirstOrDefault(
+			prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+		);
+
+		if (matchingPrefix is not null)
+			return "/" + path[matchingPrefix.Length..];
 
 		return path;
 	}
