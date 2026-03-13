@@ -80,6 +80,7 @@ toc:
           - file: attributes.md
           - file: navigation.md
           - file: extensions.md
+          - file: api-explorer.md
       - file: page.md
       - file: content-sources.md
   - folder: syntax
