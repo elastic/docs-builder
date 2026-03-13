@@ -1,9 +1,9 @@
 @layer components {
 	.agent-skill {
-		@apply border-teal-40 bg-teal-10 mt-4 rounded-sm border-1 pb-4;
+		@apply border-poppy-40 bg-poppy-10 mt-4 rounded-sm border-1 pb-4;
 
 		.agent-skill-header {
-			@apply bg-teal-20 text-teal-110 flex items-center gap-2 rounded-t-sm px-4 py-2 font-bold;
+			@apply bg-poppy-20 text-poppy-110 flex items-center gap-2 rounded-t-sm px-4 py-2 font-bold;
 		}
 
 		.agent-skill-icon {
@@ -17,10 +17,6 @@
 		.agent-skill-text {
 			p {
 				@apply m-0 text-base;
-			}
-
-			.agent-skill-learn-more {
-				@apply mt-1 text-sm;
 			}
 		}
 
