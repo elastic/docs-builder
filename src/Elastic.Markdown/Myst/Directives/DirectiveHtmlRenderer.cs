@@ -232,7 +232,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = AgentSkillView.Create(new AgentSkillViewModel
 		{
 			DirectiveBlock = block,
-			Url = block.Url
+			Url = block.Url,
+			HasBody = block.Count > 0
 		});
 		RenderRazorSlice(slice, renderer);
 	}
