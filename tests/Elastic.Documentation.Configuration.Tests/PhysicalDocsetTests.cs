@@ -36,9 +36,13 @@ public class PhysicalDocsetTests
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
 		// Assert API configuration
-		docSet.Api.Should().HaveCount(2);
+		docSet.Api.Should().HaveCount(6);
 		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.Should().Be("elasticsearch-openapi.json");
 		docSet.Api.Should().ContainKey("kibana").WhoseValue.Should().Be("kibana-openapi.json");
+		docSet.Api.Should().ContainKey("cloud-serverless").WhoseValue.Should().Be("cloud-serverless-openapi.json");
+		docSet.Api.Should().ContainKey("cloud").WhoseValue.Should().Be("cloud-billing-openapi.json");
+		docSet.Api.Should().ContainKey("cloud-hosted").WhoseValue.Should().Be("cloud-hosted-openapi.json");
+		docSet.Api.Should().ContainKey("cloud-enterprise").WhoseValue.Should().Be("cloud-enterprise-openapi.json");
 
 		// Assert TOC structure
 		docSet.TableOfContents.Should().NotBeEmpty();
