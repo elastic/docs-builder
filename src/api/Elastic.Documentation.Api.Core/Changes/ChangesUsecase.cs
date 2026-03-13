@@ -58,8 +58,14 @@ public partial class ChangesUsecase(IChangesGateway changesGateway, ILogger<Chan
 				+ new string('=', paddingLength);
 
 			var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
-			var parts = JsonSerializer.Deserialize<JsonElement[]>(json);
-			if (parts is not [{ ValueKind: JsonValueKind.Number } epochEl, { ValueKind: JsonValueKind.String } urlEl])
+			using var doc = JsonDocument.Parse(json);
+			var root = doc.RootElement;
+			if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() != 2)
+				return null;
+
+			var epochEl = root[0];
+			var urlEl = root[1];
+			if (epochEl.ValueKind != JsonValueKind.Number || urlEl.ValueKind != JsonValueKind.String)
 				return null;
 
 			return new ChangesPageCursor(epochEl.GetInt64(), urlEl.GetString()!);
