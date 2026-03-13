@@ -92,6 +92,7 @@ public class ChangelogArtifactEvaluationService(
 		await coreService.SetOutputAsync("status", metadata.Status);
 		await coreService.SetOutputAsync("config-file", metadata.ConfigFile ?? string.Empty);
 		await coreService.SetOutputAsync("changelog-dir", metadata.ChangelogDir ?? string.Empty);
+		await coreService.SetOutputAsync("changelog-filename", metadata.ChangelogFilename ?? string.Empty);
 		await coreService.SetOutputAsync("label-table", metadata.LabelTable ?? string.Empty);
 		await coreService.SetOutputAsync("should-commit", shouldCommit ? "true" : "false");
 		await coreService.SetOutputAsync("should-comment-success", shouldCommentSuccess ? "true" : "false");

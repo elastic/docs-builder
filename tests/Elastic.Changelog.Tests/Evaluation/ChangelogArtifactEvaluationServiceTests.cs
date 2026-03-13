@@ -38,7 +38,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		await FileSystem.File.WriteAllTextAsync(path, json);
 	}
 
-	private static ChangelogArtifactMetadata DefaultMetadata(string status = "success") =>
+	private static ChangelogArtifactMetadata DefaultMetadata(string status = "success", string? changelogFilename = "42.yaml") =>
 		new()
 		{
 			PrNumber = 42,
@@ -47,6 +47,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 			Status = status,
 			ConfigFile = "docs/changelog.yml",
 			ChangelogDir = "changelogs",
+			ChangelogFilename = changelogFilename,
 			CreateRules = new CreateRules { Labels = ["changelog:skip"], Mode = FieldMode.Exclude }
 		};
 
@@ -136,6 +137,7 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		VerifyOutputSet("head-ref", "feature/test");
 		VerifyOutputSet("head-sha", "abc123");
 		VerifyOutputSet("status", "success");
+		VerifyOutputSet("changelog-filename", "42.yaml");
 	}
 
 	[Fact]
@@ -165,6 +167,19 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 		result.Should().BeTrue();
 		VerifyOutputSet("should-commit", "false");
 		VerifyOutputSet("should-comment-success", "true");
+	}
+
+	[Fact]
+	public async Task EvaluateArtifact_TimestampFilename_OutputsOriginalFilename()
+	{
+		await WriteMetadata(DefaultMetadata(changelogFilename: "1735689600-fix-search.yaml"));
+		SetupPrInfo();
+
+		var service = CreateService();
+		var result = await service.EvaluateArtifact(Collector, DefaultArgs(), CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("changelog-filename", "1735689600-fix-search.yaml");
 	}
 
 	[Fact]
