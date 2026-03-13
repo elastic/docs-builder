@@ -1,7 +1,7 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <div hx-select-oob="#main-container" hx-swap="none" class="w-full max-w-[100vw] text-ink relative text-pretty overflow-x-hidden">
 	<section class="w-full bg-grey-10" id="hero">
-		<div class="container mx-auto pt-28 pb-28 grid lg:grid-cols-[1fr_600px] items-center gap-6">
+		<div class="container mx-auto pt-28 pb-4 min-[1024px]:pb-28 grid min-[1024px]:grid-cols-[auto_420px] min-[1024px]:justify-between items-center gap-6 min-[1024px]:gap-[74px]">
 			<div class="max-w-165">
 				<h1 class="text-6xl font-bold font-sans text-black">Elastic Docs</h1>
 				<p class="mt-4">Welcome to the technical documentation for <span class="whitespace-nowrap">Elastic Stack 9.0.0</span>
@@ -35,8 +35,24 @@
 					</div>
 				}
 			</div>
-			<div class="hidden lg:flex justify-center items-center">
-				<img src="@Model.Static("hero.png")" alt="Elastic Docs" width="600">
+			<div class="flex flex-col justify-center w-full mt-14 min-[1024px]:mt-0">
+				<div class="rounded-2xl p-8 bg-white flex flex-col gap-4 items-start"
+				     style="border: 2px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(-65deg, #BFDBFF 17%, #E2D3FE 83%) border-box; background-clip: padding-box, border-box; background-origin: padding-box, border-box;">
+					<span class="euiBadge euiBadge--primary inline-flex items-center font-sans font-bold text-xs uppercase tracking-wide shrink-0 rounded-full px-2 py-0.5 bg-[#8144CC] text-white">NEW</span>
+					<div class="flex flex-col">
+						<p class="font-sans font-bold text-xl">Elastic skills for AI agents</p>
+						<p class="mt-2">Install official skills that teach AI coding agents how to work with Elasticsearch, Kibana, Fleet, and the rest of the Elastic stack.</p>
+						<div class="grid grid-cols-1 mt-6 gap-2 text-left">
+							<a href="@Model.Link("/explore-analyze/ai-features/elastic-agent-skills")" class="link justify-start">
+								Learn more
+								<svg class="link-arrow"
+								     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
+								</svg>
+							</a>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</section>
