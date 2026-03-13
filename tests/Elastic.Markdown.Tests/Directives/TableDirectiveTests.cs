@@ -145,3 +145,55 @@ Some text, no table.
 	[Fact]
 	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pipe table"));
 }
+
+public class TableDirectiveInvalidWidthsTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
+"""
+:::{table}
+:widths: foo
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+""")
+{
+	[Fact]
+	public void EmitsErrorForInvalidPreset() =>
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Invalid widths value"));
+}
+
+public class TableDirectiveOutOfRangeWidthsTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
+"""
+:::{table}
+:widths: 0-12
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+""")
+{
+	[Fact]
+	public void EmitsErrorForOutOfRangeUnit() =>
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Invalid widths value"));
+}
+
+public class TableDirectiveMultipleTablesTests(ITestOutputHelper output) : DirectiveTest<TableDirectiveBlock>(output,
+"""
+:::{table}
+:widths: 4-8
+
+| a | b |
+| --- | --- |
+| 1 | 2 |
+
+| c | d |
+| --- | --- |
+| 3 | 4 |
+:::
+""")
+{
+	[Fact]
+	public void EmitsErrorForMultipleTables() =>
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("exactly one pipe table"));
+}

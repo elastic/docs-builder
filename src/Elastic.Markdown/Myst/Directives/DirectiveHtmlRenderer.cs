@@ -113,6 +113,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case TableDirectiveBlock tableDirectiveBlock:
 				WriteTableDirective(renderer, tableDirectiveBlock);
+				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
 				return;
@@ -219,9 +220,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			ColumnWidths = block.ColumnWidths
-    });
+		});
 		RenderRazorSlice(slice, renderer);
 	}
+
 	private static void WriteAgentSkill(HtmlRenderer renderer, AgentSkillBlock block)
 	{
 		if (string.IsNullOrEmpty(block.Url))

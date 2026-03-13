@@ -11,14 +11,14 @@ namespace Elastic.Markdown.Myst.Directives.Table;
 
 /// <summary>
 /// A wrapper directive for pipe tables that allows controlling column widths using a 12-unit grid system.
-/// Supports presets (<c>even</c>, <c>definition</c>) and custom dash-separated values (e.g., <c>4-8</c>, <c>4-4-4</c>).
+/// Supports presets (<c>auto</c>, <c>description</c>) and custom dash-separated values (e.g., <c>4-8</c>, <c>4-4-4</c>).
 /// </summary>
 public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "table";
 
 	/// <summary>
-	/// Column widths as percentages (e.g., 33.33, 66.67 for 4-8). Empty when using <c>even</c> preset or no widths specified.
+	/// Column widths as percentages (e.g., 33.33, 66.67 for 4-8). Empty when using <c>auto</c> preset or no widths specified.
 	/// </summary>
 	public IReadOnlyList<double> ColumnWidths { get; private set; } = [];
 
@@ -56,15 +56,23 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public void ValidateTableColumnCount()
 	{
-		var table = this.OfType<Markdig.Extensions.Tables.Table>().FirstOrDefault();
+		var tables = this.OfType<Markdig.Extensions.Tables.Table>().ToList();
 
-		if (table is null)
+		if (tables.Count == 0)
 		{
 			this.EmitError("Table directive must contain a pipe table. Add a table using Markdown pipe syntax.");
 			ColumnWidths = [];
 			return;
 		}
 
+		if (tables.Count > 1)
+		{
+			this.EmitError("Table directive must contain exactly one pipe table.");
+			ColumnWidths = [];
+			return;
+		}
+
+		var table = tables[0];
 		var columnCount = GetTableColumnCount(table);
 		if (columnCount == 0)
 		{
@@ -102,7 +110,7 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 			if (!int.TryParse(part, out var unit) || unit < 1 || unit > 12)
 			{
 				block.EmitError(
-					$"Invalid widths value '{value}'. Use preset (even, definition) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4).");
+					$"Invalid widths value '{value}'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4).");
 				return null;
 			}
 
