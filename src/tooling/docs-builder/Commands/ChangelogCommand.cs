@@ -1264,6 +1264,7 @@ internal sealed partial class ChangelogCommand(
 		string headSha,
 		string? labelTable = null,
 		string? config = null,
+		string? existingChangelogFilename = null,
 		Cancel ctx = default
 	)
 	{
@@ -1281,7 +1282,8 @@ internal sealed partial class ChangelogCommand(
 			HeadRef = headRef,
 			HeadSha = headSha,
 			LabelTable = labelTable,
-			Config = config
+			Config = config,
+			ExistingChangelogFilename = existingChangelogFilename
 		};
 
 		serviceInvoker.AddCommand(service, args,

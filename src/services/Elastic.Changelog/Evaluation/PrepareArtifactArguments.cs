@@ -16,4 +16,10 @@ public record PrepareArtifactArguments
 	public required string HeadSha { get; init; }
 	public string? LabelTable { get; init; }
 	public string? Config { get; init; }
+
+	/// <summary>
+	/// Filename of a previously committed changelog for this PR.
+	/// When set, the staging file is renamed to match so the same path is overwritten on the branch.
+	/// </summary>
+	public string? ExistingChangelogFilename { get; init; }
 }

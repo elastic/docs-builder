@@ -78,7 +78,6 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Type.Should().Be("bug-fix");
 		result.Owner.Should().Be("elastic");
 		result.Repo.Should().Be("kibana");
-		result.UsePrNumber.Should().BeTrue();
 	}
 
 	[Fact]
@@ -91,7 +90,6 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var result = service.EnrichFromCI(input);
 
 		result.Prs.Should().BeEquivalentTo(["99"]);
-		result.UsePrNumber.Should().BeFalse();
 	}
 
 	[Fact]
@@ -146,7 +144,6 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Type.Should().BeNull();
 		result.Owner.Should().BeNull();
 		result.Repo.Should().BeNull();
-		result.UsePrNumber.Should().BeTrue();
 	}
 
 	[Fact]
@@ -160,7 +157,6 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 
 		result.Title.Should().Be("CI title");
 		result.Prs.Should().BeNull();
-		result.UsePrNumber.Should().BeFalse();
 	}
 
 	[Fact]

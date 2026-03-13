@@ -55,10 +55,11 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 			Config = config ?? "/config/changelog.yml"
 		};
 
-	private async Task SetupStagingYaml(int prNumber = 42)
+	private async Task SetupStagingYaml(string? filename = null)
 	{
 		FileSystem.Directory.CreateDirectory("/staging");
-		await FileSystem.File.WriteAllTextAsync($"/staging/{prNumber}.yaml", "title: test changelog");
+		filename ??= "42.yaml";
+		await FileSystem.File.WriteAllTextAsync($"/staging/{filename}", "title: test changelog");
 	}
 
 	private async Task SetupConfig(string configPath = "/config/changelog.yml")
@@ -90,6 +91,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.PrNumber.Should().Be(42);
 		metadata.HeadRef.Should().Be("feature/test");
 		metadata.HeadSha.Should().Be("abc123");
+		metadata.ChangelogFilename.Should().Be("42.yaml");
 		A.CallTo(() => _mockCore.SetOutputAsync("status", "success")).MustHaveHappened();
 	}
 
@@ -123,6 +125,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		var metadata = ReadMetadata();
 		metadata.Status.Should().Be("no-label");
 		metadata.LabelTable.Should().Contain("Label");
+		metadata.ChangelogFilename.Should().BeNull();
 	}
 
 	[Fact]
@@ -138,6 +141,58 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.CreateRules.Should().NotBeNull();
 		metadata.CreateRules.Labels.Should().Contain("changelog:skip");
 		metadata.CreateRules.Mode.Should().Be(FieldMode.Exclude);
+	}
+
+	[Fact]
+	public async Task PrepareArtifact_TimestampFilename_PreservesOriginalName()
+	{
+		await SetupStagingYaml("1735689600-fix-search.yaml");
+		await SetupConfig();
+		var service = CreateService();
+
+		var result = await service.PrepareArtifact(Collector, DefaultArgs(), CancellationToken.None);
+
+		result.Should().BeTrue();
+		FileSystem.File.Exists("/output/1735689600-fix-search.yaml").Should().BeTrue();
+		var content = await FileSystem.File.ReadAllTextAsync("/output/1735689600-fix-search.yaml", TestContext.Current.CancellationToken);
+		content.Should().Be("title: test changelog");
+		var metadata = ReadMetadata();
+		metadata.Status.Should().Be("success");
+		metadata.ChangelogFilename.Should().Be("1735689600-fix-search.yaml");
+	}
+
+	[Fact]
+	public async Task PrepareArtifact_IssueFilename_PreservesOriginalName()
+	{
+		await SetupStagingYaml("789.yaml");
+		await SetupConfig();
+		var service = CreateService();
+
+		var result = await service.PrepareArtifact(Collector, DefaultArgs(), CancellationToken.None);
+
+		result.Should().BeTrue();
+		FileSystem.File.Exists("/output/789.yaml").Should().BeTrue();
+		var metadata = ReadMetadata();
+		metadata.Status.Should().Be("success");
+		metadata.ChangelogFilename.Should().Be("789.yaml");
+	}
+
+	[Fact]
+	public async Task PrepareArtifact_ExistingFilename_RenamesStagingFileToMatch()
+	{
+		await SetupStagingYaml("1735700000-new-title.yaml");
+		await SetupConfig();
+		var service = CreateService();
+		var args = DefaultArgs() with { ExistingChangelogFilename = "1735689600-old-title.yaml" };
+
+		var result = await service.PrepareArtifact(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		FileSystem.File.Exists("/output/1735689600-old-title.yaml").Should().BeTrue();
+		FileSystem.File.Exists("/output/1735700000-new-title.yaml").Should().BeFalse();
+		var metadata = ReadMetadata();
+		metadata.Status.Should().Be("success");
+		metadata.ChangelogFilename.Should().Be("1735689600-old-title.yaml");
 	}
 
 	[Fact]

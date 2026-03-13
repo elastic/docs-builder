@@ -68,6 +68,7 @@ docs-builder changelog evaluate-pr [options...] [-h|--help]
 | `title` | Resolved PR title |
 | `type` | Resolved changelog type |
 | `label-table` | Markdown table of configured label-to-type mappings |
+| `existing-changelog-filename` | Filename of a previously committed changelog for this PR (if any) |
 
 ## Environment variables
 
