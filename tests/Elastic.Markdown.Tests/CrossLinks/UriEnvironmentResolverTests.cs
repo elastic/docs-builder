@@ -219,7 +219,7 @@ public class CodexCrossRepoRedirectTests
 
 		success.Should().BeTrue();
 		resolvedUri.Should().NotBeNull();
-		resolvedUri!.IsAbsoluteUri.Should().BeFalse();
+		resolvedUri.IsAbsoluteUri.Should().BeFalse();
 		resolvedUri.ToString().Should().Be("/r/kibana/get-started");
 	}
 }

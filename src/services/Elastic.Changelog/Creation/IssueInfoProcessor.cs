@@ -37,7 +37,12 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 			};
 		}
 
-		if (ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), input.Products, config, collector, issueUrl))
+		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
+		var effectiveProducts = input.Products;
+		if (input.Products.Count == 0 && config.LabelToProducts != null)
+			effectiveProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+
+		if (ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), effectiveProducts, config, collector, issueUrl))
 		{
 			return new IssueProcessingResult
 			{
@@ -77,7 +82,12 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 			return (false, null);
 		}
 
-		var shouldSkip = ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), products, config, collector, issueUrl);
+		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
+		var effectiveProducts = products;
+		if (products.Count == 0 && config.LabelToProducts != null)
+			effectiveProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+
+		var shouldSkip = ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), effectiveProducts, config, collector, issueUrl);
 		return (shouldSkip, issueInfo);
 	}
 
@@ -174,6 +184,19 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 		derived.Issues = input.Issues is { Length: > 0 }
 			? input.Issues
 			: [issueUrl];
+
+		// Map labels to products if products were not explicitly provided
+		if (input.Products.Count == 0 && config.LabelToProducts != null)
+		{
+			var mappedProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+			if (mappedProducts.Count > 0)
+			{
+				derived.Products = mappedProducts;
+				logger.LogInformation("Mapped issue labels to products: {Products}", string.Join(", ", mappedProducts.Select(p => p.Product)));
+			}
+		}
+		else if (input.Products.Count > 0)
+			logger.LogDebug("Using explicitly provided products, ignoring issue labels");
 
 		// Extract linked PRs from issue body
 		if ((input.ExtractIssues ?? false) && issueInfo.LinkedPrs.Count > 0)

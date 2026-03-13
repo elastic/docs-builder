@@ -7,7 +7,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Configuration;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -25,20 +25,27 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 	private bool _disposed;
 
 	public ElasticsearchAskAiMessageFeedbackGateway(
-		ElasticsearchOptions elasticsearchOptions,
+		DocumentationEndpoints endpoints,
 		AppEnvironment appEnvironment,
 		ILogger<ElasticsearchAskAiMessageFeedbackGateway> logger)
 	{
 		_logger = logger;
 		_indexName = $"ask-ai-message-feedback-{appEnvironment.Current.ToStringFast(true)}";
 
-		_nodePool = new SingleNodePool(new Uri(elasticsearchOptions.Url.Trim()));
+		var endpoint = endpoints.Elasticsearch;
+		_nodePool = new SingleNodePool(endpoint.Uri);
+		var auth = endpoint.ApiKey is { } apiKey
+			? (AuthorizationHeader)new ApiKey(apiKey)
+			: endpoint is { Username: { } username, Password: { } password }
+				? new BasicAuthentication(username, password)
+				: null!;
+
 		using var clientSettings = new ElasticsearchClientSettings(
 				_nodePool,
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, MessageFeedbackJsonContext.Default)
 			)
 			.DefaultIndex(_indexName)
-			.Authentication(new ApiKey(elasticsearchOptions.ApiKey));
+			.Authentication(auth);
 		_client = new ElasticsearchClient(clientSettings);
 	}
 

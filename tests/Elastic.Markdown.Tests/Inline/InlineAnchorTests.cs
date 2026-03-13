@@ -21,7 +21,7 @@ public class InlineAnchorTests(ITestOutputHelper output) : LeafTest<InlineAnchor
 	public void ParsesBlock()
 	{
 		Block.Should().NotBeNull();
-		Block!.Anchor.Should().Be("is-an-inline-anchor");
+		Block.Anchor.Should().Be("is-an-inline-anchor");
 	}
 
 	[Fact]
@@ -41,7 +41,7 @@ public class InlineAnchorAtStartTests(ITestOutputHelper output) : LeafTest<Inlin
 	public void ParsesBlock()
 	{
 		Block.Should().NotBeNull();
-		Block!.Anchor.Should().Be("is-an-inline-anchor");
+		Block.Anchor.Should().Be("is-an-inline-anchor");
 	}
 
 	[Fact]
@@ -62,7 +62,7 @@ public class InlineAnchorAtEndTests(ITestOutputHelper output) : LeafTest<InlineA
 	public void ParsesBlock()
 	{
 		Block.Should().NotBeNull();
-		Block!.Anchor.Should().Be("is-an-inline-anchor");
+		Block.Anchor.Should().Be("is-an-inline-anchor");
 	}
 
 	[Fact]

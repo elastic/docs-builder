@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text.Json;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
@@ -30,6 +32,17 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 		[Description("Maximum number of documents to analyze (default: 20)")] int limit = 20,
 		CancellationToken cancellationToken = default)
 	{
+		var toolName = McpToolTelemetry.ResolveToolName("check_{resource}_coherence");
+		using var activity = McpToolTelemetry.StartActivity(toolName);
+		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
+		{
+			["topic"] = topic,
+			["limit"] = limit
+		});
+		McpToolTelemetry.LogStart(logger, toolName, payload);
+		var duration = Stopwatch.StartNew();
+		var outcome = "failure";
+
 		try
 		{
 			limit = Math.Clamp(limit, 5, 50);
@@ -77,16 +90,26 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 				}).ToList()
 			};
 
+			McpToolTelemetry.MarkSuccess(activity);
+			outcome = "success";
 			return JsonSerializer.Serialize(response, McpJsonContext.Default.CoherenceCheckResponse);
 		}
 		catch (OperationCanceledException)
 		{
+			McpToolTelemetry.MarkCancelled(activity);
+			outcome = "cancelled";
 			throw;
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			McpToolTelemetry.MarkFailure(activity, ex);
 			logger.LogError(ex, "CheckCoherence failed for topic '{Topic}'", topic);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+		}
+		finally
+		{
+			duration.Stop();
+			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
 		}
 	}
 
@@ -102,6 +125,17 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 		[Description("Specific area to focus on (e.g., 'installation', 'configuration')")] string? focusArea = null,
 		CancellationToken cancellationToken = default)
 	{
+		var toolName = McpToolTelemetry.ResolveToolName("find_{resource}_inconsistencies");
+		using var activity = McpToolTelemetry.StartActivity(toolName);
+		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
+		{
+			["topic"] = topic,
+			["focusArea"] = focusArea
+		});
+		McpToolTelemetry.LogStart(logger, toolName, payload);
+		var duration = Stopwatch.StartNew();
+		var outcome = "failure";
+
 		try
 		{
 			var query = focusArea != null ? $"{topic} {focusArea}" : topic;
@@ -174,16 +208,26 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 				ProductBreakdown = byProduct.ToDictionary(g => g.Key, g => g.Value.Count)
 			};
 
+			McpToolTelemetry.MarkSuccess(activity);
+			outcome = "success";
 			return JsonSerializer.Serialize(response, McpJsonContext.Default.InconsistenciesResponse);
 		}
 		catch (OperationCanceledException)
 		{
+			McpToolTelemetry.MarkCancelled(activity);
+			outcome = "cancelled";
 			throw;
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			McpToolTelemetry.MarkFailure(activity, ex);
 			logger.LogError(ex, "FindInconsistencies failed for topic '{Topic}' with focus area '{FocusArea}'", topic, focusArea);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+		}
+		finally
+		{
+			duration.Stop();
+			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
 		}
 	}
 

@@ -325,9 +325,9 @@ public class DocumentationDocumentSerializationTests
 		deserialized.Url.Should().Be(original.Url);
 		deserialized.Title.Should().Be(original.Title);
 		deserialized.Applies.Should().NotBeNull();
-		deserialized.Applies!.Stack.Should().BeEquivalentTo(original.Applies!.Stack);
+		deserialized.Applies.Stack.Should().BeEquivalentTo(original.Applies.Stack);
 		deserialized.Applies.Deployment.Should().NotBeNull();
-		deserialized.Applies.Deployment!.Ess.Should().BeEquivalentTo(original.Applies.Deployment!.Ess);
+		deserialized.Applies.Deployment.Ess.Should().BeEquivalentTo(original.Applies.Deployment.Ess);
 	}
 
 	[Fact]

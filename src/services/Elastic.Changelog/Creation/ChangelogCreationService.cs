@@ -47,6 +47,11 @@ public record CreateChangelogArguments
 	/// Whether to extract linked issues/PRs from PR/issue body. null = use config default.
 	/// </summary>
 	public bool? ExtractIssues { get; init; }
+
+	/// <summary>
+	/// When true, omit schema reference comments from generated YAML files.
+	/// </summary>
+	public bool Concise { get; init; }
 }
 
 /// <summary>
@@ -56,7 +61,8 @@ public class ChangelogCreationService(
 ILoggerFactory logFactory,
 IConfigurationContext configurationContext,
 IGitHubPrService? githubPrService = null,
-IFileSystem? fileSystem = null
+IFileSystem? fileSystem = null,
+IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
@@ -72,6 +78,8 @@ IFileSystem? fileSystem = null
 	{
 		try
 		{
+			input = EnrichFromCI(input);
+
 			// Load changelog configuration
 			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 			if (config == null)
@@ -82,14 +90,6 @@ IFileSystem? fileSystem = null
 
 			// Apply config defaults to input (for extract_release_notes, extract_issues)
 			input = ApplyConfigDefaults(input, config);
-
-			// If no products provided, try to infer from config defaults or repository
-			if (input.Products.Count == 0)
-			{
-				var inferredProducts = InferProducts(config.ProductsConfiguration);
-				if (inferredProducts != null)
-					input = input with { Products = inferredProducts };
-			}
 
 			// Multiple PRs: one changelog per PR (--use-pr-number uses PR number as each filename)
 			if (input.Prs != null && input.Prs.Length > 1)
@@ -133,9 +133,9 @@ IFileSystem? fileSystem = null
 		};
 
 	/// <summary>
-	/// Infers products from configuration defaults or git repository name.
+	/// Infers products from configuration defaults or repository name.
 	/// </summary>
-	private IReadOnlyList<ProductArgument>? InferProducts(ProductsConfig? productsConfig)
+	private IReadOnlyList<ProductArgument>? InferProducts(ProductsConfig? productsConfig, string? repoName)
 	{
 		// First, try config defaults
 		if (productsConfig?.Default is { Count: > 0 })
@@ -150,8 +150,8 @@ IFileSystem? fileSystem = null
 			return products;
 		}
 
-		// Second, try generic product inference from current git repo
-		var product = _productInferService.InferProductFromCurrentRepository();
+		// Second, try inference from the --repo argument (or bundle.repo from config)
+		var product = repoName != null ? _productInferService.InferProductFromRepository(repoName) : null;
 		if (product == null)
 		{
 			_logger.LogDebug("Could not infer product from repository");
@@ -220,24 +220,31 @@ IFileSystem? fileSystem = null
 		if (!_validator.ValidatePrFormat(collector, prUrl, input.Owner, input.Repo))
 			return false;
 
-		// Process PR information if specified
-		if (!string.IsNullOrWhiteSpace(prUrl))
+		// Fetch PR info to derive missing fields unless title and type are already known
+		var hasRequiredFields = !string.IsNullOrWhiteSpace(input.Title) && !string.IsNullOrWhiteSpace(input.Type);
+		if (!string.IsNullOrWhiteSpace(prUrl) && !hasRequiredFields)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
 
 			if (prResult.ShouldSkip)
-				return true; // Return true but don't create changelog
+				return true;
 
 			prFetchFailed = prResult.FetchFailed;
 
-			// Apply derived fields if available
 			if (prResult.DerivedFields != null)
 				input = ApplyDerivedFields(input, prResult.DerivedFields);
 			else if (!prFetchFailed)
-			{
-				// DerivedFields is null and fetch didn't fail means validation error occurred
 				return false;
-			}
+		}
+		else if (!string.IsNullOrWhiteSpace(prUrl))
+			_logger.LogInformation("Title and type already provided, skipping PR API fetch for {PrUrl}", prUrl);
+
+		// If still no products, fall back to products.default or repo name inference
+		if (input.Products.Count == 0)
+		{
+			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
+			if (inferredProducts != null)
+				input = input with { Products = inferredProducts };
 		}
 
 		// Validate required fields
@@ -318,6 +325,14 @@ IFileSystem? fileSystem = null
 		else if (!issueResult.FetchFailed)
 			return false;
 
+		// If still no products, fall back to products.default or repo name inference
+		if (input.Products.Count == 0)
+		{
+			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
+			if (inferredProducts != null)
+				input = input with { Products = inferredProducts };
+		}
+
 		if (!_validator.ValidateRequiredFields(collector, input, issueResult.FetchFailed, fromIssue: true))
 			return false;
 
@@ -343,8 +358,48 @@ IFileSystem? fileSystem = null
 			Type = derived.Type != null && string.IsNullOrWhiteSpace(input.Type) ? derived.Type : input.Type,
 			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description) ? derived.Description : input.Description,
 			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas,
+			Products = derived.Products is { Count: > 0 } && input.Products.Count == 0 ? derived.Products : input.Products,
 			Highlight = derived.Highlight ?? input.Highlight,
 			Issues = derived.Issues != null && (input.Issues == null || input.Issues.Length == 0) ? derived.Issues : input.Issues,
 			Prs = derived.Prs != null && (input.Prs == null || input.Prs.Length == 0) ? derived.Prs : input.Prs
 		};
+
+	/// <summary>
+	/// In CI, fills missing arguments from well-known CHANGELOG_* environment variables
+	/// set by the evaluate-pr step. CLI arguments always take precedence.
+	/// </summary>
+	internal CreateChangelogArguments EnrichFromCI(CreateChangelogArguments input)
+	{
+		if (env is not { IsRunningOnCI: true })
+			return input;
+
+		var prNumber = env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER");
+		var ciTitle = env.GetEnvironmentVariable("CHANGELOG_TITLE");
+		var ciType = env.GetEnvironmentVariable("CHANGELOG_TYPE");
+		var ciOwner = env.GetEnvironmentVariable("CHANGELOG_OWNER");
+		var ciRepo = env.GetEnvironmentVariable("CHANGELOG_REPO");
+
+		var hasCiData = !string.IsNullOrEmpty(prNumber) || !string.IsNullOrEmpty(ciTitle);
+		if (!hasCiData)
+			return input;
+
+		_logger.LogInformation("CI environment detected, enriching arguments from CHANGELOG_* env vars");
+
+		var enrichedPrs = input.Prs is { Length: > 0 }
+			? input.Prs
+			: !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
+
+		// TODO: filename strategy (use-pr-number) will move to changelog.yml configuration
+		var usePrNumber = input.UsePrNumber || (input.Prs is not { Length: > 0 } && !string.IsNullOrEmpty(prNumber));
+
+		return input with
+		{
+			Prs = enrichedPrs,
+			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
+			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
+			Owner = input.Owner ?? ciOwner,
+			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,
+			UsePrNumber = usePrNumber
+		};
+	}
 }

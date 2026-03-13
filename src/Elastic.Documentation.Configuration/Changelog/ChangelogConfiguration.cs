@@ -90,6 +90,13 @@ public record ChangelogConfiguration
 	public IReadOnlyDictionary<string, string>? LabelToAreas { get; init; }
 
 	/// <summary>
+	/// Mapping from GitHub label names to product spec strings (computed from Pivot.Products).
+	/// Each label maps to a product spec string (e.g., "elasticsearch", "kibana 9.2.0").
+	/// When a PR has labels matching multiple entries, all matching products are collected.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? LabelToProducts { get; init; }
+
+	/// <summary>
 	/// Rules configuration for create and publish blockers
 	/// </summary>
 	public RulesConfiguration? Rules { get; init; }

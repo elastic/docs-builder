@@ -52,6 +52,12 @@ public record CreateChangelogsFromReleaseArguments
 	/// Whether to warn when Release Drafter type doesn't match label-derived type (defaults to true)
 	/// </summary>
 	public bool WarnOnTypeMismatch { get; init; } = true;
+
+	/// <summary>
+	/// Whether to create a bundle file after creating individual changelog files. Defaults to true.
+	/// Set to false when called from 'changelog add --release-version' to skip bundle creation.
+	/// </summary>
+	public bool CreateBundle { get; init; } = true;
 }
 
 /// <summary>
@@ -166,8 +172,8 @@ public class GitHubReleaseChangelogService(
 
 			_logger.LogInformation("Created {Count} changelog files from release {Tag}", successCount, release.TagName);
 
-			// 8. Create bundle file if changelogs were created
-			if (createdFiles.Count > 0)
+			// 8. Optionally create bundle file if changelogs were created
+			if (input.CreateBundle && createdFiles.Count > 0)
 			{
 				var bundlePath = await CreateBundleFile(outputDir, createdFiles, productInfo, ctx);
 				_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
