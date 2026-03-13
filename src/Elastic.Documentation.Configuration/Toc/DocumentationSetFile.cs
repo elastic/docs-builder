@@ -478,23 +478,34 @@ public class DocumentationSetFile : TableOfContentsFile
 			? fullPath
 			: fullPath.Substring(containerPath.Length + 1);
 
+		// Parse and validate sort order
+		if (!SortOrderExtensions.TryParse(folderRef.Sort, out var sortOrder) && folderRef.Sort is not null)
+			collector.EmitError(
+				context,
+				$"Unknown sort order '{folderRef.Sort}' for folder '{folderRef.PathRelativeToDocumentationSet}'."
+				+ " Valid values are: asc, ascending, desc, descending."
+			);
+
 		// If children are explicitly defined, resolve them
 		if (folderRef.Children.Count > 0)
 		{
 			// For children of folders, the container remains the same as the folder's container
 			var resolvedChildren = ResolveTableOfContents(collector, folderRef.Children, baseDirectory, fileSystem, fullPath, containerPath, context, suppressDiagnostics);
-			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context);
+			// Exclude is intentionally not passed through — it only applies to auto-discovery
+			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.Sort);
 		}
 
 		// No children defined - auto-discover .md files in the folder
-		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context);
-		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context);
+		// null preserves the default alphabetical sorting; non-null enables natural sort for version numbers
+		var explicitSortOrder = folderRef.Sort is not null ? sortOrder : (SortOrder?)null;
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, explicitSortOrder, folderRef.Exclude);
+		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort, folderRef.Exclude);
 	}
 
 	/// <summary>
 	/// Auto-discovers .md files in a folder directory and creates FileRef items for them.
-	/// If index.md exists, it's placed first. Otherwise, files are sorted alphabetically.
-	/// Files starting with '_' or '.' are excluded.
+	/// If index.md exists, it's placed first. Other files are sorted according to the specified sort order.
+	/// Files starting with '_' or '.' are excluded, as well as any files listed in <paramref name="exclude"/>.
 	/// </summary>
 	private static TableOfContents AutoDiscoverFolderFiles(
 		IDiagnosticsCollector collector,
@@ -502,7 +513,9 @@ public class DocumentationSetFile : TableOfContentsFile
 		string containerPath,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string context)
+		string context,
+		SortOrder? sortOrder,
+		IReadOnlyCollection<string>? exclude)
 	{
 		var directoryPath = fileSystem.Path.Combine(baseDirectory.FullName, folderPath);
 		var directory = fileSystem.DirectoryInfo.New(directoryPath);
@@ -511,11 +524,14 @@ public class DocumentationSetFile : TableOfContentsFile
 			return [];
 
 		// Find all .md files in the directory (not recursive)
+		var excludeSet = exclude is { Count: > 0 }
+			? new HashSet<string>(exclude, StringComparer.OrdinalIgnoreCase)
+			: null;
 		var mdFiles = fileSystem.Directory
 			.GetFiles(directoryPath, "*.md")
 			.Select(f => fileSystem.FileInfo.New(f))
 			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
-			.OrderBy(f => f.Name)
+			.Where(f => excludeSet is null || !excludeSet.Contains(f.Name))
 			.ToList();
 
 		if (mdFiles.Count == 0)
@@ -523,21 +539,25 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Separate index.md from other files
 		var indexFile = mdFiles.FirstOrDefault(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
-		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)).ToList();
+		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
+
+		// When sort is explicitly set (non-null), use natural sort order (handles version numbers correctly: 3_2 < 3_10)
+		// When null, preserve the original alphabetical sorting behavior
+		var sortedFiles = sortOrder switch
+		{
+			SortOrder.Descending => otherFiles.OrderByDescending(f => f.Name, NaturalStringComparer.Instance).ToList(),
+			SortOrder.Ascending => otherFiles.OrderBy(f => f.Name, NaturalStringComparer.Instance).ToList(),
+			_ => otherFiles.OrderBy(f => f.Name).ToList()
+		};
 
 		var children = new TableOfContents();
 
 		// Add index.md first if it exists
 		if (indexFile != null)
-		{
-			var indexRef = indexFile.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)
-				? new IndexFileRef(indexFile.Name, indexFile.Name, false, [], context)
-				: new FileRef(indexFile.Name, indexFile.Name, false, [], context);
-			children.Add(indexRef);
-		}
+			children.Add(new IndexFileRef(indexFile.Name, indexFile.Name, false, [], context));
 
-		// Add other files sorted alphabetically
-		foreach (var file in otherFiles)
+		// Add other files sorted according to the specified order
+		foreach (var file in sortedFiles)
 		{
 			var fileRef = new FileRef(file.Name, file.Name, false, [], context);
 			children.Add(fileRef);

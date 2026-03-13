@@ -112,7 +112,7 @@ The TOC in principle follows the directory structure on disk.
   - folder: subsection
 ```
 
-If a folder does not explicitly define `children` all markdown files within that folder are included automatically 
+If a folder does not explicitly define `children` all markdown files within that folder are included automatically
 
 If a folder does define `children` all markdown files within that folder have to be included. `docs-builder` will error if it detects dangling documentation files.
 
@@ -124,6 +124,36 @@ If a folder does define `children` all markdown files within that folder have to
       - file: page-one.md
       - file: page-two.md
 ```
+
+##### `sort`
+
+When auto-discovering files (no explicit `children`), you can control the sort order with `sort`:
+
+```yaml
+  ...
+  - folder: api-versions
+    sort: desc
+```
+
+Valid values are `asc`, `ascending`, `desc`, and `descending`. The default is ascending (A-Z). When set to descending, files are listed Z-A, which is useful for version-numbered folders where the newest version should appear first. Sorting uses natural order, so version numbers sort correctly (`3_2_0` comes before `3_10_0`). `index.md` is always placed first regardless of sort order.
+
+The `sort` option has no effect when `children` are explicitly defined, since the order is determined by the `children` list.
+
+##### `exclude`
+
+When using auto-discovery (no explicit `children`), you can exclude specific files from being included:
+
+```yaml
+  ...
+  - folder: subsection
+    exclude:
+      - draft.md
+      - internal-notes.md
+```
+
+Excluded file names are matched case-insensitively. This is useful when a folder contains files that should not appear in the navigation, like drafts or internal documentation.
+
+The `exclude` option has no effect when `children` are explicitly defined, since all files must be listed manually.
 
 #### Virtual grouping
 
