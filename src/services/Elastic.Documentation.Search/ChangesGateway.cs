@@ -34,15 +34,17 @@ public class ChangesGateway(ElasticsearchClientAccessor clientAccessor, ILogger<
 							.Gt(request.Since.ToString("O"))
 						)
 					))
-					.Sort(so => so
-						.Field(f => f.LastUpdated, sf => sf.Order(SortOrder.Asc))
-						.Field(f => f.Url, sf => sf.Order(SortOrder.Asc))
+					.Sort(
+						so => so.Field(f => f.LastUpdated, sf => sf.Order(SortOrder.Asc)),
+						so => so.Field(f => f.Url, sf => sf.Order(SortOrder.Asc))
 					)
 					.Source(sf => sf
 						.Filter(f => f
 							.Includes(
 								e => e.Url,
 								e => e.Title,
+								e => e.SearchTitle,
+								e => e.Type,
 								e => e.LastUpdated
 							)
 						)
@@ -100,8 +102,14 @@ public class ChangesGateway(ElasticsearchClientAccessor clientAccessor, ILogger<
 			{
 				var sortEpoch = lastHit.Sort.ElementAt(0);
 				var sortUrl = lastHit.Sort.ElementAt(1);
-				if (sortEpoch.TryGetLong(out var epochMs) && sortUrl.TryGetString(out var url))
-					nextCursor = new ChangesPageCursor(epochMs!.Value, url!);
+
+				// ES returns date sort values as double (JSON has no int/float distinction)
+				var epochMs = sortEpoch.TryGetLong(out var l) ? l!.Value
+					: sortEpoch.TryGetDouble(out var d) ? (long)d!.Value
+					: default(long?);
+
+				if (epochMs is not null && sortUrl.TryGetString(out var url))
+					nextCursor = new ChangesPageCursor(epochMs.Value, url!);
 			}
 		}
 
