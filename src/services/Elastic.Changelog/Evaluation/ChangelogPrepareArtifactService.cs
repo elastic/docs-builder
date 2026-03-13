@@ -33,19 +33,26 @@ public class ChangelogPrepareArtifactService(
 
 		_ = _fileSystem.Directory.CreateDirectory(input.OutputDir);
 
+		string? changelogFilename = null;
 		if (status == PrEvaluationResult.Success)
 		{
-			var sourceYaml = _fileSystem.Path.Combine(input.StagingDir, $"{input.PrNumber}.yaml");
-			var destYaml = _fileSystem.Path.Combine(input.OutputDir, $"{input.PrNumber}.yaml");
+			var sourceYaml = FindStagingYaml(input.StagingDir);
 
-			if (_fileSystem.File.Exists(sourceYaml))
+			if (sourceYaml != null)
 			{
+				changelogFilename = input.ExistingChangelogFilename
+					?? _fileSystem.Path.GetFileName(sourceYaml);
+
+				if (input.ExistingChangelogFilename != null)
+					_logger.LogInformation("Reusing existing filename {Filename} for stable path on branch", changelogFilename);
+
+				var destYaml = _fileSystem.Path.Combine(input.OutputDir, changelogFilename);
 				_fileSystem.File.Copy(sourceYaml, destYaml, overwrite: true);
 				_logger.LogInformation("Copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
 			}
 			else
 			{
-				collector.EmitError(sourceYaml, "Generated changelog YAML not found in staging directory");
+				collector.EmitError(input.StagingDir, "No generated changelog YAML found in staging directory");
 				status = PrEvaluationResult.Error;
 			}
 		}
@@ -66,6 +73,7 @@ public class ChangelogPrepareArtifactService(
 			LabelTable = input.LabelTable,
 			ConfigFile = resolvedConfigPath,
 			ChangelogDir = changelogDir,
+			ChangelogFilename = changelogFilename,
 			CreateRules = createRules
 		};
 
@@ -77,6 +85,25 @@ public class ChangelogPrepareArtifactService(
 		await coreService.SetOutputAsync("status", statusString);
 
 		return true;
+	}
+
+	/// <summary>
+	/// Finds the changelog YAML in the staging directory regardless of filename strategy.
+	/// Returns null if no YAML file is found.
+	/// </summary>
+	private string? FindStagingYaml(string stagingDir)
+	{
+		if (!_fileSystem.Directory.Exists(stagingDir))
+			return null;
+
+		var yamlFiles = _fileSystem.Directory.GetFiles(stagingDir, "*.yaml");
+		if (yamlFiles.Length == 0)
+			return null;
+
+		if (yamlFiles.Length > 1)
+			_logger.LogWarning("Multiple YAML files found in staging directory, using first: {File}", yamlFiles[0]);
+
+		return yamlFiles[0];
 	}
 
 	internal static PrEvaluationResult ResolveStatus(string evaluateStatus, string generateOutcome)

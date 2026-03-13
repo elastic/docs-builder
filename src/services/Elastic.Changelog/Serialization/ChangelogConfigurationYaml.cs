@@ -11,6 +11,11 @@ namespace Elastic.Changelog.Serialization;
 internal record ChangelogConfigurationYaml
 {
 	/// <summary>
+	/// Filename strategy for generated changelog files (pr, issue, timestamp).
+	/// </summary>
+	public string? Filename { get; set; }
+
+	/// <summary>
 	/// Pivot configuration for types, subtypes, and areas with label mappings.
 	/// </summary>
 	public PivotConfigurationYaml? Pivot { get; set; }
