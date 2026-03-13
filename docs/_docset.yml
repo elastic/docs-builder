@@ -26,6 +26,10 @@ suppress:
 api:
    elasticsearch: elasticsearch-openapi.json
    kibana: kibana-openapi.json
+   cloud-serverless: cloud-serverless-openapi.json
+   cloud: cloud-billing-openapi.json
+   cloud-hosted: cloud-hosted-openapi.json
+   cloud-enterprise: cloud-enterprise-openapi.json
 
 toc:
   - file: index.md
