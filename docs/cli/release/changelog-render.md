@@ -60,7 +60,7 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 :   Defaults to the version in the first bundle.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
 
-You can configure `block` definitions in your `changelog.yml` configuration file to automatically comment out changelog entries  based on their products, areas, and/or types.
+You can configure `block` definitions in your `changelog.yml` configuration file to automatically comment out changelog entries based on their products, areas, and/or types.
 For more information, refer to [](/contribute/changelog.md#example-block-label).
 
 ## Output formats
