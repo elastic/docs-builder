@@ -26,4 +26,10 @@ public record IndexedProduct
 	[Keyword(Normalizer = "keyword_normalizer")]
 	[JsonPropertyName("repository")]
 	public string? Repository { get; init; }
+
+	/// <summary>
+	/// The product version (e.g., "8.15", "7.17") - used for legacy /guide docs version filtering
+	/// </summary>
+	[JsonPropertyName("version")]
+	public string? Version { get; init; }
 }

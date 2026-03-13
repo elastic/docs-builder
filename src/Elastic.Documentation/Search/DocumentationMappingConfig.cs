@@ -42,7 +42,8 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 			);
 
 	internal static MappingsBuilder<DocumentationDocument> ConfigureCommonMappings(MappingsBuilder<DocumentationDocument> m) => m
-		// Text fields with custom analyzers and multi-fields
+		.AddCommonTitleMappings()
+		// Override Title/SearchTitle/Abstract/Headings with synonym analyzers
 		.SearchTitle(f => f
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer")
@@ -63,15 +64,10 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 		.Headings(f => f
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
-		// AI field with custom analyzers not on the attribute
 		.AddField("ai_rag_optimized_summary", f => f.Text()
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
-		// Keyword fields with multi-fields
-		.Url(f => f
-			.MultiField("match", mf => mf.Text())
-			.MultiField("prefix", mf => mf.Text().Analyzer("hierarchy_analyzer")))
-		// Rank features — no attribute available, must use AddField
+		// Rank features
 		.AddField("navigation_depth", f => f.RankFeature().PositiveScoreImpact(false))
 		.AddField("navigation_table_of_contents", f => f.RankFeature().PositiveScoreImpact(false))
 		// Nested applies_to — sub-fields don't match C# structure (custom JsonConverter)
@@ -90,9 +86,6 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 
 public class SemanticConfig : IConfigureElasticsearch<DocumentationDocument>
 {
-	private const string ElserInferenceId = ".elser-2-elastic";
-	private const string JinaInferenceId = ".jina-embeddings-v5-text-small";
-
 	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
@@ -104,62 +97,28 @@ public class SemanticConfig : IConfigureElasticsearch<DocumentationDocument>
 				.SearchAnalyzer("synonyms_analyzer")
 				.TermVector("with_positions_offsets")
 			)
-			// ELSER sparse embeddings
-			.AddField("title.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("abstract.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_questions.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_use_cases.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			// Jina v5 dense embeddings
-			.AddField("title.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("abstract.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_rag_optimized_summary.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_questions.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_use_cases.jina", f => f.SemanticText().InferenceId(JinaInferenceId));
+			.AddSemanticTextFields();
 }
 
 /// <summary>
 /// Builds analysis settings at runtime (includes synonyms that are loaded from configuration).
 /// </summary>
+/// <summary>
+/// Extends <see cref="SharedAnalysisFactory"/> with synonym filters for documentation indices.
+/// </summary>
 public static class DocumentationAnalysisFactory
 {
-	public static AnalysisBuilder BuildAnalysis(AnalysisBuilder analysis, string synonymSetName, string[] indexTimeSynonyms) => analysis
-		.Normalizer("keyword_normalizer", n => n.Custom()
-			.CharFilter("strip_non_word_chars")
-			.Filters("lowercase", "asciifolding", "trim"))
-		.Analyzer("starts_with_analyzer", a => a.Custom()
-			.Tokenizer("starts_with_tokenizer")
-			.Filter("lowercase"))
-		.Analyzer("starts_with_analyzer_search", a => a.Custom()
-			.Tokenizer("keyword")
-			.Filter("lowercase"))
-		.Analyzer("synonyms_fixed_analyzer", a => a.Custom()
-			.Tokenizer("group_tokenizer")
-			.Filters("lowercase", "synonyms_fixed_filter", "kstem"))
-		.Analyzer("synonyms_analyzer", a => a.Custom()
-			.Tokenizer("group_tokenizer")
-			.Filters("lowercase", "synonyms_filter", "kstem"))
-		.Analyzer("highlight_analyzer", a => a.Custom()
-			.Tokenizer("group_tokenizer")
-			.Filters("lowercase", "english_stop"))
-		.Analyzer("hierarchy_analyzer", a => a.Custom()
-			.Tokenizer("path_tokenizer"))
-		.CharFilter("strip_non_word_chars", cf => cf.PatternReplace()
-			.Pattern(@"\W")
-			.Replacement(" "))
-		.TokenFilter("synonyms_fixed_filter", tf => tf.SynonymGraph()
-			.Synonyms(indexTimeSynonyms))
-		.TokenFilter("synonyms_filter", tf => tf.SynonymGraph()
-			.SynonymsSet(synonymSetName)
-			.Updateable(true))
-		.TokenFilter("english_stop", tf => tf.Stop()
-			.Stopwords("_english_"))
-		.Tokenizer("starts_with_tokenizer", t => t.EdgeNGram()
-			.MinGram(1)
-			.MaxGram(10)
-			.TokenChars("letter", "digit", "symbol", "whitespace"))
-		.Tokenizer("group_tokenizer", t => t.CharGroup()
-			.TokenizeOnChars("whitespace", ",", ";", "?", "!", "(", ")", "&", "'", "\"", "/", "[", "]", "{", "}"))
-		.Tokenizer("path_tokenizer", t => t.PathHierarchy()
-			.Delimiter('/'));
+	public static AnalysisBuilder BuildAnalysis(AnalysisBuilder analysis, string synonymSetName, string[] indexTimeSynonyms) =>
+		SharedAnalysisFactory.BuildBaseAnalysis(analysis)
+			.Analyzer("synonyms_fixed_analyzer", a => a.Custom()
+				.Tokenizer("group_tokenizer")
+				.Filters("lowercase", "synonyms_fixed_filter", "kstem"))
+			.Analyzer("synonyms_analyzer", a => a.Custom()
+				.Tokenizer("group_tokenizer")
+				.Filters("lowercase", "synonyms_filter", "kstem"))
+			.TokenFilter("synonyms_fixed_filter", tf => tf.SynonymGraph()
+				.Synonyms(indexTimeSynonyms))
+			.TokenFilter("synonyms_filter", tf => tf.SynonymGraph()
+				.SynonymsSet(synonymSetName)
+				.Updateable(true));
 }

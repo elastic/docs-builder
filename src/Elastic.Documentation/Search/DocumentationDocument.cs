@@ -18,7 +18,7 @@ public record ParentDocument
 	public required string Url { get; set; }
 }
 
-public record DocumentationDocument
+public record DocumentationDocument : IDocument
 {
 	[AiInput]
 	[JsonPropertyName("title")]
@@ -150,4 +150,29 @@ public record DocumentationDocument
 	[JsonPropertyName("ai_use_cases")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string[]? AiUseCases { get; set; }
+
+	/// <summary>
+	/// Hash of the LLM prompt templates used to generate AI fields.
+	/// Used to detect stale enrichments when prompts change.
+	/// </summary>
+	[Keyword]
+	[JsonPropertyName("enrichment_prompt_hash")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? EnrichmentPromptHash { get; set; }
+
+	// HTTP caching fields for incremental sync
+
+	/// <summary>
+	/// ETag header from last crawl - used for conditional HTTP requests.
+	/// </summary>
+	[JsonPropertyName("http_etag")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? HttpEtag { get; set; }
+
+	/// <summary>
+	/// Last-Modified header from last crawl - used for conditional HTTP requests.
+	/// </summary>
+	[JsonPropertyName("http_last_modified")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public DateTimeOffset? HttpLastModified { get; set; }
 }

@@ -41,6 +41,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly string _fixedSynonymsHash;
+	private readonly SearchConfigPublisher _searchConfigPublisher;
 
 	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
@@ -49,8 +50,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private int _primaryIndexed;
 	private int _secondaryIndexed;
 
-	// Shared ES operations with retry and task polling
-	private readonly ElasticsearchOperations _operations;
 
 	public ElasticsearchMarkdownExporter(
 		ILoggerFactory logFactory,
@@ -71,15 +70,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var es = endpoints.Elasticsearch;
 
 		_transport = ElasticsearchTransportFactory.Create(es);
-		_operations = new ElasticsearchOperations(_transport, _logger, collector);
+		_searchConfigPublisher = new SearchConfigPublisher(_transport, _logger, collector);
 
-		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
-		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
-		{
-			var id = synonym.Key;
-			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
-			return acc;
-		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
+		var indexTimeSynonyms = SearchConfigPublisher.GetIndexTimeSynonyms(_synonyms);
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
 		var synonymSetName = $"docs-{_buildType}-{_environment}";
@@ -143,8 +136,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 				await _aiEnrichment.InitializeAsync(ct);
 				_logger.LogInformation("AI enrichment infrastructure ready");
 			}
-			await PublishSynonymsAsync(ct);
-			await PublishQueryRulesAsync(ct);
+			await _searchConfigPublisher.PublishSynonymsAsync(_synonyms, _buildType, _environment, ct);
+			await _searchConfigPublisher.PublishQueryRulesAsync(_rules, _buildType, _environment, ct);
 		});
 	}
 
@@ -230,82 +223,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 				sw.Elapsed.ToString(@"hh\:mm\:ss"), last.Enriched, last.Failed, last.TotalCandidates);
 	}
 
-	private async Task PublishSynonymsAsync(Cancel ctx)
-	{
-		var setName = $"docs-{_buildType}-{_environment}";
-		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
-
-		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
-		{
-			var id = synonym.Key;
-			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
-			return acc;
-		});
-
-		var synonymsSet = new SynonymsSet { Synonyms = synonymRules };
-		await PutSynonyms(synonymsSet, setName, ctx);
-	}
-
-	private async Task PutSynonyms(SynonymsSet synonymsSet, string setName, Cancel ctx)
-	{
-		var json = JsonSerializer.Serialize(synonymsSet, SynonymSerializerContext.Default.SynonymsSet);
-
-		var response = await _operations.WithRetryAsync(
-			() => _transport.PutAsync<StringResponse>($"_synonyms/{setName}", PostData.String(json), ctx),
-			$"PUT _synonyms/{setName}",
-			ctx);
-
-		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			_collector.EmitGlobalError(
-				$"Failed to publish synonym set '{setName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
-		else
-			_logger.LogInformation("Successfully published synonym set '{SetName}'.", setName);
-	}
-
-	private async Task PublishQueryRulesAsync(Cancel ctx)
-	{
-		if (_rules.Count == 0)
-		{
-			_logger.LogInformation("No query rules to publish");
-			return;
-		}
-
-		var rulesetName = $"docs-ruleset-{_buildType}-{_environment}";
-		_logger.LogInformation("Publishing query ruleset '{RulesetName}' with {Count} rules to Elasticsearch", rulesetName, _rules.Count);
-
-		var rulesetRules = _rules.Select(r => new QueryRulesetRule
-		{
-			RuleId = r.RuleId,
-			Type = r.Type.ToString().ToLowerInvariant(),
-			Criteria = r.Criteria.Select(c => new QueryRulesetCriteria
-			{
-				Type = c.Type.ToString().ToLowerInvariant(),
-				Metadata = c.Metadata,
-				Values = c.Values.ToList()
-			}).ToList(),
-			Actions = new QueryRulesetActions { Ids = r.Actions.Ids.ToList() }
-		}).ToList();
-
-		var ruleset = new QueryRuleset { Rules = rulesetRules };
-		await PutQueryRuleset(ruleset, rulesetName, ctx);
-	}
-
-	private async Task PutQueryRuleset(QueryRuleset ruleset, string rulesetName, Cancel ctx)
-	{
-		var json = JsonSerializer.Serialize(ruleset, QueryRulesetSerializerContext.Default.QueryRuleset);
-
-		var response = await _operations.WithRetryAsync(
-			() => _transport.PutAsync<StringResponse>($"_query_rules/{rulesetName}", PostData.String(json), ctx),
-			$"PUT _query_rules/{rulesetName}",
-			ctx);
-
-		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			_collector.EmitGlobalError(
-				$"Failed to publish query ruleset '{rulesetName}'. Reason: {response.ApiCallDetails.OriginalException?.Message ?? response.ToString()}");
-		else
-			_logger.LogInformation("Successfully published query ruleset '{RulesetName}'.", rulesetName);
-	}
-
 	internal async ValueTask<bool> WriteDocumentAsync(DocumentationDocument doc, Cancel ctx)
 	{
 		if (_orchestrator.TryWrite(doc))
@@ -322,66 +239,3 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		GC.SuppressFinalize(this);
 	}
 }
-
-internal sealed record SynonymsSet
-{
-	[JsonPropertyName("synonyms_set")]
-	public required List<SynonymRule> Synonyms { get; init; } = [];
-}
-
-internal sealed record SynonymRule
-{
-	public required string Id { get; init; }
-	public required string Synonyms { get; init; }
-}
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
-[JsonSerializable(typeof(SynonymsSet))]
-[JsonSerializable(typeof(SynonymRule))]
-internal sealed partial class SynonymSerializerContext : JsonSerializerContext;
-
-internal sealed record QueryRuleset
-{
-	[JsonPropertyName("rules")]
-	public required List<QueryRulesetRule> Rules { get; init; } = [];
-}
-
-internal sealed record QueryRulesetRule
-{
-	[JsonPropertyName("rule_id")]
-	public required string RuleId { get; init; }
-
-	[JsonPropertyName("type")]
-	public required string Type { get; init; }
-
-	[JsonPropertyName("criteria")]
-	public required List<QueryRulesetCriteria> Criteria { get; init; } = [];
-
-	[JsonPropertyName("actions")]
-	public required QueryRulesetActions Actions { get; init; }
-}
-
-internal sealed record QueryRulesetCriteria
-{
-	[JsonPropertyName("type")]
-	public required string Type { get; init; }
-
-	[JsonPropertyName("metadata")]
-	public required string Metadata { get; init; }
-
-	[JsonPropertyName("values")]
-	public required List<string> Values { get; init; } = [];
-}
-
-internal sealed record QueryRulesetActions
-{
-	[JsonPropertyName("ids")]
-	public required List<string> Ids { get; init; } = [];
-}
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
-[JsonSerializable(typeof(QueryRuleset))]
-[JsonSerializable(typeof(QueryRulesetRule))]
-[JsonSerializable(typeof(QueryRulesetCriteria))]
-[JsonSerializable(typeof(QueryRulesetActions))]
-internal sealed partial class QueryRulesetSerializerContext : JsonSerializerContext;
