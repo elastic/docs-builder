@@ -20,26 +20,35 @@ public class SiteHtmlExtractor(ILogger<SiteHtmlExtractor> logger) : ISiteHtmlExt
 	private readonly HtmlParser _parser = new();
 
 	public Task<SiteDocument?> ExtractAsync(CrawlResult result, CancellationToken ct) =>
-		ExtractAsync(
+		ExtractCoreAsync(
 			result.Url,
 			result.Content!,
 			result.LastModified,
 			GetLanguageFromUrl(result.Url),
 			GetPageType(result.Url),
-			ct,
 			result.HttpEtag,
-			result.HttpLastModified
+			result.HttpLastModified,
+			ct
 		);
 
-	public async Task<SiteDocument?> ExtractAsync(
+	public Task<SiteDocument?> ExtractAsync(
 		string url,
 		string html,
 		DateTimeOffset? sitemapLastModified,
 		string language,
 		string pageType,
-		Cancel ctx = default,
-		string? httpEtag = null,
-		DateTimeOffset? httpLastModified = null
+		Cancel ctx = default
+	) => ExtractCoreAsync(url, html, sitemapLastModified, language, pageType, null, null, ctx);
+
+	private async Task<SiteDocument?> ExtractCoreAsync(
+		string url,
+		string html,
+		DateTimeOffset? sitemapLastModified,
+		string language,
+		string pageType,
+		string? httpEtag,
+		DateTimeOffset? httpLastModified,
+		Cancel ctx = default
 	)
 	{
 		IHtmlDocument document;
@@ -179,13 +188,20 @@ public class SiteHtmlExtractor(ILogger<SiteHtmlExtractor> logger) : ISiteHtmlExt
 		var uri = new Uri(url);
 		var path = uri.AbsolutePath;
 
-		if (path.StartsWith("/de/", StringComparison.OrdinalIgnoreCase)) return "de";
-		if (path.StartsWith("/fr/", StringComparison.OrdinalIgnoreCase)) return "fr";
-		if (path.StartsWith("/jp/", StringComparison.OrdinalIgnoreCase)) return "ja";
-		if (path.StartsWith("/kr/", StringComparison.OrdinalIgnoreCase)) return "ko";
-		if (path.StartsWith("/cn/", StringComparison.OrdinalIgnoreCase)) return "zh";
-		if (path.StartsWith("/es/", StringComparison.OrdinalIgnoreCase)) return "es";
-		if (path.StartsWith("/pt/", StringComparison.OrdinalIgnoreCase)) return "pt";
+		if (path.StartsWith("/de/", StringComparison.OrdinalIgnoreCase))
+			return "de";
+		if (path.StartsWith("/fr/", StringComparison.OrdinalIgnoreCase))
+			return "fr";
+		if (path.StartsWith("/jp/", StringComparison.OrdinalIgnoreCase))
+			return "ja";
+		if (path.StartsWith("/kr/", StringComparison.OrdinalIgnoreCase))
+			return "ko";
+		if (path.StartsWith("/cn/", StringComparison.OrdinalIgnoreCase))
+			return "zh";
+		if (path.StartsWith("/es/", StringComparison.OrdinalIgnoreCase))
+			return "es";
+		if (path.StartsWith("/pt/", StringComparison.OrdinalIgnoreCase))
+			return "pt";
 
 		return "en";
 	}
@@ -196,25 +212,42 @@ public class SiteHtmlExtractor(ILogger<SiteHtmlExtractor> logger) : ISiteHtmlExt
 		var path = uri.AbsolutePath;
 
 		// Labs content - technical articles and tutorials
-		if (path.Contains("/search-labs/", StringComparison.OrdinalIgnoreCase)) return "search-labs";
-		if (path.Contains("/security-labs/", StringComparison.OrdinalIgnoreCase)) return "security-labs";
-		if (path.Contains("/observability-labs/", StringComparison.OrdinalIgnoreCase)) return "observability-labs";
+		if (path.Contains("/search-labs/", StringComparison.OrdinalIgnoreCase))
+			return "search-labs";
+		if (path.Contains("/security-labs/", StringComparison.OrdinalIgnoreCase))
+			return "security-labs";
+		if (path.Contains("/observability-labs/", StringComparison.OrdinalIgnoreCase))
+			return "observability-labs";
 
 		// General content types
-		if (path.Contains("/blog/", StringComparison.OrdinalIgnoreCase)) return "blog";
-		if (path.Contains("/what-is/", StringComparison.OrdinalIgnoreCase)) return "concept";
-		if (path.Contains("/webinars/", StringComparison.OrdinalIgnoreCase)) return "webinar";
-		if (path.Contains("/virtual-events/", StringComparison.OrdinalIgnoreCase)) return "event";
-		if (path.Contains("/elasticon/", StringComparison.OrdinalIgnoreCase)) return "event";
-		if (path.Contains("/events/", StringComparison.OrdinalIgnoreCase)) return "event";
-		if (path.Contains("/training/", StringComparison.OrdinalIgnoreCase)) return "training";
-		if (path.Contains("/resources/", StringComparison.OrdinalIgnoreCase)) return "resource";
-		if (path.Contains("/customers/", StringComparison.OrdinalIgnoreCase)) return "customer-story";
-		if (path.Contains("/downloads/", StringComparison.OrdinalIgnoreCase)) return "download";
-		if (path.Contains("/demo-gallery/", StringComparison.OrdinalIgnoreCase)) return "demo";
-		if (path.Contains("/industries/", StringComparison.OrdinalIgnoreCase)) return "industry";
-		if (path.Contains("/partners/", StringComparison.OrdinalIgnoreCase)) return "partner";
-		if (path.Contains("/about/", StringComparison.OrdinalIgnoreCase)) return "about";
+		if (path.Contains("/blog/", StringComparison.OrdinalIgnoreCase))
+			return "blog";
+		if (path.Contains("/what-is/", StringComparison.OrdinalIgnoreCase))
+			return "concept";
+		if (path.Contains("/webinars/", StringComparison.OrdinalIgnoreCase))
+			return "webinar";
+		if (path.Contains("/virtual-events/", StringComparison.OrdinalIgnoreCase))
+			return "event";
+		if (path.Contains("/elasticon/", StringComparison.OrdinalIgnoreCase))
+			return "event";
+		if (path.Contains("/events/", StringComparison.OrdinalIgnoreCase))
+			return "event";
+		if (path.Contains("/training/", StringComparison.OrdinalIgnoreCase))
+			return "training";
+		if (path.Contains("/resources/", StringComparison.OrdinalIgnoreCase))
+			return "resource";
+		if (path.Contains("/customers/", StringComparison.OrdinalIgnoreCase))
+			return "customer-story";
+		if (path.Contains("/downloads/", StringComparison.OrdinalIgnoreCase))
+			return "download";
+		if (path.Contains("/demo-gallery/", StringComparison.OrdinalIgnoreCase))
+			return "demo";
+		if (path.Contains("/industries/", StringComparison.OrdinalIgnoreCase))
+			return "industry";
+		if (path.Contains("/partners/", StringComparison.OrdinalIgnoreCase))
+			return "partner";
+		if (path.Contains("/about/", StringComparison.OrdinalIgnoreCase))
+			return "about";
 
 		// Product pages
 		if (path.Contains("/elasticsearch", StringComparison.OrdinalIgnoreCase) ||

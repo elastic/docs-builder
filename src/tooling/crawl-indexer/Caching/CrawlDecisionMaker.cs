@@ -71,9 +71,15 @@ public class CrawlDecisionMaker(ILogger<CrawlDecisionMaker> logger)
 		{
 			switch (d.Reason)
 			{
-				case CrawlReason.New: newUrls++; break;
-				case CrawlReason.Unchanged: unchanged++; break;
-				case CrawlReason.PossiblyChanged: possiblyChanged++; break;
+				case CrawlReason.New:
+					newUrls++;
+					break;
+				case CrawlReason.Unchanged:
+					unchanged++;
+					break;
+				case CrawlReason.PossiblyChanged:
+					possiblyChanged++;
+					break;
 			}
 		}
 		return new(newUrls, unchanged, possiblyChanged);

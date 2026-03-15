@@ -10,6 +10,7 @@ using CrawlIndexer.Html;
 using CrawlIndexer.Indexing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Search;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
@@ -304,7 +305,8 @@ public class GuideCommand(
 				session.OnUrlCrawled = (url, bytes) => progressCtx.ReportUrlCrawled(url, bytes);
 				session.OnUrlSkipped = (url, reason) =>
 				{
-					if (reason == "Not modified (304)") skippedNotModified++;
+					if (reason == "Not modified (304)")
+						skippedNotModified++;
 					progressCtx.ReportUrlSkipped(url, reason);
 				};
 				session.OnUrlFailed = (url, error) =>
@@ -333,7 +335,7 @@ public class GuideCommand(
 					progressCtx.ReportIndexingError(url, error);
 				};
 				await session.RunAsync(urlsToCrawl, effectiveToken);
-			}););
+			});
 
 			// Finalization with its own progress display
 			await IndexingDisplay.RunFinalizationWithProgressAsync(exporter, ctx);
