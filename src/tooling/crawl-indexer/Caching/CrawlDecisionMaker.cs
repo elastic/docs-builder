@@ -4,7 +4,6 @@
 
 using CrawlIndexer.Crawling;
 using Microsoft.Extensions.Logging;
-using System.Linq;
 
 namespace CrawlIndexer.Caching;
 
