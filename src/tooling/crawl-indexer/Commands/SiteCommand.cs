@@ -10,6 +10,7 @@ using CrawlIndexer.Html;
 using CrawlIndexer.Indexing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Search;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
@@ -61,7 +62,7 @@ public class SiteCommand(
 		"/downloads/past-releases/"   // Low search value, ~15k URLs
 	];
 
-	private record PathEntry(string Pattern, string Emoji, Color Color);
+	private sealed record PathEntry(string Pattern, string Emoji, Color Color);
 
 	// Path patterns with display metadata; order matters — more specific before general
 	private static readonly IReadOnlyList<PathEntry> PathEntries =
@@ -342,7 +343,8 @@ public class SiteCommand(
 				session.OnUrlCrawled = (url, bytes) => progressCtx.ReportUrlCrawled(url, bytes);
 				session.OnUrlSkipped = (url, reason) =>
 				{
-					if (reason == "Not modified (304)") skippedNotModified++;
+					if (reason == "Not modified (304)")
+						skippedNotModified++;
 					progressCtx.ReportUrlSkipped(url, reason);
 				};
 				session.OnUrlFailed = (url, error) =>
@@ -372,7 +374,7 @@ public class SiteCommand(
 					progressCtx.ReportIndexingError(url, error);
 				};
 				await session.RunAsync(urlsToCrawl, effectiveToken);
-			}););
+			});
 
 			// Finalization (reindex to semantic, cleanup) with its own progress display
 			await IndexingDisplay.RunFinalizationWithProgressAsync(exporter, ctx);
@@ -787,7 +789,7 @@ public class SiteCommand(
 	}
 
 
-	private record CrawlPlan(
+	private sealed record CrawlPlan(
 		IReadOnlyList<CrawlDecision> UrlsToCrawl,
 		IReadOnlyList<string> StaleUrls,
 		CrawlDecisionStats Stats

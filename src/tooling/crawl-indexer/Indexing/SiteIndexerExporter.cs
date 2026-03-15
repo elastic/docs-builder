@@ -212,11 +212,11 @@ public class SiteIndexerExporter : IIndexerExporter, IDocumentExporter<SiteDocum
 		_logger.LogInformation("Site orchestrator started with {Strategy} strategy", _orchestrator.Strategy);
 	}
 
-	public async Task ExportAsync(SiteDocument document, Cancel ctx = default)
+	public async Task ExportAsync(SiteDocument document, Cancel ct = default)
 	{
 		if (_orchestrator.TryWrite(document))
 			return;
-		_ = await _orchestrator.WaitToWriteAsync(document, ctx);
+		_ = await _orchestrator.WaitToWriteAsync(document, ct);
 	}
 
 	public async ValueTask FinalizeAsync(Cancel ctx = default)
@@ -230,5 +230,6 @@ public class SiteIndexerExporter : IIndexerExporter, IDocumentExporter<SiteDocum
 	{
 		_orchestrator.Dispose();
 		_aiEnrichment?.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

@@ -186,11 +186,11 @@ public class GuideIndexerExporter : IIndexerExporter, IDocumentExporter<Document
 			yield return p;
 	}
 
-	public async Task ExportAsync(DocumentationDocument document, Cancel ctx = default)
+	public async Task ExportAsync(DocumentationDocument document, Cancel ct = default)
 	{
 		if (_orchestrator.TryWrite(document))
 			return;
-		_ = await _orchestrator.WaitToWriteAsync(document, ctx);
+		_ = await _orchestrator.WaitToWriteAsync(document, ct);
 	}
 
 	public async ValueTask FinalizeAsync(Cancel ctx = default)
@@ -204,5 +204,6 @@ public class GuideIndexerExporter : IIndexerExporter, IDocumentExporter<Document
 	{
 		_orchestrator.Dispose();
 		_aiEnrichment?.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }
