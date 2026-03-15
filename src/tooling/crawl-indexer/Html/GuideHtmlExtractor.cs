@@ -20,15 +20,18 @@ public class GuideHtmlExtractor(ILogger<GuideHtmlExtractor> logger) : IGuideHtml
 	private readonly HtmlParser _parser = new();
 
 	public Task<DocumentationDocument?> ExtractAsync(CrawlResult result, CancellationToken ct) =>
-		ExtractAsync(result.Url, result.Content!, result.LastModified, ct, result.HttpEtag, result.HttpLastModified);
+		ExtractCoreAsync(result.Url, result.Content!, result.LastModified, result.HttpEtag, result.HttpLastModified, ct);
 
-	public async Task<DocumentationDocument?> ExtractAsync(
+	public Task<DocumentationDocument?> ExtractAsync(string url, string html, DateTimeOffset? sitemapLastModified, Cancel ctx = default) =>
+		ExtractCoreAsync(url, html, sitemapLastModified, null, null, ctx);
+
+	private async Task<DocumentationDocument?> ExtractCoreAsync(
 		string url,
 		string html,
 		DateTimeOffset? sitemapLastModified,
-		Cancel ctx = default,
-		string? httpEtag = null,
-		DateTimeOffset? httpLastModified = null
+		string? httpEtag,
+		DateTimeOffset? httpLastModified,
+		Cancel ctx = default
 	)
 	{
 		IHtmlDocument document;
