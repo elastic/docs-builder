@@ -43,7 +43,6 @@ public class GuideCommand(
 	/// <param name="maxPages">Limit pages to crawl (0 = unlimited)</param>
 	/// <param name="dryRun">Discover URLs without crawling</param>
 	/// <param name="noAi">Disable AI enrichment</param>
-	/// <param name="noSemantic">Skip semantic index</param>
 	/// <param name="failFast">Stop immediately when an indexing error occurs</param>
 	/// <param name="rps">Rate limit in requests per second (0 or omit for unlimited)</param>
 	/// <param name="ctx">Cancellation token</param>
@@ -55,14 +54,11 @@ public class GuideCommand(
 		int maxPages = 0,
 		bool dryRun = false,
 		bool noAi = false,
-		bool noSemantic = false,
 		bool failFast = false,
 		int? rps = null,
 		Cancel ctx = default
 	)
 	{
-		_ = noSemantic; // TODO: Pass to orchestrator when single-channel mode is supported
-
 		// Validate and configure RPS
 		try
 		{
@@ -132,19 +128,19 @@ public class GuideCommand(
 					task.Description = "[green]✓[/] Sitemap discovery complete";
 				});
 
-			AnsiConsole.MarkupLine("[dim]Filtering guide URLs...[/]");
-			var guideUrls = allUrls
-				.Where(u => u.Location.StartsWith(GuideBaseUrl, StringComparison.OrdinalIgnoreCase))
-				.ToList();
-
-			SpectreConsoleTheme.WriteSuccess($"Found [yellow]{guideUrls.Count:N0}[/] guide URLs in sitemap");
-
 			if (allUrls.Count == 0)
 			{
 				diagnostics.EmitError("sitemap", "Sitemap returned 0 URLs - nothing to crawl");
 				SpectreConsoleTheme.WriteError("Sitemap returned 0 URLs - nothing to crawl");
 				return;
 			}
+
+			AnsiConsole.MarkupLine("[dim]Filtering guide URLs...[/]");
+			var guideUrls = allUrls
+				.Where(u => u.Location.StartsWith(GuideBaseUrl, StringComparison.OrdinalIgnoreCase))
+				.ToList();
+
+			SpectreConsoleTheme.WriteSuccess($"Found [yellow]{guideUrls.Count:N0}[/] guide URLs in sitemap");
 
 			if (guideUrls.Count == 0)
 			{
@@ -277,9 +273,9 @@ public class GuideCommand(
 				transport,
 				buildType,
 				environment,
-			configurationContext.SearchConfiguration,
-			enableAiEnrichment: !noAi
-		);
+				configurationContext.SearchConfiguration,
+				enableAiEnrichment: !noAi
+			);
 
 			// Bootstrap indices
 			await AnsiConsole.Status()
@@ -302,98 +298,57 @@ public class GuideCommand(
 			var errorCount = 0;
 			var startTime = DateTime.UtcNow;
 
+			var session = new CrawlSession<DocumentationDocument>(crawler, htmlExtractor, exporter, diagnostics);
 			await progress.RunWithLiveAsync("Crawling guide documentation", async (progressCtx, _) =>
 			{
-				await foreach (var result in crawler.CrawlAsync(urlsToCrawl, effectiveToken))
+				session.OnUrlCrawled = (url, bytes) => progressCtx.ReportUrlCrawled(url, bytes);
+				session.OnUrlSkipped = (url, reason) =>
 				{
-					// Check for fail-fast cancellation
-					if (effectiveToken.IsCancellationRequested)
-						break;
+					if (reason == "Not modified (304)") skippedNotModified++;
+					progressCtx.ReportUrlSkipped(url, reason);
+				};
+				session.OnUrlFailed = (url, error) =>
+				{
+					errorCount++;
+					progressCtx.ReportUrlFailed(url, error);
+				};
+				session.OnFatalError = (url, error) =>
+				{
+					progressCtx.ReportUrlFailed(url, error);
+					SpectreConsoleTheme.WriteError($"Fatal error: {error} - stopping crawl");
+				};
+				session.OnUrlIndexed = () =>
+				{
+					processedCount++;
+					progressCtx.ReportUrlIndexed();
+				};
+				session.OnUrlUnavailable = url =>
+				{
+					progressCtx.ReportUrlUnavailable(url);
+					diagnostics.EmitWarning(url, "Page not found");
+				};
+				session.OnIndexingError = (url, error) =>
+				{
+					errorCount++;
+					progressCtx.ReportIndexingError(url, error);
+				};
+				await session.RunAsync(urlsToCrawl, effectiveToken);
+			}););
 
-					// Handle HTTP 304 Not Modified
-					if (result.NotModified)
-					{
-						skippedNotModified++;
-						progressCtx.ReportUrlSkipped(result.Url, "Not modified (304)");
-						continue;
-					}
-
-					if (!result.Success)
-					{
-						// Fatal errors (e.g., HTTP 406) stop crawling immediately
-						if (result.FatalError)
-						{
-							progressCtx.ReportUrlFailed(result.Url, result.Error ?? "Fatal error");
-							diagnostics.EmitError(result.Url, $"Fatal error: {result.Error}");
-							SpectreConsoleTheme.WriteError($"Fatal error: {result.Error} - stopping crawl");
-							break;
-						}
-
-						if (result.StatusCode == 404)
-						{
-							// 404 is unavailable, not a failure
-							progressCtx.ReportUrlUnavailable(result.Url);
-							diagnostics.EmitWarning(result.Url, $"Page not found: {result.Error}");
-							continue;
-						}
-
-						// Non-404 failures are errors
-						errorCount++;
-						progressCtx.ReportUrlFailed(result.Url, result.Error ?? "Unknown error");
-						diagnostics.EmitError(result.Url, $"Failed to crawl: {result.Error}");
-						continue;
-					}
-
-					progressCtx.ReportUrlCrawled(result.Url, result.Content?.Length ?? 0);
-
-					try
-					{
-						var document = await htmlExtractor.ExtractAsync(
-							result.Url,
-							result.Content!,
-							result.LastModified,
-							effectiveToken
-						);
-
-						if (document is null)
-						{
-							progressCtx.ReportUrlSkipped(result.Url, "Failed to extract");
-							diagnostics.EmitWarning(result.Url, "Failed to extract document from HTML");
-							continue;
-						}
-
-						// Set HTTP caching headers for future conditional requests
-						document.HttpEtag = result.HttpEtag;
-						document.HttpLastModified = result.HttpLastModified;
-
-						await exporter.ExportAsync(document, effectiveToken);
-						processedCount++;
-						progressCtx.ReportUrlIndexed();
-					}
-					catch (OperationCanceledException) when (effectiveToken.IsCancellationRequested)
-					{
-						break;
-					}
-					catch (Exception ex)
-					{
-						errorCount++;
-						progressCtx.ReportIndexingError(result.Url, ex.Message);
-						diagnostics.EmitError(result.Url, $"Failed to index: {ex.Message}", ex);
-					}
-				}
-
-				// Finalize inside progress context so it completes before showing "complete"
-				await exporter.FinalizeAsync(ctx);
-			});
+			// Finalization with its own progress display
+			await IndexingDisplay.RunFinalizationWithProgressAsync(exporter, ctx);
 
 			if (skippedNotModified > 0)
 				SpectreConsoleTheme.WriteInfo($"Skipped [grey]{skippedNotModified:N0}[/] unchanged pages (HTTP 304)");
+
+			// AI enrichment phase (separate from crawling for visible progress)
+			var aiResult = await IndexingDisplay.RunAiEnrichmentWithProgressAsync(exporter, ctx);
 
 			var crawlTime = DateTime.UtcNow - startTime;
 
 			// Display final summary
 			var stats = progress.GetStats();
-			IndexingDisplay.DisplayFinalSummary(stats, decisionStats);
+			IndexingDisplay.DisplayFinalSummary(stats, aiResult);
 
 			logger.LogInformation(
 				"Crawling complete. Processed: {Processed}, Errors: {Errors}, Duration: {Duration}",

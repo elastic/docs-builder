@@ -89,10 +89,6 @@ public record SiteDocument : IDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public DateTimeOffset? ModifiedDate { get; set; }
 
-	[Keyword]
-	[JsonPropertyName("relevance")]
-	public string Relevance { get; set; } = "medium";
-
 	[Text]
 	[JsonPropertyName("og_title")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

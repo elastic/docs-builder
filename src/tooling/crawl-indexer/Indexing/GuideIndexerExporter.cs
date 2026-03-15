@@ -21,7 +21,7 @@ namespace CrawlIndexer.Indexing;
 /// Exports guide documents to Elasticsearch using IncrementalSyncOrchestrator for dual-index mode.
 /// Reuses DocumentationMappingContext since guides use the same DocumentationDocument type.
 /// </summary>
-public class GuideIndexerExporter : IDisposable
+public class GuideIndexerExporter : IIndexerExporter, IDocumentExporter<DocumentationDocument>
 {
 	private readonly ILogger _logger;
 	private readonly IDiagnosticsCollector _diagnostics;
@@ -30,6 +30,11 @@ public class GuideIndexerExporter : IDisposable
 	private string? _secondaryWriteAlias;
 
 	public bool AiEnrichmentEnabled => _aiEnrichment is not null;
+
+	public IngestSyncStrategy Strategy => _orchestrator.Strategy;
+
+	/// <summary>Fired during finalization for reindex/delete/cleanup progress updates.</summary>
+	public Action<SyncProgressInfo>? OnSyncProgress { get; set; }
 
 	public GuideIndexerExporter(
 		ILoggerFactory loggerFactory,
@@ -83,9 +88,21 @@ public class GuideIndexerExporter : IDisposable
 		{
 			ConfigurePrimary = o => ConfigureChannelOptions(o, endpoint, errorTracker),
 			ConfigureSecondary = o => ConfigureChannelOptions(o, endpoint, errorTracker),
-			OnPostComplete = _aiEnrichment is not null
-				? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct)
-				: null
+			OnReindexProgress = (label, p) =>
+			{
+				_logger.LogInformation(
+					"[{Label}] total={Total} created={Created} updated={Updated} deleted={Deleted} noops={Noops} completed={IsCompleted}",
+					label, p.Total, p.Created, p.Updated, p.Deleted, p.Noops, p.IsCompleted);
+				OnSyncProgress?.Invoke(new SyncProgressInfo(
+					label, p.Total, p.Created + p.Updated + p.Deleted + p.Noops, p.IsCompleted));
+			},
+			OnDeleteByQueryProgress = (label, p) =>
+			{
+				_logger.LogInformation(
+					"[{Label}] total={Total} deleted={Deleted} completed={IsCompleted}",
+					label, p.Total, p.Deleted, p.IsCompleted);
+				OnSyncProgress?.Invoke(new SyncProgressInfo(label, p.Total, p.Deleted, p.IsCompleted));
+			}
 		};
 
 		var publisher = new SearchConfigPublisher(transport, _logger, diagnostics);
@@ -108,33 +125,6 @@ public class GuideIndexerExporter : IDisposable
 			.CreateContext(type: buildType, env: environment)
 			.ResolveReadTarget();
 
-	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
-	{
-		if (_aiEnrichment is null)
-			return;
-
-		_logger.LogInformation("Starting post-indexing AI enrichment for {Alias}...", context.SecondaryWriteAlias);
-		var sw = System.Diagnostics.Stopwatch.StartNew();
-
-		AiEnrichmentProgress? last = null;
-		var options = new AiEnrichmentOptions
-		{
-			CompletionTimeout = TimeSpan.FromMinutes(2),
-			CompletionMaxRetries = 2,
-		};
-		await foreach (var p in _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, options, ctx))
-		{
-			_logger.LogInformation(
-				"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",
-				p.Phase, p.Enriched, p.Failed, p.TotalCandidates, p.Message is not null ? $" — {p.Message}" : "");
-			last = p;
-		}
-
-		if (last is not null)
-			_logger.LogInformation(
-				"AI enrichment complete in {Elapsed}: {Enriched} enriched, {Failed} failed, {Candidates} candidates",
-				sw.Elapsed.ToString(@"hh\:mm\:ss"), last.Enriched, last.Failed, last.TotalCandidates);
-	}
 
 	private void ConfigureChannelOptions(
 		IngestChannelOptions<DocumentationDocument> options,
@@ -214,6 +204,5 @@ public class GuideIndexerExporter : IDisposable
 	{
 		_orchestrator.Dispose();
 		_aiEnrichment?.Dispose();
-		GC.SuppressFinalize(this);
 	}
 }

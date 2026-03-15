@@ -74,7 +74,7 @@ public class SiteAiCommand(
 					await exporter.StartAsync(effectiveToken);
 				});
 
-			var aiResult = await RunAiEnrichmentWithProgressAsync(exporter, maxRunDocs, effectiveToken);
+			var aiResult = await IndexingDisplay.RunAiEnrichmentWithProgressAsync(exporter, effectiveToken, maxRunDocs);
 
 			DisplayAiSummary(aiResult, maxRunTime, maxRunDocs);
 		}
@@ -89,95 +89,11 @@ public class SiteAiCommand(
 		}
 	}
 
-	private static async Task<AiEnrichmentResult> RunAiEnrichmentWithProgressAsync(
-		SiteIndexerExporter exporter,
-		int maxRunDocs,
-		CancellationToken ct
-	)
+	private static void DisplayAiSummary(AiEnrichmentResult? result, int maxRunTime, int maxRunDocs)
 	{
-		SpectreConsoleTheme.WriteSection("AI Enrichment");
+		if (result is null)
+			return;
 
-		var sw = System.Diagnostics.Stopwatch.StartNew();
-		Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentProgress? last = null;
-		var enrichedCount = 0;
-
-		await AnsiConsole.Progress()
-			.AutoRefresh(true)
-			.AutoClear(false)
-			.HideCompleted(false)
-			.Columns(
-				new SpinnerColumn(),
-				new TaskDescriptionColumn { Alignment = Justify.Left },
-				new ProgressBarColumn(),
-				new PercentageColumn()
-			)
-			.StartAsync(async progressCtx =>
-			{
-				var task = progressCtx.AddTask("[purple]🧠 Discovering candidates...[/]", maxValue: 100);
-				task.IsIndeterminate = true;
-
-				await foreach (var p in exporter.RunAiEnrichmentAsync(maxRunDocs, ct))
-				{
-					last = p;
-
-					switch (p.Phase)
-					{
-						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.Querying when p.TotalCandidates > 0:
-							var effectiveMax = maxRunDocs > 0
-								? Math.Min(p.TotalCandidates, maxRunDocs)
-								: p.TotalCandidates;
-							task.IsIndeterminate = false;
-							task.MaxValue = effectiveMax;
-							task.Value = 0;
-							task.Description = $"[purple]🧠 Found {p.TotalCandidates:N0} candidates[/]"
-								+ (maxRunDocs > 0 ? $" [dim](limit: {maxRunDocs:N0})[/]" : "");
-							break;
-						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.Enriching:
-							enrichedCount = p.Enriched;
-							task.Value = p.Enriched + p.Failed;
-							var failSuffix = p.Failed > 0 ? $" [red]({p.Failed} failed)[/]" : "";
-							task.Description = $"[purple]🧠 Enriching[/] [dim]{p.Enriched:N0}/{p.TotalCandidates:N0}[/]{failSuffix}";
-							break;
-						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.Refreshing:
-							task.Value = task.MaxValue;
-							task.Description = "[purple]🧠 Refreshing lookup index...[/]";
-							break;
-						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.ExecutingPolicy:
-							task.Description = "[purple]🧠 Executing enrich policy...[/]";
-							break;
-						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.Backfilling:
-							task.Description = $"[purple]🧠 Backfilling {p.Enriched:N0} docs...[/]";
-							break;
-						case Elastic.Ingest.Elasticsearch.Enrichment.AiEnrichmentPhase.Complete:
-							task.Value = task.MaxValue;
-							var completeFail = p.Failed > 0 ? $" [red]({p.Failed} failed)[/]" : "";
-							task.Description = p.TotalCandidates > 0
-								? $"[green]✓ AI enrichment complete[/] [dim]({p.Enriched:N0} enriched)[/]{completeFail}"
-								: "[green]✓ AI enrichment complete[/] [dim](no new candidates)[/]";
-							break;
-					}
-				}
-
-				if (last is null)
-				{
-					task.IsIndeterminate = false;
-					task.Value = task.MaxValue;
-					task.Description = "[green]✓ AI enrichment complete[/] [dim](no new candidates)[/]";
-				}
-			});
-
-		sw.Stop();
-
-		return new AiEnrichmentResult(
-			last?.Enriched ?? 0,
-			last?.Failed ?? 0,
-			last?.TotalCandidates ?? 0,
-			sw.Elapsed
-		);
-	}
-
-	private static void DisplayAiSummary(AiEnrichmentResult result, int maxRunTime, int maxRunDocs)
-	{
 		AnsiConsole.WriteLine();
 
 		var rows = new List<Spectre.Console.Rendering.IRenderable>();

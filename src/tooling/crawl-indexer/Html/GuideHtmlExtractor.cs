@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using CrawlIndexer.Crawling;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
 
@@ -14,11 +15,21 @@ namespace CrawlIndexer.Html;
 /// <summary>
 /// Extracts content from legacy /guide HTML pages into DocumentationDocument.
 /// </summary>
-public class GuideHtmlExtractor(ILogger<GuideHtmlExtractor> logger) : IGuideHtmlExtractor
+public class GuideHtmlExtractor(ILogger<GuideHtmlExtractor> logger) : IGuideHtmlExtractor, IDocumentExtractor<DocumentationDocument>
 {
 	private readonly HtmlParser _parser = new();
 
-	public async Task<DocumentationDocument?> ExtractAsync(string url, string html, DateTimeOffset? sitemapLastModified, Cancel ctx = default)
+	public Task<DocumentationDocument?> ExtractAsync(CrawlResult result, CancellationToken ct) =>
+		ExtractAsync(result.Url, result.Content!, result.LastModified, ct, result.HttpEtag, result.HttpLastModified);
+
+	public async Task<DocumentationDocument?> ExtractAsync(
+		string url,
+		string html,
+		DateTimeOffset? sitemapLastModified,
+		Cancel ctx = default,
+		string? httpEtag = null,
+		DateTimeOffset? httpLastModified = null
+	)
 	{
 		IHtmlDocument document;
 		try
@@ -118,7 +129,9 @@ public class GuideHtmlExtractor(ILogger<GuideHtmlExtractor> logger) : IGuideHtml
 			Body = textContent,
 			StrippedBody = textContent, // Already stripped
 			Abstract = abstractText,
-			Parents = parents
+			Parents = parents,
+			HttpEtag = httpEtag,
+			HttpLastModified = httpLastModified
 		};
 	}
 

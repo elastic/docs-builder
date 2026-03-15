@@ -27,7 +27,7 @@ public sealed record SyncProgressInfo(string Label, long Total, long Processed, 
 /// <summary>
 /// Exports site documents to Elasticsearch using IncrementalSyncOrchestrator for dual-index mode.
 /// </summary>
-public class SiteIndexerExporter : IDisposable
+public class SiteIndexerExporter : IIndexerExporter, IDocumentExporter<SiteDocument>
 {
 	private readonly ILogger _logger;
 	private readonly IDiagnosticsCollector _diagnostics;
@@ -230,6 +230,5 @@ public class SiteIndexerExporter : IDisposable
 	{
 		_orchestrator.Dispose();
 		_aiEnrichment?.Dispose();
-		GC.SuppressFinalize(this);
 	}
 }

@@ -11,6 +11,7 @@ using CrawlIndexer.Indexing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Exporters.Elasticsearch;
+using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 
@@ -60,45 +61,48 @@ public class SiteCommand(
 		"/downloads/past-releases/"   // Low search value, ~15k URLs
 	];
 
-	// Path patterns and their relevance levels
-	// Note: Order matters - more specific patterns should come before general ones
-	private static readonly Dictionary<string, (string Relevance, string Emoji, Color Color)> PathInfo = new(StringComparer.OrdinalIgnoreCase)
-	{
-		// Labs content - highly technical, top priority
-		{ "/search-labs/", ("high", "🔬", Color.Cyan1) },
-		{ "/security-labs/", ("high", "🛡", Color.Cyan1) },
-		{ "/observability-labs/", ("high", "🔭", Color.Cyan1) },
+	private record PathEntry(string Pattern, string Emoji, Color Color);
+
+	// Path patterns with display metadata; order matters — more specific before general
+	private static readonly IReadOnlyList<PathEntry> PathEntries =
+	[
+		// Labs content
+		new("/search-labs/",        "🔬", Color.Cyan1),
+		new("/security-labs/",      "🛡",  Color.Cyan1),
+		new("/observability-labs/", "🔭", Color.Cyan1),
 
 		// General blog and educational content
-		{ "/blog/", ("high", "📝", Color.Green) },
-		{ "/what-is/", ("high", "❓", Color.Green) },
+		new("/blog/",     "📝", Color.Green),
+		new("/what-is/",  "❓", Color.Green),
 
 		// Product pages
-		{ "/elasticsearch", ("high", "🔍", Color.Green) },
-		{ "/kibana", ("high", "📊", Color.Green) },
-		{ "/observability", ("high", "👁", Color.Green) },
-		{ "/security", ("high", "🔒", Color.Green) },
-		{ "/enterprise-search", ("high", "🏢", Color.Green) },
-		{ "/explore/", ("high", "🧭", Color.Green) },
+		new("/elasticsearch",   "🔍", Color.Green),
+		new("/kibana",          "📊", Color.Green),
+		new("/observability",   "👁",  Color.Green),
+		new("/security",        "🔒", Color.Green),
+		new("/enterprise-search","🏢", Color.Green),
+		new("/explore/",        "🧭", Color.Green),
 
 		// Medium priority content
-		{ "/downloads/", ("medium", "📥", Color.Yellow) },
-		{ "/resources/", ("medium", "📚", Color.Yellow) },
-		{ "/training/", ("medium", "🎓", Color.Yellow) },
-		{ "/industries/", ("medium", "🏭", Color.Yellow) },
-		{ "/webinars/", ("medium", "🎥", Color.Yellow) },
-		{ "/virtual-events/", ("medium", "🎪", Color.Yellow) },
-		{ "/elasticon/", ("medium", "🎉", Color.Yellow) },
-		{ "/events/", ("medium", "📅", Color.Yellow) },
-		{ "/demo-gallery/", ("medium", "🖼", Color.Yellow) },
+		new("/downloads/",     "📥", Color.Yellow),
+		new("/resources/",     "📚", Color.Yellow),
+		new("/training/",      "🎓", Color.Yellow),
+		new("/industries/",    "🏭", Color.Yellow),
+		new("/webinars/",      "🎥", Color.Yellow),
+		new("/virtual-events/","🎪", Color.Yellow),
+		new("/elasticon/",     "🎉", Color.Yellow),
+		new("/events/",        "📅", Color.Yellow),
+		new("/demo-gallery/",  "🖼",  Color.Yellow),
 
 		// Lower priority content
-		{ "/campaigns/", ("low", "📣", Color.Grey) },
-		{ "/customers/", ("low", "👥", Color.Grey) },
-		{ "/partners/", ("low", "🤝", Color.Grey) },
-		{ "/about/", ("low", "ℹ", Color.Grey) },
-		{ "/agreements/", ("low", "📜", Color.Grey) }
-	};
+		new("/campaigns/",  "📣", Color.Grey),
+		new("/customers/",  "👥", Color.Grey),
+		new("/partners/",   "🤝", Color.Grey),
+		new("/about/",      "ℹ",  Color.Grey),
+		new("/agreements/", "📜", Color.Grey)
+	];
+
+	private static readonly string[] LangPrefixes = ["/de/", "/fr/", "/jp/", "/kr/", "/cn/", "/es/", "/pt/"];
 
 	private static readonly Dictionary<string, string> LanguageNames = new()
 	{
@@ -122,7 +126,6 @@ public class SiteCommand(
 	/// <param name="dryRun">Discover URLs without crawling</param>
 	/// <param name="noTranslations">Skip language sitemaps (English only)</param>
 	/// <param name="noAi">Disable AI enrichment</param>
-	/// <param name="noSemantic">Skip semantic index</param>
 	/// <param name="failFast">Stop immediately when an indexing error occurs</param>
 	/// <param name="rps">Rate limit in requests per second (0 or omit for unlimited)</param>
 	/// <param name="fair">Distribute --max-pages evenly across categories (for validation)</param>
@@ -137,7 +140,6 @@ public class SiteCommand(
 		bool dryRun = false,
 		bool noTranslations = false,
 		bool noAi = false,
-		bool noSemantic = false,
 		bool failFast = false,
 		int? rps = null,
 		bool fair = false,
@@ -166,8 +168,6 @@ public class SiteCommand(
 		// Configure error tracker for fail-fast
 		errorTracker.SetFailFastToken(failFastCts);
 
-		_ = noSemantic; // TODO: Pass to orchestrator when single-channel mode is supported
-
 		_ = diagnostics.StartAsync(ctx);
 
 		try
@@ -189,8 +189,7 @@ public class SiteCommand(
 				.Concat(noTranslations ? [] : TranslationSitemaps)
 				.ToList();
 
-			var allUrlsList = new List<SitemapEntry>();
-
+			IReadOnlyList<SitemapEntry> allUrls = [];
 			await AnsiConsole.Progress()
 				.AutoRefresh(true)
 				.AutoClear(false)
@@ -205,38 +204,18 @@ public class SiteCommand(
 				.StartAsync(async progressCtx =>
 				{
 					var mainTask = progressCtx.AddTask("[aqua]🌍 Fetching sitemaps[/]", maxValue: allSitemaps.Count);
-
-					foreach (var currentSitemap in allSitemaps)
-					{
-						try
+					allUrls = await DiscoverUrlsAsync(
+						allSitemaps,
+						new Progress<(int completed, string currentSitemap)>(p =>
 						{
-							var shortUrl = currentSitemap.Length > 50 ? "..." + currentSitemap[^47..] : currentSitemap;
+							var shortUrl = p.currentSitemap.Length > 50 ? "..." + p.currentSitemap[^47..] : p.currentSitemap;
 							mainTask.Description = $"[aqua]🌍[/] [dim]{Markup.Escape(shortUrl)}[/]";
-
-							var urls = await sitemapParser.ParseAsync(
-								new Uri(currentSitemap),
-								null,
-								ctx
-							);
-
-							allUrlsList.AddRange(urls);
-						}
-						catch (HttpRequestException ex)
-						{
-							logger.LogDebug("Sitemap {Url} not found: {Message}", currentSitemap, ex.Message);
-						}
-
-						mainTask.Increment(1);
-					}
-
+							mainTask.Value = p.completed;
+						}),
+						ctx
+					);
 					mainTask.Description = "[green]✓[/] Sitemap discovery complete";
 				});
-
-			// Deduplicate URLs (in case of overlap between sitemaps)
-			var allUrls = allUrlsList
-				.GroupBy(u => u.Location)
-				.Select(g => g.First())
-				.ToList();
 
 			SpectreConsoleTheme.WriteSuccess($"Found [yellow]{allUrls.Count:N0}[/] total URLs from [cyan]{allSitemaps.Count}[/] sitemaps");
 
@@ -267,74 +246,45 @@ public class SiteCommand(
 			// Load cache from Elasticsearch (if index exists)
 			SpectreConsoleTheme.WriteSection("Cache Analysis");
 
-			var cache = new Dictionary<string, CachedDocInfo>(StringComparer.OrdinalIgnoreCase);
-			var crawlCache = new ElasticsearchCrawlCache(
-				loggerFactory.CreateLogger<ElasticsearchCrawlCache>(),
-				transport
-			);
-
 			var indexAlias = SiteIndexerExporter.ResolveLexicalReadAlias(buildType, environment);
-			if (await crawlCache.IndexExistsAsync(indexAlias, ctx))
-			{
-				await AnsiConsole.Progress()
-					.AutoRefresh(true)
-					.AutoClear(false)
-					.HideCompleted(false)
-					.Columns(
-						new SpinnerColumn(),
-						new TaskDescriptionColumn(),
-						new ProgressBarColumn(),
-						new PercentageColumn()
-					)
-					.StartAsync(async progressCtx =>
-					{
-						var task = progressCtx.AddTask("[aqua]📦 Loading cached documents[/]", maxValue: 100);
-
-						cache = await crawlCache.LoadCacheAsync(
-							indexAlias,
-							new Progress<(int loaded, string? url)>(p =>
-							{
-								task.Description = $"[aqua]📦 Loaded {p.loaded:N0} docs[/]";
-								task.IsIndeterminate = true;
-							}),
-							ctx
-						);
-
-						task.IsIndeterminate = false;
-						task.Value = task.MaxValue = 100;
-						task.Description = "[green]✓[/] Cache loaded";
-					});
-
-				SpectreConsoleTheme.WriteSuccess($"Loaded [yellow]{cache.Count:N0}[/] documents from cache");
-			}
-			else
-			{
-				SpectreConsoleTheme.WriteInfo("No existing index - performing full crawl");
-			}
-
-			// Make crawl decisions for all filtered URLs
-			var decisionMaker = new CrawlDecisionMaker(loggerFactory.CreateLogger<CrawlDecisionMaker>());
-			var allDecisions = decisionMaker.MakeDecisions(filteredUrls, cache).ToList();
-
-			// Apply --fair limit early so dry-run shows accurate counts
-			if (fair && maxPages > 0)
-			{
-				var needsCrawling = allDecisions.Where(d => d.Reason != CrawlReason.Unchanged).ToList();
-				if (needsCrawling.Count > maxPages)
+			var cache = new Dictionary<string, CachedDocInfo>(StringComparer.OrdinalIgnoreCase);
+			await AnsiConsole.Progress()
+				.AutoRefresh(true)
+				.AutoClear(false)
+				.HideCompleted(false)
+				.Columns(
+					new SpinnerColumn(),
+					new TaskDescriptionColumn(),
+					new ProgressBarColumn(),
+					new PercentageColumn()
+				)
+				.StartAsync(async progressCtx =>
 				{
-					var fairSample = ApplyCategoryFairness(needsCrawling, maxPages);
-					var cachedDecisions = allDecisions.Where(d => d.Reason == CrawlReason.Unchanged).ToList();
-					allDecisions = cachedDecisions.Concat(fairSample).ToList();
-					SpectreConsoleTheme.WriteInfo($"Fair sampling: [yellow]{fairSample.Count:N0}[/] pages to crawl across categories");
-				}
-			}
-
-			var stats = CrawlDecisionMaker.GetStats(allDecisions);
+					var task = progressCtx.AddTask("[aqua]📦 Loading cached documents[/]", maxValue: 100);
+					cache = await LoadCacheAsync(
+						indexAlias,
+						transport,
+						new Progress<(int loaded, string? url)>(p =>
+						{
+							task.Description = $"[aqua]📦 Loaded {p.loaded:N0} docs[/]";
+							task.IsIndeterminate = true;
+						}),
+						ctx
+					);
+					task.IsIndeterminate = false;
+					task.Value = task.MaxValue = 100;
+					task.Description = "[green]✓[/] Cache loaded";
+				});
+			if (cache.Count > 0)
+				SpectreConsoleTheme.WriteSuccess($"Loaded [yellow]{cache.Count:N0}[/] documents from cache");
+			else
+				SpectreConsoleTheme.WriteInfo("No existing index - performing full crawl");
+			var plan = BuildCrawlPlan(filteredUrls, cache, unchanged, fair, maxPages);
 
 			SpectreConsoleTheme.WriteInfo(
-				$"Pages: [green]{stats.NewUrls:N0}[/] new, " +
-				$"[grey]{stats.UnchangedUrls:N0}[/] unchanged, " +
-				$"[yellow]{stats.PossiblyChangedUrls:N0}[/] to verify"
+				$"Pages: [green]{plan.Stats.NewUrls:N0}[/] new, " +
+				$"[grey]{plan.Stats.UnchangedUrls:N0}[/] unchanged, " +
+				$"[yellow]{plan.Stats.PossiblyChangedUrls:N0}[/] to verify"
 			);
 
 			// Display Site Analysis
@@ -342,42 +292,25 @@ public class SiteCommand(
 			var excludedUrls = allUrls.Where(u => !filteredUrls.Contains(u)).ToList();
 			DisplaySiteAnalysis(filteredUrls, excludedUrls, exclusions);
 
-			// Find stale URLs (in cache but not in any sitemap)
-			var allKnownUrls = filteredUrls
-				.Select(u => u.Location)
-				.ToHashSet(StringComparer.OrdinalIgnoreCase);
-			var staleUrls = decisionMaker.FindStaleUrls(cache, allKnownUrls).ToList();
-
-			if (staleUrls.Count > 0)
-				SpectreConsoleTheme.WriteWarning($"Found [red]{staleUrls.Count:N0}[/] stale URLs to delete");
+			if (plan.StaleUrls.Count > 0)
+				SpectreConsoleTheme.WriteWarning($"Found [red]{plan.StaleUrls.Count:N0}[/] stale URLs to delete");
 
 			if (dryRun)
 			{
-				IndexingDisplay.DisplayDryRunWithCacheStats(stats, staleUrls.Count);
+				IndexingDisplay.DisplayDryRunWithCacheStats(plan.Stats, plan.StaleUrls.Count);
 				return;
 			}
 
-			// With --unchanged, include cached URLs so their batch_index_date is refreshed via hash noop
-			var urlsToCrawl = allDecisions
-				.Where(d => unchanged || d.Reason != CrawlReason.Unchanged)
-				.ToList();
-
-			// Apply max-pages limit (only for non-fair mode; fair mode was applied earlier)
-			if (!fair && maxPages > 0 && urlsToCrawl.Count > maxPages)
-			{
-				urlsToCrawl = urlsToCrawl.Take(maxPages).ToList();
-				SpectreConsoleTheme.WriteWarning($"Limited to [yellow]{maxPages:N0}[/] pages to crawl");
-			}
-
+			var urlsToCrawl = plan.UrlsToCrawl.ToList();
 			// Create exporter with shared transport
 			using var exporter = new SiteIndexerExporter(
-					loggerFactory,
-					diagnostics,
-					errorTracker,
-					endpoints.Elasticsearch,
-					transport,
-					buildType,
-					environment,
+				loggerFactory,
+				diagnostics,
+				errorTracker,
+				endpoints.Elasticsearch,
+				transport,
+				buildType,
+				environment,
 				configurationContext.SearchConfiguration,
 				enableAiEnrichment: !noAi
 			);
@@ -403,97 +336,43 @@ public class SiteCommand(
 			var errorCount = 0;
 			var startTime = DateTime.UtcNow;
 
+			var session = new CrawlSession<SiteDocument>(crawler, htmlExtractor, exporter, diagnostics);
 			await progress.RunWithLiveAsync("Crawling site pages", async (progressCtx, _) =>
 			{
-				await foreach (var result in crawler.CrawlAsync(urlsToCrawl, effectiveToken))
+				session.OnUrlCrawled = (url, bytes) => progressCtx.ReportUrlCrawled(url, bytes);
+				session.OnUrlSkipped = (url, reason) =>
 				{
-					// Check for fail-fast cancellation
-					if (effectiveToken.IsCancellationRequested)
-						break;
-
-					// Handle HTTP 304 Not Modified
-					if (result.NotModified)
-					{
-						skippedNotModified++;
-						progressCtx.ReportUrlSkipped(result.Url, "Not modified (304)");
-						continue;
-					}
-
-					if (!result.Success)
-					{
-						// Fatal errors (e.g., HTTP 406) stop crawling immediately
-						if (result.FatalError)
-						{
-							progressCtx.ReportUrlFailed(result.Url, result.Error ?? "Fatal error");
-							diagnostics.EmitError(result.Url, $"Fatal error: {result.Error}");
-							SpectreConsoleTheme.WriteError($"Fatal error: {result.Error} - stopping crawl");
-							break;
-						}
-
-						var urlLanguage = GetLanguageFromUrl(result.Url);
-						var isTranslation = urlLanguage != "en";
-
-						if (result.StatusCode == 404)
-						{
-							progressCtx.ReportUrlUnavailable(result.Url);
-							if (!isTranslation)
-								diagnostics.EmitWarning(result.Url, $"Page not found: {result.Error}");
-							continue;
-						}
-
-						// Non-404 failures are errors
-						errorCount++;
-						progressCtx.ReportUrlFailed(result.Url, result.Error ?? "Unknown error");
-						diagnostics.EmitError(result.Url, $"Failed to crawl: {result.Error}");
-						continue;
-					}
-
-					progressCtx.ReportUrlCrawled(result.Url, result.Content?.Length ?? 0);
-
-					try
-					{
-						var language = GetLanguageFromUrl(result.Url);
-						var relevance = GetRelevance(result.Url);
-						var pageType = GetPageType(result.Url);
-
-						var document = await htmlExtractor.ExtractAsync(
-							result.Url,
-							result.Content!,
-							result.LastModified,
-							language,
-							relevance,
-							pageType,
-							effectiveToken
-						);
-
-						if (document is null)
-						{
-							progressCtx.ReportUrlSkipped(result.Url, "Failed to extract");
-							diagnostics.EmitWarning(result.Url, "Failed to extract document from HTML");
-							continue;
-						}
-
-						// Set HTTP caching headers for future conditional requests
-						document.HttpEtag = result.HttpEtag;
-						document.HttpLastModified = result.HttpLastModified;
-
-						await exporter.ExportAsync(document, effectiveToken);
-						processedCount++;
-						progressCtx.ReportUrlIndexed();
-					}
-					catch (OperationCanceledException) when (effectiveToken.IsCancellationRequested)
-					{
-						break;
-					}
-					catch (Exception ex)
-					{
-						errorCount++;
-						progressCtx.ReportIndexingError(result.Url, ex.Message);
-						diagnostics.EmitError(result.Url, $"Failed to index: {ex.Message}", ex);
-					}
-				}
-
-			});
+					if (reason == "Not modified (304)") skippedNotModified++;
+					progressCtx.ReportUrlSkipped(url, reason);
+				};
+				session.OnUrlFailed = (url, error) =>
+				{
+					errorCount++;
+					progressCtx.ReportUrlFailed(url, error);
+				};
+				session.OnFatalError = (url, error) =>
+				{
+					progressCtx.ReportUrlFailed(url, error);
+					SpectreConsoleTheme.WriteError($"Fatal error: {error} - stopping crawl");
+				};
+				session.OnUrlIndexed = () =>
+				{
+					processedCount++;
+					progressCtx.ReportUrlIndexed();
+				};
+				session.OnUrlUnavailable = url =>
+				{
+					progressCtx.ReportUrlUnavailable(url);
+					if (GetLanguageFromUrl(url) == "en")
+						diagnostics.EmitWarning(url, "Page not found");
+				};
+				session.OnIndexingError = (url, error) =>
+				{
+					errorCount++;
+					progressCtx.ReportIndexingError(url, error);
+				};
+				await session.RunAsync(urlsToCrawl, effectiveToken);
+			}););
 
 			// Finalization (reindex to semantic, cleanup) with its own progress display
 			await IndexingDisplay.RunFinalizationWithProgressAsync(exporter, ctx);
@@ -508,8 +387,7 @@ public class SiteCommand(
 
 			// Display final summary
 			var crawlStats = progress.GetStats();
-			var finalStats = CrawlDecisionMaker.GetStats(allDecisions);
-			IndexingDisplay.DisplayFinalSummary(crawlStats, finalStats, aiResult);
+			IndexingDisplay.DisplayFinalSummary(crawlStats, aiResult);
 
 			logger.LogInformation(
 				"Crawling complete. Processed: {Processed}, Errors: {Errors}, Duration: {Duration}",
@@ -536,11 +414,6 @@ public class SiteCommand(
 		List<string> exclusionPatterns
 	)
 	{
-		// Group by relevance
-		var byRelevance = urls
-			.GroupBy(u => GetRelevance(u.Location))
-			.ToDictionary(g => g.Key, g => g.Count());
-
 		// Group by category
 		var byCategory = urls
 			.GroupBy(u => GetCategory(u.Location))
@@ -554,43 +427,25 @@ public class SiteCommand(
 			.OrderByDescending(g => g.Count())
 			.ToList();
 
-		// Relevance breakdown
-		var relevanceBreakdown = new BreakdownChart()
-			.Width(60);
-
-		if (byRelevance.TryGetValue("high", out var high))
-			_ = relevanceBreakdown.AddItem("High", high, Color.Green);
-		if (byRelevance.TryGetValue("medium", out var medium))
-			_ = relevanceBreakdown.AddItem("Medium", medium, Color.Yellow);
-		if (byRelevance.TryGetValue("low", out var low))
-			_ = relevanceBreakdown.AddItem("Low", low, Color.Grey);
-
-		AnsiConsole.MarkupLine("[aqua]📊 Content Distribution by Relevance[/]");
-		AnsiConsole.Write(relevanceBreakdown);
-		AnsiConsole.WriteLine();
-
 		// Category table
 		var categoryTable = new Table()
 			.Border(TableBorder.Rounded)
 			.BorderColor(Color.Grey)
 			.AddColumn("[aqua]Category[/]")
-			.AddColumn(new TableColumn("[aqua]Count[/]").RightAligned())
-			.AddColumn("[aqua]Relevance[/]");
+			.AddColumn(new TableColumn("[aqua]Count[/]").RightAligned());
 
 		foreach (var group in byCategory)
 		{
-			var (relevance, emoji, color) = PathInfo.GetValueOrDefault(
-				group.Key,
-				("medium", "📄", Color.White)
-			);
+			var entry = PathEntries.FirstOrDefault(e => e.Pattern == group.Key);
+			var emoji = entry?.Emoji ?? "📄";
+			var color = entry?.Color ?? Color.White;
 			var displayName = group.Key.Trim('/');
 			if (string.IsNullOrEmpty(displayName))
 				displayName = "Root";
 
 			_ = categoryTable.AddRow(
 				$"{emoji} [{color}]{Markup.Escape(displayName)}[/]",
-				$"[white]{group.Count():N0}[/]",
-				$"[{color}]{relevance}[/]"
+				$"[white]{group.Count():N0}[/]"
 			);
 		}
 
@@ -685,8 +540,7 @@ public class SiteCommand(
 		var path = uri.AbsolutePath;
 
 		// Remove language prefix if present
-		var langPrefixes = new[] { "/de/", "/fr/", "/jp/", "/kr/", "/cn/", "/es/", "/pt/" };
-		foreach (var prefix in langPrefixes)
+		foreach (var prefix in LangPrefixes)
 		{
 			if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
 			{
@@ -695,10 +549,10 @@ public class SiteCommand(
 			}
 		}
 
-		foreach (var pattern in PathInfo.Keys)
+		foreach (var entry in PathEntries)
 		{
-			if (path.StartsWith(pattern, StringComparison.OrdinalIgnoreCase))
-				return pattern;
+			if (path.StartsWith(entry.Pattern, StringComparison.OrdinalIgnoreCase))
+				return entry.Pattern;
 		}
 
 		// Get first path segment
@@ -834,20 +688,6 @@ public class SiteCommand(
 		return "en";
 	}
 
-	private static string GetRelevance(string url)
-	{
-		var uri = new Uri(url);
-		var path = uri.AbsolutePath;
-
-		foreach (var (pattern, info) in PathInfo)
-		{
-			if (path.StartsWith(pattern, StringComparison.OrdinalIgnoreCase) ||
-				path.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-				return info.Relevance;
-		}
-
-		return "medium";
-	}
 
 	private static string GetPageType(string url)
 	{
@@ -902,5 +742,100 @@ public class SiteCommand(
 
 		return "marketing";
 	}
+
+	private CrawlPlan BuildCrawlPlan(
+		List<SitemapEntry> filteredUrls,
+		Dictionary<string, CachedDocInfo> cache,
+		bool unchanged,
+		bool fair,
+		int maxPages
+	)
+	{
+		var decisionMaker = new CrawlDecisionMaker(loggerFactory.CreateLogger<CrawlDecisionMaker>());
+		var allDecisions = decisionMaker.MakeDecisions(filteredUrls, cache).ToList();
+
+		if (fair && maxPages > 0)
+		{
+			var needsCrawling = allDecisions.Where(d => d.Reason != CrawlReason.Unchanged).ToList();
+			if (needsCrawling.Count > maxPages)
+			{
+				var fairSample = ApplyCategoryFairness(needsCrawling, maxPages);
+				var cachedDecisions = allDecisions.Where(d => d.Reason == CrawlReason.Unchanged).ToList();
+				allDecisions = [.. cachedDecisions, .. fairSample];
+				SpectreConsoleTheme.WriteInfo($"Fair sampling: [yellow]{fairSample.Count:N0}[/] pages to crawl across categories");
+			}
+		}
+
+		var stats = CrawlDecisionMaker.GetStats(allDecisions);
+
+		var allKnownUrls = filteredUrls
+			.Select(u => u.Location)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var staleUrls = decisionMaker.FindStaleUrls(cache, allKnownUrls).ToList();
+
+		var urlsToCrawl = allDecisions
+			.Where(d => unchanged || d.Reason != CrawlReason.Unchanged)
+			.ToList();
+
+		if (!fair && maxPages > 0 && urlsToCrawl.Count > maxPages)
+		{
+			urlsToCrawl = urlsToCrawl.Take(maxPages).ToList();
+			SpectreConsoleTheme.WriteWarning($"Limited to [yellow]{maxPages:N0}[/] pages to crawl");
+		}
+
+		return new(urlsToCrawl, staleUrls, stats);
+	}
+
+
+	private record CrawlPlan(
+		IReadOnlyList<CrawlDecision> UrlsToCrawl,
+		IReadOnlyList<string> StaleUrls,
+		CrawlDecisionStats Stats
+	);
+
+	private async Task<IReadOnlyList<SitemapEntry>> DiscoverUrlsAsync(
+		IReadOnlyList<string> sitemaps,
+		IProgress<(int completed, string currentSitemap)> progress,
+		CancellationToken ct
+	)
+	{
+		var allUrlsList = new List<SitemapEntry>();
+		var completed = 0;
+		foreach (var currentSitemap in sitemaps)
+		{
+			try
+			{
+				var urls = await sitemapParser.ParseAsync(new Uri(currentSitemap), null, ct);
+				allUrlsList.AddRange(urls);
+			}
+			catch (HttpRequestException ex)
+			{
+				logger.LogDebug("Sitemap {Url} not found: {Message}", currentSitemap, ex.Message);
+			}
+			completed++;
+			progress.Report((completed, currentSitemap));
+		}
+		return allUrlsList
+			.GroupBy(u => u.Location)
+			.Select(g => g.First())
+			.ToList();
+	}
+
+	private async Task<Dictionary<string, CachedDocInfo>> LoadCacheAsync(
+		string indexAlias,
+		DistributedTransport transport,
+		IProgress<(int loaded, string? url)>? progress,
+		CancellationToken ct
+	)
+	{
+		var crawlCache = new ElasticsearchCrawlCache(
+			loggerFactory.CreateLogger<ElasticsearchCrawlCache>(),
+			transport
+		);
+		if (!await crawlCache.IndexExistsAsync(indexAlias, ct))
+			return new(StringComparer.OrdinalIgnoreCase);
+		return await crawlCache.LoadCacheAsync(indexAlias, progress, ct);
+	}
+
 
 }

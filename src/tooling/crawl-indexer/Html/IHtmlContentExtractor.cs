@@ -7,7 +7,7 @@ using Elastic.Documentation.Search;
 namespace CrawlIndexer.Html;
 
 /// <summary>
-/// Extracts content from HTML pages for indexing.
+/// Extracts content from HTML pages for guide indexing.
 /// </summary>
 public interface IGuideHtmlExtractor
 {
@@ -30,7 +30,6 @@ public interface ISiteHtmlExtractor
 		string html,
 		DateTimeOffset? sitemapLastModified,
 		string language,
-		string relevance,
 		string pageType,
 		Cancel ctx = default
 	);

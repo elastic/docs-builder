@@ -62,12 +62,22 @@ public class CrawlDecisionMaker(ILogger<CrawlDecisionMaker> logger)
 	/// <summary>
 	/// Gets statistics about crawl decisions.
 	/// </summary>
-	public static CrawlDecisionStats GetStats(IReadOnlyList<CrawlDecision> decisions) =>
-		new(
-			decisions.Count(d => d.Reason == CrawlReason.New),
-			decisions.Count(d => d.Reason == CrawlReason.Unchanged),
-			decisions.Count(d => d.Reason == CrawlReason.PossiblyChanged)
-		);
+	public static CrawlDecisionStats GetStats(IReadOnlyList<CrawlDecision> decisions)
+	{
+		var newUrls = 0;
+		var unchanged = 0;
+		var possiblyChanged = 0;
+		foreach (var d in decisions)
+		{
+			switch (d.Reason)
+			{
+				case CrawlReason.New: newUrls++; break;
+				case CrawlReason.Unchanged: unchanged++; break;
+				case CrawlReason.PossiblyChanged: possiblyChanged++; break;
+			}
+		}
+		return new(newUrls, unchanged, possiblyChanged);
+	}
 }
 
 /// <summary>

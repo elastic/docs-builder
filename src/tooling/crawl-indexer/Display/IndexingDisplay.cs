@@ -68,12 +68,9 @@ public static class IndexingDisplay
 
 	public static void DisplayFinalSummary(
 		CrawlStats crawlStats,
-		CrawlDecisionStats? decisionStats = null,
 		AiEnrichmentResult? aiResult = null
 	)
 	{
-		_ = decisionStats;
-
 		AnsiConsole.WriteLine();
 
 		var rows = new List<IRenderable>();
@@ -230,7 +227,7 @@ public static class IndexingDisplay
 
 	/// <summary>Runs finalization (reindex, cleanup) with Spectre.Console progress display.</summary>
 	public static async Task RunFinalizationWithProgressAsync(
-		SiteIndexerExporter exporter,
+		IIndexerExporter exporter,
 		Cancel ctx
 	)
 	{
@@ -333,8 +330,9 @@ public static class IndexingDisplay
 
 	/// <summary>Runs AI enrichment with Spectre.Console progress display.</summary>
 	public static async Task<AiEnrichmentResult?> RunAiEnrichmentWithProgressAsync(
-		SiteIndexerExporter exporter,
-		Cancel ctx
+		IIndexerExporter exporter,
+		Cancel ct,
+		int maxRunDocs = 0
 	)
 	{
 		if (!exporter.AiEnrichmentEnabled)
@@ -342,6 +340,15 @@ public static class IndexingDisplay
 
 		SpectreConsoleTheme.WriteSection("AI Enrichment");
 
+		return await RunAiProgressInternalAsync(exporter.RunAiEnrichmentAsync(maxRunDocs, ct), maxRunDocs, ct);
+	}
+
+	private static async Task<AiEnrichmentResult> RunAiProgressInternalAsync(
+		IAsyncEnumerable<AiEnrichmentProgress> source,
+		int maxRunDocs,
+		Cancel ct
+	)
+	{
 		var sw = System.Diagnostics.Stopwatch.StartNew();
 		AiEnrichmentProgress? last = null;
 
@@ -360,16 +367,20 @@ public static class IndexingDisplay
 				var task = progressCtx.AddTask("[purple]🧠 Discovering candidates...[/]", maxValue: 100);
 				task.IsIndeterminate = true;
 
-				await foreach (var p in exporter.RunAiEnrichmentAsync(ctx: ctx))
+				await foreach (var p in source.WithCancellation(ct))
 				{
 					last = p;
 					switch (p.Phase)
 					{
 						case AiEnrichmentPhase.Querying when p.TotalCandidates > 0:
+							var effectiveMax = maxRunDocs > 0
+								? Math.Min(p.TotalCandidates, maxRunDocs)
+								: p.TotalCandidates;
 							task.IsIndeterminate = false;
-							task.MaxValue = p.TotalCandidates;
+							task.MaxValue = effectiveMax;
 							task.Value = 0;
-							task.Description = $"[purple]🧠 Found {p.TotalCandidates:N0} candidates[/]";
+							task.Description = $"[purple]🧠 Found {p.TotalCandidates:N0} candidates[/]"
+								+ (maxRunDocs > 0 ? $" [dim](limit: {maxRunDocs:N0})[/]" : "");
 							break;
 						case AiEnrichmentPhase.Enriching:
 							task.Value = p.Enriched + p.Failed;
@@ -377,7 +388,7 @@ public static class IndexingDisplay
 							task.Description = $"[purple]🧠 Enriching[/] [dim]{p.Enriched:N0}/{p.TotalCandidates:N0}[/]{failSuffix}";
 							break;
 						case AiEnrichmentPhase.Refreshing:
-							task.Value = p.Enriched;
+							task.Value = task.MaxValue;
 							task.Description = "[purple]🧠 Refreshing lookup index...[/]";
 							break;
 						case AiEnrichmentPhase.ExecutingPolicy:
