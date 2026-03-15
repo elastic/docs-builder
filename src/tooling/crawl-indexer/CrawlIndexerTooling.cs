@@ -58,16 +58,8 @@ public static class CrawlIndexerTooling
 				AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
 			})
 			.Services
-			.AddHttpClient<ITranslationDiscovery, TranslationDiscovery>()
-			.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-			{
-				AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-			})
-			.AddStandardResilienceHandler(ConfigureCrawlerResilience)
-			.Services
 			.AddSingleton<IVersionDiscovery, VersionDiscovery>()
 			.AddSingleton<CrawlDecisionMaker>()
-			.AddSingleton<TranslationCacheService>()
 			.AddSingleton<CrawlerSettings>()
 			.AddSingleton<CrawlerRateLimiter>();
 
