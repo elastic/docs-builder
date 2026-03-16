@@ -229,13 +229,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		if (string.IsNullOrEmpty(block.Url))
 			return;
 
-		var prefix = block.Build.UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
 		var slice = AgentSkillView.Create(new AgentSkillViewModel
 		{
 			DirectiveBlock = block,
 			Url = block.Url,
-			HasBody = block.Count > 0,
-			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills"
+			HasBody = block.Count > 0
 		});
 		RenderRazorSlice(slice, renderer);
 	}
