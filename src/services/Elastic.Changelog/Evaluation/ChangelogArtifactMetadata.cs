@@ -18,6 +18,7 @@ public record ChangelogArtifactMetadata
 	public string? LabelTable { get; init; }
 	public string? ConfigFile { get; init; }
 	public string? ChangelogDir { get; init; }
+	public string? ChangelogFilename { get; init; }
 	public CreateRules? CreateRules { get; init; }
 }
 

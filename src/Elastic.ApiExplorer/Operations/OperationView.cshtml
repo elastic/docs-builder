@@ -75,7 +75,7 @@
 			<span class="beta-badge">Beta</span>
 		}
 		@{
-			var versionInfo = operation.Extensions?.TryGetValue("x-state", out var stateValue) == true && stateValue is System.Text.Json.Nodes.JsonNode stateNode ? stateNode.ToString() : null;
+			var versionInfo = (operation.Extensions?.TryGetValue("x-state", out var stateValue) == true && stateValue is JsonNodeExtension stateExt) ? stateExt.Node.GetValue<string>() : null;
 		}
 		@if (!string.IsNullOrEmpty(versionInfo))
 		{
