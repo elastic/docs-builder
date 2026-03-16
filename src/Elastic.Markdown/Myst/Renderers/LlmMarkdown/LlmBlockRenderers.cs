@@ -670,29 +670,98 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			renderer.WriteLine();
 			renderer.Write("## ");
 			renderer.WriteLine(group.Name ?? string.Empty);
+			RenderSettingsMarkdownSnippet(renderer, block, group.Description);
+			RenderSettingsMarkdownSnippet(renderer, block, group.Example);
+			renderer.WriteLine("<definitions>");
 
 			foreach (var setting in group.Settings)
-			{
-				renderer.WriteLine();
-				renderer.Write("#### ");
-				renderer.WriteLine(setting.Name ?? string.Empty);
+				RenderSetting(renderer, block, setting, parentName: null, inheritedAppliesTo: null);
 
-				if (!string.IsNullOrEmpty(setting.Description))
-				{
-					var document = MarkdownParser.ParseMarkdownStringAsync(
-						block.Build,
-						block.Context,
-						setting.Description,
-						block.IncludeFrom,
-						block.Context.YamlFrontMatter,
-						MarkdownParser.Pipeline);
-					_ = renderer.Render(document);
-					renderer.EnsureBlockSpacing();
-				}
-			}
+			renderer.WriteLine("</definitions>");
 		}
 
 		renderer.EnsureLine();
+	}
+
+	private static void RenderSetting(
+		LlmMarkdownRenderer renderer,
+		SettingsBlock block,
+		Setting setting,
+		string? parentName,
+		Elastic.Documentation.AppliesTo.ApplicableTo? inheritedAppliesTo)
+	{
+		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
+		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
+		var appliesText = LlmApplicabilityHelper.RenderForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
+
+		renderer.WriteLine("  <definition term=\"" + displayName + "\">");
+		if (!string.IsNullOrEmpty(appliesText))
+			renderer.WriteLine("    <applies-to>" + appliesText + "</applies-to>");
+
+		RenderSettingsMarkdownSnippet(renderer, block, setting.Description);
+
+		if (!string.IsNullOrWhiteSpace(setting.Datatype))
+			renderer.WriteLine($"Datatype: `{setting.Datatype}`");
+		if (!string.IsNullOrWhiteSpace(setting.Default))
+			renderer.WriteLine($"Default: `{setting.Default}`");
+
+		if (setting.Options is { Length: > 0 })
+		{
+			renderer.WriteLine("Options:");
+			foreach (var option in setting.Options)
+			{
+				var optionLabel = string.IsNullOrWhiteSpace(option.Option) ? "value" : $"`{option.Option}`";
+				if (string.IsNullOrWhiteSpace(option.Description))
+					renderer.WriteLine($"- {optionLabel}");
+				else
+					renderer.WriteLine($"- {optionLabel}: {option.Description}");
+			}
+		}
+
+		RenderAdmonitionSnippet(renderer, block, "note", setting.Note);
+		RenderAdmonitionSnippet(renderer, block, "tip", setting.Tip);
+		RenderAdmonitionSnippet(renderer, block, "warning", setting.Warning);
+		RenderAdmonitionSnippet(renderer, block, "important", setting.Important);
+		RenderAdmonitionSnippet(renderer, block, "admonition", setting.DeprecationDetails, "Deprecation details");
+
+		RenderSettingsMarkdownSnippet(renderer, block, setting.Example);
+
+		renderer.WriteLine("  </definition>");
+
+		foreach (var child in setting.Settings)
+			RenderSetting(renderer, block, child, displayName, appliesTo);
+	}
+
+	private static void RenderAdmonitionSnippet(
+		LlmMarkdownRenderer renderer,
+		SettingsBlock block,
+		string directive,
+		string? content,
+		string? title = null)
+	{
+		if (string.IsNullOrWhiteSpace(content))
+			return;
+
+		var titleSuffix = string.IsNullOrWhiteSpace(title) ? string.Empty : $" {title}";
+		var snippet = $":::{{{directive}}}{titleSuffix}\n{content}\n:::";
+		RenderSettingsMarkdownSnippet(renderer, block, snippet);
+	}
+
+	private static void RenderSettingsMarkdownSnippet(LlmMarkdownRenderer renderer, SettingsBlock block, string? content)
+	{
+		if (string.IsNullOrWhiteSpace(content))
+			return;
+
+		var normalized = SettingsMarkdownNormalizer.Normalize(content);
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			normalized,
+			block.IncludeFrom,
+			block.Context.YamlFrontMatter,
+			MarkdownParser.Pipeline);
+		_ = renderer.Render(document);
+		renderer.EnsureBlockSpacing();
 	}
 
 	private static void WriteMathBlock(LlmMarkdownRenderer renderer, MathBlock block)

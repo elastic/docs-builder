@@ -805,6 +805,17 @@ type ``settings directive`` () =
       - setting: xpack.example.setting
         description: |
           This is a test setting with **bold** text and a [link](https://example.com).
+        datatype: enum
+        default: strict
+        applies_to:
+          stack: ga 9.2
+        options:
+          - option: strict
+          - option: lenient
+        settings:
+          - setting: "[n].url"
+            description: Child setting description.
+            datatype: string
       - setting: xpack.another.setting
         description: Another setting description.
   - group: Advanced settings
@@ -818,20 +829,36 @@ type ``settings directive`` () =
     let ``renders settings as markdown headings`` () =
         generator |> convertsToNewLLM """
 ## General settings
-
-#### xpack.example.setting
+<definitions>
+  <definition term="xpack.example.setting">
+    <applies-to>Elastic Stack: Planned</applies-to>
 
 This is a test setting with **bold** text and a [link](https://example.com).
+Datatype: `enum`
+Default: `strict`
+Options:
+- `strict`
+- `lenient`
+  </definition>
+  <definition term="xpack.example.setting[n].url">
+    <applies-to>Elastic Stack: Planned</applies-to>
 
-#### xpack.another.setting
+Child setting description.
+Datatype: `string`
+  </definition>
+  <definition term="xpack.another.setting">
 
 Another setting description.
+  </definition>
+</definitions>
 
 ## Advanced settings
-
-#### xpack.advanced.option
+<definitions>
+  <definition term="xpack.advanced.option">
 
 An advanced option.
+  </definition>
+</definitions>
 """
 
 type ``links in paragraphs`` () =

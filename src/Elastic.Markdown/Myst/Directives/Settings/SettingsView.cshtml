@@ -10,19 +10,112 @@
 	private IHtmlContent RenderGroup(SettingsGrouping group)
 	{
 		<h2>@group.Name</h2>
-		foreach (var setting in group.Settings)
+		@RenderMarkdown(group.Description)
+		@RenderExample(group.Example)
+		<dl>
+		@foreach (var setting in group.Settings)
 		{
-			@RenderSetting(setting)
+			@RenderSetting(setting, null, null)
 		}
+		</dl>
 		return HtmlString.Empty;
 	}
-	private IHtmlContent RenderSetting(Setting setting)
+
+	private IHtmlContent RenderSetting(Setting setting, string? parentName, Elastic.Documentation.AppliesTo.ApplicableTo? inheritedAppliesTo)
 	{
-		<h4>@setting.Name</h4>
-		if (setting.Description is not null)
-		{
-			@(new HtmlString(Model.RenderMarkdown(setting.Description)))
-		}
+		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
+		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
+		var appliesHtml = Model.RenderAppliesToInline(appliesTo);
+
+		<dt id="@setting.Id">@displayName @(new HtmlString(appliesHtml))</dt>
+		<dd>
+			@RenderMarkdown(setting.Description)
+			@RenderMetadata(setting)
+			@RenderSettingAdmonitions(setting)
+			@RenderExample(setting.Example)
+
+			@if (setting.Settings.Length > 0)
+			{
+				<dl>
+					@foreach (var child in setting.Settings)
+					{
+						@RenderSetting(child, displayName, appliesTo)
+					}
+				</dl>
+			}
+		</dd>
+
 		return HtmlString.Empty;
+	}
+
+	private IHtmlContent RenderMetadata(Setting setting)
+	{
+		if (!string.IsNullOrWhiteSpace(setting.Datatype))
+		{
+			<p><strong>Datatype:</strong> <code>@setting.Datatype</code></p>
+		}
+
+		if (!string.IsNullOrWhiteSpace(setting.Default))
+		{
+			<p><strong>Default:</strong> <code>@setting.Default</code></p>
+		}
+
+		if (setting.Options is { Length: > 0 })
+		{
+			<p><strong>Options:</strong></p>
+			<ul>
+				@foreach (var option in setting.Options)
+				{
+					<li>
+						@if (!string.IsNullOrWhiteSpace(option.Option))
+						{
+							<code>@option.Option</code>
+						}
+						@if (!string.IsNullOrWhiteSpace(option.Description))
+						{
+							@: - @option.Description
+						}
+					</li>
+				}
+			</ul>
+		}
+
+		return HtmlString.Empty;
+	}
+
+	private IHtmlContent RenderSettingAdmonitions(Setting setting)
+	{
+		@RenderAdmonition("note", setting.Note)
+		@RenderAdmonition("tip", setting.Tip)
+		@RenderAdmonition("warning", setting.Warning)
+		@RenderAdmonition("important", setting.Important)
+		@RenderAdmonition("admonition", setting.DeprecationDetails, "Deprecation details")
+		return HtmlString.Empty;
+	}
+
+	private IHtmlContent RenderAdmonition(string directive, string? content, string? title = null)
+	{
+		if (string.IsNullOrWhiteSpace(content))
+			return HtmlString.Empty;
+
+		var heading = string.IsNullOrWhiteSpace(title) ? string.Empty : $" {title}";
+		var markdown = $":::{{{directive}}}{heading}\n{content}\n:::";
+		return new HtmlString(Model.RenderMarkdown(markdown));
+	}
+
+	private IHtmlContent RenderExample(string? example)
+	{
+		if (string.IsNullOrWhiteSpace(example))
+			return HtmlString.Empty;
+
+		return new HtmlString(Model.RenderMarkdown(example));
+	}
+
+	private IHtmlContent RenderMarkdown(string? markdown)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return HtmlString.Empty;
+
+		return new HtmlString(Model.RenderMarkdown(markdown));
 	}
 }

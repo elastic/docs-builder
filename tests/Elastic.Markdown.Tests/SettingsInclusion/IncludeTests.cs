@@ -64,3 +64,85 @@ public class RandomFileEmitsAnError(ITestOutputHelper output) : DirectiveTest<Se
 			.OnlyContain(d => d.Message.Contains("Can not be parsed as a valid settings file"));
 	}
 }
+
+public class NewSchemaRendersMetadataAndNestedSettings(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/new-schema.yml
+:::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/new-schema.yml", """
+product: Kibana
+collection: Test collection
+groups:
+  - group: General settings
+    settings:
+      - setting: xpack.actions.customHostSettings
+        description: Parent setting description.
+        datatype: object
+        default: "[]"
+        applies_to:
+          stack: ga 9.2
+        options:
+          - option: strict
+            description: Strict mode.
+        settings:
+          - setting: "[n].url"
+            description: Child setting description.
+            datatype: string
+""");
+	}
+
+	[Fact]
+	public void RendersAppliesToAndMetadata()
+	{
+		Html.Should().Contain("applies-to-popover");
+		Html.Should().Contain("<strong>Datatype:</strong>");
+		Html.Should().Contain("<strong>Default:</strong>");
+		Html.Should().Contain("<strong>Options:</strong>");
+	}
+
+	[Fact]
+	public void RendersNestedSettingName()
+	{
+		Html.Should().Contain("xpack.actions.customHostSettings[n].url");
+	}
+}
+
+public class LegacySourceBlocksRenderAsMarkdownCode(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/legacy-source.yml
+:::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/legacy-source.yml", """
+groups:
+  - group: Example
+    settings:
+      - setting: xpack.legacy.example
+        description: |
+          Example code:
+          
+          [source,yaml]
+          --
+          xpack.legacy.example:
+            enabled: true
+          --
+""");
+	}
+
+	[Fact]
+	public void RendersAsFencedCodeBlock()
+	{
+		Html.Should().Contain("language-yaml");
+		Html.Should().NotContain("[source,yaml]");
+	}
+}

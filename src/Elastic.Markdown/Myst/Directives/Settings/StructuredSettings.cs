@@ -14,6 +14,10 @@ public record YamlSettings
 	public string? Product { get; set; }
 	[YamlMember(Alias = "collection")]
 	public string? Collection { get; set; }
+	[YamlMember(Alias = "id")]
+	public string? Id { get; set; }
+	[YamlMember(Alias = "page_description")]
+	public string? PageDescription { get; set; }
 	[YamlMember(Alias = "groups")]
 	public SettingsGrouping[] Groups { get; set; } = [];
 }
@@ -23,8 +27,14 @@ public record SettingsGrouping
 {
 	[YamlMember(Alias = "group")]
 	public string? Name { get; set; }
-	[YamlMember(Alias = "self")]
+	[YamlMember(Alias = "id")]
 	public string? Id { get; set; }
+	[YamlMember(Alias = "self")]
+	public string? LegacyId { get; set; }
+	[YamlMember(Alias = "description")]
+	public string? Description { get; set; }
+	[YamlMember(Alias = "example")]
+	public string? Example { get; set; }
 	[YamlMember(Alias = "settings")]
 	public Setting[] Settings { get; set; } = [];
 }
@@ -34,14 +44,41 @@ public record Setting
 {
 	[YamlMember(Alias = "setting")]
 	public string? Name { get; set; }
+	[YamlMember(Alias = "id")]
+	public string? Id { get; set; }
 	[YamlMember(Alias = "description")]
 	public string? Description { get; set; }
+	[YamlMember(Alias = "deprecation_details")]
+	public string? DeprecationDetails { get; set; }
+	[YamlMember(Alias = "note")]
+	public string? Note { get; set; }
+	[YamlMember(Alias = "tip")]
+	public string? Tip { get; set; }
+	[YamlMember(Alias = "warning")]
+	public string? Warning { get; set; }
+	[YamlMember(Alias = "important")]
+	public string? Important { get; set; }
+	[YamlMember(Alias = "default")]
+	public string? Default { get; set; }
+	[YamlMember(Alias = "datatype")]
+	public string? Datatype { get; set; }
+	[YamlMember(Alias = "example")]
+	public string? Example { get; set; }
+	[YamlMember(Alias = "settings")]
+	public Setting[] Settings { get; set; } = [];
+	[YamlMember(Alias = "applies_to")]
+	public ApplicableTo? AppliesTo { get; set; }
+
+	// Legacy fields maintained for backward compatibility with existing sources.
 	[YamlMember(Alias = "applies")]
-	public Applicability? Applies { get; set; }
+	public ApplicableTo? LegacyAppliesTo { get; set; }
 	[YamlMember(Alias = "type")]
 	public SettingMutability Mutability { get; set; }
 	[YamlMember(Alias = "options")]
 	public AllowedValue[]? Options { get; set; }
+
+	public ApplicableTo? ResolveAppliesTo(ApplicableTo? inheritedAppliesTo) =>
+		AppliesTo ?? LegacyAppliesTo ?? inheritedAppliesTo;
 }
 
 [YamlSerializable]

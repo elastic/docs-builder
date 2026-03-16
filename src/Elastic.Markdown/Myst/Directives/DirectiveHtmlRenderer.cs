@@ -440,9 +440,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = SettingsView.Create(new SettingsViewModel
 		{
 			SettingsCollection = settings,
+			VersionsConfig = block.Build.VersionsConfiguration,
 			RenderMarkdown = s =>
 			{
-				var document = MarkdownParser.ParseMarkdownStringAsync(block.Build, block.Context, s, block.IncludeFrom, block.Context.YamlFrontMatter, MarkdownParser.Pipeline);
+				var normalized = SettingsMarkdownNormalizer.Normalize(s);
+				var document = MarkdownParser.ParseMarkdownStringAsync(block.Build, block.Context, normalized, block.IncludeFrom, block.Context.YamlFrontMatter, MarkdownParser.Pipeline);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 
 				// Trim to ensure consistent whitespace
