@@ -1,9 +1,9 @@
 @layer components {
 	.agent-skill {
-		@apply border-pink-40 bg-pink-10 mt-4 rounded-sm border-1 pb-4;
+		@apply border-grey-40 bg-grey-10 mt-4 rounded-sm border-1 pb-4;
 
 		.agent-skill-header {
-			@apply bg-pink-20 text-pink-110 flex items-center gap-2 rounded-t-sm px-4 py-2 font-bold;
+			@apply bg-grey-20 text-grey-110 flex items-center gap-2 rounded-t-sm px-4 py-2 font-bold;
 		}
 
 		.agent-skill-icon {
