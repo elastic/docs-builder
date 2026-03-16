@@ -8,15 +8,12 @@
 	</div>
 	<div class="agent-skill-content">
 		<div class="agent-skill-text">
+			<p>A skill is available to help AI agents with this topic.</p>
 			@if (Model.HasBody)
 			{
 				@Model.RenderBlock()
 			}
-			else
-			{
-				<p>A skill is available to help AI agents with this topic.</p>
-			}
-			<p>To learn more about Elastic agent skills, refer to the <a href="/explore-analyze/ai-features/agent-skills">documentation</a>.</p>
+			<p><a href="/explore-analyze/ai-features/agent-skills">Learn more about agent skills for Elastic</a></p>
 		</div>
 		<a href="@Model.Url" target="_blank" rel="noopener noreferrer" class="agent-skill-button">
 			Get the skill

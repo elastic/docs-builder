@@ -26,7 +26,7 @@ type ``agent skill with url`` () =
 	<div class="agent-skill-content">
 		<div class="agent-skill-text">
 			<p>A skill is available to help AI agents with this topic.</p>
-			<p>To learn more about Elastic agent skills, refer to the <a href="/explore-analyze/ai-features/agent-skills">documentation</a>.</p>
+			<p><a href="/explore-analyze/ai-features/agent-skills">Learn more about agent skills for Elastic</a></p>
 		</div>
 		<a href="https://github.com/elastic/agent-skills@elasticsearch-esql" target="_blank" rel="noopener noreferrer" class="agent-skill-button">
 			Get the skill
@@ -62,8 +62,9 @@ This skill helps agents write and optimize ES|QL queries.
 	</div>
 	<div class="agent-skill-content">
 		<div class="agent-skill-text">
+			<p>A skill is available to help AI agents with this topic.</p>
 			<p>This skill helps agents write and optimize ES|QL queries.</p>
-			<p>To learn more about Elastic agent skills, refer to the <a href="/explore-analyze/ai-features/agent-skills">documentation</a>.</p>
+			<p><a href="/explore-analyze/ai-features/agent-skills">Learn more about agent skills for Elastic</a></p>
 		</div>
 		<a href="https://github.com/elastic/agent-skills@elasticsearch-esql" target="_blank" rel="noopener noreferrer" class="agent-skill-button">
 			Get the skill

@@ -766,10 +766,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		if (!string.IsNullOrEmpty(block.Url))
 			renderer.Writer.Write($" url=\"{block.Url}\"");
 		renderer.Writer.WriteLine(">");
+		renderer.WriteLine("  A skill is available to help AI agents with this topic.");
 		if (block.Count > 0)
 			WriteChildrenWithIndentation(renderer, block, "  ");
-		else
-			renderer.WriteLine("  A skill is available to help AI agents with this topic.");
 		renderer.Writer.WriteLine("</agent-skill>");
 		renderer.EnsureLine();
 	}

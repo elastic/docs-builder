@@ -44,7 +44,7 @@ A regular paragraph.
 	[Fact]
 	public void RendersLearnMoreLink()
 	{
-		Html.Should().Contain("refer to the");
+		Html.Should().Contain("Learn more about agent skills for Elastic");
 		Html.Should().Contain("href=\"/explore-analyze/ai-features/agent-skills\"");
 	}
 
@@ -75,12 +75,12 @@ A regular paragraph.
 		Html.Should().Contain("This skill helps agents write and optimize ES|QL queries.");
 
 	[Fact]
-	public void DoesNotRenderDefaultText() =>
-		Html.Should().NotContain("A skill is available to help AI agents with this topic.");
+	public void StillRendersDefaultText() =>
+		Html.Should().Contain("A skill is available to help AI agents with this topic.");
 
 	[Fact]
 	public void StillRendersLearnMoreLink() =>
-		Html.Should().Contain("href=\"/explore-analyze/ai-features/agent-skills\"");
+		Html.Should().Contain("Learn more about agent skills for Elastic");
 
 	[Fact]
 	public void StillRendersButton() =>

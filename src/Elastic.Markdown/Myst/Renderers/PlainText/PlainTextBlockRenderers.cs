@@ -276,10 +276,9 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			case AgentSkillBlock agentSkillBlock:
 				renderer.EnsureBlockSpacing();
 				renderer.WriteLine("Agent skill available");
+				renderer.WriteLine("A skill is available to help AI agents with this topic.");
 				if (agentSkillBlock.Count > 0)
 					renderer.WriteChildren(agentSkillBlock);
-				else
-					renderer.WriteLine("A skill is available to help AI agents with this topic.");
 				if (!string.IsNullOrEmpty(agentSkillBlock.Url))
 					renderer.WriteLine(agentSkillBlock.Url);
 				renderer.EnsureLine();
