@@ -215,30 +215,29 @@ public class ChangelogRenderingService(
 		if (context.Configuration?.Rules?.Publish == null)
 			return;
 
+		var publishRules = context.Configuration.Rules.Publish;
+		var byProduct = publishRules.ByProduct ?? new Dictionary<string, PublishBlocker>(StringComparer.OrdinalIgnoreCase);
+
 		var visibleEntries = entries.Where(resolved =>
 			string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) ||
 			!context.FeatureIdsToHide.Contains(resolved.Entry.FeatureId));
 
 		foreach (var resolved in visibleEntries)
 		{
-			// Get product IDs for this entry
-			var productIds = context.EntryToBundleProducts.GetValueOrDefault(resolved.Entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-			if (productIds.Count == 0)
+			var bundleProducts = context.EntryToBundleProducts.GetValueOrDefault(resolved.Entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+			if (bundleProducts.Count == 0)
 				continue;
 
-			// Check each product's publish configuration
-			foreach (var productId in productIds)
-			{
-				var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
-				if (blocker != null && blocker.ShouldBlock(resolved.Entry))
-				{
-					var reasons = GetBlockReasons(resolved.Entry, blocker);
-					var prefix = blocker.TypesMode == FieldMode.Include || blocker.AreasMode == FieldMode.Include ? "[+include]" : "[-exclude]";
-					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
-					var entryIdentifier = GetEntryIdentifier(resolved.Entry, context);
-					collector.EmitWarning(string.Empty, $"{prefix} Changelog entry {entryIdentifier} will be commented out{productInfo} because it matches rules configuration: {reasons}");
-				}
-			}
+			var entryOwnIds = resolved.Entry.Products?.Select(p => p.ProductId) ?? [];
+			var blocker = PublishBlockerExtensions.ResolveBlocker(bundleProducts, entryOwnIds, byProduct, publishRules.Blocker);
+
+			if (blocker == null || !blocker.ShouldBlock(resolved.Entry))
+				continue;
+
+			var reasons = GetBlockReasons(resolved.Entry, blocker);
+			var prefix = blocker.TypesMode == FieldMode.Include || blocker.AreasMode == FieldMode.Include ? "[+include]" : "[-exclude]";
+			var entryIdentifier = GetEntryIdentifier(resolved.Entry, context);
+			collector.EmitWarning(string.Empty, $"{prefix} Changelog entry {entryIdentifier} will be commented out because it matches rules configuration: {reasons}");
 		}
 	}
 
@@ -300,16 +299,6 @@ public class ChangelogRenderingService(
 		}
 
 		return string.Join(" and ", reasons);
-	}
-
-	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
-	{
-		// Check product-specific override first
-		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
-			return productBlocker;
-
-		// Fall back to global publish blocker
-		return publishRules.Blocker;
 	}
 
 	private static bool ValidateEntryTypes(

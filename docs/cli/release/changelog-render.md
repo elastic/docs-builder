@@ -63,6 +63,9 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 You can configure `block` definitions in your `changelog.yml` configuration file to automatically comment out changelog entries based on their products, areas, and/or types.
 For more information, refer to [](/contribute/changelog.md#example-block-label).
 
+When (deprecated) `rules.publish.products` per-product overrides are configured and changelog entries belong to multiple products, the applicable rule is chosen using the intersection + alphabetical first-match algorithm.
+For details, refer to [Per-product rule resolution for multi-product entries](/contribute/changelog.md#changelog-bundle-multi-product-rules).
+
 ## Output formats
 
 ### Markdown format
