@@ -58,6 +58,12 @@ public record ConfigurationFile
 
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
+	public string? StorybookRoot { get; }
+
+	public string? StorybookServerRoot { get; }
+
+	public IReadOnlySet<string> StorybookAllowedRoots { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
 	/// <summary>
 	/// Set of diagnostic hint types to suppress for this documentation set.
 	/// </summary>
@@ -140,6 +146,21 @@ public record ConfigurationFile
 				OpenApiSpecifications = specs;
 			}
 
+			if (docSetFile.Storybook is not null)
+			{
+				StorybookRoot = NormalizeStorybookValue(docSetFile.Storybook.Root);
+				StorybookServerRoot = NormalizeStorybookValue(docSetFile.Storybook.ServerRoot);
+			}
+
+			if (docSetFile.Storybook?.AllowedRoots is { Count: > 0 })
+			{
+				StorybookAllowedRoots = docSetFile.Storybook.AllowedRoots
+					.Where(static root => !string.IsNullOrWhiteSpace(root))
+					.Select(static root => NormalizeStorybookValue(root))
+					.OfType<string>()
+					.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			}
+
 			// Process products from docset - resolve ProductLinks to Product objects
 			if (docSetFile.Products.Count > 0)
 			{
@@ -182,6 +203,15 @@ public record ConfigurationFile
 			context.EmitError(context.ConfigurationPath, $"Could not load docset.yml: {e.Message}");
 			throw;
 		}
+	}
+
+	private static string? NormalizeStorybookValue(string? value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return null;
+
+		var trimmed = value.Trim();
+		return trimmed.Length > 1 && trimmed.EndsWith('/') ? trimmed.TrimEnd('/') : trimmed;
 	}
 
 	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)

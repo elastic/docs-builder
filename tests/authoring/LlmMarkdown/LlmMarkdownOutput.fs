@@ -52,6 +52,19 @@ def hello():
 ```
 """
 
+type ``empty code blocks`` () =
+    static let markdown = Setup.Document """
+```python
+```
+"""
+
+    [<Fact>]
+    let ``render without crashing`` () =
+        markdown |> convertsToNewLLM """
+```python
+```
+"""
+
 type ``enhanced code blocks`` () =
     static let markdown = Setup.Document """
 ```python title="Hello World Example"

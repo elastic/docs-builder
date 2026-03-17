@@ -19,6 +19,7 @@ using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
+using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Syntax;
 
@@ -102,17 +103,24 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 		for (var i = 0; i <= lastNonEmptyIndex; i++)
 		{
 			var line = obj.Lines.Lines[i];
-			renderer.WriteLine(line.ToString());
+			renderer.WriteLine(GetLineText(line));
 		}
 	}
 
 	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
 	{
-		var lastNonEmptyIndex = obj.Lines.Lines.Length - 1;
-		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
+		var lines = obj.Lines.Lines;
+		if (lines is null || lines.Length == 0)
+			return -1;
+
+		var lastNonEmptyIndex = lines.Length - 1;
+		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(GetLineText(lines[lastNonEmptyIndex])))
 			lastNonEmptyIndex--;
 		return lastNonEmptyIndex;
 	}
+
+	private static string GetLineText(StringLine line) =>
+		line.Slice.Text is null ? string.Empty : line.Slice.ToString();
 
 	private static void WriteContributorsBlock(PlainTextRenderer renderer, ContributorsBlock block)
 	{

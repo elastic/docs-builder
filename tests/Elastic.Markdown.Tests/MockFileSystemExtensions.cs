@@ -13,7 +13,8 @@ public static class MockFileSystemExtensions
 		this MockFileSystem fileSystem,
 		IDirectoryInfo root,
 		Dictionary<string, string>? globalVariables = null,
-		IReadOnlyList<string>? products = null)
+		IReadOnlyList<string>? products = null,
+		string? extraYaml = null)
 	{
 		// language=yaml
 		var yaml = new StringWriter();
@@ -46,6 +47,9 @@ public static class MockFileSystemExtensions
 			foreach (var (key, value) in globalVariables)
 				yaml.WriteLine($"  {key}: {value}");
 		}
+
+		if (!string.IsNullOrWhiteSpace(extraYaml))
+			yaml.WriteLine(extraYaml.Trim());
 
 		fileSystem.AddFile(Path.Combine(root.FullName, "docset.yml"), new MockFileData(yaml.ToString()));
 	}

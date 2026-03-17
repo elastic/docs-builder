@@ -65,6 +65,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "codex")]
 	public CodexDocSetMetadata? Codex { get; set; }
 
+	[YamlMember(Alias = "storybook")]
+	public DocumentationSetStorybook? Storybook { get; set; }
+
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
 	{
 		if (item is FileRef fileRef)
@@ -576,6 +579,19 @@ public class DocumentationSetFeatures
 	public bool? PrimaryNav { get; set; }
 	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
 	public bool? DisableGithubEditLink { get; set; }
+}
+
+[YamlSerializable]
+public class DocumentationSetStorybook
+{
+	[YamlMember(Alias = "root")]
+	public string? Root { get; set; }
+
+	[YamlMember(Alias = "server_root")]
+	public string? ServerRoot { get; set; }
+
+	[YamlMember(Alias = "allowed_roots")]
+	public List<string> AllowedRoots { get; set; } = [];
 }
 
 /// <summary>
