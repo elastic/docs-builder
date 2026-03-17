@@ -71,23 +71,23 @@ public abstract class ChangelogTestBase : IDisposable
 					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
 				}
 			},
-		{
-			"cloud-serverless", new Product
 			{
-				Id = "cloud-serverless",
-				DisplayName = "Elastic Cloud Serverless",
-				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
-			}
-		},
-		{
-			"security", new Product
+				"cloud-serverless", new Product
+				{
+					Id = "cloud-serverless",
+					DisplayName = "Elastic Cloud Serverless",
+					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+				}
+			},
 			{
-				Id = "security",
-				DisplayName = "Elastic Security",
-				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+				"security", new Product
+				{
+					Id = "security",
+					DisplayName = "Elastic Security",
+					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+				}
 			}
-		}
-	};
+		};
 		var productsConfiguration = new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),

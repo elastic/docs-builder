@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -633,7 +632,7 @@ public partial class ChangelogBundlingService(
 		return issue.ToLowerInvariant();
 	}
 
-	private IReadOnlyList<MatchedChangelogFile> ApplyBundleFilter(
+	private static IReadOnlyList<MatchedChangelogFile> ApplyBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
