@@ -119,36 +119,35 @@ The configuration can include publish rules to filter entries by type or area.
 
 Product ID for loading product-specific publish rules from `changelog.yml`. The directive resolves the product ID in this order:
 
-1. **Explicit `:product:` option** - if specified, uses that product ID
-2. **Docset's single product** - if the docset has exactly one product configured in `docset.yml`, uses that product ID automatically
-3. **Global fallback** - uses the global `rules.publish` configuration
+1. **Explicit `:product:` option** — if specified, uses that product ID
+2. **Docset's single product** — if the docset has exactly one product configured in `docset.yml`, uses that product ID automatically
+3. **Global fallback** — uses the global `rules.publish` configuration
 
-This automatic fallback means most single-product docsets don't need to specify `:product:` explicitly - the directive will automatically use the docset's product for publish rule lookup.
+:::{important}
+`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time instead of render time.
+For details, refer to [Filtering entries with publish rules](#filtering-entries-with-publish-rules).
+:::
 
-**Example docset with single product:**
+**When to set `:product:` explicitly:**
+
+Always specify `:product:` when your docset serves more than one product, or when bundle files can contain entries from multiple products and you have per-product rules configured.
+Without an explicit `:product:`, the directive falls back to global rules, which may not apply the right filtering for each product.
+
+```markdown
+:::{changelog}
+:product: kibana
+:::
+```
+
+**Single-product docsets:**
+
+If your `docset.yml` declares exactly one product, the directive uses that product ID automatically and you don't need to set `:product:`:
 
 ```yaml
 # docset.yml
 products:
   - id: kibana
-toc:
-  - file: release-notes.md
 ```
-
-```yaml
-# changelog.yml
-rules:
-  publish:
-    products:
-      kibana:
-        exclude_types:
-          - docs
-        exclude_areas:
-          - "Elastic Observability solution"
-          - "Elastic Security solution"
-```
-
-With this configuration, the directive will automatically use the `kibana` product rules:
 
 ```markdown
 :::{changelog}
@@ -157,7 +156,7 @@ With this configuration, the directive will automatically use the `kibana` produ
 
 **Explicit override:**
 
-You can override the automatic product detection by specifying `:product:` explicitly:
+You can override the automatic product detection at any time:
 
 ```markdown
 :::{changelog}
@@ -165,197 +164,26 @@ You can override the automatic product detection by specifying `:product:` expli
 :::
 ```
 
-This is useful when:
-- The docset has multiple products and you want a specific one
-- You want to use a different product's rules than the docset default
-
 The product ID matching is case-insensitive.
 
 ## Filtering entries with bundle rules
 
-You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file.
+You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
 
-:::{tip}
-This method will replace filtering entries with publish rules. The changelog bundle will ultimately be the source of truth for what appears in the documentation.
-:::
-
-Refer to the [`changelog bundle`](../cli/release/changelog-bundle.md) command..
+`rules.bundle` supports product, type, and area filtering, and per-product overrides.
+For full syntax, refer to the [rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).
 
 ## Filtering entries with publish rules
 
-You can filter changelog entries from the rendered output using the `rules.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
+:::{warning}
+`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time. Using `rules.publish` emits a deprecation warning during configuration loading.
+:::
+
+`rules.publish` still works for backward compatibility and can be used to filter changelog entries from the rendered output using the `rules.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
 
 Each field supports **exclude** (block if matches) or **include** (block if doesn't match) semantics. You cannot mix both for the same field (for example, you cannot specify both `exclude_types` and `include_types`).
 
-For areas, you can control the matching mode with `match_areas`:
-- `any` (default): block if ANY entry area matches the list
-- `all`: block only if ALL entry areas match the list
-
-The `match_areas` setting inherits from the global `rules.match` if not specified. Product-level `match_areas` inherits from the parent `publish.match_areas`:
-
-```
-rules.match → publish.match_areas → publish.products.{id}.match_areas
-```
-
-### Configuration syntax
-
-Create a `changelog.yml` file in your docset root (or `docs/changelog.yml`):
-
-```yaml
-rules:
-  # Global publish rules (applies to all products)
-  publish:
-    # match_areas: any
-    exclude_types:
-      - docs           # Hide documentation entries
-      - regression     # Hide regression entries
-    exclude_areas:
-      - Internal       # Hide entries with "Internal" area
-      - Experimental   # Hide entries with "Experimental" area
-
-    # Product-specific rules (override global rules)
-    products:
-      kibana:
-        exclude_types:
-          - docs
-        exclude_areas:
-          - "Elastic Observability solution"
-          - "Elastic Security solution"
-      cloud-serverless:
-        exclude_types:
-          - docs
-        exclude_areas:
-          - "Snapshot and restore"
-```
-
-Product-specific rules are applied automatically when your docset has a single product configured. For docsets with multiple products or to override the automatic detection, specify the `:product:` option:
-
-```markdown
-:::{changelog}
-:product: kibana
-:::
-```
-
-### Filtering by type
-
-The `exclude_types` or `include_types` list filters entries based on their changelog entry type. Matching is **case-insensitive**.
-
-| Type | Description |
-|------|-------------|
-| `feature` | New features |
-| `enhancement` | Improvements to existing features |
-| `security` | Security advisories and fixes |
-| `bug-fix` | Bug fixes |
-| `breaking-change` | Breaking changes |
-| `deprecation` | Deprecated functionality |
-| `known-issue` | Known issues |
-| `docs` | Documentation changes |
-| `regression` | Regressions |
-| `other` | Other changes |
-
-Example - hide documentation and regression entries:
-
-```yaml
-rules:
-  publish:
-    exclude_types:
-      - docs
-      - regression
-```
-
-Example - only show feature and bug-fix entries:
-
-```yaml
-rules:
-  publish:
-    include_types:
-      - feature
-      - bug-fix
-```
-
-### Filtering by area
-
-The `exclude_areas` or `include_areas` list filters entries based on their area/component tags. By default (`match_areas: any`), an entry is blocked if **any** of its areas match. With `match_areas: all`, an entry is blocked only if **all** of its areas match. Matching is **case-insensitive**.
-
-Example - hide internal and experimental entries:
-
-```yaml
-rules:
-  publish:
-    exclude_areas:
-      - Internal
-      - Experimental
-      - Testing
-```
-
-Example - only show entries with specific areas, requiring all areas to match:
-
-```yaml
-rules:
-  publish:
-    match_areas: all
-    include_areas:
-      - "Search"
-      - "Monitoring"
-```
-
-The `match_areas` setting controls how areas are compared. Here is a quick reference:
-
-| Config | Entry areas | match_areas | Result |
-|--------|------------|-------------|--------|
-| `exclude_areas: [Internal]` | `[Search, Internal]` | `any` | **Hidden** ("Internal" matches) |
-| `exclude_areas: [Internal]` | `[Search, Internal]` | `all` | **Shown** (not all areas are in the exclude list) |
-| `include_areas: [Search]` | `[Search, Internal]` | `any` | **Shown** ("Search" matches) |
-| `include_areas: [Search]` | `[Search, Internal]` | `all` | **Hidden** ("Internal" is not in the include list) |
-
-Product-specific rules can override `match_areas`:
-
-```yaml
-rules:
-  match: any
-  publish:
-    # inherits match_areas: any from rules.match
-    exclude_areas:
-      - Internal
-    products:
-      cloud-serverless:
-        match_areas: all
-        include_areas:
-          - "Search"
-          - "Monitoring"
-```
-
-### Combining type and area filters
-
-You can combine both type and area filters. An entry is blocked if it matches **either** a blocked type **or** a blocked area. You can mix exclude and include across fields (for example, `exclude_types` with `include_areas`).
-
-```yaml
-rules:
-  publish:
-    exclude_types:
-      - docs
-      - deprecation
-    exclude_areas:
-      - Internal
-```
-
-This configuration will hide:
-- All entries with type `docs` or `deprecation`
-- All entries with the `Internal` area tag (regardless of type)
-
-### Example: Cloud Serverless configuration
-
-For Cloud Serverless releases where you want to hide certain entry types:
-
-```yaml
-# changelog.yml
-rules:
-  publish:
-    exclude_types:
-      - docs           # Documentation changes handled separately
-      - deprecation    # Deprecations shown on dedicated page
-      - known-issue    # Known issues shown on dedicated page
-```
+For details, refer to the [Rules reference](/contribute/changelog.md#rules-reference).
 
 ## Feature hiding from bundles
 
