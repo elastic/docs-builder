@@ -204,4 +204,68 @@ public class BlockingLabelTests(ITestOutputHelper output) : CreateChangelogTestB
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(0); // No files should be created
 	}
+
+	[Fact]
+	public async Task CreateChangelog_WithLabelDerivedProduct_AppliesProductSpecificCreateRule()
+	{
+		// This test verifies the timing fix: products derived from pivot.products label mapping
+		// are available before rules.create.products is evaluated (the blocker check).
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "PR with product label and blocking label",
+			Labels = ["type:feature", ":stack/elasticsearch", "skip:releaseNotes"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'elasticsearch':
+			      - ":stack/elasticsearch"
+			lifecycles:
+			  - ga
+			rules:
+			  create:
+			    products:
+			      elasticsearch:
+			        exclude: "skip:releaseNotes"
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		// No --products provided; products must be derived from labels to trigger the product-specific rule
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert — product-specific rule should have blocked creation
+		result.Should().BeTrue(); // Succeed but skip
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping changelog creation") && d.Message.Contains("skip:releaseNotes"));
+
+		var outputDir = input.Output;
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(0);
+	}
 }

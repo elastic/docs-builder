@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Linq;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -19,7 +20,7 @@ namespace Elastic.Changelog.Bundling;
 /// </summary>
 public record ChangelogRemoveArguments
 {
-	public required string Directory { get; init; }
+	public string? Directory { get; init; }
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? Products { get; init; }
 	public string[]? Prs { get; init; }
@@ -36,6 +37,18 @@ public record ChangelogRemoveArguments
 
 	/// <summary>Version number or promotion report URL/path when using a profile.</summary>
 	public string? ProfileArgument { get; init; }
+
+	/// <summary>
+	/// Optional third profile argument: a promotion report URL/path or URL list file to use as the
+	/// PR/issue filter source when <see cref="ProfileArgument"/> is the version string.
+	/// </summary>
+	public string? ProfileReport { get; init; }
+
+	/// <summary>
+	/// Promotion report URL or file path for option-based removal (<c>--report</c>).
+	/// When set, the report is parsed and the extracted PR URLs become the effective PR filter.
+	/// </summary>
+	public string? Report { get; init; }
 }
 
 /// <summary>
@@ -49,11 +62,13 @@ public record BundleDependency(string ChangelogFile, string BundleFile);
 public class ChangelogRemoveService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null)
+	IFileSystem? fileSystem = null,
+	IGitHubReleaseService? releaseService = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRemoveService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
 		: null;
@@ -62,22 +77,41 @@ public class ChangelogRemoveService(
 	{
 		try
 		{
+			// Load changelog configuration
 			ChangelogConfiguration? config = null;
-			if (_configLoader != null)
+			if (!string.IsNullOrWhiteSpace(input.Profile))
+			{
+				// Profile mode requires the config file to exist — no fallback to defaults.
+				if (_configLoader == null)
+				{
+					collector.EmitError(string.Empty, "Changelog configuration loader is required for profile-based removal.");
+					return false;
+				}
+				// When an explicit config path is provided, load it (required, no fallback).
+				// Otherwise, discover from CWD: ./changelog.yml then ./docs/changelog.yml.
+				config = string.IsNullOrWhiteSpace(input.Config)
+					? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
+					: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+				if (config == null)
+					return false;
+			}
+			else if (_configLoader != null)
 				config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 
 			// Handle profile-based removal (same ordering as ChangelogBundlingService)
 			if (!string.IsNullOrWhiteSpace(input.Profile))
 			{
 				var filterResult = await ProfileFilterResolver.ResolveAsync(
-					collector,
-					input.Profile,
-					input.ProfileArgument,
-					config,
-					_fileSystem,
-					_logger,
-					ctx
-				);
+						collector,
+						input.Profile,
+						input.ProfileArgument,
+						config,
+						_fileSystem,
+						_logger,
+						ctx,
+						input.ProfileReport,
+						_releaseService
+					);
 
 				if (filterResult == null)
 					return false;
@@ -86,8 +120,18 @@ public class ChangelogRemoveService(
 				{
 					Products = filterResult.Products,
 					Prs = filterResult.Prs,
+					Issues = filterResult.Issues,
 					All = false
 				};
+			}
+			else if (!string.IsNullOrWhiteSpace(input.Report))
+			{
+				// Option-based mode with --report: parse report and populate Prs
+				var parser = new PromotionReportParser(logFactory, _fileSystem);
+				var prs = await parser.ParseReportToPrUrlsAsync(collector, input.Report, ctx);
+				if (prs == null)
+					return false;
+				input = input with { Prs = prs };
 			}
 
 			input = ApplyConfigDefaults(input, config);
@@ -116,13 +160,14 @@ public class ChangelogRemoveService(
 			}
 
 			// A placeholder output path is passed to discovery so the bundle file itself is excluded.
-			var placeholderOutput = _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
+			// Directory is non-null here: ApplyConfigDefaults ensures a value and ValidateInput enforces non-empty.
+			var placeholderOutput = _fileSystem.Path.Combine(input.Directory!, "changelog-bundle.yaml");
 			var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
-			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory, placeholderOutput, ctx);
+			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory!, placeholderOutput, ctx);
 
 			if (yamlFiles.Count == 0)
 			{
-				collector.EmitError(input.Directory, "No changelog YAML files found in directory");
+				collector.EmitError(input.Directory!, "No changelog YAML files found in directory");
 				return false;
 			}
 
@@ -196,15 +241,13 @@ public class ChangelogRemoveService(
 
 	private ChangelogRemoveArguments ApplyConfigDefaults(ChangelogRemoveArguments input, ChangelogConfiguration? config)
 	{
-		if (config?.Bundle == null)
-			return input;
+		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
-		var directory = input.Directory;
-		if ((string.IsNullOrWhiteSpace(directory) || directory == _fileSystem.Directory.GetCurrentDirectory())
-			&& !string.IsNullOrWhiteSpace(config.Bundle.Directory))
-			directory = config.Bundle.Directory;
+		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+		var repo = input.Repo ?? config?.Bundle?.Repo;
+		var owner = input.Owner ?? config?.Bundle?.Owner;
 
-		return input with { Directory = directory };
+		return input with { Directory = directory, Repo = repo, Owner = owner };
 	}
 
 	private bool ValidateInput(IDiagnosticsCollector collector, ChangelogRemoveArguments input)
@@ -371,12 +414,13 @@ public class ChangelogRemoveService(
 		}
 
 		// 3. {directory}/bundles
-		var sibling = _fileSystem.Path.Combine(input.Directory, "bundles");
+		// Directory is guaranteed non-null at this point (ApplyConfigDefaults + ValidateInput).
+		var sibling = _fileSystem.Path.Combine(input.Directory!, "bundles");
 		if (_fileSystem.Directory.Exists(sibling))
 			return sibling;
 
 		// 4. {directory}/../bundles
-		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory);
+		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory!);
 		if (!string.IsNullOrWhiteSpace(dirParent))
 		{
 			var parentBundles = _fileSystem.Path.Combine(dirParent, "bundles");

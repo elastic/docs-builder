@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Services;
@@ -148,7 +149,7 @@ public class IsolatedBuildService(
 			context.LegacyUrlMappings,
 			set.Configuration,
 			context.Git);
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, "isolated");
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -179,7 +180,7 @@ public class IsolatedBuildService(
 	/// When <paramref name="externalExporters"/> is provided, those exporters are used instead of
 	/// creating new ones, and their lifecycle (Start/Stop) is not managed by this method.
 	/// </summary>
-	public async Task<bool> BuildDocumentationSet(
+	public async Task<BuildDocumentationSetResult> BuildDocumentationSet(
 		DocumentationSet documentationSet,
 		INavigationTraversable? navigation = null,
 		INavigationHtmlWriter? navigationHtmlWriter = null,
@@ -199,7 +200,8 @@ public class IsolatedBuildService(
 		else
 		{
 			exporters ??= ExportOptions.Default;
-			allExporters = exporters.CreateMarkdownExporters(logFactory, context, "codex").ToArray();
+			context.Endpoints.BuildType = "codex";
+			allExporters = exporters.CreateMarkdownExporters(logFactory, context).ToArray();
 		}
 
 		if (manageLifecycle)
@@ -220,7 +222,7 @@ public class IsolatedBuildService(
 			allExporters,
 			pageViewFactory: pageViewFactory);
 
-		_ = await generator.GenerateAll(ctx);
+		var result = await generator.GenerateAll(ctx);
 
 		if (manageLifecycle)
 		{
@@ -230,6 +232,13 @@ public class IsolatedBuildService(
 
 		_logger.LogInformation("Finished building documentation set {Name}", documentationSet.Context.Git.RepositoryName);
 
-		return context.Collector.Errors == 0;
+		return new BuildDocumentationSetResult(context.Collector.Errors == 0, result.Redirects);
 	}
 }
+
+/// <summary>
+/// Result of building a documentation set, including redirects for aggregation in portal builds.
+/// </summary>
+/// <param name="Success">Whether the build completed without errors.</param>
+/// <param name="Redirects">Redirect mappings from the documentation set, if available.</param>
+public record BuildDocumentationSetResult(bool Success, IReadOnlyDictionary<string, LinkRedirect> Redirects);

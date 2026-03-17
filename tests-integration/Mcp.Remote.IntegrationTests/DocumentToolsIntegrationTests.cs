@@ -19,6 +19,7 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		// Arrange
 		var (documentTools, clientAccessor) = CreateDocumentTools();
 		Assert.SkipUnless(documentTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
 		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -53,6 +54,7 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		// Arrange
 		var (documentTools, clientAccessor) = CreateDocumentTools();
 		Assert.SkipUnless(documentTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
 		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -76,6 +78,7 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 		// Arrange
 		var (documentTools, clientAccessor) = CreateDocumentTools();
 		Assert.SkipUnless(documentTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
 		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 

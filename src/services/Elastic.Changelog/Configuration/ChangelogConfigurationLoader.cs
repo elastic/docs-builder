@@ -116,6 +116,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		IReadOnlyList<string>? availableAreas;
 		Dictionary<string, string>? labelToType;
 		Dictionary<string, string>? labelToAreas;
+		Dictionary<string, string>? labelToProducts;
 		PivotConfiguration? pivot = null;
 
 		if (yamlConfig.Pivot != null)
@@ -198,6 +199,24 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 			// Build LabelToAreas mapping (inverted from pivot.areas)
 			labelToAreas = BuildLabelToAreasMapping(yamlConfig.Pivot.Areas);
+
+			// Validate product IDs in pivot.products keys and build LabelToProducts mapping
+			if (yamlConfig.Pivot.Products is { Count: > 0 })
+			{
+				foreach (var productSpec in yamlConfig.Pivot.Products.Keys)
+				{
+					var specParts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					if (specParts.Length == 0)
+						continue;
+					var productId = specParts[0].Replace('_', '-');
+					if (validProductIds.Contains(productId))
+						continue;
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(configPath, $"Product '{specParts[0]}' in pivot.products is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					return null;
+				}
+			}
+			labelToProducts = BuildLabelToProductsMapping(yamlConfig.Pivot.Products);
 		}
 		else
 		{
@@ -207,6 +226,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			availableAreas = null;
 			labelToType = null;
 			labelToAreas = null;
+			labelToProducts = null;
 		}
 
 		// Process lifecycles
@@ -275,6 +295,19 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Issues = yamlConfig.Extract?.Issues ?? true
 		};
 
+		// Process filename strategy
+		var filenameStrategy = FilenameStrategy.Timestamp;
+		if (!string.IsNullOrWhiteSpace(yamlConfig.Filename))
+		{
+			if (!FilenameStrategyExtensions.TryParse(yamlConfig.Filename, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true))
+			{
+				var valid = string.Join(", ", FilenameStrategyExtensions.GetValues().Select(v => v.ToStringFast(true)));
+				collector.EmitError(configPath, $"filename: '{yamlConfig.Filename}' is not valid. Use one of: {valid}");
+				return null;
+			}
+			filenameStrategy = parsed;
+		}
+
 		return new ChangelogConfiguration
 		{
 			Pivot = pivot,
@@ -285,11 +318,13 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Products = products,
 			LabelToType = labelToType,
 			LabelToAreas = labelToAreas,
+			LabelToProducts = labelToProducts,
 			Rules = rules,
 			HighlightLabels = highlightLabels,
 			ProductsConfiguration = productsConfig,
 			Bundle = bundleConfig,
-			Extract = extract
+			Extract = extract,
+			Filename = filenameStrategy
 		};
 	}
 
@@ -314,6 +349,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Types = types,
 			Subtypes = ConvertLenientDictToStringDict(yamlPivot.Subtypes),
 			Areas = ConvertLenientDictToStringDict(yamlPivot.Areas),
+			Products = ConvertLenientDictToStringDict(yamlPivot.Products),
 			Highlight = JoinLenientList(yamlPivot.Highlight)
 		};
 	}
@@ -406,12 +442,18 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		{
 			profiles = yaml.Profiles.ToDictionary(
 				kvp => kvp.Key,
-				kvp => new BundleProfile
-				{
-					Products = kvp.Value.Products,
-					Output = kvp.Value.Output,
-					HideFeatures = kvp.Value.HideFeatures?.Values
-				});
+				kvp => kvp.Value is null
+					? new BundleProfile()
+					: new BundleProfile
+					{
+						Products = kvp.Value.Products,
+						Output = kvp.Value.Output,
+						OutputProducts = kvp.Value.OutputProducts,
+						Repo = kvp.Value.Repo,
+						Owner = kvp.Value.Owner,
+						HideFeatures = kvp.Value.HideFeatures?.Values,
+						Source = kvp.Value.Source
+					});
 		}
 
 		return new BundleConfiguration
@@ -419,8 +461,102 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Directory = yaml.Directory,
 			OutputDirectory = yaml.OutputDirectory,
 			Resolve = yaml.Resolve ?? true,
+			Repo = yaml.Repo,
+			Owner = yaml.Owner,
 			Profiles = profiles
 		};
+	}
+
+	/// <summary>
+	/// Loads changelog configuration from a specific path, treating a missing file as a hard error.
+	/// Used in profile mode when an explicit config path was provided (e.g. in tests).
+	/// </summary>
+	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationRequired(IDiagnosticsCollector collector, string configPath, Cancel ctx)
+	{
+		if (!fileSystem.File.Exists(configPath))
+		{
+			collector.EmitError(
+				configPath,
+				$"Changelog configuration file not found at '{configPath}'. " +
+				"Either run 'docs-builder changelog init' to create one, " +
+				"or re-run from the folder where changelog.yml exists."
+			);
+			return null;
+		}
+
+		try
+		{
+			var yamlContent = await fileSystem.File.ReadAllTextAsync(configPath, ctx);
+			var yamlConfig = DeserializeConfiguration(yamlContent);
+			return ParseConfiguration(collector, yamlConfig, configPath);
+		}
+		catch (IOException ex)
+		{
+			collector.EmitError(configPath, $"I/O error loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			collector.EmitError(configPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (YamlDotNet.Core.YamlException ex)
+		{
+			collector.EmitError(configPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Discovers and loads the changelog configuration for profile mode.
+	/// Unlike <see cref="LoadChangelogConfiguration"/>, this method treats a missing config file as a
+	/// hard error. It searches for <c>changelog.yml</c> then <c>docs/changelog.yml</c> relative to the
+	/// current working directory, so the command works when run from any folder that contains the file.
+	/// </summary>
+	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationForProfileMode(IDiagnosticsCollector collector, Cancel ctx)
+	{
+		var cwd = fileSystem.Directory.GetCurrentDirectory();
+		var candidates = new[]
+		{
+			fileSystem.Path.Combine(cwd, "changelog.yml"),
+			fileSystem.Path.Combine(cwd, "docs", "changelog.yml")
+		};
+
+		var foundPath = candidates.FirstOrDefault(fileSystem.File.Exists);
+
+		if (foundPath == null)
+		{
+			collector.EmitError(
+				string.Empty,
+				"changelog.yml not found. Profile-based commands require a changelog configuration file. " +
+				"Either run 'docs-builder changelog init' to create one, " +
+				"or re-run this command from the folder where changelog.yml exists " +
+				"(e.g. the project root if the file is at docs/changelog.yml)."
+			);
+			return null;
+		}
+
+		try
+		{
+			var yamlContent = await fileSystem.File.ReadAllTextAsync(foundPath, ctx);
+			var yamlConfig = DeserializeConfiguration(yamlContent);
+			return ParseConfiguration(collector, yamlConfig, foundPath);
+		}
+		catch (IOException ex)
+		{
+			collector.EmitError(foundPath, $"I/O error loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (UnauthorizedAccessException ex)
+		{
+			collector.EmitError(foundPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
+			return null;
+		}
+		catch (YamlDotNet.Core.YamlException ex)
+		{
+			collector.EmitError(foundPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
+			return null;
+		}
 	}
 
 	private RulesConfiguration? ParseRulesConfiguration(
@@ -450,6 +586,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (createRules == null && collector.Errors > 0)
 			return null;
 
+		// Parse bundle rules
+		var bundleRules = ParseBundleRules(collector, rulesYaml.Bundle, configPath, validProductIds, globalMatch);
+		if (bundleRules == null && collector.Errors > 0)
+			return null;
+
 		// Parse publish rules
 		var publishRules = ParsePublishRules(collector, rulesYaml.Publish, configPath, validProductIds, "rules.publish", globalMatch);
 		if (publishRules == null && collector.Errors > 0)
@@ -459,8 +600,81 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		{
 			Match = globalMatch,
 			Create = createRules,
+			Bundle = bundleRules,
 			Publish = publishRules
 		};
+	}
+
+	private BundleRules? ParseBundleRules(
+		IDiagnosticsCollector collector,
+		BundleRulesYaml? yaml,
+		string configPath,
+		HashSet<string> validProductIds,
+		MatchMode inheritedMatch)
+	{
+		if (yaml == null)
+			return null;
+
+		// Validate mutual exclusivity
+		if (yaml.ExcludeProducts?.Values is { Count: > 0 } && yaml.IncludeProducts?.Values is { Count: > 0 })
+		{
+			collector.EmitError(configPath, "rules.bundle: cannot have both 'exclude_products' and 'include_products'. Use one or the other.");
+			return null;
+		}
+
+		// Parse and validate product lists
+		var excludeProducts = ParseAndValidateProductList(collector, yaml.ExcludeProducts, configPath, validProductIds, "rules.bundle.exclude_products");
+		if (excludeProducts == null && collector.Errors > 0)
+			return null;
+
+		var includeProducts = ParseAndValidateProductList(collector, yaml.IncludeProducts, configPath, validProductIds, "rules.bundle.include_products");
+		if (includeProducts == null && collector.Errors > 0)
+			return null;
+
+		// Parse match_products
+		var matchProducts = inheritedMatch;
+		if (!string.IsNullOrWhiteSpace(yaml.MatchProducts))
+		{
+			var parsed = ParseMatchMode(yaml.MatchProducts);
+			if (parsed == null)
+			{
+				collector.EmitError(configPath, $"rules.bundle.match_products: '{yaml.MatchProducts}' is not valid. Use 'any' or 'all'.");
+				return null;
+			}
+			matchProducts = parsed.Value;
+		}
+
+		return new BundleRules
+		{
+			ExcludeProducts = excludeProducts,
+			IncludeProducts = includeProducts,
+			MatchProducts = matchProducts
+		};
+	}
+
+	private static IReadOnlyList<string>? ParseAndValidateProductList(
+		IDiagnosticsCollector collector,
+		YamlLenientList? list,
+		string configPath,
+		HashSet<string> validProductIds,
+		string fieldPath)
+	{
+		if (list?.Values is not { Count: > 0 } values)
+			return null;
+
+		var result = new List<string>();
+		foreach (var rawId in values)
+		{
+			var normalizedId = rawId.Replace('_', '-');
+			if (!validProductIds.Contains(normalizedId))
+			{
+				var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+				collector.EmitError(configPath, $"{fieldPath}: '{rawId}' is not in the list of available products. Available products: {availableProducts}");
+				return null;
+			}
+			result.Add(normalizedId);
+		}
+		return result;
 	}
 
 	private CreateRules? ParseCreateRules(
@@ -734,5 +948,28 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		}
 
 		return labelToAreas.Count > 0 ? labelToAreas : null;
+	}
+
+	/// <summary>
+	/// Builds LabelToProducts mapping by inverting pivot.products entries.
+	/// Each label in a product entry maps to that product spec string.
+	/// </summary>
+	private static Dictionary<string, string>? BuildLabelToProductsMapping(Dictionary<string, YamlLenientList?>? products)
+	{
+		if (products == null || products.Count == 0)
+			return null;
+
+		var labelToProducts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var (productSpec, labelList) in products)
+		{
+			if (labelList?.Values == null)
+				continue;
+
+			foreach (var label in labelList.Values)
+				labelToProducts[label] = productSpec;
+		}
+
+		return labelToProducts.Count > 0 ? labelToProducts : null;
 	}
 }

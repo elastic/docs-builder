@@ -43,6 +43,20 @@ public static class ChangelogRenderUtilities
 	}
 
 	/// <summary>
+	/// Gets the entry context (repo, owner, hideLinks, shouldHide) for a specific entry.
+	/// </summary>
+	public static (string EntryRepo, string EntryOwner, bool HideLinks, bool ShouldHide) GetEntryContext(
+		ChangelogEntry entry,
+		ChangelogRenderContext context)
+	{
+		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
+		var entryOwner = context.EntryToOwner.GetValueOrDefault(entry, context.Owner);
+		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
+		var shouldHide = ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+		return (entryRepo, entryOwner, hideLinks, shouldHide);
+	}
+
+	/// <summary>
 	/// Determines if an entry should be hidden based on feature IDs or rules configuration
 	/// </summary>
 	public static bool ShouldHideEntry(

@@ -365,17 +365,20 @@ public class ChangelogRenderingService(
 		// Create mappings from entries to their metadata
 		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
 		var entryToRepo = new Dictionary<ChangelogEntry, string>();
+		var entryToOwner = new Dictionary<ChangelogEntry, string>();
 		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
 
 		foreach (var entry in resolved.Entries)
 		{
 			entryToBundleProducts[entry.Entry] = entry.BundleProductIds;
 			entryToRepo[entry.Entry] = entry.Repo;
+			entryToOwner[entry.Entry] = entry.Owner;
 			entryToHideLinks[entry.Entry] = entry.HideLinks;
 		}
 
-		// Use first repo found for section anchors, or default
+		// Use first repo/owner found for section anchors, or default
 		var repoForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Repo : "elastic";
+		var ownerForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Owner : "elastic";
 
 		return new ChangelogRenderContext
 		{
@@ -383,11 +386,13 @@ public class ChangelogRenderingService(
 			Title = outputSetup.Title,
 			TitleSlug = outputSetup.TitleSlug,
 			Repo = repoForAnchors,
+			Owner = ownerForAnchors,
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
+			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config
 		};

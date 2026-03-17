@@ -142,6 +142,26 @@ public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : Direc
 }
 
 
+public class IncludeRelativeTraversalBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+:::{include} ../../../outside.txt
+:::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(@"outside.txt", "some content");
+
+	[Fact]
+	public void EmitsError()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+		Collector.Diagnostics.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
+	}
+}
+
+
 public class CanNotIncludeItself(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
 """
 ```{include} _snippets/test.md

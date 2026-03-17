@@ -33,7 +33,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var changelogData = BuildChangelogData(input);
 
 		// Generate YAML file
-		var yamlContent = GenerateYaml(changelogData, config, titleMissing, typeMissing);
+		var yamlContent = input.Concise
+			? GenerateConciseYaml(changelogData)
+			: GenerateYaml(changelogData, config, titleMissing, typeMissing);
 
 		// Determine output path
 		var outputDir = input.Output ?? fileSystem.Directory.GetCurrentDirectory();
@@ -51,6 +53,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		return true;
 	}
 
+	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
+	private const int MaxFilenameLength = 200;
+
 	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
 		if (input.UsePrNumber && input.Prs is { Length: > 0 })
@@ -64,7 +69,13 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 				.ToList();
 
 			if (numbers.Count > 0)
-				return $"{string.Join("-", numbers)}.yaml";
+			{
+				var joined = $"{string.Join("-", numbers)}.yaml";
+				if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
+					return joined;
+				// Too many PRs: use compact format to avoid path-too-long errors
+				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
+			}
 
 			collector.EmitWarning(string.Empty, $"Failed to extract PR numbers from PRs. Falling back to timestamp-based filename.");
 		}
@@ -80,7 +91,12 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 				.ToList();
 
 			if (numbers.Count > 0)
-				return $"{string.Join("-", numbers)}.yaml";
+			{
+				var joined = $"{string.Join("-", numbers)}.yaml";
+				if (joined.Length <= MaxFilenameLength + 5)
+					return joined;
+				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-issues.yaml";
+			}
 
 			collector.EmitWarning(string.Empty, "Failed to extract issue numbers from issues. Falling back to timestamp-based filename.");
 		}
@@ -252,5 +268,16 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			""";
 
 		return result;
+	}
+
+	private static string GenerateConciseYaml(ChangelogEntry data)
+	{
+		var serializeData = data with
+		{
+			Areas = data.Areas is { Count: 0 } ? null : data.Areas,
+			Issues = data.Issues is { Count: 0 } ? null : data.Issues
+		};
+
+		return ReleaseNotesSerialization.SerializeEntry(serializeData);
 	}
 }

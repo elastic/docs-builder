@@ -128,7 +128,7 @@
 			}
 			@if (ctx.ShowVersionInfo)
 			{
-				var propVersionInfo = propSchema.Extensions?.TryGetValue("x-state", out var propStateValue) == true && propStateValue is System.Text.Json.Nodes.JsonNode propStateNode ? propStateNode.ToString() : null;
+				var propVersionInfo = (propSchema.Extensions?.TryGetValue("x-state", out var propStateValue) == true && propStateValue is JsonNodeExtension propStateExt) ? propStateExt.Node.GetValue<string>() : null;
 				if (!string.IsNullOrEmpty(propVersionInfo))
 				{
 					<span class="version-badge">@propVersionInfo</span>

@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
@@ -13,6 +14,7 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
 using Markdig.Parsers;
@@ -130,6 +132,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{math}") > 0)
 			return new MathBlock(this, context);
 
+		if (info.IndexOf("{agent-skill}") > 0)
+			return new AgentSkillBlock(this, context);
+
 		foreach (var admonition in Admonitions)
 		{
 			if (info.IndexOf(admonition) > 0)
@@ -153,6 +158,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{button}") > 0)
 			return new ButtonBlock(this, context);
+
+		if (info.IndexOf("{table}") > 0)
+			return new TableDirectiveBlock(this, context);
 
 		return new UnknownDirectiveBlock(this, info.ToString(), context);
 	}

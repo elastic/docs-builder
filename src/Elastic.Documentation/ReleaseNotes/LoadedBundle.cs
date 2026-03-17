@@ -9,12 +9,14 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 /// <param name="Version">The semantic version or date extracted from the bundle.</param>
 /// <param name="Repo">The repository/product name.</param>
+/// <param name="Owner">The GitHub owner (organization or user) for PR/issue link generation.</param>
 /// <param name="Data">The full parsed bundle data.</param>
 /// <param name="FilePath">The absolute path to the bundle file.</param>
 /// <param name="Entries">Resolved changelog entries (from inline data or file references).</param>
 public record LoadedBundle(
 	string Version,
 	string Repo,
+	string Owner,
 	Bundle Data,
 	string FilePath,
 	IReadOnlyList<ChangelogEntry> Entries)

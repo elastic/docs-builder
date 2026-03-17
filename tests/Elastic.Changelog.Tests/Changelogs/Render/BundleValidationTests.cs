@@ -108,7 +108,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		Collector.Warnings.Should().Be(0, "all checksums match, no warnings expected");
 
 		// Verify all 3 entries were rendered
-		var indexFile = FileSystem.Path.Combine(input.Output!, "9.2.0", "index.md");
+		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
+		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue("output should be rendered");
 		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 		content.Should().Contain("Feature one");
@@ -215,7 +216,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		result.Should().BeTrue();
 		Collector.Warnings.Should().Be(0, "resolved entries skip checksum validation");
 
-		var indexFile = FileSystem.Path.Combine(input.Output!, "9.2.0", "index.md");
+		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
+		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
 		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 		content.Should().Contain("Resolved amend feature");
 	}
