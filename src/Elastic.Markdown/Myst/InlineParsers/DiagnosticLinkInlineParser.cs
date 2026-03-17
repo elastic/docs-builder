@@ -464,5 +464,5 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
 		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase)
-		|| scheme.Equals("vscode", StringComparison.OrdinalIgnoreCase);
+		|| scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
 }
