@@ -7,4 +7,6 @@ namespace Elastic.Markdown.Myst.Directives.AgentSkill;
 public class AgentSkillViewModel : DirectiveViewModel
 {
 	public required string Url { get; init; }
+	public bool HasBody { get; init; }
+	public required string LearnMoreUrl { get; init; }
 }
