@@ -40,7 +40,12 @@ public enum ChangelogTypeFilter
 	/// <summary>
 	/// Show only known issue entries.
 	/// </summary>
-	KnownIssue
+	KnownIssue,
+
+	/// <summary>
+	/// Show only highlighted entries (where highlight == true).
+	/// </summary>
+	Highlight
 }
 
 /// <summary>
@@ -177,7 +182,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	/// <summary>
 	/// Parses and validates the :type: option.
-	/// Valid values: all, breaking-change, deprecation, known-issue.
+	/// Valid values: all, breaking-change, deprecation, known-issue, highlight.
 	/// If not specified, returns Default (excludes separated types).
 	/// </summary>
 	private ChangelogTypeFilter ParseTypeFilter()
@@ -192,13 +197,14 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			"breaking-change" => ChangelogTypeFilter.BreakingChange,
 			"deprecation" => ChangelogTypeFilter.Deprecation,
 			"known-issue" => ChangelogTypeFilter.KnownIssue,
+			"highlight" => ChangelogTypeFilter.Highlight,
 			_ => EmitInvalidTypeFilterWarning(typeValue)
 		};
 	}
 
 	private ChangelogTypeFilter EmitInvalidTypeFilterWarning(string typeValue)
 	{
-		this.EmitWarning($"Invalid :type: value '{typeValue}'. Valid values are: all, breaking-change, deprecation, known-issue. Using default behavior.");
+		this.EmitWarning($"Invalid :type: value '{typeValue}'. Valid values are: all, breaking-change, deprecation, known-issue, highlight. Using default behavior.");
 		return ChangelogTypeFilter.Default;
 	}
 
@@ -320,9 +326,11 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		var loader = new BundleLoader(Build.ReadFileSystem);
 
 		// Load bundles using the BundleLoader service
+		// Emit errors (not warnings) for missing file references so the build fails fast
+		// rather than silently omitting entries from the rendered output.
 		var loadedBundles = loader.LoadBundles(
 			BundlesFolderPath,
-			msg => this.EmitWarning(msg));
+			msg => this.EmitError(msg));
 
 		// Sort by version (descending - newest first)
 		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions
@@ -455,6 +463,20 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Slug = $"{repo}-{titleSlug}-breaking-changes",
 					Level = 3
 				};
+
+			// Check for highlights (any entry with highlight == true) - only show in :type: all
+			var hasHighlights = bundle.Entries.Any(e => e.Highlight == true);
+			if (hasHighlights && TypeFilter == ChangelogTypeFilter.All)
+				yield return new PageTocItem
+				{
+					Heading = "Highlights",
+					Slug = $"{repo}-{titleSlug}-highlights",
+					Level = 3
+				};
+
+			// When filtering by highlight, skip all other type-based sections
+			if (TypeFilter == ChangelogTypeFilter.Highlight)
+				continue;
 
 			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
 				yield return new PageTocItem

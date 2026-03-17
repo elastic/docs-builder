@@ -2,6 +2,11 @@
 
 You can create diagrams using [Mermaid](https://mermaid.js.org/) with standard fenced code blocks. Diagrams are rendered client-side in the browser.
 
+```mermaid
+flowchart LR
+    A[Write Mermaid] --> B[Render diagram]
+```
+
 ## Basic usage
 
 Use a fenced code block with `mermaid` as the language:
@@ -173,6 +178,108 @@ erDiagram
 ::::
 
 :::::
+
+### Complex flowchart
+
+::::::{tab-set}
+
+:::::{tab-item} Source
+````markdown
+```mermaid
+graph TB
+    A["Painless Operators"]
+
+    B["General"]
+    C["Numeric"]
+    D["Boolean"]
+    E["Reference"]
+    F["Array"]
+
+    B1["Control expression flow and<br/>value assignment"]
+    C1["Mathematical operations and<br/>bit manipulation"]
+    D1["Boolean logic and<br/>conditional evaluation"]
+    E1["Object interaction and<br/>safe data access"]
+    F1["Array manipulation and<br/>element access"]
+
+    B2["Precedence ( )<br/>Function Call ( )<br/>Cast ( )<br/>Conditional ? :<br/>Elvis ?:<br/>Assignment =<br/>Compound Assignment $="]
+    C2["Post/Pre Increment ++<br/>Post/Pre Decrement --<br/>Unary +/-<br/>Bitwise Not ~<br/>Multiplication *<br/>Division /<br/>Remainder %<br/>Addition +<br/>Subtraction -<br/>Shift <<, >>, >>><br/>Bitwise And &<br/>Bitwise Xor ^<br/>Bitwise Or |"]
+    D2["Boolean Not !<br/>Comparison >, >=, <, <=<br/>Instanceof instanceof<br/>Equality ==, !=<br/>Identity ===, !==<br/>Boolean Xor ^<br/>Boolean And &&<br/>Boolean Or ||"]
+    E2["Method Call . ( )<br/>Field Access .<br/>Null Safe ?.<br/>New Instance new ( )<br/>String Concatenation +<br/>List/Map Init [ ], [ : ]<br/>List/Map Access [ ]"]
+    F2["Array Init [ ] { }<br/>Array Access [ ]<br/>Array Length .length<br/>New Array new [ ]"]
+
+    A --> B & C & D & E & F
+    B --> B1
+    C --> C1
+    D --> D1
+    E --> E1
+    F --> F1
+    B1 --> B2
+    C1 --> C2
+    D1 --> D2
+    E1 --> E2
+    F1 --> F2
+
+    classDef rootNode fill:#0B64DD,stroke:#101C3F,stroke-width:2px,color:#fff
+    classDef categoryBox fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#343741
+    classDef descBox fill:#48EFCF,stroke:#343741,stroke-width:2px,color:#343741
+    classDef exampleBox fill:#f5f7fa,stroke:#343741,stroke-width:2px,color:#343741
+
+    class A rootNode
+    class B,C,D,E,F categoryBox
+    class B1,C1,D1,E1,F1 descBox
+    class B2,C2,D2,E2,F2 exampleBox
+```
+````
+:::::
+
+:::::{tab-item} Rendered
+```mermaid
+graph TB
+    A["Painless Operators"]
+
+    B["General"]
+    C["Numeric"]
+    D["Boolean"]
+    E["Reference"]
+    F["Array"]
+
+    B1["Control expression flow and<br/>value assignment"]
+    C1["Mathematical operations and<br/>bit manipulation"]
+    D1["Boolean logic and<br/>conditional evaluation"]
+    E1["Object interaction and<br/>safe data access"]
+    F1["Array manipulation and<br/>element access"]
+
+    B2["Precedence ( )<br/>Function Call ( )<br/>Cast ( )<br/>Conditional ? :<br/>Elvis ?:<br/>Assignment =<br/>Compound Assignment $="]
+    C2["Post/Pre Increment ++<br/>Post/Pre Decrement --<br/>Unary +/-<br/>Bitwise Not ~<br/>Multiplication *<br/>Division /<br/>Remainder %<br/>Addition +<br/>Subtraction -<br/>Shift <<, >>, >>><br/>Bitwise And &<br/>Bitwise Xor ^<br/>Bitwise Or |"]
+    D2["Boolean Not !<br/>Comparison >, >=, <, <=<br/>Instanceof instanceof<br/>Equality ==, !=<br/>Identity ===, !==<br/>Boolean Xor ^<br/>Boolean And &&<br/>Boolean Or ||"]
+    E2["Method Call . ( )<br/>Field Access .<br/>Null Safe ?.<br/>New Instance new ( )<br/>String Concatenation +<br/>List/Map Init [ ], [ : ]<br/>List/Map Access [ ]"]
+    F2["Array Init [ ] { }<br/>Array Access [ ]<br/>Array Length .length<br/>New Array new [ ]"]
+
+    A --> B & C & D & E & F
+    B --> B1
+    C --> C1
+    D --> D1
+    E --> E1
+    F --> F1
+    B1 --> B2
+    C1 --> C2
+    D1 --> D2
+    E1 --> E2
+    F1 --> F2
+
+    classDef rootNode fill:#0B64DD,stroke:#101C3F,stroke-width:2px,color:#fff
+    classDef categoryBox fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#343741
+    classDef descBox fill:#48EFCF,stroke:#343741,stroke-width:2px,color:#343741
+    classDef exampleBox fill:#f5f7fa,stroke:#343741,stroke-width:2px,color:#343741
+
+    class A rootNode
+    class B,C,D,E,F categoryBox
+    class B1,C1,D1,E1,F1 descBox
+    class B2,C2,D2,E2,F2 exampleBox
+```
+:::::
+
+::::::
 
 ## Interactive controls
 

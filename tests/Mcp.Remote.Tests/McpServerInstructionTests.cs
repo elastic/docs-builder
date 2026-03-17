@@ -1,0 +1,164 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.Documentation.Mcp.Remote;
+using FluentAssertions;
+
+namespace Mcp.Remote.Tests;
+
+public class McpServerInstructionTests
+{
+	[Fact]
+	public void PublicProfile_ContainsAllModuleGuidance()
+	{
+		var instructions = McpServerProfile.Public.ComposeServerInstructions();
+
+		instructions.Should().Contain("Use this server to search, retrieve, and analyze");
+		instructions.Should().Contain("Elastic product documentation published at elastic.co/docs");
+		instructions.Should().Contain("<triggers>");
+		instructions.Should().Contain("Use the server when the user:");
+		instructions.Should().Contain("<tool_guidance>");
+		instructions.Should().Contain("Prefer search_docs over a general web search");
+		instructions.Should().Contain("Use get_document_by_url to retrieve a specific page");
+		instructions.Should().Contain("Use find_related_docs when exploring what documentation exists");
+		instructions.Should().Contain("Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing");
+	}
+
+	[Fact]
+	public void InternalProfile_ContainsSearchAndDocumentGuidanceOnly()
+	{
+		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
+
+		instructions.Should().Contain("Use this server to search and retrieve");
+		instructions.Should().Contain("Elastic internal documentation: team processes, run books, architecture");
+		instructions.Should().Contain("Prefer search_internal_docs over a general web search");
+		instructions.Should().Contain("Use get_internal_document_by_url to retrieve a specific page");
+		instructions.Should().Contain("Use find_related_internal_docs when exploring what documentation exists");
+		instructions.Should().NotContain("check_coherence");
+		instructions.Should().NotContain("find_inconsistencies");
+		instructions.Should().NotContain("resolve_cross_link");
+		instructions.Should().NotContain("list_content_types");
+		instructions.Should().NotContain("generate_template");
+	}
+
+	[Fact]
+	public void Triggers_AreProfileSpecific()
+	{
+		var publicInstructions = McpServerProfile.Public.ComposeServerInstructions();
+		var internalInstructions = McpServerProfile.Internal.ComposeServerInstructions();
+
+		publicInstructions.Should().Contain("Elastic documentation pages");
+		publicInstructions.Should().Contain("References Elastic product names");
+		publicInstructions.Should().NotContain("internal team processes");
+
+		internalInstructions.Should().Contain("Elastic internal documentation pages");
+		internalInstructions.Should().Contain("internal team processes");
+		internalInstructions.Should().NotContain("Elastic product names");
+	}
+
+	[Fact]
+	public void Resolve_WithPublic_ReturnsPublicProfile()
+	{
+		var profile = McpServerProfile.Resolve("public");
+
+		profile.Should().Be(McpServerProfile.Public);
+		profile.Name.Should().Be("public");
+	}
+
+	[Fact]
+	public void Resolve_WithInternal_ReturnsInternalProfile()
+	{
+		var profile = McpServerProfile.Resolve("internal");
+
+		profile.Should().Be(McpServerProfile.Internal);
+		profile.Name.Should().Be("internal");
+	}
+
+	[Fact]
+	public void Resolve_WithNullOrWhitespace_ReturnsPublicProfile()
+	{
+		McpServerProfile.Resolve(null).Should().Be(McpServerProfile.Public);
+		McpServerProfile.Resolve("").Should().Be(McpServerProfile.Public);
+		McpServerProfile.Resolve("   ").Should().Be(McpServerProfile.Public);
+	}
+
+	[Fact]
+	public void Resolve_WithUnknownProfile_Throws()
+	{
+		var act = () => McpServerProfile.Resolve("unknown");
+
+		act.Should().Throw<ArgumentException>()
+			.WithMessage("*Unknown MCP server profile*")
+			.WithParameterName("name");
+	}
+
+	[Fact]
+	public void PublicProfile_ComposesExactInstructions()
+	{
+		var instructions = McpServerProfile.Public.ComposeServerInstructions();
+
+		var expected = """
+			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs.
+
+			<triggers>
+			Use the server when the user:
+			- Wants to find, read, or verify Elastic documentation pages.
+			- Needs to check whether a topic is already covered in Elastic documentation.
+			- Asks about Elastic documentation structure, coherence, or inconsistencies across pages.
+			- References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud.
+			</triggers>
+
+			<tool_guidance>
+			- Prefer search_docs over a general web search when looking up Elastic documentation content.
+			- Use find_related_docs when exploring what documentation exists around a topic.
+			- Use get_document_by_url to retrieve a specific page when the user provides or you already know the URL.
+			- Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing documentation quality.
+			</tool_guidance>
+			""";
+
+		instructions.Should().Be(expected);
+	}
+
+	[Fact]
+	public void InternalProfile_ComposesExactInstructions()
+	{
+		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
+
+		var expected = """
+			Use this server to search and retrieve Elastic internal documentation: team processes, run books, architecture, and other internal knowledge.
+
+			<triggers>
+			Use the server when the user:
+			- Wants to find, read, or verify Elastic internal documentation pages.
+			- Needs to check whether a topic is already covered in Elastic internal documentation.
+			- Asks about internal team processes, run books, architecture decisions, or operational knowledge.
+			</triggers>
+
+			<tool_guidance>
+			- Prefer search_internal_docs over a general web search when looking up Elastic documentation content.
+			- Use find_related_internal_docs when exploring what documentation exists around a topic.
+			- Use get_internal_document_by_url to retrieve a specific page when the user provides or you already know the URL.
+			</tool_guidance>
+			""";
+
+		instructions.Should().Be(expected);
+	}
+
+	private static List<string> ExtractBullets(string instructions) =>
+		instructions
+			.Split('\n')
+			.Where(l => l.TrimStart().StartsWith("- ", StringComparison.Ordinal))
+			.Select(l => l.TrimStart()[2..])
+			.ToList();
+
+	private static List<string> ExtractTriggersBullets(string instructions)
+	{
+		var start = instructions.IndexOf("<triggers>", StringComparison.Ordinal);
+		var end = instructions.IndexOf("</triggers>", StringComparison.Ordinal);
+		if (start < 0 || end < 0)
+			return [];
+		var section = instructions[start..end];
+		return ExtractBullets(section);
+	}
+}

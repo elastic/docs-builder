@@ -88,6 +88,7 @@ toc:
       - file: quick-ref.md
       - file: headings.md
       - file: admonitions.md
+      - file: agent-skill.md
       - file: applies.md
       - file: applies-switch.md
       - file: automated_settings.md
@@ -96,6 +97,7 @@ toc:
       - file: code.md
       - file: comments.md
       - file: conditionals.md
+      - file: contributors.md
       - file: csv-include.md
       - file: directives.md
       - file: dropdowns.md
@@ -164,6 +166,12 @@ toc:
           - file: changelog-add.md
           - file: changelog-bundle.md
           - file: changelog-bundle-amend.md
+          - file: changelog-evaluate-artifact.md
+          - file: changelog-evaluate-pr.md
+          - file: changelog-gh-release.md
+          - file: changelog-init.md
+          - file: changelog-prepare-artifact.md
+          - file: changelog-remove.md
           - file: changelog-render.md
   - folder: mcp
     children:
@@ -227,6 +235,10 @@ toc:
       - folder: release-notes
         children:
           - file: index.md
+          - file: highlights.md
           - file: breaking-changes.md
           - file: deprecations.md
           - file: known-issues.md
+      - folder: release-notes-all
+        children:
+          - file: index.md

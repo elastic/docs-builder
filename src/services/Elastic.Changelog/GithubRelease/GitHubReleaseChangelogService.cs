@@ -52,6 +52,12 @@ public record CreateChangelogsFromReleaseArguments
 	/// Whether to warn when Release Drafter type doesn't match label-derived type (defaults to true)
 	/// </summary>
 	public bool WarnOnTypeMismatch { get; init; } = true;
+
+	/// <summary>
+	/// Whether to create a bundle file after creating individual changelog files. Defaults to true.
+	/// Set to false when called from 'changelog add --release-version' to skip bundle creation.
+	/// </summary>
+	public bool CreateBundle { get; init; } = true;
 }
 
 /// <summary>
@@ -166,8 +172,8 @@ public class GitHubReleaseChangelogService(
 
 			_logger.LogInformation("Created {Count} changelog files from release {Tag}", successCount, release.TagName);
 
-			// 8. Create bundle file if changelogs were created
-			if (createdFiles.Count > 0)
+			// 8. Optionally create bundle file if changelogs were created
+			if (input.CreateBundle && createdFiles.Count > 0)
 			{
 				var bundlePath = await CreateBundleFile(outputDir, createdFiles, productInfo, ctx);
 				_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
@@ -264,7 +270,7 @@ public class GitHubReleaseChangelogService(
 					: null
 			}],
 			Areas = labelDerivedAreas,
-			Pr = prUrl
+			Prs = [prUrl]
 		};
 
 		// Generate YAML content
@@ -361,36 +367,53 @@ public class GitHubReleaseChangelogService(
 		IDiagnosticsCollector collector,
 		string prUrl)
 	{
-		// Check global create blockers first
-		if (config.Block?.Create != null && config.Block.Create.Count > 0)
-		{
-			var matchingGlobalBlocker = config.Block.Create
-				.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
-			if (matchingGlobalBlocker != null)
-			{
-				collector.EmitWarning(prUrl,
-					$"Skipping changelog creation for PR {prUrl} due to global blocking label '{matchingGlobalBlocker}'. " +
-					"This label is configured to prevent changelog creation.");
-				return true;
-			}
-		}
-
-		// Check product-specific blockers
-		if (config.Block?.ByProduct == null || config.Block.ByProduct.Count == 0)
+		var createRules = config.Rules?.Create;
+		if (createRules == null)
 			return false;
 
 		var normalizedProductId = productInfo.Product?.Replace('_', '-') ?? string.Empty;
-		if (config.Block.ByProduct.TryGetValue(normalizedProductId, out var productBlockers)
-			&& productBlockers.Create is { Count: > 0 })
-		{
-			var matchingBlockerLabel = productBlockers.Create
-				.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
 
-			if (matchingBlockerLabel != null)
+		// Check product-specific overrides first
+		if (createRules.ByProduct is { Count: > 0 } && createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
+			return ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, productInfo.Product);
+
+		// Fall back to global rules
+		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+	}
+
+	private static bool ShouldSkipByCreateRules(
+		string[] prLabels,
+		CreateRules rules,
+		IDiagnosticsCollector collector,
+		string prUrl,
+		string? productContext)
+	{
+		if (rules.Labels == null || rules.Labels.Count == 0)
+			return false;
+
+		var mode = rules.Mode;
+		var match = rules.Match;
+		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
+		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
+
+		if (mode == FieldMode.Exclude)
+		{
+			var matchingLabel = rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+			if (matchingLabel != null)
 			{
 				collector.EmitWarning(prUrl,
-					$"Skipping changelog creation for PR {prUrl} due to blocking label '{matchingBlockerLabel}' " +
-					$"for product '{productInfo.Product}'. This label is configured to prevent changelog creation for this product.");
+					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				return true;
+			}
+		}
+		else
+		{
+			var hasMatch = prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
+			if (!hasMatch)
+			{
+				var labelsList = string.Join(", ", rules.Labels);
+				collector.EmitWarning(prUrl,
+					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
 				return true;
 			}
 		}

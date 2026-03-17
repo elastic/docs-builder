@@ -1,12 +1,7 @@
 name: assembler-preview
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
+  pull_request: ~
   workflow_dispatch:
     inputs:
       pr_number:

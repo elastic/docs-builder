@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using YamlDotNet.Serialization;
+using static Elastic.Documentation.Configuration.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
@@ -32,6 +33,20 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "subs")]
 	public Dictionary<string, string> Subs { get; set; } = [];
 
+	[Obsolete("Use the index.md h1 heading instead. This field will be removed in a future version.")]
+	[YamlMember(Alias = "display_name")]
+	public string? DisplayName { get; set; }
+
+	[Obsolete("Use the index.md frontmatter description instead. This field will be removed in a future version.")]
+	[YamlMember(Alias = "description")]
+	public string? Description { get; set; }
+
+	[YamlMember(Alias = "icon")]
+	public string? Icon { get; set; }
+
+	[YamlMember(Alias = "registry")]
+	public string? Registry { get; set; }
+
 	[YamlMember(Alias = "features")]
 	public DocumentationSetFeatures Features { get; set; } = new();
 
@@ -43,6 +58,12 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	[YamlMember(Alias = "products")]
 	public List<ProductLink> Products { get; set; } = [];
+
+	/// <summary>
+	/// Optional codex-specific metadata. Only contains <c>group</c> for codex navigation grouping.
+	/// </summary>
+	[YamlMember(Alias = "codex")]
+	public CodexDocSetMetadata? Codex { get; set; }
 
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
 	{
@@ -61,6 +82,16 @@ public class DocumentationSetFile : TableOfContentsFile
 		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
 
 	/// <summary>
+	/// Loads a DocumentationSetFile from a file for reading metadata only (e.g. codex section).
+	/// Does not perform full TOC resolution.
+	/// </summary>
+	public static DocumentationSetFile LoadMetadata(IFileInfo file)
+	{
+		var yaml = file.FileSystem.File.ReadAllText(file.FullName);
+		return Deserialize(yaml);
+	}
+
+	/// <summary>
 	/// Loads a DocumentationSetFile and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
@@ -68,6 +99,8 @@ public class DocumentationSetFile : TableOfContentsFile
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
 		fileSystem ??= docsetPath.FileSystem;
+		// Validate that the docset.yml is not a symlink (security: prevents path traversal attacks)
+		EnsureNotSymlink(docsetPath);
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
 		var sourceDirectory = docsetPath.Directory!;
 		return LoadAndResolve(collector, yaml, sourceDirectory, fileSystem, noSuppress);
@@ -189,6 +222,9 @@ public class DocumentationSetFile : TableOfContentsFile
 			collector.EmitError(parentContext, $"Table of contents file not found: {fullTocPath}/toc.yml");
 			return new IsolatedTableOfContentsRef(fullTocPath, tocPathRelativeToContainer, [], parentContext);
 		}
+
+		// Validate that the toc.yml is not a symlink (security: prevents path traversal attacks)
+		EnsureNotSymlink(fileSystem, tocFilePath);
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
 		var nestedTocFile = TableOfContentsFile.Deserialize(tocYaml);
@@ -540,4 +576,14 @@ public class DocumentationSetFeatures
 	public bool? PrimaryNav { get; set; }
 	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
 	public bool? DisableGithubEditLink { get; set; }
+}
+
+/// <summary>
+/// Codex-specific metadata. Only contains <c>group</c> for navigation grouping in a codex environment.
+/// </summary>
+[YamlSerializable]
+public class CodexDocSetMetadata
+{
+	[YamlMember(Alias = "group")]
+	public string? Group { get; set; }
 }

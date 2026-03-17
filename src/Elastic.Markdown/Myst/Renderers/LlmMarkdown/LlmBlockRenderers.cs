@@ -6,7 +6,9 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
@@ -201,6 +203,12 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 			return;
 		}
 
+		if (obj is ContributorsBlock contributorsBlock)
+		{
+			WriteContributorsBlock(renderer, contributorsBlock);
+			return;
+		}
+
 		renderer.EnsureBlockSpacing();
 		if (!string.IsNullOrEmpty(obj.Caption))
 		{
@@ -249,6 +257,40 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		}
 
 		renderer.WriteLine("</applies-to>");
+	}
+
+	private static void WriteContributorsBlock(LlmMarkdownRenderer renderer, ContributorsBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine("<contributors>");
+
+		foreach (var contributor in block.Contributors)
+		{
+			renderer.Write("  - **");
+			renderer.Write(contributor.Name);
+			renderer.Write("**");
+			if (!string.IsNullOrEmpty(contributor.Title))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Title);
+			}
+			if (!string.IsNullOrEmpty(contributor.Location))
+			{
+				renderer.Write(" (");
+				renderer.Write(contributor.Location);
+				renderer.Write(")");
+			}
+			if (!string.IsNullOrEmpty(contributor.ProfileUrl))
+			{
+				renderer.Write(" — [GitHub](");
+				renderer.Write(contributor.ProfileUrl);
+				renderer.Write(")");
+			}
+			renderer.WriteLine();
+		}
+
+		renderer.WriteLine("</contributors>");
+		renderer.EnsureLine();
 	}
 
 	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
@@ -449,6 +491,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				return;
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
+				return;
+			case AgentSkillBlock agentSkillBlock:
+				WriteAgentSkillBlock(renderer, agentSkillBlock);
 				return;
 		}
 
@@ -711,6 +756,20 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		}
 
 		LlmRenderingHelpers.RenderMarkdownTable(renderer, csvRows, block.MaxColumns);
+		renderer.EnsureLine();
+	}
+
+	private static void WriteAgentSkillBlock(LlmMarkdownRenderer renderer, AgentSkillBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+		renderer.Writer.Write("<agent-skill");
+		if (!string.IsNullOrEmpty(block.Url))
+			renderer.Writer.Write($" url=\"{block.Url}\"");
+		renderer.Writer.WriteLine(">");
+		renderer.WriteLine("  A skill is available to help AI agents with this topic.");
+		if (block.Count > 0)
+			WriteChildrenWithIndentation(renderer, block, "  ");
+		renderer.Writer.WriteLine("</agent-skill>");
 		renderer.EnsureLine();
 	}
 

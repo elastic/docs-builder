@@ -34,28 +34,31 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Docs update
 			  type: docs
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Other stuff
 			  type: other
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// Block docs and other types via publish blocker
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - docs
 			      - other
 			"""));
@@ -148,21 +151,24 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Hidden other change 1
 			  type: other
 			  feature-id: hidden-feature-1
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Hidden other change 2
 			  type: other
 			  feature-id: hidden-feature-2
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 	[Fact]
@@ -227,14 +233,16 @@ public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBloc
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Hidden other change
 			  type: other
 			  feature-id: hidden-feature
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 	[Fact]
@@ -285,29 +293,32 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Docs entry blocked by type
 			  type: docs
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Bug fix hidden by feature
 			  type: bug-fix
 			  feature-id: hidden-feature
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		// Block docs type via publish blocker
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - docs
 			"""));
 	}
@@ -379,7 +390,8 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Internal docs
 			  type: docs
 			  products:
@@ -387,7 +399,8 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Internal other change
 			  type: other
 			  products:
@@ -395,15 +408,16 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -466,7 +480,8 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Internal bug fix
 			  type: bug-fix
 			  products:
@@ -474,15 +489,16 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    areas:
+			    exclude_areas:
 			      - Internal
 			"""));
 	}
@@ -529,13 +545,15 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Docs in 9.3.0
 			  type: docs
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		// 9.2.0 only has docs entries (all will be blocked)
@@ -551,15 +569,16 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 			  products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
-			block:
+			rules:
 			  publish:
-			    types:
+			    exclude_types:
 			      - docs
 			"""));
 	}

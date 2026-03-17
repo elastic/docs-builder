@@ -212,7 +212,7 @@ public class ChangelogRenderingService(
 		IReadOnlyList<ResolvedEntry> entries,
 		ChangelogRenderContext context)
 	{
-		if (context.Configuration?.Block == null)
+		if (context.Configuration?.Rules?.Publish == null)
 			return;
 
 		var visibleEntries = entries.Where(resolved =>
@@ -226,16 +226,17 @@ public class ChangelogRenderingService(
 			if (productIds.Count == 0)
 				continue;
 
-			// Check each product's block configuration
+			// Check each product's publish configuration
 			foreach (var productId in productIds)
 			{
-				var blocker = GetPublishBlockerForProduct(context.Configuration.Block, productId);
+				var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
 				if (blocker != null && blocker.ShouldBlock(resolved.Entry))
 				{
 					var reasons = GetBlockReasons(resolved.Entry, blocker);
+					var prefix = blocker.TypesMode == FieldMode.Include || blocker.AreasMode == FieldMode.Include ? "[+include]" : "[-exclude]";
 					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
 					var entryIdentifier = GetEntryIdentifier(resolved.Entry, context);
-					collector.EmitWarning(string.Empty, $"Changelog entry {entryIdentifier} will be commented out{productInfo} because it matches block configuration: {reasons}");
+					collector.EmitWarning(string.Empty, $"{prefix} Changelog entry {entryIdentifier} will be commented out{productInfo} because it matches rules configuration: {reasons}");
 				}
 			}
 		}
@@ -243,16 +244,22 @@ public class ChangelogRenderingService(
 
 	private static string GetEntryIdentifier(ChangelogEntry entry, ChangelogRenderContext context)
 	{
-		// Try to extract PR number if available
-		if (!string.IsNullOrWhiteSpace(entry.Pr))
+		if (entry.Prs is { Count: > 0 })
 		{
 			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Pr, "elastic", repo);
+			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Prs[0], "elastic", repo);
 			if (prNumber.HasValue)
 				return $"for PR {prNumber.Value}";
 		}
 
-		// Fall back to title if no PR is available
+		if (entry.Issues is { Count: > 0 })
+		{
+			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
+			var issueNumber = ChangelogTextUtilities.ExtractIssueNumber(entry.Issues[0], "elastic", repo);
+			if (issueNumber.HasValue)
+				return $"for issue {issueNumber.Value}";
+		}
+
 		return $"'{entry.Title}'";
 	}
 
@@ -264,31 +271,45 @@ public class ChangelogRenderingService(
 		if (blocker.Types?.Count > 0)
 		{
 			var entryTypeName = entry.Type.ToStringFast(true);
-			if (blocker.Types.Any(t => t.Equals(entryTypeName, StringComparison.OrdinalIgnoreCase)))
-				reasons.Add($"type '{entryTypeName}'");
+			if (blocker.MatchesType(entryTypeName))
+			{
+				var modeStr = blocker.TypesMode == FieldMode.Include ? "not in rules.publish.include_types" : "in rules.publish.exclude_types";
+				reasons.Add($"type '{entryTypeName}' {modeStr}");
+			}
+			else if (blocker.TypesMode == FieldMode.Include)
+				reasons.Add($"type '{entryTypeName}' not in rules.publish.include_types");
 		}
 
 		// Check if blocked by area
 		if (blocker.Areas?.Count > 0 && entry.Areas?.Count > 0)
 		{
-			var blockedAreas = entry.Areas
-				.Where(area => blocker.Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase)))
+			var matchedAreas = entry.Areas
+				.Where(area => blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
 				.ToList();
-			if (blockedAreas.Count > 0)
-				reasons.Add($"area{(blockedAreas.Count > 1 ? "s" : "")} '{string.Join("', '", blockedAreas)}'");
+
+			if (blocker.AreasMode == FieldMode.Exclude && matchedAreas.Count > 0)
+				reasons.Add($"area{(matchedAreas.Count > 1 ? "s" : "")} '{string.Join("', '", matchedAreas)}' in rules.publish.exclude_areas (match_areas: {blocker.MatchAreas.ToString().ToLowerInvariant()})");
+			else if (blocker.AreasMode == FieldMode.Include)
+			{
+				var unmatchedAreas = entry.Areas
+					.Where(area => !blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
+					.ToList();
+				if (unmatchedAreas.Count > 0)
+					reasons.Add($"areas [{string.Join(", ", entry.Areas)}] not in rules.publish.include_areas (match_areas: {blocker.MatchAreas.ToString().ToLowerInvariant()})");
+			}
 		}
 
 		return string.Join(" and ", reasons);
 	}
 
-	private static PublishBlocker? GetPublishBlockerForProduct(BlockConfiguration blockConfig, string productId)
+	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
 	{
 		// Check product-specific override first
-		if (blockConfig.ByProduct?.TryGetValue(productId, out var productBlockers) == true)
-			return productBlockers.Publish;
+		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
+			return productBlocker;
 
 		// Fall back to global publish blocker
-		return blockConfig.Publish;
+		return publishRules.Blocker;
 	}
 
 	private static bool ValidateEntryTypes(
@@ -344,17 +365,20 @@ public class ChangelogRenderingService(
 		// Create mappings from entries to their metadata
 		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
 		var entryToRepo = new Dictionary<ChangelogEntry, string>();
+		var entryToOwner = new Dictionary<ChangelogEntry, string>();
 		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
 
 		foreach (var entry in resolved.Entries)
 		{
 			entryToBundleProducts[entry.Entry] = entry.BundleProductIds;
 			entryToRepo[entry.Entry] = entry.Repo;
+			entryToOwner[entry.Entry] = entry.Owner;
 			entryToHideLinks[entry.Entry] = entry.HideLinks;
 		}
 
-		// Use first repo found for section anchors, or default
+		// Use first repo/owner found for section anchors, or default
 		var repoForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Repo : "elastic";
+		var ownerForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Owner : "elastic";
 
 		return new ChangelogRenderContext
 		{
@@ -362,11 +386,13 @@ public class ChangelogRenderingService(
 			Title = outputSetup.Title,
 			TitleSlug = outputSetup.TitleSlug,
 			Repo = repoForAnchors,
+			Owner = ownerForAnchors,
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
+			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config
 		};

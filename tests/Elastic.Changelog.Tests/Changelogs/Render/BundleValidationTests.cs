@@ -18,7 +18,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/101
+		prs:
+		- "101"
 		""";
 
 	// language=yaml
@@ -29,7 +30,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/102
+		prs:
+		- "102"
 		""";
 
 	// language=yaml
@@ -40,7 +42,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/103
+		prs:
+		- "103"
 		""";
 
 	// language=yaml
@@ -53,7 +56,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/104
+		prs:
+		- "104"
 		""";
 
 	// language=yaml
@@ -64,7 +68,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		products:
 		  - product: kibana
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/999
+		prs:
+		- "999"
 		""";
 
 	[Fact]
@@ -103,7 +108,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		Collector.Warnings.Should().Be(0, "all checksums match, no warnings expected");
 
 		// Verify all 3 entries were rendered
-		var indexFile = FileSystem.Path.Combine(input.Output!, "9.2.0", "index.md");
+		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
+		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue("output should be rendered");
 		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 		content.Should().Contain("Feature one");
@@ -196,7 +202,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 			    products:
 			      - product: elasticsearch
 			        target: 9.2.0
-			    pr: https://github.com/elastic/elasticsearch/pull/200
+			    prs:
+			    - "200"
 			""";
 		await FileSystem.File.WriteAllTextAsync(amend1, amendContent, TestContext.Current.CancellationToken);
 
@@ -209,7 +216,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		result.Should().BeTrue();
 		Collector.Warnings.Should().Be(0, "resolved entries skip checksum validation");
 
-		var indexFile = FileSystem.Path.Combine(input.Output!, "9.2.0", "index.md");
+		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
+		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
 		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 		content.Should().Contain("Resolved amend feature");
 	}

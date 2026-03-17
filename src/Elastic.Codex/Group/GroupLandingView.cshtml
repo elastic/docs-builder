@@ -1,30 +1,32 @@
 @inherits RazorSliceHttpResult<Elastic.Codex.Group.GroupLandingViewModel>
+@using System.Linq
 @using Elastic.Codex.Group
+@using Elastic.Codex.Landing
 @using Elastic.Codex.Navigation
-@implements IUsesLayout<Elastic.Codex._Layout, GlobalLayoutViewModel>
+@implements IUsesLayout<Elastic.Codex._GroupLayout, GlobalLayoutViewModel>
 @functions {
-	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel(
+		codexBreadcrumbs: [new CodexBreadcrumb("Home", Model.BuildContext.SiteRootPath ?? "/"), new CodexBreadcrumb(Model.Group.DisplayTitle, Model.Group.Url)]);
 }
-<section id="elastic-docs-v3" class="codex-group-page">
-	<div class="codex-header py-8">
-		<h1 class="text-3xl font-bold mb-4">@Model.Group.DisplayTitle</h1>
-		<p class="text-gray-60">Documentation sets in this group</p>
+<section id="elastic-docs-v3" class="codex-landing min-h-screen">
+	<div class="pt-8 max-w-7xl mx-auto">
+		<h1 class="text-5xl font-medium text-black">@Model.Group.DisplayTitle</h1>
+		@if (!string.IsNullOrEmpty(Model.Group.Description))
+		{
+			<p class="mt-2 text-lg text-subdued">@Model.Group.Description</p>
+		}
 	</div>
-
-	<div class="codex-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+	<div id="codex-grid" class="pt-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 		@foreach (var docSet in Model.DocumentationSets.OrderBy(ds => ds.Title))
 		{
-			<a href="@docSet.Url"
-			   hx-select-oob="#main-container"
-			   preload="mousedown"
-			   class="codex-card block p-6 rounded-lg border border-gray-20 hover:border-blue-40 hover:shadow-md transition-all">
-				<div class="codex-card-content">
-					<h3 class="text-xl font-medium mb-2 text-gray-80">@docSet.Title</h3>
-					<div class="codex-card-meta text-sm text-gray-50">
-						<span>@docSet.PageCount pages</span>
-					</div>
-				</div>
-			</a>
+			@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel
+			{
+				Url = docSet.Url,
+				Title = docSet.Title ?? docSet.Name,
+				Description = docSet.Description,
+				Icon = docSet.Icon,
+				PageCount = docSet.PageCount
+			})))
 		}
 	</div>
 </section>

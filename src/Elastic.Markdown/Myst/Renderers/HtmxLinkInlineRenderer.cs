@@ -39,8 +39,9 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 				var currentRootNavigation = link.GetData("NavigationRoot") as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var targetRootNavigation = link.GetData("TargetNavigationRoot") as INodeNavigationItem<INavigationModel, INavigationItem>;
 				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
-				_ = renderer.Write($" hx-select-oob=\"{Htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
-				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
+				var htmx = GetHtmxProvider(link) ?? new DefaultHtmxAttributeProvider("/");
+				_ = renderer.Write($" hx-select-oob=\"{htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
+				_ = renderer.Write($" preload=\"{DefaultHtmxAttributeProvider.Preload}\"");
 			}
 			if (isHttpLink && !isCrossLink)
 			{
@@ -103,6 +104,9 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 		_ = renderer.Write(" />");
 	}
+
+	private static IHtmxAttributeProvider? GetHtmxProvider(LinkInline link) =>
+		link.GetData(nameof(IHtmxAttributeProvider)) as IHtmxAttributeProvider;
 }
 
 public static class CustomLinkInlineRendererExtensions

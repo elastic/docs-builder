@@ -77,12 +77,15 @@ public class AssembleContext : IDocumentationConfigurationContext
 		VersionsConfiguration = configurationContext.VersionsConfiguration;
 		SearchConfiguration = configurationContext.SearchConfiguration;
 		Endpoints = configurationContext.Endpoints;
+		Endpoints.BuildType = "assembler";
 		ProductsConfiguration = configurationContext.ProductsConfiguration;
 		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
 
 		if (!Configuration.Environments.TryGetValue(environment, out var env))
 			throw new Exception($"Could not find environment {environment}");
 		Environment = env;
+
+		Endpoints.Environment = environment;
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);
 		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "checkouts", contentSource);

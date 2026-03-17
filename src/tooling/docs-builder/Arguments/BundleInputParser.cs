@@ -18,6 +18,7 @@ public static class BundleInputParser
 	/// Format: "bundle-file-path|changelog-file-path|repo|link-visibility" (only bundle-file-path is required)
 	/// Uses pipe (|) as delimiter since ConsoleAppFramework auto-splits string[] by comma.
 	/// link-visibility can be "hide-links" or "keep-links" (default is keep-links if omitted).
+	/// Paths support tilde (~) expansion and relative paths.
 	/// </summary>
 	public static BundleInput? Parse(string input)
 	{
@@ -32,8 +33,8 @@ public static class BundleInputParser
 
 		return new BundleInput
 		{
-			BundleFile = parts[0],
-			Directory = parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) ? parts[1] : null,
+			BundleFile = NormalizePath(parts[0]),
+			Directory = parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) ? NormalizePath(parts[1]) : null,
 			Repo = parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]) ? parts[2] : null,
 			HideLinks = parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3]) && parts[3].Equals("hide-links", StringComparison.OrdinalIgnoreCase)
 		};
@@ -61,6 +62,59 @@ public static class BundleInputParser
 		}
 
 		return result;
+	}
+
+	/// <summary>
+	/// Normalizes a file path by expanding tilde (~) to the user's home directory
+	/// and converting relative paths to absolute paths.
+	/// </summary>
+	private static string NormalizePath(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return path;
+
+		var trimmedPath = path.Trim();
+
+		// Expand tilde to user's home directory
+		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
+		{
+			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+			var afterTilde = trimmedPath[2..];
+			var relativeFromHome = GetRelativePathSegment(afterTilde);
+			// Ensure that combining with homeDirectory cannot drop the base path if the segment is rooted
+			trimmedPath = Path.IsPathRooted(relativeFromHome)
+				? homeDirectory
+				: Path.Combine(homeDirectory, relativeFromHome);
+		}
+		else if (trimmedPath == "~")
+		{
+			trimmedPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		}
+
+		// Convert to absolute path (handles relative paths like ./file or ../file)
+		return Path.GetFullPath(trimmedPath);
+	}
+
+	/// <summary>
+	/// Ensures that the provided path segment is treated as a relative path segment,
+	/// removing any root and leading directory separators so it can be safely
+	/// combined with another base path without discarding the base.
+	/// </summary>
+	private static string GetRelativePathSegment(string pathSegment)
+	{
+		if (string.IsNullOrWhiteSpace(pathSegment))
+			return string.Empty;
+
+		var segment = pathSegment.Trim();
+
+		if (Path.IsPathRooted(segment))
+		{
+			var root = Path.GetPathRoot(segment);
+			if (!string.IsNullOrEmpty(root) && segment.Length > root.Length)
+				segment = segment.Substring(root.Length);
+		}
+
+		return segment.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 	}
 }
 

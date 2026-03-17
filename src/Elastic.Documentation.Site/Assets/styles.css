@@ -26,6 +26,8 @@
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './markdown/button.css';
+@import './markdown/agent-skill.css';
+@import './markdown/contributors.css';
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
 
@@ -55,7 +57,7 @@ body {
 	--banner-height: calc(var(--spacing) * 9);
 	/* --offset-top is set by build-type-specific CSS files */
 	--offset-top: 48px; /* Default fallback - will be overridden by build-type CSS */
-	--max-text-width: clamp(600px, 900px, 100%);
+	--max-text-width: clamp(600px, 768px, 100%);
 	--max-sidebar-width: calc(var(--spacing) * 65);
 	--content-spacing: calc(var(--spacing) * 8);
 	--max-layout-width: calc(
@@ -120,6 +122,28 @@ body {
 			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
 			word-break: break-word;
 		}
+	}
+
+	.sidebar-trial-card {
+		background: var(--color-green-30);
+		border-radius: 8px;
+		padding: 1px;
+	}
+
+	.sidebar-trial-card__inner {
+		background: var(--color-white);
+		border-radius: 7px;
+		padding: 24px 24px 16px;
+	}
+
+	.sidebar-trial-card__icon {
+		color: var(--color-green-90);
+	}
+
+	.sidebar-trial-card__icon svg {
+		height: 16px;
+		width: 16px;
+		fill: currentColor;
 	}
 }
 
@@ -390,4 +414,9 @@ math {
 			max-inline-size: 500px;
 		}
 	}
+}
+
+* {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(113, 134, 168, 0.5) transparent;
 }

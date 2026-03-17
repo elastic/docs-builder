@@ -67,6 +67,9 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		init;
 	}
 
+	/// <summary>Site root path for HTMX (e.g. codex root). When set, overrides derivation from UrlPathPrefix.</summary>
+	public string? SiteRootPath { get; init; }
+
 	public BuildContext(
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,

@@ -90,9 +90,16 @@ public record ChangelogConfiguration
 	public IReadOnlyDictionary<string, string>? LabelToAreas { get; init; }
 
 	/// <summary>
-	/// Combined block configuration for create and publish blockers
+	/// Mapping from GitHub label names to product spec strings (computed from Pivot.Products).
+	/// Each label maps to a product spec string (e.g., "elasticsearch", "kibana 9.2.0").
+	/// When a PR has labels matching multiple entries, all matching products are collected.
 	/// </summary>
-	public BlockConfiguration? Block { get; init; }
+	public IReadOnlyDictionary<string, string>? LabelToProducts { get; init; }
+
+	/// <summary>
+	/// Rules configuration for create and publish blockers
+	/// </summary>
+	public RulesConfiguration? Rules { get; init; }
 
 	/// <summary>
 	/// Extraction configuration for release notes and issues.
@@ -103,6 +110,12 @@ public record ChangelogConfiguration
 	/// Products configuration with available and default products.
 	/// </summary>
 	public ProductsConfig? ProductsConfiguration { get; init; }
+
+	/// <summary>
+	/// Filename strategy for generated changelog files.
+	/// Controls how files created by 'changelog add' are named.
+	/// </summary>
+	public FilenameStrategy Filename { get; init; } = FilenameStrategy.Timestamp;
 
 	/// <summary>
 	/// Bundle configuration with profiles and defaults.

@@ -20,7 +20,8 @@ internal sealed class IsolatedBuildCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	ICoreService githubActionsService,
-	IConfigurationContext configurationContext
+	IConfigurationContext configurationContext,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary>
@@ -61,7 +62,7 @@ internal sealed class IsolatedBuildCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService);
+		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		IFileSystem fs = inMemory ? new MockFileSystem() : new FileSystem();
 		var strictCommand = service.IsStrict(strict);
 

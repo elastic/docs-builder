@@ -267,6 +267,10 @@ dotnet_diagnostic.CA1873.severity = suggestion
 dotnet_diagnostic.IL3050.severity = none
 dotnet_diagnostic.IL2026.severity = none
 
+[src/api/Elastic.Documentation.Mcp.Remote/**.cs]
+dotnet_diagnostic.IL3050.severity = none
+dotnet_diagnostic.IL2026.severity = none
+
 [DocumentationWebHost.cs]
 dotnet_diagnostic.IL3050.severity = none
 dotnet_diagnostic.IL2026.severity = none

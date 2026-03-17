@@ -495,7 +495,7 @@ export const ChatMessage = ({
                                                 ? content
                                                     ? 'Response stopped early.'
                                                     : 'Response stopped before starting.'
-                                                : 'Something went wrong.'}
+                                                : 'Something went wrong. Wait a minute and try again.'}
                                         </EuiText>
                                     </EuiFlexItem>
                                     {onAskAgain && message.question && (

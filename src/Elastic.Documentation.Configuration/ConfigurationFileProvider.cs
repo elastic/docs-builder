@@ -158,7 +158,7 @@ public partial class ConfigurationFileProvider
 				reindenting = spacing;
 			}
 
-			else if (spacing == -1 && TocPrefixRegex().IsMatch(line))
+			if (spacing == -1 && TocPrefixRegex().IsMatch(line))
 			{
 				var matches = Regex.Match(line, $@"^(?<spacing>\s+)-\s?toc:\s?(?:{targets})\:");
 				if (matches.Success)

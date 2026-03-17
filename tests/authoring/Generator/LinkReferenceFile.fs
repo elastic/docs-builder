@@ -93,6 +93,9 @@ Through various means $$$including-this-inline-syntax$$$
            "migration/freeze/index.md": {
              "to": "index.md"
            },
+           "cli/mcp.md": {
+             "to": "index.md"
+           },
            "testing/redirects/4th-page.md": {
              "to": "testing/redirects/5th-page.md"
            },

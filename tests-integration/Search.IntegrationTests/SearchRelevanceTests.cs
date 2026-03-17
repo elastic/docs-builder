@@ -2,11 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
+using System.IO.Abstractions;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.ServiceDefaults;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Search.IntegrationTests;
@@ -74,8 +78,13 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 	public async Task SearchReturnsExpectedFirstResultWithExplain(string query, string expectedFirstResultUrl, string[]? additionalExpectedUrls)
 	{
 		// Arrange - Create ElasticsearchGateway directly
-		var gateway = CreateFindPageGateway();
+		var (gateway, clientAccessor) = CreateFindPageGateway();
 		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
+
+		output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
+		output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
+		output.WriteLine($"RulesetName: {clientAccessor.RulesetName ?? "(none)"}");
+
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -89,7 +98,13 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 
 		var results = searchResult.Results;
 
-		results.Should().NotBeEmpty($"Search for '{query}' should return results");
+		if (results.Count == 0)
+		{
+			var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), TestContext.Current.CancellationToken);
+			output.WriteLine($"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString(CultureInfo.InvariantCulture) : $"ERROR: {countResponse.ElasticsearchServerError?.Error.Reason}")}");
+		}
+
+		results.Should().NotBeEmpty($"Search for '{query}' should return results (index: {clientAccessor.SearchIndex})");
 
 		var actualFirstResultUrl = results.First().Url;
 
@@ -182,8 +197,12 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	public async Task ExplainTopResultAndExpectedAsyncReturnsDetailedScoring()
 	{
 		// Arrange
-		var gateway = CreateFindPageGateway();
+		var (gateway, clientAccessor) = CreateFindPageGateway();
 		Assert.SkipUnless(gateway is not null, "Elasticsearch is not connected");
+
+		output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
+		output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
+
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -220,65 +239,14 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private NavigationSearchGateway? CreateFindPageGateway()
+	private static (NavigationSearchGateway Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
 	{
-		// Build a new ConfigurationBuilder to read user secrets and environment variables
-		var configBuilder = new ConfigurationBuilder();
-		configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
-		configBuilder.AddEnvironmentVariables();
-		var config = configBuilder.Build();
+		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
+		var configProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new FileSystem(), configurationSource: ConfigurationSource.Embedded);
+		var searchConfig = configProvider.CreateSearchConfiguration();
 
-		// Get Elasticsearch configuration with fallback chain: user secrets → environment
-		var elasticsearchUrl =
-			config["Parameters:DocumentationElasticUrl"]
-			?? config["DOCUMENTATION_ELASTIC_URL"];
-
-		var elasticsearchApiKey =
-			config["Parameters:DocumentationElasticApiKey"]
-			?? config["DOCUMENTATION_ELASTIC_APIKEY"];
-
-		if (elasticsearchUrl is null or "" || elasticsearchApiKey is null or "")
-			return null;
-
-		// Create IConfiguration with the required values for ElasticsearchOptions
-		var testConfig = new ConfigurationBuilder()
-			.AddInMemoryCollection(new Dictionary<string, string?>
-			{
-				["DOCUMENTATION_ELASTIC_URL"] = elasticsearchUrl,
-				["DOCUMENTATION_ELASTIC_APIKEY"] = elasticsearchApiKey,
-				["DOCUMENTATION_ELASTIC_INDEX"] = "semantic-docs-dev-latest"
-			})
-			.Build();
-
-		var options = new ElasticsearchOptions(testConfig);
-		var searchConfig = new SearchConfiguration
-		{
-			Synonyms = new Dictionary<string, string[]>(),
-			Rules =
-			[
-				new QueryRule
-				{
-					RuleId = "pin-data-streams",
-					Type = QueryRuleType.Pinned,
-					Criteria =
-					[
-						new QueryRuleCriteria
-						{
-							Type = QueryRuleCriteriaType.Exact,
-							Metadata = "query_string",
-							Values = ["data stream", "data-stream", "data-streams", "datastream", "datastreams"]
-						}
-					],
-					Actions = new QueryRuleActions
-					{
-						Ids = ["/docs/manage-data/data-store/data-streams"]
-					}
-				}
-			],
-			DiminishTerms = ["plugin", "client", "integration", "glossary"]
-		};
-
-		var clientAccessor = new ElasticsearchClientAccessor(options, searchConfig);
-		return new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
+		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);
+		var gateway = new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
+		return (gateway, clientAccessor);
 	}
 }

@@ -21,6 +21,7 @@ public class BundleBuilder
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
 	/// <param name="resolve">Whether to resolve changelog file contents into entries.</param>
 	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
+	/// <param name="owner">Optional GitHub owner to set on products for link generation.</param>
 	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
@@ -28,10 +29,11 @@ public class BundleBuilder
 		IReadOnlyList<ProductArgument>? outputProducts,
 		bool resolve,
 		string? repo = null,
+		string? owner = null,
 		HashSet<string>? hideFeatures = null)
 	{
 		// Build products list
-		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo);
+		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
 
 		// Build entries list
 		var bundledEntries = resolve
@@ -65,7 +67,8 @@ public class BundleBuilder
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
-		string? repo)
+		string? repo,
+		string? owner)
 	{
 		List<BundledProduct> bundledProducts;
 
@@ -80,7 +83,8 @@ public class BundleBuilder
 					ProductId = p.Product ?? "",
 					Target = p.Target == "*" ? null : p.Target,
 					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
-					Repo = repo
+					Repo = repo,
+					Owner = owner
 				})
 				.ToList();
 		}
@@ -106,7 +110,8 @@ public class BundleBuilder
 					pv.product,
 					string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
 					pv.lifecycle,
-					repo))
+					repo,
+					owner))
 				.ToList();
 		}
 		else
