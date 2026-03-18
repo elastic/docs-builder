@@ -94,6 +94,7 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 		"""
 		:::{changelog}
 		:config: config/my-changelog.yml
+		:type: all
 		:::
 		""")
 	{

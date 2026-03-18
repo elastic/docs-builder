@@ -279,6 +279,7 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""")
 	{
@@ -394,6 +395,7 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""")
 	{

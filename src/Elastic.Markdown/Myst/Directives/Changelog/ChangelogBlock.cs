@@ -238,10 +238,17 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	/// <summary>
 	/// Reserved for future config loading (e.g., bundle.directory). The directive no longer applies rules.publish.
+	/// Emits a warning when an explicit :config: path is specified but the file is not found.
 	/// </summary>
 	private void LoadConfiguration()
 	{
-		// No-op: rules.publish is deprecated. Filtering must be done at bundle time via rules.bundle.
+		if (string.IsNullOrWhiteSpace(ConfigPath))
+			return;
+
+		var fileSystem = Build.ReadFileSystem;
+		var explicitPath = Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath);
+		if (!fileSystem.File.Exists(explicitPath))
+			this.EmitWarning($"Specified changelog config path '{ConfigPath}' not found.");
 	}
 
 	/// <summary>
