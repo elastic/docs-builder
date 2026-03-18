@@ -208,8 +208,8 @@ rules:
   #   #       - "Monitoring"
 
   # Publish — DEPRECATED. Use rules.bundle instead.
-  # The rules.publish section is still supported for backward compatibility but will be removed
-  # in a future release. Move filtering to rules.bundle so it applies at bundle time.
+  # The rules.publish section is still supported for backward compatibility but will be removed in a future release.
+  # It no longer applies to the {changelog} directive.
   #
   # publish:
   #   # match_areas: any

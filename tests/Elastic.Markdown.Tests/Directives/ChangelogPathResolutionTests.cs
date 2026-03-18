@@ -134,16 +134,14 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Fact]
-	public void LoadsConfigFromRelativePath() => Block!.PublishBlocker.Should().NotBeNull();
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Fact]
-	public void ConfigBlocksCorrectTypes() => Block!.PublishBlocker!.Types.Should().Contain("deprecation");
-
-	[Fact]
-	public void FiltersBlockedEntries()
+	public void RendersAllEntries_NoFiltering()
 	{
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Feature entry");
-		Html.Should().NotContain("Blocked entry");
+		Html.Should().Contain("Blocked entry");
 	}
 }
 
@@ -193,16 +191,14 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 	}
 
 	[Fact]
-	public void LoadsConfigFromDocsetRootRelativePath() => Block!.PublishBlocker.Should().NotBeNull();
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Fact]
-	public void ConfigBlocksCorrectAreas() => Block!.PublishBlocker!.Areas.Should().Contain("Internal");
-
-	[Fact]
-	public void FiltersBlockedEntries()
+	public void RendersAllEntries_NoFiltering()
 	{
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular feature");
-		Html.Should().NotContain("Internal feature");
+		Html.Should().Contain("Internal feature");
 	}
 }
 
@@ -326,13 +322,14 @@ public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<Changel
 	public void BothPathsResolveCorrectly()
 	{
 		Block!.Found.Should().BeTrue();
-		Block!.PublishBlocker.Should().NotBeNull();
+		Block!.PublishBlocker.Should().BeNull();
 	}
 
 	[Fact]
-	public void ConfigFiltersEntries()
+	public void RendersAllEntries_NoFiltering()
 	{
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Combined feature");
-		Html.Should().NotContain("Blocked by config");
+		Html.Should().Contain("Blocked by config");
 	}
 }

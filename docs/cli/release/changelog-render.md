@@ -16,7 +16,7 @@ docs-builder changelog render [options...] [-h|--help]
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
 :   Defaults to `docs/changelog.yml`.
-:   This configuration file is where the command looks for `block ... publish` definitions.
+:   This configuration file is where the command looks for `rules.publish` definitions.
 
 `--hide-features <string[]?>`
 :   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times.
@@ -60,8 +60,8 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 :   Defaults to the version in the first bundle.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
 
-You can configure `block` definitions in your `changelog.yml` configuration file to automatically comment out changelog entries based on their products, areas, and/or types.
-For more information, refer to [](/contribute/changelog.md#example-block-label).
+The `changelog render` command (unlike the `{changelog}` directive) uses `rules.publish` from your `changelog.yml` configuration file to filter entries. You can configure `rules.publish` to automatically comment out changelog entries based on their products, areas, and/or types.
+For more information, refer to [](/contribute/changelog.md#example-rules-publishing). For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
 
 ## Output formats
 

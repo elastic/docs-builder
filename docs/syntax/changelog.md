@@ -24,8 +24,7 @@ The directive supports the following options:
 |--------|-------------|---------|
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
-| `:config: path` | Path to changelog.yml configuration | auto-discover |
-| `:product: id` | Product ID for product-specific publish rules | auto from docset |
+| `:config: path` | Path to changelog.yml configuration (reserved for future use) | auto-discover |
 
 ### Example with options
 
@@ -33,7 +32,6 @@ The directive supports the following options:
 :::{changelog} /path/to/bundles
 :type: all
 :subsections:
-:product: kibana
 :::
 ```
 
@@ -103,9 +101,9 @@ To show all entries on a single page (previous default behavior):
 
 #### `:subsections:`
 
-When enabled, entries are grouped by their area/component within each section. By default, entries are listed without area grouping (matching CLI behavior).
-
-If publish rules with `include_areas` or `exclude_areas` are active, the grouping uses the first area in the entry's `areas` list that is consistent with those rules — the first included area for `include_areas` rules, or the first non-excluded area for `exclude_areas` rules. When no publish rules are configured, the first area in the list is used.
+When enabled, entries are grouped by "area" within each section.
+By default, entries are listed without area grouping.
+If a changelog has multiple area values, only the first one is used.
 
 #### `:config:`
 
@@ -113,77 +111,16 @@ Explicit path to a `changelog.yml` configuration file. If not specified, the dir
 1. `changelog.yml` in the docset root
 2. `docs/changelog.yml` relative to docset root
 
-The configuration can include publish rules to filter entries by type or area.
-
-#### `:product:`
-
-Product ID for loading product-specific publish rules from `changelog.yml`. The directive resolves the product ID in this order:
-
-1. **Explicit `:product:` option** — if specified, uses that product ID
-2. **Docset's single product** — if the docset has exactly one product configured in `docset.yml`, uses that product ID automatically
-3. **Global fallback** — uses the global `rules.publish` configuration
-
-:::{important}
-`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time instead of render time.
-For details, refer to [Filtering entries with publish rules](#filtering-entries-with-publish-rules).
-:::
-
-**When to set `:product:` explicitly:**
-
-Always specify `:product:` when your docset serves more than one product, or when bundle files can contain entries from multiple products and you have per-product rules configured.
-Without an explicit `:product:`, the directive falls back to global rules, which may not apply the right filtering for each product.
-
-```markdown
-:::{changelog}
-:product: kibana
-:::
-```
-
-**Single-product docsets:**
-
-If your `docset.yml` declares exactly one product, the directive uses that product ID automatically and you don't need to set `:product:`:
-
-```yaml
-# docset.yml
-products:
-  - id: kibana
-```
-
-```markdown
-:::{changelog}
-:::
-```
-
-**Explicit override:**
-
-You can override the automatic product detection at any time:
-
-```markdown
-:::{changelog}
-:product: elasticsearch
-:::
-```
-
-The product ID matching is case-insensitive.
+Reserved for future configuration use. The directive does not currently load or apply configuration from this file.
 
 ## Filtering entries with bundle rules
 
 You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
 
+The `{changelog}` directive does not apply `rules.publish`. To filter entries in the directive output, use `rules.bundle` at bundle time so entries are excluded before bundling. The directive receives only the bundled entries. See the [changelog bundle documentation](/cli/release/changelog-bundle.md#changelog-bundle-rules) for full syntax.
+
 `rules.bundle` supports product, type, and area filtering, and per-product overrides.
 For full syntax, refer to the [rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).
-
-## Filtering entries with publish rules
-
-:::{warning}
-`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time. Using `rules.publish` emits a deprecation warning during configuration loading.
-:::
-
-`rules.publish` still works for backward compatibility and can be used to filter changelog entries from the rendered output using the `rules.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
-
-Each field supports **exclude** (block if matches) or **include** (block if doesn't match) semantics. You cannot mix both for the same field (for example, you cannot specify both `exclude_types` and `include_types`).
-
-For details, refer to the [Rules reference](/contribute/changelog.md#rules-reference).
 
 ## Feature hiding from bundles
 
@@ -256,7 +193,7 @@ docs/
 └── release-notes.md          # Page with :::{changelog}
 ```
 
-To override these expectations, set the `bundle.directory` and `bundle.output_directory` in the changelog configuration file.
+The `bundle.directory` and `bundle.output_directory` settings in `changelog.yml` apply to the `changelog bundle` and `changelog gh-release` CLI commands. The directive's bundles folder is controlled by its first argument or defaults to `changelog/bundles/` relative to the docset root.
 
 ## Version ordering
 

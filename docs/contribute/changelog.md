@@ -79,7 +79,7 @@ For example, you might choose to omit `other` or `docs` changelogs.
 Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release bundles.
 
 When you run the `docs-builder changelog render` command, changelogs that match the products, areas, or types in the `rules.publish` section of the changelog configuration file are commented out of the documentation output files.
-[Changelog directives](#changelog-directive) also heed these publishing rules and omit matching changelogs.
+[Changelog directives](#changelog-directive) do not apply `rules.publish`; filtering must be done at bundle time via `rules.bundle`.
 
 :::{warning}
 `rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time. Using `rules.publish` emits a deprecation warning during configuration loading.
@@ -1049,14 +1049,19 @@ Changelogs with multiple areas are grouped under the first area that aligns with
 
 ### Include changelogs inline [changelog-directive]
 
-You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages, without needing to run the `changelog render` command first.
+You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages.
 
 ```markdown
 :::{changelog}
 :::
 ```
 
-By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first). For full documentation and examples, see the [{changelog} directive syntax reference](../syntax/changelog.md).
+By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first).
+For full documentation and examples, refer to the [{changelog} directive syntax reference](../syntax/changelog.md).
+
+:::{note}
+All product-specific filtering must be configured at bundle time via `rules.bundle`. Unlike the `changelog render` command, the directive does not apply `rules.publish`.
+:::
 
 ### Generate markdown or asciidoc [render-changelogs]
 
