@@ -29,17 +29,6 @@ public static partial class ReleaseNotesSerialization
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.Build();
 
-	/// <summary>
-	/// Used for loading minimal changelog configuration (publish blocker).
-	/// Includes LenientStringListConverter so List&lt;string&gt; fields accept both comma-separated strings and YAML lists.
-	/// </summary>
-	private static readonly IDeserializer IgnoreUnmatchedDeserializer =
-		new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.WithTypeConverter(new LenientStringListConverter())
-			.IgnoreUnmatchedProperties()
-			.Build();
-
 	private static readonly ISerializer YamlSerializer =
 		new StaticSerializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
