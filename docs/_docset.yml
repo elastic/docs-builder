@@ -76,6 +76,7 @@ toc:
       - folder: content-set
         children:
           - file: index.md
+          - file: docset-format.md
           - file: file-structure.md
           - file: attributes.md
           - file: navigation.md
