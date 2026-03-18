@@ -133,10 +133,6 @@ public class ChangelogRenderingService(
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
 			// Build render context (needed for block checking)
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config);
-
-			// Emit warnings for blocked entries
-			EmitBlockedEntryWarnings(collector, resolvedResult.Entries, context);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -205,111 +201,6 @@ public class ChangelogRenderingService(
 			if (!string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) && featureIdsToHide.Contains(resolved.Entry.FeatureId))
 				collector.EmitWarning(string.Empty, $"Changelog entry '{resolved.Entry.Title}' with feature-id '{resolved.Entry.FeatureId}' will be commented out in markdown output");
 		}
-	}
-
-	private static void EmitBlockedEntryWarnings(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<ResolvedEntry> entries,
-		ChangelogRenderContext context)
-	{
-		if (context.Configuration?.Rules?.Publish == null)
-			return;
-
-		var visibleEntries = entries.Where(resolved =>
-			string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) ||
-			!context.FeatureIdsToHide.Contains(resolved.Entry.FeatureId));
-
-		foreach (var resolved in visibleEntries)
-		{
-			// Get product IDs for this entry
-			var productIds = context.EntryToBundleProducts.GetValueOrDefault(resolved.Entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-			if (productIds.Count == 0)
-				continue;
-
-			// Check each product's publish configuration
-			foreach (var productId in productIds)
-			{
-				var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
-				if (blocker != null && blocker.ShouldBlock(resolved.Entry))
-				{
-					var reasons = GetBlockReasons(resolved.Entry, blocker);
-					var prefix = blocker.TypesMode == FieldMode.Include || blocker.AreasMode == FieldMode.Include ? "[+include]" : "[-exclude]";
-					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
-					var entryIdentifier = GetEntryIdentifier(resolved.Entry, context);
-					collector.EmitWarning(string.Empty, $"{prefix} Changelog entry {entryIdentifier} will be commented out{productInfo} because it matches rules configuration: {reasons}");
-				}
-			}
-		}
-	}
-
-	private static string GetEntryIdentifier(ChangelogEntry entry, ChangelogRenderContext context)
-	{
-		if (entry.Prs is { Count: > 0 })
-		{
-			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Prs[0], "elastic", repo);
-			if (prNumber.HasValue)
-				return $"for PR {prNumber.Value}";
-		}
-
-		if (entry.Issues is { Count: > 0 })
-		{
-			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-			var issueNumber = ChangelogTextUtilities.ExtractIssueNumber(entry.Issues[0], "elastic", repo);
-			if (issueNumber.HasValue)
-				return $"for issue {issueNumber.Value}";
-		}
-
-		return $"'{entry.Title}'";
-	}
-
-	private static string GetBlockReasons(ChangelogEntry entry, PublishBlocker blocker)
-	{
-		var reasons = new List<string>();
-
-		// Check if blocked by type
-		if (blocker.Types?.Count > 0)
-		{
-			var entryTypeName = entry.Type.ToStringFast(true);
-			if (blocker.MatchesType(entryTypeName))
-			{
-				var modeStr = blocker.TypesMode == FieldMode.Include ? "not in rules.publish.include_types" : "in rules.publish.exclude_types";
-				reasons.Add($"type '{entryTypeName}' {modeStr}");
-			}
-			else if (blocker.TypesMode == FieldMode.Include)
-				reasons.Add($"type '{entryTypeName}' not in rules.publish.include_types");
-		}
-
-		// Check if blocked by area
-		if (blocker.Areas?.Count > 0 && entry.Areas?.Count > 0)
-		{
-			var matchedAreas = entry.Areas
-				.Where(area => blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
-				.ToList();
-
-			if (blocker.AreasMode == FieldMode.Exclude && matchedAreas.Count > 0)
-				reasons.Add($"area{(matchedAreas.Count > 1 ? "s" : "")} '{string.Join("', '", matchedAreas)}' in rules.publish.exclude_areas (match_areas: {blocker.MatchAreas.ToString().ToLowerInvariant()})");
-			else if (blocker.AreasMode == FieldMode.Include)
-			{
-				var unmatchedAreas = entry.Areas
-					.Where(area => !blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
-					.ToList();
-				if (unmatchedAreas.Count > 0)
-					reasons.Add($"areas [{string.Join(", ", entry.Areas)}] not in rules.publish.include_areas (match_areas: {blocker.MatchAreas.ToString().ToLowerInvariant()})");
-			}
-		}
-
-		return string.Join(" and ", reasons);
-	}
-
-	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
-	{
-		// Check product-specific override first
-		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
-			return productBlocker;
-
-		// Fall back to global publish blocker
-		return publishRules.Blocker;
 	}
 
 	private static bool ValidateEntryTypes(

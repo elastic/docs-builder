@@ -207,9 +207,11 @@ rules:
   #   #       - "Search"
   #   #       - "Monitoring"
 
-  # Publish — DEPRECATED. Use rules.bundle instead.
-  # The rules.publish section is still supported for backward compatibility but will be removed in a future release.
-  # It no longer applies to the {changelog} directive.
+  # Publish — DEPRECATED AND NO LONGER USED.
+  # The `changelog render` command does not use rules.publish. Move type/area filtering to rules.bundle above.
+  # The `{changelog}` directive also does not use rules.publish.
+  # This section is ignored by both commands, and will be removed in a future release.
+  # A deprecation warning is emitted if rules.publish is present in the configuration.
   #
   # publish:
   #   # match_areas: any
