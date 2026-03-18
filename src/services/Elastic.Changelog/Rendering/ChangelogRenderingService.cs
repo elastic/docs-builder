@@ -132,7 +132,8 @@ public class ChangelogRenderingService(
 			// Emit warnings for hidden entries
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
-			// Build render context (needed for block checking)
+			// Build render context
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
