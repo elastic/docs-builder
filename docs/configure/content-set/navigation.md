@@ -1,6 +1,6 @@
 # Navigation
 
-Two types of nav files are supported: `docset.yml` and `toc.yml`. For a complete list of all `docset.yml` fields and their required/optional status, see [docset.yml format](./docset-format.md).
+Two types of navigation files are supported: `docset.yml` and `toc.yml`. For a complete list of all `docset.yml` fields refer to [docset.yml format](./docset-format.md).
 
 ## `docset.yml`
 
