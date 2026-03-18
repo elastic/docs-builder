@@ -112,17 +112,12 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public string? ConfigPath { get; private set; }
 
 	/// <summary>
-	/// Product ID for product-specific publish blocker configuration.
-	/// Resolution order:
-	/// 1. Explicit :product: option if specified
-	/// 2. Docset's single product ID (when exactly one product is configured)
-	/// 3. Falls back to global block.publish if no product can be determined
+	/// Deprecated. The :product: option is ignored. Product-specific filtering must be done at bundle time via rules.bundle.
 	/// </summary>
 	public string? ProductId { get; private set; }
 
 	/// <summary>
-	/// The loaded publish blocker configuration used to filter entries.
-	/// If null, no publish filtering is applied.
+	/// Always null. The directive no longer applies rules.publish; filtering must be done at bundle time via rules.bundle.
 	/// </summary>
 	public PublishBlocker? PublishBlocker { get; private set; }
 
@@ -172,7 +167,10 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ExtractBundlesFolderPath();
 		Subsections = PropBool("subsections");
 		ConfigPath = Prop("config");
-		ProductId = Prop("product");
+		var productOpt = Prop("product");
+		if (!string.IsNullOrWhiteSpace(productOpt))
+			this.EmitWarning("The :product: option is deprecated and has no effect. The directive does not apply rules.publish. Move type/area filtering to rules.bundle so it applies at bundle time.");
+		ProductId = productOpt;
 		TypeFilter = ParseTypeFilter();
 		LoadConfiguration();
 		LoadPrivateRepositories();
@@ -239,63 +237,18 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	}
 
 	/// <summary>
-	/// Loads the changelog configuration to extract publish blockers.
-	/// Attempts to load from:
-	/// 1. Explicit :config: path if specified
-	/// 2. changelog.yml in the docset root
-	/// 3. docs/changelog.yml relative to docset root
+	/// Reserved for future config loading (e.g., bundle.directory). The directive no longer applies rules.publish.
+	/// Emits a warning when an explicit :config: path is specified but the file is not found.
 	/// </summary>
 	private void LoadConfiguration()
 	{
-		var fileSystem = Build.ReadFileSystem;
-		string? configPath = null;
-
-		// Try explicit config path first
-		if (!string.IsNullOrWhiteSpace(ConfigPath))
-		{
-			var explicitPath = Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath);
-
-			if (fileSystem.File.Exists(explicitPath))
-				configPath = explicitPath;
-			else
-				this.EmitWarning($"Specified changelog config path '{ConfigPath}' not found.");
-		}
-		else
-		{
-			// Auto-discover: try changelog.yml first, then docs/changelog.yml
-			var changelogYml = Build.DocumentationSourceDirectory.ResolvePathFrom("changelog.yml");
-			var docsChangelogYml = Build.DocumentationSourceDirectory.ResolvePathFrom("docs/changelog.yml");
-
-			if (fileSystem.File.Exists(changelogYml))
-				configPath = changelogYml;
-			else if (fileSystem.File.Exists(docsChangelogYml))
-				configPath = docsChangelogYml;
-		}
-
-		if (string.IsNullOrWhiteSpace(configPath))
+		if (string.IsNullOrWhiteSpace(ConfigPath))
 			return;
 
-		// Resolve product ID: explicit option > single docset product > null (global fallback)
-		var resolvedProductId = ResolveProductId();
-
-		PublishBlocker = ReleaseNotesSerialization.LoadPublishBlocker(fileSystem, configPath, resolvedProductId);
-	}
-
-	/// <summary>
-	/// Resolves the product ID for publish blocker lookup.
-	/// Priority: explicit :product: option > single docset product > null.
-	/// </summary>
-	private string? ResolveProductId()
-	{
-		// Use explicit :product: option if specified
-		if (!string.IsNullOrWhiteSpace(ProductId))
-			return ProductId;
-
-		// Fall back to docset's single product if available
-		var docsetProducts = Context.Configuration.Products;
-		return docsetProducts.Count == 1 ? docsetProducts.First().Id :
-			// No product could be determined - will use global blocker
-			null;
+		var fileSystem = Build.ReadFileSystem;
+		var explicitPath = Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath);
+		if (!fileSystem.File.Exists(explicitPath))
+			this.EmitWarning($"Specified changelog config path '{ConfigPath}' not found.");
 	}
 
 	/// <summary>

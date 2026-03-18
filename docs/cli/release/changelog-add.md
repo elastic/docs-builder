@@ -89,7 +89,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   If specified, `--title` can be derived from the PR.
 :   If mappings are configured, `--areas`, `--type`, and `--products` can also be derived from the PR labels.
 :   Creates one changelog file per PR.
-:   If there are `block ... create` definitions in the changelog configuration file and a PR has a blocking label for the resolved products, that PR is skipped and no changelog file is created for it.
+:   If there are `rules.create` definitions in the changelog configuration file and a PR has a blocking label for the resolved products, that PR is skipped and no changelog file is created for it.
 
 `--release-version <string?>`
 :   Optional: GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
