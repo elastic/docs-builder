@@ -15,6 +15,7 @@ A content set in `docs-builder` is equivalent to an AsciiDoc book. At this level
 
 ## Learn more
 
+* [docset.yml format](./docset-format.md) — Complete reference for all fields, including required vs optional.
 * [File structure](./file-structure.md).
 * [Navigation](./navigation.md).
 * [Attributes](./attributes.md).
