@@ -25,7 +25,7 @@ public interface IGitRepository
 // This git repository implementation is optimized for pull and fetching single commits.
 // It uses `git pull --depth 1` and `git fetch --depth 1` to minimize the amount of data transferred.
 public class SingleCommitOptimizedGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector collector, IDirectoryInfo workingDirectory)
-	: ExternalCommandExecutor(collector, workingDirectory, Environment.GetEnvironmentVariable("CI") is null or "" ? null : TimeSpan.FromMinutes(10))
+	: ExternalCommandExecutor(collector, workingDirectory, Environment.GetEnvironmentVariable("CI") is null or "" ? null : TimeSpan.FromMinutes(30))
 		, IGitRepository
 {
 	/// <inheritdoc />
