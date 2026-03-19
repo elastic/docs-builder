@@ -287,7 +287,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			if (items.Any(a => a.Version is not null && a.Version != AllVersionsSpec.Instance))
 				diagnostics.Add((Severity.Error,
-					$"Can't specify a version for '{key}' because this product is not versioned. "));
+					$"Can't specify a version for '{key}' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."));
 			return;
 		}
 

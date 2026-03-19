@@ -87,11 +87,11 @@ applies_to:
 type ``parses deployment as string to set all deployment targets`` () =
     static let markdown = frontMatter """
 applies_to:
-   deployment: ga 9.0.0
+   deployment: ga
 """
     [<Fact>]
     let ``apply matches expected`` () =
-        let expectedAvailability = AppliesCollection.op_Explicit "ga 9.0.0"
+        let expectedAvailability = AppliesCollection.op_Explicit "ga"
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
                 Eck=expectedAvailability,
@@ -100,10 +100,6 @@ applies_to:
                 Self=expectedAvailability
             )
         ))
-
-    [<Fact>]
-    let ``emits error because ess does not support versions`` () =
-        markdown |> hasError "Can't specify a version for 'ess'"
 
 type ``parses deployment types as individual properties`` () =
     static let markdown = frontMatter """
