@@ -6,8 +6,13 @@ namespace Elastic.LegacyDocs.Migration;
 
 public record LegacyConf
 {
-	public Dictionary<string, string> Repos { get; init; } = [];
+	public Dictionary<string, LegacyRepo> Repos { get; init; } = [];
 	public List<LegacyCategory> Contents { get; init; } = [];
+}
+
+public record LegacyRepo
+{
+	public string Url { get; init; } = "";
 }
 
 public record LegacyCategory

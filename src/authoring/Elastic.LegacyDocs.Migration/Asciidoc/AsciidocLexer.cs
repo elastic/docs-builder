@@ -283,7 +283,7 @@ public static partial class AsciidocLexer
 		{
 			token = new Token(TokenType.SectionTitle, line, lineNumber, new TokenMetadata
 			{
-				Level = m.Groups[1].Value.Length,
+				Level = m.Groups[1].Value.Length - 1,
 				Title = m.Groups[2].Value.Trim()
 			});
 			return true;

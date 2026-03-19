@@ -98,6 +98,7 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		}
 
 		var content = await File.ReadAllTextAsync(indexPath, ct);
+		var basePath = Path.GetDirectoryName(indexPath) ?? primarySource.LocalPath;
 		var parserOptions = new AsciidocParserOptions
 		{
 			Attributes = new Dictionary<string, string>
@@ -107,7 +108,7 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 			}
 		};
 		var parser = new AsciidocParser(parserOptions);
-		var document = parser.Parse(content, primarySource.LocalPath);
+		var document = parser.Parse(content, basePath);
 
 		var emitterOptions = new MarkdownEmitterOptions
 		{
