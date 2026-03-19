@@ -378,3 +378,20 @@ public class VscodeProtocolLinkTest(ITestOutputHelper output) : LinkTestBase(out
 	[Fact]
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
 }
+
+public class VscodeInsidersProtocolLinkTest(ITestOutputHelper output) : LinkTestBase(output,
+	"""
+	[Install with VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22oblt-cli%22%7D)
+	"""
+)
+{
+	[Fact]
+	public void GeneratesHtml() =>
+		Html.Should().Contain("""href="vscode-insiders:""");
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+
+	[Fact]
+	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
+}

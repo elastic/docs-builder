@@ -68,19 +68,22 @@ When you run the `docs-builder changelog add` command with the `--prs` or `--iss
 
 Refer to the file layout in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-map-label).
 
-### Rules for creation and publishing
+### Rules for creation and bundling
 
-If you have pull request labels that indicate a changelog is not required (such as `>non-issue` or `release_note:skip`), you can declare these in the `rules` section of the changelog configuration.
+If you have pull request labels that indicate a changelog is not required (such as `>non-issue` or `release_note:skip`), you can declare these in the `rules.create` section of the changelog configuration.
 
 When you run the `docs-builder changelog add` command with the `--prs` or `--issues` options and the pull request or issue has one of the identified labels, the command does not create a changelog.
 
-Likewise, if there are areas or types of changelogs that should not be published, you can declare these in the `rules` section of the changelog configuration.
+Likewise, if you want to exclude changelogs with certain products, areas, or types from the release bundles, you can declare these in the `rules.bundle` section of the changelog configuration.
 For example, you might choose to omit `other` or `docs` changelogs.
-Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release docs.
+Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release bundles.
 
-When you run the `docs-builder changelog render` command, changelogs that match the specified products and areas or types are commented out of the documentation output files.
-The command will emit warnings prefixed with `[-exclude]` or `[+include]` indicating which changelogs were commented out and why.
-[Changelog directives](#changelog-directive) also heed these publishing rules and omit matching changelogs.
+When you run the `docs-builder changelog render` command, changelogs that match the products, areas, or types in the `rules.publish` section of the changelog configuration file are commented out of the documentation output files.
+[Changelog directives](#changelog-directive) do not apply `rules.publish`; filtering must be done at bundle time via `rules.bundle`.
+
+:::{warning}
+`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time. Using `rules.publish` emits a deprecation warning during configuration loading.
+:::
 
 Each field supports **exclude** (block if matches) or **include** (block if doesn't match) semantics. You cannot mix both for the same field.
 
@@ -123,7 +126,7 @@ Evaluated when running `docs-builder changelog add` with `--prs` or `--issues`.
 
 You cannot specify both `exclude` and `include`.
 
-**Product-specific create rules** (`rules.create.products`):
+##### Product-specific create rules (`rules.create.products`)
 
 Product keys can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`).
 Each product override supports the same `exclude`, `include`, and `match` options.
@@ -143,12 +146,12 @@ rules:
 #### `rules.bundle`
 
 Filters the changelogs that are included in a bundle file.
-Applied during `docs-builder changelog bundle` after the primary filter (`--prs`, `--issues`, `--all`) has matched entries.
-Not applied when the primary filter is `--input-products` (or `bundle.profiles.<name>.products`), because product-based primary filters already provide a complete product constraint.
+Applied during `docs-builder changelog bundle` and `docs-builder changelog gh-release` after the primary filter (`--prs`, `--issues`, `--all`) has matched entries.
 
-:::{note}
-`rules.bundle` does not apply to bundles created by `changelog gh-release`. This limitation will be resolved in a future release.
-:::
+The **product filter** (`exclude_products`/`include_products`) is skipped when the primary filter is `--input-products` (or `bundle.profiles.<name>.products`), because the primary filter already constrains by product.
+The **type and area filter** (`exclude_types`/`include_types`/`exclude_areas`/`include_areas`) always applies, regardless of the primary filter.
+
+##### Product filtering
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -156,54 +159,88 @@ Not applied when the primary filter is `--input-products` (or `bundle.profiles.<
 | `include_products` | string or list | Only these product IDs are included; all others are excluded. Cannot be combined with `exclude_products`. |
 | `match_products` | string | Override `rules.match` for product matching. Values: `any`, `all`. |
 
-You cannot specify both `exclude_products` and `include_products`.
+##### Type and area filtering
 
-When a changelog is excluded by `rules.bundle`, the bundling service emits a warning with a `[-bundle-exclude]` or `[-bundle-include]` prefix.
+| Option | Type | Description |
+|--------|------|-------------|
+| `exclude_types` | string or list | Changelog types to exclude from the bundle. |
+| `include_types` | string or list | Only changelogs with these types are kept; all others are excluded. |
+| `exclude_areas` | string or list | Changelog areas to exclude from the bundle. |
+| `include_areas` | string or list | Only changelogs with these areas are kept; all others are excluded. |
+| `match_areas` | string | Override `rules.match` for area matching. Values: `any`, `all`. |
+| `products` | map | Per-product type/area filter overrides (see below). |
+
+You cannot specify both `exclude_products` and `include_products`, both `exclude_types` and `include_types`, or both `exclude_areas` and `include_areas`. You can mix exclude and include across different fields (for example, `exclude_types` with `include_areas`).
+
+When a changelog is excluded by `rules.bundle`, the bundling service emits a warning with a `[-bundle-exclude]`, `[-bundle-include]`, or `[-bundle-type-area]` prefix.
+
+##### Product-specific bundle rules (`rules.bundle.products`)
+
+Product keys can be a single product ID or a comma-separated list.
+Each product override supports the same type/area options (`exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas`).
+Product-specific rules **override** the global bundle type/area rules entirely for entries matching that product.
 
 ```yaml
 rules:
   bundle:
     exclude_products: cloud-enterprise
-    # Or include only certain products:
-    # include_products:
-    #   - cloud-serverless
-    #   - cloud-hosted
-    # match_products: any
-```
-
-#### `rules.publish`
-
-Filters the changelogs that appear in rendered output.
-Evaluated when running `docs-builder changelog render` or using the `{changelog}` directive.
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `exclude_types` | list | Changelog types to hide from output |
-| `include_types` | list | Only changelogs with these types are shown; all others are hidden |
-| `exclude_areas` | list | Changelog areas to hide from output |
-| `include_areas` | list | Only changelogs with these areas are shown; all others are hidden |
-| `match_areas` | string | Override `rules.match` for area matching. Values: `any`, `all`. |
-| `products` | map | Product-specific publish rules (see below). |
-
-You cannot specify both `exclude_types` and `include_types`, or both `exclude_areas` and `include_areas`.
-You **can** mix exclude and include across different fields (for example, `exclude_types` with `include_areas`).
-
-**Product-specific publish rules** (`rules.publish.products`):
-
-Product keys can be a single product ID or a comma-separated list.
-Each product override supports the same options as the global publish rules (`exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas`).
-Product-specific rules **override** the global publish rules entirely.
-
-```yaml
-rules:
-  publish:
-    exclude_types:
-      - docs
+    exclude_types: deprecation
+    exclude_areas:
+      - Internal
     products:
       cloud-serverless:
         include_areas:
           - "Search"
           - "Monitoring"
+```
+
+##### Per-product rule resolution for multi-product entries [changelog-bundle-multi-product-rules]
+
+When a changelog entry belongs to more than one product, the applicable per-product rule is chosen using an *intersection + alphabetical first-match* algorithm:
+
+1. Compute the **intersection** of the bundle's product context and the entry's own products.
+   - The bundle context is the set of product IDs from `--output-products` (if specified), or the entry's own products when `--output-products` is not set.
+   - The intersection restricts rule lookup to only the products the entry actually claims to belong to.
+2. **Sort the intersection alphabetically** (case-insensitive, ascending) for a deterministic result.
+3. Use the per-product rule for the **first product ID** in the sorted intersection that has a configured rule.
+4. If the intersection is empty (the entry's products are disjoint from the bundle context), fall back to the entry's own product list sorted alphabetically, then to the global `rules.bundle` blocker. This prevents context-only rules from being applied to unrelated entries.
+
+For example, with `--output-products "kibana 9.3.0" "security 9.3.0"`:
+
+| Entry's `products` | Intersection with context | Sorted | Rule used |
+|--------------------|--------------------------|--------|-----------|
+| `[kibana]` | `{kibana}` | `[kibana]` | `kibana` rule |
+| `[security]` | `{security}` | `[security]` | `security` rule |
+| `[kibana, security]` | `{kibana, security}` | `[kibana, security]` | `kibana` rule (k < s) |
+
+When `--output-products` is not set, the entry's own product list is used as the context, so each single-product entry naturally picks its own rule. For shared entries without `--output-products`, the alphabetically-first product with a configured rule wins. To avoid ambiguity for shared entries, configure per-product rules that agree on the shared entry, or use `--output-products` to make the bundle's product context explicit.
+
+#### `rules.publish`
+
+:::{warning}
+`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time rather than render time. Using `rules.publish` emits a deprecation warning during configuration loading.
+:::
+
+`rules.publish` still works for backward compatibility, but will be removed in a future release. The migration is straightforward — copy the same fields from `rules.publish` into `rules.bundle`.
+
+**Before (deprecated):**
+
+```yaml
+rules:
+  publish:
+    exclude_types: docs
+    exclude_areas:
+      - Internal
+```
+
+**After:**
+
+```yaml
+rules:
+  bundle:
+    exclude_types: docs
+    exclude_areas:
+      - Internal
 ```
 
 #### Match inheritance
@@ -214,7 +251,8 @@ The `match` setting cascades from global to section to product:
 rules.match (global default, "any" if omitted)
   ├─ rules.create.match → rules.create.products.{id}.match
   ├─ rules.bundle.match_products
-  └─ rules.publish.match_areas → rules.publish.products.{id}.match_areas
+  ├─ rules.bundle.match_areas → rules.bundle.products.{id}.match_areas
+  └─ rules.publish.match_areas → rules.publish.products.{id}.match_areas  (deprecated)
 ```
 
 If a lower-level `match` or `match_areas` is specified, it overrides the inherited value.
@@ -235,14 +273,14 @@ The difference only matters for changelogs with multiple products.
 
 #### Area matching behavior
 
-With `match_areas`, the behavior differs depending on the mode:
+With `match_areas` (applies to both `rules.bundle` and `rules.publish`), the behavior differs depending on the mode:
 
 | Config | Changelog `areas` | `match_areas` | Result |
 |--------|------------|-------------|--------|
-| `exclude_areas: [Internal]` | `[Search, Internal]` | `any` | **Hidden** ("Internal" matches) |
-| `exclude_areas: [Internal]` | `[Search, Internal]` | `all` | **Shown** (not all areas are in the exclude list) |
-| `include_areas: [Search]` | `[Search, Internal]` | `any` | **Shown** ("Search" matches) |
-| `include_areas: [Search]` | `[Search, Internal]` | `all` | **Hidden** ("Internal" is not in the include list) |
+| `exclude_areas: [Internal]` | `[Search, Internal]` | `any` | **Excluded** ("Internal" matches) |
+| `exclude_areas: [Internal]` | `[Search, Internal]` | `all` | **Included** (not all areas are in the exclude list) |
+| `include_areas: [Search]` | `[Search, Internal]` | `any` | **Included** ("Search" matches) |
+| `include_areas: [Search]` | `[Search, Internal]` | `all` | **Excluded** ("Internal" is not in the include list) |
 
 #### Validation
 
@@ -252,9 +290,12 @@ The following configurations cause validation errors:
 |-----------|-------|
 | Old `block:` key found | `'block' is no longer supported. Rename to 'rules'. See changelog.example.yml.` |
 | Both `exclude` and `include` in create | `rules.create: cannot have both 'exclude' and 'include'. Use one or the other.` |
-| Both `exclude_types` and `include_types` | `rules.publish: cannot have both 'exclude_types' and 'include_types'. Use one or the other.` |
-| Both `exclude_areas` and `include_areas` | `rules.publish: cannot have both 'exclude_areas' and 'include_areas'. Use one or the other.` |
+| Both `exclude_types` and `include_types` in bundle | `rules.bundle: cannot have both 'exclude_types' and 'include_types'. Use one or the other.` |
+| Both `exclude_areas` and `include_areas` in bundle | `rules.bundle: cannot have both 'exclude_areas' and 'include_areas'. Use one or the other.` |
 | Both `exclude_products` and `include_products` in bundle | `rules.bundle: cannot have both 'exclude_products' and 'include_products'. Use one or the other.` |
+| Both `exclude_types` and `include_types` in publish | `rules.publish: cannot have both 'exclude_types' and 'include_types'. Use one or the other.` |
+| Both `exclude_areas` and `include_areas` in publish | `rules.publish: cannot have both 'exclude_areas' and 'include_areas'. Use one or the other.` |
+| `rules.publish` present | Deprecation warning: `rules.publish is deprecated. Move type/area filtering to rules.bundle.` |
 | Invalid match value | `rules.match: '{value}' is not valid. Use 'any' or 'all'.` |
 | Unknown product ID in bundle | `rules.bundle.exclude_products: '{id}' is not in the list of available products.` |
 | Unknown product ID | `rules.create.products: '{id}' not in available products.` |
@@ -313,12 +354,23 @@ Examples:
 
 ### Filenames
 
-By default, the `docs-builder changelog add` command generates filenames using a timestamp and a sanitized version of the title:
-`{timestamp}-{sanitized-title}.yaml`
+The `docs-builder changelog add` command names generated files according to the `filename` strategy in `changelog.yml`:
 
-For example: `1735689600-fixes-enrich-and-lookup-join-resolution.yaml`
+| Strategy | Example filename | Description |
+|---|---|---|
+| `timestamp` (default) | `1735689600-fixes-enrich-and-lookup-join-resolution.yaml` | Uses a Unix timestamp with a sanitized title slug. |
+| `pr` | `137431.yaml` | Uses the PR number. |
+| `issue` | `2571.yaml` | Uses the issue number. |
 
-If you want to use PR numbers for filenames, add the `--use-pr-number` option. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers:
+Set the strategy in your changelog configuration file:
+
+```yaml
+filename: timestamp
+```
+
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for full documentation.
+
+You can override the configured strategy per invocation with the `--use-pr-number` or `--use-issue-number` CLI flags:
 
 ```sh
 docs-builder changelog add \
@@ -330,13 +382,13 @@ docs-builder changelog add \
   --issues https://github.com/elastic/docs-builder/issues/2571 \
   --products "elasticsearch 9.3.0" \
   --config docs/changelog.yml \
-  --use-pr-number
+  --use-issue-number
 ```
-
-For filenames that match issue numbers instead of PR numbers, specify `--use-issue-number`.
 
 :::{important}
 `--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. Each requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide, or from linked references in the issue or PR body when extraction is enabled.
+
+**Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`timestamp`).
 :::
 
 ### Examples
@@ -947,6 +999,10 @@ For more details and examples, go to [](/cli/release/changelog-bundle-amend.md).
 
 ### Control changelog publishing [example-rules-publishing]
 
+:::{warning}
+This functionality is deprecated. Perform the filtering at bundle time instead. Using `rules.publish` emits a deprecation warning during configuration loading.
+:::
+
 You can use rules in the changelog configuration file to refrain from publishing changelogs based on their areas and types.
 
 For example, your configuration file can contain a `rules` section like this:
@@ -993,14 +1049,19 @@ Changelogs with multiple areas are grouped under the first area that aligns with
 
 ### Include changelogs inline [changelog-directive]
 
-You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages, without needing to run the `changelog render` command first.
+You can use the [`{changelog}` directive](../syntax/changelog.md) to render all changelog bundles directly in your documentation pages.
 
 ```markdown
 :::{changelog}
 :::
 ```
 
-By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first). For full documentation and examples, see the [{changelog} directive syntax reference](../syntax/changelog.md).
+By default, the directive renders all bundles from `changelog/bundles/` (relative to the docset root), ordered by semantic version (newest first).
+For full documentation and examples, refer to the [{changelog} directive syntax reference](../syntax/changelog.md).
+
+:::{note}
+All product-specific filtering must be configured at bundle time via `rules.bundle`. Unlike the `changelog render` command, the directive does not apply `rules.publish`.
+:::
 
 ### Generate markdown or asciidoc [render-changelogs]
 

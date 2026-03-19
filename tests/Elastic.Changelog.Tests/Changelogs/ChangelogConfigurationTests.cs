@@ -1203,6 +1203,51 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot have both 'exclude_products' and 'include_products'"));
 	}
 
+	[Theory]
+	[InlineData("pr", FilenameStrategy.Pr)]
+	[InlineData("issue", FilenameStrategy.Issue)]
+	[InlineData("timestamp", FilenameStrategy.Timestamp)]
+	public async Task LoadChangelogConfiguration_Filename_ParsesStrategy(string yamlValue, FilenameStrategy expected)
+	{
+		var config = await LoadConfig(
+			$"""
+			filename: {yamlValue}
+			""");
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Filename.Should().Be(expected);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToTimestamp()
+	{
+		var config = await LoadConfig(
+			"""
+			lifecycles:
+			  - ga
+			""");
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Filename.Should().Be(FilenameStrategy.Timestamp);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Invalid_ReturnsError()
+	{
+		var config = await LoadConfig(
+			"""
+			filename: random-value
+			""");
+
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("filename: 'random-value' is not valid"));
+	}
+
 	[Fact]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_UnknownProductId_ReturnsError()
 	{
@@ -1226,5 +1271,73 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesPublish_EmitsDeprecationWarning()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  publish:
+			    exclude_types: docs
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert — config loads (backward compat) but warns
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("rules.publish is deprecated"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_TypeAreaAndProducts_LoadsCorrectly()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - deprecation
+			      - docs
+			    exclude_areas:
+			      - Internal
+			    match_areas: any
+			    products:
+			      cloud-serverless:
+			        include_areas:
+			          - Search
+			          - Monitoring
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		var bundle = config!.Rules!.Bundle!;
+		bundle.Blocker.Should().NotBeNull();
+		bundle.Blocker!.Types.Should().BeEquivalentTo(["deprecation", "docs"]);
+		bundle.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		bundle.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
+		bundle.Blocker.MatchAreas.Should().Be(MatchMode.Any);
+		bundle.ByProduct.Should().ContainKey("cloud-serverless");
+		bundle.ByProduct!["cloud-serverless"].Areas.Should().BeEquivalentTo(["Search", "Monitoring"]);
+		bundle.ByProduct["cloud-serverless"].AreasMode.Should().Be(FieldMode.Include);
 	}
 }

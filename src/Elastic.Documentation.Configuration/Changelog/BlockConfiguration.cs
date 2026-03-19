@@ -59,7 +59,7 @@ public record CreateRules
 }
 
 /// <summary>
-/// Rules for bundle-time product filtering.
+/// Rules for bundle-time filtering by product, type, and area.
 /// Applied during <c>changelog bundle</c> after the primary filter (PR/issue/all) matches entries.
 /// Ignored when the primary filter is already product-based (<c>--input-products</c>).
 /// </summary>
@@ -79,6 +79,16 @@ public record BundleRules
 	/// Match mode for products (any or all). Inherited from RulesConfiguration.Match if not set.
 	/// </summary>
 	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
+
+	/// <summary>
+	/// Global type/area blocker applied to all entries. Mirrors <c>rules.publish</c> blocker semantics.
+	/// </summary>
+	public PublishBlocker? Blocker { get; init; }
+
+	/// <summary>
+	/// Per-product type/area blocker overrides. Keys are product IDs.
+	/// </summary>
+	public IReadOnlyDictionary<string, PublishBlocker>? ByProduct { get; init; }
 }
 
 /// <summary>

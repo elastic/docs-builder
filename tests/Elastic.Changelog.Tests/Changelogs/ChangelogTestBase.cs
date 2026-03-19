@@ -78,6 +78,14 @@ public abstract class ChangelogTestBase : IDisposable
 					DisplayName = "Elastic Cloud Serverless",
 					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
 				}
+			},
+			{
+				"security", new Product
+				{
+					Id = "security",
+					DisplayName = "Elastic Security",
+					VersioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack)
+				}
 			}
 		};
 		var productsConfiguration = new ProductsConfiguration
