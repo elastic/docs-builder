@@ -63,6 +63,7 @@
   </Folder>
   <Folder Name="/src/authoring/">
     <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
+    <Project Path="src/authoring/Elastic.LegacyDocs.Migration/Elastic.LegacyDocs.Migration.csproj" />
   </Folder>
   <Folder Name="/src/infra/">
 	  <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
