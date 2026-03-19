@@ -7,7 +7,7 @@ namespace Elastic.LegacyDocs.Migration;
 public record SourceRepoOptions
 {
 	public string? ReposDirectory { get; init; }
-	public Dictionary<string, string> RepoUrls { get; init; } = [];
+	public Dictionary<string, LegacyRepo> Repos { get; init; } = [];
 }
 
 public record ResolvedSource

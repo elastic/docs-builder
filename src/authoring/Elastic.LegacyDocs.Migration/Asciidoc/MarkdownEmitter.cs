@@ -12,6 +12,7 @@ public record MarkdownEmitterOptions
 	public string ImagePathPrefix { get; init; } = "images/";
 	public string? BookPrefix { get; init; }
 	public string? Version { get; init; }
+	public Dictionary<string, string> AnchorToSlugMap { get; init; } = [];
 }
 
 public class MarkdownEmitter(MarkdownEmitterOptions options)
@@ -20,16 +21,17 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 	private int _footnoteCounter;
 	private readonly List<(int Index, string Content)> _footnotes = [];
 
+	public void UpdateAnchorMap(Dictionary<string, string> anchorMap) =>
+		options = options with { AnchorToSlugMap = anchorMap };
+
 	public string Emit(AsciidocDocument document)
 	{
 		Reset();
 
-		if (document.Id is not null)
-			WriteLine($"({document.Id})=");
-
 		if (document.Title is not null)
 		{
-			WriteLine($"# {document.Title}");
+			var anchor = document.Id is not null ? $" [{document.Id}]" : "";
+			WriteLine($"# {document.Title}{anchor}");
 			WriteLine();
 		}
 
@@ -105,7 +107,7 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 				EmitLiteralBlock(literal);
 				break;
 			case AdmonitionNode admonition:
-				EmitDirective(admonition.Type.ToString().ToLowerInvariant(), null, admonition.Children);
+				EmitDirective(MapAdmonitionType(admonition.Type), null, admonition.Children);
 				break;
 			case UnorderedListNode ul:
 				EmitUnorderedList(ul, indent: 0);
@@ -125,7 +127,7 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 				EmitBlockImage(image);
 				break;
 			case SidebarNode sidebar:
-				EmitDirective("sidebar", null, sidebar.Children);
+				EmitDirective("admonition", "Sidebar", sidebar.Children);
 				break;
 			case ExampleNode example:
 				EmitDirective("admonition", "Example", example.Children);
@@ -147,11 +149,9 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 
 	private void EmitSection(SectionNode section)
 	{
-		if (section.Id is not null)
-			WriteLine($"({section.Id})=");
-
 		var hashes = new string('#', section.Level + 1);
-		WriteLine($"{hashes} {section.Title}");
+		var anchor = section.Id is not null ? $" [{section.Id}]" : "";
+		WriteLine($"{hashes} {section.Title}{anchor}");
 		WriteLine();
 
 		EmitChildren(section.Children);
@@ -188,6 +188,13 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 			WriteLine($"    {line}");
 		WriteLine();
 	}
+
+	private static string MapAdmonitionType(AdmonitionType type) =>
+		type switch
+		{
+			AdmonitionType.Caution => "warning",
+			_ => type.ToString().ToLowerInvariant()
+		};
 
 	private void EmitDirective(string name, string? argument, IReadOnlyList<IAsciidocNode> children)
 	{
@@ -386,7 +393,10 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 	private void EmitBlockImage(ImageNode image)
 	{
 		var alt = image.Alt ?? "";
-		WriteLine($"![{alt}]({options.ImagePathPrefix}{image.Path})");
+		var path = image.Path.StartsWith(options.ImagePathPrefix, StringComparison.OrdinalIgnoreCase)
+			? image.Path
+			: $"{options.ImagePathPrefix}{image.Path}";
+		WriteLine($"![{alt}]({path})");
 		WriteLine();
 	}
 
@@ -462,6 +472,12 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 
 		if (!xref.Target.Contains('/') && !xref.Target.Contains("::"))
 		{
+			if (options.AnchorToSlugMap.TryGetValue(xref.Target, out var slug))
+			{
+				Write($"[{text}]({slug}.md)");
+				return;
+			}
+
 			Write($"[{text}](#{xref.Target})");
 			return;
 		}

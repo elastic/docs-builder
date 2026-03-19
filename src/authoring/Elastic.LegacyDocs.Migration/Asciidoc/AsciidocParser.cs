@@ -965,6 +965,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		@"\^([^\^]+)\^|" +
 		@"~([^~]+)~|" +
 		@"\{([a-zA-Z0-9_-]+)\}|" +
+		@"(https?://[^\[\s]+)\[([^\]]*)\]|" +
 		@"\s*\+\s*$"
 	)]
 	private static partial Regex InlineCombinedRegex();
@@ -1007,6 +1008,8 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 				result.Add(new SubscriptInline(ParseInlines(match.Groups[14].Value)));
 			else if (match.Groups[15].Success)
 				result.Add(new AttributeRefInline(match.Groups[15].Value));
+			else if (match.Groups[16].Success)
+				result.Add(new InlineLinkNode(match.Groups[16].Value, NullIfEmpty(match.Groups[17].Value)));
 			else if (match.Value.TrimEnd().EndsWith('+'))
 				result.Add(new LineBreakInline());
 

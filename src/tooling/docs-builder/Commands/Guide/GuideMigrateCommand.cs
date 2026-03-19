@@ -51,7 +51,7 @@ internal sealed class GuideMigrateCommand(ILoggerFactory logFactory)
 		var repoOptions = new SourceRepoOptions
 		{
 			ReposDirectory = reposDir,
-			RepoUrls = legacyConf.Repos
+			Repos = legacyConf.Repos
 		};
 		var repoManager = new SourceRepoManager(repoOptions);
 
