@@ -60,7 +60,7 @@ public class SiteNavigationV2 : SiteNavigation
 			GroupNavV2Item group => CreateGroup(group, nodes, parent, depth, sitePrefix),
 			TocNavV2Item toc => nodes.TryGetValue(toc.Source, out var node) ? node : null,
 			PageNavV2Item { Page: null, Title: var title } => new PlaceholderNavigationLeaf(title ?? "Untitled", parent),
-			PageNavV2Item { Page: var page, Title: var title } => new PageCrossLinkLeaf(page!, title ?? page!.ToString(), sitePrefix, parent),
+			PageNavV2Item { Page: var page, Title: var title } => new PageCrossLinkLeaf(page, title ?? page.ToString(), sitePrefix, parent),
 			_ => null
 		};
 
