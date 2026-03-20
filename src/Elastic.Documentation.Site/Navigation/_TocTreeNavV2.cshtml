@@ -16,38 +16,13 @@
 
 	if (item is LabelNavigationNode label)
 	{
-		var labelId = $"v2-label-{label.Id}";
-		<li class="flex flex-wrap @(isTopLevel ? "mt-6" : "mt-4") relative" data-v2-accordion>
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
-				<span class="@(isTopLevel ? "font-semibold text-ink" : "") content-center py-1 pr-2 text-sm select-none">
-					@label.NavigationTitle
-				</span>
-				@if (label.NavigationItems.Count > 0)
-				{
-					<label for="@labelId" class="group/label flex mr-2 items-start">
-						<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="1.5"
-								stroke="currentColor"
-								class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
-								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
-							</svg>
-						</div>
-						<input
-							id="@labelId"
-							type="checkbox"
-							class="hidden"
-							aria-hidden="true"
-							@(label.ExpandedByDefault ? "checked" : "")>
-					</label>
-				}
-			</div>
+		<li class="@(isTopLevel ? "mt-6" : "mt-4") relative">
+			<span class="@(isTopLevel ? "font-semibold text-ink" : "font-medium text-ink/70") block py-1 text-sm select-none">
+				@label.NavigationTitle
+			</span>
 			@if (label.NavigationItems.Count > 0)
 			{
-				<ul class="w-full hidden peer-has-checked:block ml-4 relative before:content-[''] before:absolute before:-left-[calc(var(--spacing)*4-1px)] before:top-0 before:bottom-0 before:w-px before:bg-grey-20 before:peer-has-checked:block">
+				<ul class="w-full">
 					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
 					{
 						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
