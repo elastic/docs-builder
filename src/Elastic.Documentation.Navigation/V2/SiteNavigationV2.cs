@@ -60,6 +60,7 @@ public class SiteNavigationV2 : SiteNavigation
 		item switch
 		{
 			LabelNavV2Item label => CreateLabel(label, nodes, parent, depth),
+			GroupNavV2Item group => CreateGroup(group, nodes, parent, depth),
 			TocNavV2Item toc => nodes.TryGetValue(toc.Source, out var node) ? node : null,
 			PageNavV2Item { Page: null, Title: var title } => new PlaceholderNavigationLeaf(title ?? "Untitled", parent),
 			PageNavV2Item { Title: var title } page => new PlaceholderNavigationLeaf(title ?? page.Page?.ToString() ?? "Unknown", parent),
@@ -77,5 +78,17 @@ public class SiteNavigationV2 : SiteNavigation
 		var placeholder = new LabelNavigationNode(label.Label, label.Expanded, [], parent);
 		var children = BuildV2Items(label.Children, nodes, placeholder, depth + 1);
 		return new LabelNavigationNode(label.Label, label.Expanded, children, parent);
+	}
+
+	private static PlaceholderNavigationNode CreateGroup(
+		GroupNavV2Item group,
+		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		int depth
+	)
+	{
+		var placeholder = new PlaceholderNavigationNode(group.Title, [], parent);
+		var children = BuildV2Items(group.Children, nodes, placeholder, depth + 1);
+		return new PlaceholderNavigationNode(group.Title, children, parent);
 	}
 }
