@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
@@ -628,6 +629,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
+			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
 			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
 		}
 		catch (FileNotFoundException e)
@@ -699,7 +701,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		var supportedOn = LlmApplicabilityHelper.RenderSupportedOnRowForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
 		var showSupportedOn = appliesTo is not null && appliesTo != Documentation.AppliesTo.ApplicableTo.All;
 
-		renderer.WriteLine("  <definition term=\"" + displayName + "\">");
+		renderer.WriteLine("  <definition term=\"" + WebUtility.HtmlEncode(displayName) + "\">");
 		if (!string.IsNullOrEmpty(stackAvailability))
 			renderer.WriteLine("    <stack-availability>" + stackAvailability + "</stack-availability>");
 		if (showSupportedOn && !string.IsNullOrEmpty(supportedOn))

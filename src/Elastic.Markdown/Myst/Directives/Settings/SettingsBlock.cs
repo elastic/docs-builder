@@ -3,8 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Markdig.Syntax;
 using YamlDotNet.Core;
 
@@ -58,6 +61,35 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 	//https://mystmd.org/guide/directives#directive-include
 	public override void FinalizeAndValidate(ParserContext context) => ExtractInclusionPath(context);
 
+	/// <summary>
+	/// Records docset substitution keys referenced in raw settings YAML (e.g. <c>page_description</c>) so
+	/// strict builds do not report them as unused when they never appear in processed markdown.
+	/// </summary>
+	public static void CollectSubstitutionUsageFromYaml(string yamlContent, BuildContext build)
+	{
+		if (string.IsNullOrEmpty(yamlContent) || build.Configuration.Substitutions.Count == 0)
+			return;
+
+		var span = yamlContent.AsSpan();
+		if (span.IndexOf("}}") < 0)
+			return;
+
+		var subs = build.Configuration.Substitutions;
+		foreach (var match in InterpolationRegex.MatchSubstitutions().EnumerateMatches(span))
+		{
+			if (match.Length < 4)
+				continue;
+
+			var token = span.Slice(match.Index, match.Length).ToString().Trim('{', '}', ' ');
+			if (token.Length == 0)
+				continue;
+
+			var (cleanKey, _) = SubstitutionMutationHelper.ParseKeyWithMutations(token);
+			if (subs.TryGetValue(cleanKey, out _))
+				build.Collector.CollectUsedSubstitutionKey(cleanKey);
+		}
+	}
+
 	private void ExtractInclusionPath(ParserContext context)
 	{
 		var includePath = Arguments;
@@ -109,6 +141,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		{
 			var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
+			CollectSubstitutionUsageFromYaml(yaml, Build);
 			_parsedSettings = YamlSerialization.Deserialize<YamlSettings>(yaml, Build.ProductsConfiguration);
 			return _parsedSettings;
 		}
@@ -129,7 +162,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 	private static IEnumerable<string> CollectSettingIds(YamlSettings yaml)
 	{
 		if (!string.IsNullOrWhiteSpace(yaml.Id))
-			yield return yaml.Id!;
+			yield return yaml.Id;
 
 		foreach (var group in yaml.Groups)
 		{
@@ -146,7 +179,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		foreach (var setting in settings)
 		{
 			if (!string.IsNullOrWhiteSpace(setting.Id))
-				yield return setting.Id!;
+				yield return setting.Id;
 			foreach (var id in CollectSettingIds(setting.Settings))
 				yield return id;
 		}

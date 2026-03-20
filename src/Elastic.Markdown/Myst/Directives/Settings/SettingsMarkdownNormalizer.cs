@@ -117,7 +117,10 @@ internal static class SettingsMarkdownNormalizer
 				continue;
 			}
 
-			var path = (uri.Host + uri.AbsolutePath.TrimStart('/')).TrimEnd('/');
+			var trimmedPath = uri.AbsolutePath.TrimStart('/');
+			var path = string.IsNullOrEmpty(uri.Host)
+				? trimmedPath.TrimEnd('/')
+				: (string.IsNullOrEmpty(trimmedPath) ? uri.Host : $"{uri.Host}/{trimmedPath}").TrimEnd('/');
 			if (path.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
 				path = path[..^3];
 

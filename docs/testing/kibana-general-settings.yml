@@ -755,7 +755,7 @@ groups:
       - setting: map.tilemap.url
         id: tilemap-url
         description: |
-          The URL to the service that {{kib}} uses as the default basemap in [maps](docs-content://explore-analyze/visualize/maps.md) and [vega maps](docs-content://explore-analyze/visualize/custom-visualizations-with-vega.md#vega-with-a-map). By default, {{kib}} sets a basemap from the [Elastic Maps Service](docs-content://explore-analyze/visualize/maps/maps-connect-to-ems.md), but users can point to their own Tile Map Service. For example: `"https://tiles.elastic.co/v2/default/{{z}}/{x}/{{y}}.png?elastic_tile_service_tos=agree&my_app_name=kibana"`
+          The URL to the service that {{kib}} uses as the default basemap in [maps](docs-content://explore-analyze/visualize/maps.md) and [vega maps](docs-content://explore-analyze/visualize/custom-visualizations-with-vega.md#vega-with-a-map). By default, {{kib}} sets a basemap from the [Elastic Maps Service](docs-content://explore-analyze/visualize/maps/maps-connect-to-ems.md), but users can point to their own Tile Map Service. For example: `"https://tiles.elastic.co/v2/default/{{z}}/{{x}}/{{y}}.png?elastic_tile_service_tos=agree&my_app_name=kibana"`
         datatype: string
         applies_to:
           stack: ga

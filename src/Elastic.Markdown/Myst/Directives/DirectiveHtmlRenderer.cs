@@ -439,7 +439,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			return;
 		}
 
-		var settingsSourceFile = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath!);
+		var settingsSourceFile = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 		var slice = SettingsView.Create(new SettingsViewModel
 		{
 			SettingsCollection = settings,

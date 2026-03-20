@@ -49,7 +49,9 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 					if (item is not null)
 					{
 						foreach (var kv in item)
-							merged[kv.Key] = kv.Value;
+							merged[kv.Key] = merged.TryGetValue(kv.Key, out var existing)
+								? DeepMergeAppliesToNode(existing, kv.Value)
+								: kv.Value;
 					}
 				}
 				else if (parser.TryConsume<Scalar>(out var row))
@@ -68,6 +70,24 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			return null;
 
 		return FinalizeApplicableTo(dictionary, diagnostics);
+	}
+
+	private static object? DeepMergeAppliesToNode(object? existing, object? incoming)
+	{
+		if (incoming is not Dictionary<object, object?> incomingDict)
+			return incoming;
+
+		if (existing is Dictionary<object, object?> existingDict)
+		{
+			foreach (var kv in incomingDict)
+				existingDict[kv.Key] = existingDict.TryGetValue(kv.Key, out var childExisting)
+					? DeepMergeAppliesToNode(childExisting, kv.Value)
+					: kv.Value;
+
+			return existingDict;
+		}
+
+		return incoming;
 	}
 
 	private static void MergeAppliesToListScalarLine(

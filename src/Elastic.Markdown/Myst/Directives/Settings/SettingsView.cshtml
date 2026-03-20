@@ -80,7 +80,7 @@
 		var supportedOnBadges = Model.RenderSupportedOnBadges(appliesTo);
 		var showSupportedOn = appliesTo is not null && appliesTo != ApplicableTo.All;
 
-		<dt id="@setting.Id">@displayName @(new HtmlString(stackBadges))</dt>
+		<dt id="@SettingsViewModel.SettingFragmentId(setting, displayName)">@displayName @(new HtmlString(stackBadges))</dt>
 		<dd>
 			@if (showSupportedOn)
 			{
