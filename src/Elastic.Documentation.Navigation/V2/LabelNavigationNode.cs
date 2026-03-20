@@ -21,7 +21,7 @@ public class LabelNavigationNode : INodeNavigationItem<INavigationModel, INaviga
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent
 	)
 	{
-		Id = ShortId.Create("label");
+		Id = ShortId.Create("label", label);
 		NavigationTitle = label;
 		ExpandedByDefault = expandedByDefault;
 		NavigationItems = children;
