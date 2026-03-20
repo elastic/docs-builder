@@ -1331,4 +1331,80 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		bundle.ByProduct!["cloud-serverless"].Areas.Should().BeEquivalentTo(["Search", "Monitoring"]);
 		bundle.ByProduct["cloud-serverless"].AreasMode.Should().Be(FieldMode.Include);
 	}
+
+	// -----------------------------------------------------------------------
+	// extract section: strip_title_prefix
+	// -----------------------------------------------------------------------
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_True_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  strip_title_prefix: true
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_False_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  strip_title_prefix: false
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_Missing_DefaultsFalse()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			lifecycles:
+			  - ga
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeFalse("default is false");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_WithOtherExtractSettings_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  release_notes: false
+			  issues: true
+			  strip_title_prefix: true
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.ReleaseNotes.Should().BeFalse();
+		config.Extract.Issues.Should().BeTrue();
+		config.Extract.StripTitlePrefix.Should().BeTrue();
+	}
 }

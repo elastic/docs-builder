@@ -38,7 +38,7 @@ docs-builder changelog gh-release <repo> [version] [options...] [-h|--help]
 :   Optional: Remove square brackets and the text within them from the beginning of pull request titles, and also remove a colon if it follows the closing bracket.
 :   For example, `"[Inference API] New embedding model support"` becomes `"New embedding model support"`.
 :   Multiple bracket prefixes are also supported (for example, `"[Discover][ESQL] Fix filtering"` becomes `"Fix filtering"`).
-
+:   By default, the behavior is determined by the `extract.strip_title_prefix` changelog configuration setting (which defaults to `false`).
 `--warn-on-type-mismatch`
 :   Optional: Warn when the type inferred from Release Drafter section headers (for example, "Bug Fixes") doesn't match the type derived from the pull request's labels. Defaults to `true`.
 
