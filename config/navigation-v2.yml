@@ -34,7 +34,7 @@ nav:
       # ── Ingest and manage data ───────────────────────────────
       - label: Ingest and manage data
         children:
-          - group: Ingest or migrate: bring your data into Elasticsearch
+          - group: "Ingest or migrate: bring your data into Elasticsearch"
             children:
               - title: Choose/Plan your ingest method
               - title: Ingest architectures
