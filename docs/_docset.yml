@@ -114,6 +114,7 @@ toc:
       - file: diagrams.md
       - file: lists.md
       - file: line_breaks.md
+      - file: storybook.md
       - file: links.md
       - file: passthrough.md
       - file: sidebars.md

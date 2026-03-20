@@ -20,6 +20,7 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
@@ -116,6 +117,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
+				return;
+			case StorybookBlock storybookBlock:
+				WriteStorybook(renderer, storybookBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -236,6 +240,22 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Url = block.Url,
 			HasBody = block.Count > 0,
 			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills"
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteStorybook(HtmlRenderer renderer, StorybookBlock block)
+	{
+		if (string.IsNullOrEmpty(block.StoryUrl))
+			return;
+
+		var slice = StorybookView.Create(new StorybookViewModel
+		{
+			DirectiveBlock = block,
+			StoryUrl = block.StoryUrl,
+			Height = block.Height,
+			IframeTitle = block.IframeTitle,
+			HasBody = block.Count > 0
 		});
 		RenderRazorSlice(slice, renderer);
 	}

@@ -50,6 +50,7 @@
     <Compile Include="Blocks\Lists.fs"/>
     <Compile Include="Blocks\Admonitions.fs"/>
     <Compile Include="Blocks\AgentSkill.fs"/>
+    <Compile Include="Blocks\Storybook.fs"/>
     <Compile Include="Blocks\ImageBlocks.fs" />
     <Compile Include="Applicability\AppliesToFrontMatter.fs" />
     <Compile Include="Applicability\AppliesToDirective.fs" />

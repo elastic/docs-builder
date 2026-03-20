@@ -14,9 +14,11 @@ using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
+using Elastic.Markdown.Myst.Directives.Storybook;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
+using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -225,7 +227,7 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 		for (var i = 0; i <= lastNonEmptyIndex; i++)
 		{
 			var line = obj.Lines.Lines[i];
-			renderer.Write(line.ToString());
+			renderer.Write(GetLineText(line));
 			renderer.WriteLine();
 		}
 
@@ -295,11 +297,18 @@ public class LlmEnhancedCodeBlockRenderer : MarkdownObjectRenderer<LlmMarkdownRe
 
 	private static int GetLastNonEmptyLineIndex(EnhancedCodeBlock obj)
 	{
-		var lastNonEmptyIndex = obj.Lines.Lines.Length - 1;
-		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
+		var lines = obj.Lines.Lines;
+		if (lines is null || lines.Length == 0)
+			return -1;
+
+		var lastNonEmptyIndex = lines.Length - 1;
+		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(GetLineText(lines[lastNonEmptyIndex])))
 			lastNonEmptyIndex--;
 		return lastNonEmptyIndex;
 	}
+
+	private static string GetLineText(StringLine line) =>
+		line.Slice.Text is null ? string.Empty : line.Slice.ToString();
 }
 
 /// <summary>
@@ -494,6 +503,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkillBlock(renderer, agentSkillBlock);
+				return;
+			case StorybookBlock storybookBlock:
+				WriteStorybookBlock(renderer, storybookBlock);
 				return;
 		}
 
@@ -770,6 +782,23 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		if (block.Count > 0)
 			WriteChildrenWithIndentation(renderer, block, "  ");
 		renderer.Writer.WriteLine("</agent-skill>");
+		renderer.EnsureLine();
+	}
+
+	private static void WriteStorybookBlock(LlmMarkdownRenderer renderer, StorybookBlock block)
+	{
+		if (string.IsNullOrEmpty(block.StoryUrl))
+			return;
+
+		renderer.EnsureBlockSpacing();
+		renderer.Writer.Write("<storybook");
+		renderer.Writer.Write($" src=\"{LlmRenderingHelpers.MakeAbsoluteUrl(renderer, block.StoryUrl)}\"");
+		renderer.Writer.Write($" height=\"{block.Height}\"");
+		renderer.Writer.Write($" title=\"{block.IframeTitle}\"");
+		renderer.Writer.WriteLine(">");
+		if (block.Count > 0)
+			WriteChildrenWithIndentation(renderer, block, "  ");
+		renderer.Writer.WriteLine("</storybook>");
 		renderer.EnsureLine();
 	}
 

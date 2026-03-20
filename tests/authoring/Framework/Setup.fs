@@ -47,10 +47,12 @@ type TestFile =
 
 type SetupOptions =
     { UrlPathPrefix: string option
-      DocsetProducts: string list option }
+      DocsetProducts: string list option
+      DocsetExtraYaml: string option }
     static member Empty = {
         UrlPathPrefix = None
         DocsetProducts = None
+        DocsetExtraYaml = None
     }
 
 type Setup =
@@ -58,7 +60,8 @@ type Setup =
     static let GenerateDocSetYaml(
         fileSystem: MockFileSystem,
         globalVariables: Dictionary<string, string> option,
-        docsetProducts: string list option
+        docsetProducts: string list option,
+        docsetExtraYaml: string option
     ) =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
         let yaml = new StringWriter();
@@ -105,6 +108,11 @@ type Setup =
             )
         | _ -> ()
 
+        match docsetExtraYaml with
+        | Some extra when not (String.IsNullOrWhiteSpace extra) ->
+            yaml.WriteLine(extra.Trim())
+        | _ -> ()
+
         let name = if Random().Next(0, 10) % 2 = 0 then "_docset.yml" else "docset.yml"
         fileSystem.AddFile(Path.Combine(root.FullName, name), MockFileData(yaml.ToString()))
 
@@ -128,7 +136,7 @@ type Setup =
         let opts = MockFileSystemOptions(CurrentDirectory=Paths.WorkingDirectoryRoot.FullName)
         let fileSystem = MockFileSystem(d, opts)
 
-        GenerateDocSetYaml (fileSystem, None, options.DocsetProducts)
+        GenerateDocSetYaml (fileSystem, None, options.DocsetProducts, options.DocsetExtraYaml)
 
         let collector = TestDiagnosticsCollector()
         let versioningSystems = Dictionary<VersioningSystemId, VersioningSystem>()
