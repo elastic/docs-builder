@@ -30,7 +30,7 @@ public partial class ConfigurationFileProvider
 		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
 		.Build();
 
-	public static IDeserializer NavV2Deserializer { get; } = new DeserializerBuilder()
+	public static IDeserializer NavV2Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
 		.WithTypeConverter(new NavV2FileYamlConverter())
 		.Build();
