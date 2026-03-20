@@ -50,10 +50,9 @@ function markCurrentPage(nav: HTMLElement) {
     $$('.current', nav).forEach((el) => el.classList.remove('current'))
 
     const pathname = window.location.pathname.replace(/\/$/, '')
-    $$(
-        `a[href="${pathname}"], a[href="${pathname}/"]`,
-        nav
-    ).forEach((el) => el.classList.add('current'))
+    $$(`a[href="${pathname}"], a[href="${pathname}/"]`, nav).forEach((el) =>
+        el.classList.add('current')
+    )
 }
 
 /**
