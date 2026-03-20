@@ -342,12 +342,15 @@ public class GitHubReleaseChangelogService(
 			.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
 			.FirstOrDefault(mappedType => mappedType != null);
 
-	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
+	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
 		foreach (var label in labels)
 		{
-			if (labelToAreasMapping.TryGetValue(label, out var area))
+			if (!labelToAreasMapping.TryGetValue(label, out var mappedAreas))
+				continue;
+
+			foreach (var area in mappedAreas)
 				_ = areas.Add(area);
 		}
 		return areas.ToList();

@@ -191,9 +191,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Should have inverted label mappings
 			config.LabelToAreas.Should().NotBeNull();
 			config.LabelToAreas.Should().ContainKey(":Search/Search");
-			config.LabelToAreas[":Search/Search"].Should().Be("Search");
+			config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 			config.LabelToAreas.Should().ContainKey(":Security/Security");
-			config.LabelToAreas[":Security/Security"].Should().Be("Security");
+			config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 		}
 		finally
 		{
@@ -695,12 +695,12 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		// Both labels from the list should map to "Search"
 		config.LabelToAreas.Should().NotBeNull();
 		config.LabelToAreas.Should().ContainKey(":Search/Search");
-		config.LabelToAreas[":Search/Search"].Should().Be("Search");
+		config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 		config.LabelToAreas.Should().ContainKey(":Search/Ranking");
-		config.LabelToAreas[":Search/Ranking"].Should().Be("Search");
+		config.LabelToAreas[":Search/Ranking"].Should().ContainSingle().Which.Should().Be("Search");
 		// String form should still work
 		config.LabelToAreas.Should().ContainKey(":Security/Security");
-		config.LabelToAreas[":Security/Security"].Should().Be("Security");
+		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 	}
 
 	[Fact]
@@ -860,11 +860,11 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Areas: string for Search, list for Security
 		config.LabelToAreas.Should().ContainKey(":Search/Search");
-		config.LabelToAreas[":Search/Search"].Should().Be("Search");
+		config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 		config.LabelToAreas.Should().ContainKey(":Security/Security");
-		config.LabelToAreas[":Security/Security"].Should().Be("Security");
+		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 		config.LabelToAreas.Should().ContainKey(":Security/Auth");
-		config.LabelToAreas[":Security/Auth"].Should().Be("Security");
+		config.LabelToAreas[":Security/Auth"].Should().ContainSingle().Which.Should().Be("Security");
 	}
 
 	/// <summary>

@@ -437,10 +437,10 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 	public void MapLabelsToAreas_WithAreaNameContainingCommas_PresservesFullName()
 	{
 		// Arrange
-		var labelToAreas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+		var labelToAreas = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase)
 		{
-			["Team:Alerting Services"] = "Alerting, connectors, and reporting",
-			["Team:Search"] = "Search"
+			["Team:Alerting Services"] = ["Alerting, connectors, and reporting"],
+			["Team:Search"] = ["Search"]
 		};
 
 		// Act
