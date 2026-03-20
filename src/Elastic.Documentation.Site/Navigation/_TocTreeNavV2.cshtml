@@ -16,8 +16,8 @@
 
 	if (item is LabelNavigationNode label)
 	{
-		<li class="@(isTopLevel ? "mt-6" : "mt-4") relative">
-			<span class="@(isTopLevel ? "font-semibold text-ink" : "font-medium text-ink/70") block py-1 text-sm select-none">
+		<li class="@(isTopLevel ? "mt-6" : "mt-5") relative">
+			<span class="@(isTopLevel ? "font-semibold text-sm text-ink" : "text-[10px] font-semibold uppercase tracking-widest text-ink/50") block py-1 select-none">
 				@label.NavigationTitle
 			</span>
 			@if (label.NavigationItems.Count > 0)
