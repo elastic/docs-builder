@@ -125,12 +125,9 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
 		// Skip path prefix validation for V2 nav — prefixes are auto-derived
-		if (navigation is not SiteNavigationV2)
-		{
-			// this validates all path prefixes are unique, early exit if duplicates are detected
-			if (!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
-				return false;
-		}
+		if (navigation is not SiteNavigationV2 &&
+			(!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0))
+			return false;
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		using var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
