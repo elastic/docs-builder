@@ -1,3 +1,4 @@
+@using Elastic.Documentation.AppliesTo
 @using Elastic.Markdown.Myst.Directives.Settings
 @inherits RazorSlice<SettingsViewModel>
 
@@ -9,7 +10,56 @@
 
 	private IHtmlContent RenderGroup(SettingsGrouping group)
 	{
-		<h2>@group.Name</h2>
+		var groupSlug = SettingsViewModel.GroupHeadingSlug(group);
+		var level = System.Math.Clamp(Model.GroupHeadingLevel, 1, 6);
+		if (!string.IsNullOrWhiteSpace(groupSlug))
+		{
+			switch (level)
+			{
+				case 1:
+					<h1 id="@groupSlug">@group.Name</h1>
+					break;
+				case 2:
+					<h2 id="@groupSlug">@group.Name</h2>
+					break;
+				case 3:
+					<h3 id="@groupSlug">@group.Name</h3>
+					break;
+				case 4:
+					<h4 id="@groupSlug">@group.Name</h4>
+					break;
+				case 5:
+					<h5 id="@groupSlug">@group.Name</h5>
+					break;
+				default:
+					<h6 id="@groupSlug">@group.Name</h6>
+					break;
+			}
+		}
+		else
+		{
+			switch (level)
+			{
+				case 1:
+					<h1>@group.Name</h1>
+					break;
+				case 2:
+					<h2>@group.Name</h2>
+					break;
+				case 3:
+					<h3>@group.Name</h3>
+					break;
+				case 4:
+					<h4>@group.Name</h4>
+					break;
+				case 5:
+					<h5>@group.Name</h5>
+					break;
+				default:
+					<h6>@group.Name</h6>
+					break;
+			}
+		}
 		@RenderMarkdown(group.Description)
 		@RenderExample(group.Example)
 		<dl>
@@ -21,14 +71,21 @@
 		return HtmlString.Empty;
 	}
 
-	private IHtmlContent RenderSetting(Setting setting, string? parentName, Elastic.Documentation.AppliesTo.ApplicableTo? inheritedAppliesTo)
+	private IHtmlContent RenderSetting(Setting setting, string? parentName, ApplicableTo? inheritedAppliesTo)
 	{
 		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
 		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
-		var appliesHtml = Model.RenderAppliesToInline(appliesTo);
 
-		<dt id="@setting.Id">@displayName @(new HtmlString(appliesHtml))</dt>
+		var stackBadges = Model.RenderStackRowBadges(appliesTo);
+		var supportedOnBadges = Model.RenderSupportedOnBadges(appliesTo);
+		var showSupportedOn = appliesTo is not null && appliesTo != ApplicableTo.All;
+
+		<dt id="@setting.Id">@displayName @(new HtmlString(stackBadges))</dt>
 		<dd>
+			@if (showSupportedOn)
+			{
+				<p class="settings-supported-on"><strong>Supported on:</strong> @(new HtmlString(supportedOnBadges))</p>
+			}
 			@RenderMarkdown(setting.Description)
 			@RenderMetadata(setting)
 			@RenderSettingAdmonitions(setting)
@@ -55,9 +112,10 @@
 			<p><strong>Datatype:</strong> <code>@setting.Datatype</code></p>
 		}
 
-		if (!string.IsNullOrWhiteSpace(setting.Default))
+		var defaultDisplay = SettingDisplay.FormatDefault(setting.Default);
+		if (!string.IsNullOrWhiteSpace(defaultDisplay))
 		{
-			<p><strong>Default:</strong> <code>@setting.Default</code></p>
+			<p><strong>Default:</strong> <code>@defaultDisplay</code></p>
 		}
 
 		if (setting.Options is { Length: > 0 })

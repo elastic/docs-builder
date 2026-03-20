@@ -665,10 +665,13 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		renderer.EnsureBlockSpacing();
 
+		var groupHeadingLevel = Math.Clamp(block.GroupHeadingLevel, 1, 6);
+		var groupHeadingPrefix = new string('#', groupHeadingLevel) + " ";
+
 		foreach (var group in settings.Groups)
 		{
 			renderer.WriteLine();
-			renderer.Write("## ");
+			renderer.Write(groupHeadingPrefix);
 			renderer.WriteLine(group.Name ?? string.Empty);
 			RenderSettingsMarkdownSnippet(renderer, block, group.Description);
 			RenderSettingsMarkdownSnippet(renderer, block, group.Example);
@@ -692,18 +695,23 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	{
 		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
 		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
-		var appliesText = LlmApplicabilityHelper.RenderForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
+		var stackAvailability = LlmApplicabilityHelper.RenderStackRowForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
+		var supportedOn = LlmApplicabilityHelper.RenderSupportedOnRowForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
+		var showSupportedOn = appliesTo is not null && appliesTo != Documentation.AppliesTo.ApplicableTo.All;
 
 		renderer.WriteLine("  <definition term=\"" + displayName + "\">");
-		if (!string.IsNullOrEmpty(appliesText))
-			renderer.WriteLine("    <applies-to>" + appliesText + "</applies-to>");
+		if (!string.IsNullOrEmpty(stackAvailability))
+			renderer.WriteLine("    <stack-availability>" + stackAvailability + "</stack-availability>");
+		if (showSupportedOn && !string.IsNullOrEmpty(supportedOn))
+			renderer.WriteLine("    <supported-on>" + supportedOn + "</supported-on>");
 
 		RenderSettingsMarkdownSnippet(renderer, block, setting.Description);
 
 		if (!string.IsNullOrWhiteSpace(setting.Datatype))
 			renderer.WriteLine($"Datatype: `{setting.Datatype}`");
-		if (!string.IsNullOrWhiteSpace(setting.Default))
-			renderer.WriteLine($"Default: `{setting.Default}`");
+		var defaultDisplay = SettingDisplay.FormatDefault(setting.Default);
+		if (!string.IsNullOrWhiteSpace(defaultDisplay))
+			renderer.WriteLine($"Default: `{defaultDisplay}`");
 
 		if (setting.Options is { Length: > 0 })
 		{

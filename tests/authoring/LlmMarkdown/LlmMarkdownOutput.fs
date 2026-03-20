@@ -831,7 +831,8 @@ type ``settings directive`` () =
 ## General settings
 <definitions>
   <definition term="xpack.example.setting">
-    <applies-to>Elastic Stack: Planned</applies-to>
+    <stack-availability>Elastic Stack: Planned</stack-availability>
+    <supported-on>Self-managed Elastic deployments: Planned</supported-on>
 
 This is a test setting with **bold** text and a [link](https://example.com).
 Datatype: `enum`
@@ -841,7 +842,8 @@ Options:
 - `lenient`
   </definition>
   <definition term="xpack.example.setting[n].url">
-    <applies-to>Elastic Stack: Planned</applies-to>
+    <stack-availability>Elastic Stack: Planned</stack-availability>
+    <supported-on>Self-managed Elastic deployments: Planned</supported-on>
 
 Child setting description.
 Datatype: `string`
@@ -857,6 +859,54 @@ Another setting description.
   <definition term="xpack.advanced.option">
 
 An advanced option.
+  </definition>
+</definitions>
+"""
+
+    [<Fact>]
+    let ``renders group headings one level deeper than preceding markdown heading`` () =
+        let generator =
+            Setup.Generate [
+                Index
+                    """
+## Included settings file
+
+:::{settings} _settings/example-settings.yml
+:::
+"""
+                File(
+                    "_settings/example-settings.yml",
+                    """groups:
+  - group: General settings
+    settings:
+      - setting: xpack.example.setting
+        description: Test.
+  - group: Advanced settings
+    settings:
+      - setting: xpack.advanced.option
+        description: Advanced.
+"""
+                )
+            ]
+
+        generator
+        |> convertsToNewLLM """
+## Included settings file
+
+
+### General settings
+<definitions>
+  <definition term="xpack.example.setting">
+
+Test.
+  </definition>
+</definitions>
+
+### Advanced settings
+<definitions>
+  <definition term="xpack.advanced.option">
+
+Advanced.
   </definition>
 </definitions>
 """

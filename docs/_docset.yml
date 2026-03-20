@@ -15,6 +15,29 @@ subs:
   serverless-full: "Elastic Cloud Serverless"
   ecloud: "Elastic Cloud"
   dbuild: "docs-builder"
+  # Substitutions used by Kibana settings-gen YAML samples (fixtures)
+  kib: "Kibana"
+  es: "Elasticsearch"
+  fleet: "Fleet"
+  fleet-server: "Fleet Server"
+  ls: "Logstash"
+  stack: "Elastic Stack"
+  stack-monitor-app: "Stack Monitoring"
+  stack-security-features: "Elastic Stack security features"
+  security-features: "Elastic Stack security features"
+  package-manager: "Elastic Package Manager"
+  agent: "Elastic Agent"
+  agents: "Elastic Agents"
+  bedrock: "Amazon Bedrock"
+  gemini: "Google Gemini"
+  ibm-r: "IBM Resilient"
+  opsgenie: "Opsgenie"
+  sn-itsm: "ServiceNow ITSM"
+  sn-sir: "ServiceNow SIR"
+  sn-itom: "ServiceNow ITOM"
+  swimlane: "Swimlane"
+  webhook-cm: "Case Management webhook"
+  hosted-ems: "hosted Elastic Maps Service"
 
 features:
   primary-nav: false
@@ -115,6 +138,7 @@ toc:
       - file: line_breaks.md
       - file: links.md
       - file: passthrough.md
+      - file: security-settings.md
       - file: sidebars.md
       - file: stepper.md
       - file: substitutions.md
@@ -199,6 +223,7 @@ toc:
   - folder: testing
     children:
       - file: index.md
+      - file: kibana-settings-yaml-samples.md
       - file: req.md
       - folder: nested
         children:

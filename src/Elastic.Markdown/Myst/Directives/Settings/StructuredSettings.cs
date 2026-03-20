@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using Elastic.Documentation.AppliesTo;
 using YamlDotNet.Serialization;
 
@@ -29,7 +30,7 @@ public record SettingsGrouping
 	public string? Name { get; set; }
 	[YamlMember(Alias = "id")]
 	public string? Id { get; set; }
-	[YamlMember(Alias = "self")]
+	[YamlMember(Alias = "legacy_id")]
 	public string? LegacyId { get; set; }
 	[YamlMember(Alias = "description")]
 	public string? Description { get; set; }
@@ -59,7 +60,7 @@ public record Setting
 	[YamlMember(Alias = "important")]
 	public string? Important { get; set; }
 	[YamlMember(Alias = "default")]
-	public string? Default { get; set; }
+	public object? Default { get; set; }
 	[YamlMember(Alias = "datatype")]
 	public string? Datatype { get; set; }
 	[YamlMember(Alias = "example")]
@@ -97,4 +98,17 @@ public enum SettingMutability
 	Static,
 	[YamlMember(Alias = "dynamic")]
 	Dynamic
+}
+
+public static class SettingDisplay
+{
+	public static string? FormatDefault(object? value) =>
+		value switch
+		{
+			null => null,
+			string s => string.IsNullOrWhiteSpace(s) ? null : s,
+			bool b => b ? "true" : "false",
+			IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
+			_ => value.ToString()
+		};
 }

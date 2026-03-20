@@ -406,12 +406,15 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 				if (!string.IsNullOrEmpty(setting.Description))
 				{
+					var settingsSourceFile = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
+					var normalized = SettingsMarkdownNormalizer.Normalize(setting.Description);
 					var document = MarkdownParser.ParseMarkdownStringAsync(
 						block.Build,
 						block.Context,
-						setting.Description,
-						block.IncludeFrom,
+						normalized,
+						settingsSourceFile,
 						block.Context.YamlFrontMatter,
+						block.IncludeFrom,
 						MarkdownParser.Pipeline);
 					_ = renderer.Render(document);
 					renderer.EnsureBlockSpacing();

@@ -4,11 +4,18 @@
 
 using System.IO.Abstractions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst;
+using Markdig.Syntax;
+using YamlDotNet.Core;
 
 namespace Elastic.Markdown.Myst.Directives.Settings;
 
 public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
+	private string[]? _generatedAnchors;
+	private YamlSettings? _parsedSettings;
+	private int? _groupHeadingLevel;
+
 	public override string Directive => "settings";
 
 	public ParserContext Context { get; } = context;
@@ -18,6 +25,33 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 	public IFileInfo IncludeFrom { get; } = context.MarkdownSourcePath;
 
 	public bool Found { get; private set; }
+
+	/// <summary>
+	/// Heading level for each YAML group title (e.g. 3 when the directive follows an <c>##</c> heading), same rule as <see cref="Stepper.StepBlock"/>.
+	/// </summary>
+	public int GroupHeadingLevel => _groupHeadingLevel ??= CalculateGroupHeadingLevel();
+
+	/// <inheritdoc />
+	public override IEnumerable<string> GeneratedAnchors =>
+		_generatedAnchors ??= LoadGeneratedAnchors();
+
+	/// <summary>Right-rail and in-page TOC entries for each settings group.</summary>
+	public IEnumerable<PageTocItem> GeneratedTableOfContent
+	{
+		get
+		{
+			if (TryLoadSettings() is not { } settings)
+				return [];
+
+			var level = GroupHeadingLevel;
+			return settings.Groups.Select(g => new PageTocItem
+			{
+				Heading = g.Name ?? string.Empty,
+				Slug = SettingsViewModel.GroupHeadingSlug(g),
+				Level = level
+			}).Where(t => !string.IsNullOrEmpty(t.Slug));
+		}
+	}
 
 
 	//TODO add all options from
@@ -42,6 +76,80 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			Found = true;
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");
+	}
+
+	private int CalculateGroupHeadingLevel()
+	{
+		var current = (ContainerBlock)this;
+		while (current.Parent is not null)
+			current = current.Parent;
+
+		var allBlocks = current.Descendants().ToList();
+		var thisIndex = allBlocks.IndexOf(this);
+		if (thisIndex == -1)
+			return 2;
+
+		for (var i = thisIndex - 1; i >= 0; i--)
+		{
+			if (allBlocks[i] is HeadingBlock heading)
+				return System.Math.Min(heading.Level + 1, 6);
+		}
+
+		return 2;
+	}
+
+	private YamlSettings? TryLoadSettings()
+	{
+		if (_parsedSettings is not null)
+			return _parsedSettings;
+		if (!Found || IncludePath is null)
+			return null;
+
+		try
+		{
+			var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
+			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
+			_parsedSettings = YamlSerialization.Deserialize<YamlSettings>(yaml, Build.ProductsConfiguration);
+			return _parsedSettings;
+		}
+		catch (YamlException)
+		{
+			return null;
+		}
+	}
+
+	private string[] LoadGeneratedAnchors()
+	{
+		if (TryLoadSettings() is not { } settings)
+			return [];
+
+		return CollectSettingIds(settings).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+	}
+
+	private static IEnumerable<string> CollectSettingIds(YamlSettings yaml)
+	{
+		if (!string.IsNullOrWhiteSpace(yaml.Id))
+			yield return yaml.Id!;
+
+		foreach (var group in yaml.Groups)
+		{
+			var groupSlug = SettingsViewModel.GroupHeadingSlug(group);
+			if (!string.IsNullOrEmpty(groupSlug))
+				yield return groupSlug;
+			foreach (var id in CollectSettingIds(group.Settings))
+				yield return id;
+		}
+	}
+
+	private static IEnumerable<string> CollectSettingIds(Setting[] settings)
+	{
+		foreach (var setting in settings)
+		{
+			if (!string.IsNullOrWhiteSpace(setting.Id))
+				yield return setting.Id!;
+			foreach (var id in CollectSettingIds(setting.Settings))
+				yield return id;
+		}
 	}
 }
 

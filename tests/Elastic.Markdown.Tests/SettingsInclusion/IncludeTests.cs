@@ -101,6 +101,7 @@ groups:
 	public void RendersAppliesToAndMetadata()
 	{
 		Html.Should().Contain("applies-to-popover");
+		Html.Should().Contain("settings-supported-on");
 		Html.Should().Contain("<strong>Datatype:</strong>");
 		Html.Should().Contain("<strong>Default:</strong>");
 		Html.Should().Contain("<strong>Options:</strong>");
