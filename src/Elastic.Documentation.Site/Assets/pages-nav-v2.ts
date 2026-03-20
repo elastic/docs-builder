@@ -1,4 +1,4 @@
-import { $, $$ } from 'select-dom'
+import { $$ } from 'select-dom'
 
 /**
  * Returns all sibling top-level accordion checkboxes for a given checkbox.
