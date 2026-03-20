@@ -432,4 +432,154 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		yamlContent.Should().Contain("- security");
 		yamlContent.Should().Contain("- search");
 	}
+
+	[Fact]
+	public void MapLabelsToAreas_WithAreaNameContainingCommas_PresservesFullName()
+	{
+		// Arrange
+		var labelToAreas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+		{
+			["Team:Alerting Services"] = "Alerting, connectors, and reporting",
+			["Team:Search"] = "Search"
+		};
+
+		// Act
+		var result = PrInfoProcessor.MapLabelsToAreas(
+			["Team:Alerting Services", "Team:Search"],
+			labelToAreas
+		);
+
+		// Assert
+		result.Should().HaveCount(2);
+		result.Should().Contain("Alerting, connectors, and reporting");  // Not split
+		result.Should().Contain("Search");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithAreaNameContainingCommas_PreservesAreaName()
+	{
+		// Arrange: Area name contains commas
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Fix alerting issues",
+			Labels = ["type:bug", "Team:Alerting Services"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    bug-fix: "type:bug"
+			    feature:
+			    breaking-change:
+			  areas:
+			    "Alerting, connectors, and reporting":
+			      - "Team:Alerting Services"
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+		}
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("- Alerting, connectors, and reporting");  // Full name, not split
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithOneLabelMappedToMultipleAreas_AddsAllAreas()
+	{
+		// Arrange: Same label under multiple areas
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Cross-area change",
+			Labels = ["type:enhancement", "Team:Search"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    enhancement: "type:enhancement"
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  areas:
+			    "Search":
+			      - "Team:Search"
+			    "Observability":
+			      - "Team:Search"
+			lifecycles:
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output;
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("- Search");
+		yamlContent.Should().Contain("- Observability");
+	}
 }

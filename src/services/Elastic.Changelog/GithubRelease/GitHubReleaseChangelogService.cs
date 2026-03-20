@@ -345,12 +345,11 @@ public class GitHubReleaseChangelogService(
 	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
-		var areaList = labels
-			.Where(label => labelToAreasMapping.ContainsKey(label))
-			.SelectMany(label => labelToAreasMapping[label]
-				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-		foreach (var area in areaList)
-			_ = areas.Add(area);
+		foreach (var label in labels)
+		{
+			if (labelToAreasMapping.TryGetValue(label, out var area))
+				_ = areas.Add(area);
+		}
 		return areas.ToList();
 	}
 

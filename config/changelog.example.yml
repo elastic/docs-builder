@@ -100,14 +100,22 @@ pivot:
   #   - ">release-highlight"
 
   # Area definitions with labels
-  # Keys are area display names, values are label strings or lists
+  # Keys are area display names (can contain commas), values are label strings or lists
+  # Each label maps to exactly one area.
   # String form: "label1, label2" | List form: [label1, label2]
+  # To map one label to multiple areas, repeat the label under each area name.
   areas:
     # Example mappings - customize based on your label naming conventions
     # Autoscaling: ":Distributed Coordination/Autoscaling"
     # Search: ":Search/Search"
     # Security: ":Security/Security"
     # Watcher: ":Data Management/Watcher"
+    # To map a label to multiple areas (e.g., "Team:Search" to both "Search" and "Observability"):
+    # Search:
+    #   - ":Search/Search"
+    #   - "Team:Search"
+    # Observability:
+    #   - "Team:Search"
     # List form example:
     # Search:
     #   - ":Search/Search"

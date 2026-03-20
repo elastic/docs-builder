@@ -85,7 +85,7 @@ public record ChangelogConfiguration
 
 	/// <summary>
 	/// Mapping from GitHub label names to changelog area values (computed from Pivot.Areas)
-	/// Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
+	/// Multiple labels can map to the same area. To map one label to multiple areas, repeat the label under each area.
 	/// </summary>
 	public IReadOnlyDictionary<string, string>? LabelToAreas { get; init; }
 
