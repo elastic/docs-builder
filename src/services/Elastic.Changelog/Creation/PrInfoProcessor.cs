@@ -133,7 +133,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			var prTitle = prInfo.Title;
 			// Strip prefix if requested
-			if (input.StripTitlePrefix)
+			if (input.StripTitlePrefix == true)
 				prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
 			derived.Title = prTitle;
 			logger.LogInformation("Using PR title: {Title}", derived.Title);

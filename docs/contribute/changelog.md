@@ -463,6 +463,8 @@ The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, 
 
 The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
 
+By default, `--strip-title-prefix` is disabled. You can enable it globally by setting `extract.strip_title_prefix: true` in the changelog configuration file, which will apply the prefix stripping to all `changelog add` and `changelog gh-release` commands without requiring the CLI flag. The CLI flag `--strip-title-prefix` overrides the configuration setting.
+
 :::{note}
 The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
 :::

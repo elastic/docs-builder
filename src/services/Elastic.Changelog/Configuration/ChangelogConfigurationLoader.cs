@@ -292,7 +292,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		var extract = new ExtractConfiguration
 		{
 			ReleaseNotes = yamlConfig.Extract?.ReleaseNotes ?? true,
-			Issues = yamlConfig.Extract?.Issues ?? true
+			Issues = yamlConfig.Extract?.Issues ?? true,
+			StripTitlePrefix = yamlConfig.Extract?.StripTitlePrefix ?? false
 		};
 
 		// Process filename strategy

@@ -359,6 +359,12 @@ internal record ExtractConfigurationYaml
 	/// Defaults to true.
 	/// </summary>
 	public bool? Issues { get; set; }
+
+	/// <summary>
+	/// Whether to strip square-bracket prefixes from PR titles by default.
+	/// Defaults to false.
+	/// </summary>
+	public bool? StripTitlePrefix { get; set; }
 }
 
 /// <summary>
