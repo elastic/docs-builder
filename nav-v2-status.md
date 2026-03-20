@@ -85,11 +85,11 @@ HtmlWriter.RenderLayout (called per page)
 
 ## Verified behaviours ✓
 
-- Label sections visible as non-clickable headings with chevron toggle
-- `expanded: true` on "Reference" → starts open on page load
-- Clicking a collapsed section opens it
-- Opening one section collapses previously-open sibling (accordion)
-- All other sections remain collapsed until clicked
+- Label sections visible as non-clickable headings, always expanded, no toggle
+- Nested labels (e.g. "Ingest and manage data" inside "The Elasticsearch Platform") also always expanded, no toggle
+- `title:` placeholder items render as disabled grey links
+- TOC folder nodes within labels still have their own expand/collapse toggle
+- Accordion: opening one TOC folder collapses its siblings at the same level
 
 ---
 
@@ -195,7 +195,7 @@ Given the above constraints, the most viable near-term approach:
 
 1. ~~**Rewrite `navigation-v2.yml`**~~ ✓ Done — 6 top-level labels, nested labels inside "The Elasticsearch Platform", `title:` placeholders for the AI/ML sub-sections that don't yet have their own toc roots.
 
-2. **Nested label support** — `navigation-v2.yml` and `NavigationV2File.cs` currently only support labels at the top level. Nested labels (labels whose parent is another label) need the YAML format and `SiteNavigationV2` builder to support arbitrary depth label nesting.
+2. ~~**Nested label support**~~ ✓ Done — labels nest at arbitrary depth; YAML parser, builder, and Razor partial all recurse. `LabelNavigationNode.ExpandedByDefault` is now unused (labels are unconditionally expanded); can be removed in a cleanup pass.
 
 3. **Current-page highlighting** — `pages-nav-v2.ts` marks the active link; verify it highlights the right item without auto-expanding parents.
 
@@ -209,15 +209,14 @@ Given the above constraints, the most viable near-term approach:
 
 ```bash
 # from docs-builder root
-assembler clone          # if repos not yet cloned
-assembler build          # re-build with nav-v2 fixes
-assembler serve          # serve at localhost:4000
+dotnet run --no-restore --project src/tooling/docs-builder -- assembler build
+dotnet run --project src/tooling/docs-builder -- assembler serve
 ```
 
 Open `http://localhost:4000/docs/get-started/` — sidebar should show label sections
-with accordion behaviour instead of the flat V1 nav.
+always expanded, with nested labels visible immediately.
 
 To disable V2 nav temporarily without changing code:
 ```bash
-FEATURE_NAV_V2=false assembler build
+FEATURE_NAV_V2=false dotnet run --no-restore --project src/tooling/docs-builder -- assembler build
 ```
