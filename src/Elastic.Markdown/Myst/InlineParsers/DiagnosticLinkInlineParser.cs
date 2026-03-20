@@ -135,6 +135,17 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (IsCrossLink(uri))
 		{
+			if (!context.CrossLinkResolver.IsDeclaredCrossLinkScheme(uri.Scheme))
+			{
+				// Only known custom protocol schemes should bypass cross-link validation.
+				// Undeclared schemes still surface errors to catch cross-link typos.
+				if (IsPassthroughCustomProtocolScheme(uri.Scheme))
+				{
+					link.SetData("isCrossLink", false);
+					return;
+				}
+			}
+
 			link.SetData("isCrossLink", true);
 			ProcessCrossLink(link, processor, context, uri);
 			return;
@@ -190,9 +201,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (context.CrossLinkResolver.TryResolve(
 				s => processor.EmitError(link, s),
-				uri, out var resolvedUri)
-			 )
+				uri, out var resolvedUri))
+		{
 			link.Url = resolvedUri.ToString();
+			if (resolvedUri.IsAbsoluteUri && context.Build.BuildType == BuildType.Isolated)
+				link.SetData("isCrossLink", false);
+		}
 
 		// Emit error for empty link text in crosslinks
 		if (link.FirstChild == null)
@@ -447,4 +461,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
 		CrossLinkValidator.IsCrossLink(uri);
+
+	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
+		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase)
+		|| scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
 }

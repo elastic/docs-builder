@@ -9,9 +9,8 @@ using FluentAssertions;
 namespace Elastic.Markdown.Tests.Directives;
 
 /// <summary>
-/// Tests that publish blockers correctly filter the right-hand navigation (TOC) and generated anchors.
-/// When all entries of a certain type are blocked, the corresponding section heading should not
-/// appear in the TOC or generated anchors.
+/// Verifies that the directive does not apply publish blockers. Previously blocked entries
+/// (docs, other) should appear in the TOC, anchors, and HTML output.
 /// </summary>
 public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
@@ -34,22 +33,25 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Docs update
 			  type: docs
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Other stuff
 			  type: other
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
-		// Block docs and other types via publish blocker
+		// rules.publish in config is ignored by the directive
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
@@ -62,21 +64,24 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 	}
 
 	[Fact]
-	public void TocExcludesBlockedDocumentationSection()
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
+
+	[Fact]
+	public void TocIncludesDocumentationSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().NotContain(t => t.Heading == "Documentation");
+		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 
 	[Fact]
-	public void TocExcludesBlockedOtherSection()
+	public void TocIncludesOtherSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().NotContain(t => t.Heading == "Other changes");
+		tocItems.Should().Contain(t => t.Heading == "Other changes");
 	}
 
 	[Fact]
-	public void TocRetainsNonBlockedFeaturesSection()
+	public void TocIncludesFeaturesSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
@@ -90,31 +95,24 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 	}
 
 	[Fact]
-	public void AnchorsExcludeBlockedDocumentationSection()
+	public void AnchorsIncludeDocumentationSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
-		anchors.Should().NotContain(a => a.Contains("docs"));
+		anchors.Should().Contain(a => a.Contains("docs"));
 	}
 
 	[Fact]
-	public void AnchorsExcludeBlockedOtherSection()
+	public void AnchorsIncludeOtherSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
-		anchors.Should().NotContain(a => a.EndsWith("-other"));
+		anchors.Should().Contain(a => a.EndsWith("-other"));
 	}
 
 	[Fact]
-	public void AnchorsRetainNonBlockedFeaturesSection()
+	public void HtmlContainsAllSections()
 	{
-		var anchors = Block!.GeneratedAnchors.ToList();
-		anchors.Should().Contain(a => a.Contains("features-enhancements"));
-	}
-
-	[Fact]
-	public void HtmlDoesNotContainBlockedSections()
-	{
-		Html.Should().NotContain("Documentation");
-		Html.Should().NotContain("Other changes");
+		Html.Should().Contain("Documentation");
+		Html.Should().Contain("Other changes");
 		Html.Should().Contain("Features and enhancements");
 	}
 }
@@ -148,21 +146,24 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Hidden other change 1
 			  type: other
 			  feature-id: hidden-feature-1
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Hidden other change 2
 			  type: other
 			  feature-id: hidden-feature-2
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 	[Fact]
@@ -227,14 +228,16 @@ public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBloc
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Hidden other change
 			  type: other
 			  feature-id: hidden-feature
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 	[Fact]
@@ -285,23 +288,26 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Docs entry blocked by type
 			  type: docs
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Bug fix hidden by feature
 			  type: bug-fix
 			  feature-id: hidden-feature
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
-		// Block docs type via publish blocker
+		// rules.publish is ignored by the directive; only hide-features applies
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
@@ -313,10 +319,11 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 	}
 
 	[Fact]
-	public void TocExcludesPublishBlockedSection()
+	public void TocIncludesDocumentationSection_PublishBlockerIgnored()
 	{
+		// Directive does not apply rules.publish; docs section appears
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().NotContain(t => t.Heading == "Documentation");
+		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 
 	[Fact]
@@ -335,10 +342,10 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 	}
 
 	[Fact]
-	public void AnchorsExcludeBothFilteredSections()
+	public void AnchorsExcludeOnlyHideFeatureFilteredSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
-		anchors.Should().NotContain(a => a.Contains("-docs"));
+		anchors.Should().Contain(a => a.Contains("-docs"));
 		anchors.Should().NotContain(a => a.Contains("-fixes"));
 	}
 
@@ -347,16 +354,16 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 	{
 		Html.Should().Contain("Features and enhancements");
 		Html.Should().Contain("Visible feature");
-		Html.Should().NotContain("Documentation");
-		Html.Should().NotContain("Docs entry blocked by type");
+		Html.Should().Contain("Documentation");
+		Html.Should().Contain("Docs entry blocked by type");
 		Html.Should().NotContain(">Fixes<");
 		Html.Should().NotContain("Bug fix hidden by feature");
 	}
 }
 
 /// <summary>
-/// Tests area-based publish blocker filtering on TOC and anchors.
-/// When all entries of a type are blocked by area, the section should not appear.
+/// Verifies that the directive does not apply area-based publish blockers.
+/// Previously blocked entries (Internal area) should appear in the TOC and anchors.
 /// </summary>
 public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
@@ -379,7 +386,8 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Internal docs
 			  type: docs
 			  products:
@@ -387,7 +395,8 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			- title: Internal other change
 			  type: other
 			  products:
@@ -395,9 +404,11 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 			    target: 9.3.0
 			  areas:
 			  - Internal
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
+		// rules.publish in config is ignored by the directive
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
@@ -409,38 +420,41 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 	}
 
 	[Fact]
-	public void TocExcludesAreaBlockedDocumentationSection()
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
+
+	[Fact]
+	public void TocIncludesDocumentationSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().NotContain(t => t.Heading == "Documentation");
+		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 
 	[Fact]
-	public void TocExcludesAreaBlockedOtherSection()
+	public void TocIncludesOtherSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().NotContain(t => t.Heading == "Other changes");
+		tocItems.Should().Contain(t => t.Heading == "Other changes");
 	}
 
 	[Fact]
-	public void TocRetainsNonBlockedFeaturesSection()
+	public void TocIncludesFeaturesSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
 	}
 
 	[Fact]
-	public void AnchorsMatchToc()
+	public void AnchorsIncludeAllSections()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
-		anchors.Should().NotContain(a => a.Contains("-docs"));
-		anchors.Should().NotContain(a => a.EndsWith("-other"));
+		anchors.Should().Contain(a => a.Contains("-docs"));
+		anchors.Should().Contain(a => a.EndsWith("-other"));
 		anchors.Should().Contain(a => a.Contains("features-enhancements"));
 	}
 }
 
 /// <summary>
-/// Tests that when ALL entries across ALL types in a bundle are filtered out,
+/// Tests that when ALL entries across ALL types in a bundle are filtered out by hide-features,
 /// the version header still appears in the TOC but no section headers do.
 /// </summary>
 public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
@@ -450,42 +464,32 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 		"""
 		:::{changelog}
 		:::
-		""")
-	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 			// language=yaml
 			"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
+			hide-features:
+			- all-hidden
 			entries:
-			- title: Internal feature
+			- title: Hidden feature
 			  type: feature
+			  feature-id: all-hidden
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  areas:
-			  - Internal
-			  pr: "111111"
-			- title: Internal bug fix
+			  prs:
+			  - "111111"
+			- title: Hidden bug fix
 			  type: bug-fix
+			  feature-id: all-hidden
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  areas:
-			  - Internal
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
-
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
-			rules:
-			  publish:
-			    exclude_areas:
-			      - Internal
-			"""));
-	}
 
 	[Fact]
 	public void TocContainsVersionHeaderOnly()
@@ -529,13 +533,15 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			- title: Docs in 9.3.0
 			  type: docs
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		// 9.2.0 only has docs entries (all will be blocked)
@@ -551,9 +557,11 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 			  products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
+		// rules.publish is ignored by the directive
 		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
 			// language=yaml
 			"""
@@ -573,10 +581,11 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 	}
 
 	[Fact]
-	public void NeitherVersionHasDocumentationInToc()
+	public void BothVersionsHaveDocumentationInToc()
 	{
+		// Directive does not apply rules.publish; Documentation section appears
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-		tocItems.Should().NotContain(t => t.Heading == "Documentation");
+		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 
 	[Fact]
@@ -587,23 +596,10 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 	}
 
 	[Fact]
-	public void SecondVersionHasNoSectionHeaders()
+	public void SecondVersionHasDocumentationSection()
 	{
+		// 9.2.0 has only docs entries; with no publish blocking, Documentation section appears
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
-
-		// 9.2.0 is the second version header; find its index and check no h3 follows until end
-		var versionIndices = tocItems
-			.Select((t, i) => (t, i))
-			.Where(x => x.t.Level == 2)
-			.Select(x => x.i)
-			.ToList();
-
-		// Should have 2 versions
-		versionIndices.Should().HaveCount(2);
-
-		// Items after the second version header should all be version-level (none at section level)
-		var lastVersionIdx = versionIndices.Last();
-		var itemsAfterLastVersion = tocItems.Skip(lastVersionIdx + 1).ToList();
-		itemsAfterLastVersion.Should().NotContain(t => t.Level == 3);
+		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 }

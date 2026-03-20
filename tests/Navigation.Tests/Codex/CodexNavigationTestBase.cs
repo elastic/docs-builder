@@ -19,14 +19,11 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 
 	protected ICodexDocumentationContext CreateContext() => new TestCodexDocumentationContext(Collector);
 
-	protected static CodexConfiguration CreateCodexConfiguration(
-		string sitePrefix,
-		List<CodexDocumentationSetReference> docSets) =>
+	protected static CodexConfiguration CreateCodexConfiguration(string sitePrefix) =>
 		new()
 		{
 			Title = "Test Codex",
-			SitePrefix = sitePrefix,
-			DocumentationSets = docSets
+			SitePrefix = sitePrefix
 		};
 
 	protected IReadOnlyDictionary<string, IDocumentationSetNavigation> CreateMockDocSetNavigations(
@@ -47,7 +44,7 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 				repoName);
 
 			var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
-				docSet, context, TestDocumentationFileFactory.Instance);
+				docSet, context, CodexTestDocumentationFileFactory.Instance);
 
 			result[repoName] = navigation;
 		}

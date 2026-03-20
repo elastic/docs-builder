@@ -15,7 +15,7 @@ public class KnownIssuesAsciidocRenderer(StringBuilder sb) : AsciidocRendererBas
 	/// <inheritdoc />
 	public override void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context)
 	{
-		var groupedByArea = entries.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList();
+		var groupedByArea = entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList();
 
 		foreach (var areaGroup in groupedByArea)
 		{

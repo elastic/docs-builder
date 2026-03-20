@@ -16,7 +16,7 @@ docs-builder changelog render [options...] [-h|--help]
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
 :   Defaults to `docs/changelog.yml`.
-:   This configuration file is where the command looks for `block ... publish` definitions.
+:   Note: The `changelog render` command does not use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`.
 
 `--hide-features <string[]?>`
 :   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times.
@@ -33,7 +33,7 @@ docs-builder changelog render [options...] [-h|--help]
 :   For example, `--input "/path/to/changelog-bundle.yaml|/path/to/changelogs|elasticsearch|keep-links"`.
 :   Only `bundle-file-path` is required for each bundle.
 :   Use `repo` if your changelogs do not contain full URLs for the pull requests or issues; otherwise they will be incorrectly derived with "elastic/elastic" in the URL by default.
-:   Use `link-visibility` to control whether PR/issue links are shown or hidden for entries from this bundle. Valid values are `keep-links` (default) or `hide-links`. Use `hide-links` for bundles from private repositories.
+:   Use `link-visibility` to control whether PR/issue links are shown or hidden for entries from this bundle. Valid values are `keep-links` (default) or `hide-links`. Use `hide-links` for bundles from private repositories. When `hide-links` is set, all links are hidden for each affected entry — changelog entries can contain multiple PR links (`prs`) and issue links (`issues`), and all of them are hidden or shown together.
 :   Paths support tilde (`~`) expansion and relative paths.
 
 :::{note}
@@ -53,14 +53,14 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 `--subsections`
 :   Optional: Group entries by area in subsections.
 :   Defaults to false.
+:   When enabled, entries are grouped by their area within each section. The first area from each entry's areas list is used for grouping.
 
 `--title <string?>`
 :   Optional: The title to use for section headers, directories, and anchors in output files.
 :   Defaults to the version in the first bundle.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
 
-You can configure `block` definitions in your `changelog.yml` configuration file to automatically comment out changelog entries  based on their products, areas, and/or types.
-For more information, refer to [](/contribute/changelog.md#example-block-label).
+The `changelog render` command does **not** use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`. For more information, refer to [](/contribute/changelog.md). For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
 
 ## Output formats
 
@@ -90,6 +90,14 @@ When `--file-type asciidoc` is specified, the command generates a single asciido
 - Other changes
 
 The asciidoc output uses attribute references for links (for example, `{repo-pull}NUMBER[#NUMBER]`).
+
+### Multiple PR and issue links
+
+Changelog entries can reference multiple pull requests and issues using the `prs` and `issues` array fields. When an entry has multiple links, all of them are rendered inline for that entry:
+
+```md
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
+```
 
 ## Examples
 

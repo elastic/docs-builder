@@ -132,11 +132,8 @@ public class ChangelogRenderingService(
 			// Emit warnings for hidden entries
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
-			// Build render context (needed for block checking)
+			// Build render context
 			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config);
-
-			// Emit warnings for blocked entries
-			EmitBlockedEntryWarnings(collector, resolvedResult.Entries, context);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -207,105 +204,6 @@ public class ChangelogRenderingService(
 		}
 	}
 
-	private static void EmitBlockedEntryWarnings(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<ResolvedEntry> entries,
-		ChangelogRenderContext context)
-	{
-		if (context.Configuration?.Rules?.Publish == null)
-			return;
-
-		var visibleEntries = entries.Where(resolved =>
-			string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) ||
-			!context.FeatureIdsToHide.Contains(resolved.Entry.FeatureId));
-
-		foreach (var resolved in visibleEntries)
-		{
-			// Get product IDs for this entry
-			var productIds = context.EntryToBundleProducts.GetValueOrDefault(resolved.Entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-			if (productIds.Count == 0)
-				continue;
-
-			// Check each product's publish configuration
-			foreach (var productId in productIds)
-			{
-				var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
-				if (blocker != null && blocker.ShouldBlock(resolved.Entry))
-				{
-					var reasons = GetBlockReasons(resolved.Entry, blocker);
-					var prefix = blocker.TypesMode == FieldMode.Include || blocker.AreasMode == FieldMode.Include ? "[+include]" : "[-exclude]";
-					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
-					var entryIdentifier = GetEntryIdentifier(resolved.Entry, context);
-					collector.EmitWarning(string.Empty, $"{prefix} Changelog entry {entryIdentifier} will be commented out{productInfo} because it matches rules configuration: {reasons}");
-				}
-			}
-		}
-	}
-
-	private static string GetEntryIdentifier(ChangelogEntry entry, ChangelogRenderContext context)
-	{
-		// Try to extract PR number if available
-		if (!string.IsNullOrWhiteSpace(entry.Pr))
-		{
-			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Pr, "elastic", repo);
-			if (prNumber.HasValue)
-				return $"for PR {prNumber.Value}";
-		}
-
-		// Fall back to title if no PR is available
-		return $"'{entry.Title}'";
-	}
-
-	private static string GetBlockReasons(ChangelogEntry entry, PublishBlocker blocker)
-	{
-		var reasons = new List<string>();
-
-		// Check if blocked by type
-		if (blocker.Types?.Count > 0)
-		{
-			var entryTypeName = entry.Type.ToStringFast(true);
-			if (blocker.MatchesType(entryTypeName))
-			{
-				var modeStr = blocker.TypesMode == FieldMode.Include ? "not in rules.publish.include_types" : "in rules.publish.exclude_types";
-				reasons.Add($"type '{entryTypeName}' {modeStr}");
-			}
-			else if (blocker.TypesMode == FieldMode.Include)
-				reasons.Add($"type '{entryTypeName}' not in rules.publish.include_types");
-		}
-
-		// Check if blocked by area
-		if (blocker.Areas?.Count > 0 && entry.Areas?.Count > 0)
-		{
-			var matchedAreas = entry.Areas
-				.Where(area => blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
-				.ToList();
-
-			if (blocker.AreasMode == FieldMode.Exclude && matchedAreas.Count > 0)
-				reasons.Add($"area{(matchedAreas.Count > 1 ? "s" : "")} '{string.Join("', '", matchedAreas)}' in rules.publish.exclude_areas (match_areas: {blocker.MatchAreas.ToString().ToLowerInvariant()})");
-			else if (blocker.AreasMode == FieldMode.Include)
-			{
-				var unmatchedAreas = entry.Areas
-					.Where(area => !blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
-					.ToList();
-				if (unmatchedAreas.Count > 0)
-					reasons.Add($"areas [{string.Join(", ", entry.Areas)}] not in rules.publish.include_areas (match_areas: {blocker.MatchAreas.ToString().ToLowerInvariant()})");
-			}
-		}
-
-		return string.Join(" and ", reasons);
-	}
-
-	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
-	{
-		// Check product-specific override first
-		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
-			return productBlocker;
-
-		// Fall back to global publish blocker
-		return publishRules.Blocker;
-	}
-
 	private static bool ValidateEntryTypes(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<ResolvedEntry> entries,
@@ -359,17 +257,20 @@ public class ChangelogRenderingService(
 		// Create mappings from entries to their metadata
 		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
 		var entryToRepo = new Dictionary<ChangelogEntry, string>();
+		var entryToOwner = new Dictionary<ChangelogEntry, string>();
 		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
 
 		foreach (var entry in resolved.Entries)
 		{
 			entryToBundleProducts[entry.Entry] = entry.BundleProductIds;
 			entryToRepo[entry.Entry] = entry.Repo;
+			entryToOwner[entry.Entry] = entry.Owner;
 			entryToHideLinks[entry.Entry] = entry.HideLinks;
 		}
 
-		// Use first repo found for section anchors, or default
+		// Use first repo/owner found for section anchors, or default
 		var repoForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Repo : "elastic";
+		var ownerForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Owner : "elastic";
 
 		return new ChangelogRenderContext
 		{
@@ -377,11 +278,13 @@ public class ChangelogRenderingService(
 			Title = outputSetup.Title,
 			TitleSlug = outputSetup.TitleSlug,
 			Repo = repoForAnchors,
+			Owner = ownerForAnchors,
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
+			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config
 		};

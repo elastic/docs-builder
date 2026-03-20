@@ -25,8 +25,6 @@ public static class ServicesExtension
 		var logger = GetLogger(services);
 		logger?.LogInformation("Configuring Search services");
 
-		// Shared Elasticsearch options - DI auto-resolves IConfiguration from primary constructor
-		_ = services.AddSingleton<ElasticsearchOptions>();
 		_ = services.AddSingleton<ElasticsearchClientAccessor>();
 
 		// Navigation Search (autocomplete/navigation search)

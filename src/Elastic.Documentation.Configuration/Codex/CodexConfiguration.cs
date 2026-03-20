@@ -31,7 +31,7 @@ public record CodexConfiguration
 	/// The title displayed on the codex index page.
 	/// </summary>
 	[YamlMember(Alias = "title")]
-	public string Title { get; set; } = "Documentation Codex";
+	public string Title { get; set; } = "Elastic Internal Docs";
 
 	/// <summary>
 	/// Predefined groups with id, name, description, and icon. Documentation sets reference groups by id.
@@ -40,10 +40,11 @@ public record CodexConfiguration
 	public IReadOnlyList<CodexGroupDefinition> Groups { get; set; } = [];
 
 	/// <summary>
-	/// The list of documentation sets to include in the codex.
+	/// The base URL for canonical links and frontmatter URLs (e.g., "https://codex.elastic.dev").
+	/// Used by the LLM markdown exporter, canonical link tags, and report-issue links.
 	/// </summary>
-	[YamlMember(Alias = "documentation_sets")]
-	public IReadOnlyList<CodexDocumentationSetReference> DocumentationSets { get; set; } = [];
+	[YamlMember(Alias = "canonical_base_url")]
+	public string? CanonicalBaseUrl { get; set; }
 
 	/// <summary>
 	/// Deserializes a codex configuration from YAML content.
@@ -95,24 +96,4 @@ public record CodexConfiguration
 
 		return config with { SitePrefix = sitePrefix };
 	}
-
-	/// <summary>
-	/// Gets all unique group ids defined in the documentation sets.
-	/// </summary>
-	[YamlIgnore]
-	public IReadOnlyList<string> GroupIds =>
-		DocumentationSets
-			.Where(ds => !string.IsNullOrEmpty(ds.Group))
-			.Select(ds => ds.Group!)
-			.Distinct()
-			.OrderBy(g => g)
-			.ToList();
-
-	/// <summary>
-	/// Gets documentation sets grouped by group id.
-	/// Documentation sets without a group are grouped under null.
-	/// </summary>
-	[YamlIgnore]
-	public ILookup<string?, CodexDocumentationSetReference> DocumentationSetsByGroup =>
-		DocumentationSets.ToLookup(ds => ds.Group);
 }

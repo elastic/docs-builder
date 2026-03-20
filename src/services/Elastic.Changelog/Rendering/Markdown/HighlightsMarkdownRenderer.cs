@@ -36,8 +36,8 @@ public class HighlightsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRender
 		if (highlights.Count > 0)
 		{
 			var groupedByArea = context.Subsections
-				? highlights.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()
-				: highlights.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+				? highlights.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
+				: highlights.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 			foreach (var areaGroup in groupedByArea)
 			{
 				// Check if all entries in this area group are hidden
@@ -57,8 +57,7 @@ public class HighlightsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRender
 
 				foreach (var entry in areaGroup)
 				{
-					var (_, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+					var (entryRepo, entryOwner, entryHideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 
 					_ = sb.AppendLine();
 					if (shouldHide)
@@ -66,7 +65,7 @@ public class HighlightsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRender
 					_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
 					_ = sb.AppendLine(entry.Description ?? "% Describe the highlight");
 					_ = sb.AppendLine();
-					RenderPrIssueLinks(sb, entry, entryRepo, entryHideLinks);
+					RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
 					_ = sb.AppendLine("::::");
 					if (shouldHide)
 						_ = sb.AppendLine("-->");

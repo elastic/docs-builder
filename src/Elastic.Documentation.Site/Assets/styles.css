@@ -26,6 +26,7 @@
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './markdown/button.css';
+@import './markdown/agent-skill.css';
 @import './markdown/contributors.css';
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
@@ -56,7 +57,7 @@ body {
 	--banner-height: calc(var(--spacing) * 9);
 	/* --offset-top is set by build-type-specific CSS files */
 	--offset-top: 48px; /* Default fallback - will be overridden by build-type CSS */
-	--max-text-width: clamp(600px, 900px, 100%);
+	--max-text-width: clamp(600px, 768px, 100%);
 	--max-sidebar-width: calc(var(--spacing) * 65);
 	--content-spacing: calc(var(--spacing) * 8);
 	--max-layout-width: calc(
@@ -413,4 +414,9 @@ math {
 			max-inline-size: 500px;
 		}
 	}
+}
+
+* {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(113, 134, 168, 0.5) transparent;
 }

@@ -21,16 +21,14 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void GroupNavigation_TopLevelItems_ContainsAllGroupMembers()
 	{
 		// Arrange: Create a codex with grouped repos
-		var config = CreateCodexConfiguration(
-			sitePrefix: "/docs",
-			docSets: [
-				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability", DisplayName = "APM Agent" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability", DisplayName = "Uptime" },
-				new CodexDocumentationSetReference { Name = "logs", Branch = "main", Group = "observability", DisplayName = "Logs" }
-			]);
-
+		CodexDocumentationSetReference[] docSets = [
+			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "logs", Branch = "main", Group = "observability" }
+		];
+		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent", "uptime", "logs"]);
-		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
+		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get the group navigation
 		var groupNav = codexNav.GroupNavigations.First();
@@ -45,25 +43,23 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	}
 
 	[Fact]
-	public void GroupNavigation_TopLevelItems_UseDisplayNames()
+	public void GroupNavigation_TopLevelItems_UseIndexH1()
 	{
-		// Arrange
-		var config = CreateCodexConfiguration(
-			sitePrefix: "/docs",
-			docSets: [
-				new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability", DisplayName = "APM Agent Docs" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability", DisplayName = "Uptime Monitoring" }
-			]);
-
+		// Arrange: Mock creates index.md with "# {repoName}" so h1 is "apm-agent" and "uptime"
+		CodexDocumentationSetReference[] docSets = [
+			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
+		];
+		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent", "uptime"]);
-		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
+		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		var groupNav = codexNav.GroupNavigations.First();
 
-		// Assert: Navigation titles should use the display names from config
+		// Assert: Navigation titles use index.md h1, not display_name
 		groupNav.NavigationItems.Select(i => i.NavigationTitle).Should().BeEquivalentTo([
-			"APM Agent Docs",
-			"Uptime Monitoring"
+			"apm-agent",
+			"uptime"
 		]);
 	}
 
@@ -71,26 +67,22 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void UngroupedRepo_NavigationRoot_IsItself()
 	{
 		// Arrange
-		var config = CreateCodexConfiguration(
-			sitePrefix: "/docs",
-			docSets: [
-				new CodexDocumentationSetReference { Name = "standalone", Branch = "main" }
-			]);
-
+		CodexDocumentationSetReference[] docSets = [new CodexDocumentationSetReference { Name = "standalone", Branch = "main" }];
+		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["standalone"]);
-		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
+		_ = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get the standalone repo's navigation
 		var standaloneNav = docSetNavigations["standalone"] as INavigationHomeAccessor;
 		standaloneNav.Should().NotBeNull();
-		var homeProvider = standaloneNav!.HomeProvider;
+		var homeProvider = standaloneNav.HomeProvider;
 
 		// Assert: The HomeProvider's NavigationRoot should be the repo itself
 		homeProvider.Should().NotBeNull();
 
 		// The navigation root for an ungrouped repo should be itself (DocumentationSetNavigation)
 		// This means when rendering, it will show only its own navigation tree
-		var navRoot = homeProvider!.NavigationRoot;
+		var navRoot = homeProvider.NavigationRoot;
 		navRoot.Should().BeAssignableTo<IDocumentationSetNavigation>();
 		navRoot.Url.Should().Be("/docs/r/standalone");
 	}
@@ -99,24 +91,22 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void GroupedRepo_NavigationRoot_IsGroupNavigation()
 	{
 		// Arrange
-		var config = CreateCodexConfiguration(
-			sitePrefix: "/docs",
-			docSets: [
-				new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
-			]);
-
+		CodexDocumentationSetReference[] docSets = [
+			new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
+		];
+		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm", "uptime"]);
-		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
+		_ = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get the grouped repo's navigation
 		var apmNav = docSetNavigations["apm"] as INavigationHomeAccessor;
 		apmNav.Should().NotBeNull();
 
 		// Assert: The HomeProvider's NavigationRoot should be the GroupNavigation
-		apmNav!.HomeProvider.Should().NotBeNull();
+		apmNav.HomeProvider.Should().NotBeNull();
 
-		var navRoot = apmNav.HomeProvider!.NavigationRoot;
+		var navRoot = apmNav.HomeProvider.NavigationRoot;
 		navRoot.Should().BeOfType<GroupNavigation>();
 		navRoot.Url.Should().Be("/docs/g/observability");
 
@@ -129,17 +119,15 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void CodexNavigation_TopLevelItems_ShowsGroupLinksAndUngroupedRepos()
 	{
 		// Arrange: Mix of grouped and ungrouped repos
-		var config = CreateCodexConfiguration(
-			sitePrefix: "/docs",
-			docSets: [
-				new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
-				new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
-				new CodexDocumentationSetReference { Name = "standalone1", Branch = "main" },
-				new CodexDocumentationSetReference { Name = "standalone2", Branch = "main" }
-			]);
-
+		CodexDocumentationSetReference[] docSets = [
+			new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "standalone1", Branch = "main" },
+			new CodexDocumentationSetReference { Name = "standalone2", Branch = "main" }
+		];
+		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm", "uptime", "standalone1", "standalone2"]);
-		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
+		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Assert: Codex nav should have 3 top-level items:
 		// 1 group link (/g/observability) + 2 ungrouped repos
@@ -160,16 +148,14 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void AllGroupMembers_ShareSameNavigationRoot()
 	{
 		// Arrange
-		var config = CreateCodexConfiguration(
-			sitePrefix: "/docs",
-			docSets: [
-				new CodexDocumentationSetReference { Name = "repo1", Branch = "main", Group = "group1" },
-				new CodexDocumentationSetReference { Name = "repo2", Branch = "main", Group = "group1" },
-				new CodexDocumentationSetReference { Name = "repo3", Branch = "main", Group = "group1" }
-			]);
-
+		CodexDocumentationSetReference[] docSets = [
+			new CodexDocumentationSetReference { Name = "repo1", Branch = "main", Group = "group1" },
+			new CodexDocumentationSetReference { Name = "repo2", Branch = "main", Group = "group1" },
+			new CodexDocumentationSetReference { Name = "repo3", Branch = "main", Group = "group1" }
+		];
+		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["repo1", "repo2", "repo3"]);
-		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
+		_ = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get each repo's navigation root
 		var repo1Root = ((INavigationHomeAccessor)docSetNavigations["repo1"]).HomeProvider?.NavigationRoot;
@@ -186,15 +172,13 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void DifferentGroups_HaveDifferentNavigationRoots()
 	{
 		// Arrange
-		var config = CreateCodexConfiguration(
-			sitePrefix: "/docs",
-			docSets: [
-				new CodexDocumentationSetReference { Name = "obs-repo", Branch = "main", Group = "observability" },
-				new CodexDocumentationSetReference { Name = "sec-repo", Branch = "main", Group = "security" }
-			]);
-
+		CodexDocumentationSetReference[] docSets = [
+			new CodexDocumentationSetReference { Name = "obs-repo", Branch = "main", Group = "observability" },
+			new CodexDocumentationSetReference { Name = "sec-repo", Branch = "main", Group = "security" }
+		];
+		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["obs-repo", "sec-repo"]);
-		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
+		_ = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		// Get each repo's navigation root
 		var obsRoot = ((INavigationHomeAccessor)docSetNavigations["obs-repo"]).HomeProvider?.NavigationRoot;
@@ -210,16 +194,14 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 	public void GroupLandingPage_HasAllMembersAsNavigationItems()
 	{
 		// Arrange
-		var config = CreateCodexConfiguration(
-			sitePrefix: "",
-			docSets: [
-				new CodexDocumentationSetReference { Name = "a", Branch = "main", Group = "tools" },
-				new CodexDocumentationSetReference { Name = "b", Branch = "main", Group = "tools" },
-				new CodexDocumentationSetReference { Name = "c", Branch = "main", Group = "tools" }
-			]);
-
+		CodexDocumentationSetReference[] docSets = [
+			new CodexDocumentationSetReference { Name = "a", Branch = "main", Group = "tools" },
+			new CodexDocumentationSetReference { Name = "b", Branch = "main", Group = "tools" },
+			new CodexDocumentationSetReference { Name = "c", Branch = "main", Group = "tools" }
+		];
+		var config = CreateCodexConfiguration("");
 		var docSetNavigations = CreateMockDocSetNavigations(["a", "b", "c"]);
-		var codexNav = new CodexNavigation(config, CreateContext(), docSetNavigations);
+		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
 
 		var groupNav = codexNav.GroupNavigations.First();
 

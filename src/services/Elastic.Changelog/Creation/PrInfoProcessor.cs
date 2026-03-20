@@ -37,8 +37,13 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			};
 		}
 
-		// Check for label blockers
-		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), input.Products, config, collector, prUrl))
+		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
+		var effectiveProducts = input.Products;
+		if (input.Products.Count == 0 && config.LabelToProducts != null)
+			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+
+		// Check for label blockers using effective products (including label-derived ones)
+		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl))
 		{
 			return new PrProcessingResult
 			{
@@ -79,7 +84,12 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return (false, null);
 		}
 
-		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), products, config, collector, prUrl);
+		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
+		var effectiveProducts = products;
+		if (products.Count == 0 && config.LabelToProducts != null)
+			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+
+		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl);
 		return (shouldSkip, prInfo);
 	}
 
@@ -93,7 +103,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		var derived = new DerivedPrFields();
 
 		// Extract release notes from PR body if requested
-		if (input.ExtractReleaseNotes)
+		if (input.ExtractReleaseNotes ?? false)
 		{
 			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(prInfo.Body);
 
@@ -180,8 +190,21 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		else if (input.Highlight != null)
 			logger.LogDebug("Using explicitly provided highlight value, ignoring PR labels");
 
+		// Map labels to products if products were not explicitly provided
+		if (input.Products.Count == 0 && config.LabelToProducts != null)
+		{
+			var mappedProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+			if (mappedProducts.Count > 0)
+			{
+				derived.Products = mappedProducts;
+				logger.LogInformation("Mapped PR labels to products: {Products}", string.Join(", ", mappedProducts.Select(p => p.Product)));
+			}
+		}
+		else if (input.Products.Count > 0)
+			logger.LogDebug("Using explicitly provided products, ignoring PR labels");
+
 		// Extract linked issues from PR body if config enabled and issues not provided
-		if (input.ExtractIssues && (input.Issues == null || input.Issues.Length == 0))
+		if ((input.ExtractIssues ?? false) && (input.Issues == null || input.Issues.Length == 0))
 		{
 			if (prInfo.LinkedIssues.Count > 0)
 			{
@@ -196,7 +219,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return derived;
 	}
 
-	private bool ShouldSkipPrDueToLabelBlockers(
+	internal static bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
@@ -229,7 +252,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
 	}
 
-	private static bool ShouldSkipByCreateRules(
+	internal static bool ShouldSkipByCreateRules(
 		string[] prLabels,
 		CreateRules rules,
 		IDiagnosticsCollector collector,
@@ -307,11 +330,63 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		}
 	}
 
-	private static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
+	/// <summary>
+	/// Returns true only when every product defined in the create rules would be blocked by the given labels.
+	/// When per-product overrides exist without global labels, treats the override list as the complete
+	/// product universe for the purpose of this pre-flight check.
+	/// </summary>
+	internal static bool AreAllProductsBlocked(string[] prLabels, CreateRules? createRules)
+	{
+		if (createRules == null)
+			return false;
+
+		var hasGlobalLabels = createRules.Labels is { Count: > 0 };
+		var hasProductOverrides = createRules.ByProduct is { Count: > 0 };
+
+		if (!hasGlobalLabels && !hasProductOverrides)
+			return false;
+
+		if (hasProductOverrides)
+		{
+			foreach (var (_, productRules) in createRules.ByProduct!)
+			{
+				if (!IsBlockedByRules(prLabels, productRules))
+					return false;
+			}
+
+			// Products without overrides fall back to global rules
+			if (hasGlobalLabels && !IsBlockedByRules(prLabels, createRules))
+				return false;
+
+			return true;
+		}
+
+		return IsBlockedByRules(prLabels, createRules);
+	}
+
+	/// <summary>
+	/// Checks if a single set of create rules blocks the given PR labels (no diagnostics).
+	/// In exclude mode, blocked when the configured labels ARE found on the PR.
+	/// In include mode, blocked when the configured labels are NOT found on the PR.
+	/// Match mode controls whether any or all labels must satisfy the condition.
+	/// </summary>
+	internal static bool IsBlockedByRules(string[] prLabels, CreateRules rules)
+	{
+		if (rules.Labels is not { Count: > 0 })
+			return false;
+
+		var labelsMatch = rules.Match == MatchMode.All
+			? prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+			: prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
+
+		return rules.Mode == FieldMode.Exclude ? labelsMatch : !labelsMatch;
+	}
+
+	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
 		.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
 		.FirstOrDefault(mappedType => mappedType != null);
 
-	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
+	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
 		var areaList = labels
@@ -321,6 +396,38 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		foreach (var area in areaList)
 			_ = areas.Add(area);
 		return areas.ToList();
+	}
+
+	/// <summary>
+	/// Maps PR/issue labels to product arguments using the pivot.products mapping.
+	/// All distinct matching product spec strings are collected (same behavior as areas).
+	/// </summary>
+	internal static List<ProductArgument> MapLabelsToProducts(string[] labels, IReadOnlyDictionary<string, string> labelToProductsMapping)
+	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var products = new List<ProductArgument>();
+
+		foreach (var label in labels)
+		{
+			if (!labelToProductsMapping.TryGetValue(label, out var productSpec))
+				continue;
+
+			if (!seen.Add(productSpec))
+				continue;
+
+			var parts = productSpec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+			if (parts.Length == 0)
+				continue;
+
+			products.Add(new ProductArgument
+			{
+				Product = parts[0].Replace('_', '-'),
+				Target = parts.Length > 1 ? parts[1] : null,
+				Lifecycle = parts.Length > 2 ? parts[2] : null
+			});
+		}
+
+		return products;
 	}
 }
 
@@ -336,7 +443,7 @@ public record PrProcessingResult
 }
 
 /// <summary>
-/// Fields derived from PR information
+/// Fields derived from PR or issue information
 /// </summary>
 public record DerivedPrFields
 {
@@ -346,4 +453,15 @@ public record DerivedPrFields
 	public string[]? Areas { get; set; }
 	public bool? Highlight { get; set; }
 	public string[]? Issues { get; set; }
+
+	/// <summary>
+	/// Products derived from PR/issue labels via pivot.products mapping.
+	/// Only set when labels matched and no products were explicitly provided.
+	/// </summary>
+	public IReadOnlyList<ProductArgument>? Products { get; set; }
+
+	/// <summary>
+	/// Linked PRs derived from issue body (when creating changelog from --issues)
+	/// </summary>
+	public string[]? Prs { get; set; }
 }

@@ -113,7 +113,7 @@ public class GroupNavigationTests
 
 		var indexLeaf = groupNav.Index as GroupIndexLeaf;
 		indexLeaf.Should().NotBeNull();
-		indexLeaf!.Url.Should().Be("/docs/g/observability");
+		indexLeaf.Url.Should().Be("/docs/g/observability");
 		indexLeaf.NavigationTitle.Should().Be("Observability");
 		indexLeaf.NavigationRoot.Should().BeSameAs(groupNav);
 		indexLeaf.Parent.Should().BeSameAs(groupNav);
@@ -125,11 +125,10 @@ public class GroupNavigationTests
 		var config = new Documentation.Configuration.Codex.CodexConfiguration
 		{
 			Title = "Test Codex",
-			SitePrefix = "/docs",
-			DocumentationSets = []
+			SitePrefix = "/docs"
 		};
 
-		return new CodexNavigation(config, new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
+		return new CodexNavigation(config, [], new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
 	}
 
 	private sealed class MinimalCodexContext : ICodexDocumentationContext

@@ -156,7 +156,9 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
 
-		var url = $"{context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}";
+		var url = context.BuildContext.CanonicalBaseUrl is { } baseUrl
+			? new Uri(baseUrl, context.NavigationItem.Url).ToString().TrimEnd('/')
+			: context.NavigationItem.Url.TrimEnd('/');
 		_ = metadata.AppendLine($"url: {url}");
 
 		// Use DocumentInferrerService to get merged products

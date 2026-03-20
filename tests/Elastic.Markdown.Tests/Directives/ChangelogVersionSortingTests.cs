@@ -30,7 +30,8 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-08-01
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-15.yaml", new MockFileData(
@@ -45,7 +46,8 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-08-15
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
@@ -60,7 +62,8 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-08-05
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 	}
 
@@ -71,20 +74,20 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 	public void RendersInDateOrderDescending()
 	{
 		// Should be sorted by date descending: 2025-08-15 > 2025-08-05 > 2025-08-01
-		var idx15 = Html.IndexOf("2025-08-15", StringComparison.Ordinal);
-		var idx05 = Html.IndexOf("2025-08-05", StringComparison.Ordinal);
-		var idx01 = Html.IndexOf("2025-08-01", StringComparison.Ordinal);
+		var idx15 = Html.IndexOf("August 15, 2025", StringComparison.Ordinal);
+		var idx05 = Html.IndexOf("August 5, 2025", StringComparison.Ordinal);
+		var idx01 = Html.IndexOf("August 1, 2025", StringComparison.Ordinal);
 
-		idx15.Should().BeLessThan(idx05, "2025-08-15 should appear before 2025-08-05");
-		idx05.Should().BeLessThan(idx01, "2025-08-05 should appear before 2025-08-01");
+		idx15.Should().BeLessThan(idx05, "August 15, 2025 should appear before August 5, 2025");
+		idx05.Should().BeLessThan(idx01, "August 5, 2025 should appear before August 1, 2025");
 	}
 
 	[Fact]
 	public void RendersAllDateVersions()
 	{
-		Html.Should().Contain("2025-08-15");
-		Html.Should().Contain("2025-08-05");
-		Html.Should().Contain("2025-08-01");
+		Html.Should().Contain("August 15, 2025");
+		Html.Should().Contain("August 5, 2025");
+		Html.Should().Contain("August 1, 2025");
 	}
 
 	[Fact]
@@ -118,7 +121,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
@@ -133,7 +137,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
@@ -148,7 +153,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-08-05
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/2025-07-01.yaml", new MockFileData(
@@ -163,7 +169,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: cloud-serverless
 			    target: 2025-07-01
-			  pr: "444444"
+			  prs:
+			  - "444444"
 			"""));
 	}
 
@@ -176,18 +183,18 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 		// Semver versions should appear before date versions
 		var idx93 = Html.IndexOf("9.3.0", StringComparison.Ordinal);
 		var idx92 = Html.IndexOf("9.2.0", StringComparison.Ordinal);
-		var idxDate1 = Html.IndexOf("2025-08-05", StringComparison.Ordinal);
-		var idxDate2 = Html.IndexOf("2025-07-01", StringComparison.Ordinal);
+		var idxDate1 = Html.IndexOf("August 5, 2025", StringComparison.Ordinal);
+		var idxDate2 = Html.IndexOf("July 1, 2025", StringComparison.Ordinal);
 
 		// Semver versions should come before dates
-		idx93.Should().BeLessThan(idxDate1, "Semver 9.3.0 should appear before date 2025-08-05");
-		idx92.Should().BeLessThan(idxDate1, "Semver 9.2.0 should appear before date 2025-08-05");
+		idx93.Should().BeLessThan(idxDate1, "Semver 9.3.0 should appear before date August 5, 2025");
+		idx92.Should().BeLessThan(idxDate1, "Semver 9.2.0 should appear before date August 5, 2025");
 
 		// Within semver, should be sorted correctly
 		idx93.Should().BeLessThan(idx92, "9.3.0 should appear before 9.2.0");
 
 		// Within dates, should be sorted correctly (descending)
-		idxDate1.Should().BeLessThan(idxDate2, "2025-08-05 should appear before 2025-07-01");
+		idxDate1.Should().BeLessThan(idxDate2, "August 5, 2025 should appear before July 1, 2025");
 	}
 
 	[Fact]
@@ -195,8 +202,8 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 	{
 		Html.Should().Contain("9.3.0");
 		Html.Should().Contain("9.2.0");
-		Html.Should().Contain("2025-08-05");
-		Html.Should().Contain("2025-07-01");
+		Html.Should().Contain("August 5, 2025");
+		Html.Should().Contain("July 1, 2025");
 	}
 
 	[Fact]
@@ -206,6 +213,148 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Semver 9.2.0 feature");
 		Html.Should().Contain("Date-based feature");
 		Html.Should().Contain("Earlier date feature");
+	}
+}
+
+/// <summary>
+/// Tests for year-month (yyyy-MM) versioned bundles, as used by Cloud Hosted release notes.
+/// Verifies that headings render as "Month Year" (e.g., "December 2025") and that
+/// slugs/anchors retain the original yyyy-MM format.
+/// </summary>
+public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogYearMonthVersionTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
+	{
+		FileSystem.AddFile("docs/changelog/bundles/2025-12.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: cloud-hosted
+			  target: 2025-12
+			entries:
+			- title: December feature
+			  type: feature
+			  products:
+			  - product: cloud-hosted
+			    target: 2025-12
+			  prs:
+			  - "111111"
+			"""));
+
+		FileSystem.AddFile("docs/changelog/bundles/2025-10.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: cloud-hosted
+			  target: 2025-10
+			entries:
+			- title: October feature
+			  type: feature
+			  products:
+			  - product: cloud-hosted
+			    target: 2025-10
+			  prs:
+			  - "222222"
+			"""));
+
+		FileSystem.AddFile("docs/changelog/bundles/2025-08.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: cloud-hosted
+			  target: 2025-08
+			entries:
+			- title: August feature
+			  type: feature
+			  products:
+			  - product: cloud-hosted
+			    target: 2025-08
+			  prs:
+			  - "333333"
+			- title: August bugfix
+			  type: bug-fix
+			  products:
+			  - product: cloud-hosted
+			    target: 2025-08
+			  prs:
+			  - "333334"
+			"""));
+	}
+
+	[Fact]
+	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(3);
+
+	[Fact]
+	public void RendersHeadingsAsMonthYear()
+	{
+		Html.Should().Contain("December 2025");
+		Html.Should().Contain("October 2025");
+		Html.Should().Contain("August 2025");
+	}
+
+	[Fact]
+	public void DoesNotRenderRawYearMonthInHeadings()
+	{
+		// The raw yyyy-MM format should only appear in slugs/anchors, not in visible headings
+		Html.Should().NotContain(">2025-12<");
+		Html.Should().NotContain(">2025-10<");
+		Html.Should().NotContain(">2025-08<");
+	}
+
+	[Fact]
+	public void RendersInDescendingMonthOrder()
+	{
+		var idxDec = Html.IndexOf("December 2025", StringComparison.Ordinal);
+		var idxOct = Html.IndexOf("October 2025", StringComparison.Ordinal);
+		var idxAug = Html.IndexOf("August 2025", StringComparison.Ordinal);
+
+		idxDec.Should().BeLessThan(idxOct, "December 2025 should appear before October 2025");
+		idxOct.Should().BeLessThan(idxAug, "October 2025 should appear before August 2025");
+	}
+
+	[Fact]
+	public void PreservesOriginalSlugsForAnchors()
+	{
+		// Anchors should use the original yyyy-MM format, not the display format
+		Html.Should().Contain("2025-12");
+		Html.Should().Contain("2025-10");
+		Html.Should().Contain("2025-08");
+	}
+
+	[Fact]
+	public void RendersAllEntries()
+	{
+		Html.Should().Contain("December feature");
+		Html.Should().Contain("October feature");
+		Html.Should().Contain("August feature");
+		Html.Should().Contain("August bugfix");
+	}
+
+	[Fact]
+	public void TocUsesMonthYearHeadings()
+	{
+		var toc = Block!.GeneratedTableOfContent.ToList();
+		var versionHeadings = toc.Where(t => t.Level == 2).Select(t => t.Heading).ToList();
+
+		versionHeadings.Should().Contain("December 2025");
+		versionHeadings.Should().Contain("October 2025");
+		versionHeadings.Should().Contain("August 2025");
+	}
+
+	[Fact]
+	public void TocSlugUsesOriginalFormat()
+	{
+		var toc = Block!.GeneratedTableOfContent.ToList();
+		var versionSlugs = toc.Where(t => t.Level == 2).Select(t => t.Slug).ToList();
+
+		versionSlugs.Should().Contain("2025-12");
+		versionSlugs.Should().Contain("2025-10");
+		versionSlugs.Should().Contain("2025-08");
 	}
 }
 
@@ -231,7 +380,8 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: experimental
 			    target: release-alpha
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/release-beta.yaml", new MockFileData(
@@ -246,7 +396,8 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: experimental
 			    target: release-beta
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 	}
 

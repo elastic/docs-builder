@@ -22,16 +22,18 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 
 	private readonly string _environment;
 	private readonly IFileSystem _fileSystem;
+	private readonly bool _skipFetch;
 	private readonly SemaphoreSlim _cloneLock = new(1, 1);
 	private bool _ensuredClone;
 
-	public GitLinkIndexReader(string environment, IFileSystem? fileSystem = null)
+	public GitLinkIndexReader(string environment, IFileSystem? fileSystem = null, bool skipFetch = false)
 	{
 		if (string.IsNullOrWhiteSpace(environment))
 			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));
 
 		_environment = environment;
 		_fileSystem = fileSystem ?? new FileSystem();
+		_skipFetch = skipFetch;
 	}
 
 	/// <inheritdoc />
@@ -79,8 +81,17 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			if (_ensuredClone)
 				return;
 
-			var cloneDir = _fileSystem.DirectoryInfo.New(CloneDirectory);
 			var gitDir = Path.Combine(CloneDirectory, ".git");
+			if (_skipFetch)
+			{
+				if (!_fileSystem.Directory.Exists(gitDir))
+					throw new InvalidOperationException(
+						$"Codex link index not found at {CloneDirectory}. Run 'docs-builder codex clone' first.");
+				_ensuredClone = true;
+				return;
+			}
+
+			var cloneDir = _fileSystem.DirectoryInfo.New(CloneDirectory);
 			var gitUrl = GetCodexLinkIndexGitUrl();
 
 			if (!_fileSystem.Directory.Exists(gitDir))

@@ -20,12 +20,13 @@ public record BundledProduct
 	/// Constructor with all parameters.
 	/// </summary>
 	[SetsRequiredMembers]
-	public BundledProduct(string productId, string? target = null, Lifecycle? lifecycle = null, string? repo = null)
+	public BundledProduct(string productId, string? target = null, Lifecycle? lifecycle = null, string? repo = null, string? owner = null)
 	{
 		ProductId = productId;
 		Target = target;
 		Lifecycle = lifecycle;
 		Repo = repo;
+		Owner = owner;
 	}
 
 	/// <summary>The product identifier.</summary>
@@ -42,4 +43,10 @@ public record BundledProduct
 	/// If not specified, falls back to ProductId.
 	/// </summary>
 	public string? Repo { get; init; }
+
+	/// <summary>
+	/// GitHub owner (organization or user) for generating PR/issue links.
+	/// If not specified, defaults to "elastic".
+	/// </summary>
+	public string? Owner { get; init; }
 }

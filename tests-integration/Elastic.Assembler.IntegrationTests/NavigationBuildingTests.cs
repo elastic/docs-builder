@@ -44,7 +44,7 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 		var configurationContext = host.Services.GetRequiredService<IConfigurationContext>();
 
 		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper!);
+		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, fs, new MockFileSystem(), null, null);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
@@ -98,7 +98,7 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 
 		// Extract all URLs from the rendered DOM
 		var domLinks = document.QuerySelectorAll("a[href]");
-		var domUrls = domLinks.Select(link => link.GetAttribute("href")!).ToHashSet();
+		var domUrls = domLinks.Select(link => link.GetAttribute("href")).ToHashSet();
 		output.WriteLine($"DOM URLs: {domUrls.Count}");
 
 		// Validate that all navigation URLs are present in the DOM

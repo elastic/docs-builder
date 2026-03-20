@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Security.Cryptography;
 using System.Text;
+using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation;
@@ -52,6 +52,12 @@ public record CreateChangelogsFromReleaseArguments
 	/// Whether to warn when Release Drafter type doesn't match label-derived type (defaults to true)
 	/// </summary>
 	public bool WarnOnTypeMismatch { get; init; } = true;
+
+	/// <summary>
+	/// Whether to create a bundle file after creating individual changelog files. Defaults to true.
+	/// Set to false when called from 'changelog add --release-version' to skip bundle creation.
+	/// </summary>
+	public bool CreateBundle { get; init; } = true;
 }
 
 /// <summary>
@@ -62,7 +68,8 @@ public class GitHubReleaseChangelogService(
 	IConfigurationContext configurationContext,
 	IGitHubReleaseService? releaseService = null,
 	IGitHubPrService? prService = null,
-	IFileSystem? fileSystem = null
+	IFileSystem? fileSystem = null,
+	ChangelogBundlingService? bundlingService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
@@ -70,6 +77,7 @@ public class GitHubReleaseChangelogService(
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
+	private readonly ChangelogBundlingService _bundlingService = bundlingService ?? new ChangelogBundlingService(logFactory, configurationContext, fileSystem);
 
 	public async Task<bool> CreateChangelogsFromRelease(
 		IDiagnosticsCollector collector,
@@ -166,11 +174,12 @@ public class GitHubReleaseChangelogService(
 
 			_logger.LogInformation("Created {Count} changelog files from release {Tag}", successCount, release.TagName);
 
-			// 8. Create bundle file if changelogs were created
-			if (createdFiles.Count > 0)
+			// 8. Optionally create bundle file if changelogs were created
+			if (input.CreateBundle && createdFiles.Count > 0)
 			{
-				var bundlePath = await CreateBundleFile(outputDir, createdFiles, productInfo, ctx);
-				_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
+				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input.Config, ctx);
+				if (bundlePath != null)
+					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
 			}
 
 			return successCount > 0 || parsedNotes.PrReferences.Count == 0;
@@ -264,7 +273,7 @@ public class GitHubReleaseChangelogService(
 					: null
 			}],
 			Areas = labelDerivedAreas,
-			Pr = prUrl
+			Prs = [prUrl]
 		};
 
 		// Generate YAML content
@@ -285,39 +294,17 @@ public class GitHubReleaseChangelogService(
 	private static string GenerateYaml(ChangelogEntry data) =>
 		ReleaseNotesSerialization.SerializeEntry(data);
 
-	private async Task<string> CreateBundleFile(
+	private async Task<string?> CreateBundleViaService(
+		IDiagnosticsCollector collector,
 		string outputDir,
-		List<string> createdFiles,
+		List<string> createdFileNames,
 		ProductArgument productInfo,
+		string owner,
+		string repo,
+		string? configPath,
 		Cancel ctx)
 	{
-		var bundleEntries = new List<BundledEntry>();
-
-		foreach (var filename in createdFiles)
-		{
-			var filePath = _fileSystem.Path.Combine(outputDir, filename);
-			var content = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
-			var checksum = ComputeChecksum(content);
-
-			bundleEntries.Add(new BundledEntry
-			{
-				File = new BundledFile
-				{
-					Name = filename,
-					Checksum = checksum
-				}
-			});
-		}
-
-		var bundleData = new Bundle
-		{
-			Products = [productInfo.ToBundledProduct()],
-			Entries = bundleEntries
-		};
-
-		var yamlContent = ReleaseNotesSerialization.SerializeBundle(bundleData);
-
-		// Create bundles subfolder
+		// Build the bundles subfolder path (mirrors the previous CreateBundleFile convention)
 		var bundlesDir = _fileSystem.Path.Combine(outputDir, "bundles");
 		if (!_fileSystem.Directory.Exists(bundlesDir))
 			_ = _fileSystem.Directory.CreateDirectory(bundlesDir);
@@ -325,16 +312,29 @@ public class GitHubReleaseChangelogService(
 		// Name format: <version>-<product>-bundle.yml
 		var bundleFilename = $"{productInfo.Target}-{productInfo.Product}-bundle.yml";
 		var bundlePath = _fileSystem.Path.Combine(bundlesDir, bundleFilename);
-		await _fileSystem.File.WriteAllTextAsync(bundlePath, yamlContent, Encoding.UTF8, ctx);
 
-		return bundlePath;
-	}
+		// Build PR URL list from created file names — gh-release names files as <pr_number>-<type>-<slug>.yaml
+		var prUrls = createdFileNames
+			.Select(filename =>
+			{
+				var prNumber = filename.Split('-')[0];
+				return $"https://github.com/{owner}/{repo}/pull/{prNumber}";
+			})
+			.ToArray();
 
-	private static string ComputeChecksum(string content)
-	{
-		var bytes = Encoding.UTF8.GetBytes(content);
-		var hash = SHA256.HashData(bytes);
-		return Convert.ToHexString(hash).ToLowerInvariant()[..16];
+		var bundleArgs = new BundleChangelogsArguments
+		{
+			Directory = outputDir,
+			Output = bundlePath,
+			Prs = prUrls,
+			Owner = owner,
+			Repo = repo,
+			Config = configPath,
+			OutputProducts = [productInfo]
+		};
+
+		var success = await _bundlingService.BundleChangelogs(collector, bundleArgs, ctx);
+		return success ? bundlePath : null;
 	}
 
 	private static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) =>

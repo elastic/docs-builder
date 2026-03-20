@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
+    <PackageReference Include="Elastic.Mapping" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
