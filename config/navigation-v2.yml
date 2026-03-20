@@ -1,127 +1,573 @@
 nav:
-  # ─────────────────────────────────────────────────────────────
-  # Elasticsearch fundamentals
-  # Content: get-started + conceptual/architecture pages that
-  # currently live in the ES reference but belong here editorially.
-  # ─────────────────────────────────────────────────────────────
   - label: Elasticsearch fundamentals
     children:
-      - toc: get-started
-      - title: What is Elasticsearch?
-      - title: Core concepts (indices, shards, mappings)
-      - title: Architecture and scalability
-
-  # ─────────────────────────────────────────────────────────────
-  # Install, deploy, and administer
-  # Content: deploy-manage (Elastic Cloud, ECE, ECK, self-managed,
-  # security, monitoring, upgrade, tools) + cloud-account.
-  # ─────────────────────────────────────────────────────────────
+    - group: Get started in seconds (New)
+      children:
+      - title: Evaluate Elastic during a trial
+    - group: Elasticsearch concepts
+      children:
+      - title: Elasticsearch essentials (Core document database)
+      - title: Ingest data into Elasticsearch
+      - title: Core search features (indexing, mapping)
+      - title: Visualize and analyze (Kibana)
+      - group: Use cases
+        children:
+        - title: Geospatial analysis
+        - title: Add search to your site or app
+        - title: RAG
   - label: Install, deploy, and administer
     children:
-      - toc: deploy-manage
-      - toc: cloud-account
-
-  # ─────────────────────────────────────────────────────────────
-  # The Elasticsearch Platform
-  # Container label with three nested sub-sections.
-  # All real content currently lives in two monolithic toc roots
-  # (manage-data, explore-analyze); placeholders mark sections
-  # that will need dedicated toc roots when the split happens.
-  # ─────────────────────────────────────────────────────────────
+    - group: Distributed architecture
+      children:
+      - title: Clusters nodes and shards
+      - title: Discovery and cluster formation
+      - title: Kibana task management
+      - title: Reading and writing documents
+      - title: Shard allocation relocation and recovery
+      - title: The shard request cache
+    - group: Plan your install (name TBD)
+      children:
+      - title: Versioning and compatibility
+      - title: Detailed deployment comparison
+      - group: Reference architectures
+        children:
+        - title: Hot/Frozen - High Availability
+      - group: Production guidance
+        children:
+        - title: Run Elasticsearch in production
+        - title: Run Kibana in production
+    - group: Install and deploy Elasticsearch
+      children:
+      - title: Skills for installation and deployment
+      - title: Deploy in Elastic Cloud
+      - title: Elastic Cloud Enterprise
+      - title: Elastic Cloud on Kubernetes
+      - group: Self-managed cluster
+        children:
+        - title: "[XREF] Command line tools"
+    - group: Administer your deployment
+      children:
+      - title: Skills for cluster and deployment administration
+      - title: Elastic Stack settings
+      - group: Autoscaling
+        children:
+        - title: Autoscaling deciders
+        - title: Autoscaling in ECE and ECH
+        - title: Autoscaling in ECK
+        - title: Trained model autoscaling
+      - group: Backup high availability and resilience tools
+        children:
+        - title: Cross-cluster replication
+        - title: Snapshot and restore
+      - title: Cloud Connect
+      - group: Security and encryption
+        children:
+        - title: Encrypt your deployment data
+        - title: Elastic Cloud Static IPs
+        - title: Enabling cipher suites for stronger encryption
+        - title: Use a customer-managed encryption key
+        - title: Securing HTTP client applications
+        - title: Manage IP filtering in ECK and self-managed
+        - title: Manage IP filters in ECH or Serverless
+        - title: Manage HTTP certificates on ECK
+        - title: Kubernetes network policies
+        - title: Secure settings on ECK
+        - title: Manage transport certificates on ECK
+        - title: Mutual TLS between Kibana and Elasticsearch
+        - title: Kibana session management
+        - title: Security limitations
+        - title: Security logging
+        - title: Network security
+        - title: Private connectivity
+        - title: Secure other Elastic Stack components
+        - title: TLS encryption for cluster communications
+        - title: Secure Kibana saved objects
+        - title: Secure your settings
+        - title: Secure your ECK orchestrator
+        - title: Secure your ECE installation
+        - title: Set up security in self-managed
+      - group: Authentication and authorization
+        children:
+        - group: Users and roles
+          children:
+          - title: Elastic Cloud Enterprise orchestrator users
+          - title: Cloud organization users
+          - title: Cluster or deployment users
+          - title: Serverless project custom roles
+        - title: Spaces
+        - title: "[child] Using Spaces with Fleet"
+      - group: Elastic API keys
+        children:
+        - title: Elastic Cloud API keys
+        - title: Elastic Cloud Enterprise API keys
+        - title: Elasticsearch API keys
+        - title: Serverless project API keys
+      - title: Connectors
+      - group: Remote clusters
+        children:
+        - title: Remote cluster connection modes
+        - title: Remote clusters on Elastic Cloud Hosted
+        - title: Remote clusters on Elastic Cloud Enterprise
+        - title: Remote clusters on ECK
+        - title: Remote clusters on self-managed
+        - title: Remote cluster security models
+      - group: Monitoring
+        children:
+        - title: Performance metrics on Elastic Cloud
+        - title: AutoOps
+        - title: AutoOps and Stack Monitoring comparison
+        - title: Cloud deployment health and performance
+        - title: JVM memory pressure indicator
+        - title: Kibana task manager health monitoring
+        - group: Logging
+          children:
+          - title: "[REF] Audit events"
+        - title: Monitoring orchestrators
+        - title: Stack monitoring
+      - title: Configure Kibana reporting
+      - group: Cloud organization
+        children:
+        - title: Billing
+        - title: Operational emails
+        - title: Service status
+        - title: Tools and APIs for your Cloud organization
+      - group: Licenses and subscriptions
+        children:
+        - title: Manage your license in ECE
+        - title: Manage your license in ECK
+        - title: Manage your license in self-managed
+      - group: Maintenance
+        children:
+        - title: Add and remove Elasticsearch nodes
+        - title: ECE maintenance
+        - title: Start and stop routing requests
+        - title: Start and stop services
+      - group: Upgrade your deployment, cluster, or orchestrator
+        children:
+        - title: Upgrade your deployment or cluster
+        - title: Upgrade your ingest components
+        - title: Upgrade your orchestrator
+        - title: Plan your upgrade
+        - title: Prepare to upgrade
+      - group: Uninstall
+        children:
+        - title: Uninstall Elastic Cloud Enterprise
+        - title: Uninstall Elastic Cloud on Kubernetes
+    - group: Deployment and administration tools
+      children:
+      - title: Overview (roundup)
+      - title: ECCTL
+      - title: Skills
   - label: The Elasticsearch Platform
     children:
-
-      # ── Ingest and manage data ───────────────────────────────
-      - label: Ingest and manage data
+    - label: Ingest and manage data
+      children:
+      - group: "Ingest or migrate: bring your data into Elasticsearch"
         children:
-          - group: "Ingest or migrate: bring your data into Elasticsearch"
+        - title: Choose/Plan your ingest method
+        - title: Ingest architectures
+        - group: Ingest by solution (New - Crosslinks)
+          children:
+          - title: Ingesting data for search use cases
+          - title: Ingesting data for observability (New)
+          - title: Ingesting data for security (Move from Solutions)
+        - title: Ingesting time series data
+        - title: Logs (Solutions / Obs)
+        - group: Ingest data from applications (New)
+          children:
+          - title: Collect application data (Solutions / Obs)
+          - title: APM agents
+          - title: Ingest data with Node.js
+          - title: Ingest data with Python
+          - title: Ingest data from Beats with Logstash as a proxy
+          - title: Ingest data from a relational database
+          - title: Ingest logs from a Python application using Filebeat
+          - title: Ingest logs from a Node.js web application using Filebeat
+        - title: Ingest data using the API (New)
+        - title: Upload data files
+        - title: Sample data
+        - title: Migrating your Elasticsearch data
+        - group: Ingest tools (from Reference)
+          children:
+          - title: Fleet and Elastic Agent
+          - title: Elastic Distributions of OpenTelemetry (EDOT)
+          - title: Elastic Integrations
+          - title: Content connectors
+          - title: Logstash
+          - title: APM
+          - title: Beats
+          - group: Other ingest tools
             children:
-              - title: Choose/Plan your ingest method
-              - title: Ingest architectures
-              - group: Ingest by solution (New - Crosslinks)
-                children:
-                  - title: Ingesting data for search use cases
-                  - title: Ingesting data for observability (New)
-                  - title: Ingesting data for security (Move from Solutions)
-              - title: Ingesting time series data
-              - title: Logs (Solutions / Obs)
-              - group: Ingest data from applications (New)
-                children:
-                  - title: Collect application data (Solutions / Obs)
-                  - title: APM agents
-                  - title: Ingest data with Node.js
-                  - title: Ingest data with Python
-                  - title: Ingest data from Beats with Logstash as a proxy
-                  - title: Ingest data from a relational database
-                  - title: Ingest logs from a Python application using Filebeat
-                  - title: Ingest logs from a Node.js web application using Filebeat
-              - title: Ingest data using the API (New)
-              - title: Upload data files
-              - title: Sample data
-              - title: Migrating your Elasticsearch data
-              - group: Ingest tools (from Reference)
-                children:
-                  - title: Fleet and Elastic Agent
-                  - title: Elastic Distributions of OpenTelemetry (EDOT)
-                  - title: Elastic Integrations
-                  - title: Content connectors
-                  - title: Logstash
-                  - title: APM
-                  - title: Beats
-                  - group: Other ingest tools
-                    children:
-                      - title: Elasticsearch for Apache Hadoop
-                      - title: Elastic Serverless Forwarder for AWS
-
-      # ── Search, visualize, and analyze ───────────────────────
-      # Desired level-1 sections (subset of explore-analyze):
-      #   • Query and filter (query-filter, discover)
-      #   • Dashboards and visualizations (dashboards, visualize)
-      #   • Alerting and cases (alerting, cases)
-      #   • Transforms and cross-cluster (transforms, cross-cluster-search)
-      #   • Reports and workflows (report-and-share, workflows)
-      # explore-analyze also contains AI/ML — those belong below.
-      - label: Search, visualize, and analyze
+            - title: Elasticsearch for Apache Hadoop
+            - title: Elastic Serverless Forwarder for AWS
+      - group: Data storage and lifecycle
         children:
-          - toc: explore-analyze
-
-      # ── AI and machine learning ───────────────────────────────
-      # Desired level-1 sections (future toc splits of explore-analyze):
-      #   • AI features and Agent Builder (explore-analyze/ai-features)
-      #   • Elastic Inference Service (explore-analyze/elastic-inference)
-      #   • Machine learning: anomaly detection, NLP, DFA
-      #     (explore-analyze/machine-learning)
-      # Shown as placeholders until content gets its own toc root.
-      - label: AI and machine learning
+        - group: The Elasticsearch data store
+          children:
+          - title: Aliases
+          - title: Data streams
+          - group: Index basics
+            children:
+            - title: "[XREF] Index settings reference"
+            - title: Index lifecycle management actions
+          - title: Manage data from the command line
+          - group: Mapping
+            children:
+            - title: Mapping reference
+          - title: Templates
+          - group: Text analysis
+            children:
+            - title: "[XREF] Text analysis components"
+        - group: Data lifecycle
+          children:
+          - title: Elasticsearch Curator
+          - title: Data stream lifecycle
+          - title: "Data tiers: hot warm cold frozen"
+          - title: Index lifecycle management (ILM)
+          - title: Rollup
+        - title: "Use case: time series data management"
+      - group: Transform and enrich data
         children:
-          - title: AI features and Agent Builder
+        - group: Data pipelines
+          children:
+          - title: Managed pipelines (Otel / Planned)
+          - title: Elasticsearch ingest pipelines
+          - title: Logstash pipelines
+        - title: Data enrichment
+        - title: Index mapping and text analysis
+        - title: Calculate ingest lag metadata
+    - label: Search, visualize and analyze
+      children:
+      - group: Search and query
+        children:
+        - group: Get started with search
+          children:
+          - title: APIs and tools for search
+        - group: Search strategies
+          children:
+          - title: Full-text search
+          - title: AI-powered search
+          - title: Hybrid search
+          - title: Ranking and reranking
+        - group: Build search queries with APIs and query languages and search templates
+          children:
+          - title: ES|QL
+          - title: Query DSL
+          - title: "..."
+        - group: Cross-project search
+          children:
+          - title: Link projects for cross-project search
+          - title: Using project routing to limit search scope
+          - title: How search works in CPS
+          - title: Using tags to control search
+        - title: Cross-cluster search
+        - title: Add search to your site or app
+        - group: Querying and filtering in Kibana
+          children:
+          - title: Filtering in Kibana
+          - title: Query languages
+          - title: Query tools
+      - group: Explore and visualize
+        children:
+        - title: Learn data exploration and visualization
+        - group: Find and organize content
+          children:
+          - title: Data views
+          - title: Files
+          - title: Find apps and objects
+          - title: Reports
+          - title: Saved objects
+          - title: Tags
+        - group: Reporting and sharing
+          children:
+          - title: Automatically generate reports
+        - group: Panels and visualizations
+          children:
+          - title: Alert panels
+          - title: Custom visualizations with Vega
+          - title: Image panels
+          - title: Legacy editors
+          - title: Lens
+          - title: Link panels
+          - title: Maps
+          - title: Text panels
+        - group: Dashboards
+          children:
+          - title: Add filter controls
+          - title: Organize dashboard panels
+          - title: Building dashboards
+          - title: Create a dashboard
+          - title: "Tutorial: dashboard with time series charts"
+          - title: "Tutorial: dashboard to monitor website logs"
+          - title: Add drilldowns
+          - title: Duplicate a dashboard
+          - title: Import a dashboard
+          - title: Managing dashboards
+          - title: Sharing dashboards
+          - title: Exploring dashboards
+        - group: Discover
+          children:
+          - title: Run queries in the background
+          - title: Explore fields and data with Discover
+          - title: Search for relevance
+          - title: Customize the Discover view
+          - title: Run a pattern analysis on log data
+          - title: Save a search for reuse
+          - title: Using ES|QL
+      - group: Alert and trigger actions
+        children:
+        - group: Workflows
+          children:
+          - title: Author workflows
+          - title: Data and error handling
+          - title: Get started with workflows
+          - title: Steps
+          - title: Triggers
+        - title: Alerting
+        - group: Cases
+          children:
+          - title: Attach objects to cases
+          - title: Configure case settings
+          - title: Create cases
+          - title: Manage cases
+          - title: Search and share cases
+    - label: AI and machine learning
+      children:
+      - group: Machine Learning and NLP
+        children:
+        - title: Anomaly detection
+        - title: Data frame analytics
+      - group: AI framework
+        children:
+        - group: Elastic Inference Service
+          children:
           - title: Elastic Inference Service
-          - title: Machine learning
-
-  # ─────────────────────────────────────────────────────────────
-  # Solutions and project types
-  # Content: solutions (search, observability, security,
-  # elasticsearch-solution-project).
-  # ─────────────────────────────────────────────────────────────
+          - title: Inference integrations
+        - group: Agent builder
+          children:
+          - title: Elasticsearch MCP
+        - title: AI chats
+        - title: LLM guides
+        - title: Manage access to AI features
+      - title: AI agent skills for Elastic
   - label: Solutions and project types
     children:
-      - toc: solutions
-
-  # ─────────────────────────────────────────────────────────────
-  # Reference
-  # Content: Elasticsearch REST API + config reference,
-  # Kibana reference, and docs-content reference sub-tocs
-  # (clients, ingestion tools, fleet, APM, ML reference, glossary).
-  # ─────────────────────────────────────────────────────────────
+    - title: Solutions overview (NEW)
+    - group: Elasticsearch solution
+      children:
+      - title: Get started with Elasticsearch
+      - title: Playground for RAG
+      - title: Query rules
+    - group: Elastic Security solution
+      children:
+      - title: Entity analytics
+      - title: AI for security
+      - title: Elastic Security APIs
+      - title: Cloud Security
+      - title: Configure endpoint protection with Elastic Defend
+      - title: Elastic Security dashboards
+      - title: Detections and alerts
+      - title: Get started with Elastic Security
+      - title: Investigation tools
+      - title: Manage Elastic Defend
+    - group: Elastic Observability solution
+      children:
+      - title: AI for Observability
+      - title: "Application performance monitoring (APM)"
+      - title: Application and service monitoring
+      - title: Get started with Elastic Observability
+      - title: Incident management
+      - title: Infrastructure and host monitoring
+      - title: Log monitoring
+      - title: Streams
+      - title: Synthetic monitoring
+      - title: Uptime monitoring (deprecated)
   - label: Reference
-    expanded: true
     children:
-      - toc: elasticsearch://reference/elasticsearch
-      - toc: kibana://reference
-
-  # ─────────────────────────────────────────────────────────────
-  # Troubleshooting
-  # ─────────────────────────────────────────────────────────────
+    - group: Elasticsearch
+      children:
+      - title: Elasticsearch plugins
+      - title: REST APIs
+      - title: Command-line tools
+      - title: Configuration reference
+      - title: "[XREF] Index lifecycle management actions"
+      - title: Index settings
+      - title: JVM settings
+      - title: "[XREF] Mapping reference"
+      - title: Roles
+      - title: Security privileges
+    - group: Kibana
+      children:
+      - title: Advanced settings
+      - title: Audit events
+      - title: Commands
+      - title: Configuration reference
+      - title: Connectors reference
+      - title: Kibana plugins
+      - title: Accessibility statement
+      - title: Case analytics indices schema
+    - group: Cloud
+      children:
+      - title: Elastic Cloud Hosted
+      - title: Elastic Cloud Enterprise
+      - title: ECK
+      - title: "[XREF] ECCTL command reference"
+    - group: Elastic Security reference
+      children:
+      - title: Endpoint command reference
+      - title: Fields and object schemas for Security
+      - title: Prebuilt detection rules reference
+    - group: Elastic Observability reference
+      children:
+      - title: Fields and object schemas for Observability
+    - group: "Elastic Common Schema (ECS) reference"
+      children:
+      - title: Getting started
+      - title: Guidelines and best practices
+    - group: Machine learning
+      children:
+      - title: Function reference for machine learning
+      - title: Anomaly detection job wizards
+    - group: Search UI
+      children:
+      - title: Using with Vue.js
+      - title: App Search Connector
+      - title: Elasticsearch Connector
+      - title: Site Search Connector
+      - title: Workplace Search Connector
+      - title: Actions
+      - title: Configuration
+      - title: Core API
+      - title: Analytics Plugin
+      - title: State
+      - title: ErrorBoundary
+      - title: Facet
+      - title: Paging
+      - title: PagingInfo
+      - title: Result
+      - title: Results
+      - title: ResultsPerPage
+      - title: SearchBox
+      - title: Sorting
+      - title: SearchProvider
+      - title: useSearch hook
+      - title: WithSearch
+      - title: Architecture
+      - title: Customizing Styles and HTML
+      - title: E-commerce overview
+      - title: Adding search bar to header
+      - title: Analyzing performance
+      - title: Building a custom connector
+      - title: Changing component behavior
+      - title: Conditional Facets
+      - title: Debugging
+      - title: NextJS Integration
+      - title: Using search-as-you-type
+      - title: Search UI known issues
+      - title: Autocomplete
+      - title: Product Carousels
+      - title: Category Page
+      - title: Product Detail Page
+      - title: Search Page
+      - title: "Tutorial: App Search"
+      - title: "Tutorial: Elasticsearch"
+      - title: Using in Production
+      - title: "Tutorial: Workplace Search"
+    - group: Aggregations
+      children:
+      - title: Bucket aggregations
+      - title: Metrics aggregations
+      - title: Pipeline aggregations
+    - group: Elastic Cloud on Kubernetes
+      children:
+      - title: ECK API Reference
+      - title: ECK configuration flags
+      - title: Third-party dependencies
+      - title: Elasticsearch upgrade predicates
+    - title: "Elastic Cloud Control (ECCTL)"
+    - title: Elasticsearch clients
+    - group: Ingest processor reference
+      children:
+      - title: Grok processor
+    - group: Query languages
+      children:
+      - title: EQL search
+      - title: ES|QL reference
+      - title: Kibana Query Language
+      - title: Query DSL
+      - title: SQL overview
+    - title: Scripting languages
+    - title: Numeral formatting
+    - group: Text analysis components
+      children:
+      - title: Analyzer reference
+      - title: Character filter reference
+      - title: Normalizers
+      - title: Token filter reference
+      - title: Tokenizer reference
+    - title: Glossary
   - label: Troubleshooting
     children:
-      - toc: troubleshoot
+    - group: Troubleshoot Elasticsearch
+      children:
+      - title: Troubleshoot broken repositories
+      - title: Add a preferred data tier
+      - title: Allow cluster-wide shard allocation
+      - title: Allow index shard allocation
+      - title: Using the cluster allocation API
+      - title: Troubleshoot data corruption
+      - title: Troubleshoot discovery
+      - title: File-based access recovery
+      - title: Fix common cluster issues
+      - title: Fix data nodes out of disk
+      - title: Fix master nodes out of disk
+      - title: Fix other role nodes out of disk
+      - title: Watermark errors
+      - title: Total shards per node has been reached
+      - title: Total shards for an index exceeded
+      - title: Not enough nodes to allocate shard replicas
+      - title: Fix index lifecycle management errors
+      - title: Troubleshoot monitoring
+      - title: Troubleshoot remote clusters
+      - title: Fix repeated snapshot policy failures
+      - title: Restore from snapshot
+      - title: Troubleshoot snapshot and ILM
+      - title: Troubleshoot transforms
+      - title: Troubleshoot ingest pipelines
+      - title: Troubleshoot incomplete migration to data tiers
+      - title: Troubleshoot searches
+      - title: Troubleshoot shard capacity health issues
+      - title: Troubleshoot an unbalanced cluster
+      - title: Troubleshoot an unstable cluster
+      - title: Troubleshoot Watcher
+    - group: Troubleshoot Kibana
+      children:
+      - title: Check Kibana server status
+      - title: Troubleshoot Kibana alerts
+      - title: Capture Kibana diagnostics
+      - title: "Error: Kibana server is not ready yet"
+      - title: Troubleshoot graph analytics
+      - title: Troubleshoot Kibana Maps
+      - title: Troubleshoot Kibana migration and upgrades
+      - title: Troubleshoot Kibana monitoring
+      - title: Troubleshoot Kibana reporting
+      - title: Troubleshoot Kibana Task Manager
+      - title: Trace an Elasticsearch query in Kibana
+      - title: Using Kibana server logs
+    - group: Troubleshoot Observability
+      children:
+      - title: Explore data
+      - title: Inspect
+    - group: Troubleshoot Security
+      children:
+      - title: Troubleshoot agentless integrations
+      - title: Troubleshoot detection rules
+      - title: Troubleshoot Elastic Defend
+      - title: Troubleshoot indicators of compromise
+    - group: Troubleshoot ingestion tools
+      children:
+      - title: Beats logging plugin
+      - title: Troubleshoot Elastic Serverless Forwarder
+      - title: Troubleshoot Fleet
+      - title: Troubleshoot Logstash
+      - title: Troubleshoot EDOT
