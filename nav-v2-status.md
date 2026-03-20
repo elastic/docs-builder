@@ -215,6 +215,14 @@ Given the above constraints, the most viable near-term approach:
 
 ---
 
+## PR and commit workflow
+
+**PR:** https://github.com/elastic/docs-builder/pull/2927 (draft)
+
+After every commit:
+1. `git push` — keep remote branch in sync
+2. Update the PR description if the commit meaningfully changes scope
+
 ## How to test locally
 
 ```bash
