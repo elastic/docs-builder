@@ -593,18 +593,17 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		// Parse publish rules — emit deprecation warning when present
 		if (rulesYaml.Publish != null)
-			collector.EmitWarning(configPath, "rules.publish is deprecated. Move type/area filtering to rules.bundle, which applies at bundle time instead of render time.");
+			collector.EmitWarning(configPath, "rules.publish is deprecated and no longer used by the changelog render command. Move type/area filtering to rules.bundle, which applies at bundle time instead of render time.");
 
-		var publishRules = ParsePublishRules(collector, rulesYaml.Publish, configPath, validProductIds, "rules.publish", globalMatch);
-		if (publishRules == null && collector.Errors > 0)
-			return null;
+		// Note: rules.publish is no longer used by changelog render; set to null so it's never applied
+		// The warning above alerts users they need to migrate to rules.bundle
 
 		return new RulesConfiguration
 		{
 			Match = globalMatch,
 			Create = createRules,
 			Bundle = bundleRules,
-			Publish = publishRules
+			Publish = null  // rules.publish is retired; filtering happens at bundle time via rules.bundle
 		};
 	}
 
