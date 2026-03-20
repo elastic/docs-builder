@@ -3,9 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Assembler.Links;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
@@ -108,17 +112,17 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 {
 	try
 	{
-		var esOptions = app.Services.GetService<ElasticsearchOptions>();
-		if (esOptions != null)
+		var clientAccessor = app.Services.GetService<ElasticsearchClientAccessor>();
+		if (clientAccessor is not null)
 		{
 			logger.LogInformation(
-				"Elasticsearch configuration - Url: {Url}, Index: {Index}",
-				esOptions.Url,
-				esOptions.IndexName
+				"Elasticsearch configuration - Url: {Url}, SearchIndex: {SearchIndex}",
+				clientAccessor.Endpoint.Uri,
+				clientAccessor.SearchIndex
 			);
 		}
 		else
-			logger.LogWarning("ElasticsearchOptions could not be resolved from DI");
+			logger.LogWarning("ElasticsearchClientAccessor could not be resolved from DI");
 	}
 	catch (Exception ex)
 	{

@@ -11,6 +11,13 @@ public interface ICrossLinkResolver
 {
 	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 	IUriEnvironmentResolver UriResolver { get; }
+
+	/// <summary>
+	/// Determines whether the given URI scheme is a declared cross-link repository scheme.
+	/// Schemes not declared here (e.g. <c>cursor</c>, <c>vscode</c>) are treated as custom
+	/// protocol links and pass through without cross-link validation.
+	/// </summary>
+	bool IsDeclaredCrossLinkScheme(string scheme);
 }
 
 public class NoopCrossLinkResolver : ICrossLinkResolver
@@ -27,6 +34,9 @@ public class NoopCrossLinkResolver : ICrossLinkResolver
 	/// <inheritdoc />
 	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
 
+	/// <inheritdoc />
+	public bool IsDeclaredCrossLinkScheme(string scheme) => false;
+
 	private NoopCrossLinkResolver() { }
 
 }
@@ -38,6 +48,9 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+
+	/// <inheritdoc />
+	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
 	{

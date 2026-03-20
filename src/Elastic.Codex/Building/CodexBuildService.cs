@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
+using System.Text.Json;
 using Elastic.Codex.Navigation;
 using Elastic.Codex.Page;
 using Elastic.Codex.Sourcing;
@@ -12,9 +14,11 @@ using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
@@ -89,13 +93,23 @@ public class CodexBuildService(
 		if (exporters is not null && buildContexts.Count > 0)
 		{
 			var firstContext = buildContexts[0].BuildContext;
-			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext, context.IndexNamespace).ToArray();
+			firstContext.Endpoints.BuildType = "codex";
+			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext).ToArray();
 			var startTasks = sharedExporters.Select(async e => await e.StartAsync(ctx));
 			await Task.WhenAll(startTasks);
 		}
 
+		var effectiveExporters = exporters ?? ExportOptions.Default;
+		var redirects = new Dictionary<string, string>();
 		foreach (var buildContext in buildContexts)
-			await BuildDocumentationSet(context, buildContext, sharedExporters, ctx);
+		{
+			var buildResult = await BuildDocumentationSet(context, buildContext, sharedExporters, ctx);
+			if (buildResult is { Success: true } && buildResult.Redirects.Count > 0)
+				CollectRedirects(redirects, buildResult.Redirects, buildContext.Checkout.Reference.ResolvedRepoName, buildContext.DocumentationSet.CrossLinkResolver, context);
+		}
+
+		if (effectiveExporters.Contains(Exporter.Redirects) && redirects.Count > 0)
+			await OutputRedirectsAsync(context, redirects, ctx);
 
 		if (sharedExporters is not null)
 		{
@@ -183,6 +197,8 @@ public class CodexBuildService(
 			};
 
 			ICrossLinkResolver crossLinkResolver;
+			var codexRepos = new HashSet<string> { repoName };
+
 			if (buildContext.Configuration.CrossLinkEntries.Length > 0)
 			{
 				var fetcher = new DocSetConfigurationCrossLinkFetcher(
@@ -190,14 +206,15 @@ public class CodexBuildService(
 					buildContext.Configuration,
 					codexLinkIndexReader: buildContext.Configuration.Registry != DocSetRegistry.Public ? codexLinkIndexReader : null);
 				var crossLinks = await fetcher.FetchCrossLinks(ctx);
-				IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
-					? new CodexAwareUriResolver(crossLinks.CodexRepositories, useRelativePaths: true)
-					: null;
+				if (crossLinks.CodexRepositories is not null)
+					codexRepos.UnionWith(crossLinks.CodexRepositories);
+				var uriResolver = new CodexAwareUriResolver(codexRepos.ToFrozenSet(), useRelativePaths: true);
 				crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 			}
 			else
 			{
-				crossLinkResolver = NoopCrossLinkResolver.Instance;
+				var uriResolver = new CodexAwareUriResolver(codexRepos.ToFrozenSet(), useRelativePaths: true);
+				crossLinkResolver = new CrossLinkResolver(FetchedCrossLinks.Empty, uriResolver);
 			}
 
 			// Create documentation set
@@ -215,7 +232,7 @@ public class CodexBuildService(
 		}
 	}
 
-	private async Task BuildDocumentationSet(
+	private async Task<BuildDocumentationSetResult> BuildDocumentationSet(
 		CodexContext context,
 		CodexDocumentationSetBuildContext buildContext,
 		IMarkdownExporter[]? sharedExporters,
@@ -227,7 +244,7 @@ public class CodexBuildService(
 		{
 			var codexBreadcrumbs = ResolveCodexBreadcrumbs(context, buildContext);
 
-			_ = await isolatedBuildService.BuildDocumentationSet(
+			return await isolatedBuildService.BuildDocumentationSet(
 				buildContext.DocumentationSet,
 				null, // Use doc set's navigation for traversal
 				null, // Use default navigation HTML writer (doc set's navigation)
@@ -241,7 +258,64 @@ public class CodexBuildService(
 			context.Collector.EmitError(context.ConfigurationPath,
 				$"Failed to build documentation set '{buildContext.Checkout.Reference.Name}': {ex.Message}");
 			_logger.LogError(ex, "Failed to build documentation set {Name}", buildContext.Checkout.Reference.Name);
+			return new BuildDocumentationSetResult(false, new Dictionary<string, LinkRedirect>());
 		}
+	}
+
+	private static void CollectRedirects(
+		Dictionary<string, string> allRedirects,
+		IReadOnlyDictionary<string, LinkRedirect> redirects,
+		string repository,
+		ICrossLinkResolver linkResolver,
+		CodexContext context)
+	{
+		if (redirects.Count == 0)
+			return;
+
+		foreach (var (k, v) in redirects)
+		{
+			if (v.To is { } to)
+				allRedirects[Resolve(k)] = Resolve(to);
+			else if (v.Many is { } many)
+			{
+				var target = many.FirstOrDefault(l => l.To is not null);
+				if (target?.To is { } t)
+					allRedirects[Resolve(k)] = Resolve(t);
+			}
+		}
+
+		string Resolve(string path)
+		{
+			Uri? uri;
+			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
+			{
+				_ = linkResolver.TryResolve(
+					specificErrorMessage => context.Collector.EmitError(context.ConfigurationPath.FullName, $"An error occurred while resolving cross-link {path}", specificErrorMessage),
+					new Uri(path),
+					out uri);
+			}
+			else // Relative links
+			{
+				uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{path}"),
+					CrossLinkResolver.ToTargetUrlPath(path));
+			}
+
+			return uri is null
+				? string.Empty
+				: uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
+		}
+	}
+
+	private async Task OutputRedirectsAsync(CodexContext context, Dictionary<string, string> redirects, Cancel ctx)
+	{
+		var uniqueRedirects = redirects
+			.Where(x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+			.ToDictionary();
+		var redirectsFile = context.WriteFileSystem.FileInfo.New(context.WriteFileSystem.Path.Combine(context.OutputDirectory.FullName, "redirects.json"));
+		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", uniqueRedirects.Count, redirectsFile.FullName);
+
+		var redirectsJson = JsonSerializer.Serialize(uniqueRedirects, SourceGenerationContext.Default.DictionaryStringString);
+		await context.WriteFileSystem.File.WriteAllTextAsync(redirectsFile.FullName, redirectsJson, ctx);
 	}
 
 	private static IReadOnlyList<CodexBreadcrumb> ResolveCodexBreadcrumbs(

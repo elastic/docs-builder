@@ -107,7 +107,7 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 			// Take first tool call (can extend to handle multiple if needed)
 			var toolCall = toolCalls[0];
 			var toolCallId = toolCall.TryGetProperty("id", out var tcId) ? tcId.GetString() : id;
-			var toolName = toolCall.GetProperty("name").GetString()!;
+			var toolName = toolCall.GetProperty("name").GetString();
 			var args = toolCall.GetProperty("args");
 
 			if (toolName is not null and "ragSearch")

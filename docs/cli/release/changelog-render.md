@@ -16,7 +16,7 @@ docs-builder changelog render [options...] [-h|--help]
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file.
 :   Defaults to `docs/changelog.yml`.
-:   This configuration file is where the command looks for `block ... publish` definitions.
+:   Note: The `changelog render` command does not use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`.
 
 `--hide-features <string[]?>`
 :   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times.
@@ -53,15 +53,14 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 `--subsections`
 :   Optional: Group entries by area in subsections.
 :   Defaults to false.
-:   When publish rules with `include_areas` or `exclude_areas` are configured in `changelog.yml`, the area used for grouping is the first area from the entry's list that aligns with those rules (first included area, or first non-excluded area).
+:   When enabled, entries are grouped by their area within each section. The first area from each entry's areas list is used for grouping.
 
 `--title <string?>`
 :   Optional: The title to use for section headers, directories, and anchors in output files.
 :   Defaults to the version in the first bundle.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
 
-You can configure `block` definitions in your `changelog.yml` configuration file to automatically comment out changelog entries  based on their products, areas, and/or types.
-For more information, refer to [](/contribute/changelog.md#example-block-label).
+The `changelog render` command does **not** use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`. For more information, refer to [](/contribute/changelog.md). For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
 
 ## Output formats
 

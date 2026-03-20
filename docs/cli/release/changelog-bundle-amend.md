@@ -59,6 +59,8 @@ The entries from all matching amend files are combined with the parent bundle's 
 
 :::{note}
 Amend bundles do not need to include `products` or `hide-features` fields—they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
+
+`rules.bundle` filtering does not apply to `changelog bundle-amend`. The command is designed as a direct-injection escape hatch: the files you specify with `--add` are always included regardless of any product, type, or area filter configuration. Filtering only applies during the initial `changelog bundle` or `changelog gh-release` run.
 :::
 ## Examples
 

@@ -19,6 +19,7 @@ public class CoherenceToolsIntegrationTests(ITestOutputHelper output) : McpTools
 		// Arrange
 		var (coherenceTools, clientAccessor) = CreateCoherenceTools();
 		Assert.SkipUnless(coherenceTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
 		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
@@ -49,6 +50,7 @@ public class CoherenceToolsIntegrationTests(ITestOutputHelper output) : McpTools
 		// Arrange
 		var (coherenceTools, clientAccessor) = CreateCoherenceTools();
 		Assert.SkipUnless(coherenceTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
 		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 

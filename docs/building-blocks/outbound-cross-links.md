@@ -46,6 +46,14 @@ When `docs-builder` encounters a cross-link:
 4. **Validate**: Verifies the link exists and generates an error if not
 5. **Transform**: Replaces the cross-link with the fully resolved URL in the output
 
+If the link scheme is not declared in `cross_links`, `{{dbuild}}` does not treat it as a valid cross-link target.
+The only supported undeclared passthrough protocol schemes are:
+
+- `cursor://...`.
+- `vscode:...`.
+
+Any other undeclared scheme still produces a cross-link validation error.
+
 ## Validation
 
 During a build, `docs-builder`:

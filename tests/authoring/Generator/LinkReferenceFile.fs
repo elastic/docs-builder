@@ -96,6 +96,12 @@ Through various means $$$including-this-inline-syntax$$$
            "cli/mcp.md": {
              "to": "index.md"
            },
+           "cli/release/changelog-evaluate-artifact.md": {
+             "to": "index.md"
+           },
+           "cli/release/changelog-prepare-artifact.md": {
+             "to": "index.md"
+           },
            "testing/redirects/4th-page.md": {
              "to": "testing/redirects/5th-page.md"
            },

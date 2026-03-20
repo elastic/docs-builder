@@ -29,7 +29,7 @@ sub:
 	public void ReadsSubstitutions()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
-		File.YamlFrontMatter!.Properties.Should().NotBeEmpty()
+		File.YamlFrontMatter.Properties.Should().NotBeEmpty()
 			.And.HaveCount(1)
 			.And.ContainKey("key");
 	}
@@ -79,9 +79,9 @@ public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output,
 	public void ReadsProducts()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
-		File.YamlFrontMatter!.Products.Should().NotBeNull()
+		File.YamlFrontMatter.Products.Should().NotBeNull()
 			.And.HaveCount(1);
-		File.YamlFrontMatter!.Products!.First().Id.Should().Be("apm");
+		File.YamlFrontMatter.Products.First().Id.Should().Be("apm");
 	}
 }
 
@@ -101,10 +101,10 @@ public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(output,
 	public void ReadsProducts()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
-		File.YamlFrontMatter!.Products.Should().NotBeNull()
+		File.YamlFrontMatter.Products.Should().NotBeNull()
 			.And.HaveCount(2);
-		File.YamlFrontMatter!.Products!.First().Id.Should().Be("apm");
-		File.YamlFrontMatter!.Products!.Last().Id.Should().Be("elasticsearch");
+		File.YamlFrontMatter.Products.First().Id.Should().Be("apm");
+		File.YamlFrontMatter.Products.Last().Id.Should().Be("elasticsearch");
 	}
 }
 

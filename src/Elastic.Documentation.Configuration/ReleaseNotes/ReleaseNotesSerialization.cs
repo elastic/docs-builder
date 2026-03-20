@@ -29,17 +29,6 @@ public static partial class ReleaseNotesSerialization
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.Build();
 
-	/// <summary>
-	/// Used for loading minimal changelog configuration (publish blocker).
-	/// Includes LenientStringListConverter so List&lt;string&gt; fields accept both comma-separated strings and YAML lists.
-	/// </summary>
-	private static readonly IDeserializer IgnoreUnmatchedDeserializer =
-		new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.WithTypeConverter(new LenientStringListConverter())
-			.IgnoreUnmatchedProperties()
-			.Build();
-
 	private static readonly ISerializer YamlSerializer =
 		new StaticSerializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -155,7 +144,8 @@ public static partial class ReleaseNotesSerialization
 		ProductId = dto.Product ?? "",
 		Target = dto.Target,
 		Lifecycle = ParseLifecycle(dto.Lifecycle),
-		Repo = dto.Repo
+		Repo = dto.Repo,
+		Owner = dto.Owner
 	};
 
 	private static BundledEntry ToBundledEntry(BundledEntryDto dto) => new()
@@ -258,7 +248,8 @@ public static partial class ReleaseNotesSerialization
 		Product = product.ProductId,
 		Target = product.Target,
 		Lifecycle = LifecycleToString(product.Lifecycle),
-		Repo = product.Repo
+		Repo = product.Repo,
+		Owner = product.Owner
 	};
 
 	private static BundledEntryDto ToDto(BundledEntry entry) => new()
@@ -325,52 +316,6 @@ public static partial class ReleaseNotesSerialization
 	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
 	/// <param name="productId">Optional product ID to load product-specific blocker.</param>
 	/// <returns>The publish blocker configuration, or null if not found or not configured.</returns>
-	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath, string? productId = null)
-	{
-		if (!fileSystem.File.Exists(configPath))
-			return null;
-
-		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		if (string.IsNullOrWhiteSpace(yamlContent))
-			return null;
-
-		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimalDto>(yamlContent);
-		if (yamlConfig.Rules is null)
-			return null;
-
-		var publish = yamlConfig.Rules.Publish;
-		if (publish is null)
-			return null;
-
-		// Parse global match mode
-		var globalMatch = ParseMatchMode(yamlConfig.Rules.Match);
-		var publishMatchAreas = ParseMatchMode(publish.MatchAreas) ?? globalMatch ?? MatchMode.Any;
-
-		// Check product-specific blocker first if productId is specified
-		if (!string.IsNullOrWhiteSpace(productId) && publish.Products is { Count: > 0 })
-		{
-			// Try exact match first, then fall back to case-insensitive match
-			if (!publish.Products.TryGetValue(productId, out var productPublish))
-			{
-				var found = publish.Products.FirstOrDefault(kvp =>
-					kvp.Key.Equals(productId, StringComparison.OrdinalIgnoreCase));
-				productPublish = found.Value;
-			}
-
-			if (productPublish != null)
-			{
-				var productMatchAreas = ParseMatchMode(productPublish.MatchAreas) ?? publishMatchAreas;
-				return ParsePublishBlocker(productPublish, productMatchAreas);
-			}
-		}
-
-		// Fall back to global publish blocker
-		return ParsePublishBlocker(publish, publishMatchAreas);
-	}
-
-	/// <summary>
-	/// Parses a PublishRulesMinimalDto into a PublishBlocker domain type.
-	/// </summary>
 	private static PublishBlocker? ParsePublishBlocker(PublishRulesMinimalDto? dto, MatchMode matchAreas)
 	{
 		if (dto == null)

@@ -55,6 +55,9 @@ public class BundleDataResolver(IFileSystem fileSystem)
 		}
 
 		var repo = bundle.Input.Repo ?? DefaultRepo;
+		var owner = bundle.Data.Products.Count > 0 && !string.IsNullOrWhiteSpace(bundle.Data.Products[0].Owner)
+			? bundle.Data.Products[0].Owner!
+			: "elastic";
 
 		// Resolve entries
 		foreach (var entry in bundle.Data.Entries)
@@ -65,6 +68,7 @@ public class BundleDataResolver(IFileSystem fileSystem)
 			{
 				Entry = entryData,
 				Repo = repo,
+				Owner = owner,
 				BundleProductIds = bundleProductIds,
 				HideLinks = bundle.Input.HideLinks
 			});
