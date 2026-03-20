@@ -1,0 +1,113 @@
+product: "{{product.kibana}}"
+collection: Sample settings collection
+id: sample-settings-collection
+page_description: |
+  This file demonstrates the full settings schema supported by the `settings` directive.
+  It includes group metadata, setting metadata, nested settings, applies_to inheritance,
+  and applies_to overrides.
+
+groups:
+  - group: General settings
+    id: general-settings
+    description: |
+      Core settings shared across environments.
+    example: |
+      ```yaml
+      xpack.sample.enabled: true
+      ```
+    settings:
+      - setting: xpack.sample.enabled
+        id: xpack-sample-enabled
+        description: |
+          Enables sample behavior.
+        datatype: bool
+        default: "true"
+        applies_to:
+          stack: ga 9.2
+          ech: ga
+        options:
+          - option: "true"
+          - option: "false"
+        note: Turn this off only for troubleshooting.
+        tip: Keep this enabled in production.
+
+      - setting: xpack.sample.hosts
+        id: xpack-sample-hosts
+        description: |
+          Defines host entries for sample integrations.
+        datatype: object
+        default: "[]"
+        applies_to:
+          stack: ga 9.2
+          self: ga
+        settings:
+          - setting: "[n].url"
+            description: |
+              Host URL for this entry.
+            datatype: string
+            default: ""
+            # Inherits applies_to from parent.
+
+          - setting: "[n].mode"
+            description: |
+              Operating mode for this host.
+            datatype: enum
+            default: strict
+            options:
+              - option: strict
+                description: Enforces full validation.
+              - option: lenient
+                description: Reduces validation checks.
+            applies_to:
+              stack: preview 9.3
+              self: ga
+
+          - setting: "[n].tls.verificationMode"
+            description: |
+              TLS verification mode for outbound connections.
+            datatype: enum
+            default: full
+            options:
+              - option: full
+              - option: certificate
+              - option: none
+            warning: Disabling verification reduces connection security.
+            important: Use `none` only for short-lived test environments.
+            deprecation_details: The `none` option will be deprecated in a future release.
+            example: |
+              ```yaml
+              xpack.sample.hosts:
+                - url: https://example.org
+                  tls:
+                    verificationMode: certificate
+              ```
+
+  - group: Preconfigured connector settings
+    id: preconfigured-connector-settings
+    description: |
+      Settings that configure preconfigured connectors.
+    example: |
+      ```yaml
+      xpack.sample.preconfigured:
+        my-connector:
+          name: sample-connector
+          actionTypeId: .server-log
+      ```
+    settings:
+      - setting: xpack.sample.preconfigured
+        id: xpack-sample-preconfigured
+        description: |
+          Defines preconfigured connector entries.
+        datatype: object
+        default: "{}"
+        applies_to:
+          stack: ga 9.2
+
+      - setting: xpack.sample.preconfigured.<connector-id>.actionTypeId
+        description: |
+          Connector type identifier for the preconfigured connector.
+        datatype: enum
+        options:
+          - option: .server-log
+          - option: .email
+          - option: .webhook

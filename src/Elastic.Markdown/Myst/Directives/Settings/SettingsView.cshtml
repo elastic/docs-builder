@@ -1,3 +1,4 @@
+@using Elastic.Documentation.AppliesTo
 @using Elastic.Markdown.Myst.Directives.Settings
 @inherits RazorSlice<SettingsViewModel>
 
@@ -9,20 +10,170 @@
 
 	private IHtmlContent RenderGroup(SettingsGrouping group)
 	{
-		<h2>@group.Name</h2>
-		foreach (var setting in group.Settings)
+		var groupSlug = SettingsViewModel.GroupHeadingSlug(group);
+		var level = System.Math.Clamp(Model.GroupHeadingLevel, 1, 6);
+		if (!string.IsNullOrWhiteSpace(groupSlug))
 		{
-			@RenderSetting(setting)
+			switch (level)
+			{
+				case 1:
+					<h1 id="@groupSlug">@group.Name</h1>
+					break;
+				case 2:
+					<h2 id="@groupSlug">@group.Name</h2>
+					break;
+				case 3:
+					<h3 id="@groupSlug">@group.Name</h3>
+					break;
+				case 4:
+					<h4 id="@groupSlug">@group.Name</h4>
+					break;
+				case 5:
+					<h5 id="@groupSlug">@group.Name</h5>
+					break;
+				default:
+					<h6 id="@groupSlug">@group.Name</h6>
+					break;
+			}
 		}
+		else
+		{
+			switch (level)
+			{
+				case 1:
+					<h1>@group.Name</h1>
+					break;
+				case 2:
+					<h2>@group.Name</h2>
+					break;
+				case 3:
+					<h3>@group.Name</h3>
+					break;
+				case 4:
+					<h4>@group.Name</h4>
+					break;
+				case 5:
+					<h5>@group.Name</h5>
+					break;
+				default:
+					<h6>@group.Name</h6>
+					break;
+			}
+		}
+		@RenderMarkdown(group.Description)
+		@RenderExample(group.Example)
+		<dl>
+		@foreach (var setting in group.Settings)
+		{
+			@RenderSetting(setting, null, null)
+		}
+		</dl>
 		return HtmlString.Empty;
 	}
-	private IHtmlContent RenderSetting(Setting setting)
+
+	private IHtmlContent RenderSetting(Setting setting, string? parentName, ApplicableTo? inheritedAppliesTo)
 	{
-		<h4>@setting.Name</h4>
-		if (setting.Description is not null)
-		{
-			@(new HtmlString(Model.RenderMarkdown(setting.Description)))
-		}
+		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
+		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
+
+		var stackBadges = Model.RenderStackRowBadges(appliesTo);
+		var supportedOnBadges = Model.RenderSupportedOnBadges(appliesTo);
+		var showSupportedOn = appliesTo is not null && appliesTo != ApplicableTo.All;
+
+		<dt id="@SettingsViewModel.SettingFragmentId(setting, displayName)">@displayName @(new HtmlString(stackBadges))</dt>
+		<dd>
+			@if (showSupportedOn)
+			{
+				<p class="settings-supported-on"><strong>Supported on:</strong> @(new HtmlString(supportedOnBadges))</p>
+			}
+			@RenderMarkdown(setting.Description)
+			@RenderMetadata(setting)
+			@RenderSettingAdmonitions(setting)
+			@RenderExample(setting.Example)
+
+			@if (setting.Settings.Length > 0)
+			{
+				<dl>
+					@foreach (var child in setting.Settings)
+					{
+						@RenderSetting(child, displayName, appliesTo)
+					}
+				</dl>
+			}
+		</dd>
+
 		return HtmlString.Empty;
+	}
+
+	private IHtmlContent RenderMetadata(Setting setting)
+	{
+		if (!string.IsNullOrWhiteSpace(setting.Datatype))
+		{
+			<p><strong>Datatype:</strong> <code>@setting.Datatype</code></p>
+		}
+
+		var defaultDisplay = SettingDisplay.FormatDefault(setting.Default);
+		if (!string.IsNullOrWhiteSpace(defaultDisplay))
+		{
+			<p><strong>Default:</strong> <code>@defaultDisplay</code></p>
+		}
+
+		if (setting.Options is { Length: > 0 })
+		{
+			<p><strong>Options:</strong></p>
+			<ul>
+				@foreach (var option in setting.Options)
+				{
+					<li>
+						@if (!string.IsNullOrWhiteSpace(option.Option))
+						{
+							<code>@option.Option</code>
+						}
+						@if (!string.IsNullOrWhiteSpace(option.Description))
+						{
+							@: - @option.Description
+						}
+					</li>
+				}
+			</ul>
+		}
+
+		return HtmlString.Empty;
+	}
+
+	private IHtmlContent RenderSettingAdmonitions(Setting setting)
+	{
+		@RenderAdmonition("note", setting.Note)
+		@RenderAdmonition("tip", setting.Tip)
+		@RenderAdmonition("warning", setting.Warning)
+		@RenderAdmonition("important", setting.Important)
+		@RenderAdmonition("admonition", setting.DeprecationDetails, "Deprecation details")
+		return HtmlString.Empty;
+	}
+
+	private IHtmlContent RenderAdmonition(string directive, string? content, string? title = null)
+	{
+		if (string.IsNullOrWhiteSpace(content))
+			return HtmlString.Empty;
+
+		var heading = string.IsNullOrWhiteSpace(title) ? string.Empty : $" {title}";
+		var markdown = $":::{{{directive}}}{heading}\n{content}\n:::";
+		return new HtmlString(Model.RenderMarkdown(markdown));
+	}
+
+	private IHtmlContent RenderExample(string? example)
+	{
+		if (string.IsNullOrWhiteSpace(example))
+			return HtmlString.Empty;
+
+		return new HtmlString(Model.RenderMarkdown(example));
+	}
+
+	private IHtmlContent RenderMarkdown(string? markdown)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return HtmlString.Empty;
+
+		return new HtmlString(Model.RenderMarkdown(markdown));
 	}
 }

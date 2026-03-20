@@ -28,6 +28,38 @@ public static class TestHelpers
 						Current = new SemVersion(8, 0, 0),
 						Base = new SemVersion(8, 0, 0)
 					}
+				},
+				{
+					VersioningSystemId.Self, new VersioningSystem
+					{
+						Id = VersioningSystemId.Self,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				},
+				{
+					VersioningSystemId.Ess, new VersioningSystem
+					{
+						Id = VersioningSystemId.Ess,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				},
+				{
+					VersioningSystemId.Eck, new VersioningSystem
+					{
+						Id = VersioningSystemId.Eck,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				},
+				{
+					VersioningSystemId.Ece, new VersioningSystem
+					{
+						Id = VersioningSystemId.Ece,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
 				}
 			},
 		};

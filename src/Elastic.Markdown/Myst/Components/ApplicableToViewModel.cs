@@ -7,6 +7,17 @@ using Elastic.Documentation.Configuration.Versions;
 
 namespace Elastic.Markdown.Myst.Components;
 
+/// <summary>Controls how applicability badges are grouped (stack row vs supported-on row).</summary>
+public enum ApplicabilityBadgePlacement
+{
+	/// <summary>Single combined row (historic behavior).</summary>
+	Combined,
+	/// <summary>Elastic Stack (and generic product) availability next to the setting name.</summary>
+	StackRow,
+	/// <summary>Deployment, serverless, and product-specific agents on a &quot;Supported on&quot; line.</summary>
+	SupportedOnRow
+}
+
 public class ApplicableToViewModel
 {
 	public required bool Inline { get; init; }
@@ -14,6 +25,8 @@ public class ApplicableToViewModel
 	public bool ShowTooltip { get; init; } = true;
 	public required ApplicableTo AppliesTo { get; init; }
 	public required VersionsConfiguration VersionsConfig { get; init; }
+
+	public ApplicabilityBadgePlacement BadgePlacement { get; init; } = ApplicabilityBadgePlacement.Combined;
 
 	private static readonly Dictionary<Func<DeploymentApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> DeploymentMappings = new()
 	{
@@ -60,6 +73,18 @@ public class ApplicableToViewModel
 
 	public IReadOnlyCollection<ApplicabilityItem> GetApplicabilityItems()
 	{
+		var rawItems = BadgePlacement switch
+		{
+			ApplicabilityBadgePlacement.StackRow => CollectStackRowRaw(),
+			ApplicabilityBadgePlacement.SupportedOnRow => CollectSupportedOnRaw(),
+			_ => CollectCombinedRaw()
+		};
+
+		return RenderGroupedItems(rawItems).ToArray();
+	}
+
+	private List<RawApplicabilityItem> CollectCombinedRaw()
+	{
 		var rawItems = new List<RawApplicabilityItem>();
 
 		if (AppliesTo.Serverless is not null)
@@ -81,7 +106,48 @@ public class ApplicableToViewModel
 		if (AppliesTo.Product is not null)
 			rawItems.AddRange(CollectFromCollection(AppliesTo.Product, ApplicabilityMappings.Product));
 
-		return RenderGroupedItems(rawItems).ToArray();
+		return rawItems;
+	}
+
+	private List<RawApplicabilityItem> CollectStackRowRaw()
+	{
+		var rawItems = new List<RawApplicabilityItem>();
+
+		if (AppliesTo.Stack is not null)
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
+
+		if (AppliesTo.Product is not null)
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Product, ApplicabilityMappings.Product));
+
+		return rawItems;
+	}
+
+	private List<RawApplicabilityItem> CollectSupportedOnRaw()
+	{
+		var rawItems = new List<RawApplicabilityItem>();
+
+		if (AppliesTo.Serverless is not null)
+		{
+			rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
+				? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+				: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
+		}
+
+		if (AppliesTo.Deployment is not null)
+			rawItems.AddRange(CollectFromMappings(AppliesTo.Deployment, DeploymentMappings));
+
+		if (AppliesTo.ProductApplicability is not null)
+			rawItems.AddRange(CollectFromMappings(AppliesTo.ProductApplicability, ProductMappings));
+
+		var noExplicitSupportedOn =
+			AppliesTo.Deployment is null &&
+			AppliesTo.Serverless is null &&
+			AppliesTo.ProductApplicability is null;
+
+		if (rawItems.Count == 0 && noExplicitSupportedOn && AppliesTo.Stack is not null)
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Self));
+
+		return rawItems;
 	}
 
 	/// <summary>
