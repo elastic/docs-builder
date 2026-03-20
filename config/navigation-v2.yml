@@ -1,34 +1,96 @@
 nav:
-  - label: Get Started
+  # ─────────────────────────────────────────────────────────────
+  # Elasticsearch fundamentals
+  # Content: get-started + conceptual/architecture pages that
+  # currently live in the ES reference but belong here editorially.
+  # ─────────────────────────────────────────────────────────────
+  - label: Elasticsearch fundamentals
     children:
       - toc: get-started
+      - title: What is Elasticsearch?
+      - title: Core concepts (indices, shards, mappings)
+      - title: Architecture and scalability
 
-  - label: Solutions
+  # ─────────────────────────────────────────────────────────────
+  # Install, deploy, and administer
+  # Content: deploy-manage (Elastic Cloud, ECE, ECK, self-managed,
+  # security, monitoring, upgrade, tools) + cloud-account.
+  # ─────────────────────────────────────────────────────────────
+  - label: Install, deploy, and administer
+    children:
+      - toc: deploy-manage
+      - toc: cloud-account
+
+  # ─────────────────────────────────────────────────────────────
+  # The Elasticsearch Platform
+  # Container label with three nested sub-sections.
+  # All real content currently lives in two monolithic toc roots
+  # (manage-data, explore-analyze); placeholders mark sections
+  # that will need dedicated toc roots when the split happens.
+  # ─────────────────────────────────────────────────────────────
+  - label: The Elasticsearch Platform
+    children:
+
+      # ── Ingest and manage data ───────────────────────────────
+      # Desired level-1 sections (future toc splits of manage-data):
+      #   • Ingest or migrate your data (manage-data/ingest + migrate)
+      #   • Store and manage data (manage-data/data-store)
+      #   • Manage data lifecycle (manage-data/lifecycle)
+      #   • Time-series data (manage-data/use-case-timeseries)
+      # For now, the entire manage-data toc root maps here.
+      - label: Ingest and manage data
+        children:
+          - toc: manage-data
+
+      # ── Search, visualize, and analyze ───────────────────────
+      # Desired level-1 sections (subset of explore-analyze):
+      #   • Query and filter (query-filter, discover)
+      #   • Dashboards and visualizations (dashboards, visualize)
+      #   • Alerting and cases (alerting, cases)
+      #   • Transforms and cross-cluster (transforms, cross-cluster-search)
+      #   • Reports and workflows (report-and-share, workflows)
+      # explore-analyze also contains AI/ML — those belong below.
+      - label: Search, visualize, and analyze
+        children:
+          - toc: explore-analyze
+
+      # ── AI and machine learning ───────────────────────────────
+      # Desired level-1 sections (future toc splits of explore-analyze):
+      #   • AI features and Agent Builder (explore-analyze/ai-features)
+      #   • Elastic Inference Service (explore-analyze/elastic-inference)
+      #   • Machine learning: anomaly detection, NLP, DFA
+      #     (explore-analyze/machine-learning)
+      # Shown as placeholders until content gets its own toc root.
+      - label: AI and machine learning
+        children:
+          - title: AI features and Agent Builder
+          - title: Elastic Inference Service
+          - title: Machine learning
+
+  # ─────────────────────────────────────────────────────────────
+  # Solutions and project types
+  # Content: solutions (search, observability, security,
+  # elasticsearch-solution-project).
+  # ─────────────────────────────────────────────────────────────
+  - label: Solutions and project types
     children:
       - toc: solutions
 
-  - label: Manage Data
-    children:
-      - toc: manage-data
-
-  - label: Explore & Analyze
-    children:
-      - toc: explore-analyze
-
-  - label: Deploy & Manage
-    children:
-      - toc: deploy-manage
-
-  - label: Cloud Account
-    children:
-      - toc: cloud-account
-
-  - label: Troubleshoot
-    children:
-      - toc: troubleshoot
-
+  # ─────────────────────────────────────────────────────────────
+  # Reference
+  # Content: Elasticsearch REST API + config reference,
+  # Kibana reference, and docs-content reference sub-tocs
+  # (clients, ingestion tools, fleet, APM, ML reference, glossary).
+  # ─────────────────────────────────────────────────────────────
   - label: Reference
     expanded: true
     children:
       - toc: elasticsearch://reference/elasticsearch
       - toc: kibana://reference
+
+  # ─────────────────────────────────────────────────────────────
+  # Troubleshooting
+  # ─────────────────────────────────────────────────────────────
+  - label: Troubleshooting
+    children:
+      - toc: troubleshoot

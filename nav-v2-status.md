@@ -93,16 +93,115 @@ HtmlWriter.RenderLayout (called per page)
 
 ---
 
+## Proposed new information architecture
+
+The team provided a JSON-defined IA to translate into `navigation-v2.yml`. Below is the structure and how it maps to existing V1 content paths.
+
+### Top-level labels
+
+| Label | Status | V1 content source |
+|-------|--------|-------------------|
+| Elasticsearch fundamentals | Partial — needs decomposition | `get-started` + ES core concepts (possibly from `elasticsearch://reference`) |
+| Install, deploy, and administer | Mostly maps cleanly | `deploy-manage` (deploy, security, users-roles, monitor, upgrade, etc.) |
+| The Elasticsearch Platform | Container label — has nested labels (see below) | — |
+| Solutions and project types | Maps cleanly | `solutions` (search, observability, security, elasticsearch-solution-project) |
+| Reference and resources | Maps cleanly | `elasticsearch://reference/elasticsearch` + `kibana://reference` |
+| Troubleshooting | Maps cleanly | `troubleshoot` |
+
+**ISLAND items (omit from nav):**
+- Extension points
+- Account & preferences
+
+### Nested labels inside "The Elasticsearch Platform"
+
+These are sub-labels grouping level-1 sections, not clickable headings:
+
+```
+The Elasticsearch Platform
+  ├── [nested label] Ingest and manage data
+  │     ├── Ingest or migrate: bring your data into Elasticsearch  → manage-data/ingest + manage-data/migrate
+  │     ├── Store and manage data                                  → manage-data/data-store
+  │     ├── Manage data lifecycle                                  → manage-data/lifecycle
+  │     └── (time series use case)                                 → manage-data/use-case-timeseries
+  │
+  ├── [nested label] Search, visualize, and do stuff
+  │     ├── Query and filter                                        → explore-analyze/query-filter
+  │     ├── Discover                                               → explore-analyze/discover
+  │     ├── Dashboards                                             → explore-analyze/dashboards
+  │     ├── Visualize                                              → explore-analyze/visualize
+  │     ├── Alerting                                               → explore-analyze/alerting
+  │     ├── Cases                                                  → explore-analyze/cases
+  │     ├── Transforms                                             → explore-analyze/transforms
+  │     ├── Cross-cluster search                                   → explore-analyze/cross-cluster-search
+  │     └── Report and share                                       → explore-analyze/report-and-share
+  │
+  └── [nested label] AI and machine learning
+        ├── AI features (Agent Builder, AI Assistant)              → explore-analyze/ai-features
+        ├── Elastic Inference                                      → explore-analyze/elastic-inference
+        ├── Machine learning (anomaly detection, NLP, DFA)         → explore-analyze/machine-learning
+        └── Scripting                                              → explore-analyze/scripting
+```
+
+### Content mapping details
+
+**`manage-data` sub-trees** (single TOC root, decomposed into level-1 sections):
+- `manage-data/ingest` — ingest pipelines, agentless, tools, sample data, transform/enrich
+- `manage-data/migrate` — migration guides
+- `manage-data/data-store` — aliases, data streams, index basics, mapping, templates, text analysis
+- `manage-data/lifecycle` — ILM, data tiers, rollup, curator
+- `manage-data/use-case-use-elasticsearch-to-manage-time-series-data` — time series use case
+
+**`explore-analyze` sub-trees** (single TOC root, split across two nested labels):
+- AI & ML group: `ai-features`, `elastic-inference`, `machine-learning`, `scripting`
+- Search/Visualize group: `query-filter`, `discover`, `dashboards`, `visualize`, `alerting`, `cases`, `transforms`, `cross-cluster-search`, `report-and-share`, `find-and-organize`, `workflows`
+- Note: `geospatial-analysis` and `numeral-formatting` need placement decision
+
+**`deploy-manage` sub-trees** (single TOC root, stays under "Install, deploy, and administer"):
+- `deploy` (Elastic Cloud, ECE, ECK, self-managed)
+- `security`, `users-roles`, `manage-spaces`
+- `monitor`, `autoscaling`, `production-guidance`
+- `upgrade`, `uninstall`
+- `distributed-architecture`, `remote-clusters`, `tools`
+
+**`solutions` sub-trees** (stays together under "Solutions and project types"):
+- `search` (full-text, AI/semantic, hybrid, RAG, ranking)
+- `observability`
+- `security`
+- `elasticsearch-solution-project`
+
+### Key challenges for the YAML translation
+
+1. **`manage-data` is one TOC root** — can't reference `manage-data/ingest` as a `toc:` directly; only `manage-data` is a valid TOC root. The new IA wants to surface sub-sections as top-level nav items. Approaches:
+   - Use `manage-data` as a single `toc:` under the label, accepting the flattened tree — simple but doesn't match the IA
+   - Create new separate TOC roots for each sub-tree — requires changes to `docs-content` repo
+   - Use `title:` placeholders for sections not yet wired up
+
+2. **`explore-analyze` is one TOC root** — same issue; splitting into "AI/ML" vs "Search/Visualize" groups requires either new TOC roots or navigating the tree via sub-path `toc:` references (if the assembler supports it)
+
+3. **`get-started` scope** — "Elasticsearch fundamentals" is broader than the current `get-started` TOC; it likely needs content from `elasticsearch://reference` (concepts, architecture, etc.)
+
+### Pragmatic V2 YAML approach
+
+Given the above constraints, the most viable near-term approach:
+
+- Keep **single `toc:` references** pointing at existing roots
+- Use **nested labels** to visually group them as intended by the IA
+- Add **`title:` placeholders** for sections that don't yet have a dedicated TOC root
+- This lets the prototype render the intended IA structure immediately, with real links where content exists
+
+---
+
 ## Open items / next steps
 
-1. **`navigation-v2.yml` content** — currently mirrors V1 structure exactly. The whole point of V2 is to freely rearrange this file. The skeleton has these top-level labels:
-   - Get Started, Solutions, Manage Data, Explore & Analyze, Deploy & Manage, Cloud Account, Troubleshoot, Reference
+1. ~~**Rewrite `navigation-v2.yml`**~~ ✓ Done — 6 top-level labels, nested labels inside "The Elasticsearch Platform", `title:` placeholders for the AI/ML sub-sections that don't yet have their own toc roots.
 
-2. **Current-page highlighting** — `pages-nav-v2.ts` marks the active link; verify it highlights the right item without auto-expanding parents.
+2. **Nested label support** — `navigation-v2.yml` and `NavigationV2File.cs` currently only support labels at the top level. Nested labels (labels whose parent is another label) need the YAML format and `SiteNavigationV2` builder to support arbitrary depth label nesting.
 
-3. **Placeholder / page crosslinks** — `page:` items in `navigation-v2.yml` currently render as disabled placeholders (prototype shortcut). Wire up real cross-link resolution if needed.
+3. **Current-page highlighting** — `pages-nav-v2.ts` marks the active link; verify it highlights the right item without auto-expanding parents.
 
-4. **`l{depth+1}/` parallel paths** — dropped for now (content stays at V1 paths). Could be re-added later if the team wants to preview a new IA at separate URLs while keeping V1 live.
+4. **Placeholder / page crosslinks** — `page:` items in `navigation-v2.yml` currently render as disabled placeholders (prototype shortcut). Wire up real cross-link resolution if needed.
+
+5. **`l{depth+1}/` parallel paths** — dropped for now (content stays at V1 paths). Could be re-added later if the team wants to preview a new IA at separate URLs while keeping V1 live.
 
 ---
 
