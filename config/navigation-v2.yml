@@ -398,128 +398,27 @@ nav:
       - title: Uptime monitoring (deprecated)
   - label: Reference
     children:
-    - group: Elasticsearch
-      children:
-      - title: Elasticsearch plugins
-      - title: REST APIs
-      - title: Command-line tools
-      - title: Configuration reference
-      - title: "[XREF] Index lifecycle management actions"
-      - title: Index settings
-      - title: JVM settings
-      - title: "[XREF] Mapping reference"
-      - title: Roles
-      - title: Security privileges
-    - group: Kibana
-      children:
-      - title: Advanced settings
-      - title: Audit events
-      - title: Commands
-      - title: Configuration reference
-      - title: Connectors reference
-      - title: Kibana plugins
-      - title: Accessibility statement
-      - title: Case analytics indices schema
+    - toc: elasticsearch://reference/elasticsearch
+    - toc: kibana://reference
     - group: Cloud
       children:
-      - title: Elastic Cloud Hosted
-      - title: Elastic Cloud Enterprise
-      - title: ECK
-      - title: "[XREF] ECCTL command reference"
-    - group: Elastic Security reference
-      children:
-      - title: Endpoint command reference
-      - title: Fields and object schemas for Security
-      - title: Prebuilt detection rules reference
-    - group: Elastic Observability reference
-      children:
-      - title: Fields and object schemas for Observability
-    - group: "Elastic Common Schema (ECS) reference"
-      children:
-      - title: Getting started
-      - title: Guidelines and best practices
-    - group: Machine learning
-      children:
-      - title: Function reference for machine learning
-      - title: Anomaly detection job wizards
-    - group: Search UI
-      children:
-      - title: Using with Vue.js
-      - title: App Search Connector
-      - title: Elasticsearch Connector
-      - title: Site Search Connector
-      - title: Workplace Search Connector
-      - title: Actions
-      - title: Configuration
-      - title: Core API
-      - title: Analytics Plugin
-      - title: State
-      - title: ErrorBoundary
-      - title: Facet
-      - title: Paging
-      - title: PagingInfo
-      - title: Result
-      - title: Results
-      - title: ResultsPerPage
-      - title: SearchBox
-      - title: Sorting
-      - title: SearchProvider
-      - title: useSearch hook
-      - title: WithSearch
-      - title: Architecture
-      - title: Customizing Styles and HTML
-      - title: E-commerce overview
-      - title: Adding search bar to header
-      - title: Analyzing performance
-      - title: Building a custom connector
-      - title: Changing component behavior
-      - title: Conditional Facets
-      - title: Debugging
-      - title: NextJS Integration
-      - title: Using search-as-you-type
-      - title: Search UI known issues
-      - title: Autocomplete
-      - title: Product Carousels
-      - title: Category Page
-      - title: Product Detail Page
-      - title: Search Page
-      - title: "Tutorial: App Search"
-      - title: "Tutorial: Elasticsearch"
-      - title: Using in Production
-      - title: "Tutorial: Workplace Search"
-    - group: Aggregations
-      children:
-      - title: Bucket aggregations
-      - title: Metrics aggregations
-      - title: Pipeline aggregations
-    - group: Elastic Cloud on Kubernetes
-      children:
-      - title: ECK API Reference
-      - title: ECK configuration flags
-      - title: Third-party dependencies
-      - title: Elasticsearch upgrade predicates
-    - title: "Elastic Cloud Control (ECCTL)"
-    - title: Elasticsearch clients
-    - group: Ingest processor reference
-      children:
-      - title: Grok processor
-    - group: Query languages
-      children:
-      - title: EQL search
-      - title: ES|QL reference
-      - title: Kibana Query Language
-      - title: Query DSL
-      - title: SQL overview
-    - title: Scripting languages
-    - title: Numeral formatting
-    - group: Text analysis components
-      children:
-      - title: Analyzer reference
-      - title: Character filter reference
-      - title: Normalizers
-      - title: Token filter reference
-      - title: Tokenizer reference
-    - title: Glossary
+      - toc: cloud://reference
+      - toc: cloud-on-k8s://reference
+    - toc: docs-content://reference/security
+    - toc: docs-content://reference/observability
+    - toc: ecs://reference
+    - toc: docs-content://reference/machine-learning
+    - toc: search-ui://reference
+    - toc: elasticsearch://reference/aggregations
+    - toc: ecctl://reference
+    - toc: docs-content://reference/elasticsearch-clients
+    - toc: elasticsearch://reference/enrich-processor
+    - toc: elasticsearch://reference/query-languages
+    - toc: elasticsearch://reference/scripting-languages
+    - page: docs-content://explore-analyze/numeral-formatting.md
+      title: Numeral formatting
+    - toc: elasticsearch://reference/text-analysis
+    - toc: docs-content://reference/glossary
   - label: Troubleshooting
     children:
     - group: Troubleshoot Elasticsearch
