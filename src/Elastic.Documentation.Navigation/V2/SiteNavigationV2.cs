@@ -25,7 +25,7 @@ public class SiteNavigationV2 : SiteNavigation
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
 		string? sitePrefix
 	) : base(originalFile, context, documentationSetNavigations, sitePrefix)
-		=> V2NavigationItems = BuildV2Items(v2File.Nav, Nodes, this, depth: 0, sitePrefix: sitePrefix ?? string.Empty);
+		=> V2NavigationItems = BuildV2Items(v2File.Nav, Nodes, this, sitePrefix ?? string.Empty);
 
 	/// <summary>
 	/// Label-structured navigation items for V2 sidebar rendering.
@@ -38,11 +38,10 @@ public class SiteNavigationV2 : SiteNavigation
 		IReadOnlyList<INavV2Item> v2Items,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		int depth,
 		string sitePrefix
 	) =>
 		v2Items
-			.Select(item => CreateV2NavigationItem(item, nodes, parent, depth, sitePrefix))
+			.Select(item => CreateV2NavigationItem(item, nodes, parent, sitePrefix))
 			.Where(navItem => navItem is not null)
 			.Cast<INavigationItem>()
 			.ToList();
@@ -51,13 +50,12 @@ public class SiteNavigationV2 : SiteNavigation
 		INavV2Item item,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		int depth,
 		string sitePrefix
 	) =>
 		item switch
 		{
-			LabelNavV2Item label => CreateLabel(label, nodes, parent, depth, sitePrefix),
-			GroupNavV2Item group => CreateGroup(group, nodes, parent, depth, sitePrefix),
+			LabelNavV2Item label => CreateLabel(label, nodes, parent, sitePrefix),
+			GroupNavV2Item group => CreateGroup(group, nodes, parent, sitePrefix),
 			TocNavV2Item toc => nodes.TryGetValue(toc.Source, out var node) ? node : null,
 			PageNavV2Item { Page: null, Title: var title } => new PlaceholderNavigationLeaf(title ?? "Untitled", parent),
 			PageNavV2Item { Page: var page, Title: var title } => new PageCrossLinkLeaf(page, title ?? page.ToString(), sitePrefix, parent),
@@ -68,12 +66,11 @@ public class SiteNavigationV2 : SiteNavigation
 		LabelNavV2Item label,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		int depth,
 		string sitePrefix
 	)
 	{
 		var placeholder = new LabelNavigationNode(label.Label, label.Expanded, [], parent);
-		var children = BuildV2Items(label.Children, nodes, placeholder, depth + 1, sitePrefix);
+		var children = BuildV2Items(label.Children, nodes, placeholder, sitePrefix);
 		return new LabelNavigationNode(label.Label, label.Expanded, children, parent);
 	}
 
@@ -81,12 +78,11 @@ public class SiteNavigationV2 : SiteNavigation
 		GroupNavV2Item group,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		int depth,
 		string sitePrefix
 	)
 	{
 		var placeholder = new PlaceholderNavigationNode(group.Title, [], parent);
-		var children = BuildV2Items(group.Children, nodes, placeholder, depth + 1, sitePrefix);
+		var children = BuildV2Items(group.Children, nodes, placeholder, sitePrefix);
 		return new PlaceholderNavigationNode(group.Title, children, parent);
 	}
 }
