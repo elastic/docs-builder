@@ -21,17 +21,18 @@ Content is built at **the same URL paths as V1** — the V2 flag changes only th
 
 ---
 
-## Current state: build green, awaiting assembler re-build
+## Current state: working ✓
 
 `./build.sh build` passes (lint + compile + all unit tests).
-The assembler serve at `localhost:4000` still shows the **old nav** because it was built before two bugs were fixed. User needs to re-run `assembler build` to get the fixed output.
+Accordion expand/collapse verified in-browser with Playwright.
 
-### Bugs fixed in this session
+### Bugs fixed
 
 | # | Bug | Fix |
 |---|-----|-----|
 | 1 | Feature flag never fired — `assembler.yml` sets `NAV_V2` (underscore) but `FeatureFlags(dict)` stores keys as-is; `IsEnabled("nav-v2")` never matched | Use `featureFlags.Set(key, value)` in `AssemblerBuildService` to normalise keys before lookup |
 | 2 | Content built at `/docs/l2/get-started/` instead of `/docs/get-started/` — `SiteNavigationV2` was synthesising a new nav file with `l{depth+1}/` prefixes | Pass the original `SiteNavigationFile` to the base constructor; V2 only changes sidebar rendering |
+| 3 | All label checkboxes shared the same ID (`v2-label-1ACA80E8`) — `ShortId.Create("label")` is a deterministic SHA256 hash; every `<label for="...">` targeted the same first checkbox, so only "Get Started" could ever open | `LabelNavigationNode`: `ShortId.Create("label", label)` — include the label text in the hash |
 
 ---
 
@@ -82,24 +83,26 @@ HtmlWriter.RenderLayout (called per page)
 
 ---
 
-## Next steps / open items
+## Verified behaviours ✓
 
-1. **Re-run assembler build** to see V2 nav in the browser.
+- Label sections visible as non-clickable headings with chevron toggle
+- `expanded: true` on "Reference" → starts open on page load
+- Clicking a collapsed section opens it
+- Opening one section collapses previously-open sibling (accordion)
+- All other sections remain collapsed until clicked
 
-2. **Verify accordion works** — click a top-level label to expand; click another to confirm the first collapses.
+---
 
-3. **Verify `expanded: true`** — "Reference" section in `navigation-v2.yml` has `expanded: true`; confirm it starts open.
+## Open items / next steps
 
-4. **Current-page highlighting** — `pages-nav-v2.ts` marks the active link; confirm it highlights the right item without auto-expanding parents.
-
-5. **`navigation-v2.yml` content** — currently mirrors V1 structure exactly. The whole point of V2 is to let you freely rearrange this file. The skeleton has these top-level labels:
+1. **`navigation-v2.yml` content** — currently mirrors V1 structure exactly. The whole point of V2 is to freely rearrange this file. The skeleton has these top-level labels:
    - Get Started, Solutions, Manage Data, Explore & Analyze, Deploy & Manage, Cloud Account, Troubleshoot, Reference
 
-6. **Placeholder / page crosslinks** — `page:` items in `navigation-v2.yml` currently render as disabled placeholders (prototype shortcut). Wire up real cross-link resolution if needed.
+2. **Current-page highlighting** — `pages-nav-v2.ts` marks the active link; verify it highlights the right item without auto-expanding parents.
 
-7. **`l{depth+1}/` parallel paths** — dropped for now (content stays at V1 paths). Could be re-added later if the team wants to preview a new IA at separate URLs while keeping V1 live.
+3. **Placeholder / page crosslinks** — `page:` items in `navigation-v2.yml` currently render as disabled placeholders (prototype shortcut). Wire up real cross-link resolution if needed.
 
-8. **Uncommitted** — nothing is committed yet. All changes are working-tree only.
+4. **`l{depth+1}/` parallel paths** — dropped for now (content stays at V1 paths). Could be re-added later if the team wants to preview a new IA at separate URLs while keeping V1 live.
 
 ---
 
