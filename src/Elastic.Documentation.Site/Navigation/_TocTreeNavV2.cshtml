@@ -1,0 +1,148 @@
+@using Elastic.Documentation.Navigation
+@using Elastic.Documentation.Navigation.Isolated
+@using Elastic.Documentation.Navigation.Isolated.Leaf
+@using Elastic.Documentation.Navigation.V2
+@using Elastic.Documentation.Site.Navigation
+@inherits RazorSlice<NavigationTreeItem>
+@{
+	var isTopLevel = Model.Level == 0;
+}
+@foreach (var item in Model.SubTree.NavigationItems)
+{
+	if (item.Hidden)
+	{
+		continue;
+	}
+
+	if (item is LabelNavigationNode label)
+	{
+		var labelId = $"v2-label-{label.Id}";
+		<li class="flex flex-wrap @(isTopLevel ? "mt-6" : "mt-4") relative" data-v2-accordion>
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<span class="@(isTopLevel ? "font-semibold text-ink" : "") content-center py-1 pr-2 text-sm select-none">
+					@label.NavigationTitle
+				</span>
+				@if (label.NavigationItems.Count > 0)
+				{
+					<label for="@labelId" class="group/label flex mr-2 items-start">
+						<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</div>
+						<input
+							id="@labelId"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true"
+							@(label.ExpandedByDefault ? "checked" : "")>
+					</label>
+				}
+			</div>
+			@if (label.NavigationItems.Count > 0)
+			{
+				<ul class="w-full hidden peer-has-checked:block ml-4 relative before:content-[''] before:absolute before:-left-[calc(var(--spacing)*4-1px)] before:top-0 before:bottom-0 before:w-px before:bg-grey-20 before:peer-has-checked:block">
+					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+					{
+						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+						Level = Model.Level + 1,
+						SubTree = label,
+						RootNavigationId = Model.RootNavigationId,
+						Htmx = Model.Htmx
+					}))
+				</ul>
+			}
+		</li>
+	}
+	else if (item is PlaceholderNavigationLeaf placeholder)
+	{
+		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
+			<a
+				class="sidebar-link grow text-grey-40 cursor-not-allowed"
+				aria-disabled="true"
+				tabindex="-1">
+				@placeholder.NavigationTitle
+			</a>
+		</li>
+	}
+	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
+	{
+		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
+			<a
+				href="@group.Url"
+				@Model.Htmx.GetNavHxAttributes(true)
+				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+			>
+				@group.NavigationTitle
+			</a>
+		</li>
+	}
+	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> folder)
+	{
+		var allHidden = folder.NavigationItems.All(n => n.Hidden);
+		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a
+					href="@(folder.Url)"
+					@Model.Htmx.GetNavHxAttributes(true)
+					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
+					@(folder.NavigationTitle)
+				</a>
+				@if (!allHidden)
+				{
+					<label for="@folder.Id" class="group/label flex mr-2 items-start">
+						<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</div>
+						<input
+							id="@folder.Id"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+				}
+			</div>
+			@if (folder.NavigationItems.Count > 0)
+			{
+				<ul class="w-full hidden peer-has-checked:block ml-4 relative before:content-[''] before:absolute before:-left-[calc(var(--spacing)*4-1px)] before:top-0 before:bottom-0 before:w-px before:bg-grey-20 before:peer-has-checked:block peer-has-[.current]:before:bg-grey-40 has-[.current]:before:bg-grey-40">
+					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+					{
+						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+						Level = Model.Level + 1,
+						SubTree = folder,
+						RootNavigationId = Model.RootNavigationId,
+						Htmx = Model.Htmx
+					}))
+				</ul>
+			}
+		</li>
+	}
+	else if (item is ILeafNavigationItem<INavigationModel> leaf)
+	{
+		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
+			<a
+				href="@leaf.Url"
+				@Model.Htmx.GetNavHxAttributes(true)
+				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
+			>
+				@leaf.NavigationTitle
+			</a>
+		</li>
+	}
+}

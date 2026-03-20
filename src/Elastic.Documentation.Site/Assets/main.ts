@@ -7,6 +7,7 @@ import { initImageCarousel } from './image-carousel'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initNavV2 } from './pages-nav-v2'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
@@ -114,7 +115,12 @@ document.addEventListener('htmx:load', function () {
     initAppliesSwitch()
     initMath()
     initMermaid()
-    initNav()
+    const v2Nav = document.querySelector<HTMLElement>('[data-nav-v2]')
+    if (v2Nav) {
+        initNavV2(v2Nav)
+    } else {
+        initNav()
+    }
 
     initSmoothScroll()
     openDetailsWithAnchor()

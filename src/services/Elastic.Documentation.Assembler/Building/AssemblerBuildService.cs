@@ -9,10 +9,12 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.V2;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -102,12 +104,33 @@ public class AssemblerBuildService(
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
-		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
+
+		// Normalise keys from assembler.yml (e.g. NAV_V2 → nav-v2) before checking flags
+		var featureFlags = new FeatureFlags([]);
+		foreach (var (key, value) in assembleContext.Environment.FeatureFlags)
+			featureFlags.Set(key, value);
+
+		var navV2FileInfo = configurationContext.ConfigurationFileProvider.NavigationV2File;
+		SiteNavigation navigation;
+		if (featureFlags.NavV2Enabled && navV2FileInfo is not null)
+		{
+			_logger.LogInformation("nav-v2 feature flag enabled — loading navigation-v2.yml");
+			var v2File = NavigationV2File.Deserialize(await fs.File.ReadAllTextAsync(navV2FileInfo.FullName, ctx));
+			navigation = new SiteNavigationV2(v2File, siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
+		}
+		else
+		{
+			navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
+		}
 
 		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
-		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
-			return false;
+		// Skip path prefix validation for V2 nav — prefixes are auto-derived
+		if (navigation is not SiteNavigationV2)
+		{
+			// this validates all path prefixes are unique, early exit if duplicates are detected
+			if (!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo) || assembleContext.Collector.Errors > 0)
+				return false;
+		}
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		using var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);

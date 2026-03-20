@@ -1,5 +1,6 @@
 @using Elastic.Documentation
 @using Elastic.Documentation.Site.Navigation
+@using Elastic.Documentation.Navigation
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationViewModel>
 
 <div class="pb-9 pl-3 md:pl-0 font-body">
@@ -67,15 +68,34 @@
 		</div>
 	</div>
 
-	<ul class="block px-4" id="nav-tree">
-		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
-		{
-			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
-			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
-			Level = 0,
-			SubTree = Model.Tree,
-			RootNavigationId = Model.Tree.Id,
-			Htmx = Model.Htmx
-		}))
-	</ul>
+	@if (Model.IsNavV2)
+	{
+		<nav data-nav-v2>
+			<ul class="block px-4" id="nav-tree">
+				@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+				{
+					IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+					IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+					Level = 0,
+					SubTree = Model.Tree,
+					RootNavigationId = Model.Tree.Id,
+					Htmx = Model.Htmx
+				}))
+			</ul>
+		</nav>
+	}
+	else
+	{
+		<ul class="block px-4" id="nav-tree">
+			@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
+			{
+				IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+				IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+				Level = 0,
+				SubTree = Model.Tree,
+				RootNavigationId = Model.Tree.Id,
+				Htmx = Model.Htmx
+			}))
+		</ul>
+	}
 </div>

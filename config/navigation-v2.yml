@@ -1,0 +1,34 @@
+nav:
+  - label: Get Started
+    children:
+      - toc: get-started
+
+  - label: Solutions
+    children:
+      - toc: solutions
+
+  - label: Manage Data
+    children:
+      - toc: manage-data
+
+  - label: Explore & Analyze
+    children:
+      - toc: explore-analyze
+
+  - label: Deploy & Manage
+    children:
+      - toc: deploy-manage
+
+  - label: Cloud Account
+    children:
+      - toc: cloud-account
+
+  - label: Troubleshoot
+    children:
+      - toc: troubleshoot
+
+  - label: Reference
+    expanded: true
+    children:
+      - toc: elasticsearch://reference/elasticsearch
+      - toc: kibana://reference
