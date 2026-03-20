@@ -51,7 +51,7 @@ public class SettingsViewModel
 	public static string GroupHeadingSlug(SettingsGrouping group) =>
 		string.IsNullOrWhiteSpace(group.Id)
 			? (group.Name ?? string.Empty).Slugify()
-			: group.Id!;
+			: group.Id;
 
 	public static string ComposeSettingName(string? parentName, string? settingName)
 	{
