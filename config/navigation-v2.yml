@@ -32,15 +32,46 @@ nav:
     children:
 
       # ── Ingest and manage data ───────────────────────────────
-      # Desired level-1 sections (future toc splits of manage-data):
-      #   • Ingest or migrate your data (manage-data/ingest + migrate)
-      #   • Store and manage data (manage-data/data-store)
-      #   • Manage data lifecycle (manage-data/lifecycle)
-      #   • Time-series data (manage-data/use-case-timeseries)
-      # For now, the entire manage-data toc root maps here.
       - label: Ingest and manage data
         children:
-          - toc: manage-data
+          - group: Ingest or migrate: bring your data into Elasticsearch
+            children:
+              - title: Choose/Plan your ingest method
+              - title: Ingest architectures
+              - group: Ingest by solution (New - Crosslinks)
+                children:
+                  - title: Ingesting data for search use cases
+                  - title: Ingesting data for observability (New)
+                  - title: Ingesting data for security (Move from Solutions)
+              - title: Ingesting time series data
+              - title: Logs (Solutions / Obs)
+              - group: Ingest data from applications (New)
+                children:
+                  - title: Collect application data (Solutions / Obs)
+                  - title: APM agents
+                  - title: Ingest data with Node.js
+                  - title: Ingest data with Python
+                  - title: Ingest data from Beats with Logstash as a proxy
+                  - title: Ingest data from a relational database
+                  - title: Ingest logs from a Python application using Filebeat
+                  - title: Ingest logs from a Node.js web application using Filebeat
+              - title: Ingest data using the API (New)
+              - title: Upload data files
+              - title: Sample data
+              - title: Migrating your Elasticsearch data
+              - group: Ingest tools (from Reference)
+                children:
+                  - title: Fleet and Elastic Agent
+                  - title: Elastic Distributions of OpenTelemetry (EDOT)
+                  - title: Elastic Integrations
+                  - title: Content connectors
+                  - title: Logstash
+                  - title: APM
+                  - title: Beats
+                  - group: Other ingest tools
+                    children:
+                      - title: Elasticsearch for Apache Hadoop
+                      - title: Elastic Serverless Forwarder for AWS
 
       # ── Search, visualize, and analyze ───────────────────────
       # Desired level-1 sections (subset of explore-analyze):

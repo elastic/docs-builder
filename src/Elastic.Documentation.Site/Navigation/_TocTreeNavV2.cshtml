@@ -47,6 +47,54 @@
 			</a>
 		</li>
 	}
+	else if (item is PlaceholderNavigationNode placeholderGroup)
+	{
+		var allHidden = placeholderGroup.NavigationItems.All(n => n.Hidden);
+		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<span
+					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") text-grey-40 cursor-not-allowed select-none"
+					aria-disabled="true">
+					@placeholderGroup.NavigationTitle
+				</span>
+				@if (!allHidden)
+				{
+					<label for="@placeholderGroup.Id" class="group/label flex mr-2 items-start">
+						<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</div>
+						<input
+							id="@placeholderGroup.Id"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+				}
+			</div>
+			@if (placeholderGroup.NavigationItems.Count > 0)
+			{
+				<ul class="w-full hidden peer-has-checked:block ml-4 relative before:content-[''] before:absolute before:-left-[calc(var(--spacing)*4-1px)] before:top-0 before:bottom-0 before:w-px before:bg-grey-20 before:peer-has-checked:block">
+					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+					{
+						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+						Level = Model.Level + 1,
+						SubTree = placeholderGroup,
+						RootNavigationId = Model.RootNavigationId,
+						Htmx = Model.Htmx
+					}))
+				</ul>
+			}
+		</li>
+	}
 	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
 	{
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
