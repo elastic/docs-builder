@@ -91,6 +91,16 @@ HtmlWriter.RenderLayout (called per page)
 - TOC folder nodes within labels still have their own expand/collapse toggle
 - Accordion: opening one TOC folder collapses its siblings at the same level
 
+### Label typography (visual hierarchy)
+
+| Level | Style | Example |
+|-------|-------|---------|
+| Level-1 (top-level) | `text-xs font-semibold uppercase tracking-widest text-ink` + `border-t border-grey-20` separator above | `ELASTICSEARCH FUNDAMENTALS` |
+| Level-2 (nested) | `text-xs font-semibold uppercase tracking-widest text-ink/65` | `INGEST AND MANAGE DATA` |
+| TOC folder/link | sentence-case, normal weight, clickable | `Deploy and manage` |
+
+Both label levels use the same small-caps treatment; level-1 is distinguished by full ink colour and a thin horizontal rule above each group. Level-2 is 65% opacity to read as subordinate without being illegible.
+
 ---
 
 ## Proposed new information architecture
