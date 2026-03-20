@@ -219,6 +219,24 @@ public class ButtonVscodeProtocolTests(ITestOutputHelper output) : DirectiveTest
 	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
+public class ButtonVscodeInsidersProtocolTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+[Install with VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22oblt-cli%22%7D)
+:::
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void RendersLinkHref() => Html.Should().Contain("href=\"vscode-insiders:");
+
+	[Fact]
+	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+}
+
 public class ButtonEmptyTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
 """
 :::{button}

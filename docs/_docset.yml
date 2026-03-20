@@ -103,6 +103,7 @@ toc:
           - file: attributes.md
           - file: navigation.md
           - file: extensions.md
+          - file: api-explorer.md
       - file: page.md
       - file: content-sources.md
   - folder: syntax
@@ -189,11 +190,9 @@ toc:
           - file: changelog-add.md
           - file: changelog-bundle.md
           - file: changelog-bundle-amend.md
-          - file: changelog-evaluate-artifact.md
           - file: changelog-evaluate-pr.md
           - file: changelog-gh-release.md
           - file: changelog-init.md
-          - file: changelog-prepare-artifact.md
           - file: changelog-remove.md
           - file: changelog-render.md
   - folder: mcp

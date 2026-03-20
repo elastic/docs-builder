@@ -189,7 +189,6 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		result.Should().BeTrue();
 		VerifyOutputSet("status", "no-title");
-		VerifyOutputSet("should-upload", "true");
 	}
 
 	[Fact]
@@ -204,7 +203,6 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().BeTrue();
 		VerifyOutputSet("status", "no-label");
 		VerifyOutputSet("should-generate", "false");
-		VerifyOutputSet("should-upload", "true");
 		A.CallTo(() => _mockCore.SetOutputAsync("label-table", A<string>.That.Contains("type:feature"))).MustHaveHappened();
 	}
 

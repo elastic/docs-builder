@@ -14,6 +14,7 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""")
 	{
@@ -66,33 +67,25 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 	}
 
 	[Fact]
-	public void LoadsPublishBlockerFromConfig() => Block!.PublishBlocker.Should().NotBeNull();
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Fact]
-	public void PublishBlockerHasCorrectTypes()
+	public void RendersAllEntries_NoFiltering()
 	{
-		Block!.PublishBlocker!.Types.Should().NotBeNull();
-		Block!.PublishBlocker!.Types.Should().Contain("deprecation");
-		Block!.PublishBlocker!.Types.Should().Contain("known-issue");
-	}
-
-	[Fact]
-	public void FilteredEntriesExcludeBlockedTypes()
-	{
-		// Deprecation and known-issue entries should be filtered out
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular feature");
-		Html.Should().NotContain("Deprecation notice");
-		Html.Should().NotContain("Known issue");
+		Html.Should().Contain("Deprecation notice");
+		Html.Should().Contain("Known issue");
 	}
 
 	[Fact]
 	public void RendersFeaturesSection() => Html.Should().Contain("Features and enhancements");
 
 	[Fact]
-	public void DoesNotRenderDeprecationsSection() => Html.Should().NotContain("Deprecations");
+	public void RendersDeprecationsSection() => Html.Should().Contain("Deprecations");
 
 	[Fact]
-	public void DoesNotRenderKnownIssuesSection() => Html.Should().NotContain("Known issues");
+	public void RendersKnownIssuesSection() => Html.Should().Contain("Known issues");
 }
 
 public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock>
@@ -145,20 +138,14 @@ public class ChangelogConfigLoadExplicitPathTests : DirectiveTest<ChangelogBlock
 	public void ConfigPathPropertyIsSet() => Block!.ConfigPath.Should().Be("custom/path/my-changelog.yml");
 
 	[Fact]
-	public void LoadsPublishBlockerFromExplicitConfig() => Block!.PublishBlocker.Should().NotBeNull();
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Fact]
-	public void PublishBlockerHasCorrectAreas()
+	public void RendersAllEntries_NoFiltering()
 	{
-		Block!.PublishBlocker!.Areas.Should().NotBeNull();
-		Block!.PublishBlocker!.Areas.Should().Contain("Internal");
-	}
-
-	[Fact]
-	public void FilteredEntriesExcludeBlockedAreas()
-	{
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular feature");
-		Html.Should().NotContain("Internal docs");
+		Html.Should().Contain("Internal docs");
 	}
 }
 
@@ -206,13 +193,14 @@ public class ChangelogConfigLoadFromDocsSubfolderTests : DirectiveTest<Changelog
 	}
 
 	[Fact]
-	public void LoadsPublishBlockerFromDocsSubfolder() => Block!.PublishBlocker.Should().NotBeNull();
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Fact]
-	public void FilteredEntriesExcludeBlockedTypes()
+	public void RendersAllEntries_NoFiltering()
 	{
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular feature");
-		Html.Should().NotContain("Other change");
+		Html.Should().Contain("Other change");
 	}
 }
 
@@ -291,6 +279,7 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""")
 	{
@@ -348,11 +337,11 @@ public class ChangelogConfigPriorityTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Fact]
-	public void RootConfigTakesPriorityOverDocsSubfolder()
+	public void RendersAllEntries_NoPublishFiltering()
 	{
-		// Root config blocks deprecation, not other
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular feature");
-		Html.Should().NotContain("Deprecation notice");
+		Html.Should().Contain("Deprecation notice");
 		Html.Should().Contain("Other change");
 	}
 }
@@ -406,6 +395,7 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 		// language=markdown
 		"""
 		:::{changelog}
+		:type: all
 		:::
 		""")
 	{
@@ -469,23 +459,15 @@ public class ChangelogConfigMixedBlockersTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Fact]
-	public void PublishBlockerHasBothTypesAndAreas()
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
+
+	[Fact]
+	public void RendersAllEntries_NoFiltering()
 	{
-		Block!.PublishBlocker.Should().NotBeNull();
-		Block!.PublishBlocker!.Types.Should().Contain("deprecation");
-		Block!.PublishBlocker!.Areas.Should().Contain("Internal");
-	}
-
-	[Fact]
-	public void FiltersEntriesMatchingBlockedTypes() => Html.Should().NotContain("Deprecation in Search");
-
-	[Fact]
-	public void FiltersEntriesMatchingBlockedAreas() => Html.Should().NotContain("Feature in Internal");
-
-	[Fact]
-	public void RendersNonBlockedEntries()
-	{
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular feature in Search");
+		Html.Should().Contain("Deprecation in Search");
+		Html.Should().Contain("Feature in Internal");
 		Html.Should().Contain("Bug fix");
 	}
 }
@@ -552,25 +534,15 @@ public class ChangelogProductFallbackSingleProductTests(ITestOutputHelper output
 	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
 
 	[Fact]
-	public void UsesProductSpecificBlockerWhenDocsetHasSingleProduct() =>
-		Block!.PublishBlocker.Should().NotBeNull();
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Fact]
-	public void ProductBlockerHasCorrectAreas()
+	public void RendersAllEntries_NoFiltering()
 	{
-		Block!.PublishBlocker!.Areas.Should().NotBeNull();
-		Block!.PublishBlocker!.Areas.Should().Contain("Internal");
-		Block!.PublishBlocker!.Areas.Should().Contain("Elastic Observability");
-		// Should NOT contain global area - product-specific blocker takes precedence
-		Block!.PublishBlocker!.Areas.Should().NotContain("Global Area");
-	}
-
-	[Fact]
-	public void FiltersEntriesMatchingProductBlockedAreas()
-	{
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular Kibana feature");
-		Html.Should().NotContain("Internal feature");
-		Html.Should().NotContain("Observability feature");
+		Html.Should().Contain("Internal feature");
+		Html.Should().Contain("Observability feature");
 	}
 }
 
@@ -627,22 +599,12 @@ public class ChangelogProductFallbackMultipleProductsTests(ITestOutputHelper out
 	protected override IReadOnlyList<string>? GetDocsetProducts() => ["elasticsearch", "kibana"];
 
 	[Fact]
-	public void FallsBackToGlobalBlockerWhenMultipleProducts() =>
-		Block!.PublishBlocker.Should().NotBeNull();
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Fact]
-	public void GlobalBlockerHasCorrectAreas()
+	public void RendersAllEntries_NoFiltering()
 	{
-		Block!.PublishBlocker!.Areas.Should().NotBeNull();
-		Block!.PublishBlocker!.Areas.Should().Contain("Global Area");
-		// Should NOT contain product-specific area
-		Block!.PublishBlocker!.Areas.Should().NotContain("Internal");
-	}
-
-	[Fact]
-	public void RendersAllEntriesWithGlobalBlocker()
-	{
-		// Global blocker only blocks "Global Area", not "Internal"
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular feature");
 		Html.Should().Contain("Internal feature");
 	}
@@ -716,17 +678,18 @@ public class ChangelogProductExplicitOptionOverridesDocsetTests(ITestOutputHelpe
 		Block!.ProductId.Should().Be("elasticsearch");
 
 	[Fact]
-	public void UsesExplicitProductBlockerNotDocsetProduct()
-	{
-		Block!.PublishBlocker!.Areas.Should().Contain("ES Internal");
-		Block!.PublishBlocker!.Areas.Should().NotContain("Kibana Internal");
-	}
+	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Fact]
-	public void FiltersCorrectAreas()
+	public void EmitsDeprecationWarningForProductOption() =>
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains(":product:") && d.Message.Contains("deprecated"));
+
+	[Fact]
+	public void RendersAllEntries_NoFiltering()
 	{
+		// Directive does not apply rules.publish; all entries are shown
 		Html.Should().Contain("Regular feature");
-		Html.Should().NotContain("ES Internal feature");
+		Html.Should().Contain("ES Internal feature");
 		Html.Should().Contain("Kibana Internal feature");
 	}
 }

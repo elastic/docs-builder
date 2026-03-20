@@ -591,7 +591,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (bundleRules == null && collector.Errors > 0)
 			return null;
 
-		// Parse publish rules
+		// Parse publish rules — emit deprecation warning when present
+		if (rulesYaml.Publish != null)
+			collector.EmitWarning(configPath, "rules.publish is deprecated. Move type/area filtering to rules.bundle, which applies at bundle time instead of render time.");
+
 		var publishRules = ParsePublishRules(collector, rulesYaml.Publish, configPath, validProductIds, "rules.publish", globalMatch);
 		if (publishRules == null && collector.Errors > 0)
 			return null;
@@ -615,7 +618,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (yaml == null)
 			return null;
 
-		// Validate mutual exclusivity
+		// Validate mutual exclusivity for products
 		if (yaml.ExcludeProducts?.Values is { Count: > 0 } && yaml.IncludeProducts?.Values is { Count: > 0 })
 		{
 			collector.EmitError(configPath, "rules.bundle: cannot have both 'exclude_products' and 'include_products'. Use one or the other.");
@@ -644,11 +647,89 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			matchProducts = parsed.Value;
 		}
 
+		// Parse match_areas (inherited from globalMatch if omitted)
+		var matchAreas = inheritedMatch;
+		if (!string.IsNullOrWhiteSpace(yaml.MatchAreas))
+		{
+			var parsed = ParseMatchMode(yaml.MatchAreas);
+			if (parsed == null)
+			{
+				collector.EmitError(configPath, $"rules.bundle.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+				return null;
+			}
+			matchAreas = parsed.Value;
+		}
+
+		// Parse global type/area blocker (reusing PublishRulesYaml parsing logic)
+		var blockerYaml = new PublishRulesYaml
+		{
+			MatchAreas = yaml.MatchAreas,
+			ExcludeTypes = yaml.ExcludeTypes,
+			IncludeTypes = yaml.IncludeTypes,
+			ExcludeAreas = yaml.ExcludeAreas,
+			IncludeAreas = yaml.IncludeAreas
+		};
+		var blocker = ParsePublishBlockerFromYaml(collector, blockerYaml, configPath, "rules.bundle", matchAreas);
+		if (blocker == null && collector.Errors > 0)
+			return null;
+
+		// Parse per-product overrides
+		Dictionary<string, PublishBlocker>? byProduct = null;
+		if (yaml.Products is { Count: > 0 })
+		{
+			byProduct = new Dictionary<string, PublishBlocker>(StringComparer.OrdinalIgnoreCase);
+			foreach (var (productKey, productYaml) in yaml.Products)
+			{
+				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+				foreach (var productId in productIds)
+				{
+					var normalizedProductId = productId.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedProductId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(configPath, $"rules.bundle.products: '{productId}' not in available products. Available: {availableProducts}");
+						return null;
+					}
+
+					if (productYaml == null)
+						continue;
+
+					var productMatchAreas = matchAreas;
+					if (!string.IsNullOrWhiteSpace(productYaml.MatchAreas))
+					{
+						var parsedMode = ParseMatchMode(productYaml.MatchAreas);
+						if (parsedMode == null)
+						{
+							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+							return null;
+						}
+						productMatchAreas = parsedMode.Value;
+					}
+
+					var productBlockerYaml = new PublishRulesYaml
+					{
+						MatchAreas = productYaml.MatchAreas,
+						ExcludeTypes = productYaml.ExcludeTypes,
+						IncludeTypes = productYaml.IncludeTypes,
+						ExcludeAreas = productYaml.ExcludeAreas,
+						IncludeAreas = productYaml.IncludeAreas
+					};
+					var productBlocker = ParsePublishBlockerFromYaml(collector, productBlockerYaml, configPath, $"rules.bundle.products.{normalizedProductId}", productMatchAreas);
+					if (productBlocker == null && collector.Errors > 0)
+						return null;
+					if (productBlocker != null)
+						byProduct[normalizedProductId] = productBlocker;
+				}
+			}
+		}
+
 		return new BundleRules
 		{
 			ExcludeProducts = excludeProducts,
 			IncludeProducts = includeProducts,
-			MatchProducts = matchProducts
+			MatchProducts = matchProducts,
+			Blocker = blocker,
+			ByProduct = byProduct?.Count > 0 ? byProduct : null
 		};
 	}
 

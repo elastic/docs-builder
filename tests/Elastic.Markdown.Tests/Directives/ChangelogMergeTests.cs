@@ -132,12 +132,12 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 	public void RendersOnlyOneVersionHeaderPerMergedTarget()
 	{
 		// Should render only one version header for 2025-08-05, not three separate ones
-		// Count occurrences of the version string in h2 context
-		var aug05Count = CountOccurrences(Html, ">2025-08-05<");
-		var aug01Count = CountOccurrences(Html, ">2025-08-01<");
+		// Count occurrences of the formatted display version in h2 context
+		var aug05Count = CountOccurrences(Html, ">August 5, 2025<");
+		var aug01Count = CountOccurrences(Html, ">August 1, 2025<");
 
-		aug05Count.Should().Be(1, "Should have exactly 1 version header for 2025-08-05 (merged)");
-		aug01Count.Should().Be(1, "Should have exactly 1 version header for 2025-08-01");
+		aug05Count.Should().Be(1, "Should have exactly 1 version header for August 5, 2025 (merged)");
+		aug01Count.Should().Be(1, "Should have exactly 1 version header for August 1, 2025");
 	}
 
 	[Fact]
@@ -152,11 +152,11 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 	[Fact]
 	public void MaintainsCorrectDateOrder()
 	{
-		// 2025-08-05 should appear before 2025-08-01 (descending order)
-		var idx05 = Html.IndexOf("2025-08-05", StringComparison.Ordinal);
-		var idx01 = Html.IndexOf("2025-08-01", StringComparison.Ordinal);
+		// August 5, 2025 should appear before August 1, 2025 (descending order)
+		var idx05 = Html.IndexOf("August 5, 2025", StringComparison.Ordinal);
+		var idx01 = Html.IndexOf("August 1, 2025", StringComparison.Ordinal);
 
-		idx05.Should().BeLessThan(idx01, "2025-08-05 should appear before 2025-08-01");
+		idx05.Should().BeLessThan(idx01, "August 5, 2025 should appear before August 1, 2025");
 	}
 
 	private static int CountOccurrences(string text, string pattern)
@@ -372,6 +372,6 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 	public void RendersAllVersions()
 	{
 		Html.Should().Contain("9.3.0");
-		Html.Should().Contain("2025-08-05");
+		Html.Should().Contain("August 5, 2025");
 	}
 }
