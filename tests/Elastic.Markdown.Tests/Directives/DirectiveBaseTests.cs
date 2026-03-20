@@ -90,6 +90,7 @@ $"""
 	{
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
+		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
 		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";

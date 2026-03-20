@@ -525,9 +525,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_types as comma-separated string
+		// Arrange - rules.publish is deprecated and no longer used; verify warning is emitted and Publish is null
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -542,18 +542,18 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Assert
 		config.Should().NotBeNull();
-		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Message.Contains("rules.publish is deprecated") &&
+			d.Message.Contains("no longer used by the changelog render command"));
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_types as YAML list
+		// Arrange - rules.publish as YAML list is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -572,16 +572,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_areas as comma-separated string
+		// Arrange - rules.publish with areas is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -598,16 +596,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
-		config.Rules.Publish.Blocker.AreasMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_areas as YAML list
+		// Arrange - rules.publish as YAML list is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -626,10 +622,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
-		config.Rules.Publish.Blocker.AreasMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
@@ -852,11 +846,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Rules.Create.Labels.Should().BeEquivalentTo([">non-issue", ">test"]);
 		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 
-		// publish.exclude_types as string, publish.exclude_areas as list
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
+		// publish.exclude_types as string, publish.exclude_areas as list are deprecated
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
 
 		// highlight as list
 		config.HighlightLabels.Should().BeEquivalentTo([">highlight"]);
@@ -1271,5 +1262,73 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesPublish_EmitsDeprecationWarning()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  publish:
+			    exclude_types: docs
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert — config loads (backward compat) but warns
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("rules.publish is deprecated"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_TypeAreaAndProducts_LoadsCorrectly()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - deprecation
+			      - docs
+			    exclude_areas:
+			      - Internal
+			    match_areas: any
+			    products:
+			      cloud-serverless:
+			        include_areas:
+			          - Search
+			          - Monitoring
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		var bundle = config!.Rules!.Bundle!;
+		bundle.Blocker.Should().NotBeNull();
+		bundle.Blocker!.Types.Should().BeEquivalentTo(["deprecation", "docs"]);
+		bundle.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		bundle.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
+		bundle.Blocker.MatchAreas.Should().Be(MatchMode.Any);
+		bundle.ByProduct.Should().ContainKey("cloud-serverless");
+		bundle.ByProduct!["cloud-serverless"].Areas.Should().BeEquivalentTo(["Search", "Monitoring"]);
+		bundle.ByProduct["cloud-serverless"].AreasMode.Should().Be(FieldMode.Include);
 	}
 }
