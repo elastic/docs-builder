@@ -94,6 +94,20 @@ exclude:
   - '_*.md'
 ```
 
+### `api`
+
+Maps product names to OpenAPI specification files to enable the [API Explorer](api-explorer.md). Paths are relative to the folder containing `docset.yml`. Only valid in `docset.yml`, not in `toc.yml` files.
+
+```yaml
+api:
+  elasticsearch: elasticsearch-openapi.json
+  kibana: kibana-openapi.json
+```
+
+Each key becomes a sub-path of the generated API docs: `elasticsearch` → `/api/elasticsearch/`, `kibana` → `/api/kibana/`.
+
+See [API Explorer](api-explorer.md) for full configuration details.
+
 ### `toc`
 
 Defines the table of contents (navigation) for the content set. A minimal toc is:
@@ -127,8 +141,8 @@ If a folder does define `children` all markdown files within that folder have to
 
 #### Virtual grouping
 
-A `file` element may include children to create a virtual grouping that 
-does not match the directory structure. 
+A `file` element can include children to create a virtual grouping that
+does not match the directory structure.
 
 ```yaml
   ...
@@ -138,7 +152,7 @@ does not match the directory structure.
       - file: subsection/page-two.md
 ```
 
-A `file` may only select siblings and more deeply nested files as its children. It may not select files outside its own subtree on disk.
+A `file` can only select siblings and more deeply nested files as its children. It can't select files outside its own subtree on disk.
 
 #### Hidden files
 
@@ -147,9 +161,9 @@ A hidden file can be declared in the TOC.
   - hidden: developer-pages.md
 ```
 
-It may not have any children and won't show up in the navigation.
+It can't have any children and won't show up in the navigation.
 
-It [may be linked to locally however](../../developer-notes.md)
+You can still [link to it locally](../../developer-notes.md).
 
 #### Nesting `toc`
 
@@ -284,7 +298,7 @@ See https://www.elastic.co/docs/solutions/search for more details.
 
 **When to suppress**: This hint can be useful to suppress when:
 
-- Processing generated content from external sources (e.g., TOML files) that contain elastic.co URLs
+- Processing generated content from external sources (for example, TOML files) that contain elastic.co URLs
 - During migration periods when converting large amounts of legacy content
 - For documentation that intentionally links to specific hosted versions
 
@@ -320,7 +334,7 @@ toc:
       - file: first-steps.md
 ```
 
-All children must be siblings of the parent file (in the same directory). The parent file may not select files outside its own subtree.
+All children must be siblings of the parent file (in the same directory). The parent file can't select files outside its own subtree.
 
 ### Folder without explicit children
 
@@ -376,7 +390,7 @@ toc:
   - toc: guides
 ```
 
-Each `toc` reference loads the corresponding `toc.yml` file from that directory (e.g., `api-reference/toc.yml`).
+Each `toc` reference loads the corresponding `toc.yml` file from that directory (for example, `api-reference/toc.yml`).
 
 ### Mixed patterns
 

@@ -15,7 +15,7 @@ public record EvaluatePrArguments
 	public required string[] PrLabels { get; init; }
 	public required string HeadRef { get; init; }
 	public required string HeadSha { get; init; }
-	public required string EventAction { get; init; }
+	public string? EventAction { get; init; }
 	public bool TitleChanged { get; init; }
 	public bool StripTitlePrefix { get; init; }
 	public string BotName { get; init; } = "github-actions[bot]";

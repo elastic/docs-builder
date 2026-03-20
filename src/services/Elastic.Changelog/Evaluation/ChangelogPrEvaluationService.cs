@@ -103,7 +103,7 @@ public class ChangelogPrEvaluationService(
 		}
 
 		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, existingFile={File}", title, resolvedType, existingFilename);
-		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType, existingFilename: existingFilename);
+		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType, changelogDir: changelogDir, existingFilename: existingFilename);
 	}
 
 	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
@@ -114,19 +114,17 @@ public class ChangelogPrEvaluationService(
 		string? resolvedTitle = null,
 		string? resolvedType = null,
 		string? labelTable = null,
+		string? changelogDir = null,
 		string? existingFilename = null)
 	{
-		// evaluate-pr outputs "proceed" (not "success") to signal the generate step should run
 		var statusString = status == PrEvaluationResult.Success
 			? ProceedStatus
 			: status.ToStringFast(true);
 
 		var shouldGenerate = status == PrEvaluationResult.Success;
-		var shouldUpload = status is PrEvaluationResult.Success or PrEvaluationResult.NoLabel or PrEvaluationResult.NoTitle;
 
 		await coreService.SetOutputAsync("status", statusString);
 		await coreService.SetOutputAsync("should-generate", shouldGenerate ? "true" : "false");
-		await coreService.SetOutputAsync("should-upload", shouldUpload ? "true" : "false");
 
 		if (resolvedTitle != null)
 			await coreService.SetOutputAsync("title", resolvedTitle);
@@ -134,6 +132,8 @@ public class ChangelogPrEvaluationService(
 			await coreService.SetOutputAsync("type", resolvedType);
 		if (labelTable != null)
 			await coreService.SetOutputAsync("label-table", labelTable);
+		if (changelogDir != null)
+			await coreService.SetOutputAsync("changelog-dir", changelogDir);
 		if (existingFilename != null)
 			await coreService.SetOutputAsync("existing-changelog-filename", existingFilename);
 
