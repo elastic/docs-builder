@@ -138,7 +138,6 @@ toc:
       - file: line_breaks.md
       - file: links.md
       - file: passthrough.md
-      - file: security-settings.md
       - file: sidebars.md
       - file: stepper.md
       - file: substitutions.md
@@ -224,6 +223,7 @@ toc:
     children:
       - file: index.md
       - file: kibana-settings-yaml-samples.md
+      - file: security-settings.md
       - file: req.md
       - folder: nested
         children:
