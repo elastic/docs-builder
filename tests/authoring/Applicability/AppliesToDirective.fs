@@ -15,9 +15,9 @@ type ``piggy back off yaml formatting`` () =
     static let markdown = Setup.Markdown """
 ```yaml {applies_to}
 serverless:
-  security: ga 9.0.0
-  elasticsearch: beta 9.1.0
-  observability: removed 9.2.0
+  security: ga
+  elasticsearch: beta
+  observability: removed
 ```
 """
 
@@ -28,9 +28,9 @@ serverless:
 
         directives |> appliesToDirective (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
-                Security=AppliesCollection.op_Explicit "ga 9.0.0",
-                Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
-                Observability=AppliesCollection.op_Explicit "removed 9.2.0"
+                Security=AppliesCollection.op_Explicit "ga",
+                Elasticsearch=AppliesCollection.op_Explicit "beta",
+                Observability=AppliesCollection.op_Explicit "removed"
             )
         ))
 
@@ -38,9 +38,9 @@ type ``plain block`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
 serverless:
-  security: ga 9.0.0
-  elasticsearch: beta 9.1.0
-  observability: removed 9.2.0
+  security: ga
+  elasticsearch: beta
+  observability: removed
 apm_agent_dotnet: ga 9.0
 apm_agent_node: ga 10.0
 ```
@@ -53,9 +53,9 @@ apm_agent_node: ga 10.0
 
         directives |> appliesToDirective (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
-                Security=AppliesCollection.op_Explicit "ga 9.0.0",
-                Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
-                Observability=AppliesCollection.op_Explicit "removed 9.2.0"
+                Security=AppliesCollection.op_Explicit "ga",
+                Elasticsearch=AppliesCollection.op_Explicit "beta",
+                Observability=AppliesCollection.op_Explicit "removed"
             ),
             ProductApplicability=ProductApplicability(
                 ApmAgentDotnet=AppliesCollection.op_Explicit "ga 9.0",
