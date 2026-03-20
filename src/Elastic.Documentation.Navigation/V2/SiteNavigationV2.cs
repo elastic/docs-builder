@@ -39,17 +39,12 @@ public class SiteNavigationV2 : SiteNavigation
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
 		int depth
-	)
-	{
-		var result = new List<INavigationItem>();
-		foreach (var item in v2Items)
-		{
-			var navItem = CreateV2NavigationItem(item, nodes, parent, depth);
-			if (navItem is not null)
-				result.Add(navItem);
-		}
-		return result;
-	}
+	) =>
+		v2Items
+			.Select(item => CreateV2NavigationItem(item, nodes, parent, depth))
+			.Where(navItem => navItem is not null)
+			.Cast<INavigationItem>()
+			.ToList();
 
 	private static INavigationItem? CreateV2NavigationItem(
 		INavV2Item item,
