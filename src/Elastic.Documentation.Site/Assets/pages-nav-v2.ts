@@ -42,8 +42,6 @@ function initAccordion(nav: HTMLElement) {
 
 /**
  * Mark the current page's nav link with the "current" CSS class.
- * Unlike the V1 nav, we do NOT auto-expand parent sections —
- * progressive disclosure keeps all sections collapsed until the user opens them.
  */
 function markCurrentPage(nav: HTMLElement) {
     // Remove stale current markers
@@ -56,10 +54,34 @@ function markCurrentPage(nav: HTMLElement) {
 }
 
 /**
+ * Expand all ancestor collapsible sections that contain the current page link,
+ * so that navigating directly to a URL reveals its location in the sidebar.
+ */
+function expandToCurrentPage(nav: HTMLElement) {
+    const pathname = window.location.pathname.replace(/\/$/, '')
+    const link = nav.querySelector<HTMLElement>(
+        `a[href="${pathname}"], a[href="${pathname}/"]`
+    )
+    if (!link) return
+
+    let el: Element | null = link.parentElement
+    while (el && el !== nav) {
+        if (el.matches('li')) {
+            const cb = el.querySelector<HTMLInputElement>(
+                ':scope > .peer input[type=checkbox]'
+            )
+            if (cb) cb.checked = true
+        }
+        el = el.parentElement
+    }
+}
+
+/**
  * Initialize all V2 nav behaviours on the given sidebar element.
  * Call this on every htmx:load when [data-nav-v2] is present.
  */
 export function initNavV2(nav: HTMLElement) {
     initAccordion(nav)
     markCurrentPage(nav)
+    expandToCurrentPage(nav)
 }
