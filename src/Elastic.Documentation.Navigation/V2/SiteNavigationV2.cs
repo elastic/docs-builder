@@ -25,12 +25,12 @@ public class SiteNavigationV2 : SiteNavigation
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
 		string? sitePrefix
 	) : base(originalFile, context, documentationSetNavigations, sitePrefix)
-		=> V2NavigationItems = BuildV2Items(v2File.Nav, Nodes, this, depth: 0);
+		=> V2NavigationItems = BuildV2Items(v2File.Nav, Nodes, this, depth: 0, sitePrefix: sitePrefix ?? string.Empty);
 
 	/// <summary>
 	/// Label-structured navigation items for V2 sidebar rendering.
 	/// Contains <see cref="LabelNavigationNode"/>, <see cref="PlaceholderNavigationLeaf"/>,
-	/// and existing <see cref="IRootNavigationItem{TIndex,TChildNavigation}"/> nodes.
+	/// <see cref="PageCrossLinkLeaf"/>, and existing <see cref="IRootNavigationItem{TIndex,TChildNavigation}"/> nodes.
 	/// </summary>
 	public IReadOnlyList<INavigationItem> V2NavigationItems { get; }
 
@@ -38,10 +38,11 @@ public class SiteNavigationV2 : SiteNavigation
 		IReadOnlyList<INavV2Item> v2Items,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		int depth
+		int depth,
+		string sitePrefix
 	) =>
 		v2Items
-			.Select(item => CreateV2NavigationItem(item, nodes, parent, depth))
+			.Select(item => CreateV2NavigationItem(item, nodes, parent, depth, sitePrefix))
 			.Where(navItem => navItem is not null)
 			.Cast<INavigationItem>()
 			.ToList();
@@ -50,15 +51,16 @@ public class SiteNavigationV2 : SiteNavigation
 		INavV2Item item,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		int depth
+		int depth,
+		string sitePrefix
 	) =>
 		item switch
 		{
-			LabelNavV2Item label => CreateLabel(label, nodes, parent, depth),
-			GroupNavV2Item group => CreateGroup(group, nodes, parent, depth),
+			LabelNavV2Item label => CreateLabel(label, nodes, parent, depth, sitePrefix),
+			GroupNavV2Item group => CreateGroup(group, nodes, parent, depth, sitePrefix),
 			TocNavV2Item toc => nodes.TryGetValue(toc.Source, out var node) ? node : null,
 			PageNavV2Item { Page: null, Title: var title } => new PlaceholderNavigationLeaf(title ?? "Untitled", parent),
-			PageNavV2Item { Title: var title } page => new PlaceholderNavigationLeaf(title ?? page.Page?.ToString() ?? "Unknown", parent),
+			PageNavV2Item { Page: var page, Title: var title } => new PageCrossLinkLeaf(page!, title ?? page!.ToString(), sitePrefix, parent),
 			_ => null
 		};
 
@@ -66,12 +68,12 @@ public class SiteNavigationV2 : SiteNavigation
 		LabelNavV2Item label,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		int depth
+		int depth,
+		string sitePrefix
 	)
 	{
-		// Build a temporary label so it can be used as parent for its children
 		var placeholder = new LabelNavigationNode(label.Label, label.Expanded, [], parent);
-		var children = BuildV2Items(label.Children, nodes, placeholder, depth + 1);
+		var children = BuildV2Items(label.Children, nodes, placeholder, depth + 1, sitePrefix);
 		return new LabelNavigationNode(label.Label, label.Expanded, children, parent);
 	}
 
@@ -79,11 +81,12 @@ public class SiteNavigationV2 : SiteNavigation
 		GroupNavV2Item group,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		int depth
+		int depth,
+		string sitePrefix
 	)
 	{
 		var placeholder = new PlaceholderNavigationNode(group.Title, [], parent);
-		var children = BuildV2Items(group.Children, nodes, placeholder, depth + 1);
+		var children = BuildV2Items(group.Children, nodes, placeholder, depth + 1, sitePrefix);
 		return new PlaceholderNavigationNode(group.Title, children, parent);
 	}
 }

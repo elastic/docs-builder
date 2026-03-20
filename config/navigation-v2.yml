@@ -164,42 +164,56 @@ nav:
       children:
       - group: "Ingest or migrate: bring your data into Elasticsearch"
         children:
-        - title: Choose/Plan your ingest method
-        - title: Ingest architectures
+        - page: docs-content://manage-data/ingest.md
+          title: Choose/Plan your ingest method
+        - page: docs-content://manage-data/ingest/ingest-reference-architectures.md
+          title: Ingest architectures
         - group: Ingest by solution (New - Crosslinks)
           children:
-          - title: Ingesting data for search use cases
+          - page: docs-content://solutions/search/ingest-for-search.md
+            title: Ingesting data for search use cases
           - title: Ingesting data for observability (New)
-          - title: Ingesting data for security (Move from Solutions)
-        - title: Ingesting time series data
+          - page: docs-content://solutions/security/get-started/ingest-data-to-elastic-security.md
+            title: Ingesting data for security (Move from Solutions)
+        - page: docs-content://manage-data/ingest/ingesting-timeseries-data.md
+          title: Ingesting time series data
         - title: Logs (Solutions / Obs)
         - group: Ingest data from applications (New)
           children:
-          - title: Collect application data (Solutions / Obs)
+          - page: docs-content://manage-data/ingest/ingesting-data-from-applications.md
+            title: Collect application data (Solutions / Obs)
           - title: APM agents
-          - title: Ingest data with Node.js
-          - title: Ingest data with Python
-          - title: Ingest data from Beats with Logstash as a proxy
-          - title: Ingest data from a relational database
-          - title: Ingest logs from a Python application using Filebeat
-          - title: Ingest logs from a Node.js web application using Filebeat
+          - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-data-with-nodejs-on-elasticsearch-service.md
+            title: Ingest data with Node.js
+          - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-data-with-python-on-elasticsearch-service.md
+            title: Ingest data with Python
+          - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-data-from-beats-to-elasticsearch-service-with-logstash-as-proxy.md
+            title: Ingest data from Beats with Logstash as a proxy
+          - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-data-from-relational-database-into-elasticsearch-service.md
+            title: Ingest data from a relational database
+          - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-logs-from-python-application-using-filebeat.md
+            title: Ingest logs from a Python application using Filebeat
+          - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-logs-from-nodejs-web-application-using-filebeat.md
+            title: Ingest logs from a Node.js web application using Filebeat
         - title: Ingest data using the API (New)
-        - title: Upload data files
-        - title: Sample data
+        - page: docs-content://manage-data/ingest/upload-data-files.md
+          title: Upload data files
+        - page: docs-content://manage-data/ingest/sample-data.md
+          title: Sample data
         - title: Migrating your Elasticsearch data
         - group: Ingest tools (from Reference)
           children:
-          - title: Fleet and Elastic Agent
-          - title: Elastic Distributions of OpenTelemetry (EDOT)
-          - title: Elastic Integrations
-          - title: Content connectors
-          - title: Logstash
-          - title: APM
-          - title: Beats
+          - toc: docs-content://reference/fleet
+          - toc: opentelemetry://reference
+          - toc: integration-docs://reference
+          - toc: elasticsearch://reference/search-connectors
+          - toc: logstash://reference
+          - toc: docs-content://reference/apm
+          - toc: beats://reference
           - group: Other ingest tools
             children:
-            - title: Elasticsearch for Apache Hadoop
-            - title: Elastic Serverless Forwarder for AWS
+            - toc: elasticsearch-hadoop://reference
+            - toc: elastic-serverless-forwarder://reference
       - group: Data storage and lifecycle
         children:
         - group: The Elasticsearch data store
