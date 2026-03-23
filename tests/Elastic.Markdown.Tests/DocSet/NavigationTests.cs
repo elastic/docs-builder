@@ -15,6 +15,8 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 	[Fact]
 	public void ParsesRedirects()
 	{
+		Configuration.Should().NotBeNull();
+
 		Configuration.Redirects.Should()
 			.NotBeNullOrEmpty()
 			.And.ContainKey("testing/redirects/first-page-old.md")

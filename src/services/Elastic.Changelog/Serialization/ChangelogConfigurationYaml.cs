@@ -11,6 +11,11 @@ namespace Elastic.Changelog.Serialization;
 internal record ChangelogConfigurationYaml
 {
 	/// <summary>
+	/// Filename strategy for generated changelog files (pr, issue, timestamp).
+	/// </summary>
+	public string? Filename { get; set; }
+
+	/// <summary>
 	/// Pivot configuration for types, subtypes, and areas with label mappings.
 	/// </summary>
 	public PivotConfigurationYaml? Pivot { get; set; }
@@ -94,6 +99,36 @@ internal record BundleRulesYaml
 	/// Match mode for products ("any" or "all"). Inherits from rules.match if not set.
 	/// </summary>
 	public string? MatchProducts { get; set; }
+
+	/// <summary>
+	/// Match mode for areas ("any" or "all"). Inherits from rules.match if not set.
+	/// </summary>
+	public string? MatchAreas { get; set; }
+
+	/// <summary>
+	/// Entry types to exclude from the bundle (string or list).
+	/// </summary>
+	public YamlLenientList? ExcludeTypes { get; set; }
+
+	/// <summary>
+	/// Entry types to include in the bundle (string or list, only these types are kept).
+	/// </summary>
+	public YamlLenientList? IncludeTypes { get; set; }
+
+	/// <summary>
+	/// Entry areas to exclude from the bundle (string or list).
+	/// </summary>
+	public YamlLenientList? ExcludeAreas { get; set; }
+
+	/// <summary>
+	/// Entry areas to include in the bundle (string or list, only entries with these areas are kept).
+	/// </summary>
+	public YamlLenientList? IncludeAreas { get; set; }
+
+	/// <summary>
+	/// Per-product type/area blocker overrides. Keys can be comma-separated product IDs.
+	/// </summary>
+	public Dictionary<string, BundleRulesYaml?>? Products { get; set; }
 }
 
 /// <summary>
@@ -324,6 +359,12 @@ internal record ExtractConfigurationYaml
 	/// Defaults to true.
 	/// </summary>
 	public bool? Issues { get; set; }
+
+	/// <summary>
+	/// Whether to strip square-bracket prefixes from PR titles by default.
+	/// Defaults to false.
+	/// </summary>
+	public bool? StripTitlePrefix { get; set; }
 }
 
 /// <summary>
