@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: en-US
 tone_instructions: >-
   Be concise and direct. Only flag genuine bugs, security issues,
@@ -9,8 +10,8 @@ reviews:
   review_details: false
   poem: false
   in_progress_fortune: false
-  ai_agent_prompt: false
-  posting_status_messages: false
+  enable_prompt_for_ai_agents: false
+  review_status: false
   sequence_diagrams: true
   estimate_code_review_effort: false
   collapse_walkthrough: true
@@ -72,8 +73,6 @@ reviews:
       enabled: true
     trufflehog:
       enabled: true
-    ast-grep:
-      enabled: true
     ruff:
       enabled: false
     biome:
@@ -126,23 +125,23 @@ reviews:
       enabled: false
     oxc:
       enabled: false
-    fortitude:
+    fortitudeLint:
       enabled: false
     brakeman:
       enabled: false
-    prisma-lint:
+    prismaLint:
       enabled: false
     luacheck:
       enabled: false
     blinter:
       enabled: false
-    smarty-lint:
+    smartyLint:
       enabled: false
-    ember-template-lint:
+    emberTemplateLint:
       enabled: false
     psscriptanalyzer:
       enabled: false
-    shopify-theme-check:
+    shopifyThemeCheck:
       enabled: false
     htmlhint:
       enabled: false
@@ -150,9 +149,9 @@ reviews:
       enabled: false
     checkmake:
       enabled: false
-    osv-scanner:
+    osvScanner:
       enabled: false
-    dotenv-lint:
+    dotenvLint:
       enabled: false
     trivy:
       enabled: false
