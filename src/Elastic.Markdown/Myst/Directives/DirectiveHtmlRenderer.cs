@@ -440,7 +440,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch (YamlException e)
 		{
@@ -461,7 +464,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			VersionsConfig = block.Build.VersionsConfiguration,
 			RenderMarkdown = s =>
 			{
-				var normalized = SettingsMarkdownNormalizer.Normalize(s);
+				var normalized = SettingsMarkdownNormalizer.Normalize(s, settings.Product);
 				var document = MarkdownParser.ParseMarkdownStringAsync(
 					block.Build,
 					block.Context,

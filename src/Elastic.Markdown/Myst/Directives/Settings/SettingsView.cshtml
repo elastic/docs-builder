@@ -2,6 +2,8 @@
 @using Elastic.Markdown.Myst.Directives.Settings
 @inherits RazorSlice<SettingsViewModel>
 
+@RenderMarkdown(Model.SettingsCollection.PageDescription)
+@RenderAdmonition("note", Model.SettingsCollection.Note)
 @foreach (var group in Model.SettingsCollection.Groups)
 {
 	@RenderGroup(group)
@@ -61,6 +63,7 @@
 			}
 		}
 		@RenderMarkdown(group.Description)
+		@RenderAdmonition("note", group.Note)
 		@RenderExample(group.Example)
 		<dl>
 		@foreach (var setting in group.Settings)

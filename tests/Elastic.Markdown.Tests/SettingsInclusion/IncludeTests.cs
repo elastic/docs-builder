@@ -147,3 +147,40 @@ groups:
 		Html.Should().NotContain("[source,yaml]");
 	}
 }
+
+public class SettingsTopMatterAndTitlesRender(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/top-matter.yml
+::::
+"""
+)
+{
+	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
+
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/top-matter.yml", """
+product: Kibana
+collection: Test collection
+page_description: |
+  Read the [preconfigured connectors](/reference/connectors-kibana/pre-configured-connectors.md) guide.
+note: "Top-level note for {{product.kibana}}."
+groups:
+  - group: General {{product.kibana}} settings
+    note: "Group-level note for {{product.kibana}}."
+    settings:
+      - setting: xpack.sample.enabled
+        description: "Enables sample behavior."
+""");
+	}
+
+	[Fact]
+	public void RendersPageDescriptionNotesAndInterpolatedGroupTitle()
+	{
+		Html.Should().Contain("General Kibana settings");
+		Html.Should().Contain("Top-level note for Kibana.");
+		Html.Should().Contain("Group-level note for Kibana.");
+		Html.Should().Contain("https://www.elastic.co/docs/reference/kibana/connectors-kibana/pre-configured-connectors");
+	}
+}

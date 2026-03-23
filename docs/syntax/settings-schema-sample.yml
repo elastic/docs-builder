@@ -25,14 +25,10 @@ groups:
         applies_to:
           stack: ga 9.2
           ech: ga
-        options:
-          - option: "true"
-          - option: "false"
         note: Turn this off only for troubleshooting.
         tip: Keep this enabled in production.
 
       - setting: xpack.sample.hosts
-        id: xpack-sample-hosts
         description: |
           Defines host entries for sample integrations.
         datatype: object
@@ -95,7 +91,6 @@ groups:
       ```
     settings:
       - setting: xpack.sample.preconfigured
-        id: xpack-sample-preconfigured
         description: |
           Defines preconfigured connector entries.
         datatype: object

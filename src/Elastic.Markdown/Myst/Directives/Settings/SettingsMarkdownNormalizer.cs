@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Myst.Directives.Settings;
 
 internal static class SettingsMarkdownNormalizer
 {
-	public static string Normalize(string markdown)
+	public static string Normalize(string markdown, string? product = null)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
 			return markdown;
@@ -23,7 +23,7 @@ internal static class SettingsMarkdownNormalizer
 			|| result.Contains("](docs-content://", StringComparison.Ordinal)
 			|| result.Contains("(elasticsearch://", StringComparison.Ordinal)
 			|| result.Contains("(ecs://", StringComparison.Ordinal))
-			result = RewriteReferenceLinksForDocset(result);
+			result = RewriteReferenceLinksForDocset(result, product);
 
 		return result;
 	}
@@ -71,13 +71,16 @@ internal static class SettingsMarkdownNormalizer
 	/// Kibana-generated YAML often uses repo-root paths and cross-repo schemes. For docsets that only ship settings fixtures
 	/// (for example docs-builder), rewrite to resolvable targets.
 	/// </summary>
-	private static string RewriteReferenceLinksForDocset(string markdown)
+	private static string RewriteReferenceLinksForDocset(string markdown, string? product)
 	{
 		var s = RewriteDocsContentLinks(markdown);
+		var referenceBase = string.Equals(product, "Kibana", StringComparison.OrdinalIgnoreCase)
+			? "https://www.elastic.co/docs/reference/kibana/"
+			: "https://www.elastic.co/docs/reference/";
 		s = RewriteParenLinksWithPrefix(
 			s,
 			"](/reference/",
-			"https://www.elastic.co/docs/reference/");
+			referenceBase);
 
 		s = RewriteSchemeLinks(
 			s,

@@ -630,7 +630,10 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch (FileNotFoundException e)
 		{
@@ -667,6 +670,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		renderer.EnsureBlockSpacing();
 
+		RenderSettingsMarkdownSnippet(renderer, block, settings.PageDescription, settings.Product);
+		RenderAdmonitionSnippet(renderer, block, "note", settings.Note, product: settings.Product);
+
 		var groupHeadingLevel = Math.Clamp(block.GroupHeadingLevel, 1, 6);
 		var groupHeadingPrefix = new string('#', groupHeadingLevel) + " ";
 
@@ -675,12 +681,13 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			renderer.WriteLine();
 			renderer.Write(groupHeadingPrefix);
 			renderer.WriteLine(group.Name ?? string.Empty);
-			RenderSettingsMarkdownSnippet(renderer, block, group.Description);
-			RenderSettingsMarkdownSnippet(renderer, block, group.Example);
+			RenderSettingsMarkdownSnippet(renderer, block, group.Description, settings.Product);
+			RenderAdmonitionSnippet(renderer, block, "note", group.Note, product: settings.Product);
+			RenderSettingsMarkdownSnippet(renderer, block, group.Example, settings.Product);
 			renderer.WriteLine("<definitions>");
 
 			foreach (var setting in group.Settings)
-				RenderSetting(renderer, block, setting, parentName: null, inheritedAppliesTo: null);
+				RenderSetting(renderer, block, setting, parentName: null, inheritedAppliesTo: null, settings.Product);
 
 			renderer.WriteLine("</definitions>");
 		}
@@ -693,7 +700,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		SettingsBlock block,
 		Setting setting,
 		string? parentName,
-		Elastic.Documentation.AppliesTo.ApplicableTo? inheritedAppliesTo)
+		Elastic.Documentation.AppliesTo.ApplicableTo? inheritedAppliesTo,
+		string? product)
 	{
 		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
 		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
@@ -707,7 +715,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		if (showSupportedOn && !string.IsNullOrEmpty(supportedOn))
 			renderer.WriteLine("    <supported-on>" + supportedOn + "</supported-on>");
 
-		RenderSettingsMarkdownSnippet(renderer, block, setting.Description);
+		RenderSettingsMarkdownSnippet(renderer, block, setting.Description, product);
 
 		if (!string.IsNullOrWhiteSpace(setting.Datatype))
 			renderer.WriteLine($"Datatype: `{setting.Datatype}`");
@@ -728,18 +736,18 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			}
 		}
 
-		RenderAdmonitionSnippet(renderer, block, "note", setting.Note);
-		RenderAdmonitionSnippet(renderer, block, "tip", setting.Tip);
-		RenderAdmonitionSnippet(renderer, block, "warning", setting.Warning);
-		RenderAdmonitionSnippet(renderer, block, "important", setting.Important);
-		RenderAdmonitionSnippet(renderer, block, "admonition", setting.DeprecationDetails, "Deprecation details");
+		RenderAdmonitionSnippet(renderer, block, "note", setting.Note, product: product);
+		RenderAdmonitionSnippet(renderer, block, "tip", setting.Tip, product: product);
+		RenderAdmonitionSnippet(renderer, block, "warning", setting.Warning, product: product);
+		RenderAdmonitionSnippet(renderer, block, "important", setting.Important, product: product);
+		RenderAdmonitionSnippet(renderer, block, "admonition", setting.DeprecationDetails, "Deprecation details", product);
 
-		RenderSettingsMarkdownSnippet(renderer, block, setting.Example);
+		RenderSettingsMarkdownSnippet(renderer, block, setting.Example, product);
 
 		renderer.WriteLine("  </definition>");
 
 		foreach (var child in setting.Settings)
-			RenderSetting(renderer, block, child, displayName, appliesTo);
+			RenderSetting(renderer, block, child, displayName, appliesTo, product);
 	}
 
 	private static void RenderAdmonitionSnippet(
@@ -747,22 +755,23 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		SettingsBlock block,
 		string directive,
 		string? content,
-		string? title = null)
+		string? title = null,
+		string? product = null)
 	{
 		if (string.IsNullOrWhiteSpace(content))
 			return;
 
 		var titleSuffix = string.IsNullOrWhiteSpace(title) ? string.Empty : $" {title}";
 		var snippet = $":::{{{directive}}}{titleSuffix}\n{content}\n:::";
-		RenderSettingsMarkdownSnippet(renderer, block, snippet);
+		RenderSettingsMarkdownSnippet(renderer, block, snippet, product);
 	}
 
-	private static void RenderSettingsMarkdownSnippet(LlmMarkdownRenderer renderer, SettingsBlock block, string? content)
+	private static void RenderSettingsMarkdownSnippet(LlmMarkdownRenderer renderer, SettingsBlock block, string? content, string? product = null)
 	{
 		if (string.IsNullOrWhiteSpace(content))
 			return;
 
-		var normalized = SettingsMarkdownNormalizer.Normalize(content);
+		var normalized = SettingsMarkdownNormalizer.Normalize(content, product);
 		var document = MarkdownParser.ParseMarkdownStringAsync(
 			block.Build,
 			block.Context,

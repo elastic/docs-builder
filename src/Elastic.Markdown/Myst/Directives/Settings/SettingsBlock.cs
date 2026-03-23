@@ -90,6 +90,32 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		}
 	}
 
+	/// <summary>
+	/// Applies substitutions to raw display-name fields that are not rendered through the markdown pipeline.
+	/// </summary>
+	public static YamlSettings PrepareSettingsForRendering(YamlSettings settings, ParserContext context)
+	{
+		settings.Collection = settings.Collection?.ReplaceSubstitutions(context);
+
+		foreach (var group in settings.Groups)
+		{
+			group.Name = group.Name?.ReplaceSubstitutions(context);
+
+			foreach (var setting in group.Settings)
+				PrepareSettingForRendering(setting, context);
+		}
+
+		return settings;
+	}
+
+	private static void PrepareSettingForRendering(Setting setting, ParserContext context)
+	{
+		setting.Name = setting.Name?.ReplaceSubstitutions(context);
+
+		foreach (var child in setting.Settings)
+			PrepareSettingForRendering(child, context);
+	}
+
 	private void ExtractInclusionPath(ParserContext context)
 	{
 		var includePath = Arguments;
@@ -142,7 +168,10 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			CollectSubstitutionUsageFromYaml(yaml, Build);
-			_parsedSettings = YamlSerialization.Deserialize<YamlSettings>(yaml, Build.ProductsConfiguration);
+			_parsedSettings = PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, Build.ProductsConfiguration),
+				Context
+			);
 			return _parsedSettings;
 		}
 		catch (YamlException)

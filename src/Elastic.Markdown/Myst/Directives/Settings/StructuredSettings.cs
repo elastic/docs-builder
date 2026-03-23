@@ -19,6 +19,8 @@ public record YamlSettings
 	public string? Id { get; set; }
 	[YamlMember(Alias = "page_description")]
 	public string? PageDescription { get; set; }
+	[YamlMember(Alias = "note")]
+	public string? Note { get; set; }
 	[YamlMember(Alias = "groups")]
 	public SettingsGrouping[] Groups { get; set; } = [];
 }
@@ -34,6 +36,8 @@ public record SettingsGrouping
 	public string? LegacyId { get; set; }
 	[YamlMember(Alias = "description")]
 	public string? Description { get; set; }
+	[YamlMember(Alias = "note")]
+	public string? Note { get; set; }
 	[YamlMember(Alias = "example")]
 	public string? Example { get; set; }
 	[YamlMember(Alias = "settings")]

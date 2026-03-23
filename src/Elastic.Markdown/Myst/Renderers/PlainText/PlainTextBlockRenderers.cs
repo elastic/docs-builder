@@ -386,7 +386,10 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch
 		{
@@ -395,26 +398,32 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 		renderer.EnsureBlockSpacing();
 
+		WriteSettingsMarkdownSnippet(renderer, block, settings.PageDescription, product: settings.Product);
+		WriteSettingsMarkdownSnippet(renderer, block, settings.Note, "Note", settings.Product);
+
 		foreach (var group in settings.Groups)
 		{
 			renderer.EnsureLine();
 			renderer.WriteLine(group.Name ?? string.Empty);
+			WriteSettingsMarkdownSnippet(renderer, block, group.Description, product: settings.Product);
+			WriteSettingsMarkdownSnippet(renderer, block, group.Note, "Note", settings.Product);
+			WriteSettingsMarkdownSnippet(renderer, block, group.Example, product: settings.Product);
 
 			foreach (var setting in group.Settings)
-				WriteSettingPlainText(renderer, block, setting, parentName: null);
+				WriteSettingPlainText(renderer, block, setting, parentName: null, settings.Product);
 		}
 
 		renderer.EnsureLine();
 	}
 
-	private static void WriteSettingPlainText(PlainTextRenderer renderer, SettingsBlock block, Setting setting, string? parentName)
+	private static void WriteSettingPlainText(PlainTextRenderer renderer, SettingsBlock block, Setting setting, string? parentName, string? product)
 	{
 		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
 		renderer.EnsureLine();
 		renderer.WriteLine(displayName);
 
 		if (!string.IsNullOrEmpty(setting.Description))
-			WriteSettingsMarkdownSnippet(renderer, block, setting.Description);
+			WriteSettingsMarkdownSnippet(renderer, block, setting.Description, product: product);
 
 		if (!string.IsNullOrWhiteSpace(setting.Datatype))
 			renderer.WriteLine($"Datatype: {setting.Datatype}");
@@ -436,22 +445,22 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			}
 		}
 
-		WriteSettingsMarkdownSnippet(renderer, block, setting.Note, "Note");
-		WriteSettingsMarkdownSnippet(renderer, block, setting.Tip, "Tip");
-		WriteSettingsMarkdownSnippet(renderer, block, setting.Warning, "Warning");
-		WriteSettingsMarkdownSnippet(renderer, block, setting.Important, "Important");
-		WriteSettingsMarkdownSnippet(renderer, block, setting.DeprecationDetails, "Deprecation details");
+		WriteSettingsMarkdownSnippet(renderer, block, setting.Note, "Note", product);
+		WriteSettingsMarkdownSnippet(renderer, block, setting.Tip, "Tip", product);
+		WriteSettingsMarkdownSnippet(renderer, block, setting.Warning, "Warning", product);
+		WriteSettingsMarkdownSnippet(renderer, block, setting.Important, "Important", product);
+		WriteSettingsMarkdownSnippet(renderer, block, setting.DeprecationDetails, "Deprecation details", product);
 
 		if (!string.IsNullOrWhiteSpace(setting.Example))
-			WriteSettingsMarkdownSnippet(renderer, block, setting.Example);
+			WriteSettingsMarkdownSnippet(renderer, block, setting.Example, product: product);
 
 		foreach (var child in setting.Settings)
-			WriteSettingPlainText(renderer, block, child, displayName);
+			WriteSettingPlainText(renderer, block, child, displayName, product);
 
 		renderer.EnsureBlockSpacing();
 	}
 
-	private static void WriteSettingsMarkdownSnippet(PlainTextRenderer renderer, SettingsBlock block, string? markdown, string? label = null)
+	private static void WriteSettingsMarkdownSnippet(PlainTextRenderer renderer, SettingsBlock block, string? markdown, string? label = null, string? product = null)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
 			return;
@@ -463,7 +472,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		}
 
 		var settingsSourceFile = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath!);
-		var normalized = SettingsMarkdownNormalizer.Normalize(markdown);
+		var normalized = SettingsMarkdownNormalizer.Normalize(markdown, product);
 		var document = MarkdownParser.ParseMarkdownStringAsync(
 			block.Build,
 			block.Context,
