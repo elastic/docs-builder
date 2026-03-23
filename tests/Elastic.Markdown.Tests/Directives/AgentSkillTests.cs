@@ -38,13 +38,13 @@ A regular paragraph.
 		Html.Should().Contain("Agent skill available");
 
 	[Fact]
-	public void RendersFixedText() =>
+	public void RendersDefaultText() =>
 		Html.Should().Contain("A skill is available to help AI agents with this topic.");
 
 	[Fact]
 	public void RendersLearnMoreLink()
 	{
-		Html.Should().Contain("refer to the");
+		Html.Should().Contain("Learn more about agent skills for Elastic");
 		Html.Should().Contain("href=\"/explore-analyze/ai-features/agent-skills\"");
 	}
 
@@ -57,6 +57,34 @@ A regular paragraph.
 		Html.Should().Contain("target=\"_blank\"");
 		Html.Should().Contain("rel=\"noopener noreferrer\"");
 	}
+}
+
+public class AgentSkillWithBodyTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,
+"""
+:::{agent-skill}
+:url: https://github.com/elastic/agent-skills@elasticsearch-esql
+
+This skill helps agents write and optimize ES|QL queries.
+:::
+A regular paragraph.
+"""
+)
+{
+	[Fact]
+	public void RendersCustomBody() =>
+		Html.Should().Contain("This skill helps agents write and optimize ES|QL queries.");
+
+	[Fact]
+	public void StillRendersDefaultText() =>
+		Html.Should().Contain("A skill is available to help AI agents with this topic.");
+
+	[Fact]
+	public void StillRendersLearnMoreLink() =>
+		Html.Should().Contain("Learn more about agent skills for Elastic");
+
+	[Fact]
+	public void StillRendersButton() =>
+		Html.Should().Contain("Get the skill");
 }
 
 public class AgentSkillMissingUrlTests(ITestOutputHelper output) : DirectiveTest<AgentSkillBlock>(output,

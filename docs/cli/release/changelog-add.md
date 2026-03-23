@@ -89,7 +89,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   If specified, `--title` can be derived from the PR.
 :   If mappings are configured, `--areas`, `--type`, and `--products` can also be derived from the PR labels.
 :   Creates one changelog file per PR.
-:   If there are `block ... create` definitions in the changelog configuration file and a PR has a blocking label for the resolved products, that PR is skipped and no changelog file is created for it.
+:   If there are `rules.create` definitions in the changelog configuration file and a PR has a blocking label for the resolved products, that PR is skipped and no changelog file is created for it.
 
 `--release-version <string?>`
 :   Optional: GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
@@ -106,6 +106,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   For example, if a PR title is `"[Attack discovery]: Improves Attack discovery hallucination detection"`, the changelog title will be `"Improves Attack discovery hallucination detection"`.
 :   Multiple square bracket prefixes are also supported (for example `"[Discover][ESQL] Fix filtering by multiline string fields"` becomes `"Fix filtering by multiline string fields"`).
 :   This option applies only when the title is derived from the PR (when `--title` is not explicitly provided).
+:   By default, the behavior is determined by the `extract.strip_title_prefix` changelog configuration setting (which defaults to `false`).
 
 `--subtype <string?>`
 :   Optional: Subtype for breaking changes (for example, `api`, `behavioral`, or `configuration`).
@@ -123,10 +124,10 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
 `--use-pr-number`
-:   Optional: Use PR numbers for filenames instead of timestamp-slug. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires `--prs` or `--issues`. Mutually exclusive with `--use-issue-number`.
+:   Optional: Use PR numbers for filenames instead of the configured `filename` strategy. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires `--prs` or `--issues`. Mutually exclusive with `--use-issue-number`.
 
 `--use-issue-number`
-:   Optional: Use issue numbers for filenames instead of timestamp-slug. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
+:   Optional: Use issue numbers for filenames instead of the configured `filename` strategy. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
 
 ## CI auto-detection [ci-auto-detection]
 
@@ -142,7 +143,7 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 
 **Precedence**: explicit CLI arguments always take priority over environment variables. Environment variables are only used when the corresponding CLI argument is not provided.
 
-When `CHANGELOG_PR_NUMBER` is set and `--prs` is not provided, `--use-pr-number` is also implicitly enabled so the generated filename uses the PR number.
+The filename strategy is controlled by the `filename` option in `changelog.yml` (defaulting to `timestamp`). Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for details.
 
 This allows the CI action to invoke `changelog add` with a minimal command line:
 

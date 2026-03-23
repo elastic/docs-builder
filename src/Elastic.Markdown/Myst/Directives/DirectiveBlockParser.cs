@@ -14,6 +14,8 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.SubPages;
+using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
 using Markdig.Parsers;
@@ -157,6 +159,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{button}") > 0)
 			return new ButtonBlock(this, context);
+
+		if (info.IndexOf("{list-sub-pages}") > 0)
+			return new ListSubPagesBlock(this, context);
+
+		if (info.IndexOf("{table}") > 0)
+			return new TableDirectiveBlock(this, context);
 
 		return new UnknownDirectiveBlock(this, info.ToString(), context);
 	}
