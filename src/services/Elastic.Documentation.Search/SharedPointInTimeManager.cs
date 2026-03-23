@@ -82,13 +82,13 @@ public sealed partial class SharedPointInTimeManager(
 	/// <inheritdoc />
 	public async ValueTask DisposeAsync()
 	{
-		if (_pitId is null)
-			return;
-
 		try
 		{
-			_ = await clientAccessor.Client.ClosePointInTimeAsync(r => r.Id(_pitId));
-			LogPitClosed(logger, _pitId);
+			if (_pitId is not null)
+			{
+				_ = await clientAccessor.Client.ClosePointInTimeAsync(r => r.Id(_pitId));
+				LogPitClosed(logger, _pitId);
+			}
 		}
 		catch (OperationCanceledException ex)
 		{
