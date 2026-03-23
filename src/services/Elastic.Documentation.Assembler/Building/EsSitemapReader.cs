@@ -4,7 +4,7 @@
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
+using System.Text.Json.Nodes;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -31,35 +31,37 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 			do
 			{
 				var body = BuildSearchBody(pitId, lastSortValues);
-				var response = await transport.PostAsync<StringResponse>("/_search", PostData.String(body), ct);
+				var response = await transport.PostAsync<JsonResponse>("/_search", PostData.String(body), ct);
 
 				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 					throw new InvalidOperationException(
 						$"ES search failed (page {page}): {response.ApiCallDetails.HttpStatusCode} {response.ApiCallDetails.DebugInformation}");
 
-				using var doc = JsonDocument.Parse(response.Body);
-				var root = doc.RootElement;
+				var root = response.Body;
 
 				// Update PIT id — ES may return a new one on each response
-				if (root.TryGetProperty("pit_id", out var pitIdProp))
-					pitId = pitIdProp.GetString() ?? pitId;
+				pitId = root?["pit_id"]?.GetValue<string>() ?? pitId;
 
 				hitCount = 0;
-				if (root.TryGetProperty("hits", out var hitsObj) && hitsObj.TryGetProperty("hits", out var hitsArray))
+				if (root?["hits"]?["hits"] is JsonArray hitsArray)
 				{
-					foreach (var hit in hitsArray.EnumerateArray())
+					foreach (var hit in hitsArray)
 					{
+						if (hit is null)
+							continue;
+
 						hitCount++;
 
 						// Always advance the search_after cursor, even for skipped hits
-						if (hit.TryGetProperty("sort", out var sortProp))
-							lastSortValues = sortProp.EnumerateArray().Select(e => e.ToString()).ToArray();
+						if (hit["sort"] is JsonArray sortArray)
+							lastSortValues = sortArray.Select(e => e?.ToString() ?? "").ToArray();
 
-						if (!hit.TryGetProperty("_source", out var source))
+						var source = hit["_source"];
+						if (source is null)
 							continue;
 
-						var url = source.TryGetProperty("url", out var urlProp) ? urlProp.GetString() : null;
-						var lastUpdatedStr = source.TryGetProperty("last_updated", out var luProp) ? luProp.GetString() : null;
+						var url = source["url"]?.GetValue<string>();
+						var lastUpdatedStr = source["last_updated"]?.GetValue<string>();
 
 						if (url is null || lastUpdatedStr is null)
 							continue;
@@ -108,7 +110,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		try
 		{
 			var body = $$"""{"id":"{{pitId}}"}""";
-			_ = await transport.DeleteAsync<DynamicResponse>("/_pit", new DefaultRequestParameters(), PostData.String(body), ct);
+			_ = await transport.DeleteAsync<VoidResponse>("/_pit", new DefaultRequestParameters(), PostData.String(body), ct);
 			logger.LogInformation("Closed PIT");
 		}
 		catch (OperationCanceledException)
