@@ -770,14 +770,17 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 	{
 		if (string.IsNullOrWhiteSpace(content))
 			return;
+		if (block.IncludePath is null)
+			return;
 
 		var normalized = SettingsMarkdownNormalizer.Normalize(content, product);
 		var document = MarkdownParser.ParseMarkdownStringAsync(
 			block.Build,
 			block.Context,
 			normalized,
-			block.IncludeFrom,
+			block.Build.ReadFileSystem.FileInfo.New(block.IncludePath),
 			block.Context.YamlFrontMatter,
+			block.IncludeFrom,
 			MarkdownParser.Pipeline);
 		_ = renderer.Render(document);
 		renderer.EnsureBlockSpacing();

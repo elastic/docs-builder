@@ -198,18 +198,20 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			var groupSlug = SettingsViewModel.GroupHeadingSlug(group);
 			if (!string.IsNullOrEmpty(groupSlug))
 				yield return groupSlug;
-			foreach (var id in CollectSettingIds(group.Settings))
+			foreach (var id in CollectSettingIds(group.Settings, parentName: null))
 				yield return id;
 		}
 	}
 
-	private static IEnumerable<string> CollectSettingIds(Setting[] settings)
+	private static IEnumerable<string> CollectSettingIds(Setting[] settings, string? parentName)
 	{
 		foreach (var setting in settings)
 		{
-			if (!string.IsNullOrWhiteSpace(setting.Id))
-				yield return setting.Id;
-			foreach (var id in CollectSettingIds(setting.Settings))
+			var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
+			var fragmentId = SettingsViewModel.SettingFragmentId(setting, displayName);
+			if (!string.IsNullOrWhiteSpace(fragmentId))
+				yield return fragmentId;
+			foreach (var id in CollectSettingIds(setting.Settings, displayName))
 				yield return id;
 		}
 	}

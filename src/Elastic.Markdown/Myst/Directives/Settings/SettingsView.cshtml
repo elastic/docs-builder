@@ -81,7 +81,7 @@
 
 		var stackBadges = Model.RenderStackRowBadges(appliesTo);
 		var supportedOnBadges = Model.RenderSupportedOnBadges(appliesTo);
-		var showSupportedOn = appliesTo is not null && appliesTo != ApplicableTo.All;
+		var showSupportedOn = appliesTo is not null && appliesTo != ApplicableTo.All && !string.IsNullOrWhiteSpace(supportedOnBadges);
 
 		<dt id="@SettingsViewModel.SettingFragmentId(setting, displayName)">@displayName @(new HtmlString(stackBadges))</dt>
 		<dd>
