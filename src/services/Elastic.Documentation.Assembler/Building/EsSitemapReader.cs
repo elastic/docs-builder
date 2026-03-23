@@ -81,7 +81,8 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		}
 		finally
 		{
-			await ClosePitAsync(pitId, ct);
+			// Use a non-cancelable token so PIT cleanup always runs to completion
+			await ClosePitAsync(pitId, CancellationToken.None);
 		}
 	}
 
