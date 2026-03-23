@@ -11,7 +11,7 @@ reviews:
   review_details: false
   poem: false
   in_progress_fortune: false
-  enable_prompt_for_ai_agents: false
+  enable_prompt_for_ai_agents: true
   review_status: false
   sequence_diagrams: true
   estimate_code_review_effort: false
