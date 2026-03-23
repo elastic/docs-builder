@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
@@ -308,6 +309,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		foreach (var bundle in LoadedBundles)
 		{
 			var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
+			var anchorSlug = titleSlug.Slugify();
 			var repo = bundle.Repo;
 
 			// Group filtered entries by type to determine which sections will exist
@@ -318,38 +320,38 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 			// Critical sections
 			if (shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
-				yield return $"{repo}-{titleSlug}-breaking-changes";
+				yield return $"{repo}-{anchorSlug}-breaking-changes";
 
 			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
-				yield return $"{repo}-{titleSlug}-security";
+				yield return $"{repo}-{anchorSlug}-security";
 
 			if (shouldInclude(ChangelogEntryType.KnownIssue) && entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
-				yield return $"{repo}-{titleSlug}-known-issues";
+				yield return $"{repo}-{anchorSlug}-known-issues";
 
 			if (shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
-				yield return $"{repo}-{titleSlug}-deprecations";
+				yield return $"{repo}-{anchorSlug}-deprecations";
 
 			// Features and enhancements section
 			if (shouldInclude(ChangelogEntryType.Feature) &&
 				(entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
 				 entriesByType.ContainsKey(ChangelogEntryType.Enhancement)))
-				yield return $"{repo}-{titleSlug}-features-enhancements";
+				yield return $"{repo}-{anchorSlug}-features-enhancements";
 
 			// Fixes section (bug fixes only, security is separate)
 			if (shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
-				yield return $"{repo}-{titleSlug}-fixes";
+				yield return $"{repo}-{anchorSlug}-fixes";
 
 			// Documentation section
 			if (shouldInclude(ChangelogEntryType.Docs) && entriesByType.ContainsKey(ChangelogEntryType.Docs))
-				yield return $"{repo}-{titleSlug}-docs";
+				yield return $"{repo}-{anchorSlug}-docs";
 
 			// Regressions section
 			if (shouldInclude(ChangelogEntryType.Regression) && entriesByType.ContainsKey(ChangelogEntryType.Regression))
-				yield return $"{repo}-{titleSlug}-regressions";
+				yield return $"{repo}-{anchorSlug}-regressions";
 
 			// Other changes section
 			if (shouldInclude(ChangelogEntryType.Other) && entriesByType.ContainsKey(ChangelogEntryType.Other))
-				yield return $"{repo}-{titleSlug}-other";
+				yield return $"{repo}-{anchorSlug}-other";
 		}
 	}
 
@@ -392,14 +394,19 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		foreach (var bundle in LoadedBundles)
 		{
 			var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
+			// Slugify the title slug to match what SectionedHeadingRenderer produces from explicit anchors.
+			// e.g. "9.3.0" -> "9-3-0", "2025-11" -> "2025-11"
+			var anchorSlug = titleSlug.Slugify();
 			var repo = bundle.Repo;
 			var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
 
-			// Version header
+			// Version header: slug must match what SectionedHeadingRenderer auto-derives from
+			// the display text (since there is no explicit anchor on the version heading).
+			// e.g. "November 2025" -> "november-2025", "9.3.0" -> "9-3-0"
 			yield return new PageTocItem
 			{
 				Heading = displayVersion,
-				Slug = titleSlug,
+				Slug = displayVersion.Slugify(),
 				Level = 2
 			};
 
@@ -414,7 +421,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Breaking changes",
-					Slug = $"{repo}-{titleSlug}-breaking-changes",
+					Slug = $"{repo}-{anchorSlug}-breaking-changes",
 					Level = 3
 				};
 
@@ -424,7 +431,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Highlights",
-					Slug = $"{repo}-{titleSlug}-highlights",
+					Slug = $"{repo}-{anchorSlug}-highlights",
 					Level = 3
 				};
 
@@ -436,7 +443,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Security",
-					Slug = $"{repo}-{titleSlug}-security",
+					Slug = $"{repo}-{anchorSlug}-security",
 					Level = 3
 				};
 
@@ -444,7 +451,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Known issues",
-					Slug = $"{repo}-{titleSlug}-known-issues",
+					Slug = $"{repo}-{anchorSlug}-known-issues",
 					Level = 3
 				};
 
@@ -452,7 +459,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Deprecations",
-					Slug = $"{repo}-{titleSlug}-deprecations",
+					Slug = $"{repo}-{anchorSlug}-deprecations",
 					Level = 3
 				};
 
@@ -463,7 +470,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Features and enhancements",
-					Slug = $"{repo}-{titleSlug}-features-enhancements",
+					Slug = $"{repo}-{anchorSlug}-features-enhancements",
 					Level = 3
 				};
 
@@ -472,7 +479,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Fixes",
-					Slug = $"{repo}-{titleSlug}-fixes",
+					Slug = $"{repo}-{anchorSlug}-fixes",
 					Level = 3
 				};
 
@@ -481,7 +488,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Documentation",
-					Slug = $"{repo}-{titleSlug}-docs",
+					Slug = $"{repo}-{anchorSlug}-docs",
 					Level = 3
 				};
 
@@ -490,7 +497,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Regressions",
-					Slug = $"{repo}-{titleSlug}-regressions",
+					Slug = $"{repo}-{anchorSlug}-regressions",
 					Level = 3
 				};
 
@@ -499,7 +506,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Other changes",
-					Slug = $"{repo}-{titleSlug}-other",
+					Slug = $"{repo}-{anchorSlug}-other",
 					Level = 3
 				};
 		}

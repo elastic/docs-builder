@@ -37,7 +37,7 @@ public record CreateChangelogArguments
 	public string? Config { get; init; }
 	public bool UsePrNumber { get; init; }
 	public bool UseIssueNumber { get; init; }
-	public bool StripTitlePrefix { get; init; }
+	public bool? StripTitlePrefix { get; init; }
 	/// <summary>
 	/// Whether to extract release notes from PR/issue descriptions. null = use config default.
 	/// </summary>
@@ -140,6 +140,7 @@ IEnvironmentVariables? env = null
 		{
 			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
 			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues,
+			StripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix,
 			UsePrNumber = usePrNumber,
 			UseIssueNumber = useIssueNumber
 		};

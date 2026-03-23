@@ -20,6 +20,7 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
@@ -110,6 +111,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case ButtonBlock buttonBlock:
 				WriteButton(renderer, buttonBlock);
+				return;
+			case ListSubPagesBlock listSubPagesBlock:
+				WriteListSubPages(renderer, listSubPagesBlock);
 				return;
 			case TableDirectiveBlock tableDirectiveBlock:
 				WriteTableDirective(renderer, tableDirectiveBlock);
@@ -209,6 +213,16 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Type = block.Type,
 			Align = block.Align,
 			IsInGroup = block.IsInGroup
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteListSubPages(HtmlRenderer renderer, ListSubPagesBlock block)
+	{
+		var slice = ListSubPagesView.Create(new ListSubPagesViewModel
+		{
+			DirectiveBlock = block,
+			SubPages = block.SubPages
 		});
 		RenderRazorSlice(slice, renderer);
 	}

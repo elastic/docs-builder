@@ -293,6 +293,9 @@ internal sealed partial class ChangelogCommand(
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 
+		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
+		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
+
 		// --release-version mode: delegate entirely to GitHubReleaseChangelogService without creating a bundle
 		if (releaseVersion != null)
 		{
@@ -316,7 +319,7 @@ internal sealed partial class ChangelogCommand(
 				Version = releaseVersion,
 				Config = config,
 				Output = resolvedOutput,
-				StripTitlePrefix = stripTitlePrefix,
+				StripTitlePrefix = stripTitlePrefixResolved,
 				CreateBundle = false
 			};
 
@@ -463,7 +466,7 @@ internal sealed partial class ChangelogCommand(
 			Config = config,
 			UsePrNumber = usePrNumber,
 			UseIssueNumber = useIssueNumber,
-			StripTitlePrefix = stripTitlePrefix,
+			StripTitlePrefix = stripTitlePrefixResolved,
 			ExtractReleaseNotes = extractReleaseNotes,
 			ExtractIssues = extractIssues,
 			Concise = concise
@@ -1108,13 +1111,16 @@ internal sealed partial class ChangelogCommand(
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
 
+		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
+		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
+
 		var input = new CreateChangelogsFromReleaseArguments
 		{
 			Repository = repo,
 			Version = version,
 			Config = config,
 			Output = resolvedOutput,
-			StripTitlePrefix = stripTitlePrefix,
+			StripTitlePrefix = stripTitlePrefixResolved,
 			WarnOnTypeMismatch = warnOnTypeMismatch
 		};
 
