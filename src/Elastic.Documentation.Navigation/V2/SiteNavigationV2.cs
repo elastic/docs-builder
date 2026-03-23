@@ -74,13 +74,19 @@ public class SiteNavigationV2 : SiteNavigation
 		return new LabelNavigationNode(label.Label, label.Expanded, children, parent);
 	}
 
-	private static PlaceholderNavigationNode CreateGroup(
+	private static INodeNavigationItem<INavigationModel, INavigationItem> CreateGroup(
 		GroupNavV2Item group,
 		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
 		string sitePrefix
 	)
 	{
+		if (group.Page is not null)
+		{
+			var folderPlaceholder = new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, [], parent);
+			var folderChildren = BuildV2Items(group.Children, nodes, folderPlaceholder, sitePrefix);
+			return new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, folderChildren, parent);
+		}
 		var placeholder = new PlaceholderNavigationNode(group.Title, [], parent);
 		var children = BuildV2Items(group.Children, nodes, placeholder, sitePrefix);
 		return new PlaceholderNavigationNode(group.Title, children, parent);

@@ -28,11 +28,13 @@ public record TocNavV2Item(
 public record PageNavV2Item(Uri? Page, string? Title) : INavV2Item;
 
 /// <summary>
-/// A placeholder folder node — has a title and children but no real URL.
-/// Renders like a TOC folder (with chevron expand/collapse) but with a disabled link.
+/// A folder node — has a title and children, with an optional <c>page:</c> URI.
+/// When <see cref="Page"/> is set, the header is a real clickable link; otherwise it renders
+/// as a disabled placeholder (cursor-not-allowed).
 /// </summary>
 public record GroupNavV2Item(
 	string Title,
+	Uri? Page,
 	IReadOnlyList<INavV2Item> Children
 ) : INavV2Item;
 
@@ -144,7 +146,13 @@ public class NavV2FileYamlConverter : IYamlTypeConverter
 			var groupChildren = dict.TryGetValue("children", out var gch) && gch is IReadOnlyList<INavV2Item> gChildList
 				? gChildList
 				: [];
-			return new GroupNavV2Item(groupStr, groupChildren);
+			Uri? groupPage = null;
+			if (dict.TryGetValue("page", out var gpVal) && gpVal is string gpStr)
+			{
+				var gpUri = gpStr.Contains("://") ? gpStr : $"docs-content://{gpStr}";
+				_ = Uri.TryCreate(gpUri, UriKind.Absolute, out groupPage);
+			}
+			return new GroupNavV2Item(groupStr, groupPage, groupChildren);
 		}
 
 		if (dict.TryGetValue("title", out var titleVal) && titleVal is string titleStr)

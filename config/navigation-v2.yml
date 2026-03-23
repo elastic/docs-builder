@@ -200,7 +200,17 @@ nav:
           title: Upload data files
         - page: docs-content://manage-data/ingest/sample-data.md
           title: Sample data
-        - title: Migrating your Elasticsearch data
+        - group: Migrating your Elasticsearch data
+          page: docs-content://manage-data/migrate.md
+          children:
+          - page: docs-content://manage-data/migrate/migrate-from-a-self-managed-cluster-with-a-self-signed-certificate-using-remote-reindex.md
+            title: Reindex using a private CA
+          - page: docs-content://manage-data/migrate/migrate-with-logstash.md
+            title: Migrate Elastic Cloud Hosted data to Serverless with Logstash
+          - page: docs-content://manage-data/migrate/migrate-data-between-elasticsearch-clusters-with-minimal-downtime.md
+            title: Minimal-downtime migration using snapshots
+          - page: docs-content://manage-data/migrate/migrate-internal-indices.md
+            title: Migrate system indices
         - group: Ingest tools (from Reference)
           children:
           - toc: docs-content://reference/fleet
@@ -396,144 +406,144 @@ nav:
       - title: Streams
       - title: Synthetic monitoring
       - title: Uptime monitoring (deprecated)
-  - label: Reference
-    children:
-    - toc: elasticsearch://reference/elasticsearch
-    - toc: kibana://reference
-    - group: Cloud
-      children:
-      - toc: cloud://reference
-      - toc: cloud-on-k8s://reference
-    - toc: docs-content://reference/security
-    - toc: docs-content://reference/observability
-    - toc: ecs://reference
-    - toc: docs-content://reference/machine-learning
-    - toc: search-ui://reference
-    - toc: elasticsearch://reference/aggregations
-    - toc: ecctl://reference
-    - toc: docs-content://reference/elasticsearch-clients
-    - toc: elasticsearch://reference/enrich-processor
-    - toc: elasticsearch://reference/query-languages
-    - toc: elasticsearch://reference/scripting-languages
-    - page: docs-content://explore-analyze/numeral-formatting.md
-      title: Numeral formatting
-    - toc: elasticsearch://reference/text-analysis
-    - toc: docs-content://reference/glossary
-  - label: Troubleshooting
-    children:
-    - group: Troubleshoot Elasticsearch
-      children:
-      - page: docs-content://troubleshoot/elasticsearch/add-repository.md
-        title: Troubleshoot broken repositories
-      - page: docs-content://troubleshoot/elasticsearch/add-tier.md
-        title: Add a preferred data tier
-      - page: docs-content://troubleshoot/elasticsearch/allow-all-cluster-allocation.md
-        title: Allow cluster-wide shard allocation
-      - page: docs-content://troubleshoot/elasticsearch/allow-all-index-allocation.md
-        title: Allow index shard allocation
-      - page: docs-content://troubleshoot/elasticsearch/cluster-allocation-api-examples.md
-        title: Using the cluster allocation API
-      - page: docs-content://troubleshoot/elasticsearch/corruption-troubleshooting.md
-        title: Troubleshoot data corruption
-      - page: docs-content://troubleshoot/elasticsearch/discovery-troubleshooting.md
-        title: Troubleshoot discovery
-      - page: docs-content://troubleshoot/elasticsearch/file-based-recovery.md
-        title: File-based access recovery
-      - page: docs-content://troubleshoot/elasticsearch/fix-common-cluster-issues.md
-        title: Fix common cluster issues
-      - page: docs-content://troubleshoot/elasticsearch/fix-data-node-out-of-disk.md
-        title: Fix data nodes out of disk
-      - page: docs-content://troubleshoot/elasticsearch/fix-master-node-out-of-disk.md
-        title: Fix master nodes out of disk
-      - page: docs-content://troubleshoot/elasticsearch/fix-other-node-out-of-disk.md
-        title: Fix other role nodes out of disk
-      - page: docs-content://troubleshoot/elasticsearch/fix-watermark-errors.md
-        title: Watermark errors
-      - page: docs-content://troubleshoot/elasticsearch/increase-cluster-shard-limit.md
-        title: Total shards per node has been reached
-      - page: docs-content://troubleshoot/elasticsearch/increase-shard-limit.md
-        title: Total shards for an index exceeded
-      - page: docs-content://troubleshoot/elasticsearch/diagnose-unassigned-shards.md
-        title: Not enough nodes to allocate shard replicas
-      - page: docs-content://troubleshoot/elasticsearch/index-lifecycle-management-errors.md
-        title: Fix index lifecycle management errors
-      - page: docs-content://troubleshoot/elasticsearch/monitoring-troubleshooting.md
-        title: Troubleshoot monitoring
-      - page: docs-content://troubleshoot/elasticsearch/remote-clusters.md
-        title: Troubleshoot remote clusters
-      - page: docs-content://troubleshoot/elasticsearch/repeated-snapshot-failures.md
-        title: Fix repeated snapshot policy failures
-      - page: docs-content://troubleshoot/elasticsearch/restore-from-snapshot.md
-        title: Restore from snapshot
-      - page: docs-content://troubleshoot/elasticsearch/start-ilm.md
-        title: Troubleshoot snapshot and ILM
-      - page: docs-content://troubleshoot/elasticsearch/transform-troubleshooting.md
-        title: Troubleshoot transforms
-      - page: docs-content://troubleshoot/elasticsearch/troubleshoot-ingest-pipelines.md
-        title: Troubleshoot ingest pipelines
-      - page: docs-content://troubleshoot/elasticsearch/troubleshoot-migrate-to-tiers.md
-        title: Troubleshoot incomplete migration to data tiers
-      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-searches.md
-        title: Troubleshoot searches
-      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-shards-capacity-issues.md
-        title: Troubleshoot shard capacity health issues
-      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-unbalanced-cluster.md
-        title: Troubleshoot an unbalanced cluster
-      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-unstable-cluster.md
-        title: Troubleshoot an unstable cluster
-      - page: docs-content://troubleshoot/elasticsearch/watcher-troubleshooting.md
-        title: Troubleshoot Watcher
-    - group: Troubleshoot Kibana
-      children:
-      - page: docs-content://troubleshoot/kibana/access.md
-        title: Check Kibana server status
-      - page: docs-content://troubleshoot/kibana/alerts.md
-        title: Troubleshoot Kibana alerts
-      - page: docs-content://troubleshoot/kibana/capturing-diagnostics.md
-        title: Capture Kibana diagnostics
-      - page: docs-content://troubleshoot/kibana/error-server-not-ready.md
-        title: "Error: Kibana server is not ready yet"
-      - page: docs-content://troubleshoot/kibana/graph.md
-        title: Troubleshoot graph analytics
-      - page: docs-content://troubleshoot/kibana/maps.md
-        title: Troubleshoot Kibana Maps
-      - page: docs-content://troubleshoot/kibana/migration-failures.md
-        title: Troubleshoot Kibana migration and upgrades
-      - page: docs-content://troubleshoot/kibana/monitoring.md
-        title: Troubleshoot Kibana monitoring
-      - page: docs-content://troubleshoot/kibana/reporting.md
-        title: Troubleshoot Kibana reporting
-      - page: docs-content://troubleshoot/kibana/task-manager.md
-        title: Troubleshoot Kibana Task Manager
-      - page: docs-content://troubleshoot/kibana/trace-elasticsearch-query-to-the-origin-in-kibana.md
-        title: Trace an Elasticsearch query in Kibana
-      - page: docs-content://troubleshoot/kibana/using-kibana-server-logs.md
-        title: Using Kibana server logs
-    - group: Troubleshoot Observability
-      children:
-      - page: docs-content://troubleshoot/observability/explore-data.md
-        title: Explore data
-      - page: docs-content://troubleshoot/observability/inspect.md
-        title: Inspect
-    - group: Troubleshoot Security
-      children:
-      - page: docs-content://troubleshoot/security/agentless-integrations.md
-        title: Troubleshoot agentless integrations
-      - page: docs-content://troubleshoot/security/detection-rules.md
-        title: Troubleshoot detection rules
-      - page: docs-content://troubleshoot/security/elastic-defend.md
-        title: Troubleshoot Elastic Defend
-      - page: docs-content://troubleshoot/security/indicators-of-compromise.md
-        title: Troubleshoot indicators of compromise
-    - group: Troubleshoot ingestion tools
-      children:
-      - page: docs-content://troubleshoot/ingest/beats-loggingplugin/elastic-logging-plugin-for-docker.md
-        title: Beats logging plugin
-      - page: docs-content://troubleshoot/ingest/elastic-serverless-forwarder.md
-        title: Troubleshoot Elastic Serverless Forwarder
-      - page: docs-content://troubleshoot/ingest/fleet/fleet-elastic-agent.md
-        title: Troubleshoot Fleet
-      - page: docs-content://troubleshoot/ingest/logstash.md
-        title: Troubleshoot Logstash
-      - page: docs-content://troubleshoot/ingest/opentelemetry/index.md
-        title: Troubleshoot EDOT
+#  - label: Reference
+#    children:
+#    - toc: elasticsearch://reference/elasticsearch
+#    - toc: kibana://reference
+#    - group: Cloud
+#      children:
+#      - toc: cloud://reference
+#      - toc: cloud-on-k8s://reference
+#    - toc: docs-content://reference/security
+#    - toc: docs-content://reference/observability
+#    - toc: ecs://reference
+#    - toc: docs-content://reference/machine-learning
+#    - toc: search-ui://reference
+#    - toc: elasticsearch://reference/aggregations
+#    - toc: ecctl://reference
+#    - toc: docs-content://reference/elasticsearch-clients
+#    - toc: elasticsearch://reference/enrich-processor
+#    - toc: elasticsearch://reference/query-languages
+#    - toc: elasticsearch://reference/scripting-languages
+#    - page: docs-content://explore-analyze/numeral-formatting.md
+#      title: Numeral formatting
+#    - toc: elasticsearch://reference/text-analysis
+#    - toc: docs-content://reference/glossary
+#  - label: Troubleshooting
+#    children:
+#    - group: Troubleshoot Elasticsearch
+#      children:
+#      - page: docs-content://troubleshoot/elasticsearch/add-repository.md
+#        title: Troubleshoot broken repositories
+#      - page: docs-content://troubleshoot/elasticsearch/add-tier.md
+#        title: Add a preferred data tier
+#      - page: docs-content://troubleshoot/elasticsearch/allow-all-cluster-allocation.md
+#        title: Allow cluster-wide shard allocation
+#      - page: docs-content://troubleshoot/elasticsearch/allow-all-index-allocation.md
+#        title: Allow index shard allocation
+#      - page: docs-content://troubleshoot/elasticsearch/cluster-allocation-api-examples.md
+#        title: Using the cluster allocation API
+#      - page: docs-content://troubleshoot/elasticsearch/corruption-troubleshooting.md
+#        title: Troubleshoot data corruption
+#      - page: docs-content://troubleshoot/elasticsearch/discovery-troubleshooting.md
+#        title: Troubleshoot discovery
+#      - page: docs-content://troubleshoot/elasticsearch/file-based-recovery.md
+#        title: File-based access recovery
+#      - page: docs-content://troubleshoot/elasticsearch/fix-common-cluster-issues.md
+#        title: Fix common cluster issues
+#      - page: docs-content://troubleshoot/elasticsearch/fix-data-node-out-of-disk.md
+#        title: Fix data nodes out of disk
+#      - page: docs-content://troubleshoot/elasticsearch/fix-master-node-out-of-disk.md
+#        title: Fix master nodes out of disk
+#      - page: docs-content://troubleshoot/elasticsearch/fix-other-node-out-of-disk.md
+#        title: Fix other role nodes out of disk
+#      - page: docs-content://troubleshoot/elasticsearch/fix-watermark-errors.md
+#        title: Watermark errors
+#      - page: docs-content://troubleshoot/elasticsearch/increase-cluster-shard-limit.md
+#        title: Total shards per node has been reached
+#      - page: docs-content://troubleshoot/elasticsearch/increase-shard-limit.md
+#        title: Total shards for an index exceeded
+#      - page: docs-content://troubleshoot/elasticsearch/diagnose-unassigned-shards.md
+#        title: Not enough nodes to allocate shard replicas
+#      - page: docs-content://troubleshoot/elasticsearch/index-lifecycle-management-errors.md
+#        title: Fix index lifecycle management errors
+#      - page: docs-content://troubleshoot/elasticsearch/monitoring-troubleshooting.md
+#        title: Troubleshoot monitoring
+#      - page: docs-content://troubleshoot/elasticsearch/remote-clusters.md
+#        title: Troubleshoot remote clusters
+#      - page: docs-content://troubleshoot/elasticsearch/repeated-snapshot-failures.md
+#        title: Fix repeated snapshot policy failures
+#      - page: docs-content://troubleshoot/elasticsearch/restore-from-snapshot.md
+#        title: Restore from snapshot
+#      - page: docs-content://troubleshoot/elasticsearch/start-ilm.md
+#        title: Troubleshoot snapshot and ILM
+#      - page: docs-content://troubleshoot/elasticsearch/transform-troubleshooting.md
+#        title: Troubleshoot transforms
+#      - page: docs-content://troubleshoot/elasticsearch/troubleshoot-ingest-pipelines.md
+#        title: Troubleshoot ingest pipelines
+#      - page: docs-content://troubleshoot/elasticsearch/troubleshoot-migrate-to-tiers.md
+#        title: Troubleshoot incomplete migration to data tiers
+#      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-searches.md
+#        title: Troubleshoot searches
+#      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-shards-capacity-issues.md
+#        title: Troubleshoot shard capacity health issues
+#      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-unbalanced-cluster.md
+#        title: Troubleshoot an unbalanced cluster
+#      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-unstable-cluster.md
+#        title: Troubleshoot an unstable cluster
+#      - page: docs-content://troubleshoot/elasticsearch/watcher-troubleshooting.md
+#        title: Troubleshoot Watcher
+#    - group: Troubleshoot Kibana
+#      children:
+#      - page: docs-content://troubleshoot/kibana/access.md
+#        title: Check Kibana server status
+#      - page: docs-content://troubleshoot/kibana/alerts.md
+#        title: Troubleshoot Kibana alerts
+#      - page: docs-content://troubleshoot/kibana/capturing-diagnostics.md
+#        title: Capture Kibana diagnostics
+#      - page: docs-content://troubleshoot/kibana/error-server-not-ready.md
+#        title: "Error: Kibana server is not ready yet"
+#      - page: docs-content://troubleshoot/kibana/graph.md
+#        title: Troubleshoot graph analytics
+#      - page: docs-content://troubleshoot/kibana/maps.md
+#        title: Troubleshoot Kibana Maps
+#      - page: docs-content://troubleshoot/kibana/migration-failures.md
+#        title: Troubleshoot Kibana migration and upgrades
+#      - page: docs-content://troubleshoot/kibana/monitoring.md
+#        title: Troubleshoot Kibana monitoring
+#      - page: docs-content://troubleshoot/kibana/reporting.md
+#        title: Troubleshoot Kibana reporting
+#      - page: docs-content://troubleshoot/kibana/task-manager.md
+#        title: Troubleshoot Kibana Task Manager
+#      - page: docs-content://troubleshoot/kibana/trace-elasticsearch-query-to-the-origin-in-kibana.md
+#        title: Trace an Elasticsearch query in Kibana
+#      - page: docs-content://troubleshoot/kibana/using-kibana-server-logs.md
+#        title: Using Kibana server logs
+#    - group: Troubleshoot Observability
+#      children:
+#      - page: docs-content://troubleshoot/observability/explore-data.md
+#        title: Explore data
+#      - page: docs-content://troubleshoot/observability/inspect.md
+#        title: Inspect
+#    - group: Troubleshoot Security
+#      children:
+#      - page: docs-content://troubleshoot/security/agentless-integrations.md
+#        title: Troubleshoot agentless integrations
+#      - page: docs-content://troubleshoot/security/detection-rules.md
+#        title: Troubleshoot detection rules
+#      - page: docs-content://troubleshoot/security/elastic-defend.md
+#        title: Troubleshoot Elastic Defend
+#      - page: docs-content://troubleshoot/security/indicators-of-compromise.md
+#        title: Troubleshoot indicators of compromise
+#    - group: Troubleshoot ingestion tools
+#      children:
+#      - page: docs-content://troubleshoot/ingest/beats-loggingplugin/elastic-logging-plugin-for-docker.md
+#        title: Beats logging plugin
+#      - page: docs-content://troubleshoot/ingest/elastic-serverless-forwarder.md
+#        title: Troubleshoot Elastic Serverless Forwarder
+#      - page: docs-content://troubleshoot/ingest/fleet/fleet-elastic-agent.md
+#        title: Troubleshoot Fleet
+#      - page: docs-content://troubleshoot/ingest/logstash.md
+#        title: Troubleshoot Logstash
+#      - page: docs-content://troubleshoot/ingest/opentelemetry/index.md
+#        title: Troubleshoot EDOT
