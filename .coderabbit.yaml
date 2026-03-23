@@ -3,9 +3,7 @@ language: en-US
 tone_instructions: >-
   Be concise and direct. Only flag genuine bugs, security issues,
   and logic errors. Skip style nitpicks. If the code is correct
-  and clear, do not leave inline comments. When labeling PRs,
-  apply exactly one label — choose the single most specific label
-  that best describes the primary purpose of the change.
+  and clear, do not leave inline comments.
 reviews:
   profile: chill
   request_changes_workflow: true
@@ -23,23 +21,23 @@ reviews:
   auto_apply_labels: true
   labeling_instructions:
     - label: breaking
-      instructions: "Apply when the PR introduces breaking changes to public APIs, CLI behavior, or configuration formats. Do not combine with other labels."
+      instructions: "Apply only this label when the PR introduces breaking changes to public APIs, CLI behavior, or configuration formats"
     - label: feature
-      instructions: "Apply when the PR introduces entirely new functionality or capabilities"
+      instructions: "Apply only this label when the PR introduces entirely new functionality or capabilities"
     - label: enhancement
-      instructions: "Apply when the PR improves or extends existing functionality (not new features)"
+      instructions: "Apply only this label when the PR improves or extends existing functionality (not new features)"
     - label: fix
-      instructions: "Apply when the PR fixes a bug or incorrect behavior"
+      instructions: "Apply only this label when the PR fixes a bug or incorrect behavior"
     - label: documentation
-      instructions: "Apply when the PR primarily updates docs/ content, README, or doc comments"
+      instructions: "Apply only this label when the PR primarily updates docs/ content, README, or doc comments"
     - label: chore
-      instructions: "Apply for maintenance: refactoring, code cleanup, or config changes with no user-facing impact"
+      instructions: "Apply only this label for maintenance: refactoring, code cleanup, or config changes with no user-facing impact"
     - label: dependencies
-      instructions: "Apply when NuGet packages or other dependency versions are added or updated"
+      instructions: "Apply only this label when NuGet packages or other dependency versions are added or updated"
     - label: ci
-      instructions: "Apply when GitHub Actions workflows, CI/CD scripts, or build automation is modified"
+      instructions: "Apply only this label when GitHub Actions workflows, CI/CD scripts, or build automation is modified"
     - label: redesign
-      instructions: "Apply when the PR contains site template, layout, or UI overhaul work"
+      instructions: "Apply only this label when the PR contains site template, layout, or UI overhaul work"
   suggested_reviewers: false
   auto_review:
     enabled: true
