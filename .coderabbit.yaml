@@ -28,7 +28,7 @@ reviews:
       instructions: "Apply when the PR introduces entirely new functionality or capabilities"
     - label: enhancement
       instructions: "Apply when the PR improves or extends existing functionality (not new features)"
-    - label: bug
+    - label: fix
       instructions: "Apply when the PR fixes a bug or incorrect behavior"
     - label: documentation
       instructions: "Apply when the PR primarily updates docs/ content, README, or doc comments"
