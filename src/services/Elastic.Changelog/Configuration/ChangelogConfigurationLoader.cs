@@ -115,7 +115,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		IReadOnlyList<string> availableSubtypes;
 		IReadOnlyList<string>? availableAreas;
 		Dictionary<string, string>? labelToType;
-		Dictionary<string, string>? labelToAreas;
+		Dictionary<string, List<string>>? labelToAreas;
 		Dictionary<string, string>? labelToProducts;
 		PivotConfiguration? pivot = null;
 
@@ -309,6 +309,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			filenameStrategy = parsed;
 		}
 
+		var labelToAreasReadOnly = labelToAreas?.ToDictionary(
+			kvp => kvp.Key,
+			kvp => (IReadOnlyList<string>)kvp.Value,
+			StringComparer.OrdinalIgnoreCase);
+
 		return new ChangelogConfiguration
 		{
 			Pivot = pivot,
@@ -318,7 +323,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Areas = availableAreas,
 			Products = products,
 			LabelToType = labelToType,
-			LabelToAreas = labelToAreas,
+			LabelToAreas = labelToAreasReadOnly,
 			LabelToProducts = labelToProducts,
 			Rules = rules,
 			HighlightLabels = highlightLabels,
@@ -1010,14 +1015,14 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	/// <summary>
 	/// Builds LabelToAreas mapping by inverting pivot.areas entries.
-	/// Each label in an area entry maps to that area name.
+	/// Each label in an area entry maps to that area name. The same label may appear under multiple areas; all area names are collected.
 	/// </summary>
-	private static Dictionary<string, string>? BuildLabelToAreasMapping(Dictionary<string, YamlLenientList?>? areas)
+	private static Dictionary<string, List<string>>? BuildLabelToAreasMapping(Dictionary<string, YamlLenientList?>? areas)
 	{
 		if (areas == null || areas.Count == 0)
 			return null;
 
-		var labelToAreas = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var labelToAreas = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
 		foreach (var (areaName, labelList) in areas)
 		{
@@ -1025,7 +1030,16 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				continue;
 
 			foreach (var label in labelList.Values)
-				labelToAreas[label] = areaName;
+			{
+				if (!labelToAreas.TryGetValue(label, out var areaNames))
+				{
+					areaNames = [];
+					labelToAreas[label] = areaNames;
+				}
+
+				if (!areaNames.Exists(a => a.Equals(areaName, StringComparison.OrdinalIgnoreCase)))
+					areaNames.Add(areaName);
+			}
 		}
 
 		return labelToAreas.Count > 0 ? labelToAreas : null;
