@@ -114,7 +114,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		{
 			throw;
 		}
-		catch (Exception ex)
+		catch (RequestException ex)
 		{
 			logger.LogWarning(ex, "Failed to close PIT (non-fatal)");
 		}
