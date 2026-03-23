@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -23,42 +24,45 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		var pitId = await OpenPitAsync(ct);
 		try
 		{
-			object[]? lastSortValues = null;
+			string[]? lastSortValues = null;
 			var page = 0;
 			int hitCount;
 
 			do
 			{
 				var body = BuildSearchBody(pitId, lastSortValues);
-				var response = await transport.PostAsync<DynamicResponse>("/_search", PostData.String(body), ct);
+				var response = await transport.PostAsync<StringResponse>("/_search", PostData.String(body), ct);
 
 				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 					throw new InvalidOperationException(
 						$"ES search failed (page {page}): {response.ApiCallDetails.HttpStatusCode} {response.ApiCallDetails.DebugInformation}");
 
+				using var doc = JsonDocument.Parse(response.Body);
+				var root = doc.RootElement;
+
 				// Update PIT id — ES may return a new one on each response
-				pitId = response.Body.Get<string>("pit_id") ?? pitId;
+				if (root.TryGetProperty("pit_id", out var pitIdProp))
+					pitId = pitIdProp.GetString() ?? pitId;
 
-				var hits = response.Body.Get<object[]>("hits.hits");
-				hitCount = hits?.Length ?? 0;
-
-				if (hits is not null)
+				hitCount = 0;
+				if (root.TryGetProperty("hits", out var hitsObj) && hitsObj.TryGetProperty("hits", out var hitsArray))
 				{
-					foreach (var hit in hits)
+					foreach (var hit in hitsArray.EnumerateArray())
 					{
-						if (hit is not IDictionary<string, object> dict
-							|| dict["_source"] is not IDictionary<string, object> source)
+						hitCount++;
+
+						if (!hit.TryGetProperty("_source", out var source))
 							continue;
 
-						var url = source["url"]?.ToString();
-						var lastUpdatedStr = source["last_updated"]?.ToString();
+						var url = source.TryGetProperty("url", out var urlProp) ? urlProp.GetString() : null;
+						var lastUpdatedStr = source.TryGetProperty("last_updated", out var luProp) ? luProp.GetString() : null;
 
 						if (url is null || lastUpdatedStr is null)
 							continue;
 
 						// Use sort array from the hit for search_after cursor
-						if (dict.TryGetValue("sort", out var sortObj) && sortObj is object[] sortValues)
-							lastSortValues = sortValues;
+						if (hit.TryGetProperty("sort", out var sortProp))
+							lastSortValues = sortProp.EnumerateArray().Select(e => e.ToString()).ToArray();
 
 						var lastUpdated = DateTimeOffset.Parse(lastUpdatedStr, CultureInfo.InvariantCulture);
 						yield return new SitemapEntry(url, lastUpdated);
@@ -111,12 +115,12 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		}
 	}
 
-	internal static string BuildSearchBody(string pitId, object[]? searchAfter)
+	internal static string BuildSearchBody(string pitId, string[]? searchAfter)
 	{
 		var searchAfterClause = "";
 		if (searchAfter is { Length: > 0 })
 		{
-			var values = string.Join(",", searchAfter.Select(v => $"\"{EscapeJson(v?.ToString() ?? "")}\""));
+			var values = string.Join(",", searchAfter.Select(v => $"\"{EscapeJson(v)}\""));
 			searchAfterClause = $",\"search_after\":[{values}]";
 		}
 
