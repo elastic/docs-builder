@@ -145,7 +145,7 @@ toc:
           # https://github.com/elastic/elastic-otel-php/blob/main/docs/release-notes/toc.yml
           - toc: elastic-otel-php://release-notes
             path_prefix: release-notes/edot/sdks/php
-          # EDOT RUM
+          # EDOT Browser (RUM)
           # https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/release-notes/toc.yml
           - toc: elastic-otel-rum-js://release-notes
             path_prefix: release-notes/edot/sdks/rum
@@ -486,10 +486,10 @@ toc:
                 path_prefix: reference/opentelemetry/edot-sdks/php
               - toc: elastic-otel-python://reference/edot-python
                 path_prefix: reference/opentelemetry/edot-sdks/python
-              # EDOT RUM
-              # https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/reference/toc.yml
-              - toc: elastic-otel-rum-js://reference/edot-rum
-                path_prefix: reference/opentelemetry/edot-sdks/rum
+              # EDOT Browser (RUM)
+              # https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/reference/edot-browser/toc.yml
+              - toc: elastic-otel-rum-js://reference/edot-browser
+                path_prefix: reference/opentelemetry/edot-sdks/browser
 
           # Elastic Integrations
           # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml
