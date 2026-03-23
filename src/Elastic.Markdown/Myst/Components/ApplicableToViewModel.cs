@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
 
@@ -113,7 +114,7 @@ public class ApplicableToViewModel
 	{
 		var rawItems = new List<RawApplicabilityItem>();
 
-		if (AppliesTo.Stack is not null)
+		if (AppliesTo.Stack is not null && !IsGenericGa(AppliesTo.Stack))
 			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
 
 		if (AppliesTo.Product is not null)
@@ -147,7 +148,19 @@ public class ApplicableToViewModel
 		if (rawItems.Count == 0 && noExplicitSupportedOn && AppliesTo.Stack is not null)
 			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Self));
 
-		return rawItems;
+		return rawItems
+			.Where(i => i.Applicability.Lifecycle != ProductLifecycle.Unavailable)
+			.ToList();
+	}
+
+	private static bool IsGenericGa(AppliesCollection collection)
+	{
+		if (collection.Count != 1)
+			return false;
+
+		var applicability = collection.First();
+		return applicability.Lifecycle == ProductLifecycle.GenerallyAvailable
+			&& (applicability.Version is null || applicability.Version == AllVersionsSpec.Instance);
 	}
 
 	/// <summary>

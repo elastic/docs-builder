@@ -184,3 +184,57 @@ groups:
 		Html.Should().Contain("https://www.elastic.co/docs/reference/kibana/connectors-kibana/pre-configured-connectors");
 	}
 }
+
+public class SettingsApplicabilityRowsPreferUsefulBadges(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/applicability-rows.yml
+::::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/applicability-rows.yml", """
+groups:
+  - group: Example
+    settings:
+      - setting: xpack.sample.noop
+        description: Generic stack GA should not render a stack badge.
+        applies_to:
+          stack: ga
+          self: ga
+          ech: unavailable
+""");
+	}
+
+	[Fact]
+	public void DoesNotRenderGenericStackBadgeOrUnavailableSupportedOnEntry()
+	{
+		var config = TestHelpers.CreateConfigurationContext(new MockFileSystem());
+		var viewModel = new SettingsViewModel
+		{
+			SettingsCollection = new YamlSettings(),
+			RenderMarkdown = s => s,
+			VersionsConfig = config.VersionsConfiguration,
+			GroupHeadingLevel = 2
+		};
+		var appliesTo = new Elastic.Documentation.AppliesTo.ApplicableTo
+		{
+			Stack = (Elastic.Documentation.AppliesTo.AppliesCollection)"ga",
+			Deployment = new Elastic.Documentation.AppliesTo.DeploymentApplicability
+			{
+				Self = (Elastic.Documentation.AppliesTo.AppliesCollection)"ga",
+				Ess = (Elastic.Documentation.AppliesTo.AppliesCollection)"unavailable"
+			}
+		};
+
+		viewModel.RenderStackRowBadges(appliesTo).Should().NotContain("badge-key=\"Stack\"");
+		viewModel.RenderSupportedOnBadges(appliesTo).Should().Contain("Self-managed");
+		viewModel.RenderSupportedOnBadges(appliesTo).Should().NotContain("ECH");
+
+		Html.Should().Contain("badge-key=\"Self-managed\"");
+		Html.Should().NotContain("badge-key=\"ECH\"");
+		Html.Should().NotContain("Unavailable");
+	}
+}
