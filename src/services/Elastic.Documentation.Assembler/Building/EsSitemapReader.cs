@@ -101,6 +101,10 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 			_ = await transport.DeleteAsync<DynamicResponse>("/_pit", default!, PostData.String(body), ct);
 			logger.LogInformation("Closed PIT");
 		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
 		catch (Exception ex)
 		{
 			logger.LogWarning(ex, "Failed to close PIT (non-fatal)");
