@@ -133,14 +133,6 @@ public class NavV2FileYamlConverter : IYamlTypeConverter
 			return new TocNavV2Item(source, tocChildren);
 		}
 
-		if (dict.TryGetValue("page", out var pageVal) && pageVal is string pageStr)
-		{
-			var uriString = pageStr.Contains("://") ? pageStr : $"docs-content://{pageStr}";
-			_ = Uri.TryCreate(uriString, UriKind.Absolute, out var pageUri);
-			var title = dict.TryGetValue("title", out var t) && t is string ts ? ts : null;
-			return new PageNavV2Item(pageUri, title);
-		}
-
 		if (dict.TryGetValue("group", out var groupVal) && groupVal is string groupStr)
 		{
 			var groupChildren = dict.TryGetValue("children", out var gch) && gch is IReadOnlyList<INavV2Item> gChildList
@@ -153,6 +145,14 @@ public class NavV2FileYamlConverter : IYamlTypeConverter
 				_ = Uri.TryCreate(gpUri, UriKind.Absolute, out groupPage);
 			}
 			return new GroupNavV2Item(groupStr, groupPage, groupChildren);
+		}
+
+		if (dict.TryGetValue("page", out var pageVal) && pageVal is string pageStr)
+		{
+			var uriString = pageStr.Contains("://") ? pageStr : $"docs-content://{pageStr}";
+			_ = Uri.TryCreate(uriString, UriKind.Absolute, out var pageUri);
+			var title = dict.TryGetValue("title", out var t) && t is string ts ? ts : null;
+			return new PageNavV2Item(pageUri, title);
 		}
 
 		if (dict.TryGetValue("title", out var titleVal) && titleVal is string titleStr)
