@@ -60,7 +60,8 @@ public partial class ChangesUsecase(IChangesGateway changesGateway, ILogger<Chan
 			var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
 			using var doc = JsonDocument.Parse(json);
 			var root = doc.RootElement;
-			if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() != 2)
+			var arrayLength = root.GetArrayLength();
+			if (root.ValueKind != JsonValueKind.Array || arrayLength < 2)
 				return null;
 
 			var epochEl = root[0];
@@ -68,7 +69,11 @@ public partial class ChangesUsecase(IChangesGateway changesGateway, ILogger<Chan
 			if (epochEl.ValueKind != JsonValueKind.Number || urlEl.ValueKind != JsonValueKind.String)
 				return null;
 
-			return new ChangesPageCursor(epochEl.GetInt64(), urlEl.GetString()!);
+			var pitId = arrayLength > 2 && root[2].ValueKind == JsonValueKind.String
+				? root[2].GetString()
+				: null;
+
+			return new ChangesPageCursor(epochEl.GetInt64(), urlEl.GetString()!, pitId);
 		}
 		catch (Exception ex) when (ex is FormatException or JsonException or InvalidOperationException)
 		{
@@ -83,6 +88,8 @@ public partial class ChangesUsecase(IChangesGateway changesGateway, ILogger<Chan
 		writer.WriteStartArray();
 		writer.WriteNumberValue(cursor.LastUpdatedEpochMs);
 		writer.WriteStringValue(cursor.Url);
+		if (cursor.PitId is not null)
+			writer.WriteStringValue(cursor.PitId);
 		writer.WriteEndArray();
 		writer.Flush();
 

@@ -26,7 +26,7 @@ public record ChangesResult
 }
 
 /// <summary>Cursor for search_after pagination over changed pages.</summary>
-public record ChangesPageCursor(long LastUpdatedEpochMs, string Url);
+public record ChangesPageCursor(long LastUpdatedEpochMs, string Url, string? PitId = null);
 
 /// <summary>Shared defaults for the changes feed.</summary>
 public static class ChangesDefaults
