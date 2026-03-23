@@ -3,7 +3,9 @@ language: en-US
 tone_instructions: >-
   Be concise and direct. Only flag genuine bugs, security issues,
   and logic errors. Skip style nitpicks. If the code is correct
-  and clear, do not leave inline comments.
+  and clear, do not leave inline comments. When labeling PRs,
+  apply exactly one label — choose the single most specific label
+  that best describes the primary purpose of the change.
 reviews:
   profile: chill
   request_changes_workflow: true
@@ -21,25 +23,21 @@ reviews:
   auto_apply_labels: true
   labeling_instructions:
     - label: breaking
-      instructions: "Apply when the PR introduces breaking changes to public APIs, CLI behavior, or configuration formats"
+      instructions: "Apply when the PR introduces breaking changes to public APIs, CLI behavior, or configuration formats. Do not combine with other labels."
     - label: feature
       instructions: "Apply when the PR introduces entirely new functionality or capabilities"
     - label: enhancement
-      instructions: "Apply when the PR improves or extends existing functionality"
+      instructions: "Apply when the PR improves or extends existing functionality (not new features)"
     - label: bug
       instructions: "Apply when the PR fixes a bug or incorrect behavior"
-    - label: fix
-      instructions: "Apply when the PR fixes a bug (prefer 'bug' label when both apply)"
     - label: documentation
       instructions: "Apply when the PR primarily updates docs/ content, README, or doc comments"
     - label: chore
       instructions: "Apply for maintenance: refactoring, code cleanup, or config changes with no user-facing impact"
     - label: dependencies
       instructions: "Apply when NuGet packages or other dependency versions are added or updated"
-    - label: automation
-      instructions: "Apply when GitHub Actions workflows, CI/CD scripts, or build automation is modified"
     - label: ci
-      instructions: "Apply when GitHub Actions workflows or CI/CD pipeline config is modified"
+      instructions: "Apply when GitHub Actions workflows, CI/CD scripts, or build automation is modified"
     - label: redesign
       instructions: "Apply when the PR contains site template, layout, or UI overhaul work"
   suggested_reviewers: false
