@@ -90,9 +90,9 @@ public sealed partial class SharedPointInTimeManager(
 			_ = await clientAccessor.Client.ClosePointInTimeAsync(r => r.Id(_pitId));
 			LogPitClosed(logger, _pitId);
 		}
-		catch (Exception ex)
+		catch (OperationCanceledException ex)
 		{
-			logger.LogWarning(ex, "Failed to close PIT {PitId} during shutdown", _pitId);
+			logger.LogWarning(ex, "PIT close operation was canceled during shutdown for {PitId}", _pitId);
 		}
 		finally
 		{
