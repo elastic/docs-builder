@@ -33,8 +33,7 @@ public partial class ChangesGateway(
 			if (!response.IsValidResponse && IsExpiredPit(response))
 			{
 				LogPitExpired(logger);
-				await pitManager.HandleExpiredPitAsync(pitId, ctx);
-				pitId = await pitManager.GetPitIdAsync(ctx);
+				pitId = await pitManager.GetPitIdAsync(ctx, expiredPitId: pitId);
 				response = await Search(request, pitId, fetchSize, ctx);
 			}
 

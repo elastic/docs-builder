@@ -20,36 +20,27 @@ public sealed partial class SharedPointInTimeManager(
 	private string? _pitId;
 	private DateTimeOffset _expiresAt;
 
-	/// <summary>Returns a valid PIT ID, opening a new one if needed.</summary>
-	public async Task<string> GetPitIdAsync(Cancel ctx)
+	/// <summary>
+	/// Returns a valid PIT ID, opening a new one if needed.
+	/// When <paramref name="expiredPitId"/> is supplied and matches the current PIT, it is invalidated first.
+	/// </summary>
+	public async Task<string> GetPitIdAsync(Cancel ctx, string? expiredPitId = null)
 	{
 		await _semaphore.WaitAsync(ctx);
 		try
 		{
+			if (expiredPitId is not null && _pitId == expiredPitId)
+			{
+				LogPitExpired(logger);
+				_pitId = null;
+			}
+
 			if (_pitId is not null && DateTimeOffset.UtcNow < _expiresAt)
 				return _pitId;
 
 			_pitId = await OpenPit(ctx);
 			_expiresAt = DateTimeOffset.UtcNow.Add(KeepAliveDuration);
 			return _pitId;
-		}
-		finally
-		{
-			_ = _semaphore.Release();
-		}
-	}
-
-	/// <summary>Nullifies the current PIT only if it matches the expired one, so a concurrent refresh is not discarded.</summary>
-	public async Task HandleExpiredPitAsync(string expiredPitId, Cancel ctx)
-	{
-		await _semaphore.WaitAsync(ctx);
-		try
-		{
-			if (_pitId == expiredPitId)
-			{
-				LogPitExpired(logger);
-				_pitId = null;
-			}
 		}
 		finally
 		{
