@@ -158,6 +158,6 @@ reviews:
       enabled: false
 knowledge_base:
   code_guidelines:
-    enabled: false
+    enabled: true
 chat:
   auto_reply: true
