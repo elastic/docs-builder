@@ -31,7 +31,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 			do
 			{
 				var body = BuildSearchBody(pitId, lastSortValues);
-				var response = await transport.PostAsync<JsonResponse>("/_search", PostData.String(body), ct);
+				var response = await transport.PostAsync<JsonResponse>("/_search", PostData.Serializable(body), ct);
 
 				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 					throw new InvalidOperationException(
@@ -109,8 +109,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 	{
 		try
 		{
-			var body = $$"""{"id":"{{pitId}}"}""";
-			_ = await transport.DeleteAsync<VoidResponse>("/_pit", new DefaultRequestParameters(), PostData.String(body), ct);
+			_ = await transport.DeleteAsync<VoidResponse>("/_pit", new DefaultRequestParameters(), PostData.Serializable(new { id = pitId }), ct);
 			logger.LogInformation("Closed PIT");
 		}
 		catch (OperationCanceledException)
@@ -123,26 +122,20 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		}
 	}
 
-	internal static string BuildSearchBody(string pitId, string[]? searchAfter)
+	internal static object BuildSearchBody(string pitId, string[]? searchAfter)
 	{
-		var searchAfterClause = "";
-		if (searchAfter is { Length: > 0 })
+		var body = new Dictionary<string, object>
 		{
-			var values = string.Join(",", searchAfter.Select(v => $"\"{EscapeJson(v)}\""));
-			searchAfterClause = $",\"search_after\":[{values}]";
-		}
+			["size"] = PageSize,
+			["_source"] = new[] { "url", "last_updated" },
+			["query"] = new { @bool = new { must_not = new[] { new { term = new { hidden = true } } } } },
+			["pit"] = new { id = pitId, keep_alive = PitKeepAlive },
+			["sort"] = new[] { new { url = "asc" } }
+		};
 
-		return $$"""
-			{
-				"size": {{PageSize}},
-				"_source": ["url", "last_updated"],
-				"query": { "bool": { "must_not": [{ "term": { "hidden": true } }] } },
-				"pit": { "id": "{{EscapeJson(pitId)}}", "keep_alive": "{{PitKeepAlive}}" },
-				"sort": [{ "url": "asc" }]{{searchAfterClause}}
-			}
-			""";
+		if (searchAfter is { Length: > 0 })
+			body["search_after"] = searchAfter;
+
+		return body;
 	}
-
-	private static string EscapeJson(string value) =>
-		value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

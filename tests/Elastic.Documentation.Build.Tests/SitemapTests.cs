@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using System.Text.Json;
 using System.Xml.Linq;
 using Elastic.Documentation.Assembler.Building;
 using FluentAssertions;
@@ -98,13 +99,14 @@ public class SitemapTests
 	{
 		// Act
 		var body = EsSitemapReader.BuildSearchBody("test-pit-id", null);
+		var json = JsonSerializer.Serialize(body);
 
 		// Assert
-		body.Should().Contain("\"pit\"");
-		body.Should().Contain("\"test-pit-id\"");
-		body.Should().Contain("\"must_not\"");
-		body.Should().Contain("\"hidden\": true");
-		body.Should().NotContain("search_after");
+		json.Should().Contain("\"pit\"");
+		json.Should().Contain("\"test-pit-id\"");
+		json.Should().Contain("\"must_not\"");
+		json.Should().Contain("\"hidden\":true");
+		json.Should().NotContain("search_after");
 	}
 
 	[Fact]
@@ -112,10 +114,11 @@ public class SitemapTests
 	{
 		// Act
 		var body = EsSitemapReader.BuildSearchBody("test-pit-id", ["/docs/last-url"]);
+		var json = JsonSerializer.Serialize(body);
 
 		// Assert
-		body.Should().Contain("\"search_after\"");
-		body.Should().Contain("/docs/last-url");
+		json.Should().Contain("\"search_after\"");
+		json.Should().Contain("/docs/last-url");
 	}
 
 	[Fact]
@@ -123,9 +126,10 @@ public class SitemapTests
 	{
 		// Act
 		var body = EsSitemapReader.BuildSearchBody("pit-with-\"quotes\"", null);
+		var json = JsonSerializer.Serialize(body);
+		var doc = JsonDocument.Parse(json);
 
-		// Assert
-		body.Should().Contain("pit-with-\\\"quotes\\\"");
-		body.Should().NotContain("pit-with-\"quotes\"");
+		// Assert — verify the value round-trips correctly through serialization
+		doc.RootElement.GetProperty("pit").GetProperty("id").GetString().Should().Be("pit-with-\"quotes\"");
 	}
 }
