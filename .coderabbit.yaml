@@ -1,0 +1,163 @@
+language: en-US
+tone_instructions: >-
+  Be concise and direct. Only flag genuine bugs, security issues,
+  and logic errors. Skip style nitpicks. If the code is correct
+  and clear, do not leave inline comments.
+reviews:
+  profile: chill
+  high_level_summary: false
+  review_details: false
+  poem: false
+  in_progress_fortune: false
+  ai_agent_prompt: false
+  posting_status_messages: false
+  sequence_diagrams: true
+  estimate_code_review_effort: false
+  collapse_walkthrough: true
+  changed_files_summary: false
+  suggested_labels: true
+  auto_apply_labels: true
+  labeling_instructions:
+    - label: breaking
+      instructions: "Apply when the PR introduces breaking changes to public APIs, CLI behavior, or configuration formats"
+    - label: feature
+      instructions: "Apply when the PR introduces entirely new functionality or capabilities"
+    - label: enhancement
+      instructions: "Apply when the PR improves or extends existing functionality"
+    - label: bug
+      instructions: "Apply when the PR fixes a bug or incorrect behavior"
+    - label: fix
+      instructions: "Apply when the PR fixes a bug (prefer 'bug' label when both apply)"
+    - label: documentation
+      instructions: "Apply when the PR primarily updates docs/ content, README, or doc comments"
+    - label: chore
+      instructions: "Apply for maintenance: refactoring, code cleanup, or config changes with no user-facing impact"
+    - label: dependencies
+      instructions: "Apply when NuGet packages or other dependency versions are added or updated"
+    - label: automation
+      instructions: "Apply when GitHub Actions workflows, CI/CD scripts, or build automation is modified"
+    - label: ci
+      instructions: "Apply when GitHub Actions workflows or CI/CD pipeline config is modified"
+    - label: redesign
+      instructions: "Apply when the PR contains site template, layout, or UI overhaul work"
+  suggested_reviewers: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!.artifacts/**"
+    - "!**/bin/**"
+    - "!**/obj/**"
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: true
+  tools:
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: true
+    github-checks:
+      enabled: true
+    languagetool:
+      enabled: true
+    yamllint:
+      enabled: true
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    ast-grep:
+      enabled: true
+    ruff:
+      enabled: false
+    biome:
+      enabled: false
+    hadolint:
+      enabled: false
+    swiftlint:
+      enabled: false
+    phpstan:
+      enabled: false
+    phpmd:
+      enabled: false
+    phpcs:
+      enabled: false
+    golangci-lint:
+      enabled: false
+    detekt:
+      enabled: false
+    eslint:
+      enabled: false
+    flake8:
+      enabled: false
+    rubocop:
+      enabled: false
+    buf:
+      enabled: false
+    regal:
+      enabled: false
+    pmd:
+      enabled: false
+    clang:
+      enabled: false
+    cppcheck:
+      enabled: false
+    opengrep:
+      enabled: false
+    semgrep:
+      enabled: false
+    circleci:
+      enabled: false
+    clippy:
+      enabled: false
+    sqlfluff:
+      enabled: false
+    checkov:
+      enabled: false
+    tflint:
+      enabled: false
+    pylint:
+      enabled: false
+    oxc:
+      enabled: false
+    fortitude:
+      enabled: false
+    brakeman:
+      enabled: false
+    prisma-lint:
+      enabled: false
+    luacheck:
+      enabled: false
+    blinter:
+      enabled: false
+    smarty-lint:
+      enabled: false
+    ember-template-lint:
+      enabled: false
+    psscriptanalyzer:
+      enabled: false
+    shopify-theme-check:
+      enabled: false
+    htmlhint:
+      enabled: false
+    stylelint:
+      enabled: false
+    checkmake:
+      enabled: false
+    osv-scanner:
+      enabled: false
+    dotenv-lint:
+      enabled: false
+    trivy:
+      enabled: false
+knowledge_base:
+  code_guidelines:
+    enabled: false
+chat:
+  auto_reply: true
