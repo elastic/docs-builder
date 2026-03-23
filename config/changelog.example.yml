@@ -40,6 +40,10 @@ extract:
   # When using --issues: looks for patterns like "Fixed by #123" in issue body to derive PRs.
   # Can be overridden by CLI --no-extract-issues
   issues: true
+  # Remove square-bracket prefixes from PR titles (default: false)
+  # When enabled (true or via --strip-title-prefix), titles like "[ES|QL] Fix bug" become "Fix bug".
+  # Can be overridden by CLI --strip-title-prefix
+  strip_title_prefix: false
 
 # Available lifecycle values (strongly typed: preview, beta, ga)
 # Accepts string or list: "preview, beta, ga" or a YAML list
