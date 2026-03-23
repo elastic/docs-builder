@@ -12,79 +12,49 @@ namespace Elastic.Documentation.Search;
 /// <summary>
 /// Elasticsearch gateway for the documentation changes feed.
 /// Queries last_updated > since with search_after cursor pagination.
-/// Uses Point In Time (PIT) for consistent pagination across requests.
+/// Uses a shared Point In Time (PIT) for consistent pagination across requests.
 /// </summary>
-public partial class ChangesGateway(ElasticsearchClientAccessor clientAccessor, ILogger<ChangesGateway> logger)
-	: IChangesGateway
+public partial class ChangesGateway(
+	ElasticsearchClientAccessor clientAccessor,
+	SharedPointInTimeManager pitManager,
+	ILogger<ChangesGateway> logger
+) : IChangesGateway
 {
-	private const string PitKeepAlive = "5m";
-
 	public async Task<ChangesResult> GetChangesAsync(ChangesRequest request, Cancel ctx = default)
 	{
 		var fetchSize = request.PageSize + 1;
 
 		try
 		{
-			var pitId = await ResolvePitId(request.Cursor?.PitId, ctx);
+			var pitId = await pitManager.GetPitIdAsync(ctx);
 
 			var response = await Search(request, pitId, fetchSize, ctx);
 
-			if (!response.IsValidResponse)
+			if (!response.IsValidResponse && IsExpiredPit(response))
 			{
-				if (IsExpiredPit(response) && request.Cursor?.PitId is not null)
-				{
-					LogPitExpired(logger);
-					pitId = await OpenPit(ctx);
-					var updatedCursor = request.Cursor with { PitId = pitId };
-					response = await Search(request with { Cursor = updatedCursor }, pitId, fetchSize, ctx);
-				}
-
-				if (!response.IsValidResponse)
-				{
-					var reason = response.ElasticsearchServerError?.Error.Reason ?? "Unknown";
-					throw new InvalidOperationException(
-						$"Elasticsearch changes query failed (HTTP {response.ApiCallDetails?.HttpStatusCode}): {reason}"
-					);
-				}
+				LogPitExpired(logger);
+				await pitManager.HandleExpiredPitAsync(pitId, ctx);
+				pitId = await pitManager.GetPitIdAsync(ctx);
+				response = await Search(request, pitId, fetchSize, ctx);
 			}
 
-			// Use the PIT ID from the response if available, as ES may return a new one
-			var responsePitId = response.PitId ?? pitId;
+			if (!response.IsValidResponse)
+			{
+				var reason = response.ElasticsearchServerError?.Error.Reason ?? "Unknown";
+				throw new InvalidOperationException(
+					$"Elasticsearch changes query failed (HTTP {response.ApiCallDetails?.HttpStatusCode}): {reason}"
+				);
+			}
 
-			return BuildResult(response, request.PageSize, responsePitId);
+			pitManager.RefreshKeepAlive();
+
+			return BuildResult(response, request.PageSize);
 		}
 		catch (Exception ex)
 		{
 			logger.LogError(ex, "Error querying Elasticsearch for changes since {Since}", request.Since);
 			throw;
 		}
-	}
-
-	private async Task<string> ResolvePitId(string? existingPitId, Cancel ctx)
-	{
-		if (!string.IsNullOrEmpty(existingPitId))
-			return existingPitId;
-
-		return await OpenPit(ctx);
-	}
-
-	private async Task<string> OpenPit(Cancel ctx)
-	{
-		var response = await clientAccessor.Client.OpenPointInTimeAsync(
-			clientAccessor.SearchIndex,
-			r => r.KeepAlive(PitKeepAlive),
-			ctx
-		);
-
-		if (!response.IsValidResponse)
-		{
-			throw new InvalidOperationException(
-				$"Failed to open PIT: {response.ElasticsearchServerError?.Error.Reason ?? "Unknown"}"
-			);
-		}
-
-		LogPitOpened(logger, response.Id);
-		return response.Id;
 	}
 
 	private async Task<SearchResponse<DocumentationDocument>> Search(
@@ -95,7 +65,7 @@ public partial class ChangesGateway(ElasticsearchClientAccessor clientAccessor, 
 			_ = s
 				.Size(fetchSize)
 				.TrackTotalHits(t => t.Enabled(false))
-				.Pit(p => p.Id(pitId).KeepAlive(PitKeepAlive))
+				.Pit(p => p.Id(pitId).KeepAlive(SharedPointInTimeManager.PitKeepAlive))
 				.Query(q => q.Range(r => r
 					.Date(dr => dr
 						.Field(f => f.LastUpdated)
@@ -132,7 +102,7 @@ public partial class ChangesGateway(ElasticsearchClientAccessor clientAccessor, 
 		|| response.ElasticsearchServerError?.Error.Reason?.Contains("point in time", StringComparison.OrdinalIgnoreCase) == true
 		|| response.ElasticsearchServerError?.Error.Reason?.Contains("No search context found", StringComparison.OrdinalIgnoreCase) == true;
 
-	private static ChangesResult BuildResult(SearchResponse<DocumentationDocument> response, int pageSize, string pitId)
+	private static ChangesResult BuildResult(SearchResponse<DocumentationDocument> response, int pageSize)
 	{
 		var hits = response.Hits.ToList();
 		var hasMore = hits.Count > pageSize;
@@ -167,7 +137,7 @@ public partial class ChangesGateway(ElasticsearchClientAccessor clientAccessor, 
 					: default(long?);
 
 				if (epochMs is not null && sortUrl.TryGetString(out var url))
-					nextCursor = new ChangesPageCursor(epochMs.Value, url!, pitId);
+					nextCursor = new ChangesPageCursor(epochMs.Value, url!);
 			}
 		}
 
@@ -177,9 +147,6 @@ public partial class ChangesGateway(ElasticsearchClientAccessor clientAccessor, 
 			NextCursor = nextCursor
 		};
 	}
-
-	[LoggerMessage(Level = LogLevel.Debug, Message = "Opened new PIT: {PitId}")]
-	private static partial void LogPitOpened(ILogger logger, string pitId);
 
 	[LoggerMessage(Level = LogLevel.Warning, Message = "PIT expired or not found, opening a new one and retrying with existing search_after position")]
 	private static partial void LogPitExpired(ILogger logger);

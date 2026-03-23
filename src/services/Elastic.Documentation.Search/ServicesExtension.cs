@@ -38,6 +38,7 @@ public static class ServicesExtension
 		logger?.LogInformation("Full search use case registered with hybrid RRF support");
 
 		// Changes feed (cursor-paginated changes since a given date)
+		_ = services.AddSingleton<SharedPointInTimeManager>();
 		_ = services.AddScoped<IChangesGateway, ChangesGateway>();
 		_ = services.AddScoped<ChangesUsecase>();
 

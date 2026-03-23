@@ -69,11 +69,7 @@ public partial class ChangesUsecase(IChangesGateway changesGateway, ILogger<Chan
 			if (epochEl.ValueKind != JsonValueKind.Number || urlEl.ValueKind != JsonValueKind.String)
 				return null;
 
-			var pitId = arrayLength > 2 && root[2].ValueKind == JsonValueKind.String
-				? root[2].GetString()
-				: null;
-
-			return new ChangesPageCursor(epochEl.GetInt64(), urlEl.GetString()!, pitId);
+			return new ChangesPageCursor(epochEl.GetInt64(), urlEl.GetString()!);
 		}
 		catch (Exception ex) when (ex is FormatException or JsonException or InvalidOperationException)
 		{
@@ -88,8 +84,6 @@ public partial class ChangesUsecase(IChangesGateway changesGateway, ILogger<Chan
 		writer.WriteStartArray();
 		writer.WriteNumberValue(cursor.LastUpdatedEpochMs);
 		writer.WriteStringValue(cursor.Url);
-		if (cursor.PitId is not null)
-			writer.WriteStringValue(cursor.PitId);
 		writer.WriteEndArray();
 		writer.Flush();
 
