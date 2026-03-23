@@ -41,8 +41,10 @@ public partial class ChangesGateway(ElasticsearchClientAccessor clientAccessor, 
 
 				if (!response.IsValidResponse)
 				{
-					logger.LogWarning("Elasticsearch changes query returned invalid response. Reason: {Reason}",
-						response.ElasticsearchServerError?.Error.Reason ?? "Unknown");
+					var reason = response.ElasticsearchServerError?.Error.Reason ?? "Unknown";
+					throw new InvalidOperationException(
+						$"Elasticsearch changes query failed (HTTP {response.ApiCallDetails?.HttpStatusCode}): {reason}"
+					);
 				}
 			}
 
