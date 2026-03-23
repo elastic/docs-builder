@@ -64,7 +64,12 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 						if (hit.TryGetProperty("sort", out var sortProp))
 							lastSortValues = sortProp.EnumerateArray().Select(e => e.ToString()).ToArray();
 
-						var lastUpdated = DateTimeOffset.Parse(lastUpdatedStr, CultureInfo.InvariantCulture);
+						if (!DateTimeOffset.TryParse(lastUpdatedStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var lastUpdated))
+						{
+							logger.LogWarning("Sitemap: skipping {Url}, unparseable last_updated: {Value}", url, lastUpdatedStr);
+							continue;
+						}
+
 						yield return new SitemapEntry(url, lastUpdated);
 					}
 				}
