@@ -108,7 +108,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		try
 		{
 			var body = $$"""{"id":"{{pitId}}"}""";
-			_ = await transport.DeleteAsync<DynamicResponse>("/_pit", default!, PostData.String(body), ct);
+			_ = await transport.DeleteAsync<DynamicResponse>("/_pit", new DefaultRequestParameters(), PostData.String(body), ct);
 			logger.LogInformation("Closed PIT");
 		}
 		catch (OperationCanceledException)
