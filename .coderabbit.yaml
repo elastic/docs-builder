@@ -79,7 +79,7 @@ reviews:
     biome:
       enabled: false
     hadolint:
-      enabled: false
+      enabled: true
     swiftlint:
       enabled: false
     phpstan:
@@ -93,7 +93,7 @@ reviews:
     detekt:
       enabled: false
     eslint:
-      enabled: false
+      enabled: true
     flake8:
       enabled: false
     rubocop:
