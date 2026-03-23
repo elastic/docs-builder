@@ -51,6 +51,10 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 					{
 						hitCount++;
 
+						// Always advance the search_after cursor, even for skipped hits
+						if (hit.TryGetProperty("sort", out var sortProp))
+							lastSortValues = sortProp.EnumerateArray().Select(e => e.ToString()).ToArray();
+
 						if (!hit.TryGetProperty("_source", out var source))
 							continue;
 
@@ -59,10 +63,6 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 
 						if (url is null || lastUpdatedStr is null)
 							continue;
-
-						// Use sort array from the hit for search_after cursor
-						if (hit.TryGetProperty("sort", out var sortProp))
-							lastSortValues = sortProp.EnumerateArray().Select(e => e.ToString()).ToArray();
 
 						if (!DateTimeOffset.TryParse(lastUpdatedStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var lastUpdated))
 						{
