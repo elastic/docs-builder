@@ -35,7 +35,8 @@ public partial class ChangesGateway(ElasticsearchClientAccessor clientAccessor, 
 				{
 					LogPitExpired(logger);
 					pitId = await OpenPit(ctx);
-					response = await Search(request with { Cursor = null }, pitId, fetchSize, ctx);
+					var updatedCursor = request.Cursor with { PitId = pitId };
+					response = await Search(request with { Cursor = updatedCursor }, pitId, fetchSize, ctx);
 				}
 
 				if (!response.IsValidResponse)
@@ -178,6 +179,6 @@ public partial class ChangesGateway(ElasticsearchClientAccessor clientAccessor, 
 	[LoggerMessage(Level = LogLevel.Debug, Message = "Opened new PIT: {PitId}")]
 	private static partial void LogPitOpened(ILogger logger, string pitId);
 
-	[LoggerMessage(Level = LogLevel.Warning, Message = "PIT expired or not found, opening a new one and retrying without search_after")]
+	[LoggerMessage(Level = LogLevel.Warning, Message = "PIT expired or not found, opening a new one and retrying with existing search_after position")]
 	private static partial void LogPitExpired(ILogger logger);
 }
