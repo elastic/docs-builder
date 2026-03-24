@@ -4874,13 +4874,18 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert
+		// Assert - unified filtering behavior: disjoint entries fall back to global rules  
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry should be excluded by context rule");
-		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included");
-		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-exclude]") && d.Message.Contains("kibana-feature.yaml"));
+		
+		// Breaking change: kibana entry (disjoint from security context) falls back to global rules (no exclusions) → INCLUDED
+		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by global rule fallback (no global exclusions)");
+		
+		// security entry (matches security context) uses context rule: exclude_products=[kibana] (security not excluded) → INCLUDED
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (not in context exclude list)");
+		
+		// elasticsearch entry (disjoint from security context) falls back to global rules (no exclusions) → INCLUDED  
+		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
 	}
 
 	[Fact]
@@ -4978,10 +4983,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert - unified filtering behavior: disjoint entries fall back to global rules
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by context rule");
+		
+		// kibana entry (disjoint from security context) falls back to global rule: include_products=[elasticsearch] → EXCLUDED
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry should be excluded by global rule (not in global include list)");
+		
+		// security entry (matches security context) uses context rule: include_products=[security, kibana] → INCLUDED  
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
-
-		// Breaking change: elasticsearch entry (disjoint from security context) now falls back to global rules and gets included
+		
+		// elasticsearch entry (disjoint from security context) falls back to global rule: include_products=[elasticsearch] → INCLUDED
 		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
 	}
 
