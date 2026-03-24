@@ -106,8 +106,9 @@ public class PlaceholderPageWriter(
 	)
 	{
 		var env = context.Environment;
-		var urlPathPrefix = env.PathPrefix;
-		var rootPath = string.IsNullOrEmpty(urlPathPrefix) ? "/" : $"/{urlPathPrefix.Trim('/')}/";
+		var rawPrefix = env.PathPrefix;
+		var urlPathPrefix = string.IsNullOrEmpty(rawPrefix) ? string.Empty : $"/{rawPrefix.TrimStart('/')}";
+		var rootPath = string.IsNullOrEmpty(urlPathPrefix) ? "/" : $"{urlPathPrefix.TrimEnd('/')}/";
 
 		return new MarkdownLayoutViewModel
 		{
