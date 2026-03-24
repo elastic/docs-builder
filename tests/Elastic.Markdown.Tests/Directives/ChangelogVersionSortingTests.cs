@@ -347,14 +347,16 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Fact]
-	public void TocSlugUsesOriginalFormat()
+	public void TocSlugMatchesHeadingId()
 	{
+		// The TOC slug must match the heading ID that SectionedHeadingRenderer derives from
+		// the display text, so that right-nav links scroll to the correct section.
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionSlugs = toc.Where(t => t.Level == 2).Select(t => t.Slug).ToList();
 
-		versionSlugs.Should().Contain("2025-12");
-		versionSlugs.Should().Contain("2025-10");
-		versionSlugs.Should().Contain("2025-08");
+		versionSlugs.Should().Contain("december-2025");
+		versionSlugs.Should().Contain("october-2025");
+		versionSlugs.Should().Contain("august-2025");
 	}
 }
 

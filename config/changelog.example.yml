@@ -40,6 +40,10 @@ extract:
   # When using --issues: looks for patterns like "Fixed by #123" in issue body to derive PRs.
   # Can be overridden by CLI --no-extract-issues
   issues: true
+  # Remove square-bracket prefixes from PR titles (default: false)
+  # When enabled (true or via --strip-title-prefix), titles like "[ES|QL] Fix bug" become "Fix bug".
+  # Can be overridden by CLI --strip-title-prefix
+  strip_title_prefix: false
 
 # Available lifecycle values (strongly typed: preview, beta, ga)
 # Accepts string or list: "preview, beta, ga" or a YAML list
@@ -100,14 +104,22 @@ pivot:
   #   - ">release-highlight"
 
   # Area definitions with labels
-  # Keys are area display names, values are label strings or lists
+  # Keys are area display names (can contain commas), values are label strings or lists
+  # Each label maps to exactly one area.
   # String form: "label1, label2" | List form: [label1, label2]
+  # To map one label to multiple areas, repeat the label under each area name.
   areas:
     # Example mappings - customize based on your label naming conventions
     # Autoscaling: ":Distributed Coordination/Autoscaling"
     # Search: ":Search/Search"
     # Security: ":Security/Security"
     # Watcher: ":Data Management/Watcher"
+    # To map a label to multiple areas (e.g., "Team:Search" to both "Search" and "Observability"):
+    # Search:
+    #   - ":Search/Search"
+    #   - "Team:Search"
+    # Observability:
+    #   - "Team:Search"
     # List form example:
     # Search:
     #   - ":Search/Search"
@@ -207,9 +219,11 @@ rules:
   #   #       - "Search"
   #   #       - "Monitoring"
 
-  # Publish — DEPRECATED. Use rules.bundle instead.
-  # The rules.publish section is still supported for backward compatibility but will be removed in a future release.
-  # It no longer applies to the {changelog} directive.
+  # Publish — DEPRECATED AND NO LONGER USED.
+  # The `changelog render` command does not use rules.publish. Move type/area filtering to rules.bundle above.
+  # The `{changelog}` directive also does not use rules.publish.
+  # This section is ignored by both commands, and will be removed in a future release.
+  # A deprecation warning is emitted if rules.publish is present in the configuration.
   #
   # publish:
   #   # match_areas: any

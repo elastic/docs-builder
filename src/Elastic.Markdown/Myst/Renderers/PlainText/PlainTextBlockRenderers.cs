@@ -385,7 +385,11 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
+			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch
 		{
@@ -394,32 +398,91 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 		renderer.EnsureBlockSpacing();
 
+		WriteSettingsMarkdownSnippet(renderer, block, settings.PageDescription, product: settings.Product);
+		WriteSettingsMarkdownSnippet(renderer, block, settings.Note, "Note", settings.Product);
+
 		foreach (var group in settings.Groups)
 		{
 			renderer.EnsureLine();
 			renderer.WriteLine(group.Name ?? string.Empty);
+			WriteSettingsMarkdownSnippet(renderer, block, group.Description, product: settings.Product);
+			WriteSettingsMarkdownSnippet(renderer, block, group.Note, "Note", settings.Product);
+			WriteSettingsMarkdownSnippet(renderer, block, group.Example, product: settings.Product);
 
 			foreach (var setting in group.Settings)
-			{
-				renderer.EnsureLine();
-				renderer.WriteLine(setting.Name ?? string.Empty);
-
-				if (!string.IsNullOrEmpty(setting.Description))
-				{
-					var document = MarkdownParser.ParseMarkdownStringAsync(
-						block.Build,
-						block.Context,
-						setting.Description,
-						block.IncludeFrom,
-						block.Context.YamlFrontMatter,
-						MarkdownParser.Pipeline);
-					_ = renderer.Render(document);
-					renderer.EnsureBlockSpacing();
-				}
-			}
+				WriteSettingPlainText(renderer, block, setting, parentName: null, settings.Product);
 		}
 
 		renderer.EnsureLine();
+	}
+
+	private static void WriteSettingPlainText(PlainTextRenderer renderer, SettingsBlock block, Setting setting, string? parentName, string? product)
+	{
+		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
+		renderer.EnsureLine();
+		renderer.WriteLine(displayName);
+
+		if (!string.IsNullOrEmpty(setting.Description))
+			WriteSettingsMarkdownSnippet(renderer, block, setting.Description, product: product);
+
+		if (!string.IsNullOrWhiteSpace(setting.Datatype))
+			renderer.WriteLine($"Datatype: {setting.Datatype}");
+
+		var defaultDisplay = SettingDisplay.FormatDefault(setting.Default);
+		if (!string.IsNullOrWhiteSpace(defaultDisplay))
+			renderer.WriteLine($"Default: {defaultDisplay}");
+
+		if (setting.Options is { Length: > 0 })
+		{
+			renderer.WriteLine("Options:");
+			foreach (var option in setting.Options)
+			{
+				var optionLabel = string.IsNullOrWhiteSpace(option.Option) ? "value" : option.Option;
+				if (string.IsNullOrWhiteSpace(option.Description))
+					renderer.WriteLine($"- {optionLabel}");
+				else
+					renderer.WriteLine($"- {optionLabel}: {option.Description}");
+			}
+		}
+
+		WriteSettingsMarkdownSnippet(renderer, block, setting.Note, "Note", product);
+		WriteSettingsMarkdownSnippet(renderer, block, setting.Tip, "Tip", product);
+		WriteSettingsMarkdownSnippet(renderer, block, setting.Warning, "Warning", product);
+		WriteSettingsMarkdownSnippet(renderer, block, setting.Important, "Important", product);
+		WriteSettingsMarkdownSnippet(renderer, block, setting.DeprecationDetails, "Deprecation details", product);
+
+		if (!string.IsNullOrWhiteSpace(setting.Example))
+			WriteSettingsMarkdownSnippet(renderer, block, setting.Example, product: product);
+
+		foreach (var child in setting.Settings)
+			WriteSettingPlainText(renderer, block, child, displayName, product);
+
+		renderer.EnsureBlockSpacing();
+	}
+
+	private static void WriteSettingsMarkdownSnippet(PlainTextRenderer renderer, SettingsBlock block, string? markdown, string? label = null, string? product = null)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return;
+
+		if (!string.IsNullOrEmpty(label))
+		{
+			renderer.EnsureLine();
+			renderer.WriteLine($"{label}:");
+		}
+
+		var settingsSourceFile = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath!);
+		var normalized = SettingsMarkdownNormalizer.Normalize(markdown, product);
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			normalized,
+			settingsSourceFile,
+			block.Context.YamlFrontMatter,
+			block.IncludeFrom,
+			MarkdownParser.Pipeline);
+		_ = renderer.Render(document);
+		renderer.EnsureBlockSpacing();
 	}
 
 	private static void WriteCsvIncludeBlock(PlainTextRenderer renderer, CsvIncludeBlock block)

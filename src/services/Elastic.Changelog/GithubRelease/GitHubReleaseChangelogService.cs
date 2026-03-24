@@ -46,7 +46,7 @@ public record CreateChangelogsFromReleaseArguments
 	/// <summary>
 	/// Whether to strip [prefix] from PR titles
 	/// </summary>
-	public bool StripTitlePrefix { get; init; }
+	public bool? StripTitlePrefix { get; init; }
 
 	/// <summary>
 	/// Whether to warn when Release Drafter type doesn't match label-derived type (defaults to true)
@@ -118,6 +118,9 @@ public class GitHubReleaseChangelogService(
 				return false;
 			}
 
+			// Resolve StripTitlePrefix from input or config default
+			var stripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix;
+
 			// 4. Fetch GitHub release
 			var release = await _releaseService.FetchReleaseAsync(owner, repo, input.Version, ctx);
 			if (release == null)
@@ -167,7 +170,7 @@ public class GitHubReleaseChangelogService(
 			{
 				var success = await ProcessPrReference(
 					collector, config, owner, repo, prRef,
-					productInfo, input, parsedNotes.Format, outputDir, createdFiles, ctx);
+					productInfo, stripTitlePrefix, parsedNotes.Format, outputDir, createdFiles, input.WarnOnTypeMismatch, ctx);
 				if (success)
 					successCount++;
 			}
@@ -203,10 +206,11 @@ public class GitHubReleaseChangelogService(
 		string repo,
 		ExtractedPrReference prRef,
 		ProductArgument productInfo,
-		CreateChangelogsFromReleaseArguments input,
+		bool stripTitlePrefix,
 		ReleaseNoteFormat format,
 		string outputDir,
 		List<string> createdFiles,
+		bool warnOnTypeMismatch,
 		Cancel ctx)
 	{
 		var prUrl = $"https://github.com/{owner}/{repo}/pull/{prRef.PrNumber}";
@@ -243,7 +247,7 @@ public class GitHubReleaseChangelogService(
 
 		// Warn on type mismatch if Release Drafter format and warning enabled
 		if (format == ReleaseNoteFormat.ReleaseDrafter &&
-			input.WarnOnTypeMismatch &&
+			warnOnTypeMismatch &&
 			labelDerivedType != null &&
 			prRef.InferredType != null &&
 			!string.Equals(labelDerivedType, prRef.InferredType, StringComparison.OrdinalIgnoreCase))
@@ -256,7 +260,7 @@ public class GitHubReleaseChangelogService(
 
 		// Build title
 		var title = prRef.Title ?? prInfo?.Title ?? $"PR #{prRef.PrNumber}";
-		if (input.StripTitlePrefix)
+		if (stripTitlePrefix)
 			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
 
 		// Create changelog data
@@ -342,15 +346,17 @@ public class GitHubReleaseChangelogService(
 			.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
 			.FirstOrDefault(mappedType => mappedType != null);
 
-	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
+	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
-		var areaList = labels
-			.Where(label => labelToAreasMapping.ContainsKey(label))
-			.SelectMany(label => labelToAreasMapping[label]
-				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-		foreach (var area in areaList)
-			_ = areas.Add(area);
+		foreach (var label in labels)
+		{
+			if (!labelToAreasMapping.TryGetValue(label, out var mappedAreas))
+				continue;
+
+			foreach (var area in mappedAreas)
+				_ = areas.Add(area);
+		}
 		return areas.ToList();
 	}
 

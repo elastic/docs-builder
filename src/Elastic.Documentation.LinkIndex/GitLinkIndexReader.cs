@@ -29,7 +29,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	public GitLinkIndexReader(string environment, IFileSystem? fileSystem = null, bool skipFetch = false)
 	{
 		if (string.IsNullOrWhiteSpace(environment))
-			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'engineering', 'security').", nameof(environment));
+			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));
 
 		_environment = environment;
 		_fileSystem = fileSystem ?? new FileSystem();

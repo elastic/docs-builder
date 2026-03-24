@@ -133,7 +133,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			var prTitle = prInfo.Title;
 			// Strip prefix if requested
-			if (input.StripTitlePrefix)
+			if (input.StripTitlePrefix == true)
 				prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
 			derived.Title = prTitle;
 			logger.LogInformation("Using PR title: {Title}", derived.Title);
@@ -386,15 +386,17 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
 		.FirstOrDefault(mappedType => mappedType != null);
 
-	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
+	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
-		var areaList = labels
-			.Where(label => labelToAreasMapping.ContainsKey(label))
-			.SelectMany(label => labelToAreasMapping[label]
-				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-		foreach (var area in areaList)
-			_ = areas.Add(area);
+		foreach (var label in labels)
+		{
+			if (!labelToAreasMapping.TryGetValue(label, out var mappedAreas))
+				continue;
+
+			foreach (var area in mappedAreas)
+				_ = areas.Add(area);
+		}
 		return areas.ToList();
 	}
 

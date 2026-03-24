@@ -805,6 +805,17 @@ type ``settings directive`` () =
       - setting: xpack.example.setting
         description: |
           This is a test setting with **bold** text and a [link](https://example.com).
+        datatype: enum
+        default: strict
+        applies_to:
+          stack: ga 9.2
+        options:
+          - option: strict
+          - option: lenient
+        settings:
+          - setting: "[n].url"
+            description: Child setting description.
+            datatype: string
       - setting: xpack.another.setting
         description: Another setting description.
   - group: Advanced settings
@@ -818,20 +829,86 @@ type ``settings directive`` () =
     let ``renders settings as markdown headings`` () =
         generator |> convertsToNewLLM """
 ## General settings
-
-#### xpack.example.setting
+<definitions>
+  <definition term="xpack.example.setting">
+    <stack-availability>Elastic Stack: Planned</stack-availability>
+    <supported-on>Self-managed Elastic deployments: Planned</supported-on>
 
 This is a test setting with **bold** text and a [link](https://example.com).
+Datatype: `enum`
+Default: `strict`
+Options:
+- `strict`
+- `lenient`
+  </definition>
+  <definition term="xpack.example.setting[n].url">
+    <stack-availability>Elastic Stack: Planned</stack-availability>
+    <supported-on>Self-managed Elastic deployments: Planned</supported-on>
 
-#### xpack.another.setting
+Child setting description.
+Datatype: `string`
+  </definition>
+  <definition term="xpack.another.setting">
 
 Another setting description.
+  </definition>
+</definitions>
 
 ## Advanced settings
-
-#### xpack.advanced.option
+<definitions>
+  <definition term="xpack.advanced.option">
 
 An advanced option.
+  </definition>
+</definitions>
+"""
+
+    [<Fact>]
+    let ``renders group headings one level deeper than preceding markdown heading`` () =
+        let generator =
+            Setup.Generate [
+                Index
+                    """
+## Included settings file
+
+:::{settings} _settings/example-settings.yml
+:::
+"""
+                File(
+                    "_settings/example-settings.yml",
+                    """groups:
+  - group: General settings
+    settings:
+      - setting: xpack.example.setting
+        description: Test.
+  - group: Advanced settings
+    settings:
+      - setting: xpack.advanced.option
+        description: Advanced.
+"""
+                )
+            ]
+
+        generator
+        |> convertsToNewLLM """
+## Included settings file
+
+
+### General settings
+<definitions>
+  <definition term="xpack.example.setting">
+
+Test.
+  </definition>
+</definitions>
+
+### Advanced settings
+<definitions>
+  <definition term="xpack.advanced.option">
+
+Advanced.
+  </definition>
+</definitions>
 """
 
 type ``links in paragraphs`` () =

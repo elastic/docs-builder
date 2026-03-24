@@ -11,7 +11,7 @@ public static class ResourceNames
 	public const string AssemblerServe = "assembler-serve";
 	public const string ElasticsearchLocal = "elasticsearch-local";
 	public const string ElasticsearchRemote = "elasticsearch-remote";
-	public const string LambdaApi = "lambda-api";
+	public const string Api = "api";
 	public const string RemoteMcp = "remote-mcp";
 	public const string ElasticsearchIngest = "elasticsearch-ingest";
 }

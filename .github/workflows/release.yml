@@ -26,7 +26,7 @@ jobs:
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@6db134d15f3909ccc9eefd369f02bd1e9cffdf97 # v6.2.0
+      - uses: release-drafter/release-drafter@139054aeaa9adc52ab36ddf67437541f039b88e2 # v7.1.1
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -60,7 +60,7 @@ jobs:
         uses: ./.github/actions/bootstrap
         
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -76,17 +76,6 @@ jobs:
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
       
-  deploy-api-lambda-staging:
-    needs: 
-      - release-drafter
-    uses: ./.github/workflows/deploy-api-lambda.yml
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      environment: staging
-      ref: refs/tags/${{ needs.release-drafter.outputs.tag_name }}
-
   deploy-link-index-updater-lambda-prod:
     environment: 
       name: link-index-updater-prod
@@ -179,7 +168,6 @@ jobs:
     needs:
       - release
       - release-drafter
-      - deploy-api-lambda-staging
       - deploy-link-index-updater-lambda-prod
     runs-on: ubuntu-latest
     permissions: 
