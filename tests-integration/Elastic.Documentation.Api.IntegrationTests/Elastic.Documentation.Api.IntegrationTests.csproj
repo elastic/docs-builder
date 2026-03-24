@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api.Lambda\Elastic.Documentation.Api.Lambda.csproj"/>
+    <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api.App\Elastic.Documentation.Api.App.csproj"/>
     <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj"/>
     <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj"/>
   </ItemGroup>

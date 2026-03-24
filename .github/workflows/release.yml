@@ -76,17 +76,6 @@ jobs:
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
       
-  deploy-api-lambda-staging:
-    needs: 
-      - release-drafter
-    uses: ./.github/workflows/deploy-api-lambda.yml
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      environment: staging
-      ref: refs/tags/${{ needs.release-drafter.outputs.tag_name }}
-
   deploy-link-index-updater-lambda-prod:
     environment: 
       name: link-index-updater-prod
@@ -179,7 +168,6 @@ jobs:
     needs:
       - release
       - release-drafter
-      - deploy-api-lambda-staging
       - deploy-link-index-updater-lambda-prod
     runs-on: ubuntu-latest
     permissions: 
