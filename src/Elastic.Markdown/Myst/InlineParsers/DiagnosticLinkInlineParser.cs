@@ -300,7 +300,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			}
 			else
 			{
-				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}");
+				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}`");
 			}
 		}
 	}
