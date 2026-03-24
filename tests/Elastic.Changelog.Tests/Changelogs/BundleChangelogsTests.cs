@@ -4877,13 +4877,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert - unified filtering behavior: disjoint entries fall back to global rules  
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		
+
 		// Breaking change: kibana entry (disjoint from security context) falls back to global rules (no exclusions) → INCLUDED
 		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by global rule fallback (no global exclusions)");
-		
+
 		// security entry (matches security context) uses context rule: exclude_products=[kibana] (security not excluded) → INCLUDED
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (not in context exclude list)");
-		
+
 		// elasticsearch entry (disjoint from security context) falls back to global rules (no exclusions) → INCLUDED  
 		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
 	}
@@ -4983,13 +4983,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert - unified filtering behavior: disjoint entries fall back to global rules
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		
+
 		// kibana entry (disjoint from security context) falls back to global rule: include_products=[elasticsearch] → EXCLUDED
 		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry should be excluded by global rule (not in global include list)");
-		
+
 		// security entry (matches security context) uses context rule: include_products=[security, kibana] → INCLUDED  
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
-		
+
 		// elasticsearch entry (disjoint from security context) falls back to global rule: include_products=[elasticsearch] → INCLUDED
 		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
 	}
