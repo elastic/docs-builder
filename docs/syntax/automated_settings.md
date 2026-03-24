@@ -5,30 +5,27 @@ Elastic Docs V3 supports the ability to build a markdown settings reference from
 ### Syntax
 
 ```markdown
-:::{settings} /syntax/kibana-alerting-action-settings.yml
+:::{settings} /syntax/settings-with-applies-example.yml
 :::
 ```
 
 ### Example
 
-```yaml
-groups:
-  - group: Group name
-    id: Link ID
-    settings:
-      - setting: Setting name
-        default: Default value
-        platform: Supported platforms
-        description: |
-          A multi-line description with markdown support.
-          More here.
-        example: |
-          A multi-line example with markdown support.
-```
+See `/syntax/settings-with-applies-example.yml` for a full, schema-compliant sample.
+
+It demonstrates:
+
+- Group `description` and `example`.
+- Setting `id`, `datatype`, `default`, and `options`.
+- `note`, `tip`, `warning`, `important`, and `deprecation_details`.
+- Nested `settings`.
+- `applies_to` inheritance and override behavior.
 
 ### Result
 
 _Everything below this line is auto-generated._
 
-:::{settings} /syntax/kibana-alerting-action-settings.yml
+:::{settings} /syntax/settings-with-applies-example.yml
 :::
+
+For large Kibana-exported YAML samples used in local stress tests, see [Kibana settings YAML samples](../testing/kibana-settings-yaml-samples.md).

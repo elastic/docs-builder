@@ -368,12 +368,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		{
 			newUrl = newUrl.EndsWith($"{Path.DirectorySeparatorChar}index.md")
 				? newUrl.Remove(newUrl.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
-				: newUrl.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
+				: newUrl.Remove(newUrl.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
 		}
 
 		// TODO this is hardcoded should be part of extension system
 		if (newUrl.EndsWith(".toml"))
-			newUrl = url[..^5];
+			newUrl = newUrl[..^5];
 
 		link.Url = !string.IsNullOrEmpty(anchor)
 			? newUrl == context.CurrentUrlPath

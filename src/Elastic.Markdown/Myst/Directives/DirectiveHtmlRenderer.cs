@@ -440,7 +440,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch (YamlException e)
 		{
@@ -453,12 +456,23 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			return;
 		}
 
+		var settingsSourceFile = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 		var slice = SettingsView.Create(new SettingsViewModel
 		{
 			SettingsCollection = settings,
+			GroupHeadingLevel = block.GroupHeadingLevel,
+			VersionsConfig = block.Build.VersionsConfiguration,
 			RenderMarkdown = s =>
 			{
-				var document = MarkdownParser.ParseMarkdownStringAsync(block.Build, block.Context, s, block.IncludeFrom, block.Context.YamlFrontMatter, MarkdownParser.Pipeline);
+				var normalized = SettingsMarkdownNormalizer.Normalize(s, settings.Product);
+				var document = MarkdownParser.ParseMarkdownStringAsync(
+					block.Build,
+					block.Context,
+					normalized,
+					settingsSourceFile,
+					block.Context.YamlFrontMatter,
+					block.IncludeFrom,
+					MarkdownParser.Pipeline);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 
 				// Trim to ensure consistent whitespace

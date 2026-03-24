@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
@@ -628,7 +629,11 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
+			SettingsBlock.CollectSubstitutionUsageFromYaml(yaml, block.Context.Build);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch (FileNotFoundException e)
 		{
@@ -665,34 +670,120 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 
 		renderer.EnsureBlockSpacing();
 
+		RenderSettingsMarkdownSnippet(renderer, block, settings.PageDescription, settings.Product);
+		RenderAdmonitionSnippet(renderer, block, "note", settings.Note, product: settings.Product);
+
+		var groupHeadingLevel = Math.Clamp(block.GroupHeadingLevel, 1, 6);
+		var groupHeadingPrefix = new string('#', groupHeadingLevel) + " ";
+
 		foreach (var group in settings.Groups)
 		{
 			renderer.WriteLine();
-			renderer.Write("## ");
+			renderer.Write(groupHeadingPrefix);
 			renderer.WriteLine(group.Name ?? string.Empty);
+			RenderSettingsMarkdownSnippet(renderer, block, group.Description, settings.Product);
+			RenderAdmonitionSnippet(renderer, block, "note", group.Note, product: settings.Product);
+			RenderSettingsMarkdownSnippet(renderer, block, group.Example, settings.Product);
+			renderer.WriteLine("<definitions>");
 
 			foreach (var setting in group.Settings)
-			{
-				renderer.WriteLine();
-				renderer.Write("#### ");
-				renderer.WriteLine(setting.Name ?? string.Empty);
+				RenderSetting(renderer, block, setting, parentName: null, inheritedAppliesTo: null, settings.Product);
 
-				if (!string.IsNullOrEmpty(setting.Description))
-				{
-					var document = MarkdownParser.ParseMarkdownStringAsync(
-						block.Build,
-						block.Context,
-						setting.Description,
-						block.IncludeFrom,
-						block.Context.YamlFrontMatter,
-						MarkdownParser.Pipeline);
-					_ = renderer.Render(document);
-					renderer.EnsureBlockSpacing();
-				}
-			}
+			renderer.WriteLine("</definitions>");
 		}
 
 		renderer.EnsureLine();
+	}
+
+	private static void RenderSetting(
+		LlmMarkdownRenderer renderer,
+		SettingsBlock block,
+		Setting setting,
+		string? parentName,
+		Elastic.Documentation.AppliesTo.ApplicableTo? inheritedAppliesTo,
+		string? product)
+	{
+		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
+		var appliesTo = setting.ResolveAppliesTo(inheritedAppliesTo);
+		var stackAvailability = LlmApplicabilityHelper.RenderStackRowForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
+		var supportedOn = LlmApplicabilityHelper.RenderSupportedOnRowForLlm(appliesTo, renderer.BuildContext.VersionsConfiguration, useInlineTag: false);
+		var showSupportedOn = appliesTo is not null && appliesTo != Documentation.AppliesTo.ApplicableTo.All;
+
+		renderer.WriteLine("  <definition term=\"" + WebUtility.HtmlEncode(displayName) + "\">");
+		if (!string.IsNullOrEmpty(stackAvailability))
+			renderer.WriteLine("    <stack-availability>" + stackAvailability + "</stack-availability>");
+		if (showSupportedOn && !string.IsNullOrEmpty(supportedOn))
+			renderer.WriteLine("    <supported-on>" + supportedOn + "</supported-on>");
+
+		RenderSettingsMarkdownSnippet(renderer, block, setting.Description, product);
+
+		if (!string.IsNullOrWhiteSpace(setting.Datatype))
+			renderer.WriteLine($"Datatype: `{setting.Datatype}`");
+		var defaultDisplay = SettingDisplay.FormatDefault(setting.Default);
+		if (!string.IsNullOrWhiteSpace(defaultDisplay))
+			renderer.WriteLine($"Default: `{defaultDisplay}`");
+
+		if (setting.Options is { Length: > 0 })
+		{
+			renderer.WriteLine("Options:");
+			foreach (var option in setting.Options)
+			{
+				var optionLabel = string.IsNullOrWhiteSpace(option.Option) ? "value" : $"`{option.Option}`";
+				if (string.IsNullOrWhiteSpace(option.Description))
+					renderer.WriteLine($"- {optionLabel}");
+				else
+					renderer.WriteLine($"- {optionLabel}: {option.Description}");
+			}
+		}
+
+		RenderAdmonitionSnippet(renderer, block, "note", setting.Note, product: product);
+		RenderAdmonitionSnippet(renderer, block, "tip", setting.Tip, product: product);
+		RenderAdmonitionSnippet(renderer, block, "warning", setting.Warning, product: product);
+		RenderAdmonitionSnippet(renderer, block, "important", setting.Important, product: product);
+		RenderAdmonitionSnippet(renderer, block, "admonition", setting.DeprecationDetails, "Deprecation details", product);
+
+		RenderSettingsMarkdownSnippet(renderer, block, setting.Example, product);
+
+		renderer.WriteLine("  </definition>");
+
+		foreach (var child in setting.Settings)
+			RenderSetting(renderer, block, child, displayName, appliesTo, product);
+	}
+
+	private static void RenderAdmonitionSnippet(
+		LlmMarkdownRenderer renderer,
+		SettingsBlock block,
+		string directive,
+		string? content,
+		string? title = null,
+		string? product = null)
+	{
+		if (string.IsNullOrWhiteSpace(content))
+			return;
+
+		var titleSuffix = string.IsNullOrWhiteSpace(title) ? string.Empty : $" {title}";
+		var snippet = $":::{{{directive}}}{titleSuffix}\n{content}\n:::";
+		RenderSettingsMarkdownSnippet(renderer, block, snippet, product);
+	}
+
+	private static void RenderSettingsMarkdownSnippet(LlmMarkdownRenderer renderer, SettingsBlock block, string? content, string? product = null)
+	{
+		if (string.IsNullOrWhiteSpace(content))
+			return;
+		if (block.IncludePath is null)
+			return;
+
+		var normalized = SettingsMarkdownNormalizer.Normalize(content, product);
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			normalized,
+			block.Build.ReadFileSystem.FileInfo.New(block.IncludePath),
+			block.Context.YamlFrontMatter,
+			block.IncludeFrom,
+			MarkdownParser.Pipeline);
+		_ = renderer.Render(document);
+		renderer.EnsureBlockSpacing();
 	}
 
 	private static void WriteMathBlock(LlmMarkdownRenderer renderer, MathBlock block)
