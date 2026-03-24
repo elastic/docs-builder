@@ -156,4 +156,67 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		// index.md should be excluded too — the user explicitly asked for it
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}
+
+	[Fact]
+	public void FolderExcludePopulatesFolderExcludedFiles()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: docs
+		               exclude:
+		                 - draft.md
+		                 - internal.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		fileSystem.AddDirectory("/docs/docs");
+		fileSystem.AddFile("/docs/docs/alpha.md", new MockFileData("# Alpha"));
+		fileSystem.AddFile("/docs/docs/draft.md", new MockFileData("# Draft"));
+		fileSystem.AddFile("/docs/docs/internal.md", new MockFileData("# Internal"));
+
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		docSet.FolderExcludedFiles.Should().BeEquivalentTo(["docs/draft.md", "docs/internal.md"]);
+	}
+
+	[Fact]
+	public void FolderExcludeCollectsFromNestedFolders()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: reference
+		               children:
+		                 - file: index.md
+		                 - folder: api
+		                   exclude:
+		                     - main.md
+		                 - folder: deps
+		                   exclude:
+		                     - main.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		fileSystem.AddDirectory("/docs/reference");
+		fileSystem.AddFile("/docs/reference/index.md", new MockFileData("# Ref"));
+		fileSystem.AddDirectory("/docs/reference/api");
+		fileSystem.AddFile("/docs/reference/api/v1.md", new MockFileData("# V1"));
+		fileSystem.AddFile("/docs/reference/api/main.md", new MockFileData("# Main"));
+		fileSystem.AddDirectory("/docs/reference/deps");
+		fileSystem.AddFile("/docs/reference/deps/v1.md", new MockFileData("# V1"));
+		fileSystem.AddFile("/docs/reference/deps/main.md", new MockFileData("# Main"));
+
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		docSet.FolderExcludedFiles.Should().BeEquivalentTo(
+			["reference/api/main.md", "reference/deps/main.md"]
+		);
+	}
 }
