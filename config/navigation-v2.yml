@@ -993,36 +993,1304 @@ nav:
         title: AI agent skills for Elastic
   - label: Solutions and project types
     children:
-    - title: Solutions overview (NEW)
+    - page: docs-content://solutions/index.md
+      title: Solutions overview
     - group: Elasticsearch solution
+      page: docs-content://solutions/elasticsearch-solution-project.md
       children:
-      - title: Get started with Elasticsearch
-      - title: Playground for RAG
-      - title: Query rules
-    - group: Elastic Security solution
+      - group: Get started
+        page: docs-content://solutions/elasticsearch-solution-project/get-started.md
+        children:
+        - page: docs-content://solutions/elasticsearch-solution-project/search-connection-details.md
+          title: Find connection details
+      - group: Playground
+        page: docs-content://solutions/elasticsearch-solution-project/playground.md
+        children:
+        - page: docs-content://solutions/elasticsearch-solution-project/playground-context.md
+          title: Optimize model context
+        - page: docs-content://solutions/elasticsearch-solution-project/playground-query.md
+          title: View and modify queries
+        - page: docs-content://solutions/elasticsearch-solution-project/playground-troubleshooting.md
+          title: Troubleshooting
+      - page: docs-content://solutions/elasticsearch-solution-project/ai-assistant.md
+        title: AI Assistant
+      - page: docs-content://solutions/elasticsearch-solution-project/query-rules-ui.md
+        title: Query rules UI
+      - group: Search Applications
+        page: docs-content://solutions/elasticsearch-solution-project/search-applications.md
+        children:
+        - page: docs-content://solutions/elasticsearch-solution-project/search-applications/search-application-api.md
+          title: Search API and templates
+        - page: docs-content://solutions/elasticsearch-solution-project/search-applications/search-application-security.md
+          title: Security
+        - page: docs-content://solutions/elasticsearch-solution-project/search-applications/search-application-client.md
+          title: Search Application client guide
+      - page: docs-content://solutions/elasticsearch-solution-project/es-serverless-add-ons.md
+        title: Add-ons
+    - group: Observability solution
+      page: docs-content://solutions/observability.md
       children:
-      - title: Entity analytics
-      - title: AI for security
-      - title: Elastic Security APIs
-      - title: Cloud Security
-      - title: Configure endpoint protection with Elastic Defend
-      - title: Elastic Security dashboards
-      - title: Detections and alerts
-      - title: Get started with Elastic Security
-      - title: Investigation tools
-      - title: Manage Elastic Defend
-    - group: Elastic Observability solution
+      - group: Get started
+        page: docs-content://solutions/observability/get-started.md
+        children:
+        - group: Elastic Observability quickstarts
+          page: docs-content://solutions/observability/get-started/quickstarts.md
+          children:
+          - page: docs-content://solutions/observability/get-started/quickstart-monitor-hosts-with-opentelemetry.md
+            title: "Quickstart: Monitor hosts with OpenTelemetry"
+          - page: docs-content://solutions/observability/get-started/quickstart-monitor-your-application-performance.md
+            title: "Quickstart: Monitor your application performance"
+          - page: docs-content://solutions/observability/get-started/quickstart-unified-kubernetes-observability-with-elastic-distributions-of-opentelemetry-edot.md
+            title: "Quickstart: Unified Kubernetes Observability with Elastic Distributions of OpenTelemetry (EDOT)"
+          - page: docs-content://solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint.md
+            title: "Quickstart: Send OTLP data to Elastic Serverless or Elastic Cloud Hosted"
+          - page: docs-content://solutions/observability/get-started/quickstart-create-synthetic-monitor.md
+            title: "Quickstart: Create a Synthetic Monitor"
+          - page: docs-content://solutions/observability/get-started/quickstart-monitor-hosts-with-elastic-agent.md
+            title: "Quickstart: Monitor hosts with Elastic Agent"
+          - page: docs-content://solutions/observability/get-started/quickstart-monitor-kubernetes-cluster-with-elastic-agent.md
+            title: "Quickstart: Monitor your Kubernetes cluster with Elastic Agent"
+          - page: docs-content://solutions/observability/get-started/quickstart-collect-data-with-aws-firehose.md
+            title: "Quickstart: Collect data with AWS Firehose"
+        - group: OpenTelemetry quickstarts
+          page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/index.md
+          children:
+          - page: docs-content://solutions/observability/get-started/opentelemetry/custom-metrics-quickstart.md
+            title: Ingest custom metrics with EDOT
+          - group: Self-managed
+            page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/index.md
+            children:
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/k8s.md
+              title: Kubernetes
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/hosts_vms.md
+              title: Hosts / VMs
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/docker.md
+              title: Docker
+          - group: Elastic Cloud Serverless
+            page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/serverless/index.md
+            children:
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/serverless/k8s.md
+              title: Kubernetes
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/serverless/hosts_vms.md
+              title: Hosts and VMs
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/serverless/docker.md
+              title: Docker
+          - group: Elastic Cloud Hosted
+            page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/ech/index.md
+            children:
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/ech/k8s.md
+              title: Kubernetes
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/ech/hosts_vms.md
+              title: Hosts and VMs
+            - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/ech/docker.md
+              title: Docker
+        - group: OpenTelemetry use cases
+          page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/index.md
+          children:
+          - group: Kubernetes observability
+            page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/index.md
+            children:
+            - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/prerequisites-compatibility.md
+              title: Prerequisites and compatibility
+            - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/components.md
+              title: Components description
+            - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/deployment.md
+              title: Deployment
+            - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/instrumenting-applications.md
+              title: Instrumenting Applications
+            - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/upgrade.md
+              title: Upgrade
+            - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/customization.md
+              title: Customization
+        - group: Other Observability tutorials
+          page: docs-content://solutions/observability/get-started/other-tutorials/index.md
+          children:
+          - page: docs-content://solutions/observability/get-started/other-tutorials/tutorial-monitor-java-application.md
+            title: "Tutorial: Monitor a Java application"
+        - page: docs-content://solutions/observability/get-started/logs-essentials.md
+          title: Logs Essentials
+      - group: Applications and services
+        page: docs-content://solutions/observability/applications/index.md
+        children:
+        - group: Application performance monitoring (APM)
+          page: docs-content://solutions/observability/apm/index.md
+          children:
+          - page: docs-content://solutions/observability/apm/get-started.md
+            title: Get started with traces and APM
+          - group: Application data types
+            page: docs-content://solutions/observability/apm/data-types.md
+            children:
+            - page: docs-content://solutions/observability/apm/spans.md
+              title: Spans
+            - group: Transactions
+              page: docs-content://solutions/observability/apm/transactions.md
+              children:
+              - page: docs-content://solutions/observability/apm/transaction-sampling.md
+                title: Transaction sampling
+            - page: docs-content://solutions/observability/apm/traces.md
+              title: Traces
+            - page: docs-content://solutions/observability/apm/errors.md
+              title: Errors
+            - page: docs-content://solutions/observability/apm/metrics.md
+              title: Metrics
+            - page: docs-content://solutions/observability/apm/metadata.md
+              title: Metadata
+          - group: Collect application data
+            page: docs-content://solutions/observability/apm/ingest/index.md
+            children:
+            - group: OpenTelemetry
+              page: docs-content://solutions/observability/apm/opentelemetry/index.md
+              children:
+              - page: docs-content://solutions/observability/apm/opentelemetry/upstream-opentelemetry-collectors-language-sdks.md
+                title: Contrib OpenTelemetry Collectors and language SDKs
+              - page: docs-content://solutions/observability/apm/opentelemetry/collect-metrics.md
+                title: Collect metrics
+              - page: docs-content://solutions/observability/apm/opentelemetry/create-apm-agent-key-for-edot-sdks.md
+                title: Create APM agent key for EDOT SDKs
+              - page: docs-content://solutions/observability/apm/opentelemetry/edot-sdks-central-configuration.md
+                title: Centrally configure EDOT SDKs
+              - page: docs-content://solutions/observability/apm/opentelemetry/limitations.md
+                title: Limitations
+              - page: docs-content://solutions/observability/apm/opentelemetry/attributes.md
+                title: Attributes and labels
+              - page: docs-content://solutions/observability/apm/opentelemetry/data-stream-routing.md
+                title: Data stream routing
+            - group: APM agents
+              page: docs-content://solutions/observability/apm/apm-agents/index.md
+              children:
+              - page: docs-content://solutions/observability/apm/apm-agents/central-configuration.md
+                title: Centrally configure APM agents
+              - page: docs-content://solutions/observability/apm/apm-agents/real-user-monitoring-rum.md
+                title: Real User Monitoring (RUM)
+              - page: docs-content://solutions/observability/apm/apm-agents/create-upload-source-maps-rum.md
+                title: Create and upload source maps (RUM)
+            - page: docs-content://solutions/observability/apm/ingest/apm-k8s-attacher.md
+              title: Kubernetes
+            - page: docs-content://solutions/observability/apm/ingest/monitor-aws-lambda-functions.md
+              title: AWS Lambda Functions
+            - page: docs-content://solutions/observability/apm/ingest/jaeger.md
+              title: Jaeger (deprecated)
+          - group: View and analyze data
+            page: docs-content://solutions/observability/apm/view-analyze-data.md
+            children:
+            - group: Overviews
+              page: docs-content://solutions/observability/apm/overviews.md
+              children:
+              - page: docs-content://solutions/observability/apm/services.md
+                title: Services
+              - page: docs-content://solutions/observability/apm/traces-ui.md
+                title: Traces UI
+              - page: docs-content://solutions/observability/apm/dependencies.md
+                title: Dependencies
+              - page: docs-content://solutions/observability/apm/service-map.md
+                title: Service Map
+              - page: docs-content://solutions/observability/apm/service-overview.md
+                title: Service overview
+              - page: docs-content://solutions/observability/apm/mobile-service-overview.md
+                title: Mobile service overview
+            - group: Drill down into data
+              page: docs-content://solutions/observability/apm/drill-down-into-data.md
+              children:
+              - page: docs-content://solutions/observability/apm/transactions-ui.md
+                title: Transactions UI
+              - page: docs-content://solutions/observability/apm/trace-sample-timeline.md
+                title: Trace sample timeline
+              - page: docs-content://solutions/observability/apm/errors-ui.md
+                title: Errors UI
+              - page: docs-content://solutions/observability/apm/metrics-ui.md
+                title: Metrics UI
+              - page: docs-content://solutions/observability/apm/infrastructure.md
+                title: Infrastructure
+              - page: docs-content://solutions/observability/apm/logs.md
+                title: Logs
+            - group: Filter and search data
+              page: docs-content://solutions/observability/apm/filter-search-data.md
+              children:
+              - page: docs-content://solutions/observability/apm/filter-data.md
+                title: Filters
+              - page: docs-content://solutions/observability/apm/advanced-queries.md
+                title: Advanced queries
+              - page: docs-content://solutions/observability/apm/cross-cluster-search.md
+                title: Cross-cluster search
+            - group: Interpret data
+              page: docs-content://solutions/observability/apm/interpret-data.md
+              children:
+              - page: docs-content://solutions/observability/apm/find-transaction-latency-failure-correlations.md
+                title: Find transaction latency and failure correlations
+              - page: docs-content://solutions/observability/apm/track-deployments-with-annotations.md
+                title: Track deployments with annotations
+              - page: docs-content://solutions/observability/apm/explore-mobile-sessions.md
+                title: Explore mobile sessions with Discover
+              - page: docs-content://solutions/observability/apm/observe-lambda-functions.md
+                title: Observe Lambda functions
+            - page: docs-content://solutions/observability/apm/machine-learning.md
+              title: Integrate with machine learning
+            - page: docs-content://solutions/observability/apm/apm-agent-explorer.md
+              title: APM Agent explorer
+            - page: docs-content://solutions/observability/apm/applications-ui-settings.md
+              title: Settings
+          - group: Act on data
+            page: docs-content://solutions/observability/apm/act-on-data.md
+            children:
+            - page: docs-content://solutions/observability/apm/create-apm-rules-alerts.md
+              title: Create rules and alerts
+            - page: docs-content://solutions/observability/apm/create-custom-links.md
+              title: Create custom links
+          - group: Use APM securely
+            page: docs-content://solutions/observability/apm/use-apm-securely.md
+            children:
+            - group: Secure data
+              page: docs-content://solutions/observability/apm/secure-data.md
+              children:
+              - page: docs-content://solutions/observability/apm/control-access-to-apm-data.md
+                title: Control access to APM data
+              - page: docs-content://solutions/observability/apm/built-in-data-filters.md
+                title: Built-in data filters
+              - page: docs-content://solutions/observability/apm/custom-filters.md
+                title: Custom filters
+              - page: docs-content://solutions/observability/apm/delete-sensitive-data.md
+                title: Delete sensitive data
+            - group: Secure communication with APM agents
+              page: docs-content://solutions/observability/apm/secure-communication-with-apm-agents.md
+              children:
+              - page: docs-content://solutions/observability/apm/apm-agent-tls-communication.md
+                title: APM agent TLS communication
+              - page: docs-content://solutions/observability/apm/api-keys.md
+                title: API keys
+              - page: docs-content://solutions/observability/apm/secret-token.md
+                title: Secret token
+              - page: docs-content://solutions/observability/apm/anonymous-authentication.md
+                title: Anonymous authentication
+            - group: Secure communication with the Elastic Stack
+              page: docs-content://solutions/observability/apm/secure-communication-with-elastic-stack.md
+              children:
+              - page: docs-content://solutions/observability/apm/create-assign-feature-roles-to-apm-server-users.md
+                title: Use feature roles
+              - page: docs-content://solutions/observability/apm/grant-access-using-api-keys.md
+                title: Grant access using API keys
+            - group: Secure access to the Applications UI
+              page: docs-content://solutions/observability/apm/secure-access-to-applications-ui.md
+              children:
+              - page: docs-content://solutions/observability/apm/ui-user-reader.md
+                title: Create an APM reader user
+              - page: docs-content://solutions/observability/apm/ui-user-annotation.md
+                title: Create an annotation user
+              - page: docs-content://solutions/observability/apm/ui-user-api.md
+                title: Create an API user
+              - page: docs-content://solutions/observability/apm/ui-user-central-config.md
+                title: Create a central config user
+              - page: docs-content://solutions/observability/apm/ui-user-storage-explorer.md
+                title: Create a storage explorer user
+          - group: Manage storage
+            page: docs-content://solutions/observability/apm/manage-storage.md
+            children:
+            - page: docs-content://solutions/observability/apm/storage-explorer.md
+              title: Storage Explorer
+            - page: docs-content://solutions/observability/apm/data-streams.md
+              title: Data streams
+            - page: docs-content://solutions/observability/apm/index-lifecycle-management.md
+              title: Index lifecycle management
+            - page: docs-content://solutions/observability/apm/view-elasticsearch-index-template.md
+              title: View the Elasticsearch index template
+            - page: docs-content://solutions/observability/apm/parse-data-using-ingest-pipelines.md
+              title: Parse data using ingest pipelines
+            - page: docs-content://solutions/observability/apm/storage-sizing-guide.md
+              title: Storage and sizing guide
+            - page: docs-content://solutions/observability/apm/reduce-storage.md
+              title: Reduce storage
+            - page: docs-content://solutions/observability/apm/explore-data-in-elasticsearch.md
+              title: Explore data in Elasticsearch
+          - group: "Work with {{apm-server}}"
+            page: docs-content://solutions/observability/apm/apm-server/index.md
+            children:
+            - group: Set up
+              page: docs-content://solutions/observability/apm/apm-server/setup.md
+              children:
+              - page: docs-content://solutions/observability/apm/apm-server/fleet-managed.md
+                title: Fleet-managed APM Server
+              - page: docs-content://solutions/observability/apm/apm-server/binary.md
+                title: APM Server binary
+            - group: Configure
+              page: docs-content://solutions/observability/apm/apm-server/configure.md
+              children:
+              - page: docs-content://solutions/observability/apm/apm-server/general-configuration-options.md
+                title: General configuration options
+              - page: docs-content://solutions/observability/apm/apm-server/configure-anonymous-authentication.md
+                title: Anonymous authentication
+              - page: docs-content://solutions/observability/apm/apm-server/apm-agent-authorization.md
+                title: APM agent authorization
+              - page: docs-content://solutions/observability/apm/apm-server/apm-agent-central-configuration.md
+                title: Configure APM Agent Central Configuration
+              - page: docs-content://solutions/observability/apm/apm-server/configure-apm-instrumentation.md
+                title: Instrumentation
+              - page: docs-content://solutions/observability/apm/apm-server/configure-kibana-endpoint.md
+                title: Kibana endpoint
+              - page: docs-content://solutions/observability/apm/apm-server/configure-logging.md
+                title: Logging
+              - group: Output
+                page: docs-content://solutions/observability/apm/apm-server/configure-output.md
+                children:
+                - page: docs-content://solutions/observability/apm/apm-server/configure-output-for-elasticsearch-service-on-elastic-cloud.md
+                  title: Elastic Cloud Hosted
+                - page: docs-content://solutions/observability/apm/apm-server/configure-elasticsearch-output.md
+                  title: Elasticsearch
+                - page: docs-content://solutions/observability/apm/apm-server/configure-logstash-output.md
+                  title: "{{ls}}"
+                - page: docs-content://solutions/observability/apm/apm-server/configure-kafka-output.md
+                  title: Kafka
+                - page: docs-content://solutions/observability/apm/apm-server/configure-redis-output.md
+                  title: Redis
+                - page: docs-content://solutions/observability/apm/apm-server/configure-console-output.md
+                  title: Console
+              - page: docs-content://solutions/observability/apm/apm-server/configure-project-paths.md
+                title: Project paths
+              - page: docs-content://solutions/observability/apm/apm-server/configure-real-user-monitoring-rum.md
+                title: Real User Monitoring (RUM)
+              - group: SSL/TLS settings
+                page: docs-content://solutions/observability/apm/apm-server/ssl-tls-settings.md
+                children:
+                - page: docs-content://solutions/observability/apm/apm-server/ssl-tls-output-settings.md
+                  title: SSL/TLS output settings
+                - page: docs-content://solutions/observability/apm/apm-server/ssl-tls-input-settings.md
+                  title: SSL/TLS input settings
+              - page: docs-content://solutions/observability/apm/apm-server/tail-based-sampling.md
+                title: Tail-based sampling
+              - page: docs-content://solutions/observability/apm/apm-server/use-environment-variables-in-configuration.md
+                title: Use environment variables in the configuration
+              - group: Advanced setup
+                page: docs-content://solutions/observability/apm/apm-server/advanced-setup.md
+                children:
+                - page: docs-content://solutions/observability/apm/apm-server/installation-layout.md
+                  title: Installation layout
+                - page: docs-content://solutions/observability/apm/apm-server/secrets-keystore-for-secure-settings.md
+                  title: Secrets keystore
+                - page: docs-content://solutions/observability/apm/apm-server/command-reference.md
+                  title: Command reference
+                - page: docs-content://solutions/observability/apm/apm-server/tune-data-ingestion.md
+                  title: Tune data ingestion
+                - page: docs-content://solutions/observability/apm/apm-server/high-availability.md
+                  title: High Availability
+                - page: docs-content://solutions/observability/apm/apm-server/systemd.md
+                  title: APM Server and systemd
+            - group: Monitor
+              page: docs-content://solutions/observability/apm/apm-server/monitor.md
+              children:
+              - page: docs-content://solutions/observability/apm/apm-server/monitor-fleet-managed.md
+                title: Fleet-managed
+              - group: APM Server binary
+                page: docs-content://solutions/observability/apm/apm-server/monitor-binary.md
+                children:
+                - page: docs-content://solutions/observability/apm/apm-server/use-internal-collection-to-send-monitoring-data.md
+                  title: Use internal collection
+                - page: docs-content://solutions/observability/apm/apm-server/use-metricbeat-to-send-monitoring-data.md
+                  title: "Use {{metricbeat}} collection"
+                - page: docs-content://solutions/observability/apm/apm-server/use-select-metrics-emitted-directly-to-monitoring-cluster.md
+                  title: Use local collection
+          - group: APM APIs
+            page: docs-content://solutions/observability/apm/apis.md
+            children:
+            - page: docs-content://solutions/observability/apm/apm-ui-api.md
+              title: APM UI API
+            - group: "{{apm-server}} API"
+              page: docs-content://solutions/observability/apm/apm-server/api.md
+              children:
+              - page: docs-content://solutions/observability/apm/apm-server/information-api.md
+                title: APM Server information API
+              - page: docs-content://solutions/observability/apm/elastic-apm-events-intake-api.md
+                title: Elastic APM events intake API
+              - page: docs-content://solutions/observability/apm/elastic-apm-agent-configuration-api.md
+                title: Elastic APM agent configuration API
+              - page: docs-content://solutions/observability/apm/opentelemetry-intake-api.md
+                title: OpenTelemetry intake API
+              - page: docs-content://solutions/observability/apm/jaeger-event-intake.md
+                title: Jaeger event intake
+            - page: docs-content://solutions/observability/apm/managed-intake-service-event-api.md
+              title: Managed intake service event API
+          - group: Upgrade
+            page: docs-content://solutions/observability/apm/upgrade.md
+            children:
+            - page: docs-content://solutions/observability/apm/apm-agent-compatibility.md
+              title: APM agent compatibility
+            - group: "Upgrade to version 9.0 [apm-upgrading-to-9.0]"
+              page: docs-content://solutions/observability/apm/upgrade-to-version-9.md
+              children:
+              - page: docs-content://solutions/observability/apm/upgrade-self-installation-of-apm-server-standalone-to-9.md
+                title: Self-installation standalone
+              - page: docs-content://solutions/observability/apm/upgrade-self-installation-of-apm-integration-to-9.md
+                title: Self-installation APM integration
+              - page: docs-content://solutions/observability/apm/upgrade-elastic-cloud-apm-server-standalone-to-9.md
+                title: "{{ecloud}} standalone"
+              - page: docs-content://solutions/observability/apm/upgrade-elastic-cloud-with-apm-integration-to-9.md
+                title: "{{ecloud}} APM integration"
+            - group: Switch to the Elastic APM integration
+              page: docs-content://solutions/observability/apm/switch-to-elastic-apm-integration.md
+              children:
+              - page: docs-content://solutions/observability/apm/switch-self-installation-to-apm-integration.md
+                title: Switch a self-installation
+              - page: docs-content://solutions/observability/apm/switch-an-elastic-cloud-cluster-to-apm-integration.md
+                title: "Switch an {{ecloud}} cluster"
+        - group: Synthetic monitoring
+          page: docs-content://solutions/observability/synthetics/index.md
+          children:
+          - group: Get started
+            page: docs-content://solutions/observability/synthetics/get-started.md
+            children:
+            - page: docs-content://solutions/observability/synthetics/create-monitors-with-projects.md
+              title: Use a Synthetics project
+            - page: docs-content://solutions/observability/synthetics/create-monitors-ui.md
+              title: Use the Synthetics UI
+          - group: Scripting browser monitors
+            page: docs-content://solutions/observability/synthetics/scripting-browser-monitors.md
+            children:
+            - page: docs-content://solutions/observability/synthetics/write-synthetic-test.md
+              title: Write a synthetic test
+            - page: docs-content://solutions/observability/synthetics/configure-individual-browser-monitors.md
+              title: Configure individual monitors
+            - page: docs-content://solutions/observability/synthetics/use-synthetics-recorder.md
+              title: Use the Synthetics Recorder
+          - page: docs-content://solutions/observability/synthetics/configure-lightweight-monitors.md
+            title: Configure lightweight monitors
+          - page: docs-content://solutions/observability/synthetics/manage-monitors.md
+            title: Manage monitors
+          - page: docs-content://solutions/observability/synthetics/work-with-params-secrets.md
+            title: Work with params and secrets
+          - page: docs-content://solutions/observability/synthetics/analyze-data.md
+            title: Analyze monitor data
+          - page: docs-content://solutions/observability/synthetics/monitor-resources-on-private-networks.md
+            title: Monitor resources on private networks
+          - page: docs-content://solutions/observability/synthetics/cli.md
+            title: Use the CLI
+          - page: docs-content://solutions/observability/synthetics/configure-projects.md
+            title: Configure a Synthetics project
+          - page: docs-content://solutions/observability/synthetics/mfa-for-browser-monitors.md
+            title: Multi-factor Authentication
+          - page: docs-content://solutions/observability/synthetics/configure-settings.md
+            title: Configure Synthetics settings
+          - group: Grant users access to secured resources
+            page: docs-content://solutions/observability/synthetics/grant-access-to-secured-resources.md
+            children:
+            - page: docs-content://solutions/observability/synthetics/setup-role.md
+              title: Setup role
+            - page: docs-content://solutions/observability/synthetics/writer-role.md
+              title: Writer role
+            - page: docs-content://solutions/observability/synthetics/reader-role.md
+              title: Reader role
+          - page: docs-content://solutions/observability/synthetics/manage-data-retention.md
+            title: Manage data retention
+          - page: docs-content://solutions/observability/synthetics/network-security.md
+            title: Use Synthetics with network security
+          - page: docs-content://solutions/observability/synthetics/migrate-from-elastic-synthetics-integration.md
+            title: Migrate from the Elastic Synthetics integration
+          - page: docs-content://solutions/observability/synthetics/scale-architect-synthetics-deployment.md
+            title: Scale and architect a deployment
+          - page: docs-content://solutions/observability/synthetics/support-matrix.md
+            title: Synthetics support matrix
+          - page: docs-content://solutions/observability/synthetics/encryption-security.md
+            title: Synthetics Encryption and Security
+        - group: Real user monitoring
+          page: docs-content://solutions/observability/applications/user-experience.md
+          children:
+          - page: docs-content://solutions/observability/applications/otel-rum.md
+            title: OpenTelemetry for Real User Monitoring (RUM)
+        - page: docs-content://solutions/observability/applications/llm-observability.md
+          title: LLM and agentic AI observability
+        - group: Uptime monitoring (deprecated)
+          page: docs-content://solutions/observability/uptime/index.md
+          children:
+          - page: docs-content://solutions/observability/uptime/get-started.md
+            title: Get started
+          - group: Analyze
+            page: docs-content://solutions/observability/uptime/analyze.md
+            children:
+            - page: docs-content://solutions/observability/uptime/view-monitor-status.md
+              title: View monitor status
+            - page: docs-content://solutions/observability/uptime/analyze-monitors.md
+              title: Analyze monitors
+            - page: docs-content://solutions/observability/uptime/inspect-duration-anomalies.md
+              title: Inspect uptime duration anomalies
+          - page: docs-content://solutions/observability/uptime/configure-settings.md
+            title: Configure settings
+        - page: docs-content://solutions/observability/otlp-visualize.md
+          title: Visualize OpenTelemetry data
+      - page: docs-content://solutions/observability/cicd.md
+        title: CI/CD
+      - group: Cloud
+        page: docs-content://solutions/observability/cloud.md
+        children:
+        - group: AWS
+          page: docs-content://solutions/observability/cloud/amazon-web-services-aws-monitoring.md
+          children:
+          - page: docs-content://solutions/observability/cloud/ingestion-options.md
+            title: Ingestion options
+          - group: "Monitor {{aws}} with Elastic Agent"
+            page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-elastic-agent.md
+            children:
+            - page: docs-content://solutions/observability/cloud/monitor-amazon-cloud-compute-ec2.md
+              title: EC2
+            - page: docs-content://solutions/observability/cloud/monitor-amazon-kinesis-data-streams.md
+              title: Kinesis data streams
+            - page: docs-content://solutions/observability/cloud/monitor-amazon-simple-storage-service-s3.md
+              title: S3
+            - page: docs-content://solutions/observability/cloud/monitor-amazon-simple-queue-service-sqs.md
+              title: SQS
+          - page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-beats.md
+            title: "Monitor {{aws}} with {{beats}}"
+          - group: "Monitor {{aws}} with Amazon Data Firehose"
+            page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-amazon-data-firehose.md
+            children:
+            - page: docs-content://solutions/observability/cloud/monitor-virtual-private-cloud-vpc-flow-logs.md
+              title: VPC Flow Logs
+            - page: docs-content://solutions/observability/cloud/monitor-cloudtrail-logs.md
+              title: CloudTrail logs
+            - page: docs-content://solutions/observability/cloud/monitor-aws-network-firewall-logs.md
+              title: Network Firewall logs
+            - page: docs-content://solutions/observability/cloud/monitor-web-application-firewall-waf-logs.md
+              title: WAF logs
+            - page: docs-content://solutions/observability/cloud/monitor-cloudwatch-logs.md
+              title: CloudWatch logs
+          - page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-elastic-serverless-forwarder.md
+            title: "Monitor {{aws}} with Elastic Serverless Forwarder"
+        - group: Azure
+          page: docs-content://solutions/observability/cloud/azure-monitoring.md
+          children:
+          - page: docs-content://solutions/observability/cloud/monitor-microsoft-azure-with-elastic-agent.md
+            title: Monitor Microsoft Azure with Elastic Agent
+          - page: docs-content://solutions/observability/cloud/monitor-microsoft-azure-with-beats.md
+            title: Monitor Microsoft Azure with Beats
+          - page: docs-content://solutions/observability/cloud/multi-tenant-data-ingestion-with-beats.md
+            title: Ingest multi-tenant Azure Event Hub logs with Filebeat
+          - page: docs-content://solutions/observability/cloud/monitor-microsoft-azure-with-azure-native-isv-service.md
+            title: Monitor Microsoft Azure with the Azure Native ISV Service
+          - page: docs-content://solutions/observability/cloud/monitor-microsoft-azure-openai.md
+            title: Monitor Microsoft Azure OpenAI
+        - group: GCP
+          page: docs-content://solutions/observability/cloud/monitor-google-cloud-platform-gcp.md
+          children:
+          - page: docs-content://solutions/observability/cloud/gcp-dataflow-templates.md
+            title: GCP Dataflow templates
+      - group: Infrastructure and hosts
+        page: docs-content://solutions/observability/infra-and-hosts.md
+        children:
+        - group: Analyze infrastructure and host metrics
+          page: docs-content://solutions/observability/infra-and-hosts/analyze-infrastructure-host-metrics.md
+          children:
+          - page: docs-content://solutions/observability/infra-and-hosts/get-started-with-system-metrics.md
+            title: Get started with system metrics
+          - page: docs-content://solutions/observability/infra-and-hosts/view-infrastructure-metrics-by-resource-type.md
+            title: View infrastructure metrics by resource type
+          - page: docs-content://solutions/observability/infra-and-hosts/discover-metrics.md
+            title: Explore metrics data with Discover in Kibana
+          - page: docs-content://solutions/observability/infra-and-hosts/explore-infrastructure-metrics-over-time.md
+            title: Explore infrastructure metrics over time
+          - page: docs-content://solutions/observability/infra-and-hosts/analyze-compare-hosts.md
+            title: Analyze and compare hosts
+          - page: docs-content://solutions/observability/infra-and-hosts/detect-metric-anomalies.md
+            title: Detect metric anomalies
+          - page: docs-content://solutions/observability/infra-and-hosts/configure-settings.md
+            title: Configure settings
+        - group: Universal Profiling
+          page: docs-content://solutions/observability/infra-and-hosts/universal-profiling.md
+          children:
+          - page: docs-content://solutions/observability/infra-and-hosts/get-started-with-universal-profiling.md
+            title: Get started
+          - group: Manage data storage
+            page: docs-content://solutions/observability/infra-and-hosts/manage-data-storage.md
+            children:
+            - page: docs-content://solutions/observability/infra-and-hosts/universal-profiling-index-life-cycle-management.md
+              title: Index lifecycle management
+            - page: docs-content://solutions/observability/infra-and-hosts/configure-probabilistic-profiling.md
+              title: Configure probabilistic profiling
+          - group: Advanced configuration
+            page: docs-content://solutions/observability/infra-and-hosts/advanced-configuration.md
+            children:
+            - page: docs-content://solutions/observability/infra-and-hosts/tag-data-for-querying.md
+              title: Tag data for querying
+            - page: docs-content://solutions/observability/infra-and-hosts/add-symbols-for-native-frames.md
+              title: Add symbols for native frames
+            - page: docs-content://solutions/observability/infra-and-hosts/use-proxy-with-universal-profiling-agent.md
+              title: Use a proxy
+            - page: docs-content://solutions/observability/infra-and-hosts/override-kernel-version-check.md
+              title: Override kernel version check
+            - page: docs-content://solutions/observability/infra-and-hosts/environment-variables-to-configure-universal-profiling-agent.md
+              title: Environment variables to configure the Universal Profiling Agent
+            - page: docs-content://solutions/observability/infra-and-hosts/configuration-file-of-universal-profiling-agent.md
+              title: Configuration file of the Universal Profiling Agent
+          - page: docs-content://solutions/observability/infra-and-hosts/upgrade-universal-profiling.md
+            title: Upgrade
+          - page: docs-content://solutions/observability/infra-and-hosts/run-universal-profiling-on-self-hosted-elastic-stack.md
+            title: Self-hosted infrastructure
+          - group: Install the backend
+            page: docs-content://solutions/observability/infra-and-hosts/install-backend.md
+            children:
+            - page: docs-content://solutions/observability/infra-and-hosts/step-1-update-stack.md
+              title: "Step 1: Update the stack"
+            - page: docs-content://solutions/observability/infra-and-hosts/step-2-enable-universal-profiling-in-kibana.md
+              title: "Step 2: Enable Universal Profiling in Kibana"
+            - page: docs-content://solutions/observability/infra-and-hosts/step-3-set-up-universal-profiling-in-kibana.md
+              title: "Step 3: Set up Universal Profiling in Kibana"
+            - page: docs-content://solutions/observability/infra-and-hosts/step-4-run-backend-applications.md
+              title: "Step 4: Run the backend applications"
+            - page: docs-content://solutions/observability/infra-and-hosts/step-5-next-steps.md
+              title: "Step 5: Next steps"
+          - page: docs-content://solutions/observability/infra-and-hosts/operate-universal-profiling-backend.md
+            title: Operate the backend
+        - page: docs-content://solutions/observability/infra-and-hosts/tutorial-observe-kubernetes-deployments.md
+          title: "Tutorial: Observe your Kubernetes deployments"
+        - group: "Tutorial: Observe your nginx instances"
+          page: docs-content://solutions/observability/infra-and-hosts/tutorial-observe-nginx-instances.md
+          children:
+          - page: docs-content://solutions/observability/infra-and-hosts/understanding-no-results-found-message.md
+            title: Understanding "no results found" message
+        - page: docs-content://solutions/observability/infra-and-hosts/collect-nginx-data-otel-integration-fleet-managed.md
+          title: Collect NGINX data with OpenTelemetry integrations (Fleet-managed)
+        - page: docs-content://solutions/observability/infra-and-hosts/collect-nginx-data-otel-integration-standalone.md
+          title: Collect NGINX data with OpenTelemetry integrations (standalone)
+      - group: Logs
+        page: docs-content://solutions/observability/logs.md
+        children:
+        - page: docs-content://solutions/observability/logs/get-started-with-system-logs.md
+          title: Get started with system logs
+        - page: docs-content://solutions/observability/logs/stream-any-log-file.md
+          title: Send any log file using Elastic Agent
+        - page: docs-content://solutions/observability/logs/stream-any-log-file-using-edot-collector.md
+          title: Send any log file using OTel Collector
+        - group: Send application log data
+          page: docs-content://solutions/observability/logs/stream-application-logs.md
+          children:
+          - page: docs-content://solutions/observability/logs/plaintext-application-logs.md
+            title: Plaintext application logs
+          - page: docs-content://solutions/observability/logs/ecs-formatted-application-logs.md
+            title: ECS formatted application logs
+          - page: docs-content://solutions/observability/logs/apm-agent-log-sending.md
+            title: APM agent log sending
+        - page: docs-content://solutions/observability/logs/parse-route-logs.md
+          title: Parse and route logs using ingest pipelines
+        - page: docs-content://solutions/observability/logs/filter-aggregate-logs.md
+          title: Filter and aggregate logs
+        - group: Explore logs
+          page: docs-content://solutions/observability/logs/explore-logs.md
+          children:
+          - page: docs-content://solutions/observability/logs/discover-logs.md
+            title: Explore logs in Discover
+          - page: docs-content://solutions/observability/logs/categorize-log-entries.md
+            title: Categorize log entries
+          - page: docs-content://solutions/observability/logs/inspect-log-anomalies.md
+            title: Inspect log anomalies
+        - page: docs-content://solutions/observability/logs/run-pattern-analysis-on-log-data.md
+          title: Run a pattern analysis on log data
+        - page: docs-content://solutions/observability/logs/log-data-sources.md
+          title: Configure log data sources
+        - page: docs-content://solutions/observability/logs/logs-data-retention.md
+          title: Configure log data retention
+        - page: docs-content://solutions/observability/logs/add-service-name-to-logs.md
+          title: Add a service name to logs
+        - group: Logs index template reference
+          page: docs-content://solutions/observability/logs/logs-index-template-reference.md
+          children:
+          - page: docs-content://solutions/observability/logs/logs-index-template-defaults.md
+            title: Default `logs` index template
+      - page: docs-content://solutions/observability/streams/streams.md
+        title: Streams
+      - page: docs-content://solutions/observability/streams/management/retention.md
+        title: Manage data retention
+      - group: Process documents
+        page: docs-content://solutions/observability/streams/management/extract.md
+        children:
+        - page: docs-content://solutions/observability/streams/management/extract/drop.md
+          title: Drop document processor
+        - page: docs-content://solutions/observability/streams/management/extract/remove.md
+          title: Remove processor
+        - page: docs-content://solutions/observability/streams/management/extract/date.md
+          title: Date processor
+        - page: docs-content://solutions/observability/streams/management/extract/convert.md
+          title: Convert processor
+        - page: docs-content://solutions/observability/streams/management/extract/replace.md
+          title: Replace processor
+        - page: docs-content://solutions/observability/streams/management/extract/dissect.md
+          title: Dissect processor
+        - page: docs-content://solutions/observability/streams/management/extract/grok.md
+          title: Grok processor
+        - page: docs-content://solutions/observability/streams/management/extract/set.md
+          title: Set processor
+        - page: docs-content://solutions/observability/streams/management/extract/math.md
+          title: Math processor
+        - page: docs-content://solutions/observability/streams/management/extract/rename.md
+          title: Rename processor
+        - page: docs-content://solutions/observability/streams/management/extract/append.md
+          title: Append processor
+        - page: docs-content://solutions/observability/streams/management/extract/manual-pipeline-configuration.md
+          title: Manual pipeline configuration
+      - page: docs-content://solutions/observability/streams/management/partitioning.md
+        title: Partition data into child streams
+      - page: docs-content://solutions/observability/streams/management/schema.md
+        title: Map fields
+      - page: docs-content://solutions/observability/streams/management/data-quality.md
+        title: Manage data quality
+      - page: docs-content://solutions/observability/streams/management/advanced.md
+        title: Configure advanced settings
+      - page: docs-content://solutions/observability/streams/wired-streams.md
+        title: Wired streams
+      - group: Incident management
+        page: docs-content://solutions/observability/incident-management.md
+        children:
+        - group: Alerting
+          page: docs-content://solutions/observability/incident-management/alerting.md
+          children:
+          - group: Create and manage rules
+            page: docs-content://solutions/observability/incident-management/create-manage-rules.md
+            children:
+            - page: docs-content://solutions/observability/incident-management/create-an-anomaly-detection-rule.md
+              title: Anomaly detection
+            - page: docs-content://solutions/observability/incident-management/create-an-apm-anomaly-rule.md
+              title: APM anomaly
+            - page: docs-content://solutions/observability/incident-management/create-custom-threshold-rule.md
+              title: Custom threshold
+            - page: docs-content://solutions/observability/incident-management/create-a-degraded-docs-rule.md
+              title: Degraded docs
+            - page: docs-content://solutions/observability/incident-management/create-an-elasticsearch-query-rule.md
+              title: Elasticsearch query
+            - page: docs-content://solutions/observability/incident-management/create-an-error-count-threshold-rule.md
+              title: Error count threshold
+            - page: docs-content://solutions/observability/incident-management/create-failed-transaction-rate-threshold-rule.md
+              title: Failed transaction rate threshold
+            - page: docs-content://solutions/observability/incident-management/create-a-failed-docs-rule.md
+              title: Failed docs
+            - page: docs-content://solutions/observability/incident-management/create-an-inventory-rule.md
+              title: Inventory
+            - page: docs-content://solutions/observability/incident-management/create-latency-threshold-rule.md
+              title: Latency threshold
+            - page: docs-content://solutions/observability/incident-management/create-log-threshold-rule.md
+              title: Log threshold
+            - page: docs-content://solutions/observability/incident-management/create-metric-threshold-rule.md
+              title: Metric threshold
+            - page: docs-content://solutions/observability/incident-management/create-monitor-status-rule.md
+              title: Monitor Status
+            - page: docs-content://solutions/observability/incident-management/create-tls-certificate-rule.md
+              title: TLS certificate
+            - page: docs-content://solutions/observability/incident-management/create-an-uptime-duration-anomaly-rule.md
+              title: Uptime duration anomaly
+            - page: docs-content://solutions/observability/incident-management/create-an-slo-burn-rate-rule.md
+              title: SLO burn rate
+          - group: Aggregation options
+            page: docs-content://solutions/observability/incident-management/aggregation-options.md
+            children:
+            - page: docs-content://solutions/observability/incident-management/rate-aggregation.md
+              title: Rate aggregation
+          - group: View and manage alerts
+            page: docs-content://solutions/observability/incident-management/view-alerts.md
+            children:
+            - page: docs-content://solutions/observability/incident-management/triage-slo-burn-rate-breaches.md
+              title: SLO burn rate breaches
+            - page: docs-content://solutions/observability/incident-management/triage-threshold-breaches.md
+              title: Threshold breaches
+        - page: docs-content://solutions/observability/incident-management/observability-cases.md
+          title: Cases
+        - group: Service-level objectives (SLOs)
+          page: docs-content://solutions/observability/incident-management/service-level-objectives-slos.md
+          children:
+          - page: docs-content://solutions/observability/incident-management/configure-service-level-objective-slo-access.md
+            title: Configure SLO access
+          - page: docs-content://solutions/observability/incident-management/create-an-slo.md
+            title: Create an SLO
+          - page: docs-content://solutions/observability/incident-management/slo-management.md
+            title: View and manage SLOs
+          - page: docs-content://solutions/observability/incident-management/configure-slo-settings.md
+            title: Configure SLOs settings
+      - page: docs-content://solutions/observability/data-set-quality-monitoring.md
+        title: Data set quality
+      - group: AI for Observability
+        page: docs-content://solutions/observability/ai/observability-ai.md
+        children:
+        - page: docs-content://solutions/observability/ai/observability-ai-assistant.md
+          title: AI Assistant
+        - page: docs-content://solutions/observability/ai/agent-builder-observability.md
+          title: Agent Builder for Observability
+        - page: docs-content://solutions/observability/ai/llm-performance-matrix.md
+          title: Large language model performance matrix
+      - page: docs-content://solutions/observability/observability-serverless-feature-tiers.md
+        title: Serverless feature tiers
+      - page: docs-content://solutions/observability/apis.md
+        title: APIs
+    - group: Security solution
+      page: docs-content://solutions/security.md
       children:
-      - title: AI for Observability
-      - title: "Application performance monitoring (APM)"
-      - title: Application and service monitoring
-      - title: Get started with Elastic Observability
-      - title: Incident management
-      - title: Infrastructure and host monitoring
-      - title: Log monitoring
-      - title: Streams
-      - title: Synthetic monitoring
-      - title: Uptime monitoring (deprecated)
+      - group: Get started
+        page: docs-content://solutions/security/get-started.md
+        children:
+        - group: Elastic Security quickstarts
+          page: docs-content://solutions/security/get-started/quickstarts.md
+          children:
+          - page: docs-content://solutions/security/get-started/get-started-detect-with-siem.md
+            title: Detect and respond to threats with SIEM
+          - page: docs-content://solutions/security/get-started/get-started-endpoint-security.md
+            title: Protect your hosts with endpoint security
+          - page: docs-content://solutions/security/get-started/get-started-cloud-security.md
+            title: Secure your cloud assets with cloud security posture management
+        - page: docs-content://solutions/security/get-started/elastic-security-requirements.md
+          title: Elastic Security requirements
+        - page: docs-content://solutions/security/get-started/elastic-security-ui.md
+          title: Elastic Security UI
+        - group: Ingest data to Elastic Security
+          page: docs-content://solutions/security/get-started/ingest-data-to-elastic-security.md
+          children:
+          - page: docs-content://solutions/security/get-started/enable-threat-intelligence-integrations.md
+            title: Enable threat intelligence integrations
+          - page: docs-content://solutions/security/get-started/automatic-migration.md
+            title: Automatic migration
+          - page: docs-content://solutions/security/get-started/automatic-import.md
+            title: Automatic import
+          - page: docs-content://solutions/security/get-started/content-connectors.md
+            title: Content connectors
+        - group: Spaces and Elastic Security
+          page: docs-content://solutions/security/get-started/spaces-elastic-security.md
+          children:
+          - page: docs-content://solutions/security/get-started/spaces-defend-faq.md
+            title: "Spaces and {{elastic-defend}} FAQ"
+        - page: docs-content://solutions/security/get-started/data-views-elastic-security.md
+          title: "{{data-sources-cap}} and Elastic Security"
+        - page: docs-content://solutions/security/get-started/create-runtime-fields-in-elastic-security.md
+          title: Create runtime fields in Elastic Security
+        - page: docs-content://solutions/security/get-started/configure-advanced-settings.md
+          title: Configure advanced settings
+      - group: "ES|QL for security"
+        page: docs-content://solutions/security/esql-for-security.md
+        children:
+        - page: docs-content://solutions/security/esql-for-security/esql-threat-hunting-tutorial.md
+          title: "Tutorial: Threat hunting with ES|QL"
+      - group: AI for security
+        page: docs-content://solutions/security/ai.md
+        children:
+        - group: Elastic AI SOC Engine
+          page: docs-content://solutions/security/ai/ease/ease-intro.md
+          children:
+          - page: docs-content://solutions/security/ai/ease/ease-alerts.md
+            title: Triage alerts
+          - page: docs-content://solutions/security/ai/ease/ease-upgrade.md
+            title: Upgrade from EASE to Elastic Security
+        - group: AI Assistant for Security
+          page: docs-content://solutions/security/ai/ai-assistant.md
+          children:
+          - page: docs-content://solutions/security/ai/ai-assistant-knowledge-base.md
+            title: AI Assistant Knowledge Base
+          - page: docs-content://solutions/security/ai/usecase-knowledge-base-walkthrough.md
+            title: Use AI Assistant's Knowledge Base to improve response quality
+        - page: docs-content://solutions/security/ai/agent-builder/agent-builder.md
+          title: Agent Builder for Elastic Security
+        - page: docs-content://solutions/security/ai/attack-discovery.md
+          title: Attack Discovery
+        - page: docs-content://solutions/security/ai/large-language-model-performance-matrix.md
+          title: Large language model performance matrix
+        - group: AI use cases
+          page: docs-content://solutions/security/ai/use-cases.md
+          children:
+          - page: docs-content://solutions/security/ai/triage-alerts.md
+            title: Triage alerts
+          - page: docs-content://solutions/security/ai/identify-investigate-document-threats.md
+            title: Identify, investigate, and document threats
+          - page: docs-content://solutions/security/ai/generate-customize-learn-about-esorql-queries.md
+            title: "Generate, customize, and learn about ES|QL queries"
+        - page: docs-content://solutions/security/ai/ease/ease-value-report.md
+          title: Value report
+      - group: Detections and alerts
+        page: docs-content://solutions/security/detect-and-alert.md
+        children:
+        - group: Before you begin
+          page: docs-content://solutions/security/detect-and-alert/before-you-begin.md
+          children:
+          - page: docs-content://solutions/security/detect-and-alert/turn-on-detections.md
+            title: Turn on detections
+          - page: docs-content://solutions/security/detect-and-alert/detections-privileges.md
+            title: Detections privileges
+          - page: docs-content://solutions/security/detect-and-alert/detection-rule-concepts.md
+            title: Detection rule concepts
+          - group: Advanced data source configuration
+            page: docs-content://solutions/security/detect-and-alert/advanced-data-source-configuration.md
+            children:
+            - page: docs-content://solutions/security/detect-and-alert/cross-cluster-search-detection-rules.md
+              title: Cross-cluster search and detection rules
+            - page: docs-content://solutions/security/detect-and-alert/using-logsdb-index-mode-with-elastic-security.md
+              title: Using logsdb index mode with Elastic Security
+        - page: docs-content://solutions/security/detect-and-alert/mitre-attack-coverage.md
+          title: "MITRE ATT&CK coverage"
+        - group: Prebuilt rules
+          page: docs-content://solutions/security/detect-and-alert/prebuilt-rules.md
+          children:
+          - page: docs-content://solutions/security/detect-and-alert/prebuilt-rule-components.md
+            title: Prebuilt rule components
+          - page: docs-content://solutions/security/detect-and-alert/install-prebuilt-rules.md
+            title: Install prebuilt rules
+          - page: docs-content://solutions/security/detect-and-alert/update-prebuilt-rules.md
+            title: Update prebuilt rules
+          - page: docs-content://solutions/security/detect-and-alert/prebuilt-rules-airgapped.md
+            title: Prebuilt rules in air-gapped environments
+          - page: docs-content://solutions/security/detect-and-alert/customize-prebuilt-rules.md
+            title: Customize prebuilt rules
+        - group: Author rules
+          page: docs-content://solutions/security/detect-and-alert/author-rules.md
+          children:
+          - group: Choose the right rule type
+            page: docs-content://solutions/security/detect-and-alert/choose-the-right-rule-type.md
+            children:
+            - page: docs-content://solutions/security/detect-and-alert/about-building-block-rules.md
+              title: About building block rules
+          - group: Rule type guides
+            page: docs-content://solutions/security/detect-and-alert/rule-types.md
+            children:
+            - page: docs-content://solutions/security/detect-and-alert/esql.md
+              title: "ES|QL rules"
+            - page: docs-content://solutions/security/detect-and-alert/custom-query.md
+              title: Custom query rules
+            - page: docs-content://solutions/security/detect-and-alert/eql.md
+              title: Event correlation (EQL) rules
+            - page: docs-content://solutions/security/detect-and-alert/indicator-match.md
+              title: Indicator match rules
+            - page: docs-content://solutions/security/detect-and-alert/threshold.md
+              title: Threshold rules
+            - page: docs-content://solutions/security/detect-and-alert/machine-learning.md
+              title: "{{ml-cap}} rules"
+            - page: docs-content://solutions/security/detect-and-alert/new-terms.md
+              title: New terms rules
+          - page: docs-content://solutions/security/detect-and-alert/using-the-rule-ui.md
+            title: Using the UI
+          - page: docs-content://solutions/security/detect-and-alert/using-the-api.md
+            title: Using the API
+          - page: docs-content://solutions/security/detect-and-alert/common-rule-settings.md
+            title: Common rule settings
+          - page: docs-content://solutions/security/detect-and-alert/set-rule-data-sources.md
+            title: Set rule data sources
+          - page: docs-content://solutions/security/detect-and-alert/write-investigation-guides.md
+            title: Write investigation guides
+          - page: docs-content://solutions/security/detect-and-alert/validate-and-test-rules.md
+            title: Validate and test rules
+        - page: docs-content://solutions/security/detect-and-alert/manage-detection-rules.md
+          title: Manage detection rules
+        - group: Monitor rule executions
+          page: docs-content://solutions/security/detect-and-alert/monitor-rule-executions.md
+          children:
+          - page: docs-content://solutions/security/detect-and-alert/fill-rule-gaps.md
+            title: Fill rule execution gaps
+        - group: Reduce noise and false positives
+          page: docs-content://solutions/security/detect-and-alert/reduce-noise-and-false-positives.md
+          children:
+          - page: docs-content://solutions/security/detect-and-alert/tune-detection-rules.md
+            title: Tune detection rules
+          - group: Rule exceptions
+            page: docs-content://solutions/security/detect-and-alert/rule-exceptions.md
+            children:
+            - page: docs-content://solutions/security/detect-and-alert/create-manage-value-lists.md
+              title: Create and manage value lists
+            - page: docs-content://solutions/security/detect-and-alert/add-manage-exceptions.md
+              title: Add and manage exceptions
+            - page: docs-content://solutions/security/detect-and-alert/create-manage-shared-exception-lists.md
+              title: Create and manage shared exception lists
+          - page: docs-content://solutions/security/detect-and-alert/alert-suppression.md
+            title: Suppress detection alerts
+        - group: Manage detection alerts
+          page: docs-content://solutions/security/detect-and-alert/manage-detection-alerts.md
+          children:
+          - page: docs-content://solutions/security/detect-and-alert/visualize-detection-alerts.md
+            title: Visualize detection alerts
+          - page: docs-content://solutions/security/detect-and-alert/view-detection-alert-details.md
+            title: View detection alert details
+          - page: docs-content://solutions/security/detect-and-alert/query-alert-indices.md
+            title: Query alert indices
+      - group: "Configure endpoint protection with {{elastic-defend}}"
+        page: docs-content://solutions/security/configure-elastic-defend.md
+        children:
+        - page: docs-content://solutions/security/configure-elastic-defend/elastic-defend-requirements.md
+          title: "{{elastic-defend}} requirements"
+        - group: "Install {{elastic-defend}}"
+          page: docs-content://solutions/security/configure-elastic-defend/install-elastic-defend.md
+          children:
+          - page: docs-content://solutions/security/configure-elastic-defend/enable-access-for-macos.md
+            title: Enable access on macOS
+          - page: docs-content://solutions/security/configure-elastic-defend/deploy-on-macos-with-mdm.md
+            title: Deploy on macOS with MDM
+          - page: docs-content://solutions/security/configure-elastic-defend/prevent-elastic-agent-uninstallation.md
+            title: Prevent Elastic Agent uninstallation
+        - page: docs-content://solutions/security/configure-elastic-defend/elastic-defend-feature-privileges.md
+          title: "{{elastic-defend}} feature privileges"
+        - group: "Configure an integration policy for {{elastic-defend}}"
+          page: docs-content://solutions/security/configure-elastic-defend/configure-an-integration-policy-for-elastic-defend.md
+          children:
+          - page: docs-content://solutions/security/configure-elastic-defend/configure-updates-for-protection-artifacts.md
+            title: Configure updates for protection artifacts
+          - page: docs-content://solutions/security/configure-elastic-defend/turn-off-diagnostic-data-for-elastic-defend.md
+            title: "Turn off diagnostic data for {{elastic-defend}}"
+          - page: docs-content://solutions/security/configure-elastic-defend/configure-self-healing-rollback-for-windows-endpoints.md
+            title: Configure self-healing rollback for Windows endpoints
+          - page: docs-content://solutions/security/configure-elastic-defend/configure-linux-file-system-monitoring.md
+            title: Configure Linux file system monitoring
+          - page: docs-content://solutions/security/configure-elastic-defend/configure-data-volume-for-elastic-endpoint.md
+            title: Configure data volume
+          - page: docs-content://solutions/security/configure-elastic-defend/create-an-elastic-defend-policy-using-api.md
+            title: Create an Elastic Defend policy using API
+        - page: docs-content://solutions/security/configure-elastic-defend/configure-offline-endpoints-air-gapped-environments.md
+          title: Configure offline endpoints and air-gapped environments
+        - page: docs-content://solutions/security/configure-elastic-defend/uninstall-elastic-agent.md
+          title: Uninstall Elastic Agent
+      - group: "Manage {{elastic-defend}}"
+        page: docs-content://solutions/security/manage-elastic-defend.md
+        children:
+        - page: docs-content://solutions/security/manage-elastic-defend/endpoints.md
+          title: Endpoints
+        - page: docs-content://solutions/security/manage-elastic-defend/policies.md
+          title: Policies
+        - page: docs-content://solutions/security/manage-elastic-defend/trusted-applications.md
+          title: Trusted applications
+        - page: docs-content://solutions/security/manage-elastic-defend/trusted-devices.md
+          title: Trusted devices
+        - page: docs-content://solutions/security/manage-elastic-defend/event-filters.md
+          title: Event filters
+        - page: docs-content://solutions/security/manage-elastic-defend/host-isolation-exceptions.md
+          title: Host isolation exceptions
+        - page: docs-content://solutions/security/manage-elastic-defend/blocklist.md
+          title: Blocklist
+        - page: docs-content://solutions/security/manage-elastic-defend/optimize-elastic-defend.md
+          title: "Optimize {{elastic-defend}}"
+        - page: docs-content://solutions/security/manage-elastic-defend/event-capture-elastic-defend.md
+          title: "Event capture and {{elastic-defend}}"
+        - page: docs-content://solutions/security/manage-elastic-defend/endpoint-protection-rules.md
+          title: Endpoint protection rules
+        - page: docs-content://solutions/security/manage-elastic-defend/automatic-troubleshooting.md
+          title: Automatic troubleshooting
+        - page: docs-content://solutions/security/manage-elastic-defend/allowlist-elastic-endpoint-in-third-party-antivirus-apps.md
+          title: "Allowlist {{elastic-endpoint}} in third-party antivirus apps"
+        - page: docs-content://solutions/security/manage-elastic-defend/elastic-endpoint-self-protection-features.md
+          title: "{{elastic-endpoint}} self-protection features"
+      - group: Endpoint response actions
+        page: docs-content://solutions/security/endpoint-response-actions.md
+        children:
+        - page: docs-content://solutions/security/endpoint-response-actions/automated-response-actions.md
+          title: Automated response actions
+        - page: docs-content://solutions/security/endpoint-response-actions/isolate-host.md
+          title: Isolate a host
+        - page: docs-content://solutions/security/endpoint-response-actions/response-actions-history.md
+          title: Response actions history
+        - page: docs-content://solutions/security/endpoint-response-actions/third-party-response-actions.md
+          title: Third-party response actions
+        - page: docs-content://solutions/security/endpoint-response-actions/configure-third-party-response-actions.md
+          title: Configure third-party response actions
+      - group: Cloud Security
+        page: docs-content://solutions/security/cloud.md
+        children:
+        - page: docs-content://solutions/security/cloud/security-posture-management-overview.md
+          title: Security posture management overview
+        - page: docs-content://solutions/security/cloud/enable-cloud-security-features.md
+          title: "Enable cloud security features in {{serverless-short}}"
+        - group: Cloud security posture management
+          page: docs-content://solutions/security/cloud/cloud-security-posture-management.md
+          children:
+          - page: docs-content://solutions/security/cloud/get-started-with-cspm-for-aws.md
+            title: Get started with CSPM for AWS
+          - page: docs-content://solutions/security/cloud/get-started-with-cspm-for-gcp.md
+            title: Get started with CSPM for GCP
+          - page: docs-content://solutions/security/cloud/get-started-with-cspm-for-azure.md
+            title: Get started with CSPM for Azure
+          - page: docs-content://solutions/security/cloud/cspm-privilege-requirements.md
+            title: CSPM privilege requirements
+          - page: docs-content://solutions/security/cloud/findings-page.md
+            title: CSPM Findings
+          - page: docs-content://solutions/security/cloud/benchmarks.md
+            title: CSPM benchmarks
+          - page: docs-content://solutions/security/cloud/cspm-dashboard.md
+            title: Cloud Security Posture dashboard
+          - page: docs-content://solutions/security/cloud/cspm-frequently-asked-questions-faq.md
+            title: Frequently asked questions (FAQ)
+        - group: Kubernetes security posture management
+          page: docs-content://solutions/security/cloud/kubernetes-security-posture-management.md
+          children:
+          - page: docs-content://solutions/security/cloud/get-started-with-kspm.md
+            title: Get started with KSPM
+          - page: docs-content://solutions/security/cloud/findings-page-2.md
+            title: KSPM Findings
+          - page: docs-content://solutions/security/cloud/kspm-benchmarks.md
+            title: KSPM benchmarks
+          - page: docs-content://solutions/security/cloud/kspm-dashboard.md
+            title: Cloud Security Posture dashboard
+          - page: docs-content://solutions/security/cloud/kspm-frequently-asked-questions.md
+            title: Frequently asked questions (FAQ)
+        - group: Cloud Asset Discovery
+          page: docs-content://solutions/security/cloud/asset-disc.md
+          children:
+          - page: docs-content://solutions/security/cloud/asset-disc-aws.md
+            title: Set up Cloud Asset Discovery for AWS
+          - page: docs-content://solutions/security/cloud/asset-disc-gcp.md
+            title: Set up Cloud Asset Discovery for GCP
+          - page: docs-content://solutions/security/cloud/asset-disc-azure.md
+            title: Set up Cloud Asset Discovery for Azure
+        - group: Cloud native vulnerability management
+          page: docs-content://solutions/security/cloud/cloud-native-vulnerability-management.md
+          children:
+          - page: docs-content://solutions/security/cloud/get-started-with-cnvm.md
+            title: Get started with CNVM
+          - page: docs-content://solutions/security/cloud/cnvm-privilege-requirements.md
+            title: CNVM privilege requirements
+          - page: docs-content://solutions/security/cloud/findings-page-3.md
+            title: CNVM Findings
+          - page: docs-content://solutions/security/cloud/cnvm-dashboard.md
+            title: CNVM dashboard
+          - page: docs-content://solutions/security/cloud/cnvm-frequently-asked-questions-faq.md
+            title: Frequently asked questions (FAQ)
+        - group: Cloud workload protection for VMs
+          page: docs-content://solutions/security/cloud/cloud-workload-protection-for-vms.md
+          children:
+          - page: docs-content://solutions/security/cloud/capture-environment-variables.md
+            title: Capture environment variables
+        - group: Cloud workload protection for Kubernetes
+          page: docs-content://solutions/security/cloud/d4c/d4c-overview.md
+          children:
+          - page: docs-content://solutions/security/cloud/d4c/get-started-with-d4c.md
+            title: Get started with Defend for Containers for Kubernetes
+          - page: docs-content://solutions/security/cloud/d4c/d4c-policies.md
+            title: Container workload protection policies
+          - page: docs-content://solutions/security/cloud/d4c/kubernetes-dashboard.md
+            title: Kubernetes dashboard
+      - group: Ingest third-party security data
+        page: docs-content://solutions/security/integrations/ingest-third-party-security-data.md
+        children:
+        - page: docs-content://solutions/security/integrations/aws-config.md
+          title: AWS Config
+        - page: docs-content://solutions/security/integrations/aws-inspector.md
+          title: AWS Inspector
+        - page: docs-content://solutions/security/integrations/aws-sec-hub.md
+          title: AWS Security Hub
+        - page: docs-content://solutions/security/integrations/aws-security-hub-cspm.md
+          title: AWS Security Hub CSPM
+        - page: docs-content://solutions/security/integrations/cncf-falco.md
+          title: CNCF Falco
+        - page: docs-content://solutions/security/integrations/google-security-command-center.md
+          title: Google Security Command Center
+        - page: docs-content://solutions/security/integrations/microsoft-defender-for-cloud.md
+          title: Microsoft Defender for Cloud
+        - page: docs-content://solutions/security/integrations/microsoft-defender-for-endpoint.md
+          title: Microsoft Defender for Endpoint
+        - page: docs-content://solutions/security/integrations/microsoft-defender-xdr.md
+          title: Microsoft Defender XDR
+        - page: docs-content://solutions/security/integrations/prisma-cloud.md
+          title: Prisma Cloud
+        - page: docs-content://solutions/security/integrations/qualys.md
+          title: Qualys VMDR
+        - page: docs-content://solutions/security/integrations/rapid7.md
+          title: Rapid7 InsightVM
+        - page: docs-content://solutions/security/integrations/tenablevm.md
+          title: Tenable VM
+        - page: docs-content://solutions/security/integrations/wiz.md
+          title: Wiz
+      - group: Investigation tools
+        page: docs-content://solutions/security/investigate.md
+        children:
+        - group: Timeline
+          page: docs-content://solutions/security/investigate/timeline.md
+          children:
+          - page: docs-content://solutions/security/investigate/timeline-templates.md
+            title: Timeline templates
+        - page: docs-content://solutions/security/investigate/visual-event-analyzer.md
+          title: Visual event analyzer
+        - page: docs-content://solutions/security/investigate/session-view.md
+          title: Session View
+        - group: Osquery
+          page: docs-content://solutions/security/investigate/osquery.md
+          children:
+          - page: docs-content://solutions/security/investigate/manage-integration.md
+            title: Osquery manager integration
+          - page: docs-content://solutions/security/investigate/osquery-faq.md
+            title: Osquery FAQ
+          - page: docs-content://solutions/security/investigate/add-osquery-response-actions.md
+            title: Add Osquery Response Actions
+          - page: docs-content://solutions/security/investigate/run-osquery-from-investigation-guides.md
+            title: Run Osquery from investigation guides
+          - page: docs-content://solutions/security/investigate/run-osquery-from-alerts.md
+            title: Run Osquery from alerts
+          - page: docs-content://solutions/security/investigate/examine-osquery-results.md
+            title: Examine Osquery results
+          - page: docs-content://solutions/security/investigate/use-placeholder-fields-in-osquery-queries.md
+            title: Use placeholder fields in Osquery queries
+        - page: docs-content://solutions/security/investigate/notes.md
+          title: Notes
+        - page: docs-content://solutions/security/investigate/indicators-of-compromise.md
+          title: Indicators of compromise
+        - page: docs-content://solutions/security/investigate/security-cases.md
+          title: Cases
+      - group: Dashboards
+        page: docs-content://solutions/security/dashboards.md
+        children:
+        - page: docs-content://solutions/security/dashboards/overview-dashboard.md
+          title: Overview dashboard
+        - page: docs-content://solutions/security/dashboards/detection-response-dashboard.md
+          title: "Detection & Response dashboard"
+        - page: docs-content://solutions/security/dashboards/cloud-security-posture-dashboard.md
+          title: Cloud Security Posture dashboard
+        - page: docs-content://solutions/security/dashboards/kubernetes-dashboard.md
+          title: Kubernetes dashboard
+        - page: docs-content://solutions/security/dashboards/entity-analytics-dashboard.md
+          title: Entity Analytics dashboard
+        - page: docs-content://solutions/security/dashboards/data-quality-dashboard.md
+          title: Data Quality dashboard
+        - page: docs-content://solutions/security/dashboards/cloud-native-vulnerability-management-dashboard.md
+          title: Cloud Native Vulnerability Management Dashboard
+        - page: docs-content://solutions/security/dashboards/detection-rule-monitoring-dashboard.md
+          title: Detection rule monitoring dashboard
+        - page: docs-content://solutions/security/dashboards/endpoint-detection-response-dashboard.md
+          title: Endpoint Detection and Response dashboard
+      - group: Entity analytics
+        page: docs-content://solutions/security/advanced-entity-analytics.md
+        children:
+        - page: docs-content://solutions/security/advanced-entity-analytics/overview.md
+          title: Entity analytics overview
+        - group: Entity risk scoring
+          page: docs-content://solutions/security/advanced-entity-analytics/entity-risk-scoring.md
+          children:
+          - page: docs-content://solutions/security/advanced-entity-analytics/entity-risk-scoring-requirements.md
+            title: Entity risk scoring requirements
+          - page: docs-content://solutions/security/advanced-entity-analytics/turn-on-risk-scoring-engine.md
+            title: Turn on the risk scoring engine
+          - page: docs-content://solutions/security/advanced-entity-analytics/view-entity-details.md
+            title: View entity details
+          - page: docs-content://solutions/security/advanced-entity-analytics/asset-criticality.md
+            title: Asset criticality
+          - page: docs-content://solutions/security/advanced-entity-analytics/entity-store.md
+            title: Entity store
+          - page: docs-content://solutions/security/advanced-entity-analytics/view-analyze-risk-score-data.md
+            title: View and analyze risk score data
+        - group: Advanced behavioral detections
+          page: docs-content://solutions/security/advanced-entity-analytics/advanced-behavioral-detections.md
+          children:
+          - page: docs-content://solutions/security/advanced-entity-analytics/machine-learning-job-rule-requirements.md
+            title: Machine learning job and rule requirements
+          - page: docs-content://solutions/security/advanced-entity-analytics/anomaly-detection.md
+            title: Anomaly detection
+          - page: docs-content://solutions/security/advanced-entity-analytics/optimizing-anomaly-results.md
+            title: Optimizing anomaly results
+          - page: docs-content://solutions/security/advanced-entity-analytics/behavioral-detection-use-cases.md
+            title: Behavioral detection use cases
+        - group: Privileged user monitoring
+          page: docs-content://solutions/security/advanced-entity-analytics/privileged-user-monitoring.md
+          children:
+          - page: docs-content://solutions/security/advanced-entity-analytics/privileged-user-monitoring-requirements.md
+            title: Privileged user monitoring requirements
+          - page: docs-content://solutions/security/advanced-entity-analytics/privileged-user-monitoring-setup.md
+            title: Set up privileged user monitoring
+          - page: docs-content://solutions/security/advanced-entity-analytics/monitor-privileged-user-activitites.md
+            title: Monitor privileged user activities
+        - group: Explore
+          page: docs-content://solutions/security/advanced-entity-analytics/explore.md
+          children:
+          - page: docs-content://solutions/security/advanced-entity-analytics/hosts-page.md
+            title: Hosts page
+          - group: Network page
+            page: docs-content://solutions/security/advanced-entity-analytics/network-page.md
+            children:
+            - page: docs-content://solutions/security/advanced-entity-analytics/configure-network-map-data.md
+              title: Configure network map data
+            - page: docs-content://solutions/security/advanced-entity-analytics/configure-dns-histogram.md
+              title: Configure the DNS histogram
+          - page: docs-content://solutions/security/advanced-entity-analytics/users-page.md
+            title: Users page
+      - page: docs-content://solutions/security/security-serverless-feature-tiers.md
+        title: Serverless feature tiers
+      - page: docs-content://solutions/security/apis.md
+        title: APIs
 #  - label: Reference
 #    children:
 #    - toc: elasticsearch://reference/elasticsearch
