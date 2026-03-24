@@ -146,6 +146,6 @@ https://github.com/elastic/{your-repository}/settings/pages
 
 ---
 
-# Local development
+## Local development
 
 Refer to [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to develop locally and contribute to the project.
