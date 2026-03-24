@@ -11,6 +11,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
+using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -70,6 +71,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			TitleRaw = value;
 		}
 	}
+
+	public string? Description { get; private set; }
 
 	[field: AllowNull, MaybeNull]
 	public string NavigationTitle
@@ -156,6 +159,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		YamlFrontMatter = yamlFrontMatter;
 		if (yamlFrontMatter.NavigationTitle is not null)
 			NavigationTitle = yamlFrontMatter.NavigationTitle;
+		if (yamlFrontMatter.Description is not null)
+			Description = yamlFrontMatter.Description;
 
 		var subs = GetSubstitutions();
 
@@ -281,8 +286,16 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				};
 			});
 
+		// Collect headings from Changelog directives
+		var changelogTocs = document
+			.Descendants<DirectiveBlock>()
+			.OfType<ChangelogBlock>()
+			.SelectMany(changelog => changelog.GeneratedTableOfContent
+				.Select(tocItem => new { TocItem = tocItem, changelog.Line }));
+
 		var toc = headingTocs
 			.Concat(stepperTocs)
+			.Concat(changelogTocs)
 			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)

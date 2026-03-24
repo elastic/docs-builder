@@ -4,6 +4,7 @@ import { ChatMessageList } from './ChatMessageList'
 import { InfoBanner } from './InfoBanner'
 import { LegalDisclaimer } from './LegalDisclaimer'
 import AiIcon from './ai-icon.svg'
+import { askAiConfig } from './askAi.config'
 import { useAskAiModalActions } from './askAi.modal.store'
 import {
     ChatMessage,
@@ -74,14 +75,8 @@ export const Chat = () => {
                 <EuiFlexItem grow={true} css={emptyStateContainerStyles}>
                     <EuiEmptyPrompt
                         icon={<EuiIcon type={AiIcon} size="xxl" />}
-                        title={<h2>Hi! I'm the Elastic Docs AI Assistant</h2>}
-                        body={
-                            <p>
-                                I'm here to help you find answers about Elastic,
-                                powered entirely by our technical documentation.
-                                How can I help?
-                            </p>
-                        }
+                        title={<h2>Hi! I'm the {askAiConfig.assistantName}</h2>}
+                        body={<p>{askAiConfig.assistantDescription}</p>}
                     />
                 </EuiFlexItem>
             ) : !hasHydrated ? (
@@ -178,7 +173,7 @@ const ChatHeader = () => {
                             font-weight: ${euiTheme.font.weight.medium};
                         `}
                     >
-                        Elastic Docs AI Assistant
+                        {askAiConfig.assistantName}
                     </span>
                 </div>
                 <div

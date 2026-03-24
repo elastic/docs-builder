@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 
 namespace Elastic.Documentation.Site.Navigation;
 
@@ -15,6 +17,10 @@ public class NavigationViewModel
 	public required bool IsGlobalAssemblyBuild { get; init; }
 	public required IEnumerable<INodeNavigationItem<INavigationModel, INavigationItem>> TopLevelItems { get; init; }
 
-	/// controls whether to split the navigation tree automatically
+	/// <summary>Controls whether to split the navigation tree automatically.</summary>
 	public required bool IsUsingNavigationDropdown { get; init; }
+
+	public required IHtmxAttributeProvider Htmx { get; init; }
+
+	public BuildType BuildType { get; init; } = BuildType.Isolated;
 }

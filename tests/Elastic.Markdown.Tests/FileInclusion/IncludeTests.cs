@@ -134,10 +134,30 @@ public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : Direc
 	[Fact]
 	public void EmitsError()
 	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
 		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.Contains("only supports including snippets from `_snippet` folders."));
+			.Contain(d => d.Severity == Severity.Error &&
+				d.Message.Contains("only supports including snippets from `_snippet` folders."));
+	}
+}
+
+
+public class IncludeRelativeTraversalBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+:::{include} ../../../outside.txt
+:::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(@"outside.txt", "some content");
+
+	[Fact]
+	public void EmitsError()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+		Collector.Diagnostics.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
 	}
 }
 

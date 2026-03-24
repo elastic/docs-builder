@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
+using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering;
 
@@ -56,6 +55,9 @@ public class BundleDataResolver(IFileSystem fileSystem)
 		}
 
 		var repo = bundle.Input.Repo ?? DefaultRepo;
+		var owner = bundle.Data.Products.Count > 0 && !string.IsNullOrWhiteSpace(bundle.Data.Products[0].Owner)
+			? bundle.Data.Products[0].Owner!
+			: "elastic";
 
 		// Resolve entries
 		foreach (var entry in bundle.Data.Entries)
@@ -66,6 +68,7 @@ public class BundleDataResolver(IFileSystem fileSystem)
 			{
 				Entry = entryData,
 				Repo = repo,
+				Owner = owner,
 				BundleProductIds = bundleProductIds,
 				HideLinks = bundle.Input.HideLinks
 			});
@@ -79,21 +82,16 @@ public class BundleDataResolver(IFileSystem fileSystem)
 		string bundleDirectory,
 		Cancel ctx)
 	{
-		// If entry has resolved data, use Mapperly to convert
+		// If entry has resolved data, convert to ChangelogEntry
 		if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-			return ChangelogMapper.ToEntry(entry);
+			return ReleaseNotesSerialization.ConvertBundledEntry(entry);
 
 		// Load from file (already validated to exist)
 		var filePath = fileSystem.Path.Combine(bundleDirectory, entry.File!.Name);
 		var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
 
-		// Deserialize YAML (skip comment lines)
-		var yamlLines = fileContent.Split('\n');
-		var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
-
-		// Normalize "version:" to "target:" in products section
-		var normalizedYaml = ChangelogBundlingService.VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
-
-		return ChangelogYamlSerialization.DeserializeEntry(normalizedYaml);
+		// Deserialize YAML
+		var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
+		return ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
 	}
 }

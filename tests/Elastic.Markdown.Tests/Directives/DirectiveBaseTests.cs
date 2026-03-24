@@ -65,7 +65,8 @@ $"""
 		AddToFileSystem(FileSystem);
 
 		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
-		FileSystem.GenerateDocSetYaml(root);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts());
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
@@ -79,10 +80,17 @@ $"""
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
 
+	/// <summary>
+	/// Override to specify products for the docset configuration.
+	/// Returns null by default (no products configured).
+	/// </summary>
+	protected virtual IReadOnlyList<string>? GetDocsetProducts() => null;
+
 	public virtual async ValueTask InitializeAsync()
 	{
 		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
 
+		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
 		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";

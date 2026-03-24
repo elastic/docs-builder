@@ -6,8 +6,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
@@ -55,6 +57,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		var context = processor.GetContext();
 		link.SetData(nameof(context.CurrentUrlPath), context.CurrentUrlPath);
+		link.SetData(nameof(IHtmxAttributeProvider), context.Htmx);
 
 		if (IsInCommentBlock(link) || context.SkipValidation)
 			return match;
@@ -132,6 +135,17 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (IsCrossLink(uri))
 		{
+			if (!context.CrossLinkResolver.IsDeclaredCrossLinkScheme(uri.Scheme))
+			{
+				// Only known custom protocol schemes should bypass cross-link validation.
+				// Undeclared schemes still surface errors to catch cross-link typos.
+				if (IsPassthroughCustomProtocolScheme(uri.Scheme))
+				{
+					link.SetData("isCrossLink", false);
+					return;
+				}
+			}
+
 			link.SetData("isCrossLink", true);
 			ProcessCrossLink(link, processor, context, uri);
 			return;
@@ -162,7 +176,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		if (!uri.Scheme.StartsWith("http") && !uri.Scheme.StartsWith("mailto"))
 			return false;
 
-		var baseDomain = uri.Host == "localhost" ? "localhost" : string.Join('.', uri.Host.Split('.')[^2..]);
+		var hostParts = uri.Host.Split('.');
+		var baseDomain = uri.Host == "localhost"
+			? "localhost"
+			: hostParts.Length >= 2
+				? string.Join('.', hostParts[^2..])
+				: uri.Host;
 		if (uri.Scheme == "mailto" && baseDomain != "elastic.co")
 		{
 			processor.EmitWarning(
@@ -182,9 +201,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (context.CrossLinkResolver.TryResolve(
 				s => processor.EmitError(link, s),
-				uri, out var resolvedUri)
-			 )
+				uri, out var resolvedUri))
+		{
 			link.Url = resolvedUri.ToString();
+			if (resolvedUri.IsAbsoluteUri && context.Build.BuildType == BuildType.Isolated)
+				link.SetData("isCrossLink", false);
+		}
 
 		// Emit error for empty link text in crosslinks
 		if (link.FirstChild == null)
@@ -405,7 +427,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 				newUrl = new Uri(baseUri, relativePath).AbsolutePath;
 		}
 
-		if (context.Build.AssemblerBuild && context.TryFindDocument(fi) is MarkdownFile currentMarkdown)
+		if (context.Build.BuildType == BuildType.Assembler && context.TryFindDocument(fi) is MarkdownFile currentMarkdown)
 		{
 			// Acquire navigation-aware path
 			if (context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(currentMarkdown, out var currentNavigation))
@@ -439,4 +461,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
 		CrossLinkValidator.IsCrossLink(uri);
+
+	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
+		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase)
+		|| scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
 }

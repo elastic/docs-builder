@@ -16,6 +16,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.ServiceDefaults;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,7 +44,7 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 		var configurationContext = host.Services.GetRequiredService<IConfigurationContext>();
 
 		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper!);
+		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, fs, new MockFileSystem(), null, null);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
@@ -84,7 +85,8 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 			Tree = navigation,
 			TopLevelItems = navigation.TopLevelItems,
 			TitleUrl = navigation.Index.Url,
-			IsUsingNavigationDropdown = true
+			IsUsingNavigationDropdown = true,
+			Htmx = new DefaultHtmxAttributeProvider("/")
 		});
 		var html = await slice.RenderAsync(cancellationToken: ctx);
 		var context = BrowsingContext.New();
@@ -96,7 +98,7 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 
 		// Extract all URLs from the rendered DOM
 		var domLinks = document.QuerySelectorAll("a[href]");
-		var domUrls = domLinks.Select(link => link.GetAttribute("href")!).ToHashSet();
+		var domUrls = domLinks.Select(link => link.GetAttribute("href")).ToHashSet();
 		output.WriteLine($"DOM URLs: {domUrls.Count}");
 
 		// Validate that all navigation URLs are present in the DOM

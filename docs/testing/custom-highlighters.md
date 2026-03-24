@@ -73,6 +73,38 @@ modulo(10, 0.5)
 
 
 
+## KQL
+
+Simple field-value query:
+
+```kuery
+status: active
+```
+
+Boolean operators and quoted strings:
+
+```kuery
+status: active and extension: "php"
+```
+
+Wildcards and negation:
+
+```kql
+machine.os: win* and not status: 503
+```
+
+Nested queries:
+
+```kql
+items: { name: "laptop" and price > 500 }
+```
+
+Grouped values with range operators:
+
+```kuery
+response: (200 or 404) and bytes >= 1000
+```
+
  ## ESQL
 
 

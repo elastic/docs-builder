@@ -11,6 +11,13 @@ public interface ICrossLinkResolver
 {
 	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
 	IUriEnvironmentResolver UriResolver { get; }
+
+	/// <summary>
+	/// Determines whether the given URI scheme is a declared cross-link repository scheme.
+	/// Schemes not declared here (e.g. <c>cursor</c>, <c>vscode</c>) are treated as custom
+	/// protocol links and pass through without cross-link validation.
+	/// </summary>
+	bool IsDeclaredCrossLinkScheme(string scheme);
 }
 
 public class NoopCrossLinkResolver : ICrossLinkResolver
@@ -27,6 +34,9 @@ public class NoopCrossLinkResolver : ICrossLinkResolver
 	/// <inheritdoc />
 	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
 
+	/// <inheritdoc />
+	public bool IsDeclaredCrossLinkScheme(string scheme) => false;
+
 	private NoopCrossLinkResolver() { }
 
 }
@@ -38,6 +48,9 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+
+	/// <inheritdoc />
+	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
 
 	public FetchedCrossLinks UpdateLinkReference(string repository, RepositoryLinks repositoryLinks)
 	{
@@ -75,7 +88,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 				return true;
 			}
 
-			errorEmitter($"'{crossLinkUri.Scheme}' was not found in the cross link index");
+			errorEmitter($"'{crossLinkUri.Scheme}' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml");
 			return false;
 		}
 
@@ -89,9 +102,12 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (sourceLinkReference.Links.TryGetValue(originalLookupPath, out var directLinkMetadata))
 			return ResolveDirectLink(errorEmitter, uriResolver, crossLinkUri, originalLookupPath, directLinkMetadata, out resolvedUri);
 
-		var linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/{crossLinkUri.Scheme}/main/links.json";
-		if (fetchedCrossLinks.LinkIndexEntries.TryGetValue(crossLinkUri.Scheme, out var indexEntry))
-			linksJson = $"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/{indexEntry.Path}";
+		var registryUrl = fetchedCrossLinks.RegistryUrlsByRepository?.GetValueOrDefault(crossLinkUri.Scheme)
+			?? "https://elastic-docs-link-index.s3.us-east-2.amazonaws.com";
+		var baseUrl = GetLinksJsonBaseUrl(registryUrl);
+		var linksJson = fetchedCrossLinks.LinkIndexEntries.TryGetValue(crossLinkUri.Scheme, out var indexEntry)
+			? $"{baseUrl}/{indexEntry.Path}"
+			: $"{baseUrl}/elastic/{crossLinkUri.Scheme}/main/links.json";
 
 		errorEmitter($"'{originalLookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}");
 		resolvedUri = null;
@@ -230,5 +246,15 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (path == "index")
 			path = string.Empty;
 		return path;
+	}
+
+	/// <summary>Derives the base URL for links.json from a reader's RegistryUrl (S3 or GitHub).</summary>
+	private static string GetLinksJsonBaseUrl(string registryUrl)
+	{
+		if (registryUrl.Contains("github.com", StringComparison.OrdinalIgnoreCase))
+			return $"{registryUrl.TrimEnd('/')}/blob/main";
+		if (registryUrl.Contains("/link-index.json", StringComparison.OrdinalIgnoreCase))
+			return registryUrl.Replace("/link-index.json", "", StringComparison.OrdinalIgnoreCase).TrimEnd('/');
+		return registryUrl.TrimEnd('/');
 	}
 }

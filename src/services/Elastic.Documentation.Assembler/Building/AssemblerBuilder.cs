@@ -38,7 +38,7 @@ public class AssemblerBuilder(
 
 	private ILegacyUrlMapper? LegacyUrlMapper { get; } = legacyUrlMapper;
 
-	public async Task BuildAllAsync(PublishEnvironment environment, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
+	public async Task BuildAllAsync(FrozenDictionary<string, AssemblerDocumentationSet> assembleSets, IReadOnlySet<Exporter> exportOptions, Cancel ctx)
 	{
 		if (context.OutputDirectory.Exists)
 			context.OutputDirectory.Delete(true);
@@ -48,7 +48,7 @@ public class AssemblerBuilder(
 		var buildTimes = new List<(string Name, int FileCount, TimeSpan Duration)>();
 
 		// Create exporters without inferrer - inferrer is created per-repository
-		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context, environment.Name);
+		var markdownExporters = exportOptions.CreateMarkdownExporters(logFactory, context);
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
@@ -102,9 +102,14 @@ public class AssemblerBuilder(
 
 		if (exportOptions.Contains(Exporter.Redirects))
 		{
-			await OutputRedirectsAsync(redirects
-				.Where(r => !r.Key.TrimEnd('/').Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
-				.ToDictionary(r => r.Key.TrimEnd('/'), r => r.Value), ctx);
+			var trimmedRedirects = new Dictionary<string, string>();
+			foreach (var r in redirects)
+			{
+				var key = r.Key.TrimEnd('/');
+				if (!key.Equals(r.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+					trimmedRedirects[key] = r.Value;
+			}
+			await OutputRedirectsAsync(trimmedRedirects, ctx);
 		}
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));

@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Cysharp.IO;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Site;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Comments;
@@ -57,17 +58,32 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
 		ParseMarkdownStringAsync(markdown, path, matter, Pipeline);
 
+	public MarkdownDocument ParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath) =>
+		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, Pipeline);
+
 	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
 		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
 
-	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, pipeline);
+	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath) =>
+		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, MinimalPipeline);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline)
+	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
+		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, null, pipeline);
+
+	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline) =>
+		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, originalSourcePath, pipeline);
+
+	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
+		YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
+		ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, null, pipeline);
+
+	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
+		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline)
 	{
 		var state = new ParserState(build)
 		{
 			MarkdownSourcePath = path,
+			OriginalSourcePath = originalSourcePath,
 			YamlFrontMatter = matter,
 			TryFindDocument = resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
@@ -79,8 +95,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		// Preprocess substitutions in link patterns before Markdig parsing
 		var preprocessedMarkdown = PreprocessLinkSubstitutions(markdown, context);
 
-		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
-		return markdownDocument;
+		return Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 	}
 
 	public static Task<MarkdownDocument> ParseSnippetAsync(BuildContext build, IParserResolvers resolvers, IFileInfo path, IFileInfo parentPath,
@@ -121,9 +136,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		// Preprocess substitutions in link patterns before Markdig parsing
 		var preprocessedMarkdown = PreprocessLinkSubstitutions(inputMarkdown, (ParserContext)context);
 
-		var markdownDocument = Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
-
-		return markdownDocument;
+		return Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 	}
 
 	[field: AllowNull, MaybeNull]
@@ -169,12 +182,11 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseSubstitution()
 				.UseComments()
 				.UseYamlFrontMatter()
-				.UseGridTables()
 				.UsePipeTables()
-			   .UseDirectives()
-			   .UseDefinitionLists()
-			   .UseEnhancedCodeBlocks()
-			   .UseHtmxLinkInlineRenderer()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseEnhancedCodeBlocks()
+				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
 				.UseSpaceNormalizer()
 				.UseHardBreaks();
@@ -287,6 +299,8 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			if (index >= start && index <= end && subsDisabled)
 				return true;
 		}
+
 		return false;
 	}
+
 }

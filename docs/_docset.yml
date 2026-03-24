@@ -10,10 +10,7 @@ exclude:
   - '!_search.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
-  stack: Elastic Stack
   serverless-short: Serverless
-  ece:   "Elastic Cloud Enterprise"
-  eck:   "Elastic Cloud on Kubernetes"
   ech:  "Elastic Cloud Hosted"
   serverless-full: "Elastic Cloud Serverless"
   ecloud: "Elastic Cloud"
@@ -21,6 +18,10 @@ subs:
 
 features:
   primary-nav: false
+  
+suppress:
+  - AutolinkElasticCoDocs
+  - DeepLinkingVirtualFile
 
 api:
    elasticsearch: elasticsearch-openapi.json
@@ -79,6 +80,7 @@ toc:
           - file: attributes.md
           - file: navigation.md
           - file: extensions.md
+          - file: api-explorer.md
       - file: page.md
       - file: content-sources.md
   - folder: syntax
@@ -87,6 +89,7 @@ toc:
       - file: quick-ref.md
       - file: headings.md
       - file: admonitions.md
+      - file: agent-skill.md
       - file: applies.md
       - file: applies-switch.md
       - file: automated_settings.md
@@ -95,8 +98,8 @@ toc:
       - file: code.md
       - file: comments.md
       - file: conditionals.md
+      - file: contributors.md
       - file: csv-include.md
-      - hidden: diagrams.md
       - file: directives.md
       - file: dropdowns.md
       - file: definition-lists.md
@@ -108,9 +111,11 @@ toc:
       - file: images.md
       - file: kbd.md
       - file: math.md
+      - file: diagrams.md
       - file: lists.md
       - file: line_breaks.md
       - file: links.md
+      - file: list-sub-pages.md
       - file: passthrough.md
       - file: sidebars.md
       - file: stepper.md
@@ -163,6 +168,10 @@ toc:
           - file: changelog-add.md
           - file: changelog-bundle.md
           - file: changelog-bundle-amend.md
+          - file: changelog-evaluate-pr.md
+          - file: changelog-gh-release.md
+          - file: changelog-init.md
+          - file: changelog-remove.md
           - file: changelog-render.md
   - folder: mcp
     children:
@@ -223,3 +232,13 @@ toc:
           - folder: baz
             children:
               - file: qux.md
+      - folder: release-notes
+        children:
+          - file: index.md
+          - file: highlights.md
+          - file: breaking-changes.md
+          - file: deprecations.md
+          - file: known-issues.md
+      - folder: release-notes-all
+        children:
+          - file: index.md

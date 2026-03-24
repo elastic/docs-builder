@@ -8,6 +8,7 @@ using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 
@@ -25,6 +26,16 @@ public record ConfigurationFile
 	private string[] Include { get; } = [];
 
 	public string[] CrossLinkRepositories { get; } = [];
+
+	/// <summary>
+	/// Registry for this documentation set. <c>Public</c> uses S3 link index; other values use codex-link-index.
+	/// </summary>
+	public DocSetRegistry Registry { get; } = DocSetRegistry.Public;
+
+	/// <summary>
+	/// Parsed cross-link entries with registry for each target.
+	/// </summary>
+	public CrossLinkEntry[] CrossLinkEntries { get; } = [];
 
 	/// The maximum depth `toc.yml` files may appear
 	public int MaxTocDepth { get; } = 1;
@@ -47,14 +58,25 @@ public record ConfigurationFile
 
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
+	/// <summary>
+	/// Set of diagnostic hint types to suppress for this documentation set.
+	/// </summary>
+	public HashSet<HintType> SuppressDiagnostics { get; } = [];
+
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
+
+	// Files excluded via folder-level `exclude` in toc.yml need to be excluded from processing too,
+	// otherwise the builder crashes with "Could not find current in navigation" when rendering them.
+	private HashSet<string> FolderExcludedFiles { get; } = [];
 
 	public bool IsExcluded(string relativePath)
 	{
 		if (Include.Length > 0 && Include.Any(i => i.Equals(relativePath.OptionalWindowsReplace(), StringComparison.OrdinalIgnoreCase)))
 			return false;
+		if (FolderExcludedFiles.Contains(relativePath.OptionalWindowsReplace()))
+			return true;
 		return Exclude.Any(g => g.IsMatch(relativePath));
 	}
 
@@ -83,12 +105,31 @@ public record ConfigurationFile
 			// Convert exclude patterns to Glob
 			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
 			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
+			FolderExcludedFiles = docSetFile.FolderExcludedFiles;
 
-			// Set cross link repositories
-			CrossLinkRepositories = [.. docSetFile.CrossLinks];
+			// Parse registry (null/empty/"public" -> Public)
+			var registry = DocSetRegistry.Public;
+			if (!string.IsNullOrWhiteSpace(docSetFile.Registry) &&
+				DocSetRegistryExtensions.TryParse(docSetFile.Registry.Trim(), out var parsedRegistry, true))
+				registry = parsedRegistry;
+
+			Registry = registry;
+
+			// Parse cross-link entries with optional registry prefix (e.g. public://elasticsearch)
+			CrossLinkEntries = docSetFile.CrossLinks
+				.Where(raw => !string.IsNullOrWhiteSpace(raw))
+				.Select(raw => ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context))
+				.Where(entry => entry is not null)
+				.Select(entry => entry!)
+				.ToArray();
+
+			CrossLinkRepositories = CrossLinkEntries.Select(e => e.Repository).ToArray();
 
 			// Extensions - assuming they're not in DocumentationSetFile yet
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
+
+			// Copy suppression settings
+			SuppressDiagnostics = docSetFile.SuppressDiagnostics;
 
 			// Read substitutions
 			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
@@ -119,6 +160,8 @@ public record ConfigurationFile
 			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 			if (docSetFile.Features.PrimaryNav.HasValue)
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
+			if (docSetFile.Features.DisableGithubEditLink.HasValue)
+				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
 
 			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
@@ -148,4 +191,39 @@ public record ConfigurationFile
 		}
 	}
 
+	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
+	{
+		DocSetRegistry entryRegistry;
+		string repository;
+
+		var colonSlash = raw.IndexOf("://", StringComparison.Ordinal);
+		if (colonSlash >= 0)
+		{
+			var prefix = raw[..colonSlash];
+			repository = raw[(colonSlash + 3)..];
+			if (string.IsNullOrWhiteSpace(repository))
+			{
+				context.EmitError(configPath, $"Cross-link '{raw}' has empty repository after registry prefix.");
+				return null;
+			}
+			if (!DocSetRegistryExtensions.TryParse(prefix, out entryRegistry, true))
+			{
+				context.EmitError(configPath, $"Cross-link '{raw}' uses unknown registry '{prefix}'. Use 'public' or 'internal'.");
+				return null;
+			}
+		}
+		else
+		{
+			repository = raw;
+			entryRegistry = docsetRegistry;
+		}
+
+		if (docsetRegistry == DocSetRegistry.Public && entryRegistry != DocSetRegistry.Public)
+		{
+			context.EmitError(configPath, $"Public documentation cannot link to codex docs. Cross-link '{raw}' targets registry '{entryRegistry.ToStringFast()}'. Remove it or use a public docset.");
+			return null;
+		}
+
+		return new CrossLinkEntry(repository, entryRegistry);
+	}
 }

@@ -17,11 +17,24 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuilderExtension
 {
 	private BuildContext Build { get; } = build;
+	private bool _versionLockInitialized;
 
 	public IDocumentationFileExporter? FileExporter { get; } = new RuleDocumentationFileExporter(build.ReadFileSystem, build.WriteFileSystem);
 
-	public DocumentationFile? CreateDocumentationFile(IFileInfo file, MarkdownParser markdownParser) =>
-		file.Extension != ".toml" ? null : new DetectionRuleFile(file, Build.DocumentationSourceDirectory, markdownParser, Build);
+	public DocumentationFile? CreateDocumentationFile(IFileInfo file, MarkdownParser markdownParser)
+	{
+		if (file.Extension != ".toml")
+			return null;
+
+		// Initialize version lock on first TOML file (lazy loading)
+		if (!_versionLockInitialized)
+		{
+			DetectionRule.InitializeVersionLock(Build.ReadFileSystem, Build.DocumentationCheckoutDirectory);
+			_versionLockInitialized = true;
+		}
+
+		return new DetectionRuleFile(file, Build.DocumentationSourceDirectory, markdownParser, Build);
+	}
 
 	public MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, MarkdownParser markdownParser) =>
 		file.Name != "index.md" ? null : new DetectionRuleOverviewFile(file, sourceDirectory, markdownParser, Build);

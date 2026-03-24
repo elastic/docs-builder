@@ -9,10 +9,23 @@ namespace Elastic.Markdown.Tests;
 
 public static class MockFileSystemExtensions
 {
-	public static void GenerateDocSetYaml(this MockFileSystem fileSystem, IDirectoryInfo root, Dictionary<string, string>? globalVariables = null)
+	public static void GenerateDocSetYaml(
+		this MockFileSystem fileSystem,
+		IDirectoryInfo root,
+		Dictionary<string, string>? globalVariables = null,
+		IReadOnlyList<string>? products = null)
 	{
 		// language=yaml
 		var yaml = new StringWriter();
+
+		// Add products section if provided
+		if (products is { Count: > 0 })
+		{
+			yaml.WriteLine("products:");
+			foreach (var productId in products)
+				yaml.WriteLine($"  - id: {productId}");
+		}
+
 		yaml.WriteLine("cross_links:");
 		yaml.WriteLine("  - docs-content");
 		yaml.WriteLine("  - kibana");

@@ -22,10 +22,12 @@ public class AssemblerBuildService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<AssemblerBuildService>();
+	private readonly IEnvironmentVariables _env = environmentVariables;
 
 	public async Task<bool> BuildAll(
 		IDiagnosticsCollector collector,
@@ -55,6 +57,11 @@ public class AssemblerBuildService(
 		_logger.LogInformation("Creating assemble context");
 
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
+
+		// --assume-build is not allowed on CI: it could serve stale content from a previous/cached build
+		// CI builds must always produce fresh, reproducible output
+		if (assumeBuild.GetValueOrDefault(false) && _env.IsRunningOnCI)
+			throw new InvalidOperationException("The --assume-build flag is not allowed on CI. CI builds must always produce fresh output to ensure reproducibility and prevent stale content.");
 
 		// Early return if --assume-build is specified and output already exists
 		if (assumeBuild.GetValueOrDefault(false))
@@ -109,7 +116,7 @@ public class AssemblerBuildService(
 
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 
-		await builder.BuildAllAsync(assembleContext.Environment, assembleSources.AssembleSets, exporters, ctx);
+		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
 
 		if (exporters.Contains(Exporter.LinkMetadata))
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);

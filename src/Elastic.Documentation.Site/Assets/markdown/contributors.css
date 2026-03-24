@@ -1,0 +1,105 @@
+.contributors-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 2rem 1.5rem;
+	margin: 1.5rem 0;
+}
+
+.contributor-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.contributor-avatar {
+	display: block;
+	width: 120px;
+	height: 120px;
+	border-radius: 50%;
+	overflow: hidden;
+	flex-shrink: 0;
+	transition: box-shadow 0.2s ease;
+}
+
+.contributor-avatar:hover {
+	box-shadow: 0 0 0 3px var(--color-blue-elastic);
+}
+
+.contributor-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: 50%;
+	background-color: var(--color-grey-3);
+}
+
+.contributor-info {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.125rem;
+	margin-top: 0.625rem;
+	max-width: 160px;
+}
+
+.contributor-name {
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--color-ink);
+	text-decoration: none;
+	line-height: 1.3;
+}
+
+.contributor-name:hover {
+	color: var(--color-blue-elastic);
+	text-decoration: underline;
+}
+
+.contributor-title {
+	font-size: 0.8125rem;
+	color: var(--color-ink-light);
+	line-height: 1.3;
+}
+
+.contributor-location {
+	font-size: 0.75rem;
+	color: var(--color-ink-light);
+	line-height: 1.3;
+	opacity: 0.8;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1024px) {
+	.contributors-grid {
+		grid-template-columns: repeat(3, 1fr);
+	}
+}
+
+@media (max-width: 768px) {
+	.contributors-grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.5rem 1rem;
+	}
+
+	.contributor-avatar {
+		width: 96px;
+		height: 96px;
+	}
+}
+
+@media (max-width: 480px) {
+	.contributors-grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.25rem 0.75rem;
+	}
+
+	.contributor-avatar {
+		width: 80px;
+		height: 80px;
+	}
+
+	.contributor-info {
+		max-width: 140px;
+	}
+}

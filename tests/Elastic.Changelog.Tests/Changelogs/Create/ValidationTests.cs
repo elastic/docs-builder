@@ -125,10 +125,11 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    invalid-product:
-			      create: "skip:releaseNotes"
+			rules:
+			  create:
+			    products:
+			      invalid-product:
+			        exclude: "skip:releaseNotes"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 
@@ -150,7 +151,68 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("Product 'invalid-product' in block.product") && d.Message.Contains("is not in the list of available products"));
+			d.Message.Contains("invalid-product") && d.Message.Contains("not in available products"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithRepoMatchingKnownProduct_InfersProduct()
+	{
+		// Arrange — no --products, but --repo matches a known product ID in products.yml
+		var service = CreateService();
+
+		var outputDir = CreateOutputDirectory();
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new CreateChangelogArguments
+		{
+			Title = "Test inference from repo name",
+			Type = "feature",
+			Products = [],
+			Repo = "kibana",
+			Output = outputDir
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		if (!result)
+		{
+			foreach (var diagnostic in Collector.Diagnostics)
+				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+		}
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("- product: kibana");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithUnknownRepo_ReturnsProductError()
+	{
+		// Arrange — no --products, --repo value does not match any known product ID
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Title = "Test unknown repo",
+			Type = "feature",
+			Products = [],
+			Repo = "my-unknown-repo",
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("product"));
 	}
 
 	[Fact]
@@ -169,12 +231,13 @@ public class ValidationTests(ITestOutputHelper output) : CreateChangelogTestBase
 			  - preview
 			  - beta
 			  - ga
-			block:
-			  product:
-			    elasticsearch:
-			      create: "skip:releaseNotes"
-			    cloud-hosted:
-			      create: "ILM"
+			rules:
+			  create:
+			    products:
+			      elasticsearch:
+			        exclude: "skip:releaseNotes"
+			      cloud-hosted:
+			        exclude: "ILM"
 			""";
 		var configPath = await CreateConfigDirectory(configContent);
 

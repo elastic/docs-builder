@@ -8,6 +8,7 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -122,6 +123,19 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		if (block is AppliesToDirective appliesToDirective)
 		{
 			RenderAppliesToHtml(renderer, appliesToDirective);
+			return;
+		}
+
+		if (block is ContributorsBlock contributorsBlock)
+		{
+			RenderContributorsHtml(renderer, contributorsBlock);
+			return;
+		}
+
+		// Render Mermaid diagrams as pre.mermaid for client-side rendering
+		if (block.Language == "mermaid")
+		{
+			RenderMermaidBlock(renderer, block);
 			return;
 		}
 
@@ -249,5 +263,43 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 		var slice = AppliesToView.Create(viewModel);
 		slice.RenderAsync(renderer.Writer).GetAwaiter().GetResult();
+	}
+
+	private static void RenderContributorsHtml(HtmlRenderer renderer, ContributorsBlock block)
+	{
+		var slice = ContributorsView.Create(new ContributorsViewModel
+		{
+			Contributors = block.Contributors
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	/// <summary>
+	/// Renders a Mermaid code block as a pre.mermaid element for client-side rendering by Mermaid.js.
+	/// </summary>
+	private static void RenderMermaidBlock(HtmlRenderer renderer, EnhancedCodeBlock block)
+	{
+		_ = renderer.Write("<pre class=\"mermaid\">");
+
+		var commonIndent = GetCommonIndent(block);
+		for (var i = 0; i < block.Lines.Count; i++)
+		{
+			var line = block.Lines.Lines[i];
+			var slice = line.Slice;
+
+			// Skip empty lines at beginning and end
+			if ((i == 0 || i == block.Lines.Count - 1) && slice.IsEmptyOrWhitespace())
+				continue;
+
+			// Remove common indentation
+			var indent = CountIndentation(slice);
+			if (indent >= commonIndent)
+				slice.Start += commonIndent;
+
+			_ = renderer.WriteEscape(slice);
+			_ = renderer.WriteLine();
+		}
+
+		_ = renderer.Write("</pre>");
 	}
 }

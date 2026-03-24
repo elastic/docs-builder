@@ -5,7 +5,9 @@
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -42,7 +44,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			// Should have default types
-			config!.Types.Should().Contain("feature");
+			config.Types.Should().Contain("feature");
 			config.Types.Should().Contain("bug-fix");
 			config.Types.Should().Contain("docs");
 		}
@@ -88,7 +90,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			// Should have default subtypes (no pivot.subtypes defined)
-			config!.SubTypes.Should().Contain("api");
+			config.SubTypes.Should().Contain("api");
 			config.SubTypes.Should().Contain("behavioral");
 			// Should have types from pivot.types keys
 			config.Types.Should().Contain("feature");
@@ -136,7 +138,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			// Should have default lifecycles (now strongly typed as Lifecycle enum)
-			config!.Lifecycles.Should().Contain(Lifecycle.Preview);
+			config.Lifecycles.Should().Contain(Lifecycle.Preview);
 			config.Lifecycles.Should().Contain(Lifecycle.Beta);
 			config.Lifecycles.Should().Contain(Lifecycle.Ga);
 		}
@@ -183,15 +185,15 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			// Should have areas from pivot.areas keys
-			config!.Areas.Should().NotBeNull();
+			config.Areas.Should().NotBeNull();
 			config.Areas.Should().Contain("Search");
 			config.Areas.Should().Contain("Security");
 			// Should have inverted label mappings
 			config.LabelToAreas.Should().NotBeNull();
 			config.LabelToAreas.Should().ContainKey(":Search/Search");
-			config.LabelToAreas![":Search/Search"].Should().Be("Search");
+			config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 			config.LabelToAreas.Should().ContainKey(":Security/Security");
-			config.LabelToAreas[":Security/Security"].Should().Be("Security");
+			config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 		}
 		finally
 		{
@@ -232,9 +234,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
 			// Should have inverted label mappings
-			config!.LabelToType.Should().NotBeNull();
+			config.LabelToType.Should().NotBeNull();
 			config.LabelToType.Should().ContainKey(">breaking");
-			config.LabelToType![">breaking"].Should().Be("breaking-change");
+			config.LabelToType[">breaking"].Should().Be("breaking-change");
 			config.LabelToType.Should().ContainKey(">bc");
 			config.LabelToType[">bc"].Should().Be("breaking-change");
 			config.LabelToType.Should().ContainKey(">bug");
@@ -415,7 +417,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Assert
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
-			config!.Types.Should().Contain("breaking-change");
+			config.Types.Should().Contain("breaking-change");
 		}
 		finally
 		{
@@ -467,5 +469,942 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		{
 			FileSystem.Directory.SetCurrentDirectory(originalDir);
 		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_RulesCreateExclude_AsString_ParsesCorrectly()
+	{
+		// Arrange - rules.create.exclude as comma-separated string
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			rules:
+			  create:
+			    exclude: ">non-issue, >test, >skip"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Rules.Should().NotBeNull();
+		config.Rules.Create.Should().NotBeNull();
+		config.Rules.Create.Labels.Should().BeEquivalentTo([">non-issue", ">test", ">skip"]);
+		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_RulesCreateExclude_AsList_ParsesCorrectly()
+	{
+		// Arrange - rules.create.exclude as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			rules:
+			  create:
+			    exclude:
+			      - ">non-issue"
+			      - ">test"
+			      - ">skip"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Rules.Should().NotBeNull();
+		config.Rules.Create.Should().NotBeNull();
+		config.Rules.Create.Labels.Should().BeEquivalentTo([">non-issue", ">test", ">skip"]);
+		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_IgnoredAndWarningEmitted()
+	{
+		// Arrange - rules.publish is deprecated and no longer used; verify warning is emitted and Publish is null
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			rules:
+			  publish:
+			    exclude_types: "deprecation, known-issue"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		config.Rules.Should().NotBeNull();
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Message.Contains("rules.publish is deprecated") &&
+			d.Message.Contains("no longer used by the changelog render command"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_IgnoredAndWarningEmitted()
+	{
+		// Arrange - rules.publish as YAML list is deprecated
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			rules:
+			  publish:
+			    exclude_types:
+			      - deprecation
+			      - known-issue
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Rules.Should().NotBeNull();
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_IgnoredAndWarningEmitted()
+	{
+		// Arrange - rules.publish with areas is deprecated
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			rules:
+			  publish:
+			    exclude_areas: "Internal, Experimental"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Rules.Should().NotBeNull();
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_IgnoredAndWarningEmitted()
+	{
+		// Arrange - rules.publish as YAML list is deprecated
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			rules:
+			  publish:
+			    exclude_areas:
+			      - Internal
+			      - Experimental
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Rules.Should().NotBeNull();
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PivotHighlight_AsString_ParsesCorrectly()
+	{
+		// Arrange - pivot.highlight as comma-separated string
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  highlight: ">highlight, >release-highlight"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.HighlightLabels.Should().BeEquivalentTo([">highlight", ">release-highlight"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PivotHighlight_AsList_ParsesCorrectly()
+	{
+		// Arrange - pivot.highlight as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  highlight:
+			    - ">highlight"
+			    - ">release-highlight"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.HighlightLabels.Should().BeEquivalentTo([">highlight", ">release-highlight"]);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_PivotAreas_AsListValues_ComputesMapping()
+	{
+		// Arrange - pivot.areas with list values instead of comma-separated strings
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  areas:
+			    Search:
+			      - ":Search/Search"
+			      - ":Search/Ranking"
+			    Security: ":Security/Security"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Areas.Should().NotBeNull();
+		config.Areas.Should().Contain("Search");
+		config.Areas.Should().Contain("Security");
+		// Both labels from the list should map to "Search"
+		config.LabelToAreas.Should().NotBeNull();
+		config.LabelToAreas.Should().ContainKey(":Search/Search");
+		config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
+		config.LabelToAreas.Should().ContainKey(":Search/Ranking");
+		config.LabelToAreas[":Search/Ranking"].Should().ContainSingle().Which.Should().Be("Search");
+		// String form should still work
+		config.LabelToAreas.Should().ContainKey(":Security/Security");
+		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_TypeLabels_AsList_ComputesMapping()
+	{
+		// Arrange - pivot.types labels as YAML list instead of comma-separated string
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			      labels:
+			        - ">bug"
+			        - ">fix"
+			    breaking-change:
+			      labels:
+			        - ">breaking"
+			        - ">bc"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.LabelToType.Should().NotBeNull();
+		// bug-fix labels (list form)
+		config.LabelToType.Should().ContainKey(">bug");
+		config.LabelToType[">bug"].Should().Be("bug-fix");
+		config.LabelToType.Should().ContainKey(">fix");
+		config.LabelToType[">fix"].Should().Be("bug-fix");
+		// breaking-change labels (list form)
+		config.LabelToType.Should().ContainKey(">breaking");
+		config.LabelToType[">breaking"].Should().Be("breaking-change");
+		config.LabelToType.Should().ContainKey(">bc");
+		config.LabelToType[">bc"].Should().Be("breaking-change");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_SubtypeLabels_AsList_ParsesCorrectly()
+	{
+		// Arrange - breaking-change subtype labels as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			      labels: ">breaking"
+			      subtypes:
+			        api:
+			          - ">api-breaking"
+			          - ">api-change"
+			        behavioral: ">behavioral-breaking"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Pivot.Should().NotBeNull();
+		config.Pivot.Types.Should().ContainKey("breaking-change");
+		var breakingChange = config.Pivot.Types["breaking-change"];
+		breakingChange.Should().NotBeNull();
+		breakingChange.Subtypes.Should().NotBeNull();
+		// List form subtype labels should be joined as comma-separated
+		breakingChange.Subtypes["api"].Should().Be(">api-breaking, >api-change");
+		// String form should still work
+		breakingChange.Subtypes["behavioral"].Should().Be(">behavioral-breaking");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ProductCreateExclude_AsList_ParsesCorrectly()
+	{
+		// Arrange - product-specific rules.create.products.*.exclude as YAML list
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			rules:
+			  create:
+			    products:
+			      elasticsearch:
+			        exclude:
+			          - ">test"
+			          - ">skip"
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Rules.Should().NotBeNull();
+		config.Rules.Create.Should().NotBeNull();
+		config.Rules.Create.ByProduct.Should().NotBeNull();
+		config.Rules.Create.ByProduct.Should().ContainKey("elasticsearch");
+		config.Rules.Create.ByProduct["elasticsearch"].Labels.Should().BeEquivalentTo([">test", ">skip"]);
+		config.Rules.Create.ByProduct["elasticsearch"].Mode.Should().Be(FieldMode.Exclude);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_MixedStringAndListForms_ParsesCorrectly()
+	{
+		// Arrange - mix of string and list forms in the same config
+		var config = await LoadConfig(
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: ">bug"
+			    breaking-change:
+			      labels:
+			        - ">breaking"
+			        - ">bc"
+			      subtypes:
+			        api: ">api-breaking"
+			        behavioral:
+			          - ">behavioral-breaking"
+			  areas:
+			    Search: ":Search/Search, :Search/Ranking"
+			    Security:
+			      - ":Security/Security"
+			      - ":Security/Auth"
+			  highlight:
+			    - ">highlight"
+			rules:
+			  create:
+			    exclude: ">non-issue, >test"
+			  publish:
+			    exclude_types: "deprecation, known-issue"
+			    exclude_areas:
+			      - Internal
+			""");
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+
+		// rules.create.exclude as string
+		config.Rules.Should().NotBeNull();
+		config.Rules.Create.Should().NotBeNull();
+		config.Rules.Create.Labels.Should().BeEquivalentTo([">non-issue", ">test"]);
+		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
+
+		// publish.exclude_types as string, publish.exclude_areas as list are deprecated
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+
+		// highlight as list
+		config.HighlightLabels.Should().BeEquivalentTo([">highlight"]);
+
+		// Type labels: string for bug-fix, list for breaking-change
+		config.LabelToType.Should().ContainKey(">bug");
+		config.LabelToType[">bug"].Should().Be("bug-fix");
+		config.LabelToType.Should().ContainKey(">breaking");
+		config.LabelToType[">breaking"].Should().Be("breaking-change");
+
+		// Areas: string for Search, list for Security
+		config.LabelToAreas.Should().ContainKey(":Search/Search");
+		config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
+		config.LabelToAreas.Should().ContainKey(":Security/Security");
+		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
+		config.LabelToAreas.Should().ContainKey(":Security/Auth");
+		config.LabelToAreas[":Security/Auth"].Should().ContainSingle().Which.Should().Be("Security");
+	}
+
+	/// <summary>
+	/// Helper to reduce boilerplate in lenient list tests.
+	/// Creates a temporary config file and loads the configuration.
+	/// </summary>
+	private async Task<ChangelogConfiguration?> LoadConfig(string yamlContent)
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		await FileSystem.File.WriteAllTextAsync(configPath, yamlContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			return await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// bundle section: repo, owner, directory
+	// (consumed by 'changelog add --release-version' and 'changelog gh-release' for config fallbacks)
+	// -----------------------------------------------------------------------
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_BundleSection_ParsesRepoOwnerDirectory()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			bundle:
+			  repo: apm-agent-dotnet
+			  owner: elastic
+			  directory: docs/changelog
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config.Bundle.Should().NotBeNull();
+			config.Bundle.Repo.Should().Be("apm-agent-dotnet");
+			config.Bundle.Owner.Should().Be("elastic");
+			config.Bundle.Directory.Should().Be("docs/changelog");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_BundleSectionAbsent_BundleIsNull()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			lifecycles:
+			  - ga
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config.Bundle.Should().BeNull("no bundle section in config means Bundle is null, so fallbacks return null");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_NoConfigFile_ReturnsDefaultWithNullBundle()
+	{
+		// Arrange – no changelog.yml on disk; simulates running from a directory without a config
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(configDir);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert – ChangelogConfiguration.Default is returned; Bundle is null so CLI fallbacks apply
+			config.Should().NotBeNull("LoadChangelogConfiguration returns Default when no file is found");
+			Collector.Errors.Should().Be(0);
+			config.Bundle.Should().BeNull("Default config has no bundle section");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPivotProducts_ComputesLabelToProductsMapping()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'elasticsearch':
+			      - ":stack/elasticsearch"
+			    'kibana':
+			      - ":stack/kibana"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config.LabelToProducts.Should().NotBeNull();
+			config.LabelToProducts.Should().ContainKey(":stack/elasticsearch");
+			config.LabelToProducts[":stack/elasticsearch"].Should().Be("elasticsearch");
+			config.LabelToProducts.Should().ContainKey(":stack/kibana");
+			config.LabelToProducts[":stack/kibana"].Should().Be("kibana");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPivotProducts_ProductSpecWithTarget_PreservesSpec()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'elasticsearch 9.2.0':
+			      - ":feature/new-in-9.2"
+			    'kibana 9.2.0 ga':
+			      - ":kibana/new-in-9.2"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config.LabelToProducts.Should().NotBeNull();
+			config.LabelToProducts[":feature/new-in-9.2"].Should().Be("elasticsearch 9.2.0");
+			config.LabelToProducts[":kibana/new-in-9.2"].Should().Be("kibana 9.2.0 ga");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPivotProducts_InvalidProductId_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'not-a-valid-product':
+			      - ":some/label"
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().BeNull();
+			Collector.Errors.Should().BeGreaterThan(0);
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_LoadsCorrectly()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  match: any
+			  bundle:
+			    exclude_products:
+			      - elasticsearch
+			      - kibana
+			    match_products: all
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Rules.Should().NotBeNull();
+		config.Rules!.Bundle.Should().NotBeNull();
+		config.Rules.Bundle!.ExcludeProducts.Should().BeEquivalentTo(["elasticsearch", "kibana"]);
+		config.Rules.Bundle.MatchProducts.Should().Be(MatchMode.All);
+		config.Rules.Bundle.IncludeProducts.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_BothExcludeAndInclude_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products: elasticsearch
+			    include_products: kibana
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot have both 'exclude_products' and 'include_products'"));
+	}
+
+	[Theory]
+	[InlineData("pr", FilenameStrategy.Pr)]
+	[InlineData("issue", FilenameStrategy.Issue)]
+	[InlineData("timestamp", FilenameStrategy.Timestamp)]
+	public async Task LoadChangelogConfiguration_Filename_ParsesStrategy(string yamlValue, FilenameStrategy expected)
+	{
+		var config = await LoadConfig(
+			$"""
+			filename: {yamlValue}
+			""");
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Filename.Should().Be(expected);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Missing_DefaultsToTimestamp()
+	{
+		var config = await LoadConfig(
+			"""
+			lifecycles:
+			  - ga
+			""");
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Filename.Should().Be(FilenameStrategy.Timestamp);
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_Filename_Invalid_ReturnsError()
+	{
+		var config = await LoadConfig(
+			"""
+			filename: random-value
+			""");
+
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("filename: 'random-value' is not valid"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_UnknownProductId_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products: not-a-real-product
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesPublish_EmitsDeprecationWarning()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  publish:
+			    exclude_types: docs
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert — config loads (backward compat) but warns
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("rules.publish is deprecated"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_TypeAreaAndProducts_LoadsCorrectly()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - deprecation
+			      - docs
+			    exclude_areas:
+			      - Internal
+			    match_areas: any
+			    products:
+			      cloud-serverless:
+			        include_areas:
+			          - Search
+			          - Monitoring
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		var bundle = config!.Rules!.Bundle!;
+		bundle.Blocker.Should().NotBeNull();
+		bundle.Blocker!.Types.Should().BeEquivalentTo(["deprecation", "docs"]);
+		bundle.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		bundle.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
+		bundle.Blocker.MatchAreas.Should().Be(MatchMode.Any);
+		bundle.ByProduct.Should().ContainKey("cloud-serverless");
+		bundle.ByProduct!["cloud-serverless"].Areas.Should().BeEquivalentTo(["Search", "Monitoring"]);
+		bundle.ByProduct["cloud-serverless"].AreasMode.Should().Be(FieldMode.Include);
+	}
+
+	// -----------------------------------------------------------------------
+	// extract section: strip_title_prefix
+	// -----------------------------------------------------------------------
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_True_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  strip_title_prefix: true
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_False_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  strip_title_prefix: false
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_Missing_DefaultsFalse()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			lifecycles:
+			  - ga
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeFalse("default is false");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_WithOtherExtractSettings_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  release_notes: false
+			  issues: true
+			  strip_title_prefix: true
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.ReleaseNotes.Should().BeFalse();
+		config.Extract.Issues.Should().BeTrue();
+		config.Extract.StripTitlePrefix.Should().BeTrue();
 	}
 }

@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -16,14 +16,24 @@ public class BundleBuilder
 	/// <summary>
 	/// Builds the bundled changelog data from matched entries.
 	/// </summary>
+	/// <param name="collector">The diagnostics collector.</param>
+	/// <param name="entries">Matched changelog files to bundle.</param>
+	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
+	/// <param name="resolve">Whether to resolve changelog file contents into entries.</param>
+	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
+	/// <param name="owner">Optional GitHub owner to set on products for link generation.</param>
+	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		IReadOnlyList<ProductArgument>? outputProducts,
-		bool resolve)
+		bool resolve,
+		string? repo = null,
+		string? owner = null,
+		HashSet<string>? hideFeatures = null)
 	{
 		// Build products list
-		var bundledProducts = BuildProducts(collector, entries, outputProducts);
+		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
 
 		// Build entries list
 		var bundledEntries = resolve
@@ -42,6 +52,7 @@ public class BundleBuilder
 		var bundledData = new Bundle
 		{
 			Products = bundledProducts,
+			HideFeatures = hideFeatures?.Count > 0 ? hideFeatures.ToList() : [],
 			Entries = bundledEntries
 		};
 
@@ -55,7 +66,9 @@ public class BundleBuilder
 	private static List<BundledProduct> BuildProducts(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
-		IReadOnlyList<ProductArgument>? outputProducts)
+		IReadOnlyList<ProductArgument>? outputProducts,
+		string? repo,
+		string? owner)
 	{
 		List<BundledProduct> bundledProducts;
 
@@ -69,7 +82,9 @@ public class BundleBuilder
 				{
 					ProductId = p.Product ?? "",
 					Target = p.Target == "*" ? null : p.Target,
-					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle)
+					Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
+					Repo = repo,
+					Owner = owner
 				})
 				.ToList();
 		}
@@ -94,7 +109,9 @@ public class BundleBuilder
 				.Select(pv => new BundledProduct(
 					pv.product,
 					string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
-					pv.lifecycle))
+					pv.lifecycle,
+					repo,
+					owner))
 				.ToList();
 		}
 		else
@@ -167,7 +184,7 @@ public class BundleBuilder
 				return null;
 			}
 
-			var bundledEntry = ChangelogMapper.ToBundledEntry(data) with
+			var bundledEntry = data.ToBundledEntry() with
 			{
 				File = new BundledFile
 				{

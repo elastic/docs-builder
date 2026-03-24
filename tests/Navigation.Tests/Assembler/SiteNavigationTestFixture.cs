@@ -224,7 +224,7 @@ public static class SiteNavigationTestFixture
 	)
 	{
 		var context = CreateContext(fileSystem, repositoryPath, output, collector);
-		context.AssemblerBuild = true;
+		context.BuildType = BuildType.Assembler;
 		return context;
 	}
 

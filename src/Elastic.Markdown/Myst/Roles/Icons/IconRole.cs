@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Svg;
 using Elastic.Markdown.Diagnostics;
 using Markdig.Parsers;
 
@@ -12,30 +13,9 @@ namespace Elastic.Markdown.Myst.Roles.Icons;
 [DebuggerDisplay("{GetType().Name} Line: {Line}, Role: {Role}, Content: {Content}")]
 public class IconsRole : RoleLeaf
 {
-	private static readonly IReadOnlyDictionary<string, string> IconMap;
-	static IconsRole()
-	{
-		var assembly = typeof(IconsRole).Assembly;
-		var iconFolder = $"{assembly.GetName().Name}.Myst.Roles.Icons.svgs.";
-		IconMap = assembly.GetManifestResourceNames()
-			.Where(r => r.StartsWith(iconFolder) && r.EndsWith(".svg"))
-			.ToDictionary(
-				r => r[iconFolder.Length..].Replace(".svg", string.Empty),
-				r =>
-				{
-					using var stream = assembly.GetManifestResourceStream(r);
-					if (stream is null)
-						return string.Empty;
-					using var reader = new StreamReader(stream);
-					return reader.ReadToEnd();
-				}
-			);
-	}
-
 	public IconsRole(string role, string content, InlineProcessor processor) : base(role, content)
 	{
-
-		if (IconMap.TryGetValue(content, out var svg))
+		if (EuiSvgIcons.TryGetIcon(content, out var svg))
 		{
 			Svg = svg;
 			Name = content;

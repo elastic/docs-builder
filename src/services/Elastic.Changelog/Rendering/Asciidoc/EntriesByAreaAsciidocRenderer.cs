@@ -2,9 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Globalization;
 using System.Text;
-using Elastic.Documentation;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
@@ -17,8 +16,8 @@ public class EntriesByAreaAsciidocRenderer(StringBuilder sb) : AsciidocRendererB
 	public override void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
-			? entries.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+			? entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
+			: entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 
 		foreach (var areaGroup in groupedByArea)
 		{

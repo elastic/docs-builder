@@ -16,6 +16,167 @@ Or with a custom bundles folder:
 :::
 ```
 
+## Options
+
+The directive supports the following options:
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `:type: value` | Filter entries by type | Excludes separated types |
+| `:subsections:` | Group entries by area/component | false |
+| `:config: path` | Path to changelog.yml configuration (reserved for future use) | auto-discover |
+
+### Example with options
+
+```markdown
+:::{changelog} /path/to/bundles
+:type: all
+:subsections:
+:::
+```
+
+### Option details
+
+#### `:type:`
+
+Controls which entry types are displayed. By default, the directive excludes "separated types" (known issues, breaking changes, deprecations, and highlights) which are typically shown on their own dedicated pages.
+
+| Value | Description |
+|-------|-------------|
+| (omitted) | Default: shows all types EXCEPT known issues, breaking changes, deprecations, and highlights |
+| `all` | Shows all entry types including known issues, breaking changes, deprecations, and highlights |
+| `breaking-change` | Shows only breaking change entries |
+| `deprecation` | Shows only deprecation entries |
+| `known-issue` | Shows only known issue entries |
+| `highlight` | Shows only highlighted entries |
+
+This allows you to create separate pages for different entry types:
+
+```markdown
+# Release Notes
+
+:::{changelog}
+:::
+```
+
+```markdown
+# Breaking Changes
+
+:::{changelog}
+:type: breaking-change
+:::
+```
+
+```markdown
+# Known Issues
+
+:::{changelog}
+:type: known-issue
+:::
+```
+
+```markdown
+# Deprecations
+
+:::{changelog}
+:type: deprecation
+:::
+```
+
+```markdown
+# Highlights
+
+:::{changelog}
+:type: highlight
+:::
+```
+
+To show all entries on a single page (previous default behavior):
+
+```markdown
+:::{changelog}
+:type: all
+:::
+```
+
+#### `:subsections:`
+
+When enabled, entries are grouped by "area" within each section.
+By default, entries are listed without area grouping.
+If a changelog has multiple area values, only the first one is used.
+
+#### `:config:`
+
+Explicit path to a `changelog.yml` configuration file. If not specified, the directive auto-discovers from:
+1. `changelog.yml` in the docset root
+2. `docs/changelog.yml` relative to docset root
+
+Reserved for future configuration use. The directive does not currently load or apply configuration from this file.
+
+## Filtering entries with bundle rules
+
+You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
+
+The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/release/changelog-bundle.md#changelog-bundle-rules) for full syntax.
+
+`rules.bundle` supports product, type, and area filtering, and per-product overrides.
+For full syntax, refer to the [rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).
+
+## Feature hiding from bundles
+
+When bundles contain a `hide-features` field, entries with matching `feature-id` values are automatically filtered out from the rendered output. This allows you to hide unreleased or experimental features without modifying the bundle at render time.
+
+```yaml
+# Example bundle with hide-features
+products:
+  - product: elasticsearch
+    target: 9.3.0
+hide-features:
+  - feature:hidden-api
+  - feature:experimental
+entries:
+  - file:
+      name: new-feature.yaml
+      checksum: abc123
+```
+
+When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
+
+To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`. For more details, see [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
+
+## Private repository link hiding
+
+Changelog entries can reference multiple pull requests and issues via the `prs` and `issues` array fields. When an entry is rendered, all of its links are shown inline:
+
+```md
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
+```
+
+PR and issue links are automatically hidden (commented out) for bundles from private repositories. When links are hidden, **all** PR and issue links for an affected entry are hidden together. This is determined by checking the `assembler.yml` configuration:
+
+- Repositories marked with `private: true` in `assembler.yml` will have their links hidden
+- For merged bundles (e.g., `elasticsearch+kibana`), links are hidden if ANY component repository is private
+- In standalone builds without `assembler.yml`, all links are shown by default
+
+## Bundle merging
+
+Bundles with the same target version/date are automatically merged into a single section. This is useful for Cloud Serverless releases where multiple repositories (e.g., Elasticsearch, Kibana) contribute to a single dated release like `2025-08-05`.
+
+### Amend bundle merging
+
+Bundles can have associated **amend files** that follow the naming pattern `{bundle-name}.amend-{N}.yaml` (e.g., `9.3.0.amend-1.yaml`). When loading bundles, the directive automatically discovers and merges amend files with their parent bundles.
+
+This allows you to add late additions to a release without modifying the original bundle file:
+
+```
+bundles/
+├── 9.3.0.yaml           # Parent bundle
+├── 9.3.0.amend-1.yaml   # First amend (auto-merged with parent)
+└── 9.3.0.amend-2.yaml   # Second amend (auto-merged with parent)
+```
+
+All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (products, hide-features, repo) is preserved.
+
 ## Default folder structure
 
 The directive expects bundles in `changelog/bundles/` relative to the docset root:
@@ -31,6 +192,8 @@ docs/
 │       └── 0.100.0.yaml
 └── release-notes.md          # Page with :::{changelog}
 ```
+
+The `bundle.directory` and `bundle.output_directory` settings in `changelog.yml` apply to the `changelog bundle` and `changelog gh-release` CLI commands. The directive's bundles folder is controlled by its first argument or defaults to `changelog/bundles/` relative to the docset root.
 
 ## Version ordering
 
@@ -68,10 +231,35 @@ Each bundle renders as a `## {version}` section with subsections beneath:
 | Regressions | `regression` | Grouped by area |
 | Other changes | `other` | Grouped by area |
 | Breaking changes | `breaking-change` | Expandable dropdowns |
+| Highlights | Entries with `highlight: true` | Expandable dropdowns |
 | Deprecations | `deprecation` | Expandable dropdowns |
 | Known issues | `known-issue` | Expandable dropdowns |
 
+**Note about highlights:**
+- Highlights only appear when using `:type: all` (they are excluded from the default view)
+- When rendered, highlighted entries appear in BOTH the "Highlights" section AND their original type section (for example, a highlighted feature appears in both "Highlights" and "Features and enhancements")
+- The "Highlights" section is only created when at least one entry has `highlight: true`
+- When using `:type: highlight`, only highlighted entries are shown (no section headers or other content)
+
 Sections with no entries of that type are omitted from the output.
+
+## Error behavior for missing files [changelog-missing-files]
+
+Bundles created without the `--resolve` option store `file:` references (filenames and checksums) instead of embedding entry content inline.
+When the directive loads such a bundle, it looks up each referenced file to read its content.
+If a referenced file cannot be found on disk, the directive emits an error and the build fails.
+This prevents silent data loss where changelog entries would be quietly omitted from rendered release notes without any indication that something was missing.
+
+To fix this, either:
+
+- Restore the missing changelog files, or
+- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained), or
+- Remove the unresolvable entry from the bundle file.
+
+:::{tip}
+In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
+For more command syntax details, go to [Remove changelog files](../contribute/changelog.md#changelog-remove).
+:::
 
 ## Example
 
@@ -102,4 +290,5 @@ The `{changelog}` directive is ideal for release notes pages that should always 
 - [Create and bundle changelogs](../contribute/changelog.md) — Learn how to create changelog entries and bundles
 - [`changelog add`](../cli/release/changelog-add.md) — CLI command to create changelog entries
 - [`changelog bundle`](../cli/release/changelog-bundle.md) — CLI command to bundle changelog entries
+- [`changelog remove`](../cli/release/changelog-remove.md) — CLI command to remove changelog files
 - [`changelog render`](../cli/release/changelog-render.md) — CLI command to render changelogs to markdown files

@@ -58,8 +58,10 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 		return $"https://github.com/elastic/{repo}/tree/{branch}/docs";
 	}
 
-	public ApiLayoutViewModel CreateGlobalLayoutModel() =>
-		new()
+	public ApiLayoutViewModel CreateGlobalLayoutModel()
+	{
+		var rootPath = BuildContext.SiteRootPath ?? GetDefaultRootPath(BuildContext.UrlPathPrefix);
+		return new()
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
@@ -69,11 +71,14 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			Next = null,
 			NavigationHtml = NavigationHtml,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
+			Htmx = new DefaultHtmxAttributeProvider(rootPath),
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
+			Optimizely = new OptimizelyConfiguration(),
 			Features = new FeatureFlags([]),
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
+			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
 			// Header properties for isolated mode
 			HeaderTitle = Document.Info.Title,
@@ -81,6 +86,14 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			GitBranch = BuildContext.Git.Branch != "unavailable" ? BuildContext.Git.Branch : null,
 			GitCommitShort = BuildContext.Git.Ref is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
 			GitRepository = BuildContext.Git.RepositoryName != "unavailable" ? BuildContext.Git.RepositoryName : null,
-			GitHubDocsUrl = GetGitHubDocsUrl()
+			GitHubDocsUrl = GetGitHubDocsUrl(),
+			GitHubRef = BuildContext.Git.GitHubRef
 		};
+	}
+
+	private static string GetDefaultRootPath(string? urlPathPrefix)
+	{
+		var prefix = urlPathPrefix?.Trim('/') ?? "";
+		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
+	}
 }

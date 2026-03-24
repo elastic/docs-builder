@@ -25,6 +25,17 @@ function persistHudOpen(open: boolean): void {
 
 export type DiagnosticSeverity = 'error' | 'warning' | 'hint'
 
+export type EuiSeverityColor = 'danger' | 'warning' | 'primary'
+
+export const SEVERITY_CONFIG: Record<
+    DiagnosticSeverity,
+    { iconType: string; color: EuiSeverityColor }
+> = {
+    error: { iconType: 'error', color: 'danger' },
+    warning: { iconType: 'warning', color: 'warning' },
+    hint: { iconType: 'info', color: 'primary' },
+}
+
 export interface DiagnosticItem {
     id: string
     severity: DiagnosticSeverity
@@ -35,10 +46,19 @@ export interface DiagnosticItem {
     timestamp: number
 }
 
+export type FilterMode = 'all' | 'errors' | 'warnings' | 'hints'
+
 export interface FilterState {
     errors: boolean
     warnings: boolean
     hints: boolean
+}
+
+const FILTER_MODE_TO_STATE: Record<FilterMode, FilterState> = {
+    all: { errors: true, warnings: true, hints: true },
+    errors: { errors: true, warnings: false, hints: false },
+    warnings: { errors: false, warnings: true, hints: false },
+    hints: { errors: false, warnings: false, hints: true },
 }
 
 export interface DiagnosticsState {
@@ -61,6 +81,7 @@ export interface DiagnosticsState {
     setConnected: (connected: boolean) => void
     toggleFilter: (filter: keyof FilterState) => void
     showAllFilters: () => void
+    setFilterMode: (mode: FilterMode) => void
     reset: () => void
 }
 
@@ -107,6 +128,8 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set) => ({
 
     showAllFilters: () =>
         set({ filters: { errors: true, warnings: true, hints: true } }),
+
+    setFilterMode: (mode) => set({ filters: FILTER_MODE_TO_STATE[mode] }),
 
     reset: () =>
         set({

@@ -4,3 +4,4 @@ Bravo,"Inline role: {kbd}`Ctrl+C`.","[Elastic docs](https://www.elastic.co/docs)
 Charlie,"Mixed **bold** and _italic_, plus `inline code`.","[Search](https://www.elastic.co/docs/solutions/search)"
 Delta,"Feature {applies_to}`stack: ga 9.1` available now.","[Elastic](https://www.elastic.co)"
 Echo,"This is {preview}`9.1` functionality.","[Preview docs](https://www.elastic.co/docs)"
+Foxtrot,"Multiple lines using HTML breaks.","[Link A](https://www.elastic.co)<br>[Link B](https://www.elastic.co/docs)"

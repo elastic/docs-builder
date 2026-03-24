@@ -2,11 +2,38 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Cysharp.IO;
 using Tomlet;
 using Tomlet.Models;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
+
+/// <summary>
+/// Represents version information from version.lock.json
+/// </summary>
+public record VersionLockEntry
+{
+	[JsonPropertyName("rule_name")]
+	public string? RuleName { get; init; }
+
+	[JsonPropertyName("sha256")]
+	public string? Sha256 { get; init; }
+
+	[JsonPropertyName("type")]
+	public string? Type { get; init; }
+
+	[JsonPropertyName("version")]
+	public int Version { get; init; }
+}
+
+[JsonSerializable(typeof(Dictionary<string, VersionLockEntry>))]
+internal sealed partial class VersionLockJsonContext : JsonSerializerContext;
 
 public record DetectionRuleThreat
 {
@@ -36,6 +63,12 @@ public record DetectionRuleTechnique : DetectionRuleSubTechnique
 
 public record DetectionRule
 {
+	// Reuse a single TomlParser instance for better performance
+	private static readonly TomlParser Parser = new();
+
+	// Cached version lock data, loaded once per build
+	private static FrozenDictionary<string, VersionLockEntry>? VersionLock;
+
 	public required string Name { get; init; }
 
 	public required string[]? Authors { get; init; }
@@ -64,19 +97,55 @@ public record DetectionRule
 	public required string[]? Indices { get; init; }
 	public required string? RunsEvery { get; init; }
 	public required string? IndicesFromDateMath { get; init; }
-	public required string MaximumAlertsPerExecution { get; init; }
+	public required int MaximumAlertsPerExecution { get; init; }
 	public required string[]? References { get; init; }
-	public required string Version { get; init; }
+	public required int Version { get; init; }
 
 	public required DetectionRuleThreat[] Threats { get; init; } = [];
 
+	/// <summary>
+	/// Initializes the version lock cache from the version.lock.json file.
+	/// This should be called once before processing detection rules.
+	/// </summary>
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
+	public static void InitializeVersionLock(IFileSystem fileSystem, IDirectoryInfo? checkoutDirectory)
+	{
+		if (VersionLock != null || checkoutDirectory == null)
+			return;
+
+		var versionLockPath = fileSystem.Path.Combine(
+			checkoutDirectory.FullName,
+			"detection_rules",
+			"etc",
+			"version.lock.json"
+		);
+
+		if (!fileSystem.File.Exists(versionLockPath))
+			return;
+
+		try
+		{
+			var json = fileSystem.File.ReadAllText(versionLockPath, Encoding.UTF8);
+			var versionData = JsonSerializer.Deserialize(json, VersionLockJsonContext.Default.DictionaryStringVersionLockEntry);
+			VersionLock = versionData?.ToFrozenDictionary() ?? FrozenDictionary<string, VersionLockEntry>.Empty;
+		}
+		catch
+		{
+			// If we can't load the version lock, continue without it
+			VersionLock = FrozenDictionary<string, VersionLockEntry>.Empty;
+		}
+	}
+
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	public static DetectionRule From(IFileInfo source)
 	{
 		TomlDocument model;
 		try
 		{
-			var sourceText = File.ReadAllText(source.FullName);
-			model = new TomlParser().Parse(sourceText);
+			// Use optimized Utf8StreamReader for better I/O performance
+			using var reader = new Utf8StreamReader(source.FullName, fileOpenMode: FileOpenMode.Throughput);
+			var sourceText = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
+			model = Parser.Parse(sourceText);
 		}
 		catch (Exception e)
 		{
@@ -90,6 +159,15 @@ public record DetectionRule
 			throw new Exception($"Could not find rule section in {source.FullName}");
 
 		var threats = GetThreats(rule);
+		var ruleId = rule.GetString("rule_id");
+
+		// Get max_signals from TOML, default to 100 if not specified
+		var maxSignals = TryGetInt(rule, "max_signals") ?? 100;
+
+		// Look up version from version.lock.json, default to 1 if not found
+		var version = 1;
+		if (VersionLock != null && VersionLock.TryGetValue(ruleId, out var versionEntry))
+			version = versionEntry.Version;
 
 		return new DetectionRule
 		{
@@ -99,7 +177,7 @@ public record DetectionRule
 			Language = TryGetString(rule, "language"),
 			License = rule.GetString("license"),
 			RiskScore = TryGetInt(rule, "risk_score") ?? 0,
-			RuleId = rule.GetString("rule_id"),
+			RuleId = ruleId,
 			Severity = rule.GetString("severity"),
 			Tags = TryGetStringArray(rule, "tags"),
 			Indices = TryGetStringArray(rule, "index"),
@@ -110,8 +188,8 @@ public record DetectionRule
 			Note = TryGetString(rule, "note"),
 			Name = rule.GetString("name"),
 			RunsEvery = TryGetString(rule, "interval"),
-			MaximumAlertsPerExecution = "?",
-			Version = "?",
+			MaximumAlertsPerExecution = maxSignals,
+			Version = version,
 			Threats = threats
 		};
 	}

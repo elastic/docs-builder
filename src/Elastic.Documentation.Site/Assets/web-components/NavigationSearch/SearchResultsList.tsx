@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
@@ -150,17 +151,21 @@ const SearchResultRow = ({
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const anchorRef = useHtmxLink(result.url)
+    const { ref, href } = useHtmxLink(result.url)
 
     const breadcrumbItems = useMemo(() => {
+        if (config.buildType == 'codex') {
+            return result.parents.map((p) => p.title)
+        }
+
         const typePrefix = result.type === 'api' ? 'API' : 'Docs'
         return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
     }, [result.type, result.parents])
 
     return (
         <a
-            ref={anchorRef}
-            href={result.url}
+            ref={ref}
+            href={href}
             data-search-result-index={index}
             onClick={onClick}
             onMouseEnter={onMouseEnter}

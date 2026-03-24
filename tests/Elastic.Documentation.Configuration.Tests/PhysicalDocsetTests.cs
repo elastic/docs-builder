@@ -33,7 +33,6 @@ public class PhysicalDocsetTests
 
 		// Assert substitutions
 		docSet.Subs.Should().NotBeEmpty();
-		docSet.Subs.Should().ContainKey("stack").WhoseValue.Should().Be("Elastic Stack");
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
 		// Assert API configuration

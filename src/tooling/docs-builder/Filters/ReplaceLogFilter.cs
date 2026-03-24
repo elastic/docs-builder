@@ -15,7 +15,12 @@ internal sealed class ReplaceLogFilter(ConsoleAppFilter next, ILogger<Program> l
 	[SuppressMessage("Usage", "CA2254:Template should be a static expression")]
 	public override Task InvokeAsync(ConsoleAppContext context, Cancel cancellationToken)
 	{
-		if (!cli.IsHelpOrVersion)
+		if (cli.IsMcp)
+		{
+			ConsoleApp.Log = _ => { };
+			ConsoleApp.LogError = _ => { };
+		}
+		else if (!cli.IsHelpOrVersion)
 		{
 			ConsoleApp.Log = msg => logger.LogInformation(msg);
 			ConsoleApp.LogError = msg => logger.LogError(msg);

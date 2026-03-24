@@ -188,7 +188,7 @@ const VersionDropdown = ({
 
     const button = (
         <EuiButton
-            iconType="arrowDown"
+            iconType="chevronSingleDown"
             iconSide="right"
             onClick={onButtonClick}
             size="s"

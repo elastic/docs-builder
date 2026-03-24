@@ -1,0 +1,127 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Collections.Frozen;
+using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Mcp.Remote.Gateways;
+using Elastic.Documentation.Mcp.Remote.Tools;
+using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.ServiceDefaults;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Mcp.Remote.IntegrationTests;
+
+/// <summary>
+/// Base class for MCP Lambda integration tests providing shared configuration and factory methods.
+/// </summary>
+public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
+{
+	protected ITestOutputHelper Output { get; } = output;
+
+	protected void LogDiagnostics(ElasticsearchClientAccessor? clientAccessor)
+	{
+		if (clientAccessor is null)
+			return;
+
+		Output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
+		Output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
+		Output.WriteLine($"RulesetName: {clientAccessor.RulesetName ?? "(none)"}");
+	}
+
+	protected async Task LogIndexCount(ElasticsearchClientAccessor clientAccessor, CancellationToken ctx)
+	{
+		var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), ctx);
+		Output.WriteLine(countResponse.IsValidResponse
+			? $"Index document count: {countResponse.Count}"
+			: $"Index count ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}");
+	}
+
+	/// <summary>
+	/// Creates SearchTools with all required dependencies.
+	/// </summary>
+	protected (SearchTools Tools, ElasticsearchClientAccessor? ClientAccessor) CreateSearchTools()
+	{
+		var clientAccessor = CreateElasticsearchClientAccessor();
+
+		var productsConfig = CreateProductsConfiguration();
+		var fullSearchGateway = new FullSearchGateway(
+			clientAccessor,
+			productsConfig,
+			NullLogger<FullSearchGateway>.Instance
+		);
+
+		var searchTools = new SearchTools(fullSearchGateway, NullLogger<SearchTools>.Instance);
+		return (searchTools, clientAccessor);
+	}
+
+	/// <summary>
+	/// Creates DocumentTools with all required dependencies.
+	/// </summary>
+	protected (DocumentTools Tools, ElasticsearchClientAccessor? ClientAccessor) CreateDocumentTools()
+	{
+		var clientAccessor = CreateElasticsearchClientAccessor();
+
+		var documentGateway = new DocumentGateway(clientAccessor, NullLogger<DocumentGateway>.Instance);
+		var documentTools = new DocumentTools(documentGateway, NullLogger<DocumentTools>.Instance);
+		return (documentTools, clientAccessor);
+	}
+
+	/// <summary>
+	/// Creates CoherenceTools with all required dependencies.
+	/// </summary>
+	protected (CoherenceTools Tools, ElasticsearchClientAccessor? ClientAccessor) CreateCoherenceTools()
+	{
+		var clientAccessor = CreateElasticsearchClientAccessor();
+
+		var productsConfig = CreateProductsConfiguration();
+		var fullSearchGateway = new FullSearchGateway(clientAccessor, productsConfig, NullLogger<FullSearchGateway>.Instance);
+		var coherenceTools = new CoherenceTools(fullSearchGateway, NullLogger<CoherenceTools>.Instance);
+		return (coherenceTools, clientAccessor);
+	}
+
+	/// <summary>
+	/// Creates an ElasticsearchClientAccessor using configuration from user secrets and environment variables.
+	/// </summary>
+	private static ElasticsearchClientAccessor CreateElasticsearchClientAccessor()
+	{
+		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
+
+		var searchConfig = new SearchConfiguration
+		{
+			Synonyms = new Dictionary<string, string[]>(),
+			Rules = [],
+			DiminishTerms = ["plugin", "client", "integration", "glossary"]
+		};
+
+		return new ElasticsearchClientAccessor(endpoints, searchConfig);
+	}
+
+	/// <summary>
+	/// Creates a minimal ProductsConfiguration for testing.
+	/// </summary>
+	private static ProductsConfiguration CreateProductsConfiguration()
+	{
+		var products = new Dictionary<string, Product>
+		{
+			["elasticsearch"] = new() { Id = "elasticsearch", DisplayName = "Elasticsearch" },
+			["kibana"] = new() { Id = "kibana", DisplayName = "Kibana" },
+			["logstash"] = new() { Id = "logstash", DisplayName = "Logstash" },
+			["beats"] = new() { Id = "beats", DisplayName = "Beats" },
+			["cloud"] = new() { Id = "cloud", DisplayName = "Elastic Cloud" },
+			["fleet"] = new() { Id = "fleet", DisplayName = "Fleet" },
+			["apm"] = new() { Id = "apm", DisplayName = "APM" }
+		};
+
+		var productDisplayNames = products.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DisplayName);
+
+		return new ProductsConfiguration
+		{
+			Products = products.ToFrozenDictionary(),
+			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
+		};
+	}
+}

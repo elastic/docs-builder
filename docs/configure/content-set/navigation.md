@@ -94,6 +94,20 @@ exclude:
   - '_*.md'
 ```
 
+### `api`
+
+Maps product names to OpenAPI specification files to enable the [API Explorer](api-explorer.md). Paths are relative to the folder containing `docset.yml`. Only valid in `docset.yml`, not in `toc.yml` files.
+
+```yaml
+api:
+  elasticsearch: elasticsearch-openapi.json
+  kibana: kibana-openapi.json
+```
+
+Each key becomes a sub-path of the generated API docs: `elasticsearch` → `/api/elasticsearch/`, `kibana` → `/api/kibana/`.
+
+See [API Explorer](api-explorer.md) for full configuration details.
+
 ### `toc`
 
 Defines the table of contents (navigation) for the content set. A minimal toc is:
@@ -112,7 +126,7 @@ The TOC in principle follows the directory structure on disk.
   - folder: subsection
 ```
 
-If a folder does not explicitly define `children` all markdown files within that folder are included automatically 
+If a folder does not explicitly define `children` all markdown files within that folder are included automatically
 
 If a folder does define `children` all markdown files within that folder have to be included. `docs-builder` will error if it detects dangling documentation files.
 
@@ -125,10 +139,40 @@ If a folder does define `children` all markdown files within that folder have to
       - file: page-two.md
 ```
 
+##### `sort`
+
+When auto-discovering files (no explicit `children`), you can control the sort order with `sort`:
+
+```yaml
+  ...
+  - folder: api-versions
+    sort: desc
+```
+
+Valid values are `asc`, `ascending`, `desc`, and `descending`. The default is ascending (A-Z). When set to descending, files are listed Z-A, which is useful for version-numbered folders where the newest version should appear first. Sorting uses natural order, so version numbers sort correctly (`3_2_0` comes before `3_10_0`). `index.md` is always placed first regardless of sort order.
+
+The `sort` option has no effect when `children` are explicitly defined, since the order is determined by the `children` list.
+
+##### `exclude`
+
+When using auto-discovery (no explicit `children`), you can exclude specific files from being included:
+
+```yaml
+  ...
+  - folder: subsection
+    exclude:
+      - draft.md
+      - internal-notes.md
+```
+
+Excluded file names are matched case-insensitively. This is useful when a folder contains files that should not appear in the navigation, like drafts or internal documentation.
+
+The `exclude` option has no effect when `children` are explicitly defined, since all files must be listed manually.
+
 #### Virtual grouping
 
-A `file` element may include children to create a virtual grouping that 
-does not match the directory structure. 
+A `file` element can include children to create a virtual grouping that
+does not match the directory structure.
 
 ```yaml
   ...
@@ -138,7 +182,7 @@ does not match the directory structure.
       - file: subsection/page-two.md
 ```
 
-A `file` may only select siblings and more deeply nested files as its children. It may not select files outside its own subtree on disk.
+A `file` can only select siblings and more deeply nested files as its children. It can't select files outside its own subtree on disk.
 
 #### Hidden files
 
@@ -147,9 +191,9 @@ A hidden file can be declared in the TOC.
   - hidden: developer-pages.md
 ```
 
-It may not have any children and won't show up in the navigation.
+It can't have any children and won't show up in the navigation.
 
-It [may be linked to locally however](../../developer-notes.md)
+You can still [link to it locally](../../developer-notes.md).
 
 #### Nesting `toc`
 
@@ -185,6 +229,7 @@ Valid suppression values:
 
 - `DeepLinkingVirtualFile`
 - `FolderFileNameMismatch`
+- `AutolinkElasticCoDocs`
 
 Example:
 
@@ -267,6 +312,32 @@ toc:
       - file: index.md
 ```
 
+#### `AutolinkElasticCoDocs`
+
+Suppresses hints about autolinks pointing to elastic.co/docs URLs.
+
+By default, when the builder encounters a bare URL starting with `https://` that contains `elastic.co/docs`, it emits a hint suggesting to use crosslinks or relative links instead:
+
+```markdown
+See https://www.elastic.co/docs/solutions/search for more details.
+```
+
+**Hint message**: "Autolink points to elastic.co/docs. Consider using a crosslink or relative link instead."
+
+**Why this is discouraged**: Using [crosslinks](../../syntax/links.md) or relative links allows the documentation system to validate that the link target exists and enables proper URL handling across different environments.
+
+**When to suppress**: This hint can be useful to suppress when:
+
+- Processing generated content from external sources (for example, TOML files) that contain elastic.co URLs
+- During migration periods when converting large amounts of legacy content
+- For documentation that intentionally links to specific hosted versions
+
+**Preferred alternative**: Use crosslinks to reference other documentation:
+
+```markdown
+See [docs](docs-content://index.md) for more details.
+```
+
 ## Navigation configuration patterns
 
 ### Single file reference
@@ -293,7 +364,7 @@ toc:
       - file: first-steps.md
 ```
 
-All children must be siblings of the parent file (in the same directory). The parent file may not select files outside its own subtree.
+All children must be siblings of the parent file (in the same directory). The parent file can't select files outside its own subtree.
 
 ### Folder without explicit children
 
@@ -349,7 +420,7 @@ toc:
   - toc: guides
 ```
 
-Each `toc` reference loads the corresponding `toc.yml` file from that directory (e.g., `api-reference/toc.yml`).
+Each `toc` reference loads the corresponding `toc.yml` file from that directory (for example, `api-reference/toc.yml`).
 
 ### Mixed patterns
 

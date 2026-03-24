@@ -26,7 +26,7 @@ jobs:
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@6db134d15f3909ccc9eefd369f02bd1e9cffdf97 # v6.2.0
+      - uses: release-drafter/release-drafter@139054aeaa9adc52ab36ddf67437541f039b88e2 # v7.1.1
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -60,7 +60,7 @@ jobs:
         uses: ./.github/actions/bootstrap
         
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -102,7 +102,7 @@ jobs:
     steps:
 
       - name: Download bootstrap binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with: 
           name: link-index-updater-lambda-binary # Defined in build-link-index-updater-lambda.yml
           
@@ -110,7 +110,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+      - uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -163,7 +163,7 @@ jobs:
         shell: bash
         
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             .artifacts/publish/docs-builder/release/*.zip

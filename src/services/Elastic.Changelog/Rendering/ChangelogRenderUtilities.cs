@@ -2,9 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Changelog.Configuration;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering;
 
@@ -14,58 +13,43 @@ namespace Elastic.Changelog.Rendering;
 public static class ChangelogRenderUtilities
 {
 	/// <summary>
-	/// Gets the component (area) for an entry. Uses first area or empty string.
+	/// Gets the component (area) for an entry for subsection grouping.
+	/// Always uses the first area from the entry; rules.publish is no longer supported.
 	/// </summary>
-	public static string GetComponent(ChangelogEntry entry)
+#pragma warning disable IDE0060 // Remove unused parameter
+	public static string GetComponent(ChangelogEntry entry, ChangelogRenderContext? context = null)
+#pragma warning restore IDE0060 // Remove unused parameter
+		=> entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
+
+	/// <summary>
+	/// Gets the entry context (repo, owner, hideLinks, shouldHide) for a specific entry.
+	/// </summary>
+	public static (string EntryRepo, string EntryOwner, bool HideLinks, bool ShouldHide) GetEntryContext(
+		ChangelogEntry entry,
+		ChangelogRenderContext context)
 	{
-		// Map areas (list) to component (string) - use first area or empty string
-		if (entry.Areas is { Count: > 0 })
-			return entry.Areas[0];
-		return string.Empty;
+		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
+		var entryOwner = context.EntryToOwner.GetValueOrDefault(entry, context.Owner);
+		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
+		var shouldHide = ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+		return (entryRepo, entryOwner, hideLinks, shouldHide);
 	}
 
 	/// <summary>
-	/// Determines if an entry should be hidden based on feature IDs or block configuration
+	/// Determines if an entry should be hidden based on feature IDs only.
+	/// rules.publish is no longer supported; filtering must be done at bundle time via rules.bundle.
 	/// </summary>
+#pragma warning disable IDE0060 // Remove unused parameter
 	public static bool ShouldHideEntry(
 		ChangelogEntry entry,
 		HashSet<string> featureIdsToHide,
 		ChangelogRenderContext? context = null)
+#pragma warning restore IDE0060 // Remove unused parameter
 	{
-		// Check feature IDs first
+		// Check feature IDs only
 		if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
 			return true;
 
-		// Check block configuration if context and configuration are available
-		if (context?.Configuration?.Block == null)
-			return false;
-
-		// Get product IDs for this entry
-		var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-		if (productIds.Count == 0)
-			return false;
-
-		// Check each product's block configuration
-		foreach (var productId in productIds)
-		{
-			var blocker = GetPublishBlockerForProduct(context.Configuration.Block, productId);
-			if (blocker != null && blocker.ShouldBlock(entry))
-				return true;
-		}
-
 		return false;
-	}
-
-	/// <summary>
-	/// Gets the publish blocker configuration for a specific product, checking product-specific overrides first
-	/// </summary>
-	private static PublishBlocker? GetPublishBlockerForProduct(BlockConfiguration blockConfig, string productId)
-	{
-		// Check product-specific override first
-		if (blockConfig.ByProduct?.TryGetValue(productId, out var productBlockers) == true)
-			return productBlockers.Publish;
-
-		// Fall back to global publish blocker
-		return blockConfig.Publish;
 	}
 }

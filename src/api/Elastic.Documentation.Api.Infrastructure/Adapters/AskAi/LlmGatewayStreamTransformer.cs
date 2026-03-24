@@ -49,6 +49,12 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 	}
 	protected override AskAiEvent? TransformJsonEvent(string? eventType, JsonElement json)
 	{
+		// Handle agent_stream_error events - these have a different format: {"error":"..."}
+		if (eventType == "agent_stream_error")
+		{
+			return ParseAgentStreamError(json);
+		}
+
 		// LLM Gateway format: ["custom", {type: "...", ...}]
 		if (json.ValueKind != JsonValueKind.Array || json.GetArrayLength() < 2)
 		{
@@ -101,7 +107,7 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 			// Take first tool call (can extend to handle multiple if needed)
 			var toolCall = toolCalls[0];
 			var toolCallId = toolCall.TryGetProperty("id", out var tcId) ? tcId.GetString() : id;
-			var toolName = toolCall.GetProperty("name").GetString()!;
+			var toolName = toolCall.GetProperty("name").GetString();
 			var args = toolCall.GetProperty("args");
 
 			if (toolName is not null and "ragSearch")
@@ -151,5 +157,23 @@ public class LlmGatewayStreamTransformer(ILogger<LlmGatewayStreamTransformer> lo
 		Logger.LogError("Error event received from LLM Gateway: {ErrorMessage}", errorMessage ?? "Unknown error");
 
 		return new AskAiEvent.ErrorEvent(id, timestamp, errorMessage ?? "Unknown error occurred");
+	}
+
+	/// <summary>
+	/// Parse agent_stream_error events which have a different format than normal events.
+	/// Format: {"error":"First generation timed out"}
+	/// </summary>
+	private AskAiEvent.ErrorEvent ParseAgentStreamError(JsonElement json)
+	{
+		var id = Guid.NewGuid().ToString();
+		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+		var errorMessage = json.TryGetProperty("error", out var errorProp)
+			? errorProp.GetString()
+			: null;
+
+		Logger.LogError("Agent stream error received from LLM Gateway: {ErrorMessage}", errorMessage ?? "Unknown error");
+
+		return new AskAiEvent.ErrorEvent(id, timestamp, errorMessage ?? "An error occurred while processing your request");
 	}
 }

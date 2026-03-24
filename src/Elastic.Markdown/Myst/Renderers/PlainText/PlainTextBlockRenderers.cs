@@ -6,9 +6,10 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
+using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -84,6 +85,12 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 			return;
 		}
 
+		if (obj is ContributorsBlock contributorsBlock)
+		{
+			WriteContributorsBlock(renderer, contributorsBlock);
+			return;
+		}
+
 		renderer.EnsureBlockSpacing();
 
 		// Include caption if present
@@ -105,6 +112,29 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 		while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(obj.Lines.Lines[lastNonEmptyIndex].ToString()))
 			lastNonEmptyIndex--;
 		return lastNonEmptyIndex;
+	}
+
+	private static void WriteContributorsBlock(PlainTextRenderer renderer, ContributorsBlock block)
+	{
+		renderer.EnsureBlockSpacing();
+
+		foreach (var contributor in block.Contributors)
+		{
+			renderer.Write(contributor.Name);
+			if (!string.IsNullOrEmpty(contributor.Title))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Title);
+			}
+			if (!string.IsNullOrEmpty(contributor.Location))
+			{
+				renderer.Write(", ");
+				renderer.Write(contributor.Location);
+			}
+			renderer.EnsureLine();
+		}
+
+		renderer.EnsureLine();
 	}
 }
 
@@ -218,10 +248,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 				WriteIncludeBlock(renderer, includeBlock);
 				return;
 
-			case DiagramBlock:
-				// Skip diagrams - not text searchable
-				return;
-
 			case SettingsBlock settingsBlock:
 				WriteSettingsBlock(renderer, settingsBlock);
 				return;
@@ -245,6 +271,17 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 			case CsvIncludeBlock csvIncludeBlock:
 				WriteCsvIncludeBlock(renderer, csvIncludeBlock);
+				return;
+
+			case AgentSkillBlock agentSkillBlock:
+				renderer.EnsureBlockSpacing();
+				renderer.WriteLine("Agent skill available");
+				renderer.WriteLine("A skill is available to help AI agents with this topic.");
+				if (agentSkillBlock.Count > 0)
+					renderer.WriteChildren(agentSkillBlock);
+				if (!string.IsNullOrEmpty(agentSkillBlock.Url))
+					renderer.WriteLine(agentSkillBlock.Url);
+				renderer.EnsureLine();
 				return;
 		}
 
@@ -432,6 +469,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 		renderer.EnsureLine();
 	}
+
 }
 
 /// <summary>

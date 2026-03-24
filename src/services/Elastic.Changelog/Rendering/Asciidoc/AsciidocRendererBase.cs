@@ -4,7 +4,7 @@
 
 using System.Globalization;
 using System.Text;
-using Elastic.Documentation;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
@@ -14,20 +14,6 @@ namespace Elastic.Changelog.Rendering.Asciidoc;
 public abstract class AsciidocRendererBase
 {
 	public abstract void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context);
-
-	/// <summary>
-	/// Gets the entry context (bundleProducts, repo, hideLinks, shouldHide) for a specific entry
-	/// </summary>
-	private static (HashSet<string> bundleProductIds, string entryRepo, bool hideLinks, bool shouldHide) GetEntryContext(
-		ChangelogEntry entry,
-		ChangelogRenderContext context)
-	{
-		var bundleProductIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
-		var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
-		return (bundleProductIds, entryRepo, hideLinks, shouldHide);
-	}
 
 	/// <summary>
 	/// Renders an entry's title and PR/issue links
@@ -40,26 +26,23 @@ public abstract class AsciidocRendererBase
 		_ = sb.Append("* ");
 		_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
 
-		var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
+		var hasPrs = entry.Prs is { Count: > 0 };
 		var hasIssues = entry.Issues is { Count: > 0 };
 
-		if (!hasPr && !hasIssues)
+		if (!hasPrs && !hasIssues)
 			return;
 
 		_ = sb.Append(' ');
-		if (hasPr)
+		foreach (var pr in entry.Prs ?? [])
 		{
-			_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(entry.Pr!, entryRepo, hideLinks));
+			_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(pr, entryRepo, hideLinks));
 			_ = sb.Append(' ');
 		}
 
-		if (hasIssues)
+		foreach (var issue in entry.Issues ?? [])
 		{
-			foreach (var issue in entry.Issues!)
-			{
-				_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
-				_ = sb.Append(' ');
-			}
+			_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
+			_ = sb.Append(' ');
 		}
 	}
 
@@ -106,7 +89,7 @@ public abstract class AsciidocRendererBase
 	/// </summary>
 	protected void RenderBasicEntry(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context)
 	{
-		var (_, entryRepo, hideLinks, shouldHide) = GetEntryContext(entry, context);
+		var (entryRepo, _, hideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
 		RenderEntryDescription(sb, entry, shouldHide);
 		_ = sb.AppendLine();
@@ -117,7 +100,7 @@ public abstract class AsciidocRendererBase
 	/// </summary>
 	protected void RenderEntryWithImpactAction(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context)
 	{
-		var (_, entryRepo, hideLinks, shouldHide) = GetEntryContext(entry, context);
+		var (entryRepo, _, hideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
 		RenderEntryDescription(sb, entry, shouldHide);
 		RenderImpactAndAction(sb, entry);

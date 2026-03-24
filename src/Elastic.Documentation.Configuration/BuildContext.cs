@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Reflection;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -48,12 +49,14 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public bool Force { get; init; }
 
-	public bool AssemblerBuild { get; init; }
+	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	// This property is used to determine if the site should be indexed by search engines
 	public bool AllowIndexing { get; init; }
 
 	public GoogleTagManagerConfiguration GoogleTagManager { get; init; }
+
+	public OptimizelyConfiguration Optimizely { get; init; }
 
 	// This property is used for the canonical URL
 	public Uri? CanonicalBaseUrl { get; init; }
@@ -63,6 +66,9 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		get => string.IsNullOrWhiteSpace(field) ? "" : $"/{field.Trim('/')}";
 		init;
 	}
+
+	/// <summary>Site root path for HTMX (e.g. codex root). When set, overrides derivation from UrlPathPrefix.</summary>
+	public string? SiteRootPath { get; init; }
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
@@ -119,6 +125,10 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		GoogleTagManager = new GoogleTagManagerConfiguration
+		{
+			Enabled = false
+		};
+		Optimizely = new OptimizelyConfiguration
 		{
 			Enabled = false
 		};

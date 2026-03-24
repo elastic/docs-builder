@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Globalization;
 using System.Text;
 using Elastic.Documentation;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
@@ -19,7 +19,7 @@ public class BreakingChangesAsciidocRenderer(StringBuilder sb) : AsciidocRendere
 		// Group by subtype if subsections is enabled, otherwise group by area
 		var groupedEntries = context.Subsections
 			? entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+			: entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 
 		foreach (var group in groupedEntries)
 		{

@@ -1,0 +1,60 @@
+/* Codex build type specific styles */
+
+:root {
+	/* Codex uses custom header with grid layout - fixed 48px height */
+	--header-height: 48px;
+	--sub-header-height: 37px;
+	--offset-top: calc(var(--header-height) + var(--sub-header-height));
+}
+
+#htmx-indicator {
+	top: var(--header-height);
+}
+
+body:has(.codex-root-landing) {
+	#htmx-indicator {
+		top: 0;
+	}
+}
+
+/* Codex header specific styles - only apply on lg screens (matches --breakpoint-lg) */
+@media screen and (min-width: 1280px) {
+	.has-isolated-header {
+		/* Ensure grid container is tall enough for sticky sidebars to work */
+		#main-container > div:first-child {
+			min-height: calc(100vh + 500px);
+		}
+
+		.sidebar {
+			position: sticky !important;
+			top: var(--offset-top) !important;
+			height: fit-content;
+			max-height: calc(100vh - var(--offset-top));
+			overflow-y: auto;
+			align-self: start;
+			transition:
+				top 0.3s ease,
+				max-height 0.3s ease;
+
+			.sidebar-nav {
+				position: relative !important;
+				top: 0 !important;
+				max-height: 100%;
+			}
+		}
+	}
+}
+
+.icon-mono path {
+	fill: currentColor !important;
+}
+
+.codex-hero {
+	navigation-search > div {
+		position: static;
+		padding: 0;
+		& > hr.euiHorizontalRule {
+			display: none;
+		}
+	}
+}

@@ -1,0 +1,11 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+<div id="elastic-nav-wrapper">
+	<div id="elastic-nav" hx-disable="true"></div>
+	@{
+		var elasticNavUrl = Model.Features.StagingElasticNavEnabled
+			? "https://stag-www.elastic.co/elastic-nav.js"
+			: "https://www.elastic.co/elastic-nav.js";
+	}
+	<script src="@elasticNavUrl" async></script>
+</div>
+@await RenderPartialAsync(_SecondaryNav.Create(Model))

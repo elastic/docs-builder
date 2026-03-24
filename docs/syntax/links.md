@@ -95,6 +95,13 @@ The syntax follows the format `<scheme>://<path>`, where:
 
 Never use a full URL for links across documentation repositories.
 
+Cross-repository validation only applies to schemes declared in `cross_links` in your `docset.yml`.
+If a scheme is not declared:
+
+- `cursor://...` links pass through as custom protocol links.
+- `vscode:...` links pass through as custom protocol links.
+- Other undeclared schemes are treated as invalid cross-repository links and produce build errors.
+
 ### External links
 
 Link to websites and resources outside the Elastic docs:

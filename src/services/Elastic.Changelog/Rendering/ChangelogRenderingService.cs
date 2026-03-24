@@ -4,13 +4,13 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using System.Linq;
 using System.Text.Json.Serialization;
 using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
@@ -115,20 +115,25 @@ public class ChangelogRenderingService(
 				return false;
 			}
 
-			// Load feature IDs to hide
+			// Load feature IDs to hide from CLI
 			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
 			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
 			if (!featureHidingResult.IsValid)
 				return false;
 
+			// Collect hide-features from bundles and merge with CLI hide-features
+			var combinedHideFeatures = new HashSet<string>(featureHidingResult.FeatureIdsToHide, StringComparer.OrdinalIgnoreCase);
+			foreach (var bundle in validationResult.Bundles)
+			{
+				foreach (var featureId in bundle.Data.HideFeatures)
+					_ = combinedHideFeatures.Add(featureId);
+			}
+
 			// Emit warnings for hidden entries
-			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, featureHidingResult.FeatureIdsToHide);
+			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
-			// Build render context (needed for block checking)
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, featureHidingResult.FeatureIdsToHide, config);
-
-			// Emit warnings for blocked entries
-			EmitBlockedEntryWarnings(collector, resolvedResult.Entries, context);
+			// Build render context
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -199,90 +204,6 @@ public class ChangelogRenderingService(
 		}
 	}
 
-	private static void EmitBlockedEntryWarnings(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<ResolvedEntry> entries,
-		ChangelogRenderContext context)
-	{
-		if (context.Configuration?.Block == null)
-			return;
-
-		var visibleEntries = entries.Where(resolved =>
-			string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) ||
-			!context.FeatureIdsToHide.Contains(resolved.Entry.FeatureId));
-
-		foreach (var resolved in visibleEntries)
-		{
-			// Get product IDs for this entry
-			var productIds = context.EntryToBundleProducts.GetValueOrDefault(resolved.Entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-			if (productIds.Count == 0)
-				continue;
-
-			// Check each product's block configuration
-			foreach (var productId in productIds)
-			{
-				var blocker = GetPublishBlockerForProduct(context.Configuration.Block, productId);
-				if (blocker != null && blocker.ShouldBlock(resolved.Entry))
-				{
-					var reasons = GetBlockReasons(resolved.Entry, blocker);
-					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
-					var entryIdentifier = GetEntryIdentifier(resolved.Entry, context);
-					collector.EmitWarning(string.Empty, $"Changelog entry {entryIdentifier} will be commented out{productInfo} because it matches block configuration: {reasons}");
-				}
-			}
-		}
-	}
-
-	private static string GetEntryIdentifier(ChangelogEntry entry, ChangelogRenderContext context)
-	{
-		// Try to extract PR number if available
-		if (!string.IsNullOrWhiteSpace(entry.Pr))
-		{
-			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Pr, "elastic", repo);
-			if (prNumber.HasValue)
-				return $"for PR {prNumber.Value}";
-		}
-
-		// Fall back to title if no PR is available
-		return $"'{entry.Title}'";
-	}
-
-	private static string GetBlockReasons(ChangelogEntry entry, PublishBlocker blocker)
-	{
-		var reasons = new List<string>();
-
-		// Check if blocked by type
-		if (blocker.Types?.Count > 0)
-		{
-			var entryTypeName = entry.Type.ToStringFast(true);
-			if (blocker.Types.Any(t => t.Equals(entryTypeName, StringComparison.OrdinalIgnoreCase)))
-				reasons.Add($"type '{entryTypeName}'");
-		}
-
-		// Check if blocked by area
-		if (blocker.Areas?.Count > 0 && entry.Areas?.Count > 0)
-		{
-			var blockedAreas = entry.Areas
-				.Where(area => blocker.Areas.Any(blocked => blocked.Equals(area, StringComparison.OrdinalIgnoreCase)))
-				.ToList();
-			if (blockedAreas.Count > 0)
-				reasons.Add($"area{(blockedAreas.Count > 1 ? "s" : "")} '{string.Join("', '", blockedAreas)}'");
-		}
-
-		return string.Join(" and ", reasons);
-	}
-
-	private static PublishBlocker? GetPublishBlockerForProduct(BlockConfiguration blockConfig, string productId)
-	{
-		// Check product-specific override first
-		if (blockConfig.ByProduct?.TryGetValue(productId, out var productBlockers) == true)
-			return productBlockers.Publish;
-
-		// Fall back to global publish blocker
-		return blockConfig.Publish;
-	}
-
 	private static bool ValidateEntryTypes(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<ResolvedEntry> entries,
@@ -336,17 +257,20 @@ public class ChangelogRenderingService(
 		// Create mappings from entries to their metadata
 		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
 		var entryToRepo = new Dictionary<ChangelogEntry, string>();
+		var entryToOwner = new Dictionary<ChangelogEntry, string>();
 		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
 
 		foreach (var entry in resolved.Entries)
 		{
 			entryToBundleProducts[entry.Entry] = entry.BundleProductIds;
 			entryToRepo[entry.Entry] = entry.Repo;
+			entryToOwner[entry.Entry] = entry.Owner;
 			entryToHideLinks[entry.Entry] = entry.HideLinks;
 		}
 
-		// Use first repo found for section anchors, or default
+		// Use first repo/owner found for section anchors, or default
 		var repoForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Repo : "elastic";
+		var ownerForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Owner : "elastic";
 
 		return new ChangelogRenderContext
 		{
@@ -354,11 +278,13 @@ public class ChangelogRenderingService(
 			Title = outputSetup.Title,
 			TitleSlug = outputSetup.TitleSlug,
 			Repo = repoForAnchors,
+			Owner = ownerForAnchors,
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
+			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config
 		};

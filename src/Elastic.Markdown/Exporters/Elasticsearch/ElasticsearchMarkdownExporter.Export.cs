@@ -4,12 +4,12 @@
 
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
-using Elastic.Markdown.Exporters.Elasticsearch.Enrichment;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using static System.StringSplitOptions;
@@ -26,18 +26,17 @@ public partial class ElasticsearchMarkdownExporter
 	/// </summary>
 	private void AssignDocumentMetadata(DocumentationDocument doc)
 	{
-		var semanticHash = _semanticChannel.Channel.ChannelHash;
-		var lexicalHash = _lexicalChannel.Channel.ChannelHash;
+		var semanticHash = _semanticTypeContext?.Hash ?? string.Empty;
+		var lexicalHash = _lexicalTypeContext.Hash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
 			doc.Url, doc.Type, doc.StrippedBody ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)),
 			doc.SearchTitle ?? string.Empty,
 			doc.NavigationSection ?? string.Empty, doc.NavigationDepth.ToString("N0"),
 			doc.NavigationTableOfContents.ToString("N0"),
-			_fixedSynonymsHash
+			_fixedSynonymsHash,
+			string.Join(",", doc.Parents?.Select(p => $"{p.Url}:{p.Title}") ?? [])
 		);
 		doc.Hash = hash;
-		doc.LastUpdated = _batchIndexDate;
-		doc.BatchIndexDate = _batchIndexDate;
 	}
 
 	private static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
@@ -155,23 +154,19 @@ public partial class ElasticsearchMarkdownExporter
 			: null;
 
 		CommonEnrichments(doc, currentNavigation);
-
-		// AI Enrichment - hybrid approach:
-		// - Cache hits: enrich processor applies fields at index time
-		// - Cache misses: apply fields inline before indexing
-		doc.EnrichmentKey = EnrichmentKeyGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
-		await TryEnrichDocumentAsync(doc, ctx);
-
 		AssignDocumentMetadata(doc);
 
-		if (_indexStrategy == IngestStrategy.Multiplex)
-			return await _lexicalChannel.TryWrite(doc, ctx) && await _semanticChannel.TryWrite(doc, ctx);
-		return await _lexicalChannel.TryWrite(doc, ctx);
+		return await WriteDocumentAsync(doc, ctx);
 	}
 
 	/// <inheritdoc />
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
+		if (_context.BuildType != BuildType.Assembler)
+		{
+			_logger.LogInformation("Skipping OpenAPI export for non-assembler build");
+			return true;
+		}
 
 		// this is temporary; once we implement Elastic.ApiExplorer, this should flow through
 		// we'll rename IMarkdownExporter to IDocumentationFileExporter at that point
@@ -196,84 +191,17 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
 			CommonEnrichments(doc, null);
-
-			// AI Enrichment - hybrid approach
-			doc.EnrichmentKey = EnrichmentKeyGenerator.Generate(doc.Title, doc.StrippedBody ?? string.Empty);
-			await TryEnrichDocumentAsync(doc, ctx);
-
 			AssignDocumentMetadata(doc);
 
-			// Write to channels following the multiplex or reindex strategy
-			if (_indexStrategy == IngestStrategy.Multiplex)
+			if (!await WriteDocumentAsync(doc, ctx))
 			{
-				if (!await _lexicalChannel.TryWrite(doc, ctx) || !await _semanticChannel.TryWrite(doc, ctx))
-				{
-					_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
-					return false;
-				}
-			}
-			else
-			{
-				if (!await _lexicalChannel.TryWrite(doc, ctx))
-				{
-					_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
-					return false;
-				}
+				_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
+				return false;
 			}
 		}
 
 		_logger.LogInformation("Finished exporting OpenAPI documentation");
 		return true;
-	}
-
-	/// <summary>
-	/// Hybrid AI enrichment: cache hits rely on enrich processor, cache misses apply fields inline.
-	/// Stale entries (with old prompt hash) are treated as non-existent and will be regenerated.
-	/// </summary>
-	private async ValueTask TryEnrichDocumentAsync(DocumentationDocument doc, Cancel ctx)
-	{
-		if (_enrichmentCache is null || _llmClient is null || string.IsNullOrWhiteSpace(doc.EnrichmentKey))
-			return;
-
-		// Check if valid enrichment exists in cache (current prompt hash)
-		// Stale entries are treated as non-existent and will be regenerated
-		if (_enrichmentCache.Exists(doc.EnrichmentKey))
-		{
-			// Cache hit - enrich processor will apply fields at index time
-			_ = Interlocked.Increment(ref _cacheHitCount);
-			return;
-		}
-
-		// Check if we've hit the limit for enrichments
-		var current = Interlocked.Increment(ref _enrichmentCount);
-		if (current > _enrichmentOptions.MaxNewEnrichmentsPerRun)
-		{
-			_ = Interlocked.Decrement(ref _enrichmentCount);
-			return;
-		}
-
-		// Cache miss (or stale) - generate enrichment inline and apply directly
-		try
-		{
-			var enrichment = await _llmClient.EnrichAsync(doc.Title, doc.StrippedBody ?? string.Empty, ctx);
-			if (enrichment is not { HasData: true })
-				return;
-
-			// Store in cache for future runs
-			await _enrichmentCache.StoreAsync(doc.EnrichmentKey, doc.Url, enrichment, ctx);
-
-			// Apply fields directly (enrich processor won't have this entry yet)
-			doc.AiRagOptimizedSummary = enrichment.RagOptimizedSummary;
-			doc.AiShortSummary = enrichment.ShortSummary;
-			doc.AiSearchQuery = enrichment.SearchQuery;
-			doc.AiQuestions = enrichment.Questions;
-			doc.AiUseCases = enrichment.UseCases;
-		}
-		catch (Exception ex) when (ex is not OperationCanceledException)
-		{
-			_logger.LogWarning(ex, "Failed to enrich document {Url}", doc.Url);
-			_ = Interlocked.Decrement(ref _enrichmentCount);
-		}
 	}
 
 }

@@ -23,7 +23,7 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Markdown.IO;
 
 //create all documentation sets
-// create a portalrootnodenavigationitem
+// create a codexrootnodenavigationitem
 // foreach doc set.
 //		root.items.add(set.navigation);
 // root.prefix = new provider('prefix)'
@@ -97,6 +97,20 @@ public class DocumentationSet : INavigationTraversable
 		NavigationIndexedByOrder = Navigation.BuildNavigationLookups(NavigationDocumentationFileLookup);
 
 		ValidateRedirectsExists();
+		ValidateRootIndexExists();
+	}
+
+	private void ValidateRootIndexExists()
+	{
+		if (Context.BuildType != BuildType.Isolated || Configuration.Registry == DocSetRegistry.Public)
+			return;
+
+		var indexFile = Context.ReadFileSystem.FileInfo.New(
+			Path.Join(SourceDirectory.FullName, "index.md"));
+
+		if (!indexFile.Exists)
+			Context.EmitError(Configuration.SourceFile,
+				"Non-public documentation sets require a root index.md file");
 	}
 
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }

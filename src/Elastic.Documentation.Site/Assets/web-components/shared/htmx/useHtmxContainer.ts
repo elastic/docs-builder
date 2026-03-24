@@ -1,14 +1,16 @@
 import {
     applyHtmxAttributes,
     getPathFromUrl,
+    isExternalDocsUrl,
     useCurrentPathname,
 } from './utils'
 import htmx from 'htmx.org'
 import { RefObject, useEffect } from 'react'
 
 /**
- * Hook that processes all internal docs links in a container element.
- * Finds anchor elements, extracts paths, applies htmx attributes, and processes with htmx.
+ * Hook that processes all links in a container element.
+ * For internal docs links, applies htmx attributes for SPA navigation.
+ * For external links (non-elastic.co or /docs/api), adds hx-disable to prevent htmx processing.
  *
  * @param containerRef - Ref to the container element
  * @param dependencies - Additional dependencies that should trigger reprocessing (e.g., content)
@@ -35,12 +37,21 @@ export const useHtmxContainer = (
             const href = anchor.getAttribute('href') || ''
             const path = getPathFromUrl(href)
 
-            if (!path) return
+            // External non-elastic.co URLs - disable htmx
+            if (!path) {
+                anchor.setAttribute('hx-disable', 'true')
+                return
+            }
 
-            // Update href to use the path
+            // External docs URLs (e.g., /docs/api) - disable htmx
+            if (isExternalDocsUrl(path)) {
+                anchor.setAttribute('href', path)
+                anchor.setAttribute('hx-disable', 'true')
+                return
+            }
+
+            // Internal docs links - apply htmx attributes
             anchor.setAttribute('href', path)
-
-            // Apply htmx attributes for in-page navigation
             applyHtmxAttributes(anchor, path, currentPathname)
             hasProcessedLinks = true
         })

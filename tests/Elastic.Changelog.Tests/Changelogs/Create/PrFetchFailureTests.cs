@@ -13,16 +13,8 @@ namespace Elastic.Changelog.Tests.Changelogs.Create;
 public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
 {
 	[Fact]
-	public async Task CreateChangelog_WithPrOptionButPrFetchFails_WithTitleAndType_CreatesChangelog()
+	public async Task CreateChangelog_WithPrOptionAndTitleAndType_SkipsApiFetch()
 	{
-		// Arrange
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns((GitHubPrInfo?)null);
-
 		var service = CreateService();
 
 		var input = new CreateChangelogArguments
@@ -34,16 +26,19 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			Output = CreateOutputDirectory()
 		};
 
-		// Act
 		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Failed to fetch PR information") && d.Severity == Severity.Warning);
+		Collector.Warnings.Should().Be(0);
 
-		// Verify changelog file was created with provided values
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
+				A<CancellationToken>._))
+			.MustNotHaveHappened();
+
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
@@ -53,7 +48,8 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Manual title provided");
 		yamlContent.Should().Contain("type: feature");
-		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
 	}
 
 	[Fact]
@@ -97,7 +93,8 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("# title: # TODO: Add title");
 		yamlContent.Should().Contain("# type: # TODO: Add type");
-		yamlContent.Should().Contain("pr: https://github.com/elastic/elasticsearch/pull/12345");
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
 		yamlContent.Should().Contain("products:");
 		// Should not contain uncommented title/type
 		var lines = yamlContent.Split('\n');
@@ -153,6 +150,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		yamlContent.Should().Contain("title: Shared title");
 		yamlContent.Should().Contain("type: bug-fix");
 		// Should reference at least one of the PRs (when filenames collide, the last one wins)
-		yamlContent.Should().MatchRegex(@"pr:\s*(https://github\.com/elastic/elasticsearch/pull/12345|https://github\.com/elastic/elasticsearch/pull/67890)");
+		yamlContent.Should().Contain("prs:");
+		yamlContent.Should().MatchRegex(@"(https://github\.com/elastic/elasticsearch/pull/12345|https://github\.com/elastic/elasticsearch/pull/67890)");
 	}
 }

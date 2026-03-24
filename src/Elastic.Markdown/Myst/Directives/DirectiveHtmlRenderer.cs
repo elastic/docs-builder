@@ -9,18 +9,19 @@ using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
+using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using Elastic.Markdown.Myst.Directives.Diagram;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
-using Elastic.Markdown.Myst.Directives.Mermaid;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.SubPages;
+using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
@@ -48,12 +49,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		switch (directiveBlock)
 		{
-			case DiagramBlock diagramBlock:
-				WriteDiagram(renderer, diagramBlock);
-				return;
-			case MermaidBlock mermaidBlock:
-				WriteMermaid(renderer, mermaidBlock);
-				return;
 			case FigureBlock imageBlock:
 				WriteFigure(renderer, imageBlock);
 				return;
@@ -116,6 +111,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case ButtonBlock buttonBlock:
 				WriteButton(renderer, buttonBlock);
+				return;
+			case ListSubPagesBlock listSubPagesBlock:
+				WriteListSubPages(renderer, listSubPagesBlock);
+				return;
+			case TableDirectiveBlock tableDirectiveBlock:
+				WriteTableDirective(renderer, tableDirectiveBlock);
+				return;
+			case AgentSkillBlock agentSkillBlock:
+				WriteAgentSkill(renderer, agentSkillBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -209,6 +213,43 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Type = block.Type,
 			Align = block.Align,
 			IsInGroup = block.IsInGroup
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteListSubPages(HtmlRenderer renderer, ListSubPagesBlock block)
+	{
+		var slice = ListSubPagesView.Create(new ListSubPagesViewModel
+		{
+			DirectiveBlock = block,
+			SubPages = block.SubPages
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteTableDirective(HtmlRenderer renderer, TableDirectiveBlock block)
+	{
+		block.ValidateTableColumnCount();
+		var slice = TableDirectiveView.Create(new TableDirectiveViewModel
+		{
+			DirectiveBlock = block,
+			ColumnWidths = block.ColumnWidths
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteAgentSkill(HtmlRenderer renderer, AgentSkillBlock block)
+	{
+		if (string.IsNullOrEmpty(block.Url))
+			return;
+
+		var prefix = block.Build.UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
+		var slice = AgentSkillView.Create(new AgentSkillViewModel
+		{
+			DirectiveBlock = block,
+			Url = block.Url,
+			HasBody = block.Count > 0,
+			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills"
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -348,22 +389,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		}
 
 		return null;
-	}
-
-	private static void WriteDiagram(HtmlRenderer renderer, DiagramBlock block)
-	{
-		var slice = DiagramView.Create(new DiagramViewModel
-		{
-			DirectiveBlock = block,
-			DiagramBlock = block
-		});
-		RenderRazorSlice(slice, renderer);
-	}
-
-	private static void WriteMermaid(HtmlRenderer renderer, MermaidBlock block)
-	{
-		var slice = MermaidView.Create(new MermaidViewModel { DirectiveBlock = block });
-		RenderRazorSliceRawContent(slice, renderer, block);
 	}
 
 	private static void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)

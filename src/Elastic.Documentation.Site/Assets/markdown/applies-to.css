@@ -102,10 +102,3 @@
 		@apply bg-grey-50 size-1 rounded-full;
 	}
 }
-
-.euiPopover__panel {
-	/* Shadow and border for the popover */
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
-	border: 1px solid var(--color-grey-20) !important;
-	border-radius: 6px !important;
-}

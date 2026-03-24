@@ -7,14 +7,15 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
+using Elastic.Changelog.GitHub;
+using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -23,13 +24,21 @@ namespace Elastic.Changelog.Bundling;
 /// </summary>
 public record BundleChangelogsArguments
 {
-	public required string Directory { get; init; }
+	/// <summary>
+	/// Directory containing changelog YAML files. null = use config default.
+	/// </summary>
+	public string? Directory { get; init; }
 	public string? Output { get; init; }
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
-	public bool Resolve { get; init; }
+	/// <summary>
+	/// Whether to resolve (copy contents of each changelog file into the entries array).
+	/// null = use config default; true = --resolve; false = --no-resolve.
+	/// </summary>
+	public bool? Resolve { get; init; }
 	public string[]? Prs { get; init; }
+	public string[]? Issues { get; init; }
 	public string? Owner { get; init; }
 	public string? Repo { get; init; }
 
@@ -44,6 +53,18 @@ public record BundleChangelogsArguments
 	public string? ProfileArgument { get; init; }
 
 	/// <summary>
+	/// Optional third profile argument: a promotion report URL/path or URL list file to use as the
+	/// PR/issue filter source when <see cref="ProfileArgument"/> is the version string.
+	/// </summary>
+	public string? ProfileReport { get; init; }
+
+	/// <summary>
+	/// Promotion report URL or file path for option-based bundling (<c>--report</c>).
+	/// When set, the report is parsed and the extracted PR URLs become the effective PR filter.
+	/// </summary>
+	public string? Report { get; init; }
+
+	/// <summary>
 	/// Output directory for bundled changelog files (from config bundle.output_directory)
 	/// </summary>
 	public string? OutputDirectory { get; init; }
@@ -52,6 +73,13 @@ public record BundleChangelogsArguments
 	/// Path to the changelog.yml configuration file
 	/// </summary>
 	public string? Config { get; init; }
+
+	/// <summary>
+	/// Feature IDs to mark as hidden in the bundle output.
+	/// When the bundle is rendered (by CLI render or {changelog} directive),
+	/// entries with matching feature-id values will be commented out.
+	/// </summary>
+	public string[]? HideFeatures { get; init; }
 }
 
 /// <summary>
@@ -60,11 +88,13 @@ public record BundleChangelogsArguments
 public partial class ChangelogBundlingService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null)
+	IFileSystem? fileSystem = null,
+	IGitHubReleaseService? releaseService = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
 		: null;
@@ -75,13 +105,32 @@ public partial class ChangelogBundlingService(
 	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex GitHubPrUrlRegex();
 
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase)]
+	private static partial Regex GitHubIssueUrlRegex();
+
 	public async Task<bool> BundleChangelogs(IDiagnosticsCollector collector, BundleChangelogsArguments input, Cancel ctx)
 	{
 		try
 		{
-			// Load changelog configuration if available
+			// Load changelog configuration
 			ChangelogConfiguration? config = null;
-			if (_configLoader != null)
+			if (!string.IsNullOrWhiteSpace(input.Profile))
+			{
+				// Profile mode requires the config file to exist — no fallback to defaults.
+				if (_configLoader == null)
+				{
+					collector.EmitError(string.Empty, "Changelog configuration loader is required for profile-based bundling.");
+					return false;
+				}
+				// When an explicit config path is provided, load it (required, no fallback).
+				// Otherwise, discover from CWD: ./changelog.yml then ./docs/changelog.yml.
+				config = string.IsNullOrWhiteSpace(input.Config)
+					? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
+					: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+				if (config == null)
+					return false;
+			}
+			else if (_configLoader != null)
 				config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 
 			// Handle profile-based bundling
@@ -92,6 +141,15 @@ public partial class ChangelogBundlingService(
 					return false;
 				input = profileResult;
 			}
+			else if (!string.IsNullOrWhiteSpace(input.Report))
+			{
+				// Option-based mode with --report: parse report and populate Prs
+				var parser = new PromotionReportParser(logFactory, _fileSystem);
+				var prs = await parser.ParseReportToPrUrlsAsync(collector, input.Report, ctx);
+				if (prs == null)
+					return false;
+				input = input with { Prs = prs };
+			}
 
 			// Apply config defaults if available
 			input = ApplyConfigDefaults(input, config);
@@ -100,35 +158,58 @@ public partial class ChangelogBundlingService(
 			if (!ValidateInput(collector, input))
 				return false;
 
-			// Load PR filter values
-			var prFilterLoader = new PrFilterLoader(_fileSystem);
-			var prFilterResult = await prFilterLoader.LoadPrsAsync(collector, input.Prs, input.Owner, input.Repo, ctx);
-			if (!prFilterResult.IsValid)
-				return false;
+			// Load PR or issue filter values
+			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var issuesToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+			if (input.Prs is { Length: > 0 })
+			{
+				var prFilterLoader = new PrFilterLoader(_fileSystem);
+				var prFilterResult = await prFilterLoader.LoadPrsAsync(collector, input.Prs, input.Owner, input.Repo, ctx);
+				if (!prFilterResult.IsValid)
+					return false;
+				prsToMatch = prFilterResult.PrsToMatch;
+			}
+			else if (input.Issues is { Length: > 0 })
+			{
+				var issueFilterLoader = new IssueFilterLoader(_fileSystem);
+				var issueFilterResult = await issueFilterLoader.LoadIssuesAsync(collector, input.Issues, input.Owner, input.Repo, ctx);
+				if (!issueFilterResult.IsValid)
+					return false;
+				issuesToMatch = issueFilterResult.IssuesToMatch;
+			}
+
+			// Directory is resolved by ApplyConfigDefaults (never null at this point)
+			var directory = input.Directory!;
 
 			// Determine output path
-			var outputPath = input.Output ?? _fileSystem.Path.Combine(input.Directory, "changelog-bundle.yaml");
+			var outputPath = input.Output ?? _fileSystem.Path.Combine(directory, "changelog-bundle.yaml");
 
 			// Discover changelog files
 			var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
-			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory, outputPath, ctx);
+			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(directory, outputPath, ctx);
 
 			if (yamlFiles.Count == 0)
 			{
-				collector.EmitError(input.Directory, "No YAML files found in directory");
+				collector.EmitError(directory, "No YAML files found in directory");
 				return false;
 			}
 
 			_logger.LogInformation("Found {Count} YAML files in directory", yamlFiles.Count);
 
 			// Build filter criteria
-			var filterCriteria = BuildFilterCriteria(input, prFilterResult.PrsToMatch);
+			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
 
 			// Match changelog entries
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ChangelogYamlSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
 			var matchResult = await entryMatcher.MatchChangelogsAsync(collector, yamlFiles, filterCriteria, ctx);
 
 			_logger.LogInformation("Found {Count} matching changelog entries", matchResult.Entries.Count);
+
+			// Refuse to write a bundle when any individual entry failed to parse; the result would be
+			// silently incomplete and could ship a broken release bundle.
+			if (collector.Errors > 0)
+				return false;
 
 			if (matchResult.Entries.Count == 0)
 			{
@@ -136,9 +217,49 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
+			// Apply rules.bundle secondary filter.
+			// Product filtering is skipped when the primary filter is InputProducts (already constrained by product).
+			// This covers both --input-products and profile-based bundling with a products: filter.
+			// Type/area filtering always applies regardless of the primary filter.
+			var filteredEntries = matchResult.Entries;
+			if (config?.Rules?.Bundle != null)
+			{
+				var skipProductFilter = input.InputProducts is { Count: > 0 };
+				if (skipProductFilter && (config.Rules.Bundle.ExcludeProducts is { Count: > 0 } || config.Rules.Bundle.IncludeProducts is { Count: > 0 }))
+					collector.EmitWarning(string.Empty, "[rules.bundle] Product filter (exclude_products/include_products) skipped: primary filter is already product-based (--input-products or a profile with products configured). Type/area filters still apply.");
+				// Extract product IDs from output_products for per-product rule resolution.
+				// When set, these IDs define the bundle's product context and drive intersection-based rule lookup.
+				var outputProductIds = input.OutputProducts
+					?.Select(p => p.Product)
+					.Where(p => !string.IsNullOrWhiteSpace(p))
+					.Select(p => p!)
+					.ToList();
+				filteredEntries = ApplyBundleFilter(collector, filteredEntries, config.Rules.Bundle, outputProductIds, skipProductFilter: skipProductFilter);
+			}
+
+			if (filteredEntries.Count == 0)
+			{
+				collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle filter");
+				return false;
+			}
+
+			// Load feature IDs to hide
+			var featureHidingLoader = new FeatureHidingLoader(_fileSystem);
+			var featureHidingResult = await featureHidingLoader.LoadFeatureIdsAsync(collector, input.HideFeatures, ctx);
+			if (!featureHidingResult.IsValid)
+				return false;
+
 			// Build bundle
 			var bundleBuilder = new BundleBuilder();
-			var buildResult = bundleBuilder.BuildBundle(collector, matchResult.Entries, input.OutputProducts, input.Resolve);
+			var buildResult = bundleBuilder.BuildBundle(
+				collector,
+				filteredEntries,
+				input.OutputProducts,
+				input.Resolve ?? false,
+				input.Repo,
+				input.Owner,
+				featureHidingResult.FeatureIdsToHide
+			);
 
 			if (!buildResult.IsValid || buildResult.Data == null)
 				return false;
@@ -162,125 +283,104 @@ public partial class ChangelogBundlingService(
 
 	private async Task<BundleChangelogsArguments?> ProcessProfile(IDiagnosticsCollector collector, BundleChangelogsArguments input, ChangelogConfiguration? config, Cancel ctx)
 	{
-		if (config?.Bundle?.Profiles == null || !config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
-		{
-			collector.EmitError(string.Empty, $"Profile '{input.Profile}' not found in bundle.profiles configuration");
+		var filterResult = await ProfileFilterResolver.ResolveAsync(
+			collector,
+			input.Profile!,
+			input.ProfileArgument,
+			config,
+			_fileSystem,
+			_logger,
+			ctx,
+			input.ProfileReport,
+			_releaseService
+		);
+
+		if (filterResult == null)
 			return null;
-		}
 
-		if (string.IsNullOrWhiteSpace(input.ProfileArgument))
+		// Resolve bundle-specific output path, output products, repo, owner, and hide-features from profile
+		string? outputPath = null;
+		IReadOnlyList<ProductArgument>? outputProducts = null;
+		string? repo = null;
+		string? owner = null;
+		string[]? mergedHideFeatures = null;
+
+		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
-			collector.EmitError(string.Empty, $"Profile '{input.Profile}' requires a version number or promotion report URL as the second argument");
-			return null;
-		}
+			// For github_release profiles, lifecycle is carried from the raw tag (pre-release suffix preserved).
+			// For all other profile types, infer it from the base version string.
+			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
 
-		// Auto-detect argument type
-		var argType = PromotionReportParser.DetectArgumentType(input.ProfileArgument);
-
-		// Check if it's a local file
-		if (argType == ProfileArgumentType.Version && _fileSystem.File.Exists(input.ProfileArgument))
-			argType = ProfileArgumentType.PromotionReportFile;
-
-		string version;
-		string[]? prsFromReport = null;
-
-		if (argType is ProfileArgumentType.PromotionReportUrl or ProfileArgumentType.PromotionReportFile)
-		{
-			// Parse promotion report to get PR list
-			var parser = new PromotionReportParser(NullLoggerFactory.Instance, _fileSystem);
-			var reportResult = await parser.ParsePromotionReportAsync(input.ProfileArgument, ctx);
-
-			if (!reportResult.IsValid)
+			var outputPattern = profile.Output?
+				.Replace("{version}", filterResult.Version)
+				.Replace("{lifecycle}", resolvedLifecycle);
+			if (!string.IsNullOrWhiteSpace(outputPattern))
 			{
-				collector.EmitError(string.Empty, reportResult.ErrorMessage ?? "Failed to parse promotion report");
-				return null;
+				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
+				// → bundle.directory → CWD
+				var outputDir = config.Bundle.OutputDirectory
+					?? input.OutputDirectory
+					?? config.Bundle.Directory
+					?? _fileSystem.Directory.GetCurrentDirectory();
+				outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
 			}
 
-			prsFromReport = reportResult.PrUrls.ToArray();
-			_logger.LogInformation("Extracted {Count} PRs from promotion report", prsFromReport.Length);
+			// Parse output_products pattern with version/lifecycle substitution
+			if (!string.IsNullOrWhiteSpace(profile.OutputProducts))
+			{
+				var outputProductsPattern = profile.OutputProducts
+					.Replace("{version}", filterResult.Version)
+					.Replace("{lifecycle}", resolvedLifecycle);
+				outputProducts = ProfileFilterResolver.ParseProfileProducts(outputProductsPattern);
+			}
 
-			// Extract version from PR URLs or use "unknown"
-			// Try to extract from first PR URL path
-			version = "unknown";
-		}
-		else
-		{
-			// Use the argument as the version number
-			version = input.ProfileArgument;
-		}
-
-		// Substitute {version} and {lifecycle} in profile patterns
-		var lifecycle = VersionLifecycleInference.InferLifecycle(version);
-		var productsPattern = profile.Products?
-			.Replace("{version}", version)
-			.Replace("{lifecycle}", lifecycle);
-		var outputPattern = profile.Output?.Replace("{version}", version);
-
-		// Parse products pattern
-		List<ProductArgument>? inputProducts = null;
-		if (!string.IsNullOrWhiteSpace(productsPattern))
-			inputProducts = ParseProfileProducts(productsPattern);
-
-		// Determine output path
-		string? outputPath = null;
-		if (!string.IsNullOrWhiteSpace(outputPattern))
-		{
-			var outputDir = config.Bundle.OutputDirectory ?? input.OutputDirectory ?? input.Directory;
-			outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
+			// Profile-level repo/owner takes precedence; fall back to bundle-level defaults
+			repo = profile.Repo ?? config.Bundle.Repo;
+			owner = profile.Owner ?? config.Bundle.Owner;
+			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 		}
 
-		// If we have PRs from a promotion report, use those; otherwise use input products filter
 		return input with
 		{
-			InputProducts = prsFromReport == null ? inputProducts : null,
-			Prs = prsFromReport,
+			InputProducts = filterResult.Products,
+			Prs = filterResult.Prs,
+			Issues = filterResult.Issues,
 			All = false,
-			Output = outputPath ?? input.Output
+			Output = outputPath,
+			OutputProducts = outputProducts,
+			Repo = repo,
+			Owner = owner,
+			HideFeatures = mergedHideFeatures
 		};
-	}
-
-	private static List<ProductArgument> ParseProfileProducts(string pattern)
-	{
-		// Parse pattern like "elasticsearch {version} ga" or "cloud-serverless {version} *"
-		var parts = pattern.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-		if (parts.Length < 1)
-			return [];
-
-		var productId = parts[0];
-		var target = parts.Length > 1 ? parts[1] : "*";
-		var lifecycle = parts.Length > 2 ? parts[2] : "*";
-
-		return
-		[
-			new ProductArgument
-			{
-				Product = productId == "*" ? "*" : productId,
-				Target = target == "*" ? "*" : target,
-				Lifecycle = lifecycle == "*" ? "*" : lifecycle
-			}
-		];
 	}
 
 	private static BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
 	{
+		// Apply directory: CLI takes precedence. Only use config when --directory not specified.
+		var directory = input.Directory ?? config?.Bundle?.Directory ?? Directory.GetCurrentDirectory();
+
 		if (config?.Bundle == null)
-			return input;
+			return input with { Directory = directory };
 
-		// Apply directory default if not specified
-		var directory = input.Directory;
-		if ((string.IsNullOrWhiteSpace(directory) || directory == Directory.GetCurrentDirectory())
-			&& !string.IsNullOrWhiteSpace(config.Bundle.Directory))
-		{
-			directory = config.Bundle.Directory;
-		}
+		// Apply output default when --output not specified: use bundle.output_directory if set
+		var output = input.Output;
+		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
+			output = Path.Combine(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
 
-		// Apply resolve default if not specified by CLI
-		var resolve = input.Resolve || config.Bundle.Resolve;
+		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
+		var resolve = input.Resolve ?? config.Bundle.Resolve;
+
+		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+		var repo = input.Repo ?? config.Bundle.Repo;
+		var owner = input.Owner ?? config.Bundle.Owner;
 
 		return input with
 		{
 			Directory = directory,
-			Resolve = resolve
+			Output = output,
+			Resolve = resolve,
+			Repo = repo,
+			Owner = owner
 		};
 	}
 
@@ -298,7 +398,7 @@ public partial class ChangelogBundlingService(
 			return false;
 		}
 
-		// Validate filter options
+		// Validate filter options - exactly one of: --all, --input-products, --prs, --issues
 		var specifiedFilters = new List<string>();
 		if (input.All)
 			specifiedFilters.Add("--all");
@@ -306,23 +406,29 @@ public partial class ChangelogBundlingService(
 			specifiedFilters.Add("--input-products");
 		if (input.Prs is { Length: > 0 })
 			specifiedFilters.Add("--prs");
+		if (input.Issues is { Length: > 0 })
+			specifiedFilters.Add("--issues");
 
 		if (specifiedFilters.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, or --prs");
+			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, or --issues");
 			return false;
 		}
 
 		if (specifiedFilters.Count > 1)
 		{
-			collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
+			collector.EmitError(string.Empty,
+				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, or --issues");
 			return false;
 		}
 
 		return true;
 	}
 
-	private static ChangelogFilterCriteria BuildFilterCriteria(BundleChangelogsArguments input, HashSet<string> prsToMatch)
+	private static ChangelogFilterCriteria BuildFilterCriteria(
+		BundleChangelogsArguments input,
+		HashSet<string> prsToMatch,
+		HashSet<string> issuesToMatch)
 	{
 		var productFilters = new List<ProductFilter>();
 		if (input.InputProducts is { Count: > 0 })
@@ -343,6 +449,7 @@ public partial class ChangelogBundlingService(
 			IncludeAll = input.All,
 			ProductFilters = productFilters,
 			PrsToMatch = prsToMatch,
+			IssuesToMatch = issuesToMatch,
 			DefaultOwner = input.Owner,
 			DefaultRepo = input.Repo
 		};
@@ -351,7 +458,7 @@ public partial class ChangelogBundlingService(
 	private async Task WriteBundleFileAsync(Bundle bundledData, string outputPath, Cancel ctx)
 	{
 		// Generate bundled YAML
-		var bundledYaml = ChangelogYamlSerialization.SerializeBundle(bundledData);
+		var bundledYaml = ReleaseNotesSerialization.SerializeBundle(bundledData);
 
 		// Ensure output directory exists
 		var outputDir = _fileSystem.Path.GetDirectoryName(outputPath);
@@ -375,10 +482,15 @@ public partial class ChangelogBundlingService(
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
 	}
 
+	/// <summary>
+	/// Computes a SHA1 hash from the normalized YAML content (comments stripped, version→target).
+	/// This ensures checksums represent semantic content, not formatting or comments.
+	/// </summary>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do not use insecure cryptographic algorithm SHA1", Justification = "SHA1 is required for compatibility with existing changelog bundle format")]
 	internal static string ComputeSha1(string content)
 	{
-		var bytes = Encoding.UTF8.GetBytes(content);
+		var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
+		var bytes = Encoding.UTF8.GetBytes(normalized);
 		var hash = SHA1.HashData(bytes);
 		return Convert.ToHexString(hash).ToLowerInvariant();
 	}
@@ -397,7 +509,7 @@ public partial class ChangelogBundlingService(
 		{
 			// Use regex to parse URL more reliably
 			var match = GitHubPrUrlRegex().Match(pr);
-			if (match.Success && match.Groups.Count >= 4)
+			if (match is { Success: true, Groups.Count: >= 4 })
 			{
 				var owner = match.Groups[1].Value.Trim();
 				var repo = match.Groups[2].Value.Trim();
@@ -455,5 +567,144 @@ public partial class ChangelogBundlingService(
 
 		// Return as-is for comparison (fallback)
 		return pr.ToLowerInvariant();
+	}
+
+	internal static string NormalizeIssueForComparison(string issue, string? defaultOwner, string? defaultRepo)
+	{
+		issue = issue.Trim();
+
+		if (issue.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			issue.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		{
+			var match = GitHubIssueUrlRegex().Match(issue);
+			if (match is { Success: true, Groups.Count: >= 4 })
+			{
+				var owner = match.Groups[1].Value.Trim();
+				var repo = match.Groups[2].Value.Trim();
+				var issuePart = match.Groups[3].Value.Trim();
+				if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
+					int.TryParse(issuePart, out var issueNum))
+					return $"{owner}/{repo}#{issueNum}".ToLowerInvariant();
+			}
+
+			try
+			{
+				var uri = new Uri(issue);
+				var segments = uri.Segments;
+				if (segments.Length >= 5 && segments[3].Equals("issues/", StringComparison.OrdinalIgnoreCase))
+				{
+					var owner = segments[1].TrimEnd('/').Trim();
+					var repo = segments[2].TrimEnd('/').Trim();
+					var issuePart = segments[4].TrimEnd('/').Trim();
+					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo) &&
+						int.TryParse(issuePart, out var issueNum))
+						return $"{owner}/{repo}#{issueNum}".ToLowerInvariant();
+				}
+			}
+			catch (UriFormatException)
+			{
+				// Fall through
+			}
+		}
+
+		var hashIndex = issue.LastIndexOf('#');
+		if (hashIndex > 0 && hashIndex < issue.Length - 1)
+		{
+			var repoPart = issue[..hashIndex].Trim();
+			var issuePart = issue[(hashIndex + 1)..].Trim();
+			if (int.TryParse(issuePart, out var issueNum))
+			{
+				var repoParts = repoPart.Split('/');
+				if (repoParts.Length == 2)
+				{
+					var owner = repoParts[0].Trim();
+					var repo = repoParts[1].Trim();
+					if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo))
+						return $"{owner}/{repo}#{issueNum}".ToLowerInvariant();
+				}
+			}
+		}
+
+		if (int.TryParse(issue, out var issueNumber) &&
+			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+			return $"{defaultOwner}/{defaultRepo}#{issueNumber}".ToLowerInvariant();
+
+		return issue.ToLowerInvariant();
+	}
+
+	private static IReadOnlyList<MatchedChangelogFile> ApplyBundleFilter(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<MatchedChangelogFile> entries,
+		BundleRules bundleRules,
+		IReadOnlyList<string>? outputProductIds = null,
+		bool skipProductFilter = false)
+	{
+		var filtered = new List<MatchedChangelogFile>();
+		foreach (var entry in entries)
+		{
+			var entryProducts = entry.Data.Products?.Select(p => p.ProductId).ToList() ?? [];
+
+			// 1 — Product filter (skipped when primary filter is already product-based)
+			if (!skipProductFilter && ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
+			{
+				collector.EmitWarning(entry.FilePath, $"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (product filter).");
+				continue;
+			}
+
+			// 2 — Type/area filter: always applies; resolve per-product blocker via intersection + alphabetical first-match
+			var blocker = GetBlockerForEntry(entryProducts, bundleRules, outputProductIds);
+			if (blocker != null && blocker.ShouldBlock(entry.Data))
+			{
+				collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (type/area filter).");
+				continue;
+			}
+
+			filtered.Add(entry);
+		}
+		return filtered;
+	}
+
+	// match_products semantics (mirrors MatchesArea in PublishBlockerExtensions):
+	//   any  — matched if ANY entry product is in the list
+	//   all  — matched if ALL entry products are in the list
+	private static bool ShouldExcludeByProductFilter(IReadOnlyList<string> entryProducts, BundleRules bundleRules, out string reason)
+	{
+		if (bundleRules.ExcludeProducts is { Count: > 0 } excludeList)
+		{
+			var matches = bundleRules.MatchProducts == MatchMode.All
+				? entryProducts.All(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: entryProducts.Any(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			reason = "exclude";
+			return matches;
+		}
+
+		if (bundleRules.IncludeProducts is { Count: > 0 } includeList)
+		{
+			var matchesSome = bundleRules.MatchProducts == MatchMode.All
+				? entryProducts.All(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: entryProducts.Any(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			reason = "include";
+			return !matchesSome;
+		}
+
+		reason = string.Empty;
+		return false;
+	}
+
+	private static PublishBlocker? GetBlockerForEntry(
+		IReadOnlyList<string> entryProducts,
+		BundleRules bundleRules,
+		IReadOnlyList<string>? outputProductIds = null)
+	{
+		if (bundleRules.ByProduct is not { Count: > 0 } byProduct)
+			return bundleRules.Blocker;
+
+		// Context: output_products (if set) defines which products this bundle is for.
+		// Fall back to the entry's own product list when output_products is not specified.
+		var contextIds = outputProductIds is { Count: > 0 }
+			? (IEnumerable<string>)outputProductIds
+			: entryProducts;
+
+		return PublishBlockerExtensions.ResolveBlocker(contextIds, entryProducts, byProduct, bundleRules.Blocker);
 	}
 }

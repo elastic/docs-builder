@@ -30,20 +30,24 @@ Where:
 
 ### Page level
 
-Page level annotations are added in the YAML frontmatter, starting with the `applies_to` key and following the [key-value reference](#key-value-reference). For example:
+Page level annotations are added in the YAML frontmatter, starting with the `applies_to` key and following the [key-value reference](#key-value-reference).
+
+All documentation pages must include an `applies_to` tag in the YAML frontmatter.
+
+:::{note}
+In the page front matter, you should only refer to one dimension (stack/serverless, deployment, or product). Refer to the [cumulative documentation guidelines](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs/guidelines#dimensions) for details.
+:::
+
+For example:
 
 ```yaml
 ---
 applies_to:
   stack: ga
-  deployment:
-    ece: ga
 ---
 ```
 
-:::{important}
-All documentation pages must include an `applies_to` tag in the YAML frontmatter.
-:::
+
 
 ### Section level
 
@@ -146,6 +150,11 @@ The build process enforces the following validation rules:
 - **One "greater than" per key**: Only one lifecycle per product key can use the `+` (greater than or equal to) syntax.
   - ✅ `stack: ga 9.2+, beta 9.0-9.1`
   - ❌ `stack: ga 9.2+, beta 9.0+`
+  :::{note}
+  Only `ga 9.3+, removed 9.5+` (with the two `+`) is forbidden while other equivalent notations are allowed:
+  - `ga 9.3, removed 9.5` corresponds to a previous version of the applies_to syntax, which we continue to support to avoid breaking changes.
+  - `ga 9.3-9.4, removed 9.5+` is the new encouraged notation to communicate this versioning scenario in the most explicit way possible, to ease future contributions.
+  :::
 - **Valid range order**: In ranges, the first version must be less than or equal to the second version.
   - ✅ `stack: preview 9.0-9.2`
   - ❌ `stack: preview 9.2-9.0`
@@ -221,8 +230,6 @@ Versioned products require a `version` tag to be used with the `lifecycle` tag:
 ```yaml
 applies_to:
   stack: preview 9.1, ga 9.4
-  deployment:
-    ece: deprecated 9.2, removed 9.8
 ```
 
 :::{include} _snippets/versioned-lifecycle.md
@@ -403,14 +410,17 @@ Inline applies annotations are rendered in the order they appear in the source f
 
 :::::{dropdown} No version declared (Other versioning systems)
 
+When no version is declared, the badge does not show a version. The lifecycle name is shown only when it is not GA, or when there are multiple lifecycles (to disambiguate). **GA is never shown when it is the only lifecycle** — only the product name is shown (e.g. `Stack`).
+
 | Lifecycle | Release status | Lifecycle count | Rendered output |
 |:----------|:---------------|-----------------|:----------------|
-| GA | – | – | `{product}\|{base}+` |
-| Preview | – | – | `{product}\|Preview {base}+` |
-| Beta | – | – | `{product}\|Beta {base}+` |
-| Deprecated | – | – | `{product}\|Deprecated {base}+` |
-| Removed | – | – | `{product}\|Removed {base}+` |
-| Unavailable | – | – | `{product}\|Unavailable {base}+` |
+| GA | – | 1 | `{product}` |
+| GA | – | \>= 2 | `{product}\|GA` |
+| Preview | – | – | `{product}\|Preview` |
+| Beta | – | – | `{product}\|Beta` |
+| Deprecated | – | – | `{product}\|Deprecated` |
+| Removed | – | – | `{product}\|Removed` |
+| Unavailable | – | – | `{product}\|Unavailable` |
 
 :::::
 
@@ -503,14 +513,16 @@ Inline applies annotations are rendered in the order they appear in the source f
 
 :::::{dropdown} No version declared (Other versioning systems)
 
+When no version is declared, the popover shows only the lifecycle state (no base version):
+
 | Lifecycle | Release status | Lifecycle count | Rendered output |
 |:----------|:---------------|-----------------|:----------------|
-| GA | – | 1 | `Generally available since {base}` |
-| Preview | – | 1 | `Preview since {base}` |
-| Beta | – | 1 | `Beta since {base}` |
-| Deprecated | – | 1 | `Deprecated since {base}` |
-| Removed | – | 1 | `Removed in {base}` |
-| Unavailable | – | 1 | `Unavailable since {base}` |
+| GA | – | 1 | `Generally available` |
+| Preview | – | 1 | `Preview` |
+| Beta | – | 1 | `Beta` |
+| Deprecated | – | 1 | `Deprecated` |
+| Removed | – | 1 | `Removed` |
+| Unavailable | – | 1 | `Unavailable` |
 
 :::::
 

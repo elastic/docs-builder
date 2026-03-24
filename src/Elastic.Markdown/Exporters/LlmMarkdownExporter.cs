@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Text;
+using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
@@ -76,14 +77,15 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
 	{
+		var fs = fileContext.BuildContext.WriteFileSystem;
 		var llmMarkdown = ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
-		var outputFile = GetLlmOutputFile(fileContext);
+		var outputFile = GetLlmOutputFile(fs, fileContext);
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
 		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
 
-		await fileContext.SourceFile.SourceFile.FileSystem.File.WriteAllTextAsync(
+		await fs.File.WriteAllTextAsync(
 			outputFile.FullName,
 			content,
 			Encoding.UTF8,
@@ -100,11 +102,14 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	private static bool IsRootIndexFile(MarkdownExportFileContext fileContext)
 	{
+		if (fileContext.BuildContext.BuildType == BuildType.Codex)
+			return false;
+
 		var fs = fileContext.BuildContext.ReadFileSystem;
 		var expected = fs.FileInfo.New(Path.Combine(fileContext.BuildContext.OutputDirectory.FullName, "index.html"));
 		return fileContext.DefaultOutputFile.FullName == expected.FullName;
 	}
-	private static IFileInfo GetLlmOutputFile(MarkdownExportFileContext fileContext)
+	private static IFileInfo GetLlmOutputFile(IFileSystem writeFileSystem, MarkdownExportFileContext fileContext)
 	{
 		var source = fileContext.SourceFile.SourceFile;
 		var fs = source.FileSystem;
@@ -115,13 +120,13 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		{
 			var root = fileContext.BuildContext.OutputDirectory;
 
-			if (defaultOutputFile.Directory!.FullName == root.FullName)
-				return fs.FileInfo.New(Path.Combine(root.FullName, "llms.txt"));
+			if (fileContext.BuildContext.BuildType != BuildType.Codex && defaultOutputFile.Directory!.FullName == root.FullName)
+				return writeFileSystem.FileInfo.New(Path.Combine(root.FullName, "llms.txt"));
 
 			// For index files: /docs/section/index.html -> /docs/section.md
 			// This allows users to append .md to any URL path
 			var folderName = defaultOutputFile.Directory!.Name;
-			return fs.FileInfo.New(Path.Combine(
+			return writeFileSystem.FileInfo.New(Path.Combine(
 				defaultOutputFile.Directory!.Parent!.FullName,
 				$"{folderName}.md"
 			));
@@ -129,7 +134,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		// Regular files: /docs/section/page.html -> /docs/section/page.llm.md
 		var directory = defaultOutputFile.Directory!.FullName;
 		var baseName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
-		return fs.FileInfo.New(Path.Combine(directory, $"{baseName}.md"));
+		return writeFileSystem.FileInfo.New(Path.Combine(directory, $"{baseName}.md"));
 	}
 
 
@@ -151,7 +156,9 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			_ = metadata.AppendLine($"description: {generateDescription}");
 		}
 
-		var url = $"{context.BuildContext.CanonicalBaseUrl?.Scheme}://{context.BuildContext.CanonicalBaseUrl?.Host}{context.NavigationItem.Url}";
+		var url = context.BuildContext.CanonicalBaseUrl is { } baseUrl
+			? new Uri(baseUrl, context.NavigationItem.Url).ToString().TrimEnd('/')
+			: context.NavigationItem.Url.TrimEnd('/');
 		_ = metadata.AppendLine($"url: {url}");
 
 		// Use DocumentInferrerService to get merged products
