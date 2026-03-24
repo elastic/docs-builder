@@ -37,10 +37,16 @@ public static class SearchQueryBuilder
 	/// Shared document filter that excludes hidden documents and root URLs.
 	/// </summary>
 	public static Query DocumentFilter { get; } =
-		!(Query)new TermsQuery(
-			Infer.Field<DocumentationDocument>(f => f.Url.Suffix("keyword")),
-			new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"]))
-		&& !(Query)new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.Hidden), Value = true };
+		new BoolQuery
+		{
+			MustNot =
+			[
+				new TermsQuery(
+					Infer.Field<DocumentationDocument>(f => f.Url.Suffix("keyword")),
+					new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])),
+				new TermQuery { Field = Infer.Field<DocumentationDocument>(f => f.Hidden), Value = true }
+			]
+		};
 
 	/// <summary>
 	/// Builds a diminish terms query to reduce scoring for common/noisy terms.
