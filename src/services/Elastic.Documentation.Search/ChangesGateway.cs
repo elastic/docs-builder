@@ -39,7 +39,7 @@ public partial class ChangesGateway(
 
 			if (!response.IsValidResponse)
 			{
-				var reason = response.ElasticsearchServerError?.Error.Reason ?? "Unknown";
+				var reason = response.ElasticsearchServerError?.Error?.Reason ?? "Unknown";
 				throw new InvalidOperationException(
 					$"Elasticsearch changes query failed (HTTP {response.ApiCallDetails?.HttpStatusCode}): {reason}"
 				);
@@ -97,9 +97,9 @@ public partial class ChangesGateway(
 		}, ctx);
 
 	private static bool IsExpiredPit(SearchResponse<DocumentationDocument> response) =>
-		response.ElasticsearchServerError?.Error.Type is "search_phase_execution_exception"
-		|| response.ElasticsearchServerError?.Error.Reason?.Contains("point in time", StringComparison.OrdinalIgnoreCase) == true
-		|| response.ElasticsearchServerError?.Error.Reason?.Contains("No search context found", StringComparison.OrdinalIgnoreCase) == true;
+		response.ElasticsearchServerError?.Error?.Type is "search_phase_execution_exception"
+		|| response.ElasticsearchServerError?.Error?.Reason?.Contains("point in time", StringComparison.OrdinalIgnoreCase) == true
+		|| response.ElasticsearchServerError?.Error?.Reason?.Contains("No search context found", StringComparison.OrdinalIgnoreCase) == true;
 
 	private static ChangesResult BuildResult(SearchResponse<DocumentationDocument> response, int pageSize)
 	{

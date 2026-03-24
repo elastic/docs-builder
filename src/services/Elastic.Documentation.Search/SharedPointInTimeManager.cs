@@ -62,7 +62,7 @@ public sealed partial class SharedPointInTimeManager(
 		if (!response.IsValidResponse)
 		{
 			throw new InvalidOperationException(
-				$"Failed to open PIT: {response.ElasticsearchServerError?.Error.Reason ?? "Unknown"}"
+				$"Failed to open PIT: {response.ElasticsearchServerError?.Error?.Reason ?? "Unknown"}"
 			);
 		}
 
