@@ -57,7 +57,7 @@ public class SiteNavigationV2 : SiteNavigation
 			LabelNavV2Item label => CreateLabel(label, nodes, parent, sitePrefix),
 			GroupNavV2Item group => CreateGroup(group, nodes, parent, sitePrefix),
 			TocNavV2Item toc => nodes.TryGetValue(toc.Source, out var node) ? node : null,
-			PageNavV2Item { Page: null, Title: var title } => new PlaceholderNavigationLeaf(title ?? "Untitled", parent),
+			PageNavV2Item { Page: null, Title: var title } => new PlaceholderNavigationLeaf(title ?? "Untitled", sitePrefix, parent),
 			PageNavV2Item { Page: var page, Title: var title } => new PageCrossLinkLeaf(page, title ?? page.ToString(), sitePrefix, parent),
 			_ => null
 		};
@@ -87,8 +87,8 @@ public class SiteNavigationV2 : SiteNavigation
 			var folderChildren = BuildV2Items(group.Children, nodes, folderPlaceholder, sitePrefix);
 			return new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, folderChildren, parent);
 		}
-		var placeholder = new PlaceholderNavigationNode(group.Title, [], parent);
+		var placeholder = new PlaceholderNavigationNode(group.Title, sitePrefix, [], parent);
 		var children = BuildV2Items(group.Children, nodes, placeholder, sitePrefix);
-		return new PlaceholderNavigationNode(group.Title, children, parent);
+		return new PlaceholderNavigationNode(group.Title, sitePrefix, children, parent);
 	}
 }

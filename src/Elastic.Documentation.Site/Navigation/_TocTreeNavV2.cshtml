@@ -40,9 +40,9 @@
 	{
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
-				class="sidebar-link grow text-grey-40 cursor-not-allowed"
-				aria-disabled="true"
-				tabindex="-1">
+				href="@placeholder.Url"
+				@Model.Htmx.GetNavHxAttributes(true)
+				class="sidebar-link grow text-grey-40">
 				@placeholder.NavigationTitle
 			</a>
 		</li>
@@ -52,11 +52,12 @@
 		var allHidden = placeholderGroup.NavigationItems.All(n => n.Hidden);
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
-				<span
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") text-grey-40 cursor-not-allowed select-none"
-					aria-disabled="true">
+				<a
+					href="@placeholderGroup.Url"
+					@Model.Htmx.GetNavHxAttributes(true)
+					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") text-grey-40">
 					@placeholderGroup.NavigationTitle
-				</span>
+				</a>
 				@if (!allHidden)
 				{
 					<label for="@placeholderGroup.Id" class="group/label flex mr-2 items-start">

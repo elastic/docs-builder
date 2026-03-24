@@ -16,6 +16,7 @@ using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.V2;
 using Elastic.Documentation.Services;
+using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Building;
@@ -137,6 +138,14 @@ public class AssemblerBuildService(
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 
 		await builder.BuildAllAsync(assembleSources.AssembleSets, exporters, ctx);
+
+		if (exporters.Contains(Exporter.Html) && navigation is SiteNavigationV2 navV2)
+		{
+			var firstBuildContext = assembleSources.AssembleSets.Values.First().BuildContext;
+			var staticHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(firstBuildContext));
+			var placeholderWriter = new PlaceholderPageWriter(logFactory, navV2, htmlWriter, assembleContext, featureFlags, staticHashProvider);
+			await placeholderWriter.WriteAllAsync(ctx);
+		}
 
 		if (exporters.Contains(Exporter.LinkMetadata))
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
