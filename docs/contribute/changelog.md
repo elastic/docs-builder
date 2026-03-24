@@ -218,29 +218,28 @@ rules:
           - "Monitoring"
 ```
 
-###### Product filtering precedence
+###### Unified rule precedence (all filter types)
 
-When both global and per-product product filtering rules are defined:
+**ALL** filter types (product, type, area) use the same precedence logic for consistency and predictability:
 
-1. **Per-context rules take precedence**: If the resolved product context (from `output_products` or `--output-products`) has `include_products` or `exclude_products` defined, those rules **completely replace** the global product filtering rules.
+1. **Per-changelog rules**: Rules resolved via intersection + alphabetical first-match (see algorithm below)
+   - Intersection of bundle context (`output_products` / `--output-products`) with changelog's products
+   - Falls back to changelog's own products when no bundle context
+   - Alphabetical first-match for deterministic resolution
+2. **Global rules**: Fallback when no per-changelog rules apply
+   - Uses `rules.bundle` level filters
 
-2. **Global rules as fallback**: If no per-product rule is resolved, or the resolved rule doesn't define product filtering, global `include_products`/`exclude_products` apply.
+This unified approach ensures that **product**, **type**, and **area** filtering all use the **same** choice of `rules.bundle.products.<id>` before falling back to global `rules.bundle`.
 
-3. **Input method independence**: Product filtering rules always apply regardless of the input method used to gather entries (`--input-products`, `--prs`, `--all`, etc.). Input stage and bundle filtering stage are conceptually separate.
+**Input method independence**: Bundle filtering rules always apply regardless of the input method used to gather entries (`--input-products`, `--prs`, `--all`, etc.). Input stage and bundle filtering stage are conceptually separate.
 
-**Example behavior when context resolves to "observability":**
+**Edge case**: Changelogs with **no `products:` field** or **empty products list** skip per-product rule resolution entirely and use global `rules.bundle` for all filter types.
 
-| Entry products | Global include | Context include | Applied rule | Result |
-|---------------|----------------|-----------------|--------------|---------|
-| `[elasticsearch]` | `[elasticsearch, kibana]` | `[observability, elasticsearch]` | Context (replace) | ✓ Included |
-| `[observability]` | `[elasticsearch, kibana]` | `[observability, elasticsearch]` | Context (replace) | ✓ Included |  
-| `[kibana]` | `[elasticsearch, kibana]` | `[observability, elasticsearch]` | Context (replace) | ✗ Excluded |
+**Subset validation warnings**: If global and per-product product lists both exist, the configuration loader emits warnings (not errors) when per-product lists include products not present in global lists, helping identify potential configuration issues while allowing the configuration to proceed.
 
-**Subset validation warnings**: If global and per-context product lists both exist, the configuration loader emits warnings (not errors) when context lists include products not present in global lists, helping identify potential configuration issues while allowing the configuration to proceed.
+##### Per-changelog rule resolution algorithm [changelog-bundle-rule-resolution]
 
-##### Per-product rule resolution for multi-product entries [changelog-bundle-multi-product-rules]
-
-When a changelog entry belongs to more than one product, the applicable per-product rule is chosen using an *intersection + alphabetical first-match* algorithm:
+For all changelog files, the applicable per-product rule (used by **all** filter types) is chosen using an *intersection + alphabetical first-match* algorithm:
 
 1. Compute the **intersection** of the bundle's product context and the entry's own products.
    - The bundle context is the set of product IDs from `--output-products` (if specified), or the entry's own products when `--output-products` is not set.

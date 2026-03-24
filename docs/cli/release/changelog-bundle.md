@@ -108,7 +108,7 @@ The `--input-products` option determines which changelog files are gathered for 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
 :   This value replaces information that would otherwise be derived from changelogs.
-:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also sets the product context used for rule resolution. For details, refer to [Per-product rule resolution for multi-product entries](/contribute/changelog.md#changelog-bundle-multi-product-rules).
+:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also sets the bundle product context used for unified rule resolution. For details, refer to [Per-changelog rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
 
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
@@ -189,7 +189,7 @@ Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is r
 
 The `rules.bundle` section in the changelog configuration file lets you filter entries during bundling. It applies to both `changelog bundle` and `changelog gh-release`, after entries are matched by the primary filter (`--prs`, `--issues`, `--all`) and before the bundle is written.
 
-Both **product filtering** (`exclude_products`/`include_products`) and **type/area filtering** (`exclude_types`/`include_types`/`exclude_areas`/`include_areas`) always apply, regardless of the input method used to gather entries.
+**All filter types** (product, type, area) use unified precedence logic and always apply, regardless of the input method used to gather entries.
 Input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate.
 
 The following fields are supported:
@@ -219,8 +219,8 @@ The following fields are supported:
 :   Match mode for the area filter (`any` or `all`). Inherits from `rules.match` when not specified.
 
 `products`
-:   Per-product type/area filter overrides. Keys are product IDs (or comma-separated lists). Product-specific rules override the global `rules.bundle` type/area rules for entries matching that product.
-:   When an entry belongs to multiple products, the applicable rule is chosen by the intersection + alphabetical first-match algorithm. For details, refer to [Per-product rule resolution for multi-product entries](/contribute/changelog.md#changelog-bundle-multi-product-rules).
+:   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists). Product-specific rules override the global `rules.bundle` rules for changelog files matching that product context.
+:   All filter types use the same intersection + alphabetical first-match algorithm for consistency. For details, refer to [Per-changelog rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
 
 ```yaml
 rules:

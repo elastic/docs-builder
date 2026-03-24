@@ -4825,13 +4825,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert
+		// Assert - unified filtering behavior: disjoint entries fall back to global rules
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by context rule");
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
-		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry should be excluded by context rule");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-include]") && d.Message.Contains("elasticsearch-feature.yaml"));
+
+		// Breaking change: elasticsearch entry (disjoint from security context) now falls back to global rules and gets included
+		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
 	}
 
 	[Fact]
@@ -4974,15 +4975,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert
+		// Assert - unified filtering behavior: disjoint entries fall back to global rules
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by context rule");
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
-		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry should be excluded by context rule");
 
-		// Context rule should apply and take precedence over global rule
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-include]") && d.Message.Contains("elasticsearch-feature.yaml"));
+		// Breaking change: elasticsearch entry (disjoint from security context) now falls back to global rules and gets included
+		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
 	}
 
 	private async Task CreateTestEntry(string changelogDir, string filename, string title, string product)
@@ -5013,5 +5013,315 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var checksumLine = lines.FirstOrDefault(l => l.Contains("checksum:"));
 		checksumLine.Should().NotBeNull("Bundle should contain a checksum line");
 		return checksumLine.Split("checksum:")[1].Trim();
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithNoProductsField_FallsBackToGlobalRules()
+	{
+		// Arrange - changelog with no products field should use global rules only
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - "docs"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var noProductsEntry =
+			"""
+			title: Entry with no products field
+			type: docs
+			prs:
+			  - "500"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268200-no-products.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, noProductsEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("no-products-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - entry is excluded by global type rule (no products to apply product rules)
+		// Since all entries are filtered out, the bundling should fail
+		result.Should().BeFalse("bundling should fail when all entries are filtered out");
+
+		// When all entries are filtered out, the system reports this as an error
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+
+		// Should be excluded by global type rule
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]") && d.Message.Contains("no-products"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithEmptyProductsList_FallsBackToGlobalRules()
+	{
+		// Arrange - changelog with empty products list should use global rules only
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - "feature"
+			    products:
+			      kibana:
+			        include_types:
+			          - "feature"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var emptyProductsEntry =
+			"""
+			title: Entry with empty products list
+			type: feature
+			products: []
+			prs:
+			  - "501"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268201-empty-products.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, emptyProductsEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("empty-products-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - entry excluded by global type rule (empty products list)
+		// Since all entries are filtered out, the bundling should fail
+		result.Should().BeFalse("bundling should fail when all entries are filtered out");
+
+		// When all entries are filtered out, the system reports this as an error
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+
+		// Should be excluded by global type rule
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]") && d.Message.Contains("empty-products"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithMultipleProducts_UnifiedProductFiltering_AlphabeticalFirstMatch()
+	{
+		// Arrange - entry belongs to both kibana and security; test product filtering uses same resolution as type/area
+		// kibana rule: exclude_products: [security] (alphabetically first → wins)
+		// security rule: include_products: [security]
+		// Expected: kibana rule fires (k < s alphabetically) → entry excluded by product filter
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products:
+			      kibana:
+			        exclude_products:
+			          - "security"
+			      security:
+			        include_products:
+			          - "security"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var multiProductEntry =
+			"""
+			title: Multi-product entry for unified filtering test
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			  - product: security
+			    target: 9.3.0
+			prs:
+			  - "502"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268202-multi-product.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, multiProductEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("unified-product-filtering-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "kibana", Target = "9.3.0" }, new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - entry excluded by product filter (kibana rule wins alphabetically)
+		// Since all entries are filtered out, the bundling should fail
+		result.Should().BeFalse("bundling should fail when all entries are filtered out");
+
+		// When all entries are filtered out, the system reports this as an error
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+
+		// Should be excluded by kibana product rule (alphabetical first-match)
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-exclude]") && d.Message.Contains("multi-product"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_DisjointBundleContext_ProductFilteringFollowsSameLogicAsTypeArea()
+	{
+		// Arrange - bundle context [kibana]; entry products [elasticsearch] (disjoint)
+		// Should fall back to entry's own products, find no rule, use global
+		// This tests that product filtering uses same disjoint fallback as type/area
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - "elasticsearch"
+			      - "kibana"
+			    products:
+			      kibana:
+			        exclude_products:
+			          - "elasticsearch"  # This should NOT apply to disjoint entry
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var elasticsearchEntry =
+			"""
+			title: Elasticsearch entry disjoint from kibana context
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - "503"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268203-elasticsearch-disjoint.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("disjoint-context-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "kibana", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - entry included (global rule applies, not the kibana context rule)
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("elasticsearch-disjoint.yaml", "disjoint entry should be included via global rule fallback");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_PartialPerProductRules_FallsBackToGlobalForMissingDimensions()
+	{
+		// Arrange - kibana rule has product filters but no type/area filters
+		// Entry should use kibana product rule but fall back to global for type/area
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - "docs"  # global type rule
+			    products:
+			      kibana:
+			        include_products:
+			          - "kibana"
+			        # No type/area rules here - should fall back to global
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var docsEntry =
+			"""
+			title: Docs entry with partial per-product rule
+			type: docs
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			prs:
+			  - "504"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268204-partial-rule.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, docsEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("partial-rule-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - entry excluded by global type rule (partial rule fallback)
+		// Since all entries are filtered out, the bundling should fail
+		result.Should().BeFalse("bundling should fail when all entries are filtered out");
+
+		// When all entries are filtered out, the system reports this as an error
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+
+		// Should be excluded by global type rule (docs type excluded)
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]") && d.Message.Contains("partial-rule"));
 	}
 }

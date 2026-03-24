@@ -639,20 +639,20 @@ public partial class ChangelogBundlingService(
 		{
 			var entryProducts = entry.Data.Products?.Select(p => p.ProductId).ToList() ?? [];
 
-			// 1 — Product filter: context-specific rules take precedence over global rules
+			// Resolve once per changelog file, reuse for both product and type/area filtering
+			var resolvedRule = ResolvePerProductBundleRule(entryProducts, bundleRules, outputProductIds);
+
+			// 1 — Product filter: use resolved rule or fall back to global
 			var excludedByProduct = false;
 			var productReason = string.Empty;
 
-			// Apply context-specific product filter if available (using bundle context resolution)
-			var contextProductRule = ResolveContextProductRule(bundleRules, outputProductIds);
-			if (contextProductRule != null && (contextProductRule.IncludeProducts != null || contextProductRule.ExcludeProducts != null))
+			if (resolvedRule != null && (resolvedRule.IncludeProducts != null || resolvedRule.ExcludeProducts != null))
 			{
-				if (ShouldExcludeByContextProductFilter(entryProducts, contextProductRule, out productReason))
+				if (ShouldExcludeByResolvedProductRule(entryProducts, resolvedRule, out productReason))
 				{
 					excludedByProduct = true;
 				}
 			}
-			// Fall back to global product filter if no context filter
 			else if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out productReason))
 			{
 				excludedByProduct = true;
@@ -664,8 +664,8 @@ public partial class ChangelogBundlingService(
 				continue;
 			}
 
-			// 2 — Type/area filter: always applies; resolve per-product blocker via intersection + alphabetical first-match
-			var blocker = GetBlockerForEntry(entryProducts, bundleRules, outputProductIds);
+			// 2 — Type/area filter: reuse same resolved rule
+			var blocker = resolvedRule?.Blocker ?? bundleRules.Blocker;
 			if (blocker != null && blocker.ShouldBlock(entry.Data))
 			{
 				collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (type/area filter).");
@@ -704,7 +704,7 @@ public partial class ChangelogBundlingService(
 		return false;
 	}
 
-	private static bool ShouldExcludeByContextProductFilter(IReadOnlyList<string> entryProducts, BundlePerProductRule rule, out string reason)
+	private static bool ShouldExcludeByResolvedProductRule(IReadOnlyList<string> entryProducts, BundlePerProductRule rule, out string reason)
 	{
 		if (rule.ExcludeProducts is { Count: > 0 } excludeList)
 		{
@@ -728,32 +728,7 @@ public partial class ChangelogBundlingService(
 		return false;
 	}
 
-	private static PublishBlocker? GetBlockerForEntry(
-		IReadOnlyList<string> entryProducts,
-		BundleRules bundleRules,
-		IReadOnlyList<string>? outputProductIds = null)
-	{
-		var perProductRule = ResolvePerProductBundleRule(entryProducts, bundleRules, outputProductIds);
-		return perProductRule?.Blocker ?? bundleRules.Blocker;
-	}
 
-	private static BundlePerProductRule? ResolveContextProductRule(
-		BundleRules bundleRules,
-		IReadOnlyList<string>? outputProductIds = null)
-	{
-		if (bundleRules.ByProduct is not { Count: > 0 } byProduct || outputProductIds is not { Count: > 0 })
-			return null;
-
-		// For product filtering, use the bundle context (output_products) to determine which rule applies.
-		// This allows "security" bundle rules to filter all entries regardless of entry products.
-		var candidates = outputProductIds
-			.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-			.ToList();
-
-		return candidates
-			.Select(id => byProduct.TryGetValue(id, out var rule) ? rule : null)
-			.FirstOrDefault(rule => rule is not null);
-	}
 
 	private static BundlePerProductRule? ResolvePerProductBundleRule(
 		IReadOnlyList<string> entryProducts,
@@ -761,6 +736,10 @@ public partial class ChangelogBundlingService(
 		IReadOnlyList<string>? outputProductIds = null)
 	{
 		if (bundleRules.ByProduct is not { Count: > 0 } byProduct)
+			return null;
+
+		// Edge case: changelog has no products → use global rules only
+		if (entryProducts.Count == 0)
 			return null;
 
 		// Context: output_products (if set) defines which products this bundle is for.
