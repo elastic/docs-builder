@@ -30,8 +30,8 @@ Build passes. Preview at https://docs-v3-preview.elastic.dev/elastic/docs-builde
 | Type | YAML key | C# type | Renders as |
 |------|----------|---------|------------|
 | Section heading | `label:` | `LabelNavigationNode` | Non-clickable uppercase header |
-| Placeholder leaf | `title:` only | `PlaceholderNavigationLeaf` | Greyed-out disabled link |
-| Placeholder folder | `group:` (no `page:`) | `PlaceholderNavigationNode` | Greyed-out folder with chevron |
+| Placeholder leaf | `title:` only | `PlaceholderNavigationLeaf` | Greyed link → generated stub page |
+| Placeholder folder | `group:` (no `page:`) | `PlaceholderNavigationNode` | Greyed folder header → generated stub page |
 | Page-folder | `group:` + `page:` | `PageFolderNavigationNode` | Clickable folder header with chevron |
 | Cross-link leaf | `page:` | `PageCrossLinkLeaf` | Normal clickable link |
 | TOC section | `toc:` | existing `IRootNavigationItem` | Full TOC tree (as V1) |
@@ -107,7 +107,7 @@ Production migration path: wire `NavigationTocMappings` from the V2 file, with o
 
 ## Open items
 
-1. **Remaining placeholders** — most sections still use `title:` placeholders pending IA decisions.
+1. **Remaining placeholders** — most sections still use `title:` placeholders pending IA decisions. Each now generates a greyed-but-clickable stub page at `/_placeholder/{hash}/`.
 2. **Production migration** — wire `NavigationTocMappings` from V2 file; optional `path:` key on `toc:` entries for zero-redirect URL pinning.
 3. **Re-enable Reference / Troubleshooting** — currently commented out; uncomment once team approves structure.
 
