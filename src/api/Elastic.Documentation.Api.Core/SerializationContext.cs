@@ -4,6 +4,7 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Core.Changes;
 using Elastic.Documentation.Api.Core.Search;
 
 namespace Elastic.Documentation.Api.Core;
@@ -31,5 +32,8 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(FullSearchApiRequest))]
 [JsonSerializable(typeof(FullSearchApiResponse))]
 [JsonSerializable(typeof(FullSearchAggregations))]
+
+[JsonSerializable(typeof(ChangesApiResponse))]
+[JsonSerializable(typeof(ChangedPageDto))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;
