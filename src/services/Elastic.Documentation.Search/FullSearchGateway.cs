@@ -140,7 +140,7 @@ public partial class FullSearchGateway(
 			if (!response.IsValidResponse)
 			{
 				logger.LogWarning("Elasticsearch response is not valid. Reason: {Reason}",
-					response.ElasticsearchServerError?.Error.Reason ?? "Unknown");
+					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 			}
 
 			return ProcessSearchResponse(response, request.Query, isSemanticQuery: true, request.IncludeHighlighting);
@@ -208,7 +208,7 @@ public partial class FullSearchGateway(
 			if (!response.IsValidResponse)
 			{
 				logger.LogWarning("Elasticsearch response is not valid. Reason: {Reason}",
-					response.ElasticsearchServerError?.Error.Reason ?? "Unknown");
+					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 			}
 
 			return ProcessSearchResponse(response, request.Query, isSemanticQuery: false, request.IncludeHighlighting);
