@@ -120,6 +120,7 @@ Here is a list of all available icons:
 | `` {icon}`copy_clipboard` ``                    |          {icon}`copy_clipboard`           |
 | `` {icon}`cross` ``                             |               {icon}`cross`               |
 | `` {icon}`cross_in_circle` ``                   |          {icon}`cross_in_circle`          |
+| `` {icon}`cross_project_search` ``              |        {icon}`cross_project_search`        |
 | `` {icon}`crosshairs` ``                        |            {icon}`crosshairs`             |
 | `` {icon}`currency` ``                          |              {icon}`currency`              |
 | `` {icon}`cut` ``                               |                {icon}`cut`                |
