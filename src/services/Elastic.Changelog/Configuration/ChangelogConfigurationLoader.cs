@@ -679,10 +679,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		// Parse per-product overrides
-		Dictionary<string, PublishBlocker>? byProduct = null;
+		Dictionary<string, BundlePerProductRule>? byProduct = null;
 		if (yaml.Products is { Count: > 0 })
 		{
-			byProduct = new Dictionary<string, PublishBlocker>(StringComparer.OrdinalIgnoreCase);
+			byProduct = new Dictionary<string, BundlePerProductRule>(StringComparer.OrdinalIgnoreCase);
 			foreach (var (productKey, productYaml) in yaml.Products)
 			{
 				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -699,6 +699,55 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					if (productYaml == null)
 						continue;
 
+					// Validate mutual exclusivity for products within this context
+					if (productYaml.ExcludeProducts?.Values is { Count: > 0 } && productYaml.IncludeProducts?.Values is { Count: > 0 })
+					{
+						collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}: cannot have both 'exclude_products' and 'include_products'. Use one or the other.");
+						return null;
+					}
+
+					// Parse product lists for this context
+					var contextExcludeProducts = ParseAndValidateProductList(collector, productYaml.ExcludeProducts, configPath, validProductIds, $"rules.bundle.products.{normalizedProductId}.exclude_products");
+					if (contextExcludeProducts == null && collector.Errors > 0)
+						return null;
+
+					var contextIncludeProducts = ParseAndValidateProductList(collector, productYaml.IncludeProducts, configPath, validProductIds, $"rules.bundle.products.{normalizedProductId}.include_products");
+					if (contextIncludeProducts == null && collector.Errors > 0)
+						return null;
+
+					// Validate subset relationship with global rules (emit warnings)
+					if (includeProducts is { Count: > 0 } && contextIncludeProducts is { Count: > 0 })
+					{
+						var extraProducts = contextIncludeProducts.Except(includeProducts, StringComparer.OrdinalIgnoreCase).ToList();
+						if (extraProducts.Count > 0)
+						{
+							collector.EmitWarning(configPath, $"Context '{normalizedProductId}' includes products [{string.Join(", ", extraProducts)}] not in global include_products [{string.Join(", ", includeProducts)}]. This may cause unexpected filtering behavior.");
+						}
+					}
+
+					if (excludeProducts is { Count: > 0 } && contextExcludeProducts is { Count: > 0 })
+					{
+						var missingProducts = excludeProducts.Except(contextExcludeProducts, StringComparer.OrdinalIgnoreCase).ToList();
+						if (missingProducts.Count > 0)
+						{
+							collector.EmitWarning(configPath, $"Context '{normalizedProductId}' excludes products [{string.Join(", ", contextExcludeProducts)}] but global exclude_products also excludes [{string.Join(", ", missingProducts)}]. This may cause unexpected filtering behavior.");
+						}
+					}
+
+					// Parse match_products for this context
+					var contextMatchProducts = inheritedMatch;
+					if (!string.IsNullOrWhiteSpace(productYaml.MatchProducts))
+					{
+						var parsed = ParseMatchMode(productYaml.MatchProducts);
+						if (parsed == null)
+						{
+							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_products: '{productYaml.MatchProducts}' is not valid. Use 'any' or 'all'.");
+							return null;
+						}
+						contextMatchProducts = parsed.Value;
+					}
+
+					// Parse type/area blocker
 					var productMatchAreas = matchAreas;
 					if (!string.IsNullOrWhiteSpace(productYaml.MatchAreas))
 					{
@@ -722,8 +771,18 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					var productBlocker = ParsePublishBlockerFromYaml(collector, productBlockerYaml, configPath, $"rules.bundle.products.{normalizedProductId}", productMatchAreas);
 					if (productBlocker == null && collector.Errors > 0)
 						return null;
-					if (productBlocker != null)
-						byProduct[normalizedProductId] = productBlocker;
+
+					// Create per-product rule if any rules are defined (product filtering OR type/area blocking)
+					if (productBlocker != null || contextIncludeProducts != null || contextExcludeProducts != null)
+					{
+						byProduct[normalizedProductId] = new BundlePerProductRule
+						{
+							Blocker = productBlocker,
+							IncludeProducts = contextIncludeProducts,
+							ExcludeProducts = contextExcludeProducts,
+							MatchProducts = contextMatchProducts
+						};
+					}
 				}
 			}
 		}

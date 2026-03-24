@@ -4175,9 +4175,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithInputProducts_IgnoresRulesBundle()
+	public async Task BundleChangelogs_WithInputProducts_AppliesBundleRules()
 	{
-		// Arrange - rules.bundle is bypassed when primary filter is InputProducts
+		// Arrange - rules.bundle always applies regardless of input method
 		// language=yaml
 		var configContent =
 			"""
@@ -4210,7 +4210,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		// Use InputProducts as primary filter — rules.bundle.exclude_products should be ignored
+		// Use InputProducts as primary filter — rules.bundle.exclude_products should still apply
 		var input = new BundleChangelogsArguments
 		{
 			Directory = changelogDir,
@@ -4222,13 +4222,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - elasticsearch entry is included despite exclude_products rule because InputProducts bypasses rules.bundle
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
-
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("[-bundle-exclude]"));
+		// Assert - elasticsearch entry is excluded by exclude_products rule even with InputProducts
+		result.Should().BeFalse("Bundle should fail because all entries are excluded by rules.bundle");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-exclude]") && d.Message.Contains("1755268130-elasticsearch-feature.yaml"));
+		Collector.Errors.Should().BeGreaterThan(0, "Should have error about no entries remaining");
 	}
 
 	[Fact]
@@ -4783,6 +4780,231 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268190-es-feature.yaml", "elasticsearch entry is disjoint from kibana output_products context; kibana rule should not apply");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPerProductIncludeProducts_IncludesOnlyContextMatchingProducts()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			      - kibana
+			    products:
+			      security:
+			        include_products:
+			          - security
+			          - kibana
+			        match_products: any
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create test entries
+		var changelogDir = CreateChangelogDir();
+		await CreateTestEntry(changelogDir, "kibana-feature.yaml", "Kibana feature", "kibana");
+		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
+		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
+
+		var outputPath = CreateTempFilePath("bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by context rule");
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry should be excluded by context rule");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-include]") && d.Message.Contains("elasticsearch-feature.yaml"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPerProductExcludeProducts_ExcludesContextMatchingProducts()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products:
+			      security:
+			        exclude_products:
+			          - kibana
+			        match_products: any
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create test entries
+		var changelogDir = CreateChangelogDir();
+		await CreateTestEntry(changelogDir, "kibana-feature.yaml", "Kibana feature", "kibana");
+		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
+		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
+
+		var outputPath = CreateTempFilePath("bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry should be excluded by context rule");
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included");
+		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-exclude]") && d.Message.Contains("kibana-feature.yaml"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPerProductRules_FallsBackToGlobalWhenNoContextRule()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			      - security
+			    products:
+			      cloud-hosted:
+			        include_products:
+			          - security
+			          - kibana
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create test entries
+		var changelogDir = CreateChangelogDir();
+		await CreateTestEntry(changelogDir, "kibana-feature.yaml", "Kibana feature", "kibana");
+		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
+		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
+
+		var outputPath = CreateTempFilePath("bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }] // No context rule for security, should fall back to global
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry should be excluded by global rule");
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by global rule");
+		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-include]") && d.Message.Contains("kibana-feature.yaml"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPerProductRules_ContextRulesTakePrecedenceOverGlobal()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			    products:
+			      security:
+			        include_products:
+			          - security
+			          - kibana
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create test entries
+		var changelogDir = CreateChangelogDir();
+		await CreateTestEntry(changelogDir, "kibana-feature.yaml", "Kibana feature", "kibana");
+		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
+		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
+
+		var outputPath = CreateTempFilePath("bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			InputProducts = [new ProductArgument { Product = "*" }], // Input method should not affect bundle filtering
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by context rule");
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry should be excluded by context rule");
+
+		// Context rule should apply and take precedence over global rule
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-include]") && d.Message.Contains("elasticsearch-feature.yaml"));
+	}
+
+	private async Task CreateTestEntry(string changelogDir, string filename, string title, string product)
+	{
+		var content = $"""
+			title: {title}
+			type: feature
+			products:
+			  - product: {product}
+			    target: 9.3.0
+			prs:
+			  - "123"
+			""";
+		var filePath = FileSystem.Path.Combine(changelogDir, filename);
+		await FileSystem.File.WriteAllTextAsync(filePath, content, TestContext.Current.CancellationToken);
+	}
+
+	private string CreateTempFilePath(string filename)
+	{
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), filename);
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+		return outputPath;
 	}
 
 	private static string ExtractChecksum(string bundleContent)

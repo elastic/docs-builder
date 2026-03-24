@@ -59,9 +59,35 @@ public record CreateRules
 }
 
 /// <summary>
+/// Per-product bundle rule combining product filtering with type/area blocking.
+/// </summary>
+public record BundlePerProductRule
+{
+	/// <summary>
+	/// Optional type/area blocker (existing functionality).
+	/// </summary>
+	public PublishBlocker? Blocker { get; init; }
+
+	/// <summary>
+	/// Product IDs to include (mutually exclusive with ExcludeProducts).
+	/// </summary>
+	public IReadOnlyList<string>? IncludeProducts { get; init; }
+
+	/// <summary>
+	/// Product IDs to exclude (mutually exclusive with IncludeProducts).
+	/// </summary>
+	public IReadOnlyList<string>? ExcludeProducts { get; init; }
+
+	/// <summary>
+	/// Match mode for products (any or all).
+	/// </summary>
+	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
+}
+
+/// <summary>
 /// Rules for bundle-time filtering by product, type, and area.
-/// Applied during <c>changelog bundle</c> after the primary filter (PR/issue/all) matches entries.
-/// Ignored when the primary filter is already product-based (<c>--input-products</c>).
+/// Applied during <c>changelog bundle</c> after the input stage gathers entries.
+/// Always applies regardless of input method (<c>--input-products</c>, <c>--prs</c>, <c>--all</c>, etc.).
 /// </summary>
 public record BundleRules
 {
@@ -86,9 +112,9 @@ public record BundleRules
 	public PublishBlocker? Blocker { get; init; }
 
 	/// <summary>
-	/// Per-product type/area blocker overrides. Keys are product IDs.
+	/// Per-product rule overrides. Keys are product IDs.
 	/// </summary>
-	public IReadOnlyDictionary<string, PublishBlocker>? ByProduct { get; init; }
+	public IReadOnlyDictionary<string, BundlePerProductRule>? ByProduct { get; init; }
 }
 
 /// <summary>

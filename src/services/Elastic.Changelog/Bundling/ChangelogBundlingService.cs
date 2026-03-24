@@ -218,15 +218,11 @@ public partial class ChangelogBundlingService(
 			}
 
 			// Apply rules.bundle secondary filter.
-			// Product filtering is skipped when the primary filter is InputProducts (already constrained by product).
-			// This covers both --input-products and profile-based bundling with a products: filter.
-			// Type/area filtering always applies regardless of the primary filter.
+			// Product filtering and type/area filtering always apply regardless of the input method used to gather entries.
+			// Input stage (--input-products, --prs, etc.) and bundle filtering stage are conceptually separate.
 			var filteredEntries = matchResult.Entries;
 			if (config?.Rules?.Bundle != null)
 			{
-				var skipProductFilter = input.InputProducts is { Count: > 0 };
-				if (skipProductFilter && (config.Rules.Bundle.ExcludeProducts is { Count: > 0 } || config.Rules.Bundle.IncludeProducts is { Count: > 0 }))
-					collector.EmitWarning(string.Empty, "[rules.bundle] Product filter (exclude_products/include_products) skipped: primary filter is already product-based (--input-products or a profile with products configured). Type/area filters still apply.");
 				// Extract product IDs from output_products for per-product rule resolution.
 				// When set, these IDs define the bundle's product context and drive intersection-based rule lookup.
 				var outputProductIds = input.OutputProducts
@@ -234,7 +230,7 @@ public partial class ChangelogBundlingService(
 					.Where(p => !string.IsNullOrWhiteSpace(p))
 					.Select(p => p!)
 					.ToList();
-				filteredEntries = ApplyBundleFilter(collector, filteredEntries, config.Rules.Bundle, outputProductIds, skipProductFilter: skipProductFilter);
+				filteredEntries = ApplyBundleFilter(collector, filteredEntries, config.Rules.Bundle, outputProductIds);
 			}
 
 			if (filteredEntries.Count == 0)
@@ -636,16 +632,34 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
-		IReadOnlyList<string>? outputProductIds = null,
-		bool skipProductFilter = false)
+		IReadOnlyList<string>? outputProductIds = null)
 	{
 		var filtered = new List<MatchedChangelogFile>();
 		foreach (var entry in entries)
 		{
 			var entryProducts = entry.Data.Products?.Select(p => p.ProductId).ToList() ?? [];
 
-			// 1 — Product filter (skipped when primary filter is already product-based)
-			if (!skipProductFilter && ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
+			// 1 — Product filter: context-specific rules take precedence over global rules
+			var perProductRule = ResolvePerProductBundleRule(entryProducts, bundleRules, outputProductIds);
+			var excludedByProduct = false;
+			var productReason = string.Empty;
+
+			// Apply context-specific product filter if available (using bundle context resolution)
+			var contextProductRule = ResolveContextProductRule(bundleRules, outputProductIds);
+			if (contextProductRule != null && (contextProductRule.IncludeProducts != null || contextProductRule.ExcludeProducts != null))
+			{
+				if (ShouldExcludeByContextProductFilter(entryProducts, contextProductRule, out productReason))
+				{
+					excludedByProduct = true;
+				}
+			}
+			// Fall back to global product filter if no context filter
+			else if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out productReason))
+			{
+				excludedByProduct = true;
+			}
+
+			if (excludedByProduct)
 			{
 				collector.EmitWarning(entry.FilePath, $"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (product filter).");
 				continue;
@@ -691,13 +705,64 @@ public partial class ChangelogBundlingService(
 		return false;
 	}
 
+	private static bool ShouldExcludeByContextProductFilter(IReadOnlyList<string> entryProducts, BundlePerProductRule rule, out string reason)
+	{
+		if (rule.ExcludeProducts is { Count: > 0 } excludeList)
+		{
+			var matches = rule.MatchProducts == MatchMode.All
+				? entryProducts.All(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: entryProducts.Any(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			reason = "context-exclude";
+			return matches;
+		}
+
+		if (rule.IncludeProducts is { Count: > 0 } includeList)
+		{
+			var matchesSome = rule.MatchProducts == MatchMode.All
+				? entryProducts.All(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase))
+				: entryProducts.Any(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			reason = "context-include";
+			return !matchesSome;
+		}
+
+		reason = string.Empty;
+		return false;
+	}
+
 	private static PublishBlocker? GetBlockerForEntry(
 		IReadOnlyList<string> entryProducts,
 		BundleRules bundleRules,
 		IReadOnlyList<string>? outputProductIds = null)
 	{
+		var perProductRule = ResolvePerProductBundleRule(entryProducts, bundleRules, outputProductIds);
+		return perProductRule?.Blocker ?? bundleRules.Blocker;
+	}
+
+	private static BundlePerProductRule? ResolveContextProductRule(
+		BundleRules bundleRules,
+		IReadOnlyList<string>? outputProductIds = null)
+	{
+		if (bundleRules.ByProduct is not { Count: > 0 } byProduct || outputProductIds is not { Count: > 0 })
+			return null;
+
+		// For product filtering, use the bundle context (output_products) to determine which rule applies.
+		// This allows "security" bundle rules to filter all entries regardless of entry products.
+		var candidates = outputProductIds
+			.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+			.ToList();
+
+		return candidates
+			.Select(id => byProduct.TryGetValue(id, out var rule) ? rule : null)
+			.FirstOrDefault(rule => rule is not null);
+	}
+
+	private static BundlePerProductRule? ResolvePerProductBundleRule(
+		IReadOnlyList<string> entryProducts,
+		BundleRules bundleRules,
+		IReadOnlyList<string>? outputProductIds = null)
+	{
 		if (bundleRules.ByProduct is not { Count: > 0 } byProduct)
-			return bundleRules.Blocker;
+			return null;
 
 		// Context: output_products (if set) defines which products this bundle is for.
 		// Fall back to the entry's own product list when output_products is not specified.
@@ -705,6 +770,23 @@ public partial class ChangelogBundlingService(
 			? (IEnumerable<string>)outputProductIds
 			: entryProducts;
 
-		return PublishBlockerExtensions.ResolveBlocker(contextIds, entryProducts, byProduct, bundleRules.Blocker);
+		var entrySet = new HashSet<string>(entryProducts, StringComparer.OrdinalIgnoreCase);
+
+		// Intersection: context products that the entry actually belongs to, sorted alphabetically
+		var candidates = contextIds
+			.Where(id => entrySet.Contains(id))
+			.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+			.ToList();
+
+		// Edge case: empty intersection (entry's products are disjoint from the bundle context).
+		// Fall back to the entry's own products so context-only rules don't bleed across.
+		if (candidates.Count == 0)
+			candidates = entrySet
+				.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+				.ToList();
+
+		return candidates
+			.Select(id => byProduct.TryGetValue(id, out var rule) ? rule : null)
+			.FirstOrDefault(rule => rule is not null);
 	}
 }

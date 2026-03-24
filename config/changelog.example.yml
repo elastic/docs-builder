@@ -192,12 +192,13 @@ rules:
   #
   # Per-product overrides:
   #   products:
-  #     '<id>': override type/area filters for that product
+  #     '<id>': override product/type/area filters for that product context
   #
   #   When an entry belongs to multiple products, the applicable rule is resolved using
   #   intersection + alphabetical first-match. See docs/contribute/changelog.md for details.
   #
   # bundle:
+  #   # Global defaults
   #   # match_products: any
   #   exclude_products: "cloud-enterprise"
   #   # Or include only certain products:
@@ -208,8 +209,32 @@ rules:
   #   # exclude_types: "deprecation, known-issue"
   #   # exclude_areas:
   #   #   - "Internal"
-  #   # Per-product overrides:
+  #   
+  #   # Per-product context overrides:
+  #   # Context-specific rules are resolved using output_products from profiles or CLI.
+  #   # Product filtering in per-product rules REPLACES global product filtering when present.
   #   # products:
+  #   #   # Applied when output_products context matches "observability"
+  #   #   observability:
+  #   #     include_products:
+  #   #       - observability
+  #   #       - kibana
+  #   #       - elasticsearch
+  #   #     match_products: any
+  #   #     exclude_types:
+  #   #       - docs
+  #   #     include_areas:
+  #   #       - APM
+  #   #       - "Infrastructure monitoring"
+  #   #   
+  #   #   # Applied when output_products context matches "security"  
+  #   #   security:
+  #   #     include_products:
+  #   #       - security
+  #   #       - elasticsearch
+  #   #     match_products: all
+  #   #   
+  #   #   # Traditional type/area-only override (no product filtering)
   #   #   'elasticsearch, kibana':
   #   #     exclude_types:
   #   #       - docs

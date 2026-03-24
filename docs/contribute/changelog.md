@@ -148,8 +148,8 @@ rules:
 Filters the changelogs that are included in a bundle file.
 Applied during `docs-builder changelog bundle` and `docs-builder changelog gh-release` after the primary filter (`--prs`, `--issues`, `--all`) has matched entries.
 
-The **product filter** (`exclude_products`/`include_products`) is skipped when the primary filter is `--input-products` (or `bundle.profiles.<name>.products`), because the primary filter already constrains by product.
-The **type and area filter** (`exclude_types`/`include_types`/`exclude_areas`/`include_areas`) always applies, regardless of the primary filter.
+Both **product filtering** (`exclude_products`/`include_products`) and **type/area filtering** (`exclude_types`/`include_types`/`exclude_areas`/`include_areas`) always apply, regardless of the input method used to gather entries.
+Input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate.
 
 ##### Product filtering
 
@@ -177,22 +177,66 @@ When a changelog is excluded by `rules.bundle`, the bundling service emits a war
 ##### Product-specific bundle rules (`rules.bundle.products`)
 
 Product keys can be a single product ID or a comma-separated list.
-Each product override supports the same type/area options (`exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas`).
-Product-specific rules **override** the global bundle type/area rules entirely for entries matching that product.
+Each product override supports:
+
+- **Product filtering**: `include_products`, `exclude_products`, `match_products` - Controls which changelog entries are included based on their product IDs
+- **Type/area filtering**: `exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas` - Controls which entries are included based on their type and area fields
+
+Product-specific rules **override** the corresponding global bundle rules entirely for entries matching that product context.
 
 ```yaml
 rules:
   bundle:
-    exclude_products: cloud-enterprise
+    # Global defaults
+    include_products: 
+      - elasticsearch
+      - kibana
     exclude_types: deprecation
     exclude_areas:
       - Internal
+    
+    # Context-specific overrides
     products:
+      observability:  # Applied when output_products (or --output-products) context matches "observability"
+        include_products:
+          - observability
+          - kibana
+          - elasticsearch
+        exclude_types:
+          - docs
+        include_areas:
+          - APM
+          - "Infrastructure monitoring"
+      security:       # Applied when output_products (or --output-products) context matches "security"
+        include_products:
+          - security
+          - elasticsearch
+        match_products: all
       cloud-serverless:
         include_areas:
           - "Search"
           - "Monitoring"
 ```
+
+###### Product filtering precedence
+
+When both global and per-product product filtering rules are defined:
+
+1. **Per-context rules take precedence**: If the resolved product context (from `output_products` or `--output-products`) has `include_products` or `exclude_products` defined, those rules **completely replace** the global product filtering rules.
+
+2. **Global rules as fallback**: If no per-product rule is resolved, or the resolved rule doesn't define product filtering, global `include_products`/`exclude_products` apply.
+
+3. **Input method independence**: Product filtering rules always apply regardless of the input method used to gather entries (`--input-products`, `--prs`, `--all`, etc.). Input stage and bundle filtering stage are conceptually separate.
+
+**Example behavior when context resolves to "observability":**
+
+| Entry products | Global include | Context include | Applied rule | Result |
+|---------------|----------------|-----------------|--------------|---------|
+| `[elasticsearch]` | `[elasticsearch, kibana]` | `[observability, elasticsearch]` | Context (replace) | ✓ Included |
+| `[observability]` | `[elasticsearch, kibana]` | `[observability, elasticsearch]` | Context (replace) | ✓ Included |  
+| `[kibana]` | `[elasticsearch, kibana]` | `[observability, elasticsearch]` | Context (replace) | ✗ Excluded |
+
+**Subset validation warnings**: If global and per-context product lists both exist, the configuration loader emits warnings (not errors) when context lists include products not present in global lists, helping identify potential configuration issues while allowing the configuration to proceed.
 
 ##### Per-product rule resolution for multi-product entries [changelog-bundle-multi-product-rules]
 
