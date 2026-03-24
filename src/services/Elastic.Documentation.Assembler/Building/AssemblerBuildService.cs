@@ -127,8 +127,16 @@ public class AssemblerBuildService(
 
 		if (exporters.Contains(Exporter.Html))
 		{
-			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
-			sitemapBuilder.Generate();
+			// Build-time sitemap uses current date as placeholder for backwards compatibility.
+			// Production sitemap with correct last_updated dates is generated via
+			// `assembler sitemap` after ES indexing, which overwrites this file.
+			var urls = navigation.NavigationItems
+				.SelectMany(SitemapNavigationHelper.Flatten)
+				.Select(n => n.Url)
+				.Distinct();
+			var now = DateTimeOffset.UtcNow;
+			var entries = urls.ToDictionary(u => u, _ => now);
+			SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
 		}
 
 		if (exporters.Contains(Exporter.LLMText))
