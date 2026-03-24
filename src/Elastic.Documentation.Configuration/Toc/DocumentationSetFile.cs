@@ -107,6 +107,13 @@ public class DocumentationSetFile : TableOfContentsFile
 	}
 
 	/// <summary>
+	/// File paths excluded from navigation via folder-level <c>exclude</c> in toc.yml.
+	/// These files exist on disk but should not be processed by the builder.
+	/// </summary>
+	[YamlIgnore]
+	public HashSet<string> FolderExcludedFiles { get; private set; } = [];
+
+	/// <summary>
 	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
@@ -118,6 +125,8 @@ public class DocumentationSetFile : TableOfContentsFile
 		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(collector, docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", containerPath: "", context: docsetPath, docSet.SuppressDiagnostics);
+		// Collect excluded paths so they can be skipped during file processing (not just navigation)
+		docSet.FolderExcludedFiles = CollectFolderExcludedFiles(docSet.TableOfContents);
 		return docSet;
 	}
 
@@ -566,6 +575,39 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Resolve the children with the folder path as parent to get correct full paths
 		// Auto-discovered items are in the same container as the folder
 		return ResolveTableOfContents(collector, children, baseDirectory, fileSystem, folderPath, containerPath, context);
+	}
+
+	/// <summary>
+	/// Traverses the resolved TOC and collects relative paths of files excluded via folder-level <c>exclude</c>.
+	/// </summary>
+	private static HashSet<string> CollectFolderExcludedFiles(IReadOnlyCollection<ITableOfContentsItem> items)
+	{
+		var excluded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		CollectExcluded(items, excluded);
+		return excluded;
+
+		static void CollectExcluded(IReadOnlyCollection<ITableOfContentsItem> items, HashSet<string> result)
+		{
+			foreach (var item in items)
+			{
+				if (item is FolderRef { Exclude: { Count: > 0 } exclude } folder)
+				{
+					foreach (var fileName in exclude)
+						_ = result.Add($"{folder.PathRelativeToDocumentationSet}/{fileName}");
+				}
+
+				// Recurse into children
+				var children = item switch
+				{
+					FolderRef f => f.Children,
+					FileRef f => f.Children,
+					IsolatedTableOfContentsRef t => t.Children,
+					_ => null
+				};
+				if (children is { Count: > 0 })
+					CollectExcluded(children, result);
+			}
+		}
 	}
 
 	/// <summary>
