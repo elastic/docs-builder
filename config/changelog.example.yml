@@ -179,8 +179,8 @@ rules:
   # Applied after the primary filter (--prs, --issues, --all, ...) has collected changelogs.
   #
   # Product filtering:
-  #   Skipped when the primary filter is already product-based
-  #   (--input-products option or a profile with bundle.profiles.<name>.products configured).
+  #   Always applied regardless of input method (--input-products, --prs, --all, etc.).
+  #   Input stage (gathering entries) and bundle filtering are conceptually separate.
   #   exclude_products / include_products (string or list) — cannot specify both.
   #   match_products inherits from rules.match if not specified.
   #
@@ -213,6 +213,7 @@ rules:
   #   # Per-product context overrides:
   #   # Context-specific rules are resolved using output_products from profiles or CLI.
   #   # Product filtering in per-product rules REPLACES global product filtering when present.
+  #   # Warning: Context product lists should be subsets of global lists to avoid conflicts.
   #   # products:
   #   #   # Applied when output_products context matches "observability"
   #   #   observability:

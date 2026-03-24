@@ -640,7 +640,6 @@ public partial class ChangelogBundlingService(
 			var entryProducts = entry.Data.Products?.Select(p => p.ProductId).ToList() ?? [];
 
 			// 1 — Product filter: context-specific rules take precedence over global rules
-			var perProductRule = ResolvePerProductBundleRule(entryProducts, bundleRules, outputProductIds);
 			var excludedByProduct = false;
 			var productReason = string.Empty;
 
