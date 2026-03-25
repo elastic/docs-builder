@@ -461,6 +461,8 @@ toc:
           - toc: opentelemetry://reference
             path_prefix: reference/opentelemetry
             children:
+              - toc: opentelemetry://reference/motlp
+                path_prefix: reference/opentelemetry/motlp
               - toc: opentelemetry://reference/edot-cloud-forwarder
                 path_prefix: reference/opentelemetry/edot-cloud-forwarder
                 children:

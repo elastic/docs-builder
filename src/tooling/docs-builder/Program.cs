@@ -46,6 +46,7 @@ app.Add<BloomFilterCommands>("assembler bloom-filter");
 app.Add<NavigationCommands>("assembler navigation");
 app.Add<ConfigurationCommands>("assembler config");
 app.Add<AssemblerIndexCommand>("assembler index");
+app.Add<AssemblerSitemapCommand>("assembler sitemap");
 app.Add<AssemblerCommands>("assembler");
 app.Add<AssembleCommands>("assemble");
 
