@@ -224,7 +224,8 @@ rules:
 
 1. **Per-changelog rules**: Rules resolved via intersection + alphabetical first-match (see algorithm below)
    - Intersection of bundle context (`output_products` / `--output-products`) with changelog's products
-   - Falls back to changelog's own products when no bundle context
+   - **No bundle context**: Falls back to changelog's own products
+   - **Disjoint from bundle context**: Uses global rules to prevent unrelated product filtering
    - Alphabetical first-match for deterministic resolution
 2. **Global rules**: Fallback when no per-changelog rules apply
    - Uses `rules.bundle` level filters
@@ -241,22 +242,26 @@ This unified approach ensures that **product**, **type**, and **area** filtering
 
 For all changelog files, the applicable per-product rule (used by **all** filter types) is chosen using an *intersection + alphabetical first-match* algorithm:
 
-1. Compute the **intersection** of the bundle's product context and the entry's own products.
-   - The bundle context is the set of product IDs from `--output-products` (if specified), or the entry's own products when `--output-products` is not set.
-   - The intersection restricts rule lookup to only the products the entry actually claims to belong to.
+1. Compute the **intersection** of the bundle's product context and the changelog's own products.
+   - The bundle context is the set of product IDs from `--output-products` (if specified), or the changelog's own products when `--output-products` is not set.
+   - The intersection restricts rule lookup to only the products the changelog actually claims to belong to.
 2. **Sort the intersection alphabetically** (case-insensitive, ascending) for a deterministic result.
 3. Use the per-product rule for the **first product ID** in the sorted intersection that has a configured rule.
-4. If the intersection is empty (the entry's products are disjoint from the bundle context), fall back to the entry's own product list sorted alphabetically, then to the global `rules.bundle` blocker. This prevents context-only rules from being applied to unrelated entries.
+4. **Disjoint fallback behavior**: If the intersection is empty (the changelog's products are disjoint from the bundle context):
+   - **Context-specific bundles** (when `--output-products` is specified): Use global `rules.bundle` rules to prevent unrelated product-specific rules from applying.
+   - **Bundle everything** (when `--output-products` is not specified): Fall back to the changelog's own product list sorted alphabetically to allow each changelog to use its own product-specific rules.
 
 For example, with `--output-products "kibana 9.3.0" "security 9.3.0"`:
 
-| Entry's `products` | Intersection with context | Sorted | Rule used |
+| Changelog `products` | Intersection with context | Sorted | Rule used |
 |--------------------|--------------------------|--------|-----------|
 | `[kibana]` | `{kibana}` | `[kibana]` | `kibana` rule |
 | `[security]` | `{security}` | `[security]` | `security` rule |
 | `[kibana, security]` | `{kibana, security}` | `[kibana, security]` | `kibana` rule (k < s) |
+| `[elasticsearch]` | `{}` (disjoint) | n/a | Global `rules.bundle` rules |
+| `[cloud-hosted, elasticsearch]` | `{}` (disjoint) | n/a | Global `rules.bundle` rules |
 
-When `--output-products` is not set, the entry's own product list is used as the context, so each single-product entry naturally picks its own rule. For shared entries without `--output-products`, the alphabetically-first product with a configured rule wins. To avoid ambiguity for shared entries, configure per-product rules that agree on the shared entry, or use `--output-products` to make the bundle's product context explicit.
+When `--output-products` is not set, the changelog's product list is used as the context, so each single-product changelog naturally picks its own rule. For multi-product changelogs in this situation, the alphabetically-first product with a configured rule wins. To avoid ambiguity for multi-product changelogs, configure per-product rules that agree on the changelog, or use `--output-products` to make the bundle's product context explicit.
 
 #### `rules.publish`
 

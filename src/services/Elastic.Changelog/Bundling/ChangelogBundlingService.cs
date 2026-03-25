@@ -757,11 +757,17 @@ public partial class ChangelogBundlingService(
 			.ToList();
 
 		// Edge case: empty intersection (entry's products are disjoint from the bundle context).
-		// Fall back to the entry's own products so context-only rules don't bleed across.
 		if (candidates.Count == 0)
+		{
+			// When building a specific bundle context, disjoint entries should use global rules only
+			if (outputProductIds is { Count: > 0 })
+				return null;
+
+			// When bundling everything, entries can use their own product-specific rules
 			candidates = entrySet
 				.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
 				.ToList();
+		}
 
 		return candidates
 			.Select(id => byProduct.TryGetValue(id, out var rule) ? rule : null)
