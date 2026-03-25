@@ -5469,22 +5469,22 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_PartialPerProductRules_FallsBackToGlobalForMissingDimensions()
+	public async Task BundleChangelogs_PartialPerProductRules_AllOrNothingReplacement()
 	{
 		// Arrange - kibana rule has product filters but no type/area filters
-		// Entry should use kibana product rule but fall back to global for type/area
+		// With all-or-nothing replacement, entry uses kibana rule entirely (global type rules ignored)
 		// language=yaml
 		var configContent =
 			"""
 			rules:
 			  bundle:
 			    exclude_types:
-			      - "docs"  # global type rule
+			      - "docs"  # global type rule - will be ignored for kibana entries
 			    products:
 			      kibana:
 			        include_products:
 			          - "kibana"
-			        # No type/area rules here - should fall back to global
+			        # No type/area rules here - global type exclusions are NOT inherited
 			""";
 
 		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
@@ -5520,15 +5520,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - entry excluded by global type rule (partial rule fallback)
-		// Since all entries are filtered out, the bundling should fail
-		result.Should().BeFalse("bundling should fail when all entries are filtered out");
+		// Assert - entry included because kibana rule completely replaces global rules
+		// Global exclude_types is ignored when per-product rule applies (all-or-nothing replacement)
+		result.Should().BeTrue("bundling should succeed - kibana rule allows the entry");
 
-		// When all entries are filtered out, the system reports this as an error
-		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+		Collector.Errors.Should().Be(0, "no errors expected when entry is included");
 
-		// Should be excluded by global type rule (docs type excluded)
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]") && d.Message.Contains("partial-rule"));
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268204-partial-rule.yaml", "entry should be included - per-product rule ignores global type exclusions");
 	}
 }

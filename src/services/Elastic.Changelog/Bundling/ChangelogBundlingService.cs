@@ -642,12 +642,13 @@ public partial class ChangelogBundlingService(
 			// Resolve once per changelog file, reuse for both product and type/area filtering
 			var resolvedRule = ResolvePerProductBundleRule(entryProducts, bundleRules, outputProductIds);
 
-			// 1 — Product filter: use resolved rule or fall back to global
+			// 1 — Product filter: use resolved rule or fall back to global (all-or-nothing replacement)
 			var excludedByProduct = false;
 			var productReason = string.Empty;
 
-			if (resolvedRule != null && (resolvedRule.IncludeProducts != null || resolvedRule.ExcludeProducts != null))
+			if (resolvedRule != null)
 			{
+				// Use per-product rule entirely (even if no product filters defined)
 				if (ShouldExcludeByResolvedProductRule(entryProducts, resolvedRule, out productReason))
 				{
 					excludedByProduct = true;
@@ -655,6 +656,7 @@ public partial class ChangelogBundlingService(
 			}
 			else if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out productReason))
 			{
+				// Use global product rules
 				excludedByProduct = true;
 			}
 
@@ -664,8 +666,8 @@ public partial class ChangelogBundlingService(
 				continue;
 			}
 
-			// 2 — Type/area filter: reuse same resolved rule
-			var blocker = resolvedRule?.Blocker ?? bundleRules.Blocker;
+			// 2 — Type/area filter: reuse same resolved rule (all-or-nothing replacement)
+			var blocker = resolvedRule != null ? resolvedRule.Blocker : bundleRules.Blocker;
 			if (blocker != null && blocker.ShouldBlock(entry.Data))
 			{
 				collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (type/area filter).");

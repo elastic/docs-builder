@@ -1444,7 +1444,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Assert
 		config.Should().NotBeNull();
-		var bundle = config!.Rules.Bundle;
+		var bundle = config!.Rules!.Bundle;
 		bundle.Should().NotBeNull();
 		bundle!.IncludeProducts.Should().BeEquivalentTo(["elasticsearch"]);
 
@@ -1549,7 +1549,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Assert
 		config.Should().NotBeNull();
-		var bundle = config!.Rules.Bundle;
+		var bundle = config!.Rules!.Bundle;
 		bundle.Should().NotBeNull();
 		bundle!.ByProduct.Should().ContainKey("security");
 		var securityRule = bundle.ByProduct!["security"];

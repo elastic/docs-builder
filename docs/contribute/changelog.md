@@ -182,31 +182,36 @@ Each product override supports:
 - **Product filtering**: `include_products`, `exclude_products`, `match_products` - Controls which changelog entries are included based on their product IDs
 - **Type/area filtering**: `exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas` - Controls which entries are included based on their type and area fields
 
-Product-specific rules **override** the corresponding global bundle rules entirely for entries matching that product context.
+Product-specific rules use **all-or-nothing replacement** when selected by the precedence algorithm (see [Unified rule precedence](#unified-rule-precedence-all-filter-types) below). When a per-product rule is chosen for a changelog, it completely replaces global bundle rules - any filter types not specified in the per-product rule are effectively disabled (not inherited from global rules). When no per-product rule is selected (e.g., disjoint products, empty products), global rules apply.
+
+**Example: All-or-nothing replacement**
 
 ```yaml
 rules:
   bundle:
-    # Global defaults
-    include_products: 
-      - elasticsearch
-      - kibana
-    exclude_types: deprecation
-    exclude_areas:
-      - Internal
+    # Global rules apply to all entries unless overridden
+    exclude_types: [docs]
+    exclude_areas: [Internal]
     
-    # Context-specific overrides
     products:
-      observability:  # Applied when output_products (or --output-products) context matches "observability"
-        include_products:
-          - observability
-          - kibana
-          - elasticsearch
-        exclude_types:
-          - docs
-        include_areas:
-          - APM
-          - "Infrastructure monitoring"
+      kibana:
+        # Only defines area filtering - type filtering is disabled for kibana entries
+        include_areas: [UI]
+        # Note: exclude_types is NOT inherited - kibana entries ignore global type exclusions
+```
+
+**Result**: 
+- Elasticsearch entries: excluded if `type: docs` OR `areas: [Internal]` (uses global rules)
+- Kibana entries: included if `areas: [UI]`, type filtering disabled (uses kibana rule entirely)
+- A kibana entry with `type: docs, areas: [UI]` will be **included** (global `exclude_types` ignored)
+
+**Migration**: To preserve global type exclusions, kibana rule must redefine them:
+
+```yaml
+products:
+  kibana:
+    exclude_types: [docs]  # Must redefine to preserve global behavior
+    include_areas: [UI]
       security:       # Applied when output_products (or --output-products) context matches "security"
         include_products:
           - security
