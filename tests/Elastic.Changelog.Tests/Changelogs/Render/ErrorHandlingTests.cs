@@ -6,7 +6,7 @@ using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 

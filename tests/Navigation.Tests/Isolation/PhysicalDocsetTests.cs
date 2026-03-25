@@ -8,7 +8,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;

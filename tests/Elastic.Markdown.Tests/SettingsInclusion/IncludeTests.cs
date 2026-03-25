@@ -7,7 +7,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Tests.Directives;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.SettingsInclusion;
 

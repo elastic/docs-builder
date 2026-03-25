@@ -4,7 +4,7 @@
 
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
-using FluentAssertions;
+using AwesomeAssertions;
 using JetBrains.Annotations;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;

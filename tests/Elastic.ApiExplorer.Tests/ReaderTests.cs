@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests;

@@ -5,7 +5,7 @@
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MatchResult = Elastic.Documentation.Configuration.Assembler.AssemblyConfiguration.ContentSourceMatch;

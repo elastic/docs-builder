@@ -5,7 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.BundleLoading;
 

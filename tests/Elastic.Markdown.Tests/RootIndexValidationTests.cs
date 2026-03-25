@@ -7,7 +7,7 @@ using System.Linq;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests;
 

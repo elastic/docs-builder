@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Codex.Navigation;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 

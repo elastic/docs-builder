@@ -8,7 +8,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 

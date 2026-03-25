@@ -5,7 +5,7 @@ using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
-using FluentAssertions;
+using AwesomeAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 

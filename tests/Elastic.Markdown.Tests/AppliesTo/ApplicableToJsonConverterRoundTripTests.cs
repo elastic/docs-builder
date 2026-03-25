@@ -5,7 +5,7 @@
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 

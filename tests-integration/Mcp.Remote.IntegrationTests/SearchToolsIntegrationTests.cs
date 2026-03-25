@@ -4,7 +4,7 @@
 
 using System.Text.Json;
 using Elastic.Documentation.Mcp.Remote.Responses;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Mcp.Remote.IntegrationTests;
 

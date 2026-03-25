@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
-using FluentAssertions;
+using AwesomeAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;

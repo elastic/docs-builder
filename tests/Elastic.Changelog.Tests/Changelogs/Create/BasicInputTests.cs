@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.Creation;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 

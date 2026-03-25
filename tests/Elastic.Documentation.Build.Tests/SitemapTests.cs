@@ -6,7 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json;
 using System.Xml.Linq;
 using Elastic.Documentation.Assembler.Building;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Documentation.Build.Tests;
 

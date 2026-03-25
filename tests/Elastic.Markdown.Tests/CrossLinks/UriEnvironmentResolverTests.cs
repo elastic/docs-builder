@@ -4,7 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Links.CrossLinks;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.CrossLinks;
 

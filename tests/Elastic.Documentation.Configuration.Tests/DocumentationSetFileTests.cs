@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 

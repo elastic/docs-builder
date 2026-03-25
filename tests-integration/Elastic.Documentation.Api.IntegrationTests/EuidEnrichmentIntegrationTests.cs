@@ -8,7 +8,7 @@ using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using FakeItEasy;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Elastic.Documentation.Api.IntegrationTests;

@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 

@@ -5,7 +5,7 @@
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 

@@ -7,7 +7,7 @@ using System.Text;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using FakeItEasy;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

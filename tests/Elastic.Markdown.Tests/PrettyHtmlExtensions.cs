@@ -7,7 +7,7 @@ using AngleSharp.Html;
 using AngleSharp.Html.Parser;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
-using FluentAssertions;
+using AwesomeAssertions;
 using JetBrains.Annotations;
 using Xunit.Internal;
 using Xunit.Sdk;

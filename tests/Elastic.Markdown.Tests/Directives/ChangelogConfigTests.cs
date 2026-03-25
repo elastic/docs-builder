@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Myst.Directives.Changelog;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 

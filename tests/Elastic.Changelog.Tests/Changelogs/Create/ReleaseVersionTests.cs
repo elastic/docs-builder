@@ -5,7 +5,7 @@
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using FakeItEasy;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;

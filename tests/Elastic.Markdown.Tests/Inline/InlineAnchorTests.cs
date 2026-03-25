@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Myst.InlineParsers;
-using FluentAssertions;
+using AwesomeAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;

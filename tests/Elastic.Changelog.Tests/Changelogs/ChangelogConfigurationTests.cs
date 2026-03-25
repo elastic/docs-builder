@@ -8,7 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 

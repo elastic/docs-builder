@@ -4,7 +4,7 @@
 
 using Elastic.Changelog.Creation;
 using Elastic.Documentation.Configuration.Changelog;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Creation;
 

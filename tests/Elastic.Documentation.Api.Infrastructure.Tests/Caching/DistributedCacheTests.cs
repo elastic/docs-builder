@@ -9,7 +9,7 @@ using Amazon.DynamoDBv2.Model;
 using Elastic.Documentation.Api.Infrastructure.Caching;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using FakeItEasy;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Caching;

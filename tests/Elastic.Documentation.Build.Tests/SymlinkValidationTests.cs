@@ -5,7 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Security;
 using Elastic.Documentation.Configuration;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Documentation.Build.Tests;
 

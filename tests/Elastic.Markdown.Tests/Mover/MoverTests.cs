@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Refactor;
 using Elastic.Markdown.Tests.DocSet;
-using FluentAssertions;
+using AwesomeAssertions;
 
 
 namespace Elastic.Markdown.Tests.Mover;

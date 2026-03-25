@@ -7,7 +7,7 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Tests.Directives;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 

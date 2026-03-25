@@ -4,7 +4,7 @@
 
 using Aspire.Hosting.Testing;
 using Elastic.Documentation.Aspire;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Assembler.IntegrationTests;
 

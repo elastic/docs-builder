@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 

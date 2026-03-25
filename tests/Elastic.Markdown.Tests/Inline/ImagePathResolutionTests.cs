@@ -14,7 +14,7 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Tests;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace Elastic.Markdown.Tests.Inline;

@@ -8,7 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Search;
 

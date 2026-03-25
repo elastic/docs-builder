@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Mcp.Remote.Gateways;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Mcp.Remote.IntegrationTests;
 

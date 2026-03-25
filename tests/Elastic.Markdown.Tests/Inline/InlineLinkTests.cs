@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
+using AwesomeAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
 

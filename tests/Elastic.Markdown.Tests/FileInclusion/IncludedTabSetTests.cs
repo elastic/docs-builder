@@ -5,7 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 

@@ -8,7 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Codex;
 

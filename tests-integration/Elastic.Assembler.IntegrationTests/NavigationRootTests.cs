@@ -18,7 +18,7 @@ using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.Navigation;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RazorSlices;

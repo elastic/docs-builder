@@ -6,7 +6,7 @@ using Elastic.Changelog.Creation;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Creation;
 

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
+using AwesomeAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
 

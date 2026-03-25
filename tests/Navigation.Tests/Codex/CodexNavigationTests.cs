@@ -6,7 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 

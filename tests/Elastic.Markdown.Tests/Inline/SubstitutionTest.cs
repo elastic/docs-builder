@@ -4,7 +4,7 @@
 
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Inline;
 

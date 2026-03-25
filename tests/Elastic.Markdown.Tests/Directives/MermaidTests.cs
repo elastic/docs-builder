@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Myst.CodeBlocks;
-using FluentAssertions;
+using AwesomeAssertions;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;

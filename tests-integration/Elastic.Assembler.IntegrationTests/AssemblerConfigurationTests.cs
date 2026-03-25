@@ -7,7 +7,7 @@ using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Assembler.IntegrationTests;

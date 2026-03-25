@@ -7,7 +7,7 @@ using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
 using FakeItEasy;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 

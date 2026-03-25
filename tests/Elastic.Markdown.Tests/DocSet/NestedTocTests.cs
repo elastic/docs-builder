@@ -8,7 +8,7 @@ using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.IO;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 

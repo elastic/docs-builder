@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Configuration.Assembler;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;

@@ -5,7 +5,7 @@
 using System.Reflection;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using FluentAssertions;
+using AwesomeAssertions;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Tests.AppliesTo;

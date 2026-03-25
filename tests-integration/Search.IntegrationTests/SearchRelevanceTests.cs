@@ -10,7 +10,7 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Search.IntegrationTests;

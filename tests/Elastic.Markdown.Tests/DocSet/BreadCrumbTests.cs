@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 

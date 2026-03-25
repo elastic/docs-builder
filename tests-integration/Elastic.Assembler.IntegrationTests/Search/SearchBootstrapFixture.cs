@@ -15,7 +15,7 @@ using Elastic.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

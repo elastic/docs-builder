@@ -8,7 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace Elastic.Markdown.Tests.Assembler;

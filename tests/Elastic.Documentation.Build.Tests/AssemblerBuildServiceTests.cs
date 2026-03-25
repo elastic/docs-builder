@@ -8,7 +8,7 @@ using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using FakeItEasy;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Build.Tests;
