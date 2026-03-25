@@ -735,7 +735,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					}
 
 					// Parse match_products for this context
-					var contextMatchProducts = inheritedMatch;
+					var contextMatchProducts = matchProducts;
 					if (!string.IsNullOrWhiteSpace(productYaml.MatchProducts))
 					{
 						var parsed = ParseMatchMode(productYaml.MatchProducts);
