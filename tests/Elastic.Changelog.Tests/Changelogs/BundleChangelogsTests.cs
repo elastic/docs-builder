@@ -4470,9 +4470,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 	[Fact]
 	public async Task BundleChangelogs_WithOutputProducts_SingleProductEntry_UsesMatchingProductRule()
 	{
-		// Arrange — output_products has two products; each single-product entry should use its own rule.
+		// Arrange — output_products has two products; rule context = "kibana" (first alphabetically).
+		// Only entries containing "kibana" product use kibana rules; others are disjoint → excluded.
 		// kibana rule: exclude_types: docs
-		// security rule: include_areas: "Detection rules and alerts"
 		// language=yaml
 		var configContent =
 			"""
@@ -4557,13 +4557,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
-
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().NotContain("name: 1755268130-kibana-doc.yaml", "kibana docs type should be excluded by kibana rule");
-		bundleContent.Should().Contain("name: 1755268140-security-entry.yaml", "security entry with matching area should be included by security rule");
-		bundleContent.Should().NotContain("name: 1755268150-security-other.yaml", "security entry with non-matching area should be excluded by security rule");
+		// Rule context = "kibana" (first alphabetically from output products)
+		// All security entries are disjoint from kibana context → excluded
+		// Kibana entry uses kibana rules (exclude docs) → excluded  
+		// Result: No entries remain → bundle should fail
+		result.Should().BeFalse($"Expected bundle to fail when no entries remain. Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().BeGreaterThan(0, "Should have error when no entries remain after filtering");
 	}
 
 	[Fact]
@@ -4775,11 +4774,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert — disjoint entry falls back; no rule applies; entry included
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268190-es-feature.yaml", "elasticsearch entry is disjoint from kibana output_products context; kibana rule should not apply");
+		// Assert — disjoint entry excluded entirely (new single-product rule resolution behavior)
+		result.Should().BeFalse($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("disjoint from rule context 'kibana'", "elasticsearch entry should be excluded as disjoint from kibana context");
+		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
 	}
 
 	[Fact]
@@ -4825,14 +4826,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - unified filtering behavior: disjoint entries fall back to global rules
+		// Assert - single-product rule resolution: only security changelog matches bundle context
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by context rule");
-		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
 
-		// Breaking change: elasticsearch entry (disjoint from security context) now falls back to global rules and gets included
-		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
+		// Only security changelog should be included (it matches the bundle context "security")
+		bundleContent.Should().Contain("security-feature.yaml", "security entry matches bundle context and should be included by security-specific rules");
+
+		// Disjoint changelogs are excluded entirely (not included via global fallback)
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context and should be excluded");
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context and should be excluded");
 	}
 
 	[Fact]
@@ -4889,18 +4892,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - unified filtering behavior: disjoint entries fall back to global rules  
+		// Assert - single-product rule resolution: disjoint entries are excluded entirely
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 
-		// Breaking change: kibana entry (disjoint from security context) falls back to global rules (no exclusions) → INCLUDED
-		bundleContent.Should().Contain("kibana-feature.yaml", "kibana entry should be included by global rule fallback (no global exclusions)");
+		// Rule context = "security" (from output products)
+		// Disjoint entries (kibana, elasticsearch) are excluded entirely
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
 
 		// security entry (matches security context) uses context rule: exclude_products=[kibana] (security not excluded) → INCLUDED
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (not in context exclude list)");
-
-		// elasticsearch entry (disjoint from security context) falls back to global rules (no exclusions) → INCLUDED  
-		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
 
 		// Multi-product entry (security + kibana) matches security context and gets excluded by exclude_products=[kibana] → EXCLUDED
 		bundleContent.Should().NotContain("security-kibana-feature.yaml", "security+kibana entry should be excluded by security context rule");
@@ -4949,12 +4951,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
+		// Rule context = "security" (from output products)
+		// No per-product rule for "security" → falls back to global rules
+		// elasticsearch and kibana entries are disjoint from security context → excluded
+		// Only security entry remains and uses global rules (include elasticsearch, security) → included
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry should be excluded by global rule");
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by global rule");
-		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-include]") && d.Message.Contains("kibana-feature.yaml"));
+		// Disjoint entries are excluded entirely in single-product rule resolution
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
 	}
 
 	[Fact]
@@ -4998,18 +5004,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - unified filtering behavior: disjoint entries fall back to global rules
+		// Assert - single-product rule resolution: disjoint entries are excluded entirely
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 
-		// kibana entry (disjoint from security context) falls back to global rule: include_products=[elasticsearch] → EXCLUDED
-		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry should be excluded by global rule (not in global include list)");
+		// Rule context = "security" (from output products)
+		// Disjoint entries (kibana, elasticsearch) are excluded entirely
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
 
-		// security entry (matches security context) uses context rule: include_products=[security, kibana] → INCLUDED  
+		// security entry (matches security context) uses context rule: include_products=[security, kibana] → INCLUDED
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
-
-		// elasticsearch entry (disjoint from security context) falls back to global rule: include_products=[elasticsearch] → INCLUDED
-		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
 	}
 
 	private async Task CreateTestEntry(string changelogDir, string filename, string title, string product)
@@ -5085,16 +5090,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - entry is excluded by global type rule (no products to apply product rules)
+		// Assert - entry is excluded due to no products field (bundle validation error)
 		// Since all entries are filtered out, the bundling should fail
 		result.Should().BeFalse("bundling should fail when all entries are filtered out");
 
-		// When all entries are filtered out, the system reports this as an error
-		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
-
-		// Should be excluded by global type rule
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]") && d.Message.Contains("no-products"));
+		// Bundle has no product context (early validation) + no entries remained 
+		Collector.Errors.Should().Be(2, "bundle validation error + no entries remained error");
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("Bundle has no product context", "should report bundle validation error");
 	}
 
 	[Fact]
@@ -5149,12 +5152,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Since all entries are filtered out, the bundling should fail
 		result.Should().BeFalse("bundling should fail when all entries are filtered out");
 
-		// When all entries are filtered out, the system reports this as an error
-		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+		// With single-product rule resolution: bundle has no product context (early validation) + no entries remained
+		Collector.Errors.Should().Be(2, "bundle validation error + no entries remained error");
+		// No warnings expected since early validation prevents processing individual entries
 
-		// Should be excluded by global type rule
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]") && d.Message.Contains("empty-products"));
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("Bundle has no product context", "bundle validation should report lack of product context");
+		errorMessages.Should().Contain("No changelog entries remained after applying rules.bundle filter", "system should report empty bundle error");
 	}
 
 	[Fact]
@@ -5283,14 +5287,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - entry included (global rule applies, not the kibana or elasticsearch context rules)
-		// If elasticsearch rules were applied, the entry would be excluded by exclude_products: [elasticsearch]
-		// But since we're building a kibana bundle and the entry is disjoint, global rules should apply
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
+		// Assert - disjoint entry excluded entirely (new single-product rule resolution behavior)
+		// The entry has products=[elasticsearch] but bundle context is kibana, so it's disjoint and excluded
+		result.Should().BeFalse($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("elasticsearch-disjoint.yaml", "disjoint entry should be included via global rule fallback, not excluded by elasticsearch-specific rule");
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("disjoint from rule context 'kibana'", "disjoint entry should be excluded with informative message");
+		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
 	}
 
 	[Fact]
@@ -5357,22 +5361,22 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - entry included (global rule applies, not elasticsearch-specific rule)
-		// If elasticsearch rules were applied, the entry would be excluded by exclude_products: [kibana, elasticsearch]
-		// But since we're building a security bundle and all entry products are disjoint, global rules should apply
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
+		// Assert - multi-product disjoint entry excluded entirely (new single-product rule resolution behavior)
+		// The entry has products=[kibana, elasticsearch] but bundle context is security, so it's disjoint and excluded
+		result.Should().BeFalse($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("multiproduct-disjoint.yaml", "multi-product disjoint entry should be included via global rules, not excluded by elasticsearch-specific rule");
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("disjoint from rule context 'security'", "disjoint entry should be excluded with informative message");
+		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
 	}
 
 	[Fact]
 	public async Task BundleChangelogs_BundleAll_DisjointUsesOwnProductRules()
 	{
 		// Arrange - bundling ALL changelogs (no OutputProducts specified)
-		// Should preserve old behavior: changelogs can use their own product-specific rules
-		// This tests both single and multi-product changelogs when no explicit bundle context is set
+		// Single-product rule resolution: rule context = first alphabetically from all entry products = "elasticsearch"
+		// Only entries containing "elasticsearch" use elasticsearch rules; others are disjoint → excluded
 		// language=yaml
 		var configContent =
 			"""
@@ -5458,14 +5462,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - only security entry should be included (others excluded by product-specific rules)
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
-
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("security-included.yaml", "security entry should be included (no exclusion rule)");
-		bundleContent.Should().NotContain("elasticsearch-single.yaml", "single elasticsearch entry should be excluded by elasticsearch rule");
-		bundleContent.Should().NotContain("multiproduct-elasticsearch.yaml", "multi-product entry should be excluded by elasticsearch rule (alphabetically first)");
+		// Assert - rule context = "elasticsearch" (first alphabetically from aggregated products)
+		// Security entry is disjoint from elasticsearch context → excluded
+		// All elasticsearch entries are excluded by elasticsearch rule → no entries remain → bundle fails  
+		result.Should().BeFalse($"Expected bundle to fail when no entries remain. Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().BeGreaterThan(0, "Should have error when no entries remain after filtering");
 	}
 
 	[Fact]

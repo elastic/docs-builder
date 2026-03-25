@@ -108,7 +108,12 @@ The `--input-products` option determines which changelog files are gathered for 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
 :   This value replaces information that would otherwise be derived from changelogs.
-:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also sets the bundle product context used for unified rule resolution. For details, refer to [Per-changelog rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
+:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also sets the bundle product context used for single-product rule resolution. For details, refer to [Single-product rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
+
+`--rule-context-product <string?>`
+:   Optional: Override the product used for rule resolution. When not specified, uses the first product alphabetically from `--output-products` (or from all products aggregated from matched entries if `--output-products` is not specified). 
+:   Use this to control which per-product rules apply when multiple products exist in the bundle context.
+:   For example, `--output-products "kibana, security" --rule-context-product "security"` uses security-specific rules instead of kibana rules (which would be used by default since "kibana" < "security" alphabetically).
 
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
@@ -220,7 +225,7 @@ The following fields are supported:
 
 `products`
 :   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists). Product-specific rules override the global `rules.bundle` rules for changelog files matching that product context.
-:   All filter types use the same intersection + alphabetical first-match algorithm for consistency. For details, refer to [Per-changelog rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
+:   All filter types use the same single-product rule resolution algorithm for consistency. For details, refer to [Single-product rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
 
 ```yaml
 rules:
@@ -372,6 +377,11 @@ The `products` field determines which changelog files are gathered for considera
 `owner`
 :   Optional. The GitHub owner written to each product entry in the bundle. Overrides `bundle.owner` when set.
 :   Example: `owner: elastic`
+
+`rule_context_product`
+:   Optional. Override the product used for rule resolution. When not specified, uses the first product alphabetically from `output_products` (or from all products aggregated from matched entries if `output_products` is not set).
+:   Use this to control which per-product rules apply when multiple products exist in the bundle context.
+:   Example: `rule_context_product: security` (uses security-specific rules instead of alphabetical default)
 
 `hide_features`
 :   Optional. Feature IDs to mark as hidden in the bundle output (string or list). When the bundle is rendered, entries with matching `feature-id` values are commented out.

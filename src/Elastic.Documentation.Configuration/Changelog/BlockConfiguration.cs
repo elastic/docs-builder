@@ -85,6 +85,59 @@ public record BundlePerProductRule
 }
 
 /// <summary>
+/// Result of bundle rule resolution for a changelog entry.
+/// Provides explicit, type-safe indication of how the entry should be handled.
+/// </summary>
+public enum ResolveResult
+{
+	/// <summary>
+	/// Use global bundle rules (no per-product rule applies).
+	/// </summary>
+	UseGlobal,
+
+	/// <summary>
+	/// Use the specified per-product rule.
+	/// </summary>
+	UsePerProduct,
+
+	/// <summary>
+	/// Exclude the entry because its products are disjoint from the bundle context.
+	/// </summary>
+	ExcludeDisjoint,
+
+	/// <summary>
+	/// Exclude the entry because it has no products declared.
+	/// </summary>
+	ExcludeMissingProducts
+}
+
+/// <summary>
+/// Container for rule resolution result when using a per-product rule.
+/// </summary>
+public record ResolveResultWithRule(ResolveResult Result, BundlePerProductRule? Rule)
+{
+	/// <summary>
+	/// Creates a UseGlobal result.
+	/// </summary>
+	public static ResolveResultWithRule UseGlobal() => new(ResolveResult.UseGlobal, null);
+
+	/// <summary>
+	/// Creates a UsePerProduct result with the specified rule.
+	/// </summary>
+	public static ResolveResultWithRule UsePerProduct(BundlePerProductRule rule) => new(ResolveResult.UsePerProduct, rule);
+
+	/// <summary>
+	/// Creates an ExcludeDisjoint result.
+	/// </summary>
+	public static ResolveResultWithRule ExcludeDisjoint() => new(ResolveResult.ExcludeDisjoint, null);
+
+	/// <summary>
+	/// Creates an ExcludeMissingProducts result.
+	/// </summary>
+	public static ResolveResultWithRule ExcludeMissingProducts() => new(ResolveResult.ExcludeMissingProducts, null);
+}
+
+/// <summary>
 /// Rules for bundle-time filtering by product, type, and area.
 /// Applied during <c>changelog bundle</c> after the input stage gathers entries.
 /// Always applies regardless of input method (<c>--input-products</c>, <c>--prs</c>, <c>--all</c>, etc.).

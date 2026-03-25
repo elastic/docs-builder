@@ -249,3 +249,10 @@ bundle:
     #   hide_features:
     #     - feature-flag-1
     #     - feature-flag-2
+
+    # Example: Multi-product profile with explicit rule context
+    # kibana-security-release:
+    #   output: "kibana-security-{version}.yaml"
+    #   output_products: "kibana {version}, security {version}"
+    #   # Use security-specific bundle rules instead of kibana rules (alphabetical default)
+    #   rule_context_product: security

@@ -75,6 +75,13 @@ public record BundleProfile
 	public string? OutputProducts { get; init; }
 
 	/// <summary>
+	/// Optional override for rule context product. When specified, this product is used for 
+	/// rule resolution instead of the default (first product from output_products).
+	/// Used to control which per-product rules apply when multiple products exist.
+	/// </summary>
+	public string? RuleContextProduct { get; init; }
+
+	/// <summary>
 	/// GitHub repository name stored on each product in the bundle output.
 	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
 	/// </summary>

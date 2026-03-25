@@ -223,50 +223,59 @@ products:
           - "Monitoring"
 ```
 
-###### Unified rule precedence (all filter types)
+###### Single-Product Rule Resolution
 
-**ALL** filter types (product, type, area) use the same precedence logic for consistency and predictability:
+Bundle rule resolution uses a **single-product context** approach for simplicity and predictability:
 
-1. **Per-changelog rules**: Rules resolved via intersection + alphabetical first-match (see algorithm below)
-   - Intersection of bundle context (`output_products` / `--output-products`) with changelog's products
-   - **No bundle context**: Falls back to changelog's own products
-   - **Disjoint from bundle context**: Uses global rules to prevent unrelated product filtering
-   - Alphabetical first-match for deterministic resolution
-2. **Global rules**: Fallback when no per-changelog rules apply
-   - Uses `rules.bundle` level filters
+1. **Rule Context Product**: Each bundle resolves to exactly one product context for rule resolution:
+   - **With `--output-products`**: First product alphabetically from the output products list
+   - **Without `--output-products`**: First product alphabetically from all products aggregated from matched changelog entries (regardless of input method: `--all`, `--prs`, `--issues`, etc.)
+   - **Override**: Use `--rule-context-product` (CLI) or `rule_context_product:` (profile) to explicitly specify which product's rules to use
 
-This unified approach ensures that **product**, **type**, and **area** filtering all use the **same** choice of `rules.bundle.products.<id>` before falling back to global `rules.bundle`.
+2. **Rule Selection**: For each changelog, determine which rules apply:
+   - **Changelog matches rule context**: Use per-product rules for that context (if configured)
+   - **Changelog disjoint from rule context**: **Exclude the changelog entirely**
+   - **No rule context available**: Use global `rules.bundle` rules
+   - **No products declared in changelog**: Emit warning and exclude the changelog
+
+3. **All-or-Nothing Replacement**: When a per-product rule is selected, it completely replaces global rules. Any filter types not specified in the per-product rule are effectively disabled.
 
 **Input method independence**: Bundle filtering rules always apply regardless of the input method used to gather entries (`--input-products`, `--prs`, `--all`, etc.). Input stage and bundle filtering stage are conceptually separate.
 
-**Edge case**: Changelogs with **no `products:` field** or **empty products list** skip per-product rule resolution entirely and use global `rules.bundle` for all filter types.
-
-**Subset validation warnings**: If global and per-product product lists both exist, the configuration loader emits warnings (not errors) when per-product lists include products not present in global lists, helping identify potential configuration issues while allowing the configuration to proceed.
+**Important**: Changelogs that are disjoint from the bundle's rule context product are **excluded entirely**, not processed with global rules. This ensures different product contexts can have different relevance criteria.
 
 ##### Per-changelog rule resolution algorithm [changelog-bundle-rule-resolution]
 
-For all changelog files, the applicable per-product rule (used by **all** filter types) is chosen using an *intersection + alphabetical first-match* algorithm:
+For all changelog files, the applicable rule is determined using a **single-product context** approach:
 
-1. Compute the **intersection** of the bundle's product context and the changelog's own products.
-   - The bundle context is the set of product IDs from `--output-products` (if specified), or the changelog's own products when `--output-products` is not set.
-   - The intersection restricts rule lookup to only the products the changelog actually claims to belong to.
-2. **Sort the intersection alphabetically** (case-insensitive, ascending) for a deterministic result.
-3. Use the per-product rule for the **first product ID** in the sorted intersection that has a configured rule.
-4. **Disjoint fallback behavior**: If the intersection is empty (the changelog's products are disjoint from the bundle context):
-   - **Context-specific bundles** (when `--output-products` is specified): Use global `rules.bundle` rules to prevent unrelated product-specific rules from applying.
-   - **Bundle everything** (when `--output-products` is not specified): Fall back to the changelog's own product list sorted alphabetically to allow each changelog to use its own product-specific rules.
+1. **Determine the rule context product** for this bundle:
+   - **With `--output-products`**: First product alphabetically from the output products list (e.g., `"elasticsearch, kibana"` → `elasticsearch`)
+   - **With `--rule-context-product`**: Use the explicitly specified product (overrides default)
+   - **Without `--output-products`**: First product alphabetically from all products aggregated from matched changelog entries
 
-For example, with `--output-products "kibana 9.3.0" "security 9.3.0"`:
+2. **Check if changelog contains the rule context product**:
+   - **Contains rule context product**: Use per-product rules for that product (if configured), otherwise use global rules
+   - **Does not contain rule context product (disjoint)**: **Exclude the changelog entirely**
+   - **Changelog has no products**: Emit warning and exclude the changelog
+   - **No rule context available**: Use global rules
 
-| Changelog `products` | Intersection with context | Sorted | Rule used |
-|--------------------|--------------------------|--------|-----------|
-| `[kibana]` | `{kibana}` | `[kibana]` | `kibana` rule |
-| `[security]` | `{security}` | `[security]` | `security` rule |
-| `[kibana, security]` | `{kibana, security}` | `[kibana, security]` | `kibana` rule (k < s) |
-| `[elasticsearch]` | `{}` (disjoint) | n/a | Global `rules.bundle` rules |
-| `[cloud-hosted, elasticsearch]` | `{}` (disjoint) | n/a | Global `rules.bundle` rules |
+For example, with `--output-products "kibana 9.3.0, security 9.3.0"` (rule context: `kibana`):
 
-When `--output-products` is not set, the changelog's product list is used as the context, so each single-product changelog naturally picks its own rule. For multi-product changelogs in this situation, the alphabetically-first product with a configured rule wins. To avoid ambiguity for multi-product changelogs, configure per-product rules that agree on the changelog, or use `--output-products` to make the bundle's product context explicit.
+| Changelog `products` | Contains `kibana`? | Result |
+|--------------------|-------------------|---------|
+| `[kibana]` | ✅ Yes | Use `kibana` rules (if configured) or global rules |
+| `[security]` | ❌ No | **Excluded** (disjoint from bundle context) |
+| `[kibana, security]` | ✅ Yes | Use `kibana` rules (if configured) or global rules |
+| `[elasticsearch]` | ❌ No | **Excluded** (disjoint from bundle context) |
+| `[]` (empty/missing) | ❌ No | **Excluded** with warning (no products declared) |
+
+**Key benefits**:
+- **Deterministic**: Same changelog + same bundle context → same result
+- **Simple**: No complex intersection logic to understand
+- **Consistent**: Different product contexts can have different inclusion criteria
+- **Predictable**: "First product alphabetically" is easy to determine
+
+**Multi-product bundles**: For truly multi-product release notes, create separate bundles with different `rule_context_product` values, or use the default (first product alphabetically) if the rule overlap is acceptable.
 
 #### `rules.publish`
 
@@ -725,6 +734,7 @@ Profile configuration fields in `bundle.profiles`:
 | `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. Required when filtering by product metadata. Not used when the filter comes from a promotion report, URL list file, or `source: github_release`. |
 | `output` | Output file path pattern with `{version}` and `{lifecycle}` placeholders. |
 | `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should have a single product ID though it's filtered from many or have a different lifecycle or version than the filter. |
+| `rule_context_product` | Optional override for the product used for rule resolution. When not specified, uses the first product alphabetically from `output_products` (or from all products aggregated from matched entries if `output_products` is not set). Use this to control which per-product rules apply when multiple products exist in the bundle context. |
 | `repo` | Optional. Overrides `bundle.repo` for this profile only. Required when `source: github_release` is used and no `bundle.repo` is set. |
 | `owner` | Optional. Overrides `bundle.owner` for this profile only. |
 | `hide_features` | List of feature IDs to embed in the bundle as hidden. |
@@ -749,6 +759,13 @@ bundle:
       output: "serverless/{version}.yaml"
       output_products: "cloud-serverless {version}"
       # inherits repo: elasticsearch and owner: elastic from bundle level
+    # Multi-product profile with explicit rule context
+    kibana-security-release:
+      products: "kibana {version} {lifecycle}, security {version} {lifecycle}"
+      output: "kibana-security/{version}.yaml"
+      output_products: "kibana {version}, security {version}"
+      # Use security-specific bundle rules instead of kibana rules (alphabetical default)
+      rule_context_product: security
 ```
 
 #### Bundle changelogs from a GitHub release [changelog-bundle-profile-github-release]
@@ -880,6 +897,10 @@ docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
 2. The repository in the pull request URLs. Not required when using full PR URLs, or when `bundle.repo` is set in the changelog configuration.
 3. The owner in the pull request URLs. Not required when using full PR URLs, or when `bundle.owner` is set in the changelog configuration.
 4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
+
+**Advanced filtering**: You can also use `--rule-context-product PRODUCT` to explicitly control which product's bundle rules are used for filtering.
+By default, the first product alphabetically from `--output-products` is used as the rule context.
+Use this option when you have multi-product output but want to use a specific product's filtering rules.
 
 If you have changelog files that reference those pull requests, the command creates a file like this:
 

@@ -332,23 +332,25 @@ public static partial class ProfileFilterResolver
 	/// </summary>
 	internal static List<ProductArgument> ParseProfileProducts(string pattern)
 	{
-		var parts = pattern.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-		if (parts.Length < 1)
-			return [];
+		// Support both single and multi-product: "kibana 9.3.0 ga" or "kibana 9.3.0 ga, security 9.3.0 ga"
+		var productEntries = pattern.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var products = new List<ProductArgument>();
 
-		var productId = parts[0];
-		var target = parts.Length > 1 ? parts[1] : "*";
-		var lifecycle = parts.Length > 2 ? parts[2] : "*";
+		foreach (var entry in productEntries)
+		{
+			var parts = entry.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			if (parts.Length < 1)
+				continue; // Skip empty entries
 
-		return
-		[
-			new ProductArgument
+			products.Add(new ProductArgument
 			{
-				Product = productId == "*" ? "*" : productId,
-				Target = target == "*" ? "*" : target,
-				Lifecycle = lifecycle == "*" ? "*" : lifecycle
-			}
-		];
+				Product = parts.Length > 0 ? (parts[0] == "*" ? "*" : parts[0]) : "*",
+				Target = parts.Length > 1 ? (parts[1] == "*" ? "*" : parts[1]) : "*",
+				Lifecycle = parts.Length > 2 ? (parts[2] == "*" ? "*" : parts[2]) : "*"
+			});
+		}
+
+		return products.Count > 0 ? products : [];
 	}
 
 	/// <summary>
