@@ -4860,6 +4860,21 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
 		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
 
+		// Create multi-product entry that should be excluded by security context rule
+		var multiProductContent = """
+			title: Security+Kibana feature
+			type: feature
+			products:
+			  - product: security
+			    target: 9.3.0
+			  - product: kibana
+			    target: 9.3.0
+			prs:
+			  - "123"
+			""";
+		var multiProductFile = FileSystem.Path.Combine(changelogDir, "security-kibana-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(multiProductFile, multiProductContent, TestContext.Current.CancellationToken);
+
 		var outputPath = CreateTempFilePath("bundle.yaml");
 
 		var input = new BundleChangelogsArguments
@@ -4886,6 +4901,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// elasticsearch entry (disjoint from security context) falls back to global rules (no exclusions) → INCLUDED  
 		bundleContent.Should().Contain("elasticsearch-feature.yaml", "elasticsearch entry should be included by global rule fallback");
+
+		// Multi-product entry (security + kibana) matches security context and gets excluded by exclude_products=[kibana] → EXCLUDED
+		bundleContent.Should().NotContain("security-kibana-feature.yaml", "security+kibana entry should be excluded by security context rule");
 	}
 
 	[Fact]
