@@ -150,18 +150,11 @@ pivot:
 #   - Comma-separated string: "value1, value2, value3"
 #   - YAML list: [value1, value2, value3]
 #
-# Global match default for multi-valued fields (labels, areas, products).
-#   any (default) = match if ANY item matches the list
-#   all           = match only if ALL items match the list
-# Inherited by create, bundle, publish, and all product overrides.
+# For details and examples, refer to the [rules documentation](https://github.com/elastic/docs-builder/blob/main/docs/contribute/changelog.md#rules-for-creation-and-bundling).
 rules:
   # match: any
 
   # Create — controls which PRs generate changelogs.
-  #   exclude: block PRs with these labels (string or list)
-  #   include: only create changelogs for PRs with these labels (string or list)
-  # Cannot specify both.
-  #
   # create:
   #   exclude: ">non-issue, >test"
   #   # Or equivalently:
@@ -176,27 +169,6 @@ rules:
   #       exclude: "ILM"
 
   # Bundle — filtering applied during 'changelog bundle' and 'changelog gh-release'.
-  # Applied after the primary filter (--prs, --issues, --all, ...) has collected changelogs.
-  #
-  # Product filtering:
-  #   Always applied regardless of input method (--input-products, --prs, --all, etc.).
-  #   Input stage (gathering entries) and bundle filtering are conceptually separate.
-  #   exclude_products / include_products (string or list) — cannot specify both.
-  #   match_products inherits from rules.match if not specified.
-  #
-  # Type and area filtering (replaces rules.publish):
-  #   Always applied, regardless of the primary filter.
-  #   exclude_types / include_types (string or list) — cannot specify both.
-  #   exclude_areas / include_areas (string or list) — cannot specify both.
-  #   match_areas inherits from rules.match if not specified.
-  #
-  # Per-product overrides:
-  #   products:
-  #     '<id>': override product/type/area filters for that product context
-  #
-  #   When an entry belongs to multiple products, the applicable rule is resolved using
-  #   intersection + alphabetical first-match. See docs/contribute/changelog.md for details.
-  #
   # bundle:
   #   # Global defaults
   #   # match_products: any
@@ -210,12 +182,8 @@ rules:
   #   # exclude_areas:
   #   #   - "Internal"
   #   
-  #   # Per-product context overrides:
-  #   # Context-specific rules are resolved using output_products from profiles or CLI.
-  #   # Product filtering in per-product rules REPLACES global product filtering when present.
-  #   # Warning: Context product lists should be subsets of global lists to avoid conflicts.
+  #   # Per-product context overrides 
   #   # products:
-  #   #   # Applied when output_products context matches "observability"
   #   #   observability:
   #   #     include_products:
   #   #       - observability
@@ -226,44 +194,7 @@ rules:
   #   #       - docs
   #   #     include_areas:
   #   #       - APM
-  #   #       - "Infrastructure monitoring"
-  #   #   
-  #   #   # Applied when output_products context matches "security"  
-  #   #   security:
-  #   #     include_products:
-  #   #       - security
-  #   #       - elasticsearch
-  #   #     match_products: all
-  #   #   
-  #   #   # Traditional type/area-only override (no product filtering)
-  #   #   'elasticsearch, kibana':
-  #   #     exclude_types:
-  #   #       - docs
-  #   #   'cloud-serverless':
-  #   #     # match_areas: any
-  #   #     include_areas:
-  #   #       - "Search"
-  #   #       - "Monitoring"
-
-  # Publish — DEPRECATED AND NO LONGER USED.
-  # The `changelog render` command does not use rules.publish. Move type/area filtering to rules.bundle above.
-  # The `{changelog}` directive also does not use rules.publish.
-  # This section is ignored by both commands, and will be removed in a future release.
-  # A deprecation warning is emitted if rules.publish is present in the configuration.
-  #
-  # publish:
-  #   # match_areas: any
-  #   exclude_types: "deprecation, known-issue"
-  #   exclude_areas:
-  #     - "Internal"
-  #   products:
-  #     'elasticsearch, kibana':
-  #       exclude_types:
-  #         - docs
-  #     'cloud-serverless':
-  #       include_areas:
-  #         - "Search"
-  #         - "Monitoring"
+  #   #       - "Infrastructure monitoring"  
 
 # Bundle configuration (profiles and defaults)
 bundle:
