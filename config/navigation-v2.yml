@@ -211,19 +211,19 @@ nav:
             title: Minimal-downtime migration using snapshots
           - page: docs-content://manage-data/migrate/migrate-internal-indices.md
             title: Migrate system indices
-        - group: Ingest tools (from Reference)
+      - group: Ingest tools (from Reference)
+        children:
+        - toc: docs-content://reference/fleet
+        - toc: opentelemetry://reference
+        - toc: integration-docs://reference
+        - toc: elasticsearch://reference/search-connectors
+        - toc: logstash://reference
+        - toc: docs-content://reference/apm
+        - toc: beats://reference
+        - group: Other ingest tools
           children:
-          - toc: docs-content://reference/fleet
-          - toc: opentelemetry://reference
-          - toc: integration-docs://reference
-          - toc: elasticsearch://reference/search-connectors
-          - toc: logstash://reference
-          - toc: docs-content://reference/apm
-          - toc: beats://reference
-          - group: Other ingest tools
-            children:
-            - toc: elasticsearch-hadoop://reference
-            - toc: elastic-serverless-forwarder://reference
+          - toc: elasticsearch-hadoop://reference
+          - toc: elastic-serverless-forwarder://reference
       - group: Data storage and lifecycle
         children:
         - group: The Elasticsearch data store
