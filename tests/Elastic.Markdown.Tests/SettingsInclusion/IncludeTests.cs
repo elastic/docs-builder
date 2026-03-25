@@ -112,6 +112,19 @@ groups:
 	{
 		Html.Should().Contain("xpack.actions.customHostSettings[n].url");
 	}
+
+	[Fact]
+	public void DotsInSettingNamesAreHyphensInAnchors()
+	{
+		Html.Should().Contain("id=\"xpack-actions-customhostsettings\"");
+		Html.Should().NotContain("id=\"xpack.actions.customhostsettings\"");
+	}
+
+	[Fact]
+	public void NestedSettingAnchorIncludesParentPrefix()
+	{
+		Html.Should().Contain("id=\"xpack-actions-customhostsettingsn-url\"");
+	}
 }
 
 public class LegacySourceBlocksRenderAsMarkdownCode(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
