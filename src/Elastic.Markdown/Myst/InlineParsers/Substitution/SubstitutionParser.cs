@@ -129,6 +129,13 @@ public class SubstitutionParser : InlineParser
 		// Use shared mutation parsing logic
 		var (key, mutationStrings) = SubstitutionMutationHelper.ParseKeyWithMutations(rawKey);
 
+		// URL templates like `https://tiles.../{{z}}/{{x}}/{{y}}.png` must not be parsed as substitutions
+		// unless the key is a defined docset/front-matter substitution (for example `{{x}}` used intentionally).
+		if (key.Length <= 1 && mutationStrings.Length == 0
+			&& !context.Substitutions.ContainsKey(key)
+			&& !context.ContextSubstitutions.ContainsKey(key))
+			return false;
+
 		if (context.Substitutions.TryGetValue(key, out var value))
 		{
 			found = true;

@@ -117,7 +117,7 @@ Reserved for future configuration use. The directive does not currently load or 
 
 You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
 
-The `{changelog}` directive does not apply `rules.publish`. To filter entries in the directive output, use `rules.bundle` at bundle time so entries are excluded before bundling. The directive receives only the bundled entries. See the [changelog bundle documentation](/cli/release/changelog-bundle.md#changelog-bundle-rules) for full syntax.
+The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/release/changelog-bundle.md#changelog-bundle-rules) for full syntax.
 
 `rules.bundle` supports product, type, and area filtering, and per-product overrides.
 For full syntax, refer to the [rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).

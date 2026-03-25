@@ -78,11 +78,11 @@ Likewise, if you want to exclude changelogs with certain products, areas, or typ
 For example, you might choose to omit `other` or `docs` changelogs.
 Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release bundles.
 
-When you run the `docs-builder changelog render` command, changelogs that match the products, areas, or types in the `rules.publish` section of the changelog configuration file are commented out of the documentation output files.
-[Changelog directives](#changelog-directive) do not apply `rules.publish`; filtering must be done at bundle time via `rules.bundle`.
+The `changelog render` command does **not** apply `rules.publish`; filtering must be done at bundle time via `rules.bundle`.
+[Changelog directives](#changelog-directive) also do not apply `rules.publish`.
 
 :::{warning}
-`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time. Using `rules.publish` emits a deprecation warning during configuration loading.
+`rules.publish` is deprecated and no longer used by the `changelog render` command. Move your type/area filtering to `rules.bundle` so it applies at bundle time. Using `rules.publish` emits a deprecation warning during configuration loading.
 :::
 
 Each field supports **exclude** (block if matches) or **include** (block if doesn't match) semantics. You cannot mix both for the same field.
@@ -218,12 +218,12 @@ When `--output-products` is not set, the entry's own product list is used as the
 #### `rules.publish`
 
 :::{warning}
-`rules.publish` is deprecated. Move your type/area filtering to `rules.bundle` so it applies at bundle time rather than render time. Using `rules.publish` emits a deprecation warning during configuration loading.
+`rules.publish` is deprecated and **no longer used by the `changelog render` command**. The command now only supports `rules.bundle` for type/area filtering at bundle time. Using `rules.publish` emits a deprecation warning during configuration loading.
 :::
 
-`rules.publish` still works for backward compatibility, but will be removed in a future release. The migration is straightforward — copy the same fields from `rules.publish` into `rules.bundle`.
+`rules.publish` is ignored by the `changelog render` command and will be removed in a future release. If you have `rules.publish` configured, move your type/area filtering to `rules.bundle` so it applies at bundle time.
 
-**Before (deprecated):**
+**Deprecated (no longer used):**
 
 ```yaml
 rules:
@@ -233,7 +233,7 @@ rules:
       - Internal
 ```
 
-**After:**
+**Use instead:**
 
 ```yaml
 rules:
@@ -462,6 +462,8 @@ In this case, the changelog file derives the title, type, areas, and products fr
 The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues. Similarly, when using `--issues`, the command extracts linked PRs from the issue body (for example, "Fixed by #123"). You can turn off this behavior in either case with the `--no-extract-issues` flag or by setting `extract.issues: false` in the changelog configuration file. The `extract.issues` setting applies to both directions: issues extracted from PR bodies (when using `--prs`) and PRs extracted from issue bodies (when using `--issues`).
 
 The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
+
+By default, `--strip-title-prefix` is disabled. You can enable it globally by setting `extract.strip_title_prefix: true` in the changelog configuration file, which will apply the prefix stripping to all `changelog add` and `changelog gh-release` commands without requiring the CLI flag. The CLI flag `--strip-title-prefix` overrides the configuration setting.
 
 :::{note}
 The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
