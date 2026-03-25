@@ -182,7 +182,7 @@ Each product override supports:
 - **Product filtering**: `include_products`, `exclude_products`, `match_products` - Controls which changelog entries are included based on their product IDs
 - **Type/area filtering**: `exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas` - Controls which entries are included based on their type and area fields
 
-Product-specific rules use **all-or-nothing replacement** when selected by the precedence algorithm (see [Unified rule precedence](#unified-rule-precedence-all-filter-types) below). When a per-product rule is chosen for a changelog, it completely replaces global bundle rules - any filter types not specified in the per-product rule are effectively disabled (not inherited from global rules). When no per-product rule is selected (e.g., disjoint products, empty products), global rules apply.
+Product-specific rules use **all-or-nothing replacement** when selected by the precedence algorithm. When a per-product rule is chosen for a changelog, it completely replaces global bundle rules - any filter types not specified in the per-product rule are effectively disabled (not inherited from global rules). When no per-product rule is selected (for example, for disjoint `products` or empty `products`), global rules apply.
 
 **Example: All-or-nothing replacement**
 
