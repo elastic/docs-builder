@@ -61,6 +61,9 @@ public record ProductApplicability
 	[YamlMember(Alias = "edot-node")]
 	public AppliesCollection? EdotNode { get; set; }
 
+	[YamlMember(Alias = "edot-browser")]
+	public AppliesCollection? EdotBrowser { get; set; }
+
 	[YamlMember(Alias = "edot-php")]
 	public AppliesCollection? EdotPhp { get; set; }
 
@@ -112,6 +115,7 @@ public record ProductApplicability
 		AppendProduct("edot-dotnet", EdotDotnet);
 		AppendProduct("edot-java", EdotJava);
 		AppendProduct("edot-node", EdotNode);
+		AppendProduct("edot-browser", EdotBrowser);
 		AppendProduct("edot-php", EdotPhp);
 		AppendProduct("edot-python", EdotPython);
 		AppendProduct("edot-cf-aws", EdotCfAws);
@@ -144,6 +148,7 @@ public static class ProductApplicabilityConversion
 		{ EdotDotnet: not null } => "edot-dotnet",
 		{ EdotJava: not null } => "edot-java",
 		{ EdotNode: not null } => "edot-node",
+		{ EdotBrowser: not null } => "edot-browser",
 		{ EdotPhp: not null } => "edot-php",
 		{ EdotPython: not null } => "edot-python",
 		{ EdotCfAws: not null } => "edot-cf-aws",
