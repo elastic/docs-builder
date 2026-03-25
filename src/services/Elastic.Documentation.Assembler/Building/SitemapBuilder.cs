@@ -12,19 +12,17 @@ using Elastic.Markdown.Extensions.DetectionRules;
 
 namespace Elastic.Documentation.Assembler.Building;
 
-// TODO rewrite as real exporter
-public class SitemapBuilder(
-	IReadOnlyCollection<INavigationItem> navigationItems,
-	IFileSystem fileSystem,
-	IDirectoryInfo pathPrefixedOutputFolder
-)
+public static class SitemapBuilder
 {
 	private static readonly Uri BaseUri = new("https://www.elastic.co");
 
-	public void Generate()
+	/// <summary>Generates sitemap.xml with per-URL last_updated dates.</summary>
+	public static void Generate(
+		IReadOnlyDictionary<string, DateTimeOffset> entries,
+		IFileSystem fileSystem,
+		IDirectoryInfo outputFolder
+	)
 	{
-		var flattenedNavigationItems = GetNavigationItems(navigationItems);
-
 		var doc = new XDocument
 		{
 			Declaration = new XDeclaration("1.0", "utf-8", "yes")
@@ -32,58 +30,40 @@ public class SitemapBuilder(
 
 		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
-		var currentDate = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
 		var root = new XElement(
 			ns + "urlset",
 			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-			flattenedNavigationItems
-				.Select(n => n switch
-				{
-					INodeNavigationItem<INavigationModel, INavigationItem> group => (group.Url, NavigationItem: group),
-					ILeafNavigationItem<INavigationModel> file => (file.Url, NavigationItem: file as INavigationItem),
-					_ => throw new Exception($"{nameof(SitemapBuilder)}.{nameof(Generate)}: Unhandled navigation item type: {n.GetType()}")
-				})
-				.Select(n => n.Url)
-				.Distinct()
-				.Select(u => new Uri(BaseUri, u))
-				.Select(u => new XElement(ns + "url", [
-					new XElement(ns + "loc", u),
-					new XElement(ns + "lastmod", currentDate)
+			entries
+				.OrderBy(e => e.Key, StringComparer.Ordinal)
+				.Select(e => new XElement(ns + "url", [
+					new XElement(ns + "loc", new Uri(BaseUri, e.Key)),
+					new XElement(ns + "lastmod", e.Value.ToString("o", CultureInfo.InvariantCulture))
 				]))
 		);
 
 		doc.Add(root);
 
-		using var fileStream = fileSystem.File.Create(fileSystem.Path.Combine(pathPrefixedOutputFolder.FullName, "sitemap.xml"));
+		if (!outputFolder.Exists)
+			_ = fileSystem.Directory.CreateDirectory(outputFolder.FullName);
+
+		using var fileStream = fileSystem.File.Create(fileSystem.Path.Combine(outputFolder.FullName, "sitemap.xml"));
 		doc.Save(fileStream);
 	}
+}
 
-	private static IReadOnlyCollection<INavigationItem> GetNavigationItems(IReadOnlyCollection<INavigationItem> items)
-	{
-		var result = new List<INavigationItem>();
-		foreach (var item in items)
+/// <summary>Extracts URLs from navigation items for sitemap generation.</summary>
+public static class SitemapNavigationHelper
+{
+	public static IEnumerable<INavigationItem> Flatten(INavigationItem item) =>
+		item switch
 		{
-			switch (item)
-			{
-				case ILeafNavigationItem<CrossLinkModel>:
-				case ILeafNavigationItem<DetectionRuleFile>:
-				case ILeafNavigationItem<INavigationModel> { Hidden: true }:
-					continue;
-				case ILeafNavigationItem<INavigationModel> file:
-					result.Add(file);
-					break;
-				case INodeNavigationItem<INavigationModel, INavigationItem> group:
-					if (item.Hidden)
-						continue;
-
-					result.AddRange(GetNavigationItems(group.NavigationItems));
-					result.Add(group);
-					break;
-				default:
-					throw new Exception($"{nameof(SitemapBuilder)}.{nameof(GetNavigationItems)}: Unhandled navigation item type: {item.GetType()}");
-			}
-		}
-
-		return result;
-	}
+			ILeafNavigationItem<CrossLinkModel> => [],
+			ILeafNavigationItem<DetectionRuleFile> => [],
+			ILeafNavigationItem<INavigationModel> { Hidden: true } => [],
+			ILeafNavigationItem<INavigationModel> file => [file],
+			INodeNavigationItem<INavigationModel, INavigationItem> { Hidden: true } => [],
+			INodeNavigationItem<INavigationModel, INavigationItem> group =>
+				group.NavigationItems.SelectMany(Flatten).Append(group),
+			_ => []
+		};
 }

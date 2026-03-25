@@ -20,6 +20,7 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.Version;
@@ -110,6 +111,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case ButtonBlock buttonBlock:
 				WriteButton(renderer, buttonBlock);
+				return;
+			case ListSubPagesBlock listSubPagesBlock:
+				WriteListSubPages(renderer, listSubPagesBlock);
 				return;
 			case TableDirectiveBlock tableDirectiveBlock:
 				WriteTableDirective(renderer, tableDirectiveBlock);
@@ -209,6 +213,16 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Type = block.Type,
 			Align = block.Align,
 			IsInGroup = block.IsInGroup
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteListSubPages(HtmlRenderer renderer, ListSubPagesBlock block)
+	{
+		var slice = ListSubPagesView.Create(new ListSubPagesViewModel
+		{
+			DirectiveBlock = block,
+			SubPages = block.SubPages
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -426,7 +440,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		try
 		{
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-			settings = YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration);
+			settings = SettingsBlock.PrepareSettingsForRendering(
+				YamlSerialization.Deserialize<YamlSettings>(yaml, block.Context.Build.ProductsConfiguration),
+				block.Context
+			);
 		}
 		catch (YamlException e)
 		{
@@ -439,12 +456,23 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			return;
 		}
 
+		var settingsSourceFile = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
 		var slice = SettingsView.Create(new SettingsViewModel
 		{
 			SettingsCollection = settings,
+			GroupHeadingLevel = block.GroupHeadingLevel,
+			VersionsConfig = block.Build.VersionsConfiguration,
 			RenderMarkdown = s =>
 			{
-				var document = MarkdownParser.ParseMarkdownStringAsync(block.Build, block.Context, s, block.IncludeFrom, block.Context.YamlFrontMatter, MarkdownParser.Pipeline);
+				var normalized = SettingsMarkdownNormalizer.Normalize(s, settings.Product);
+				var document = MarkdownParser.ParseMarkdownStringAsync(
+					block.Build,
+					block.Context,
+					normalized,
+					settingsSourceFile,
+					block.Context.YamlFrontMatter,
+					block.IncludeFrom,
+					MarkdownParser.Pipeline);
 				var html = document.ToHtml(MarkdownParser.Pipeline);
 
 				// Trim to ensure consistent whitespace
