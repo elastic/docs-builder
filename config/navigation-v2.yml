@@ -883,91 +883,91 @@ nav:
             title: AIOps Labs
           - page: docs-content://explore-analyze/machine-learning/machine-learning-in-kibana/inference-processing.md
             title: Inference processing
-      - group: AI framework
-        page: docs-content://explore-analyze/ai-features.md
+      - group: Agent builder
+        page: docs-content://explore-analyze/ai-features/elastic-agent-builder.md
+        children:
+        - page: docs-content://explore-analyze/ai-features/agent-builder/get-started.md
+          title: Get started
+        - page: docs-content://explore-analyze/ai-features/agent-builder/models.md
+          title: Models
+        - group: Chat
+          page: docs-content://explore-analyze/ai-features/agent-builder/chat.md
+          children:
+          - page: docs-content://explore-analyze/ai-features/agent-builder/standalone-and-flyout-modes.md
+            title: Chat UI modes
+        - group: Agents
+          page: docs-content://explore-analyze/ai-features/agent-builder/agent-builder-agents.md
+          children:
+          - page: docs-content://explore-analyze/ai-features/agent-builder/custom-agents.md
+            title: Custom agents
+          - page: docs-content://explore-analyze/ai-features/agent-builder/builtin-agents-reference.md
+            title: Built-in agents
+          - page: docs-content://explore-analyze/ai-features/agent-builder/prompt-engineering.md
+            title: Prompting best practices
+          - page: docs-content://explore-analyze/ai-features/agent-builder/agents-and-workflows.md
+            title: Call agents from workflows
+        - group: Tools
+          page: docs-content://explore-analyze/ai-features/agent-builder/tools.md
+          children:
+          - page: docs-content://explore-analyze/ai-features/agent-builder/tools/builtin-tools-reference.md
+            title: Built-in tools
+          - group: Custom tools
+            page: docs-content://explore-analyze/ai-features/agent-builder/tools/custom-tools.md
+            children:
+            - page: docs-content://explore-analyze/ai-features/agent-builder/tools/esql-tools.md
+              title: "ES|QL tools"
+            - page: docs-content://explore-analyze/ai-features/agent-builder/tools/index-search-tools.md
+              title: Index search tools
+            - page: docs-content://explore-analyze/ai-features/agent-builder/tools/mcp-tools.md
+              title: MCP tools
+            - page: docs-content://explore-analyze/ai-features/agent-builder/tools/workflow-tools.md
+              title: Workflow tools
+        - group: Programmatic access
+          page: docs-content://explore-analyze/ai-features/agent-builder/programmatic-access.md
+          children:
+          - group: Kibana API
+            page: docs-content://explore-analyze/ai-features/agent-builder/kibana-api.md
+            children:
+            - page: docs-content://explore-analyze/ai-features/agent-builder/agent-builder-api-tutorial.md
+              title: Kibana API tutorial
+          - page: docs-content://explore-analyze/ai-features/agent-builder/a2a-server.md
+            title: A2A server
+          - page: docs-content://explore-analyze/ai-features/agent-builder/mcp-server.md
+            title: MCP server
+        - page: docs-content://explore-analyze/ai-features/agent-builder/monitor-usage.md
+          title: Monitor token usage
+        - page: docs-content://explore-analyze/ai-features/agent-builder/permissions.md
+          title: Permissions
+        - group: Troubleshooting
+          page: docs-content://explore-analyze/ai-features/agent-builder/troubleshooting.md
+          children:
+          - page: docs-content://explore-analyze/ai-features/agent-builder/troubleshooting/context-length-exceeded.md
+            title: Context length exceeded
+          - page: docs-content://explore-analyze/ai-features/agent-builder/troubleshooting/api-calls-return-403-forbidden.md
+            title: 403 Forbidden
+        - page: docs-content://explore-analyze/ai-features/agent-builder/limitations-known-issues.md
+          title: Limitations
+      - group: Elastic Inference Service
+        page: docs-content://explore-analyze/elastic-inference.md
         children:
         - group: Elastic Inference Service
-          page: docs-content://explore-analyze/elastic-inference.md
+          page: docs-content://explore-analyze/elastic-inference/eis.md
           children:
-          - group: Elastic Inference Service
-            page: docs-content://explore-analyze/elastic-inference/eis.md
-            children:
-            - page: docs-content://explore-analyze/elastic-inference/connect-self-managed-cluster-to-eis.md
-              title: EIS for self-managed clusters
-          - page: docs-content://explore-analyze/elastic-inference/inference-api.md
-            title: Inference integrations
-        - group: Agent builder
-          page: docs-content://explore-analyze/ai-features/elastic-agent-builder.md
-          children:
-          - page: docs-content://explore-analyze/ai-features/agent-builder/get-started.md
-            title: Get started
-          - page: docs-content://explore-analyze/ai-features/agent-builder/models.md
-            title: Models
-          - group: Chat
-            page: docs-content://explore-analyze/ai-features/agent-builder/chat.md
-            children:
-            - page: docs-content://explore-analyze/ai-features/agent-builder/standalone-and-flyout-modes.md
-              title: Chat UI modes
-          - group: Agents
-            page: docs-content://explore-analyze/ai-features/agent-builder/agent-builder-agents.md
-            children:
-            - page: docs-content://explore-analyze/ai-features/agent-builder/custom-agents.md
-              title: Custom agents
-            - page: docs-content://explore-analyze/ai-features/agent-builder/builtin-agents-reference.md
-              title: Built-in agents
-            - page: docs-content://explore-analyze/ai-features/agent-builder/prompt-engineering.md
-              title: Prompting best practices
-            - page: docs-content://explore-analyze/ai-features/agent-builder/agents-and-workflows.md
-              title: Call agents from workflows
-          - group: Tools
-            page: docs-content://explore-analyze/ai-features/agent-builder/tools.md
-            children:
-            - page: docs-content://explore-analyze/ai-features/agent-builder/tools/builtin-tools-reference.md
-              title: Built-in tools
-            - group: Custom tools
-              page: docs-content://explore-analyze/ai-features/agent-builder/tools/custom-tools.md
-              children:
-              - page: docs-content://explore-analyze/ai-features/agent-builder/tools/esql-tools.md
-                title: "ES|QL tools"
-              - page: docs-content://explore-analyze/ai-features/agent-builder/tools/index-search-tools.md
-                title: Index search tools
-              - page: docs-content://explore-analyze/ai-features/agent-builder/tools/mcp-tools.md
-                title: MCP tools
-              - page: docs-content://explore-analyze/ai-features/agent-builder/tools/workflow-tools.md
-                title: Workflow tools
-          - group: Programmatic access
-            page: docs-content://explore-analyze/ai-features/agent-builder/programmatic-access.md
-            children:
-            - group: Kibana API
-              page: docs-content://explore-analyze/ai-features/agent-builder/kibana-api.md
-              children:
-              - page: docs-content://explore-analyze/ai-features/agent-builder/agent-builder-api-tutorial.md
-                title: Kibana API tutorial
-            - page: docs-content://explore-analyze/ai-features/agent-builder/a2a-server.md
-              title: A2A server
-            - page: docs-content://explore-analyze/ai-features/agent-builder/mcp-server.md
-              title: MCP server
-          - page: docs-content://explore-analyze/ai-features/agent-builder/monitor-usage.md
-            title: Monitor token usage
-          - page: docs-content://explore-analyze/ai-features/agent-builder/permissions.md
-            title: Permissions
-          - group: Troubleshooting
-            page: docs-content://explore-analyze/ai-features/agent-builder/troubleshooting.md
-            children:
-            - page: docs-content://explore-analyze/ai-features/agent-builder/troubleshooting/context-length-exceeded.md
-              title: Context length exceeded
-            - page: docs-content://explore-analyze/ai-features/agent-builder/troubleshooting/api-calls-return-403-forbidden.md
-              title: 403 Forbidden
-          - page: docs-content://explore-analyze/ai-features/agent-builder/limitations-known-issues.md
-            title: Limitations
-        - group: AI chats
+          - page: docs-content://explore-analyze/elastic-inference/connect-self-managed-cluster-to-eis.md
+            title: EIS for self-managed clusters
+        - page: docs-content://explore-analyze/elastic-inference/inference-api.md
+          title: Inference integrations
+      - group: AI chat and LLM configuration
+        page: docs-content://explore-analyze/ai-features.md
+        children:
+        - group: AI chat experiences
           page: docs-content://explore-analyze/ai-features/ai-chat-experiences.md
           children:
           - page: docs-content://explore-analyze/ai-features/ai-chat-experiences/ai-agent-or-ai-assistant.md
             title: Compare Agent Builder and AI Assistant
           - page: docs-content://explore-analyze/ai-features/ai-chat-experiences/ai-assistant.md
             title: AI assistants
-        - group: LLM guides
+        - group: LLM providers
           page: docs-content://explore-analyze/ai-features/llm-guides/llm-connectors.md
           children:
           - page: docs-content://explore-analyze/ai-features/llm-guides/connect-to-azure-openai.md
