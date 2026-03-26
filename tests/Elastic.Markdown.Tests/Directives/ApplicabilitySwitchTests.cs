@@ -217,7 +217,7 @@ Content for removed version
 
 			// Also verify the key has the expected format
 			key1.Should().StartWith("applies-", "Sync key should start with 'applies-' prefix");
-			key1.Should().MatchRegex(@"^applies-[0-9A-F]{8}$", "Sync key should be in format 'applies-{8 hex digits}'");
+			key1.Should().MatchRegex(@"^applies-[0-9A-F]{8}$");
 		}
 	}
 

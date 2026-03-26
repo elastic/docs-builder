@@ -95,11 +95,10 @@ public class SitemapTests
 	}
 
 	[Fact]
-	public void BuildSearchBody_FirstPage_HasNoPitAndNoSearchAfter()
+	public void BuildSearchBody_FirstPage_HasPitButNoSearchAfter()
 	{
 		// Act
-		var body = EsSitemapReader.BuildSearchBody("test-pit-id", null);
-		var json = JsonSerializer.Serialize(body);
+		var json = EsSitemapReader.BuildSearchBody("test-pit-id", null);
 
 		// Assert
 		json.Should().Contain("\"pit\"");
@@ -113,8 +112,7 @@ public class SitemapTests
 	public void BuildSearchBody_SubsequentPage_IncludesSearchAfter()
 	{
 		// Act
-		var body = EsSitemapReader.BuildSearchBody("test-pit-id", ["/docs/last-url"]);
-		var json = JsonSerializer.Serialize(body);
+		var json = EsSitemapReader.BuildSearchBody("test-pit-id", ["/docs/last-url"]);
 
 		// Assert
 		json.Should().Contain("\"search_after\"");
@@ -125,8 +123,7 @@ public class SitemapTests
 	public void BuildSearchBody_EscapesSpecialCharactersInPitId()
 	{
 		// Act
-		var body = EsSitemapReader.BuildSearchBody("pit-with-\"quotes\"", null);
-		var json = JsonSerializer.Serialize(body);
+		var json = EsSitemapReader.BuildSearchBody("pit-with-\"quotes\"", null);
 		var doc = JsonDocument.Parse(json);
 
 		// Assert — verify the value round-trips correctly through serialization
