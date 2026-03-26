@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -31,7 +32,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 			do
 			{
 				var body = BuildSearchBody(pitId, lastSortValues);
-				var response = await transport.PostAsync<JsonResponse>("/_search", PostData.Serializable(body), ct);
+				var response = await transport.PostAsync<JsonResponse>("/_search", PostData.String(body), ct);
 
 				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 					throw new InvalidOperationException(
@@ -109,7 +110,8 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 	{
 		try
 		{
-			_ = await transport.DeleteAsync<VoidResponse>("/_pit", new DefaultRequestParameters(), PostData.Serializable(new { id = pitId }), ct);
+			var body = JsonSerializer.Serialize(new Dictionary<string, string> { ["id"] = pitId });
+			_ = await transport.DeleteAsync<VoidResponse>("/_pit", new DefaultRequestParameters(), PostData.String(body), ct);
 			logger.LogInformation("Closed PIT");
 		}
 		catch (OperationCanceledException)
@@ -122,20 +124,41 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		}
 	}
 
-	internal static object BuildSearchBody(string pitId, string[]? searchAfter)
+	// Returns pre-built JSON string because this assembly is published with AOT trimming.
+	// System.Text.Json cannot serialize anonymous types or unregistered objects via reflection in AOT mode,
+	// so we build the JSON with JsonObject/JsonArray and send it via PostData.String() instead of PostData.Serializable().
+	internal static string BuildSearchBody(string pitId, string[]? searchAfter)
 	{
-		var body = new Dictionary<string, object>
+		var body = new JsonObject
 		{
 			["size"] = PageSize,
-			["_source"] = new[] { "url", "last_updated" },
-			["query"] = new { @bool = new { must_not = new[] { new { term = new { hidden = true } } } } },
-			["pit"] = new { id = pitId, keep_alive = PitKeepAlive },
-			["sort"] = new[] { new { url = "asc" } }
+			["_source"] = new JsonArray("url", "last_updated"),
+			["query"] = new JsonObject
+			{
+				["bool"] = new JsonObject
+				{
+					["must_not"] = new JsonArray(new JsonObject
+					{
+						["term"] = new JsonObject { ["hidden"] = true }
+					})
+				}
+			},
+			["pit"] = new JsonObject
+			{
+				["id"] = pitId,
+				["keep_alive"] = PitKeepAlive
+			},
+			["sort"] = new JsonArray(new JsonObject { ["url"] = "asc" })
 		};
 
 		if (searchAfter is { Length: > 0 })
-			body["search_after"] = searchAfter;
+		{
+			var sortArray = new JsonArray();
+			foreach (var value in searchAfter)
+				sortArray.Add(JsonValue.Create(value));
+			body["search_after"] = sortArray;
+		}
 
-		return body;
+		return body.ToJsonString();
 	}
 }
