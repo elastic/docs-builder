@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -110,7 +109,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 	{
 		try
 		{
-			var body = JsonSerializer.Serialize(new Dictionary<string, string> { ["id"] = pitId });
+			var body = new JsonObject { ["id"] = pitId }.ToJsonString();
 			_ = await transport.DeleteAsync<VoidResponse>("/_pit", new DefaultRequestParameters(), PostData.String(body), ct);
 			logger.LogInformation("Closed PIT");
 		}
@@ -155,7 +154,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		{
 			var sortArray = new JsonArray();
 			foreach (var value in searchAfter)
-				sortArray.Add(JsonValue.Create(value));
+				sortArray.Add((JsonNode)value);
 			body["search_after"] = sortArray;
 		}
 
