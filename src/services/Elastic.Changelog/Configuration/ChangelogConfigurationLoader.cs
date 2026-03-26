@@ -652,6 +652,15 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			matchProducts = parsed.Value;
 		}
 
+		// Validate global ineffective patterns
+		if (matchProducts == MatchMode.Any && includeProducts is { Count: > 0 })
+		{
+			collector.EmitWarning(configPath,
+				"Configuration pattern 'match_products: any' with 'include_products' provides no selective filtering due to single-product rule resolution. " +
+				"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
+				"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+		}
+
 		// Parse match_areas (inherited from globalMatch if omitted)
 		var matchAreas = inheritedMatch;
 		if (!string.IsNullOrWhiteSpace(yaml.MatchAreas))
@@ -745,6 +754,31 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 							return null;
 						}
 						contextMatchProducts = parsed.Value;
+					}
+
+					// Validate per-product ineffective patterns
+					if (contextMatchProducts == MatchMode.Any && contextIncludeProducts is { Count: > 0 })
+					{
+						collector.EmitWarning(configPath,
+							$"Configuration pattern 'match_products: any' with 'include_products' in per-product rule '{normalizedProductId}' provides no selective filtering. " +
+							"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
+							"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+					}
+
+					// Detect disjoint products in per-product include_products
+					if (contextIncludeProducts is { Count: > 1 })
+					{
+						var disjointProducts = contextIncludeProducts.Where(p =>
+							!string.Equals(p, normalizedProductId, StringComparison.OrdinalIgnoreCase)).ToList();
+
+						if (disjointProducts.Count > 0)
+						{
+							collector.EmitHint(configPath,
+								$"Per-product rule '{normalizedProductId}' includes disjoint products [{string.Join(", ", disjointProducts)}] " +
+								"which cannot be included due to single-product rule resolution. " +
+								"Use '--rule-context-product', separate bundles, or multi-product changelogs instead. " +
+								"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+						}
 					}
 
 					// Parse type/area blocker

@@ -174,6 +174,12 @@ You cannot specify both `exclude_products` and `include_products`, both `exclude
 
 When a changelog is excluded by `rules.bundle`, the bundling service emits a warning with a `[-bundle-exclude]`, `[-bundle-include]`, or `[-bundle-type-area]` prefix.
 
+:::{important}
+Per-product `include_products` can **only** affect changelogs that already contain the rule context product.
+It cannot be used to include changelogs that are disjoint from the rule context.
+This means, for example, that a `rules.bundle.products.kibana` configuration with `match_products: any` and  `include_products: ["kibana, elasticsearch"]` is ineffective and does **not** include changelogs that have only `product: elasticsearch`.
+:::
+
 ##### Product-specific bundle rules (`rules.bundle.products`)
 
 Product keys can be a single product ID or a comma-separated list.
@@ -182,7 +188,7 @@ Each product override supports:
 - **Product filtering**: `include_products`, `exclude_products`, `match_products` - Controls which changelog entries are included based on their product IDs
 - **Type/area filtering**: `exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas` - Controls which entries are included based on their type and area fields
 
-Product-specific rules use **all-or-nothing replacement** when selected by the precedence algorithm. When a per-product rule is chosen for a changelog, it completely replaces global bundle rules - any filter types not specified in the per-product rule are effectively disabled (not inherited from global rules). When no per-product rule is selected (for example, for disjoint `products` or empty `products`), global rules apply.
+Product-specific rules use **all-or-nothing replacement** when selected by the single-product rule resolution algorithm. When a per-product rule is chosen for a changelog, it completely replaces global bundle rules - any filter types not specified in the per-product rule are effectively disabled (not inherited from global rules). When no per-product rule exists for the rule context product, global rules apply. **Important**: Changelogs that are disjoint from the rule context product (or have empty `products`) are **excluded entirely** - they do not fall back to global rules.
 
 **Example: All-or-nothing replacement**
 
@@ -200,8 +206,8 @@ rules:
         # Note: exclude_types is NOT inherited - kibana entries ignore global type exclusions
 ```
 
-**Result**: 
-- Elasticsearch entries: excluded if `type: docs` OR `areas: [Internal]` (uses global rules)
+**Result** (assuming bundle rule context = "kibana"):
+- Elasticsearch entries: **excluded as disjoint** from kibana rule context (never reach rule evaluation)
 - Kibana entries: included if `areas: [UI]`, type filtering disabled (uses kibana rule entirely)
 - A kibana entry with `type: docs, areas: [UI]` will be **included** (global `exclude_types` ignored)
 
@@ -233,9 +239,8 @@ Bundle rule resolution uses a **single-product context** approach for simplicity
    - **Override**: Use `--rule-context-product` (CLI) or `rule_context_product:` (profile) to explicitly specify which product's rules to use
 
 2. **Rule Selection**: For each changelog, determine which rules apply:
-   - **Changelog matches rule context**: Use per-product rules for that context (if configured)
+   - **Changelog matches rule context**: Use per-product rules for that context (if configured), otherwise use global rules
    - **Changelog disjoint from rule context**: **Exclude the changelog entirely**
-   - **No rule context available**: Use global `rules.bundle` rules
    - **No products declared in changelog**: Emit warning and exclude the changelog
 
 3. **All-or-Nothing Replacement**: When a per-product rule is selected, it completely replaces global rules. Any filter types not specified in the per-product rule are effectively disabled.
@@ -244,7 +249,7 @@ Bundle rule resolution uses a **single-product context** approach for simplicity
 
 **Important**: Changelogs that are disjoint from the bundle's rule context product are **excluded entirely**, not processed with global rules. This ensures different product contexts can have different relevance criteria.
 
-##### Per-changelog rule resolution algorithm [changelog-bundle-rule-resolution]
+##### Single-product rule resolution algorithm [changelog-bundle-rule-resolution]
 
 For all changelog files, the applicable rule is determined using a **single-product context** approach:
 
@@ -257,7 +262,6 @@ For all changelog files, the applicable rule is determined using a **single-prod
    - **Contains rule context product**: Use per-product rules for that product (if configured), otherwise use global rules
    - **Does not contain rule context product (disjoint)**: **Exclude the changelog entirely**
    - **Changelog has no products**: Emit warning and exclude the changelog
-   - **No rule context available**: Use global rules
 
 For example, with `--output-products "kibana 9.3.0, security 9.3.0"` (rule context: `kibana`):
 

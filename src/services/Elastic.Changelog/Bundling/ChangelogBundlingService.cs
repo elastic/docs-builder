@@ -676,18 +676,31 @@ public partial class ChangelogBundlingService(
 			switch (resolveResult.Result)
 			{
 				case ResolveResult.ExcludeMissingProducts:
-					collector.EmitWarning(entry.FilePath, $"Changelog '{entry.Data.Title}' has no products declared - excluding from bundle");
+					collector.EmitWarning(entry.FilePath, $"[-bundle-missing-products] Excluding '{entry.FileName}' from bundle (no products declared).");
 					ruleStats["excluded_no_products"] = ruleStats.GetValueOrDefault("excluded_no_products") + 1;
 					continue;
 
 				case ResolveResult.ExcludeDisjoint:
-					collector.EmitHint(entry.FilePath, $"Excluded changelog '{entry.Data.Title}' (products: [{string.Join(", ", entryProducts)}]) - disjoint from rule context '{ruleContextProduct}'");
+					collector.EmitHint(entry.FilePath, $"[-bundle-disjoint] Excluding '{entry.FileName}' from bundle (disjoint from rule context '{ruleContextProduct}').");
 					ruleStats["excluded_disjoint"] = ruleStats.GetValueOrDefault("excluded_disjoint") + 1;
 					continue;
 
 				case ResolveResult.UsePerProduct when resolveResult.Rule != null:
 					// Apply per-product rule
 					ruleStats[ruleContextProduct ?? "unknown"] = ruleStats.GetValueOrDefault(ruleContextProduct ?? "unknown") + 1;
+
+					// Emit hint about ineffective pattern usage (once per bundle, not per entry)
+					if (resolveResult.Rule.MatchProducts == MatchMode.Any &&
+						resolveResult.Rule.IncludeProducts?.Count > 0 &&
+						!ruleStats.ContainsKey("ineffective_pattern_warned"))
+					{
+						var wouldIncludeAll = resolveResult.Rule.IncludeProducts.Contains(ruleContextProduct ?? "", StringComparer.OrdinalIgnoreCase);
+						collector.EmitHint(string.Empty,
+							$"Note: Per-product rule '{ruleContextProduct}' uses 'match_products: any' with 'include_products' which acts as " +
+							$"{(wouldIncludeAll ? "include-all" : "exclude-all")} for this context. " +
+							$"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+						ruleStats["ineffective_pattern_warned"] = 1;
+					}
 
 					// 1 — Product filter: use per-product rule
 					if (ShouldExcludeByResolvedProductRule(entryProducts, resolveResult.Rule, out var productReason))
@@ -707,6 +720,19 @@ public partial class ChangelogBundlingService(
 				case ResolveResult.UseGlobal:
 					// Apply global rules
 					ruleStats["global"] = ruleStats.GetValueOrDefault("global") + 1;
+
+					// Emit hint about ineffective global pattern usage (once per bundle, not per entry)
+					if (bundleRules.MatchProducts == MatchMode.Any &&
+						bundleRules.IncludeProducts?.Count > 0 &&
+						!ruleStats.ContainsKey("ineffective_global_pattern_warned"))
+					{
+						var wouldIncludeAll = bundleRules.IncludeProducts.Contains(ruleContextProduct ?? "", StringComparer.OrdinalIgnoreCase);
+						collector.EmitHint(string.Empty,
+							$"Note: Global rules use 'match_products: any' with 'include_products' which acts as " +
+							$"{(wouldIncludeAll ? "include-all" : "exclude-all")} for rule context '{ruleContextProduct}'. " +
+							$"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+						ruleStats["ineffective_global_pattern_warned"] = 1;
+					}
 
 					// 1 — Product filter: use global rules
 					if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var globalProductReason))

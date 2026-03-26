@@ -184,17 +184,22 @@ rules:
   #   
   #   # Per-product context overrides 
   #   # products:
+  #   #   # ❌ INEFFECTIVE PATTERNS - avoid these:
+  #   #   # observability:
+  #   #   #   match_products: any
+  #   #   #   include_products: ["observability", "kibana"]  # "kibana" part has no effect (disjoint)
+  #   #   
+  #   #   # ✅ EFFECTIVE PATTERNS - use these instead:
   #   #   observability:
-  #   #     include_products:
-  #   #       - observability
-  #   #       - kibana
-  #   #       - elasticsearch
-  #   #     match_products: any
-  #   #     exclude_types:
-  #   #       - docs
+  #   #     exclude_products: ["cloud-enterprise"]  # Exclude unwanted combinations
+  #   #     exclude_types: ["docs"]
   #   #     include_areas:
-  #   #       - APM
-  #   #       - "Infrastructure monitoring"  
+  #   #       - "APM"
+  #   #       - "Infrastructure monitoring"
+  #   #   kibana:
+  #   #     match_products: all  # Strict filtering for multi-product combinations
+  #   #     include_products: ["kibana", "security"]  # Only kibana+security entries
+  #   #     exclude_types: ["docs"]  
 
 # Bundle configuration (profiles and defaults)
 bundle:
