@@ -89,6 +89,10 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
         member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
             CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri)
 
+        member this.TryResolveSnippet(errorEmitter, snippetUri, [<Out>]snippetMetadata : byref<SnippetMetadata|null>) =
+            let resolver = CrossLinkResolver(crossLinks, uriResolver)
+            resolver.TryResolveSnippet(errorEmitter, snippetUri, &snippetMetadata)
+
         member this.IsDeclaredCrossLinkScheme(scheme) =
             declared.Contains(scheme)
 
