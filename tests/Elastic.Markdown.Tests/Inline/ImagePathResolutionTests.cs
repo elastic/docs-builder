@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Threading.Tasks;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
@@ -14,7 +15,6 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Tests;
-using AwesomeAssertions;
 using Xunit;
 
 namespace Elastic.Markdown.Tests.Inline;

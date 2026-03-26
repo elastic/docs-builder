@@ -4,10 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
-using AwesomeAssertions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 

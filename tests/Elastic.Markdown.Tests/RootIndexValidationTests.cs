@@ -4,10 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
-using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests;
 

@@ -4,11 +4,11 @@
 
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.IO;
-using AwesomeAssertions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Markdown.Tests.DocSet;

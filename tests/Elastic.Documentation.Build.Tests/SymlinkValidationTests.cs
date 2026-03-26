@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using System.Security;
-using Elastic.Documentation.Configuration;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Build.Tests;
 

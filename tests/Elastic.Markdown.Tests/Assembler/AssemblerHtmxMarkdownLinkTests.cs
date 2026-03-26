@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
-using AwesomeAssertions;
 using Xunit;
 
 namespace Elastic.Markdown.Tests.Assembler;

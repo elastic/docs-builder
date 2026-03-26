@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net.Http.Json;
-using Elastic.Documentation.Api.Core.Search;
 using AwesomeAssertions;
+using Elastic.Documentation.Api.Core.Search;
 
 namespace Elastic.Assembler.IntegrationTests.Search;
 

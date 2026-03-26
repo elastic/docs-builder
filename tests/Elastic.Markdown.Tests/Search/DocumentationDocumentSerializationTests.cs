@@ -4,11 +4,11 @@
 
 using System.Globalization;
 using System.Text.Json;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
-using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Search;
 

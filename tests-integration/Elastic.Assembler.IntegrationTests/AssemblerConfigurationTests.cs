@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
-using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Assembler.IntegrationTests;

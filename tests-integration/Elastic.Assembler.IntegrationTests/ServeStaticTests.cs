@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Aspire.Hosting.Testing;
-using Elastic.Documentation.Aspire;
 using AwesomeAssertions;
+using Elastic.Documentation.Aspire;
 
 namespace Elastic.Assembler.IntegrationTests;
 

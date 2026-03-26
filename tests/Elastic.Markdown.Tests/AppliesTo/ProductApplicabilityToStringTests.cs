@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Reflection;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using AwesomeAssertions;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Tests.AppliesTo;

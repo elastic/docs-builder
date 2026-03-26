@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Isolated;
-using AwesomeAssertions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Build.Tests;

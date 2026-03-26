@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Diagnostics;
-using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 

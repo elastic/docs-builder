@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
-using AwesomeAssertions;
 using Xunit;
 
 namespace Elastic.Changelog.Tests.Changelogs;

@@ -5,8 +5,8 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json;
 using System.Xml.Linq;
-using Elastic.Documentation.Assembler.Building;
 using AwesomeAssertions;
+using Elastic.Documentation.Assembler.Building;
 
 namespace Elastic.Documentation.Build.Tests;
 

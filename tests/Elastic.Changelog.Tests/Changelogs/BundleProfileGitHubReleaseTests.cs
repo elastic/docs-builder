@@ -2,11 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
-using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 

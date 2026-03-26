@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using Actions.Core.Services;
+using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
 using FakeItEasy;
-using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
