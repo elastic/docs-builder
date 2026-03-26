@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AngleSharp;
+using AwesomeAssertions;
 using Documentation.Builder;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
@@ -18,7 +19,6 @@ using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RazorSlices;

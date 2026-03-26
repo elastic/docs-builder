@@ -4,11 +4,11 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;

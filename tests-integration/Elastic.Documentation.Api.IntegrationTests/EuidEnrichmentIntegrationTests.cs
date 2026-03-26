@@ -4,11 +4,11 @@
 
 using System.Diagnostics;
 using System.Text;
+using AwesomeAssertions;
 using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Elastic.Documentation.Api.IntegrationTests;
