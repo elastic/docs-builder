@@ -95,7 +95,7 @@ public class SitemapTests
 	}
 
 	[Fact]
-	public void BuildSearchBody_FirstPage_HasNoPitAndNoSearchAfter()
+	public void BuildSearchBody_FirstPage_HasPitButNoSearchAfter()
 	{
 		// Act
 		var json = EsSitemapReader.BuildSearchBody("test-pit-id", null);
