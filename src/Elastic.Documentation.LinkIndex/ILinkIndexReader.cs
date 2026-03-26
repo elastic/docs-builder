@@ -10,5 +10,6 @@ public interface ILinkIndexReader
 {
 	Task<LinkRegistry> GetRegistry(Cancel cancellationToken = default);
 	Task<RepositoryLinks> GetRepositoryLinks(string key, Cancel cancellationToken = default);
+	Task<RepositorySnippets> GetRepositorySnippets(string key, Cancel cancellationToken = default);
 	string RegistryUrl { get; }
 }

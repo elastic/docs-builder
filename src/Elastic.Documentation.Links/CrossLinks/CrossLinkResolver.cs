@@ -3,13 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.Links.CrossLinks;
 
 public interface ICrossLinkResolver
 {
 	bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri);
+	bool TryResolveSnippet(Action<string> errorEmitter, Uri snippetUri, [NotNullWhen(true)] out SnippetMetadata? snippetMetadata);
 	IUriEnvironmentResolver UriResolver { get; }
 
 	/// <summary>
@@ -32,6 +35,13 @@ public class NoopCrossLinkResolver : ICrossLinkResolver
 	}
 
 	/// <inheritdoc />
+	public bool TryResolveSnippet(Action<string> errorEmitter, Uri snippetUri, [NotNullWhen(true)] out SnippetMetadata? snippetMetadata)
+	{
+		snippetMetadata = null;
+		return false;
+	}
+
+	/// <inheritdoc />
 	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
 
 	/// <inheritdoc />
@@ -44,10 +54,66 @@ public class NoopCrossLinkResolver : ICrossLinkResolver
 public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentResolver? uriResolver = null) : ICrossLinkResolver
 {
 	private FetchedCrossLinks _crossLinks = crossLinks;
+	private readonly ConcurrentDictionary<string, RepositorySnippets?> _snippetIndexByRepository = new(StringComparer.OrdinalIgnoreCase);
 	public IUriEnvironmentResolver UriResolver { get; } = uriResolver ?? new IsolatedBuildEnvironmentUriResolver();
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+
+	/// <inheritdoc />
+	public bool TryResolveSnippet(Action<string> errorEmitter, Uri snippetUri, [NotNullWhen(true)] out SnippetMetadata? snippetMetadata)
+	{
+		snippetMetadata = null;
+		if (!_crossLinks.LinkReferences.ContainsKey(snippetUri.Scheme))
+		{
+			errorEmitter($"'{snippetUri.Scheme}' was not found in the cross link index. Ensure it is listed under 'cross_links' in your docset.yml");
+			return false;
+		}
+
+		var snippetIndex = GetSnippetIndex(snippetUri.Scheme);
+		var snippets = snippetIndex?.Snippets;
+		if (snippets is null || snippets.Count == 0)
+		{
+			errorEmitter($"'{snippetUri.Scheme}' does not expose any reusable snippets in its snippets.json index.");
+			return false;
+		}
+
+		var lookupPath = (snippetUri.Host + '/' + snippetUri.AbsolutePath.TrimStart('/')).Trim('/');
+		if (string.IsNullOrEmpty(lookupPath) && snippetUri.Host.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+			lookupPath = snippetUri.Host;
+
+		if (snippets.TryGetValue(lookupPath, out var exact))
+		{
+			snippetMetadata = exact;
+			return true;
+		}
+
+		var matched = snippets.FirstOrDefault(kvp => string.Equals(kvp.Key, lookupPath, StringComparison.OrdinalIgnoreCase));
+		if (!string.IsNullOrEmpty(matched.Key))
+		{
+			snippetMetadata = matched.Value;
+			return true;
+		}
+
+		errorEmitter($"'{lookupPath}' is not a valid snippet in the '{snippetUri.Scheme}' cross link snippet index.");
+		return false;
+	}
+
+	private RepositorySnippets? GetSnippetIndex(string repository) =>
+		_snippetIndexByRepository.GetOrAdd(repository, repo =>
+		{
+			var fetcher = _crossLinks.SnippetFetcher;
+			if (fetcher is null)
+				return null;
+			try
+			{
+				return fetcher(repo, default).GetAwaiter().GetResult();
+			}
+			catch
+			{
+				return null;
+			}
+		});
 
 	/// <inheritdoc />
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);

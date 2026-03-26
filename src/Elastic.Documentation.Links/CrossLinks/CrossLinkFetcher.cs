@@ -7,6 +7,7 @@ using System.Collections.Frozen;
 using System.Text.Json;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
 
@@ -32,19 +33,26 @@ public record FetchedCrossLinks
 	/// </summary>
 	public FrozenSet<string>? CodexRepositories { get; init; }
 
+	/// <summary>
+	/// Optional lazy snippet fetcher, keyed by repository.
+	/// </summary>
+	public Func<string, Cancel, Task<RepositorySnippets?>>? SnippetFetcher { get; init; }
+
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
 		DeclaredRepositories = [],
 		LinkReferences = new Dictionary<string, RepositoryLinks>().ToFrozenDictionary(),
 		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
 		RegistryUrlsByRepository = null,
-		CodexRepositories = null
+		CodexRepositories = null,
+		SnippetFetcher = null
 	};
 }
 
 public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : IDisposable
 {
 	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
+	protected ILinkIndexReader LinkIndexProvider { get; } = linkIndexProvider;
 	private LinkRegistry? _linkIndex;
 
 	public static RepositoryLinks Deserialize(string json) =>
@@ -64,7 +72,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 		}
 
 		Logger.LogInformation("Fetching link index registry (link-index.json)");
-		_linkIndex = await linkIndexProvider.GetRegistry(ctx);
+		_linkIndex = await LinkIndexProvider.GetRegistry(ctx);
 		return _linkIndex;
 	}
 
@@ -102,7 +110,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 	}
 
 	protected Task<RepositoryLinks> FetchLinkIndexEntry(string repository, LinkRegistryEntry linkRegistryEntry, Cancel ctx) =>
-		FetchLinkIndexEntryFromReader(linkIndexProvider, repository, linkRegistryEntry, ctx);
+		FetchLinkIndexEntryFromReader(LinkIndexProvider, repository, linkRegistryEntry, ctx);
 
 	/// <summary>
 	/// Fetches repository links from a specific reader. Used for dual-registry (public + codex) fetching.

@@ -196,3 +196,36 @@ public class CanNotIncludeItself(ITestOutputHelper output) : DirectiveTest<Inclu
 			.Contain(d => d.Message.Contains("cyclical include detected"));
 	}
 }
+
+public class CrossRepositoryIncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+:::{include} docs-content://_snippets/reusable.md
+:::
+"""
+)
+{
+	[Fact]
+	public void IncludesCrossRepositorySnippetHtml() =>
+		Html.Should().Contain("Cross repo snippet content.");
+
+	[Fact]
+	public void ExposesIndexedSnippetAnchors() =>
+		Block!.IncludedAnchors.Should().Contain("reusable-heading");
+}
+
+public class CrossRepositoryIncludeRequiresSnippetFolderTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
+"""
+:::{include} docs-content://guides/not-a-snippet.md
+:::
+"""
+)
+{
+	[Fact]
+	public void EmitsError()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+		Collector.Diagnostics.Should()
+			.Contain(d => d.Severity == Severity.Error &&
+				d.Message.Contains("only supports including snippets from `_snippet` folders."));
+	}
+}

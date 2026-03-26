@@ -203,6 +203,9 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.Where(i => i.Found)
 			.Select(i =>
 			{
+				if (i.IncludedAnchors.Length > 0)
+					return new { Block = i, Anchors = new SnippetAnchors(i.IncludedAnchors, []) };
+
 				var relativePath = i.IncludePathRelativeToSource;
 				if (relativePath is null)
 					return null;
@@ -211,6 +214,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 					return null;
 
 				var anchors = snippet.GetAnchors(collector, documentationFileLookup, parser, frontMatter);
+				if (anchors is null)
+					return null;
 				return new { Block = i, Anchors = anchors };
 			})
 			.Where(i => i is not null)

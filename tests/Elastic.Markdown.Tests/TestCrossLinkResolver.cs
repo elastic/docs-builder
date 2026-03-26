@@ -62,12 +62,30 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 		{
 			DeclaredRepositories = declaredRepositories,
 			LinkReferences = linkReferences.ToFrozenDictionary(),
-			LinkIndexEntries = indexEntries.ToFrozenDictionary()
+			LinkIndexEntries = indexEntries.ToFrozenDictionary(),
+			SnippetFetcher = (repository, _) =>
+			{
+				var snippets = new RepositorySnippets
+				{
+					Snippets = new Dictionary<string, SnippetMetadata>
+					{
+						["_snippets/reusable.md"] = new()
+						{
+							Content = "## Reusable heading\n\nCross repo snippet content.",
+							Anchors = ["reusable-heading"]
+						}
+					}
+				};
+				return Task.FromResult<RepositorySnippets?>(snippets);
+			}
 		};
 	}
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+
+	public bool TryResolveSnippet(Action<string> errorEmitter, Uri snippetUri, [NotNullWhen(true)] out SnippetMetadata? snippetMetadata) =>
+		new CrossLinkResolver(_crossLinks, UriResolver).TryResolveSnippet(errorEmitter, snippetUri, out snippetMetadata);
 
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
 }

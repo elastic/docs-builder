@@ -51,5 +51,17 @@ public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elasti
 		return RepositoryLinks.Deserialize(stream);
 	}
 
+	public async Task<RepositorySnippets> GetRepositorySnippets(string key, Cancel cancellationToken)
+	{
+		var getObjectRequest = new GetObjectRequest
+		{
+			BucketName = bucketName,
+			Key = key
+		};
+		var getObjectResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
+		await using var stream = getObjectResponse.ResponseStream;
+		return RepositorySnippets.Deserialize(stream);
+	}
+
 	public string RegistryUrl { get; } = $"https://{bucketName}.s3.{s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{registryKey}";
 }

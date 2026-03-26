@@ -73,6 +73,20 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		return RepositoryLinks.Deserialize(json);
 	}
 
+	/// <inheritdoc />
+	public async Task<RepositorySnippets> GetRepositorySnippets(string key, Cancel cancellationToken = default)
+	{
+		await EnsureCloneAsync(cancellationToken);
+		if (Path.IsPathRooted(key))
+			throw new ArgumentException($"Repository key '{key}' must be a relative path.", nameof(key));
+		var snippetsPath = Path.Combine(CloneDirectory, key);
+		if (!_fileSystem.File.Exists(snippetsPath))
+			throw new FileNotFoundException($"Repository snippets not found at {snippetsPath}.");
+
+		var json = await _fileSystem.File.ReadAllTextAsync(snippetsPath, cancellationToken);
+		return RepositorySnippets.Deserialize(json);
+	}
+
 	private async Task EnsureCloneAsync(Cancel cancellationToken)
 	{
 		await _cloneLock.WaitAsync(cancellationToken);

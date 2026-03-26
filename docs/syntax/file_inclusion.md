@@ -20,6 +20,17 @@ Files to be included must live in a `_snippets` folder to be considered a snippe
 :::{include} _snippets/reusable-snippet.md
 :::
 
+### Cross-repository snippet reuse
+
+You can also include snippets from repositories listed in your `cross_links` configuration.
+
+```markdown
+:::{include} docs-content://_snippets/reusable.md
+:::
+```
+
+This syntax uses `<repository>://<path>`, and the path must point to a file in a `_snippets` folder.
+
 #### Linking to snippets with custom anchors
 
 To link to a heading with a [custom anchor (ID)](./headings.md#custom-anchor-links) defined in a snippet, target the parent file + anchor. 

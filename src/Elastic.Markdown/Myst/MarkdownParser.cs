@@ -116,6 +116,31 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
+	public static MarkdownDocument ParseSnippetStringAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		string markdown,
+		IFileInfo path,
+		IFileInfo parentPath,
+		YamlFrontMatter? matter,
+		int? includeLine = null)
+	{
+		var state = new ParserState(build)
+		{
+			MarkdownSourcePath = path,
+			YamlFrontMatter = matter,
+			TryFindDocument = resolvers.TryFindDocument,
+			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
+			CrossLinkResolver = resolvers.CrossLinkResolver,
+			NavigationTraversable = resolvers.NavigationTraversable,
+			ParentMarkdownPath = parentPath,
+			IncludeLine = includeLine
+		};
+		var context = new ParserContext(state);
+		var preprocessedMarkdown = PreprocessLinkSubstitutions(markdown, context);
+		return Markdig.Markdown.Parse(preprocessedMarkdown, Pipeline, context);
+	}
+
 
 	private static async Task<MarkdownDocument> ParseAsync(
 		IFileInfo path,

@@ -35,6 +35,7 @@ public class DocumentationSet : INavigationTraversable
 	public string Name { get; }
 	public IFileInfo OutputStateFile { get; }
 	public IFileInfo LinkReferenceFile { get; }
+	public IFileInfo SnippetReferenceFile { get; }
 
 	public IDirectoryInfo SourceDirectory { get; }
 	public IDirectoryInfo OutputDirectory { get; }
@@ -85,6 +86,7 @@ public class DocumentationSet : INavigationTraversable
 			: Context.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Context.DocumentationSourceDirectory.Name}";
 		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
 		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
+		SnippetReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "snippets.json"));
 
 		Files = fileFactory.Files;
 		var files = Files.Values.ToArray();
@@ -273,6 +275,26 @@ public class DocumentationSet : INavigationTraversable
 			Links = links,
 			CrossLinks = crossLinks
 		};
+	}
+
+	public RepositorySnippets CreateSnippetReference()
+	{
+		var snippets = Files.Values
+			.OfType<SnippetFile>()
+			.Select(snippet =>
+			{
+				var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+					? snippet.RelativePath.Replace('\\', '/')
+					: snippet.RelativePath;
+
+				var content = Context.ReadFileSystem.File.ReadAllText(snippet.SourceFile.FullName);
+				var anchors = snippet.GetAnchors(Context.Collector, TryFindDocumentByRelativePath, MarkdownParser, null)?.Anchors;
+				return (Path: path, Metadata: new SnippetMetadata { Content = content, Anchors = anchors });
+			})
+			.OrderBy(tuple => tuple.Path)
+			.ToDictionary(tuple => tuple.Path, tuple => tuple.Metadata);
+
+		return new RepositorySnippets { Snippets = snippets };
 	}
 
 	public void ClearOutputDirectory()

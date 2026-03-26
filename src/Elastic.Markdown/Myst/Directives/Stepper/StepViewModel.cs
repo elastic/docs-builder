@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
@@ -37,6 +38,13 @@ public class StepViewModel : DirectiveViewModel
 		public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri)
 		{
 			resolvedUri = null;
+			return false;
+		}
+
+		/// <inheritdoc />
+		public bool TryResolveSnippet(Action<string> errorEmitter, Uri snippetUri, [NotNullWhen(true)] out SnippetMetadata? snippetMetadata)
+		{
+			snippetMetadata = null;
 			return false;
 		}
 

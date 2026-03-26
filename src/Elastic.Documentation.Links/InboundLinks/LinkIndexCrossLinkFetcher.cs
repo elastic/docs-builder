@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.IO;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
@@ -35,7 +36,19 @@ public class LinksIndexCrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRea
 			DeclaredRepositories = declaredRepositories,
 			LinkReferences = linkReferences.ToFrozenDictionary(),
 			LinkIndexEntries = linkEntries.ToFrozenDictionary(),
+			SnippetFetcher = async (repository, cancellationToken) =>
+			{
+				if (!linkEntries.TryGetValue(repository, out var linkIndexEntry))
+					return null;
+				var snippetsPath = GetSnippetsIndexPath(linkIndexEntry.Path);
+				return await LinkIndexProvider.GetRepositorySnippets(snippetsPath, cancellationToken);
+			}
 		};
 	}
+
+	private static string GetSnippetsIndexPath(string linksPath) =>
+		linksPath.EndsWith("links.json", StringComparison.OrdinalIgnoreCase)
+			? linksPath[..^"links.json".Length] + "snippets.json"
+			: Path.Combine(Path.GetDirectoryName(linksPath) ?? string.Empty, "snippets.json").Replace('\\', '/');
 
 }

@@ -401,12 +401,17 @@ public partial class DocumentationGenerator
 	{
 		var file = DocumentationSet.LinkReferenceFile;
 		var state = DocumentationSet.CreateLinkReference();
+		var snippetsFile = DocumentationSet.SnippetReferenceFile;
+		var snippetsState = DocumentationSet.CreateSnippetReference();
 		if (writeToDisk)
 		{
 			if (!file.Directory!.Exists)
 				file.Directory.Create();
 			var bytes = JsonSerializer.SerializeToUtf8Bytes(state, SourceGenerationContext.Default.RepositoryLinks);
 			await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(file.FullName, bytes, ctx);
+
+			var snippetBytes = JsonSerializer.SerializeToUtf8Bytes(snippetsState, SourceGenerationContext.Default.RepositorySnippets);
+			await DocumentationSet.OutputDirectory.FileSystem.File.WriteAllBytesAsync(snippetsFile.FullName, snippetBytes, ctx);
 		}
 		return state;
 	}

@@ -19,6 +19,31 @@ public record LinkMetadata
 	public bool Hidden { get; init; }
 }
 
+public record SnippetMetadata
+{
+	[JsonPropertyName("content")]
+	public required string Content { get; init; }
+
+	[JsonPropertyName("anchors")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string[]? Anchors { get; init; } = [];
+}
+
+public record RepositorySnippets
+{
+	[JsonPropertyName("snippets")]
+	public required Dictionary<string, SnippetMetadata> Snippets { get; init; } = [];
+
+	public static RepositorySnippets Deserialize(Stream json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.RepositorySnippets)!;
+
+	public static RepositorySnippets Deserialize(string json) =>
+		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.RepositorySnippets)!;
+
+	public static string Serialize(RepositorySnippets reference) =>
+		JsonSerializer.Serialize(reference, SourceGenerationContext.Default.RepositorySnippets);
+}
+
 public record LinkSingleRedirect
 {
 	[JsonPropertyName("anchors")]

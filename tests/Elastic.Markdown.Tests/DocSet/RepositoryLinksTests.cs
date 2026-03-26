@@ -11,9 +11,14 @@ namespace Elastic.Markdown.Tests.DocSet;
 
 public class RepositoryLinksTests : NavigationTestsBase
 {
-	public RepositoryLinksTests(ITestOutputHelper output) : base(output) => Reference = Set.CreateLinkReference();
+	public RepositoryLinksTests(ITestOutputHelper output) : base(output)
+	{
+		Reference = Set.CreateLinkReference();
+		SnippetReference = Set.CreateSnippetReference();
+	}
 
 	private RepositoryLinks Reference { get; }
+	private RepositorySnippets SnippetReference { get; }
 
 	[Fact]
 	public void ShouldNotBeNull() =>
@@ -26,6 +31,10 @@ public class RepositoryLinksTests : NavigationTestsBase
 	[Fact]
 	public void ShouldNotIncludeSnippets() =>
 		Reference.Links.Should().NotContain(l => l.Key.Contains("_snippets/"));
+
+	[Fact]
+	public void EmitsSnippets() =>
+		SnippetReference.Snippets.Should().NotBeNullOrEmpty();
 
 }
 
@@ -108,6 +117,26 @@ public class LinkReferenceSerializationTests
 			""";
 		var linkReference = RepositoryLinks.Deserialize(json);
 		linkReference.Origin.Ref.Should().Be("ref");
+	}
+
+	[Fact]
+	public void SnippetsSerializeAndDeserialize()
+	{
+		var snippets = new RepositorySnippets
+		{
+			Snippets = new Dictionary<string, SnippetMetadata>
+			{
+				["_snippets/example.md"] = new()
+				{
+					Content = "A \"quoted\" line",
+					Anchors = ["example-anchor"]
+				}
+			}
+		};
+		var json = RepositorySnippets.Serialize(snippets);
+		var roundtrip = RepositorySnippets.Deserialize(json);
+		roundtrip.Snippets.Should().ContainKey("_snippets/example.md");
+		roundtrip.Snippets["_snippets/example.md"].Content.Should().Be("A \"quoted\" line");
 	}
 
 }

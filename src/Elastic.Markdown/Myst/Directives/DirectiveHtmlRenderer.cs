@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -393,11 +394,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteLiteralIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
 	{
-		if (!block.Found || block.IncludePath is null)
+		if (!block.Found || (block.IncludePath is null && block.IncludeContent is null))
 			return;
 
-		var file = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
-		var content = block.Build.ReadFileSystem.File.ReadAllText(file.FullName);
+		var content = block.IncludeContent;
+		if (content is null)
+		{
+			var file = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath!);
+			content = block.Build.ReadFileSystem.File.ReadAllText(file.FullName);
+		}
 		if (string.IsNullOrEmpty(block.Language))
 			_ = renderer.Write(content);
 		else
@@ -416,14 +421,31 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteIncludeBlock(HtmlRenderer renderer, IncludeBlock block)
 	{
-		if (!block.Found || block.IncludePath is null)
+		if (!block.Found || (block.IncludePath is null && block.IncludeContent is null))
 			return;
 
-		var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath);
-
 		var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-		var document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default, block.Line)
-			.GetAwaiter().GetResult();
+		Markdig.Syntax.MarkdownDocument document;
+		if (block.IncludeContent is not null)
+		{
+			var virtualSnippetPath = block.Build.ReadFileSystem.FileInfo.New(
+				Path.Combine(block.Build.DocumentationSourceDirectory.FullName, "_snippets", "__external__", $"{Guid.NewGuid():N}.md"));
+			document = MarkdownParser.ParseSnippetStringAsync(
+				block.Build,
+				block.Context,
+				block.IncludeContent,
+				virtualSnippetPath,
+				parentPath,
+				block.Context.YamlFrontMatter,
+				block.Line
+			);
+		}
+		else
+		{
+			var snippet = block.Build.ReadFileSystem.FileInfo.New(block.IncludePath!);
+			document = MarkdownParser.ParseSnippetAsync(block.Build, block.Context, snippet, parentPath, block.Context.YamlFrontMatter, default, block.Line)
+				.GetAwaiter().GetResult();
+		}
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);

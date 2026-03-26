@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 
@@ -25,6 +26,10 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 	public string? IncludePath { get; private set; }
 
 	public string? IncludePathRelativeToSource { get; private set; }
+
+	public string? IncludeContent { get; private set; }
+
+	public string[] IncludedAnchors { get; private set; } = [];
 
 	public bool Found { get; private set; }
 
@@ -53,6 +58,10 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			this.EmitError("include requires an argument.");
 			return;
 		}
+
+		includePath = includePath.Trim();
+		if (TryExtractCrossRepoInclude(context, includePath))
+			return;
 
 		var includeFrom = context.MarkdownSourcePath.Directory!.FullName;
 		if (includePath.StartsWith('/'))
@@ -97,6 +106,45 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			this.EmitError($"{{include}} cyclical include detected `{IncludePath}` points to itself");
 			Found = false;
 		}
+	}
+
+	private bool TryExtractCrossRepoInclude(ParserContext context, string includePath)
+	{
+		if (!Uri.TryCreate(includePath, UriKind.Absolute, out var includeUri))
+			return false;
+		if (includeUri.Scheme is "http" or "https" or "file")
+			return false;
+		if (!context.CrossLinkResolver.IsDeclaredCrossLinkScheme(includeUri.Scheme))
+			return false;
+
+		var lookupPath = $"{includeUri.Host}/{includeUri.AbsolutePath.TrimStart('/')}".Trim('/');
+		if (string.IsNullOrWhiteSpace(lookupPath))
+		{
+			this.EmitError("Cross-repository include requires a non-empty path.");
+			return true;
+		}
+
+		if (lookupPath.Contains("..", StringComparison.Ordinal))
+		{
+			this.EmitError("Cross-repository include path must not contain relative traversal segments.");
+			return true;
+		}
+
+		if (!lookupPath.Contains("_snippets", StringComparison.Ordinal))
+		{
+			this.EmitError($"{{include}} only supports including snippets from `_snippet` folders. `{includePath}` is not a snippet");
+			return true;
+		}
+
+		if (!context.CrossLinkResolver.TryResolveSnippet(message => this.EmitError(message), includeUri, out var snippetMetadata))
+			return true;
+
+		IncludePath = includePath;
+		IncludePathRelativeToSource = $"{includeUri.Scheme}://{lookupPath}";
+		IncludeContent = snippetMetadata.Content;
+		IncludedAnchors = snippetMetadata.Anchors ?? [];
+		Found = true;
+		return true;
 	}
 
 	private void ValidateIncludePath(IFileInfo file)

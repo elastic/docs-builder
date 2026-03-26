@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated;
 using Markdig;
@@ -58,6 +59,13 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	{
 		resolvedUri = new Uri("https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main");
 		return true;
+	}
+
+	/// <inheritdoc />
+	public bool TryResolveSnippet(Action<string> errorEmitter, Uri snippetUri, [NotNullWhen(true)] out SnippetMetadata? snippetMetadata)
+	{
+		snippetMetadata = null;
+		return false;
 	}
 
 	/// <inheritdoc />

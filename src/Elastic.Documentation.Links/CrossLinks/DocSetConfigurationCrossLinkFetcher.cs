@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.IO;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LinkIndex;
@@ -29,6 +30,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		var registryUrlsByRepository = new Dictionary<string, string>();
 		var codexRepositories = new HashSet<string>();
 		var declaredRepositories = new HashSet<string>();
+		var readersByRepository = new Dictionary<string, ILinkIndexReader>();
 
 		var publicReader = linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous();
 		var useDualRegistry = configuration.Registry != DocSetRegistry.Public && _codexReader is not null;
@@ -47,6 +49,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 				var linkReference = await FetchCrossLinksFromReader(reader, entry.Repository, this, ctx);
 				linkReferences.Add(entry.Repository, linkReference);
 				registryUrlsByRepository[entry.Repository] = reader.RegistryUrl;
+				readersByRepository[entry.Repository] = reader;
 
 				var registry = await reader.GetRegistry(ctx);
 				if (registry.Repositories.TryGetValue(entry.Repository, out var repoBranches))
@@ -59,6 +62,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 			{
 				_logger.LogWarning(ex, "Error fetching link data for repository '{Repository}'. Cross-links to this repository may not resolve correctly.", entry.Repository);
 				_ = registryUrlsByRepository.TryAdd(entry.Repository, reader.RegistryUrl);
+				readersByRepository[entry.Repository] = reader;
 
 				if (!linkReferences.ContainsKey(entry.Repository))
 				{
@@ -86,6 +90,21 @@ public class DocSetConfigurationCrossLinkFetcher(
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
 			RegistryUrlsByRepository = registryUrlsByRepository.ToFrozenDictionary(),
 			CodexRepositories = codexRepositories.Count > 0 ? codexRepositories.ToFrozenSet() : null,
+			SnippetFetcher = async (repository, cancellationToken) =>
+			{
+				if (!readersByRepository.TryGetValue(repository, out var reader))
+					return null;
+				if (!linkIndexEntries.TryGetValue(repository, out var linkIndexEntry))
+					return null;
+
+				var snippetsPath = GetSnippetsIndexPath(linkIndexEntry.Path);
+				return await reader.GetRepositorySnippets(snippetsPath, cancellationToken);
+			}
 		};
 	}
+
+	private static string GetSnippetsIndexPath(string linksPath) =>
+		linksPath.EndsWith("links.json", StringComparison.OrdinalIgnoreCase)
+			? linksPath[..^"links.json".Length] + "snippets.json"
+			: Path.Combine(Path.GetDirectoryName(linksPath) ?? string.Empty, "snippets.json").Replace('\\', '/');
 }
