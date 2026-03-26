@@ -205,7 +205,7 @@ The following fields are supported:
 :   A product ID or list of product IDs to include in the bundle (all others are excluded). Cannot be combined with `exclude_products`.
 
 `match_products`
-:   Match mode for the product filter (`any` or `all`). Inherits from `rules.match` when not specified.
+:   Match mode for the product filter (`any`, `all`, or `conjunction`). Inherits from `rules.match` when not specified.
 
 `exclude_types`
 :   A changelog type or list of types to exclude from the bundle.
@@ -220,7 +220,7 @@ The following fields are supported:
 :   Only changelogs with these areas are kept; all others are excluded.
 
 `match_areas`
-:   Match mode for the area filter (`any` or `all`). Inherits from `rules.match` when not specified.
+:   Match mode for the area filter (`any`, `all`, or `conjunction`). Inherits from `rules.match` when not specified.
 
 `products`
 :   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists). When this map is **non-empty**, the bundler uses **per-product rule context** mode: global `rules.bundle` product/type/area fields are **not** used for filtering (repeat constraints under each product key if you still need them). For details, refer to [Bundle rule modes](/contribute/changelog.md#bundle-rule-modes) and [Single-product rule resolution (Mode 3 only)](/contribute/changelog.md#changelog-bundle-rule-resolution).

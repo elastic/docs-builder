@@ -180,6 +180,13 @@ rules:
   #     - kibana
   #   exclude_types: "deprecation, known-issue"
   #
+  # Example — exclude only when the changelog lists BOTH products (conjunction); extras allowed:
+  # bundle:
+  #   match_products: conjunction
+  #   exclude_products:
+  #     - kibana
+  #     - observability
+  #
   # Mode 3 (per-product context): non-empty `rules.bundle.products` — global include/exclude/type/area
   # under `bundle:` are NOT applied for filtering; configure filters under each product key.
   # Example:

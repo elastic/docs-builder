@@ -48,7 +48,7 @@ public record CreateRules
 	public FieldMode Mode { get; init; } = FieldMode.Exclude;
 
 	/// <summary>
-	/// Match mode for labels (any or all). Inherited from RulesConfiguration.Match if not set.
+	/// Match mode for labels (any, all, or conjunction). Inherited from RulesConfiguration.Match if not set.
 	/// </summary>
 	public MatchMode Match { get; init; } = MatchMode.Any;
 
@@ -79,7 +79,7 @@ public record BundlePerProductRule
 	public IReadOnlyList<string>? ExcludeProducts { get; init; }
 
 	/// <summary>
-	/// Match mode for products (any or all).
+	/// Match mode for products (any, all, or conjunction).
 	/// </summary>
 	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
 }
@@ -165,7 +165,7 @@ public record BundleRules
 	public IReadOnlyList<string>? IncludeProducts { get; init; }
 
 	/// <summary>
-	/// Match mode for products (any or all). Inherited from RulesConfiguration.Match if not set.
+	/// Match mode for products (any, all, or conjunction). Inherited from RulesConfiguration.Match if not set.
 	/// </summary>
 	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
 

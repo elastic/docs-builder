@@ -800,24 +800,32 @@ public partial class ChangelogBundlingService(
 	}
 
 	// match_products semantics (mirrors MatchesArea in PublishBlockerExtensions):
-	//   any  — matched if ANY entry product is in the list
-	//   all  — matched if ALL entry products are in the list
+	//   any         — matched if ANY entry product is in the list
+	//   all         — matched if ALL entry products are in the list (subset)
+	//   conjunction — matched if EVERY configured product appears on the entry
+	private static bool EntryMatchesProductList(
+		IReadOnlyList<string> entryProducts,
+		IReadOnlyList<string> list,
+		MatchMode matchProducts) =>
+		matchProducts switch
+		{
+			MatchMode.All => entryProducts.All(p => list.Contains(p, StringComparer.OrdinalIgnoreCase)),
+			MatchMode.Conjunction => list.All(id => entryProducts.Contains(id, StringComparer.OrdinalIgnoreCase)),
+			_ => entryProducts.Any(p => list.Contains(p, StringComparer.OrdinalIgnoreCase))
+		};
+
 	private static bool ShouldExcludeByProductFilter(IReadOnlyList<string> entryProducts, BundleRules bundleRules, out string reason)
 	{
 		if (bundleRules.ExcludeProducts is { Count: > 0 } excludeList)
 		{
-			var matches = bundleRules.MatchProducts == MatchMode.All
-				? entryProducts.All(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase))
-				: entryProducts.Any(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			var matches = EntryMatchesProductList(entryProducts, excludeList, bundleRules.MatchProducts);
 			reason = "exclude";
 			return matches;
 		}
 
 		if (bundleRules.IncludeProducts is { Count: > 0 } includeList)
 		{
-			var matchesSome = bundleRules.MatchProducts == MatchMode.All
-				? entryProducts.All(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase))
-				: entryProducts.Any(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			var matchesSome = EntryMatchesProductList(entryProducts, includeList, bundleRules.MatchProducts);
 			reason = "include";
 			return !matchesSome;
 		}
@@ -830,18 +838,14 @@ public partial class ChangelogBundlingService(
 	{
 		if (rule.ExcludeProducts is { Count: > 0 } excludeList)
 		{
-			var matches = rule.MatchProducts == MatchMode.All
-				? entryProducts.All(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase))
-				: entryProducts.Any(p => excludeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			var matches = EntryMatchesProductList(entryProducts, excludeList, rule.MatchProducts);
 			reason = "context-exclude";
 			return matches;
 		}
 
 		if (rule.IncludeProducts is { Count: > 0 } includeList)
 		{
-			var matchesSome = rule.MatchProducts == MatchMode.All
-				? entryProducts.All(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase))
-				: entryProducts.Any(p => includeList.Contains(p, StringComparer.OrdinalIgnoreCase));
+			var matchesSome = EntryMatchesProductList(entryProducts, includeList, rule.MatchProducts);
 			reason = "context-include";
 			return !matchesSome;
 		}

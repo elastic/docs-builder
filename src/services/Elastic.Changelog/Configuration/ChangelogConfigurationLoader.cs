@@ -581,7 +581,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(rulesYaml.Match);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"rules.match: '{rulesYaml.Match}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"rules.match: '{rulesYaml.Match}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			globalMatch = parsed.Value;
@@ -646,7 +646,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchProducts);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"rules.bundle.match_products: '{yaml.MatchProducts}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"rules.bundle.match_products: '{yaml.MatchProducts}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			matchProducts = parsed.Value;
@@ -659,7 +659,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchAreas);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"rules.bundle.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"rules.bundle.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			matchAreas = parsed.Value;
@@ -741,7 +741,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						var parsed = ParseMatchMode(productYaml.MatchProducts);
 						if (parsed == null)
 						{
-							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_products: '{productYaml.MatchProducts}' is not valid. Use 'any' or 'all'.");
+							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_products: '{productYaml.MatchProducts}' is not valid. Use 'any', 'all', or 'conjunction'.");
 							return null;
 						}
 						contextMatchProducts = parsed.Value;
@@ -779,7 +779,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						var parsedMode = ParseMatchMode(productYaml.MatchAreas);
 						if (parsedMode == null)
 						{
-							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
 							return null;
 						}
 						productMatchAreas = parsedMode.Value;
@@ -883,7 +883,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.Match);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"{path}.match: '{yaml.Match}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"{path}.match: '{yaml.Match}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			match = parsed.Value;
@@ -946,7 +946,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchAreas);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"{path}.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"{path}.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			matchAreas = parsed.Value;
@@ -984,7 +984,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						var parsed = ParseMatchMode(productYaml.MatchAreas);
 						if (parsed == null)
 						{
-							collector.EmitError(configPath, $"{path}.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+							collector.EmitError(configPath, $"{path}.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
 							return null;
 						}
 						productMatchAreas = parsed.Value;
@@ -1081,6 +1081,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		{
 			"any" => MatchMode.Any,
 			"all" => MatchMode.All,
+			"conjunction" => MatchMode.Conjunction,
 			_ => string.IsNullOrWhiteSpace(value) ? null : null
 		};
 

@@ -1169,6 +1169,30 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_MatchProductsConjunction_LoadsCorrectly()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products:
+			      - elasticsearch
+			      - kibana
+			    match_products: conjunction
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Rules!.Bundle!.MatchProducts.Should().Be(MatchMode.Conjunction);
+	}
+
+	[Fact]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_BothExcludeAndInclude_ReturnsError()
 	{
 		// Arrange

@@ -327,6 +327,23 @@ public class PublishBlockerExtensionsTests
 	}
 
 	[Fact]
+	public void MatchesArea_MatchConjunction_ReturnsTrue_WhenAllListedAreasOnEntry()
+	{
+		var blocker = new PublishBlocker { Areas = ["Search", "Internal"], MatchAreas = MatchMode.Conjunction };
+
+		blocker.MatchesArea(["Search", "Internal"]).Should().BeTrue();
+		blocker.MatchesArea(["Search", "Internal", "Monitoring"]).Should().BeTrue();
+	}
+
+	[Fact]
+	public void MatchesArea_MatchConjunction_ReturnsFalse_WhenAnyListedAreaMissingFromEntry()
+	{
+		var blocker = new PublishBlocker { Areas = ["Search", "Internal"], MatchAreas = MatchMode.Conjunction };
+
+		blocker.MatchesArea(["Search"]).Should().BeFalse();
+	}
+
+	[Fact]
 	public void MatchesArea_ReturnsFalse_WhenNoAreas()
 	{
 		var blocker = new PublishBlocker();
@@ -414,6 +431,62 @@ public class PublishBlockerExtensionsTests
 		// include_areas: [Search], match: all, entry areas: ["Search", "Internal"] → Blocked
 		var blocker = new PublishBlocker { Areas = ["Search"], AreasMode = FieldMode.Include, MatchAreas = MatchMode.All };
 		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Internal"] };
+
+		blocker.ShouldBlock(entry).Should().BeTrue();
+	}
+
+	[Fact]
+	public void ShouldBlock_ExcludeArea_MatchConjunction_Blocks_WhenAllListedAreasPresent()
+	{
+		var blocker = new PublishBlocker
+		{
+			Areas = ["Search", "Internal"],
+			AreasMode = FieldMode.Exclude,
+			MatchAreas = MatchMode.Conjunction
+		};
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Internal", "Monitoring"] };
+
+		blocker.ShouldBlock(entry).Should().BeTrue();
+	}
+
+	[Fact]
+	public void ShouldBlock_ExcludeArea_MatchConjunction_Allows_WhenAnyListedAreaMissing()
+	{
+		var blocker = new PublishBlocker
+		{
+			Areas = ["Search", "Internal"],
+			AreasMode = FieldMode.Exclude,
+			MatchAreas = MatchMode.Conjunction
+		};
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Monitoring"] };
+
+		blocker.ShouldBlock(entry).Should().BeFalse();
+	}
+
+	[Fact]
+	public void ShouldBlock_IncludeArea_MatchConjunction_Allows_WhenAllListedAreasPresent()
+	{
+		var blocker = new PublishBlocker
+		{
+			Areas = ["Search", "Internal"],
+			AreasMode = FieldMode.Include,
+			MatchAreas = MatchMode.Conjunction
+		};
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search", "Internal"] };
+
+		blocker.ShouldBlock(entry).Should().BeFalse();
+	}
+
+	[Fact]
+	public void ShouldBlock_IncludeArea_MatchConjunction_Blocks_WhenAnyListedAreaMissing()
+	{
+		var blocker = new PublishBlocker
+		{
+			Areas = ["Search", "Internal"],
+			AreasMode = FieldMode.Include,
+			MatchAreas = MatchMode.Conjunction
+		};
+		var entry = new ChangelogEntry { Title = "Test", Type = ChangelogEntryType.Feature, Areas = ["Search"] };
 
 		blocker.ShouldBlock(entry).Should().BeTrue();
 	}

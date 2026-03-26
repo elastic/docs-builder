@@ -111,7 +111,8 @@ Global match default for multi-valued fields (labels, areas). Inherited by `crea
 | Value | Description |
 |-------|-------------|
 | `any` (default) | Match if ANY item in the relevant changelog field matches an item in the configured list |
-| `all` | Match only if ALL items in the relevant changelog field match items in the configured list |
+| `all` | Match only if ALL items in the relevant changelog field match items in the configured list (subset semantics; see product/area tables) |
+| `conjunction` | Match only if EVERY item in the configured list appears in the relevant changelog field (logical AND over the list) |
 
 #### `rules.create`
 
@@ -122,7 +123,7 @@ Evaluated when running `docs-builder changelog add` with `--prs` or `--issues`.
 |--------|------|-------------|
 | `exclude` | string | Comma-separated labels that prevent changelog creation. A PR with any matching label is skipped. |
 | `include` | string | Comma-separated labels required for changelog creation. A PR without any matching label is skipped. |
-| `match` | string | Override `rules.match` for create rules. Values: `any`, `all`. |
+| `match` | string | Override `rules.match` for create rules. Values: `any`, `all`, `conjunction`. |
 | `products` | map | Product-specific create rules (see below). |
 
 You cannot specify both `exclude` and `include`.
@@ -170,7 +171,7 @@ Configuration loading may emit a **hint** when both global bundle fields and a n
 |--------|------|-------------|
 | `exclude_products` | string or list | Product IDs to exclude from the bundle. Cannot be combined with `include_products`. |
 | `include_products` | string or list | Only these product IDs are included; all others are excluded. Cannot be combined with `exclude_products`. |
-| `match_products` | string | Override `rules.match` for product matching. Values: `any`, `all`. |
+| `match_products` | string | Override `rules.match` for product matching. Values: `any`, `all`, `conjunction`. |
 
 ##### Type and area filtering
 
@@ -180,7 +181,7 @@ Configuration loading may emit a **hint** when both global bundle fields and a n
 | `include_types` | string or list | Only changelogs with these types are kept; all others are excluded. |
 | `exclude_areas` | string or list | Changelog areas to exclude from the bundle. |
 | `include_areas` | string or list | Only changelogs with these areas are kept; all others are excluded. |
-| `match_areas` | string | Override `rules.match` for area matching. Values: `any`, `all`. |
+| `match_areas` | string | Override `rules.match` for area matching. Values: `any`, `all`, `conjunction`. |
 | `products` | map | Per-product type/area filter overrides (see below). |
 
 You cannot specify both `exclude_products` and `include_products`, both `exclude_types` and `include_types`, or both `exclude_areas` and `include_areas`. You can mix exclude and include across different fields (for example, `exclude_types` with `include_areas`).
@@ -299,28 +300,36 @@ If a lower-level `match` or `match_areas` is specified, it overrides the inherit
 
 The following applies to **global** `rules.bundle` product lists (**Mode 2**). In **Mode 3**, product matching uses the per-product block for the rule context product instead.
 
-With `match_products`, the behavior differs depending on the mode:
+With `match_products`, the behavior differs depending on the mode. The keyword **`conjunction`** means *every product ID in the config list must appear on the changelog* (logical AND). It does not refer to the `include_products` / `exclude_products` field names — those choose **which** list and **include vs exclude**; `match_products` chooses **how** that list is interpreted.
 
 | Config | Changelog `products` | `match_products` | Result |
 |--------|----------------|----------------|--------|
 | `exclude_products: [cloud-enterprise]` | `[cloud-enterprise, kibana]` | `any` | **Excluded** ("cloud-enterprise" matches) |
 | `exclude_products: [cloud-enterprise]` | `[cloud-enterprise, kibana]` | `all` | **Included** (not all products are in the exclude list) |
+| `exclude_products: [kibana, observability]` | `[kibana]` | `conjunction` | **Included** (not every listed exclude ID is on the changelog) |
+| `exclude_products: [kibana, observability]` | `[kibana, observability]` | `conjunction` | **Excluded** (every listed exclude ID is on the changelog) |
 | `include_products: [elasticsearch]` | `[elasticsearch, kibana]` | `any` | **Included** ("elasticsearch" matches) |
 | `include_products: [elasticsearch]` | `[elasticsearch, kibana]` | `all` | **Excluded** ("kibana" is not in the include list) |
+| `include_products: [elasticsearch, security]` | `[elasticsearch, security, kibana]` | `conjunction` | **Included** (every listed include ID is on the changelog) |
+| `include_products: [elasticsearch, security]` | `[elasticsearch]` | `conjunction` | **Excluded** ("security" is missing from the changelog) |
 
 In practice, most changelogs have a single product, so `any` (the default) and `all` behave identically for them.
 The difference only matters for changelogs with multiple products.
 
 #### Area matching behavior
 
-With `match_areas` (applies to both `rules.bundle` and `rules.publish`), the behavior differs depending on the mode:
+With `match_areas` (applies to both `rules.bundle` and `rules.publish`), the behavior differs depending on the mode. As with products, **`conjunction`** means every area in the config list must appear on the changelog.
 
 | Config | Changelog `areas` | `match_areas` | Result |
 |--------|------------|-------------|--------|
 | `exclude_areas: [Internal]` | `[Search, Internal]` | `any` | **Excluded** ("Internal" matches) |
 | `exclude_areas: [Internal]` | `[Search, Internal]` | `all` | **Included** (not all areas are in the exclude list) |
+| `exclude_areas: [Search, Internal]` | `[Search]` | `conjunction` | **Included** ("Internal" is not on the changelog) |
+| `exclude_areas: [Search, Internal]` | `[Search, Internal, Monitoring]` | `conjunction` | **Excluded** (every listed exclude area is on the changelog) |
 | `include_areas: [Search]` | `[Search, Internal]` | `any` | **Included** ("Search" matches) |
 | `include_areas: [Search]` | `[Search, Internal]` | `all` | **Excluded** ("Internal" is not in the include list) |
+| `include_areas: [Search, Internal]` | `[Search, Internal]` | `conjunction` | **Included** (every listed include area is on the changelog) |
+| `include_areas: [Search, Internal]` | `[Search]` | `conjunction` | **Excluded** ("Internal" is missing from the changelog) |
 
 #### Validation
 
@@ -336,7 +345,7 @@ The following configurations cause validation errors:
 | Both `exclude_types` and `include_types` in publish | `rules.publish: cannot have both 'exclude_types' and 'include_types'. Use one or the other.` |
 | Both `exclude_areas` and `include_areas` in publish | `rules.publish: cannot have both 'exclude_areas' and 'include_areas'. Use one or the other.` |
 | `rules.publish` present | Deprecation warning: `rules.publish is deprecated. Move type/area filtering to rules.bundle.` |
-| Invalid match value | `rules.match: '{value}' is not valid. Use 'any' or 'all'.` |
+| Invalid match value | `rules.match: '{value}' is not valid. Use 'any', 'all', or 'conjunction'.` |
 | Unknown product ID in bundle | `rules.bundle.exclude_products: '{id}' is not in the list of available products.` |
 | Unknown product ID | `rules.create.products: '{id}' not in available products.` |
 

@@ -4175,6 +4175,147 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithGlobalExcludeProductsMatchConjunction_ExcludesOnlyWhenAllListedProductsOnEntry()
+	{
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products:
+			      - elasticsearch
+			      - kibana
+			    match_products: conjunction
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var kibanaOnly = """
+			title: Kibana only
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/100
+			""";
+		var esAndKibana = """
+			title: Elasticsearch and Kibana
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
+			""";
+		var changelogDir = CreateChangelogDir();
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Combine(changelogDir, "1755268001-kibana-only.yaml"),
+			kibanaOnly,
+			TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Combine(changelogDir, "1755268002-es-kibana.yaml"),
+			esAndKibana,
+			TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268001-kibana-only.yaml");
+		bundleContent.Should().NotContain("1755268002-es-kibana.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithGlobalIncludeProductsMatchConjunction_RequiresAllListedProductsOnEntry()
+	{
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			      - security
+			    match_products: conjunction
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var esOnly = """
+			title: ES only
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/400
+			""";
+		var esSec = """
+			title: ES and security
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  - product: security
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/500
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Combine(changelogDir, "1755268011-es-only.yaml"),
+			esOnly,
+			TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Combine(changelogDir, "1755268012-es-sec.yaml"),
+			esSec,
+			TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268012-es-sec.yaml");
+		bundleContent.Should().NotContain("1755268011-es-only.yaml");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithInputProducts_AppliesBundleRules()
 	{
 		// Arrange - rules.bundle always applies regardless of input method
