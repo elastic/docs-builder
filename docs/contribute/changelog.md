@@ -95,6 +95,7 @@ For multi-valued fields (labels, areas), you can control the matching mode:
 You can define rules at the global level (applies to all products) or for specific products.
 Product-specific rules **override** the global rules entirely—they do not merge.
 If you define a product-specific `publish` rule, you must re-state any global rules that you also want applied for that product.
+For `rules.bundle`, global versus per-product behavior is described under [bundle rule modes](#bundle-rule-modes).
 :::
 
 Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and an [example usage](#example-block-label).
@@ -148,8 +149,20 @@ rules:
 Filters the changelogs that are included in a bundle file.
 Applied during `docs-builder changelog bundle` and `docs-builder changelog gh-release` after the primary filter (`--prs`, `--issues`, `--all`) has matched entries.
 
-Both **product filtering** (`exclude_products`/`include_products`) and **type/area filtering** (`exclude_types`/`include_types`/`exclude_areas`/`include_areas`) always apply, regardless of the input method used to gather entries.
 Input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate.
+Which global fields take effect depends on the [bundle rule mode](#bundle-rule-modes).
+
+##### Bundle rule modes [bundle-rule-modes]
+
+The bundler chooses one of three modes from your parsed `rules.bundle` configuration:
+
+| Mode | When it applies | Filtering behavior |
+|------|-----------------|-------------------|
+| **1 — No filtering** | There is no effective bundle rule: no `exclude_products` / `include_products`, no type/area blocker, and no non-empty `products` map. | No product, type, or area filtering from `rules.bundle`. |
+| **2 — Global content** | At least one global filter or blocker is set, and **`products` is absent or empty** (including `products: {}`). | Global lists are evaluated against **each changelog’s own** `products`, `type`, and `areas`. There is **no** single rule-context product and **no** disjoint exclusion. Changelogs with **missing or empty** `products` are **included** with a warning; product include/exclude lists are skipped for those entries. Type/area rules still apply. |
+| **3 — Per-product context** | **`products` has at least one key** with a rule block. | **Global** `exclude_products`, `include_products`, `match_products`, and global type/area fields under `rules.bundle` are **not used for filtering** — configure what you need under each product key (or use Mode 2 by removing product keys). The bundle uses a **single rule-context product**, **disjoint** changelogs are excluded, and **missing/empty** `products` are excluded with a warning. If the rule-context product has no per-product block, the entry **passes through** without global fallback. |
+
+Configuration loading may emit a **hint** when both global bundle fields and a non-empty `products` map are present, because global keys are ignored in Mode 3.
 
 ##### Product filtering
 
@@ -172,114 +185,73 @@ Input stage (gathering entries) and bundle filtering stage (filtering for output
 
 You cannot specify both `exclude_products` and `include_products`, both `exclude_types` and `include_types`, or both `exclude_areas` and `include_areas`. You can mix exclude and include across different fields (for example, `exclude_types` with `include_areas`).
 
-When a changelog is excluded by `rules.bundle`, the bundling service emits a warning with a `[-bundle-exclude]`, `[-bundle-include]`, or `[-bundle-type-area]` prefix.
+When a changelog is excluded by `rules.bundle`, the bundling service emits a warning with a `[-bundle-exclude]`, `[-bundle-include]`, `[-bundle-type-area]`, or mode-specific prefix such as `[-bundle-global]`.
 
 :::{important}
-Per-product `include_products` can **only** affect changelogs that already contain the rule context product.
-It cannot be used to include changelogs that are disjoint from the rule context.
-This means, for example, that a `rules.bundle.products.kibana` configuration with `match_products: any` and  `include_products: ["kibana, elasticsearch"]` is ineffective and does **not** include changelogs that have only `product: elasticsearch`.
+In **Mode 3** (non-empty `rules.bundle.products`), per-product `include_products` can **only** affect changelogs that already contain the rule context product.
+It cannot pull in changelogs that are disjoint from that context.
+Under **Mode 2** (global-only `rules.bundle`), `match_products: any` with `include_products` is meaningful: each changelog is evaluated on its own, so OR-style inclusion (for example, elasticsearch **or** kibana) works without per-product blocks.
 :::
 
 ##### Product-specific bundle rules (`rules.bundle.products`)
 
+This section applies to **Mode 3 — Per-product context** (at least one key under `rules.bundle.products` with rules).
+
 Product keys can be a single product ID or a comma-separated list.
 Each product override supports:
 
-- **Product filtering**: `include_products`, `exclude_products`, `match_products` - Controls which changelog entries are included based on their product IDs
-- **Type/area filtering**: `exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas` - Controls which entries are included based on their type and area fields
+- **Product filtering**: `include_products`, `exclude_products`, `match_products` — controls which changelog entries are included based on their product IDs
+- **Type/area filtering**: `exclude_types`, `include_types`, `exclude_areas`, `include_areas`, `match_areas` — controls which entries are included based on their type and area fields
 
-Product-specific rules use **all-or-nothing replacement** when selected by the single-product rule resolution algorithm. When a per-product rule is chosen for a changelog, it completely replaces global bundle rules - any filter types not specified in the per-product rule are effectively disabled (not inherited from global rules). When no per-product rule exists for the rule context product, global rules apply. **Important**: Changelogs that are disjoint from the rule context product (or have empty `products`) are **excluded entirely** - they do not fall back to global rules.
+When a per-product rule applies to an entry, it is used **instead of** any global `rules.bundle` filters (**global bundle keys are not applied** in Mode 3). If a filter type is omitted in that per-product block, it is not inherited from global `rules.bundle` — repeat the constraint under the product key if you still need it.
 
-**Example: All-or-nothing replacement**
+If the changelog contains the rule context product but **no** block exists for that product ID, the entry is **included** without applying global bundle filters (**pass-through**).
+
+**Example (Mode 3): per-product rule replaces global keys for matching entries**
 
 ```yaml
 rules:
   bundle:
-    # Global rules apply to all entries unless overridden
     exclude_types: [docs]
     exclude_areas: [Internal]
-    
     products:
       kibana:
-        # Only defines area filtering - type filtering is disabled for kibana entries
         include_areas: [UI]
-        # Note: exclude_types is NOT inherited - kibana entries ignore global type exclusions
 ```
 
-**Result** (assuming bundle rule context = "kibana"):
-- Elasticsearch entries: **excluded as disjoint** from kibana rule context (never reach rule evaluation)
-- Kibana entries: included if `areas: [UI]`, type filtering disabled (uses kibana rule entirely)
-- A kibana entry with `type: docs, areas: [UI]` will be **included** (global `exclude_types` ignored)
+**Result** when the rule context product is `kibana`:
 
-**Migration**: To preserve global type exclusions, kibana rule must redefine them:
+- Elasticsearch-only entries: **excluded** as disjoint (they never use the `kibana` block).
+- Kibana entries: only the `kibana` block applies — global `exclude_types` / `exclude_areas` do not apply. Add `exclude_types` under `kibana` if you still need to drop `docs` entries.
 
-```yaml
-products:
-  kibana:
-    exclude_types: [docs]  # Must redefine to preserve global behavior
-    include_areas: [UI]
-      security:       # Applied when output_products (or --output-products) context matches "security"
-        include_products:
-          - security
-          - elasticsearch
-        match_products: all
-      cloud-serverless:
-        include_areas:
-          - "Search"
-          - "Monitoring"
-```
+###### Single-product rule resolution (Mode 3 only) [changelog-bundle-rule-resolution]
 
-###### Single-Product Rule Resolution
+**Mode 3** uses a **single rule-context product** for each bundle:
 
-Bundle rule resolution uses a **single-product context** approach for simplicity and predictability:
-
-1. **Rule Context Product**: Each bundle resolves to exactly one product context for rule resolution:
+1. **Rule context product**:
    - **With `--output-products`**: First product alphabetically from the output products list
    - **Without `--output-products`**: First product alphabetically from all products aggregated from matched changelog entries (regardless of input method: `--all`, `--prs`, `--issues`, etc.)
-   - **Override**: Use `--rule-context-product` (CLI) or `rule_context_product:` (profile) to explicitly specify which product's rules to use
+   - **Override**: `--rule-context-product` (CLI) or `rule_context_product:` (profile)
 
-2. **Rule Selection**: For each changelog, determine which rules apply:
-   - **Changelog matches rule context**: Use per-product rules for that context (if configured), otherwise use global rules
-   - **Changelog disjoint from rule context**: **Exclude the changelog entirely**
-   - **No products declared in changelog**: Emit warning and exclude the changelog
+2. **For each changelog**:
+   - **Contains rule context product** and a per-product block exists for that product: apply that block (product rules, then type/area for that block).
+   - **Contains rule context product** and **no** per-product block for that product: **include** without applying global `rules.bundle` filters (pass-through).
+   - **Disjoint** from rule context: **exclude** the changelog.
+   - **No products** in the changelog: emit a warning and **exclude** the changelog.
 
-3. **All-or-Nothing Replacement**: When a per-product rule is selected, it completely replaces global rules. Any filter types not specified in the per-product rule are effectively disabled.
-
-**Input method independence**: Bundle filtering rules always apply regardless of the input method used to gather entries (`--input-products`, `--prs`, `--all`, etc.). Input stage and bundle filtering stage are conceptually separate.
-
-**Important**: Changelogs that are disjoint from the bundle's rule context product are **excluded entirely**, not processed with global rules. This ensures different product contexts can have different relevance criteria.
-
-##### Single-product rule resolution algorithm [changelog-bundle-rule-resolution]
-
-For all changelog files, the applicable rule is determined using a **single-product context** approach:
-
-1. **Determine the rule context product** for this bundle:
-   - **With `--output-products`**: First product alphabetically from the output products list (e.g., `"elasticsearch, kibana"` → `elasticsearch`)
-   - **With `--rule-context-product`**: Use the explicitly specified product (overrides default)
-   - **Without `--output-products`**: First product alphabetically from all products aggregated from matched changelog entries
-
-2. **Check if changelog contains the rule context product**:
-   - **Contains rule context product**: Use per-product rules for that product (if configured), otherwise use global rules
-   - **Does not contain rule context product (disjoint)**: **Exclude the changelog entirely**
-   - **Changelog has no products**: Emit warning and exclude the changelog
+**Input method independence**: Bundle filtering still applies regardless of how entries were gathered (`--input-products`, `--prs`, `--all`, etc.).
 
 For example, with `--output-products "kibana 9.3.0, security 9.3.0"` (rule context: `kibana`):
 
-| Changelog `products` | Contains `kibana`? | Result |
+| Changelog `products` | Contains `kibana`? | Result (Mode 3) |
 |--------------------|-------------------|---------|
-| `[kibana]` | ✅ Yes | Use `kibana` rules (if configured) or global rules |
-| `[security]` | ❌ No | **Excluded** (disjoint from bundle context) |
-| `[kibana, security]` | ✅ Yes | Use `kibana` rules (if configured) or global rules |
-| `[elasticsearch]` | ❌ No | **Excluded** (disjoint from bundle context) |
-| `[]` (empty/missing) | ❌ No | **Excluded** with warning (no products declared) |
+| `[kibana]` | Yes | Use `kibana` per-product rules if defined; otherwise pass-through |
+| `[security]` | No | **Excluded** (disjoint) |
+| `[kibana, security]` | Yes | Use `kibana` per-product rules if defined; otherwise pass-through |
+| `[elasticsearch]` | No | **Excluded** (disjoint) |
+| `[]` (empty/missing) | No | **Excluded** with warning |
 
-**Key benefits**:
-- **Deterministic**: Same changelog + same bundle context → same result
-- **Simple**: No complex intersection logic to understand
-- **Consistent**: Different product contexts can have different inclusion criteria
-- **Predictable**: "First product alphabetically" is easy to determine
-
-**Multi-product bundles**: For truly multi-product release notes, create separate bundles with different `rule_context_product` values, or use the default (first product alphabetically) if the rule overlap is acceptable.
+**Multi-product bundles**: For release notes that need different rule behavior per product, use separate bundles or different `rule_context_product` values, or use **Mode 2** (global-only `rules.bundle`) when you need OR-style product inclusion without disjoint exclusion.
 
 #### `rules.publish`
 
@@ -324,6 +296,8 @@ rules.match (global default, "any" if omitted)
 If a lower-level `match` or `match_areas` is specified, it overrides the inherited value.
 
 #### Product matching behavior
+
+The following applies to **global** `rules.bundle` product lists (**Mode 2**). In **Mode 3**, product matching uses the per-product block for the rule context product instead.
 
 With `match_products`, the behavior differs depending on the mode:
 
@@ -677,6 +651,8 @@ You can specify only one of the following filter options:
 - `--issues`: Include changelogs for the specified issue URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/issues/123`. Go to [Filter by issues](#changelog-bundle-issues).
 - `--release-version`: Bundle changelogs for the pull requests in GitHub release notes. Refer to [Bundle by GitHub release](#changelog-bundle-release-version).
 - `--report`: Include changelogs whose pull requests appear in a promotion report. Accepts a URL or a local file path to an HTML report.
+
+`rules.bundle` in `changelog.yml` is **not** mutually exclusive with these options: it runs as a **second stage** after the primary filter matches entries (for example, `--input-products` gathers changelogs, then global or per-product bundle rules may exclude some). The only mutually exclusive pairing is **profile-based** versus **option-based** invocation. See [bundle rule modes](#bundle-rule-modes).
 
 By default, the output file contains only the changelog file names and checksums.
 To change this behavior, set `bundle.resolve` to `true` in the changelog configuration file or use the `--resolve` command option.

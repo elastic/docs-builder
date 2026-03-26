@@ -652,15 +652,6 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			matchProducts = parsed.Value;
 		}
 
-		// Validate global ineffective patterns
-		if (matchProducts == MatchMode.Any && includeProducts is { Count: > 0 })
-		{
-			collector.EmitWarning(configPath,
-				"Configuration pattern 'match_products: any' with 'include_products' provides no selective filtering due to single-product rule resolution. " +
-				"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
-				"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
-		}
-
 		// Parse match_areas (inherited from globalMatch if omitted)
 		var matchAreas = inheritedMatch;
 		if (!string.IsNullOrWhiteSpace(yaml.MatchAreas))
@@ -818,6 +809,17 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						};
 					}
 				}
+			}
+		}
+
+		if (yaml.Products is { Count: > 0 })
+		{
+			var hasGlobalProductFilters = (excludeProducts?.Count ?? 0) > 0 || (includeProducts?.Count ?? 0) > 0;
+			if (hasGlobalProductFilters || blocker != null)
+			{
+				collector.EmitHint(configPath,
+					"rules.bundle: When 'products' is present, global include_products, exclude_products, and type/area rules are not applied for filtering; configure filters under each product key or use global-only rules.bundle (no 'products' section). " +
+					"See: https://elastic.github.io/docs-builder/contribute/changelog/#bundle-rule-modes");
 			}
 		}
 

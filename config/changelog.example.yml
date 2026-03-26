@@ -169,37 +169,33 @@ rules:
   #       exclude: "ILM"
 
   # Bundle — filtering applied during 'changelog bundle' and 'changelog gh-release'.
+  # See docs/contribute/changelog.md → "Bundle rule modes" for Mode 1 / 2 / 3 behavior.
+  #
+  # Mode 2 (global content): use global lists only — no `products` key, or `products: {}`.
+  # Example — include changelogs that list elasticsearch OR kibana (evaluated per changelog):
   # bundle:
-  #   # Global defaults
-  #   # match_products: any
-  #   exclude_products: "cloud-enterprise"
-  #   # Or include only certain products:
-  #   # include_products:
-  #   #   - cloud-serverless
-  #   #   - cloud-hosted
-  #   # Type/area filtering:
-  #   # exclude_types: "deprecation, known-issue"
-  #   # exclude_areas:
-  #   #   - "Internal"
-  #   
-  #   # Per-product context overrides 
-  #   # products:
-  #   #   # ❌ INEFFECTIVE PATTERNS - avoid these:
-  #   #   # observability:
-  #   #   #   match_products: any
-  #   #   #   include_products: ["observability", "kibana"]  # "kibana" part has no effect (disjoint)
-  #   #   
-  #   #   # ✅ EFFECTIVE PATTERNS - use these instead:
-  #   #   observability:
-  #   #     exclude_products: ["cloud-enterprise"]  # Exclude unwanted combinations
-  #   #     exclude_types: ["docs"]
-  #   #     include_areas:
-  #   #       - "APM"
-  #   #       - "Infrastructure monitoring"
-  #   #   kibana:
-  #   #     match_products: all  # Strict filtering for multi-product combinations
-  #   #     include_products: ["kibana", "security"]  # Only kibana+security entries
-  #   #     exclude_types: ["docs"]  
+  #   match_products: any
+  #   include_products:
+  #     - elasticsearch
+  #     - kibana
+  #   exclude_types: "deprecation, known-issue"
+  #
+  # Mode 3 (per-product context): non-empty `rules.bundle.products` — global include/exclude/type/area
+  # under `bundle:` are NOT applied for filtering; configure filters under each product key.
+  # Example:
+  # bundle:
+  #   exclude_types: [docs]   # ignored for filtering in Mode 3 — duplicate under each product if needed
+  #   products:
+  #     observability:
+  #       exclude_products: ["cloud-enterprise"]
+  #       exclude_types: ["docs"]
+  #       include_areas:
+  #         - "APM"
+  #         - "Infrastructure monitoring"
+  #     kibana:
+  #       match_products: all
+  #       include_products: ["kibana", "security"]
+  #       exclude_types: ["docs"]
 
 # Bundle configuration (profiles and defaults)
 bundle:

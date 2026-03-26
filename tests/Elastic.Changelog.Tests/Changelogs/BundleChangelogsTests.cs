@@ -5050,7 +5050,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 	[Fact]
 	public async Task BundleChangelogs_WithNoProductsField_FallsBackToGlobalRules()
 	{
-		// Arrange - changelog with no products field should use global rules only
+		// Arrange — global-only rules.bundle (Mode 2): entries with no products get a warning; product filters are skipped;
+		// type/area blocker still applies.
 		// language=yaml
 		var configContent =
 			"""
@@ -5090,14 +5091,191 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - entry is excluded due to no products field (bundle validation error)
-		// Since all entries are filtered out, the bundling should fail
+		// Assert — docs entry excluded by global type filter; bundle fails with no entries remained
 		result.Should().BeFalse("bundling should fail when all entries are filtered out");
 
-		// Bundle has no product context (early validation) + no entries remained 
-		Collector.Errors.Should().Be(2, "bundle validation error + no entries remained error");
+		Collector.Errors.Should().Be(1, "no entries remained after rules.bundle filter");
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
-		errorMessages.Should().Contain("Bundle has no product context", "should report bundle validation error");
+		errorMessages.Should().Contain("No changelog entries remained after applying rules.bundle filter");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_GlobalMode_IncludeProductsAny_IncludesEntryMatchingAnyListedProduct()
+	{
+		// Mode 2 — global rules only: match_products: any with include_products lists means OR over changelog products.
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    match_products: any
+			    include_products:
+			      - kibana
+			      - elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var esOnly =
+			"""
+			title: ES only
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/1
+			""";
+		// language=yaml
+		var kibanaOnly =
+			"""
+			title: Kibana only
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/2
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268205-es.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268206-kibana.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, esOnly, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaOnly, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("global-or-bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268205-es.yaml");
+		bundleContent.Should().Contain("1755268206-kibana.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_GlobalMode_EmptyProducts_IncludesFeatureEntryWithWarning()
+	{
+		// Mode 2 — missing/empty changelog products: include with warning; product include/exclude lists are skipped for that entry.
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var noProductsEntry =
+			"""
+			title: No products
+			type: feature
+			prs:
+			  - "901"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268207-no-products-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, noProductsEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("global-empty-products.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268207-no-products-feature.yaml");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithEmptyProductsYamlMap_UsesGlobalRulesWhenGlobalFiltersPresent()
+	{
+		// rules.bundle.products: {} — no per-product rules; same as omitting products (Mode 2 when global filters exist).
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products: {}
+			    exclude_products: kibana
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var es =
+			"""
+			title: ES
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/1
+			""";
+		var kibana =
+			"""
+			title: Kibana
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/2
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Combine(changelogDir, "1755268208-es.yaml"), es, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Combine(changelogDir, "1755268209-kibana.yaml"), kibana, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("empty-products-map-bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268208-es.yaml");
+		bundleContent.Should().NotContain("1755268209-kibana.yaml");
 	}
 
 	[Fact]

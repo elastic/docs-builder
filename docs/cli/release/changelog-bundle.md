@@ -89,7 +89,7 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 - `"* * *"` - match all changelogs (equivalent to `--all`)
 
 :::{note}
-The `--input-products` option determines which changelog files are gathered for consideration. Bundle filtering rules (`rules.bundle.include_products`, `exclude_products`, etc.) are then applied to filter the gathered entries for the final output. Input stage and bundle filtering stage are conceptually separate.
+The `--input-products` option determines which changelog files are gathered for consideration. **`rules.bundle` is not disabled** when you use `--input-products` — global `include_products` / `exclude_products`, type/area rules, and (when configured) per-product rules still run **after** matching, unless your configuration is in [no-filtering mode](/contribute/changelog.md#bundle-rule-modes). The only “mutually exclusive” pairing on this command is **profile-based** bundling versus **option-based** flags (see [Usage](#usage)), not `--input-products` versus `rules.bundle`.
 :::
 
 `--issues <string[]?>`
@@ -192,10 +192,9 @@ Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is r
 
 ## Rules for filtered bundles [changelog-bundle-rules]
 
-The `rules.bundle` section in the changelog configuration file lets you filter entries during bundling. It applies to both `changelog bundle` and `changelog gh-release`, after entries are matched by the primary filter (`--prs`, `--issues`, `--all`) and before the bundle is written.
+The `rules.bundle` section in the changelog configuration file lets you filter entries during bundling. It applies to both `changelog bundle` and `changelog gh-release`, after entries are matched by the primary filter (`--prs`, `--issues`, `--all`, **`--input-products`**, and so on) and before the bundle is written.
 
-**All filter types** (product, type, area) use unified precedence logic and always apply, regardless of the input method used to gather entries.
-Input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate.
+Which `rules.bundle` fields take effect depends on the [bundle rule modes](/contribute/changelog.md#bundle-rule-modes) (no filtering, global rules against each changelog’s content, or per-product rule context). Input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate.
 
 The following fields are supported:
 
@@ -224,8 +223,7 @@ The following fields are supported:
 :   Match mode for the area filter (`any` or `all`). Inherits from `rules.match` when not specified.
 
 `products`
-:   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists). Product-specific rules override the global `rules.bundle` rules for changelog files matching that product context.
-:   All filter types use the same single-product rule resolution algorithm for consistency. For details, refer to [Single-product rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
+:   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists). When this map is **non-empty**, the bundler uses **per-product rule context** mode: global `rules.bundle` product/type/area fields are **not** used for filtering (repeat constraints under each product key if you still need them). For details, refer to [Bundle rule modes](/contribute/changelog.md#bundle-rule-modes) and [Single-product rule resolution (Mode 3 only)](/contribute/changelog.md#changelog-bundle-rule-resolution).
 
 ```yaml
 rules:
@@ -353,7 +351,7 @@ If you're using profile-based commands, they're affected by the following fields
 :   Example: `"elasticsearch {version} {lifecycle}"`
 
 :::{note}
-The `products` field determines which changelog files are gathered for consideration. Bundle filtering rules (`rules.bundle.include_products`, `exclude_products`, etc.) are then applied to filter the gathered entries for the final output. Input stage and bundle filtering stage are conceptually separate.
+The `products` field determines which changelog files are gathered for consideration. **`rules.bundle` still applies** afterward (see the note under [`--input-products`](#options)). Input stage and bundle filtering stage are conceptually separate.
 :::
 
 `output`
@@ -466,7 +464,7 @@ bundle:
 `output_products: "elasticsearch {version} {lifecycle}"` produces a single, authoritative product entry in the bundle derived from the release tag — for example, tag `v9.2.0` gives `elasticsearch 9.2.0 ga` and tag `v9.2.0-beta.1` gives `elasticsearch 9.2.0 beta`. Without `output_products`, the bundle products array is instead derived from the matched changelog files' own `products` fields, which is the consistent fallback for all profile types. Set `output_products` when you need a single clean product entry that reflects the release identity rather than the diverse metadata across individual changelog files.
 
 :::{note}
-The `products` field determines which changelog files are gathered for consideration. Bundle filtering rules (`rules.bundle.include_products`, `exclude_products`, etc.) are then applied to filter the gathered entries for the final output. Input stage and bundle filtering stage are conceptually separate.
+The `products` field determines which changelog files are gathered for consideration. **`rules.bundle` still applies** afterward (see the note under [`--input-products`](#options)). Input stage and bundle filtering stage are conceptually separate.
 :::
 
 ### Bundle by report or URL list [profile-bundle-report-examples]

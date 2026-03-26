@@ -108,7 +108,12 @@ public enum ResolveResult
 	/// <summary>
 	/// Exclude the entry because it has no products declared.
 	/// </summary>
-	ExcludeMissingProducts
+	ExcludeMissingProducts,
+
+	/// <summary>
+	/// Include the entry without per-product filtering (per-product context mode when no override exists for the rule context product).
+	/// </summary>
+	PassThrough
 }
 
 /// <summary>
@@ -120,6 +125,11 @@ public record ResolveResultWithRule(ResolveResult Result, BundlePerProductRule? 
 	/// Creates a UseGlobal result.
 	/// </summary>
 	public static ResolveResultWithRule UseGlobal() => new(ResolveResult.UseGlobal, null);
+
+	/// <summary>
+	/// Creates a PassThrough result (no per-product rule applies; global rules are not used in per-product mode).
+	/// </summary>
+	public static ResolveResultWithRule PassThrough() => new(ResolveResult.PassThrough, null);
 
 	/// <summary>
 	/// Creates a UsePerProduct result with the specified rule.
@@ -168,6 +178,49 @@ public record BundleRules
 	/// Per-product rule overrides. Keys are product IDs.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundlePerProductRule>? ByProduct { get; init; }
+}
+
+/// <summary>
+/// Bundle-time filtering mode: none, global rules (changelog content only), or per-product rule context.
+/// </summary>
+public enum BundleFilterMode
+{
+	/// <summary>
+	/// No bundle rules apply (no product/type/area filtering from rules.bundle).
+	/// </summary>
+	NoFiltering,
+
+	/// <summary>
+	/// Global rules.bundle only; filters use each changelog's fields (no disjoint exclusion).
+	/// </summary>
+	GlobalContent,
+
+	/// <summary>
+	/// Non-empty <c>rules.bundle.products</c>; single rule-context product and per-product rules only (global bundle keys ignored).
+	/// </summary>
+	PerProductContext
+}
+
+/// <summary>
+/// Resolves <see cref="BundleFilterMode"/> from parsed <see cref="BundleRules"/>.
+/// </summary>
+public static class BundleRulesExtensions
+{
+	/// <summary>
+	/// Determines mode: per-product when <see cref="BundleRules.ByProduct"/> is non-empty; else global when any global filter exists; else no filtering.
+	/// </summary>
+	public static BundleFilterMode DetermineFilterMode(this BundleRules bundleRules)
+	{
+		if (bundleRules.ByProduct is { Count: > 0 })
+			return BundleFilterMode.PerProductContext;
+
+		if ((bundleRules.ExcludeProducts?.Count ?? 0) > 0 ||
+			(bundleRules.IncludeProducts?.Count ?? 0) > 0 ||
+			bundleRules.Blocker != null)
+			return BundleFilterMode.GlobalContent;
+
+		return BundleFilterMode.NoFiltering;
+	}
 }
 
 /// <summary>

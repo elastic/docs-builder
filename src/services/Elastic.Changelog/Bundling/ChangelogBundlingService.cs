@@ -224,20 +224,29 @@ public partial class ChangelogBundlingService(
 				return false;
 			}
 
-			// Apply rules.bundle secondary filter.
-			// Product filtering and type/area filtering always apply regardless of the input method used to gather entries.
+			// Apply rules.bundle secondary filter (three modes: none, global content, per-product context).
 			// Input stage (--input-products, --prs, etc.) and bundle filtering stage are conceptually separate.
 			var filteredEntries = matchResult.Entries;
 			if (config?.Rules?.Bundle != null)
 			{
-				// Extract product IDs from output_products for per-product rule resolution.
-				// When set, these IDs define the bundle's product context and drive intersection-based rule lookup.
 				var outputProductIds = input.OutputProducts
 					?.Select(p => p.Product)
 					.Where(p => !string.IsNullOrWhiteSpace(p))
 					.Select(p => p!)
 					.ToList();
-				filteredEntries = ApplyBundleFilter(collector, filteredEntries, config.Rules.Bundle, outputProductIds, input.RuleContextProduct);
+				var mode = config.Rules.Bundle.DetermineFilterMode();
+				filteredEntries = mode switch
+				{
+					BundleFilterMode.NoFiltering => filteredEntries,
+					BundleFilterMode.GlobalContent => ApplyGlobalContentBundleFilter(collector, filteredEntries, config.Rules.Bundle),
+					BundleFilterMode.PerProductContext => ApplyPerProductContextBundleFilter(
+						collector,
+						filteredEntries,
+						config.Rules.Bundle,
+						outputProductIds,
+						input.RuleContextProduct),
+					_ => filteredEntries
+				};
 			}
 
 			if (filteredEntries.Count == 0)
@@ -637,7 +646,58 @@ public partial class ChangelogBundlingService(
 		return issue.ToLowerInvariant();
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyBundleFilter(
+	private static IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<MatchedChangelogFile> entries,
+		BundleRules bundleRules)
+	{
+		var filtered = new List<MatchedChangelogFile>();
+		var warnedMissingProducts = false;
+
+		foreach (var entry in entries)
+		{
+			var entryProducts = entry.Data.Products?.Select(p => p.ProductId).ToList() ?? [];
+
+			if (entryProducts.Count == 0)
+			{
+				if (!warnedMissingProducts)
+				{
+					collector.EmitWarning(entry.FilePath,
+						"[-bundle-global] Changelog has no products declared; product filters are skipped for this entry. See documentation for rules.bundle global mode.");
+					warnedMissingProducts = true;
+				}
+				else
+					collector.EmitWarning(entry.FilePath, "[-bundle-global] Changelog has no products declared; product filters are skipped for this entry.");
+
+				if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
+				{
+					collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter).");
+					continue;
+				}
+
+				filtered.Add(entry);
+				continue;
+			}
+
+			if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
+			{
+				collector.EmitWarning(entry.FilePath, $"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (global product filter).");
+				continue;
+			}
+
+			if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
+			{
+				collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter).");
+				continue;
+			}
+
+			filtered.Add(entry);
+		}
+
+		return filtered;
+	}
+
+	private static IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
@@ -717,36 +777,8 @@ public partial class ChangelogBundlingService(
 					}
 					break;
 
-				case ResolveResult.UseGlobal:
-					// Apply global rules
-					ruleStats["global"] = ruleStats.GetValueOrDefault("global") + 1;
-
-					// Emit hint about ineffective global pattern usage (once per bundle, not per entry)
-					if (bundleRules.MatchProducts == MatchMode.Any &&
-						bundleRules.IncludeProducts?.Count > 0 &&
-						!ruleStats.ContainsKey("ineffective_global_pattern_warned"))
-					{
-						var wouldIncludeAll = bundleRules.IncludeProducts.Contains(ruleContextProduct ?? "", StringComparer.OrdinalIgnoreCase);
-						collector.EmitHint(string.Empty,
-							$"Note: Global rules use 'match_products: any' with 'include_products' which acts as " +
-							$"{(wouldIncludeAll ? "include-all" : "exclude-all")} for rule context '{ruleContextProduct}'. " +
-							$"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
-						ruleStats["ineffective_global_pattern_warned"] = 1;
-					}
-
-					// 1 — Product filter: use global rules
-					if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var globalProductReason))
-					{
-						collector.EmitWarning(entry.FilePath, $"[-bundle-{globalProductReason}] Excluding '{entry.FileName}' from bundle (global product filter).");
-						continue;
-					}
-
-					// 2 — Type/area filter: use global blocker
-					if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
-					{
-						collector.EmitWarning(entry.FilePath, $"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter).");
-						continue;
-					}
+				case ResolveResult.PassThrough:
+					ruleStats["pass_through"] = ruleStats.GetValueOrDefault("pass_through") + 1;
 					break;
 			}
 
@@ -826,23 +858,23 @@ public partial class ChangelogBundlingService(
 		string? ruleContextProduct)
 	{
 		if (bundleRules.ByProduct is not { Count: > 0 } byProduct)
-			return ResolveResultWithRule.UseGlobal();
+			return ResolveResultWithRule.PassThrough();
 
 		// Edge case: changelog has no products → exclude with warning
 		if (entryProducts.Count == 0)
 			return ResolveResultWithRule.ExcludeMissingProducts();
 
-		// Edge case: no rule context available → use global
+		// Edge case: no rule context available → include without per-product rules (global not applied in this mode)
 		if (string.IsNullOrEmpty(ruleContextProduct))
-			return ResolveResultWithRule.UseGlobal();
+			return ResolveResultWithRule.PassThrough();
 
 		// Disjoint check: exclude if changelog doesn't contain rule context product
 		if (!entryProducts.Contains(ruleContextProduct, StringComparer.OrdinalIgnoreCase))
 			return ResolveResultWithRule.ExcludeDisjoint();
 
-		// Direct rule lookup - single product, no intersection complexity
+		// Direct rule lookup — no per-product block for context product: pass through (global rules.bundle ignored in this mode)
 		return byProduct.TryGetValue(ruleContextProduct, out var rule)
 			? ResolveResultWithRule.UsePerProduct(rule)
-			: ResolveResultWithRule.UseGlobal();
+			: ResolveResultWithRule.PassThrough();
 	}
 }
