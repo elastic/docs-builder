@@ -4,13 +4,13 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Search.IntegrationTests;
