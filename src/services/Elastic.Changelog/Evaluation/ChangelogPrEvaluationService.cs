@@ -102,8 +102,20 @@ public class ChangelogPrEvaluationService(
 			return await SetOutputs(PrEvaluationResult.NoLabel, title, labelTable: BuildLabelTable(config.LabelToType));
 		}
 
-		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, existingFile={File}", title, resolvedType, existingFilename);
-		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType, changelogDir: changelogDir, existingFilename: existingFilename);
+		// Resolve products from labels
+		string? resolvedProducts = null;
+		if (config.LabelToProducts is { Count: > 0 })
+		{
+			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, config.LabelToProducts);
+			if (products.Count > 0)
+			{
+				resolvedProducts = ProductArgument.FormatProductSpecs(products);
+				_logger.LogInformation("Mapped PR labels to products: {Products}", resolvedProducts);
+			}
+		}
+
+		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}", title, resolvedType, resolvedProducts, existingFilename);
+		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType, resolvedProducts: resolvedProducts, changelogDir: changelogDir, existingFilename: existingFilename);
 	}
 
 	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
@@ -113,6 +125,7 @@ public class ChangelogPrEvaluationService(
 		PrEvaluationResult status,
 		string? resolvedTitle = null,
 		string? resolvedType = null,
+		string? resolvedProducts = null,
 		string? labelTable = null,
 		string? changelogDir = null,
 		string? existingFilename = null)
@@ -130,6 +143,8 @@ public class ChangelogPrEvaluationService(
 			await coreService.SetOutputAsync("title", resolvedTitle);
 		if (resolvedType != null)
 			await coreService.SetOutputAsync("type", resolvedType);
+		if (resolvedProducts != null)
+			await coreService.SetOutputAsync("products", resolvedProducts);
 		if (labelTable != null)
 			await coreService.SetOutputAsync("label-table", labelTable);
 		if (changelogDir != null)

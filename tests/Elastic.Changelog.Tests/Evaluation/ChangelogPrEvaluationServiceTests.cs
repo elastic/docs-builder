@@ -32,6 +32,24 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		    security:
 		""";
 
+	private const string ConfigWithProducts = """
+		pivot:
+		  types:
+		    feature: "type:feature"
+		    bug-fix: "type:bug"
+		    breaking-change: "type:breaking"
+		    enhancement: ">enhancement"
+		    deprecation:
+		    docs:
+		    known-issue:
+		    other:
+		    regression:
+		    security:
+		  products:
+		    cloud-hosted: "@Product:ECH"
+		    cloud-serverless: "@Product:ESS"
+		""";
+
 	public ChangelogPrEvaluationServiceTests(ITestOutputHelper output) : base(output)
 	{
 		_mockGitHub = A.Fake<IGitHubPrService>();
@@ -71,11 +89,11 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		};
 	}
 
-	private async Task WriteMinimalConfig(string configPath = "/tmp/config/changelog.yml")
+	private async Task WriteMinimalConfig(string configPath = "/tmp/config/changelog.yml", string? content = null)
 	{
 		var dir = FileSystem.Path.GetDirectoryName(configPath)!;
 		FileSystem.Directory.CreateDirectory(dir);
-		await FileSystem.File.WriteAllTextAsync(configPath, MinimalConfig);
+		await FileSystem.File.WriteAllTextAsync(configPath, content ?? MinimalConfig);
 	}
 
 	private void VerifyOutputSet(string name, string value) =>
@@ -376,4 +394,37 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[InlineData("title: Issue #42 was fixed", false)]
 	public void ContentReferencesPr_MatchesPrNumberCorrectly(string content, bool expected) =>
 		ChangelogPrEvaluationService.ContentReferencesPr(content, "42").Should().Be(expected);
+
+	[Fact]
+	public async Task EvaluatePr_WithProductLabels_OutputsProducts()
+	{
+		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		var service = CreateService();
+		var args = DefaultArgs(
+			prLabels: [">enhancement", "@Product:ECH", "@Product:ESS"],
+			config: "/tmp/config/changelog.yml"
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("should-generate", "true");
+		VerifyOutputSet("type", "enhancement");
+		VerifyOutputSet("products", "cloud-hosted, cloud-serverless");
+	}
+
+	[Fact]
+	public async Task EvaluatePr_WithoutProductLabels_DoesNotOutputProducts()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs();
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		A.CallTo(() => _mockCore.SetOutputAsync("products", A<string>._)).MustNotHaveHappened();
+	}
 }

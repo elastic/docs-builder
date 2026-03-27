@@ -67,6 +67,7 @@ docs-builder changelog evaluate-pr [options...] [-h|--help]
 | `should-upload` | `true` if the artifact should be uploaded |
 | `title` | Resolved PR title |
 | `type` | Resolved changelog type |
+| `products` | Comma-separated product specs resolved from PR labels via `pivot.products` mappings (e.g., `cloud-hosted, cloud-serverless`) |
 | `label-table` | Markdown table of configured label-to-type mappings |
 | `existing-changelog-filename` | Filename of a previously committed changelog for this PR (if any) |
 

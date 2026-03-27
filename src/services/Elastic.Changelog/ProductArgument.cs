@@ -42,6 +42,57 @@ public record ProductArgument
 		Lifecycle = ParseLifecycle(Lifecycle)
 	};
 
+	/// <summary>
+	/// Formats a product spec string matching the CLI format: "product [target] [lifecycle]".
+	/// </summary>
+	public string ToSpecString()
+	{
+		if (string.IsNullOrWhiteSpace(Product))
+			return string.Empty;
+
+		var spec = Product;
+		if (!string.IsNullOrWhiteSpace(Target))
+			spec += $" {Target}";
+		if (!string.IsNullOrWhiteSpace(Lifecycle))
+			spec += $" {Lifecycle}";
+		return spec;
+	}
+
+	/// <summary>
+	/// Formats a list of product arguments as a comma-separated spec string.
+	/// </summary>
+	public static string FormatProductSpecs(IReadOnlyList<ProductArgument> products) =>
+		string.Join(", ", products.Select(p => p.ToSpecString()).Where(s => s.Length > 0));
+
+	/// <summary>
+	/// Parses a comma-separated product spec string into a list of ProductArguments.
+	/// Each entry has the format "product [target] [lifecycle]".
+	/// </summary>
+	public static IReadOnlyList<ProductArgument> ParseProductSpecs(string? specs)
+	{
+		if (string.IsNullOrWhiteSpace(specs))
+			return [];
+
+		var entries = specs.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var result = new List<ProductArgument>();
+
+		foreach (var entry in entries)
+		{
+			var parts = entry.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+			if (parts.Length == 0)
+				continue;
+
+			result.Add(new ProductArgument
+			{
+				Product = parts[0],
+				Target = parts.Length > 1 ? parts[1] : null,
+				Lifecycle = parts.Length > 2 ? parts[2] : null
+			});
+		}
+
+		return result;
+	}
+
 	private static Lifecycle? ParseLifecycle(string? value)
 	{
 		if (string.IsNullOrEmpty(value))
