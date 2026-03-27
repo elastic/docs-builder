@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.GitHub;
@@ -172,7 +173,12 @@ public static partial class ProfileFilterResolver
 			return null;
 		}
 
-		var products = ParseProfileProducts(productsPattern);
+		if (!TryParseProfileProducts(productsPattern, out var products, out var productsParseError))
+		{
+			collector.EmitError(string.Empty, $"Profile '{profileName}': {productsParseError}");
+			return null;
+		}
+
 		return new ProfileFilterResult { Products = products, Version = version };
 	}
 
@@ -330,25 +336,49 @@ public static partial class ProfileFilterResolver
 	/// <c>"cloud-serverless {version} *"</c> (after placeholder substitution) into a
 	/// <see cref="ProductArgument"/> list.
 	/// </summary>
-	internal static List<ProductArgument> ParseProfileProducts(string pattern)
+	/// <returns>False when any comma-separated segment has more than three space-separated fields (product, target, lifecycle).</returns>
+	internal static bool TryParseProfileProducts(
+		string pattern,
+		[NotNullWhen(true)] out List<ProductArgument>? products,
+		[NotNullWhen(false)] out string? errorMessage)
 	{
-		var parts = pattern.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-		if (parts.Length < 1)
-			return [];
+		products = null;
+		errorMessage = null;
 
-		var productId = parts[0];
-		var target = parts.Length > 1 ? parts[1] : "*";
-		var lifecycle = parts.Length > 2 ? parts[2] : "*";
+		if (string.IsNullOrWhiteSpace(pattern))
+		{
+			products = [];
+			return true;
+		}
 
-		return
-		[
-			new ProductArgument
+		// Support both single and multi-product: "kibana 9.3.0 ga" or "kibana 9.3.0 ga, security 9.3.0 ga"
+		var productEntries = pattern.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var list = new List<ProductArgument>();
+
+		foreach (var entry in productEntries)
+		{
+			var parts = entry.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			if (parts.Length < 1)
+				continue;
+
+			if (parts.Length > 3)
 			{
-				Product = productId == "*" ? "*" : productId,
-				Target = target == "*" ? "*" : target,
-				Lifecycle = lifecycle == "*" ? "*" : lifecycle
+				errorMessage =
+					"Each product entry must have at most three space-separated fields (product, target, lifecycle). " +
+					$"Too many values in segment: '{entry}'.";
+				return false;
 			}
-		];
+
+			list.Add(new ProductArgument
+			{
+				Product = parts[0] == "*" ? "*" : parts[0],
+				Target = parts.Length > 1 ? (parts[1] == "*" ? "*" : parts[1]) : "*",
+				Lifecycle = parts.Length > 2 ? (parts[2] == "*" ? "*" : parts[2]) : "*"
+			});
+		}
+
+		products = list.Count > 0 ? list : [];
+		return true;
 	}
 
 	/// <summary>
