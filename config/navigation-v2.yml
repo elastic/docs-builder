@@ -511,61 +511,6 @@ nav:
               title: CSV
             - page: docs-content://explore-analyze/report-and-share/reporting-troubleshooting-pdf.md
               title: PDF/PNG
-        - group: Workflows
-          page: docs-content://explore-analyze/workflows.md
-          children:
-          - page: docs-content://explore-analyze/workflows/setup.md
-            title: Set up workflows
-          - page: docs-content://explore-analyze/workflows/get-started.md
-            title: Get started with workflows
-          - group: Core components
-            page: docs-content://explore-analyze/workflows/core-components.md
-            children:
-            - group: Triggers
-              page: docs-content://explore-analyze/workflows/triggers.md
-              children:
-              - page: docs-content://explore-analyze/workflows/triggers/manual-triggers.md
-                title: Manual triggers
-              - page: docs-content://explore-analyze/workflows/triggers/scheduled-triggers.md
-                title: Scheduled triggers
-              - page: docs-content://explore-analyze/workflows/triggers/alert-triggers.md
-                title: Alert triggers
-            - group: Steps
-              page: docs-content://explore-analyze/workflows/steps.md
-              children:
-              - group: Action steps
-                page: docs-content://explore-analyze/workflows/steps/action-steps.md
-                children:
-                - page: docs-content://explore-analyze/workflows/steps/elasticsearch.md
-                  title: Elasticsearch
-                - page: docs-content://explore-analyze/workflows/steps/kibana.md
-                  title: Kibana
-                - page: docs-content://explore-analyze/workflows/steps/external-systems-apps.md
-                  title: External systems and apps
-              - group: Flow control steps
-                page: docs-content://explore-analyze/workflows/steps/flow-control-steps.md
-                children:
-                - page: docs-content://explore-analyze/workflows/steps/if.md
-                  title: If
-                - page: docs-content://explore-analyze/workflows/steps/foreach.md
-                  title: Foreach
-                - page: docs-content://explore-analyze/workflows/steps/wait.md
-                  title: Wait
-              - page: docs-content://explore-analyze/workflows/steps/ai-steps.md
-                title: AI steps
-          - group: Data and error handling
-            page: docs-content://explore-analyze/workflows/data.md
-            children:
-            - page: docs-content://explore-analyze/workflows/data/templating.md
-              title: Templating engine
-          - page: docs-content://explore-analyze/workflows/author-workflows.md
-            title: Author workflows
-          - page: docs-content://explore-analyze/workflows/monitor-troubleshoot.md
-            title: Monitor and troubleshoot workflows
-          - page: docs-content://explore-analyze/workflows/manage-workflows.md
-            title: Manage workflows
-          - page: docs-content://explore-analyze/workflows/templates.md
-            title: Workflow templates
         - group: Alerting
           page: docs-content://explore-analyze/alerting.md
           children:
@@ -710,6 +655,63 @@ nav:
             title: Configure settings
           - page: docs-content://explore-analyze/cases/cases-as-data.md
             title: Cases as data
+    - label: Automate
+      children:
+      - group: Workflows
+        page: docs-content://explore-analyze/workflows.md
+        children:
+        - page: docs-content://explore-analyze/workflows/setup.md
+          title: Set up workflows
+        - page: docs-content://explore-analyze/workflows/get-started.md
+          title: Get started with workflows
+        - group: Core components
+          page: docs-content://explore-analyze/workflows/core-components.md
+          children:
+          - group: Triggers
+            page: docs-content://explore-analyze/workflows/triggers.md
+            children:
+            - page: docs-content://explore-analyze/workflows/triggers/manual-triggers.md
+              title: Manual triggers
+            - page: docs-content://explore-analyze/workflows/triggers/scheduled-triggers.md
+              title: Scheduled triggers
+            - page: docs-content://explore-analyze/workflows/triggers/alert-triggers.md
+              title: Alert triggers
+          - group: Steps
+            page: docs-content://explore-analyze/workflows/steps.md
+            children:
+            - group: Action steps
+              page: docs-content://explore-analyze/workflows/steps/action-steps.md
+              children:
+              - page: docs-content://explore-analyze/workflows/steps/elasticsearch.md
+                title: Elasticsearch
+              - page: docs-content://explore-analyze/workflows/steps/kibana.md
+                title: Kibana
+              - page: docs-content://explore-analyze/workflows/steps/external-systems-apps.md
+                title: External systems and apps
+            - group: Flow control steps
+              page: docs-content://explore-analyze/workflows/steps/flow-control-steps.md
+              children:
+              - page: docs-content://explore-analyze/workflows/steps/if.md
+                title: If
+              - page: docs-content://explore-analyze/workflows/steps/foreach.md
+                title: Foreach
+              - page: docs-content://explore-analyze/workflows/steps/wait.md
+                title: Wait
+            - page: docs-content://explore-analyze/workflows/steps/ai-steps.md
+              title: AI steps
+        - group: Data and error handling
+          page: docs-content://explore-analyze/workflows/data.md
+          children:
+          - page: docs-content://explore-analyze/workflows/data/templating.md
+            title: Templating engine
+        - page: docs-content://explore-analyze/workflows/author-workflows.md
+          title: Author workflows
+        - page: docs-content://explore-analyze/workflows/monitor-troubleshoot.md
+          title: Monitor and troubleshoot workflows
+        - page: docs-content://explore-analyze/workflows/manage-workflows.md
+          title: Manage workflows
+        - page: docs-content://explore-analyze/workflows/templates.md
+          title: Workflow templates
     - label: AI and machine learning
       children:
       - group: Machine Learning and NLP
