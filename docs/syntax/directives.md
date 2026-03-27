@@ -1,4 +1,4 @@
-# Directives
+# How directives work
 
 Directives extend Markdown with additional features:
 

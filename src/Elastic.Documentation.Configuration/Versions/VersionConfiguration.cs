@@ -105,6 +105,8 @@ public enum VersioningSystemId
 	EdotJava,
 	[Display(Name = "edot-node")]
 	EdotNode,
+	[Display(Name = "edot-browser")]
+	EdotBrowser,
 	[Display(Name = "edot-php")]
 	EdotPhp,
 	[Display(Name = "edot-python")]

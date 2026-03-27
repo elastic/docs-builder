@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 

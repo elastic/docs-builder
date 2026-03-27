@@ -5,9 +5,9 @@
 using AngleSharp.Diffing;
 using AngleSharp.Html;
 using AngleSharp.Html.Parser;
+using AwesomeAssertions;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
-using FluentAssertions;
 using JetBrains.Annotations;
 using Xunit.Internal;
 using Xunit.Sdk;

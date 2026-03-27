@@ -6,7 +6,7 @@ using System.Diagnostics;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Mcp.Remote.Tests;
 

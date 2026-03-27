@@ -4,6 +4,7 @@
 
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
+using AwesomeAssertions;
 using Documentation.Builder.Diagnostics.Console;
 using Elastic.Documentation.Aspire;
 using Elastic.Documentation.Configuration;
@@ -15,7 +16,6 @@ using Elastic.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests;

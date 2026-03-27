@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Tests.Directives;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.SettingsInclusion;
 
@@ -111,6 +111,19 @@ groups:
 	public void RendersNestedSettingName()
 	{
 		Html.Should().Contain("xpack.actions.customHostSettings[n].url");
+	}
+
+	[Fact]
+	public void DotsInSettingNamesAreHyphensInAnchors()
+	{
+		Html.Should().Contain("id=\"xpack-actions-customhostsettings\"");
+		Html.Should().NotContain("id=\"xpack.actions.customhostsettings\"");
+	}
+
+	[Fact]
+	public void NestedSettingAnchorIncludesParentPrefix()
+	{
+		Html.Should().Contain("id=\"xpack-actions-customhostsettingsn-url\"");
 	}
 }
 

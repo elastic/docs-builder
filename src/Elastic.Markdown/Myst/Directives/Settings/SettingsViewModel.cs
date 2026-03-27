@@ -69,6 +69,6 @@ public class SettingsViewModel
 	/// <summary>Stable HTML fragment for a setting: YAML <c>id</c> when present, otherwise slugified composed name.</summary>
 	public static string SettingFragmentId(Setting setting, string composedDisplayName) =>
 		string.IsNullOrWhiteSpace(setting.Id)
-			? composedDisplayName.Slugify()
+			? composedDisplayName.Replace('.', '-').Slugify()
 			: setting.Id;
 }
