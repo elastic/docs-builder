@@ -2,13 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -191,9 +191,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Should have inverted label mappings
 			config.LabelToAreas.Should().NotBeNull();
 			config.LabelToAreas.Should().ContainKey(":Search/Search");
-			config.LabelToAreas[":Search/Search"].Should().Be("Search");
+			config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 			config.LabelToAreas.Should().ContainKey(":Security/Security");
-			config.LabelToAreas[":Security/Security"].Should().Be("Security");
+			config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 		}
 		finally
 		{
@@ -525,9 +525,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_types as comma-separated string
+		// Arrange - rules.publish is deprecated and no longer used; verify warning is emitted and Publish is null
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -542,18 +542,18 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Assert
 		config.Should().NotBeNull();
-		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Message.Contains("rules.publish is deprecated") &&
+			d.Message.Contains("no longer used by the changelog render command"));
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_types as YAML list
+		// Arrange - rules.publish as YAML list is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -572,16 +572,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_areas as comma-separated string
+		// Arrange - rules.publish with areas is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -598,16 +596,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
-		config.Rules.Publish.Blocker.AreasMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_areas as YAML list
+		// Arrange - rules.publish as YAML list is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -626,10 +622,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
-		config.Rules.Publish.Blocker.AreasMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
@@ -701,12 +695,12 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		// Both labels from the list should map to "Search"
 		config.LabelToAreas.Should().NotBeNull();
 		config.LabelToAreas.Should().ContainKey(":Search/Search");
-		config.LabelToAreas[":Search/Search"].Should().Be("Search");
+		config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 		config.LabelToAreas.Should().ContainKey(":Search/Ranking");
-		config.LabelToAreas[":Search/Ranking"].Should().Be("Search");
+		config.LabelToAreas[":Search/Ranking"].Should().ContainSingle().Which.Should().Be("Search");
 		// String form should still work
 		config.LabelToAreas.Should().ContainKey(":Security/Security");
-		config.LabelToAreas[":Security/Security"].Should().Be("Security");
+		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 	}
 
 	[Fact]
@@ -852,11 +846,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Rules.Create.Labels.Should().BeEquivalentTo([">non-issue", ">test"]);
 		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 
-		// publish.exclude_types as string, publish.exclude_areas as list
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
+		// publish.exclude_types as string, publish.exclude_areas as list are deprecated
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
 
 		// highlight as list
 		config.HighlightLabels.Should().BeEquivalentTo([">highlight"]);
@@ -869,11 +860,11 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Areas: string for Search, list for Security
 		config.LabelToAreas.Should().ContainKey(":Search/Search");
-		config.LabelToAreas[":Search/Search"].Should().Be("Search");
+		config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 		config.LabelToAreas.Should().ContainKey(":Security/Security");
-		config.LabelToAreas[":Security/Security"].Should().Be("Security");
+		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 		config.LabelToAreas.Should().ContainKey(":Security/Auth");
-		config.LabelToAreas[":Security/Auth"].Should().Be("Security");
+		config.LabelToAreas[":Security/Auth"].Should().ContainSingle().Which.Should().Be("Security");
 	}
 
 	/// <summary>
@@ -1271,5 +1262,149 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'not-a-real-product'") && d.Message.Contains("not in the list of available products"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesPublish_EmitsDeprecationWarning()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  publish:
+			    exclude_types: docs
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert — config loads (backward compat) but warns
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("rules.publish is deprecated"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_TypeAreaAndProducts_LoadsCorrectly()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - deprecation
+			      - docs
+			    exclude_areas:
+			      - Internal
+			    match_areas: any
+			    products:
+			      cloud-serverless:
+			        include_areas:
+			          - Search
+			          - Monitoring
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		var bundle = config!.Rules!.Bundle!;
+		bundle.Blocker.Should().NotBeNull();
+		bundle.Blocker!.Types.Should().BeEquivalentTo(["deprecation", "docs"]);
+		bundle.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		bundle.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
+		bundle.Blocker.MatchAreas.Should().Be(MatchMode.Any);
+		bundle.ByProduct.Should().ContainKey("cloud-serverless");
+		bundle.ByProduct!["cloud-serverless"].Areas.Should().BeEquivalentTo(["Search", "Monitoring"]);
+		bundle.ByProduct["cloud-serverless"].AreasMode.Should().Be(FieldMode.Include);
+	}
+
+	// -----------------------------------------------------------------------
+	// extract section: strip_title_prefix
+	// -----------------------------------------------------------------------
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_True_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  strip_title_prefix: true
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_False_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  strip_title_prefix: false
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_Missing_DefaultsFalse()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			lifecycles:
+			  - ga
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeFalse("default is false");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_WithOtherExtractSettings_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  release_notes: false
+			  issues: true
+			  strip_title_prefix: true
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.ReleaseNotes.Should().BeFalse();
+		config.Extract.Issues.Should().BeTrue();
+		config.Extract.StripTitlePrefix.Should().BeTrue();
 	}
 }

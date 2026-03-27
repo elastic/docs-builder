@@ -7,6 +7,12 @@
     </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Documentation.Build.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="GitHub.Actions.Core" />
     <PackageReference Include="ModelContextProtocol" />
   </ItemGroup>

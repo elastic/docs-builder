@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json;
+using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote.Responses;
-using FluentAssertions;
 
 namespace Mcp.Remote.IntegrationTests;
 
@@ -36,7 +36,7 @@ public class CoherenceToolsIntegrationTests(ITestOutputHelper output) : McpTools
 		response.Should().NotBeNull();
 		response!.Topic.Should().Be("elasticsearch security");
 		response.TotalDocuments.Should().BeGreaterThan(0);
-		response.CoverageScore.Should().BeGreaterOrEqualTo(0);
+		response.CoverageScore.Should().BeGreaterThanOrEqualTo(0);
 		Output.WriteLine($"Total documents: {response.TotalDocuments}");
 		Output.WriteLine($"Analyzed documents: {response.AnalyzedDocuments}");
 		Output.WriteLine($"Coverage score: {response.CoverageScore}");

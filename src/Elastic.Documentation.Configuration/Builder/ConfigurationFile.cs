@@ -67,10 +67,16 @@ public record ConfigurationFile
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
 
+	// Files excluded via folder-level `exclude` in toc.yml need to be excluded from processing too,
+	// otherwise the builder crashes with "Could not find current in navigation" when rendering them.
+	private HashSet<string> FolderExcludedFiles { get; } = [];
+
 	public bool IsExcluded(string relativePath)
 	{
 		if (Include.Length > 0 && Include.Any(i => i.Equals(relativePath.OptionalWindowsReplace(), StringComparison.OrdinalIgnoreCase)))
 			return false;
+		if (FolderExcludedFiles.Contains(relativePath.OptionalWindowsReplace()))
+			return true;
 		return Exclude.Any(g => g.IsMatch(relativePath));
 	}
 
@@ -99,6 +105,7 @@ public record ConfigurationFile
 			// Convert exclude patterns to Glob
 			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
 			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
+			FolderExcludedFiles = docSetFile.FolderExcludedFiles;
 
 			// Parse registry (null/empty/"public" -> Public)
 			var registry = DocSetRegistry.Public;

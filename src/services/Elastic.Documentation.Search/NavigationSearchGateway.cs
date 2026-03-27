@@ -96,7 +96,7 @@ public class NavigationSearchGateway(ElasticsearchClientAccessor clientAccessor,
 			if (!response.IsValidResponse)
 			{
 				logger.LogWarning("Elasticsearch response is not valid. Reason: {Reason}",
-					response.ElasticsearchServerError?.Error.Reason ?? "Unknown");
+					response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 			}
 
 			return ProcessSearchResponse(response, searchQuery);

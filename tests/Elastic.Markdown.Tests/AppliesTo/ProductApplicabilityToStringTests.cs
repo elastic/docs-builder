@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Reflection;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using FluentAssertions;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
@@ -41,7 +41,7 @@ public class ProductApplicabilityToStringTests
 		}
 
 		// Verify we have the expected number of properties
-		properties.Should().HaveCount(23, "ProductApplicability should have exactly 23 product properties");
+		properties.Should().HaveCount(24, "ProductApplicability should have exactly 24 product properties");
 	}
 
 	[Fact]

@@ -25,7 +25,6 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
 	{
 		var diagnostics = new List<(Severity, string)>();
-		var applicableTo = new ApplicableTo();
 
 		if (parser.TryConsume<Scalar>(out var value))
 		{
@@ -39,9 +38,79 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 				return ApplicableTo.All;
 		}
 
+		if (parser.TryConsume<SequenceStart>(out _))
+		{
+			var merged = new Dictionary<object, object?>();
+			while (!parser.TryConsume<SequenceEnd>(out _))
+			{
+				if (parser.Current is MappingStart)
+				{
+					var item = rootDeserializer.Invoke(typeof(Dictionary<object, object?>)) as Dictionary<object, object?>;
+					if (item is not null)
+					{
+						foreach (var kv in item)
+							merged[kv.Key] = merged.TryGetValue(kv.Key, out var existing)
+								? DeepMergeAppliesToNode(existing, kv.Value)
+								: kv.Value;
+					}
+				}
+				else if (parser.TryConsume<Scalar>(out var row))
+					MergeAppliesToListScalarLine(merged, row.Value, diagnostics);
+				else
+					_ = parser.MoveNext();
+			}
+
+			return merged.Count > 0
+				? FinalizeApplicableTo(merged, diagnostics)
+				: null;
+		}
+
 		var deserialized = rootDeserializer.Invoke(typeof(Dictionary<object, object?>));
 		if (deserialized is not Dictionary<object, object?> { Count: > 0 } dictionary)
 			return null;
+
+		return FinalizeApplicableTo(dictionary, diagnostics);
+	}
+
+	private static object? DeepMergeAppliesToNode(object? existing, object? incoming)
+	{
+		if (incoming is not Dictionary<object, object?> incomingDict)
+			return incoming;
+
+		if (existing is Dictionary<object, object?> existingDict)
+		{
+			foreach (var kv in incomingDict)
+				existingDict[kv.Key] = existingDict.TryGetValue(kv.Key, out var childExisting)
+					? DeepMergeAppliesToNode(childExisting, kv.Value)
+					: kv.Value;
+
+			return existingDict;
+		}
+
+		return incoming;
+	}
+
+	private static void MergeAppliesToListScalarLine(
+		Dictionary<object, object?> dictionary,
+		string line,
+		List<(Severity, string)> diagnostics)
+	{
+		var trimmed = line.Trim();
+		var colon = trimmed.IndexOf(':');
+		if (colon <= 0 || colon >= trimmed.Length - 1)
+		{
+			diagnostics.Add((Severity.Warning, $"Applies list item '{line}' could not be parsed as 'key: value'."));
+			return;
+		}
+
+		var key = trimmed[..colon].Trim();
+		var val = trimmed[(colon + 1)..].Trim();
+		dictionary[key] = string.IsNullOrEmpty(val) ? null : val;
+	}
+
+	private ApplicableTo FinalizeApplicableTo(Dictionary<object, object?> dictionary, List<(Severity, string)> diagnostics)
+	{
+		var applicableTo = new ApplicableTo();
 
 		var keys = dictionary.Keys.OfType<string>().Select(x => x.Replace('_', '-')).ToArray();
 		var oldStyleKeys = keys.Where(k => k.StartsWith(':')).ToList();
@@ -231,6 +300,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			{ "edot_dotnet", a => productAvailability.EdotDotnet = a },
 			{ "edot_java", a => productAvailability.EdotJava = a },
 			{ "edot_node", a => productAvailability.EdotNode = a },
+			{ "edot_browser", a => productAvailability.EdotBrowser = a },
 			{ "edot_php", a => productAvailability.EdotPhp = a },
 			{ "edot_python", a => productAvailability.EdotPython = a },
 			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a },

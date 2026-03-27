@@ -37,7 +37,7 @@ public record CreateChangelogArguments
 	public string? Config { get; init; }
 	public bool UsePrNumber { get; init; }
 	public bool UseIssueNumber { get; init; }
-	public bool StripTitlePrefix { get; init; }
+	public bool? StripTitlePrefix { get; init; }
 	/// <summary>
 	/// Whether to extract release notes from PR/issue descriptions. null = use config default.
 	/// </summary>
@@ -140,6 +140,7 @@ IEnvironmentVariables? env = null
 		{
 			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
 			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues,
+			StripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix,
 			UsePrNumber = usePrNumber,
 			UseIssueNumber = useIssueNumber
 		};
@@ -233,9 +234,11 @@ IEnvironmentVariables? env = null
 		if (!_validator.ValidatePrFormat(collector, prUrl, input.Owner, input.Repo))
 			return false;
 
-		// Fetch PR info to derive missing fields unless title and type are already known
-		var hasRequiredFields = !string.IsNullOrWhiteSpace(input.Title) && !string.IsNullOrWhiteSpace(input.Type);
-		if (!string.IsNullOrWhiteSpace(prUrl) && !hasRequiredFields)
+		// Fetch PR info when any derivable field is still missing (title, type, or products)
+		var needsDerivation = string.IsNullOrWhiteSpace(input.Title)
+			|| string.IsNullOrWhiteSpace(input.Type)
+			|| input.Products.Count == 0;
+		if (!string.IsNullOrWhiteSpace(prUrl) && needsDerivation)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
 
@@ -250,7 +253,7 @@ IEnvironmentVariables? env = null
 				return false;
 		}
 		else if (!string.IsNullOrWhiteSpace(prUrl))
-			_logger.LogInformation("Title and type already provided, skipping PR API fetch for {PrUrl}", prUrl);
+			_logger.LogInformation("All required fields already provided, skipping PR API fetch for {PrUrl}", prUrl);
 
 		// If still no products, fall back to products.default or repo name inference
 		if (input.Products.Count == 0)
@@ -391,6 +394,7 @@ IEnvironmentVariables? env = null
 		var ciType = env.GetEnvironmentVariable("CHANGELOG_TYPE");
 		var ciOwner = env.GetEnvironmentVariable("CHANGELOG_OWNER");
 		var ciRepo = env.GetEnvironmentVariable("CHANGELOG_REPO");
+		var ciProducts = env.GetEnvironmentVariable("CHANGELOG_PRODUCTS");
 
 		var hasCiData = !string.IsNullOrEmpty(prNumber) || !string.IsNullOrEmpty(ciTitle);
 		if (!hasCiData)
@@ -402,13 +406,18 @@ IEnvironmentVariables? env = null
 			? input.Prs
 			: !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
 
+		var enrichedProducts = input.Products.Count > 0
+			? input.Products
+			: ProductArgument.ParseProductSpecs(ciProducts);
+
 		return input with
 		{
 			Prs = enrichedPrs,
 			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
-			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo
+			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,
+			Products = enrichedProducts
 		};
 	}
 }

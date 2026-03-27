@@ -96,14 +96,39 @@ public class ChangelogPrEvaluationService(
 		if (config.LabelToType is { Count: > 0 })
 			resolvedType = PrInfoProcessor.MapLabelsToType(input.PrLabels, config.LabelToType);
 
+		// Resolve products from labels
+		string? resolvedProducts = null;
+		string? productLabelTable = null;
+		if (config.LabelToProducts is { Count: > 0 })
+		{
+			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, config.LabelToProducts);
+			if (products.Count > 0)
+			{
+				resolvedProducts = ProductArgument.FormatProductSpecs(products);
+				_logger.LogInformation("Mapped PR labels to products: {Products}", resolvedProducts);
+			}
+			else
+				productLabelTable = BuildProductLabelTable(config.LabelToProducts);
+		}
+
 		if (resolvedType == null)
 		{
 			_logger.LogInformation("No type label found on PR");
-			return await SetOutputs(PrEvaluationResult.NoLabel, title, labelTable: BuildLabelTable(config.LabelToType));
+			return await SetOutputs(
+				PrEvaluationResult.NoLabel, title,
+				labelTable: BuildLabelTable(config.LabelToType),
+				productLabelTable: productLabelTable
+			);
 		}
 
-		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, existingFile={File}", title, resolvedType, existingFilename);
-		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType, existingFilename: existingFilename);
+		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}", title, resolvedType, resolvedProducts, existingFilename);
+		return await SetOutputs(
+			PrEvaluationResult.Success, title, resolvedType,
+			resolvedProducts: resolvedProducts,
+			productLabelTable: productLabelTable,
+			changelogDir: changelogDir,
+			existingFilename: existingFilename
+		);
 	}
 
 	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
@@ -113,27 +138,33 @@ public class ChangelogPrEvaluationService(
 		PrEvaluationResult status,
 		string? resolvedTitle = null,
 		string? resolvedType = null,
+		string? resolvedProducts = null,
 		string? labelTable = null,
+		string? productLabelTable = null,
+		string? changelogDir = null,
 		string? existingFilename = null)
 	{
-		// evaluate-pr outputs "proceed" (not "success") to signal the generate step should run
 		var statusString = status == PrEvaluationResult.Success
 			? ProceedStatus
 			: status.ToStringFast(true);
 
 		var shouldGenerate = status == PrEvaluationResult.Success;
-		var shouldUpload = status is PrEvaluationResult.Success or PrEvaluationResult.NoLabel or PrEvaluationResult.NoTitle;
 
 		await coreService.SetOutputAsync("status", statusString);
 		await coreService.SetOutputAsync("should-generate", shouldGenerate ? "true" : "false");
-		await coreService.SetOutputAsync("should-upload", shouldUpload ? "true" : "false");
 
 		if (resolvedTitle != null)
 			await coreService.SetOutputAsync("title", resolvedTitle);
 		if (resolvedType != null)
 			await coreService.SetOutputAsync("type", resolvedType);
+		if (resolvedProducts != null)
+			await coreService.SetOutputAsync("products", resolvedProducts);
 		if (labelTable != null)
 			await coreService.SetOutputAsync("label-table", labelTable);
+		if (productLabelTable != null)
+			await coreService.SetOutputAsync("product-label-table", productLabelTable);
+		if (changelogDir != null)
+			await coreService.SetOutputAsync("changelog-dir", changelogDir);
 		if (existingFilename != null)
 			await coreService.SetOutputAsync("existing-changelog-filename", existingFilename);
 
@@ -169,14 +200,20 @@ public class ChangelogPrEvaluationService(
 		content.Contains($"- \"{prNumber}\"", StringComparison.Ordinal) ||
 		content.Contains($"- '{prNumber}'", StringComparison.Ordinal);
 
-	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType)
+	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType) =>
+		BuildMappingTable(labelToType, "Label", "Type");
+
+	internal static string BuildProductLabelTable(IReadOnlyDictionary<string, string>? labelToProducts) =>
+		BuildMappingTable(labelToProducts, "Label", "Product");
+
+	internal static string BuildMappingTable(IReadOnlyDictionary<string, string>? mapping, string keyHeader, string valueHeader)
 	{
-		if (labelToType is not { Count: > 0 })
+		if (mapping is not { Count: > 0 })
 			return "";
 
-		var lines = new List<string> { "| Label | Type |", "| --- | --- |" };
-		foreach (var (label, type) in labelToType)
-			lines.Add($"| `{label}` | {type} |");
+		var lines = new List<string> { $"| {keyHeader} | {valueHeader} |", "| --- | --- |" };
+		foreach (var (key, value) in mapping)
+			lines.Add($"| `{key}` | {value} |");
 
 		return string.Join("\n", lines);
 	}

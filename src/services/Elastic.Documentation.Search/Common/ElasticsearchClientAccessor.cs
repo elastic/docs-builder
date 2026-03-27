@@ -75,6 +75,23 @@ public class ElasticsearchClientAccessor : IDisposable
 	}
 
 	/// <summary>
+	/// Extracts the ruleset name from the index name.
+	/// Index name format: "semantic-docs-{namespace}-latest" -> ruleset: "docs-ruleset-{namespace}"
+	/// The namespace may contain hyphens (e.g., "codex-internal"), so we extract everything
+	/// between the "semantic-docs-" prefix and the "-latest" suffix.
+	/// </summary>
+	private static string? ExtractRulesetName(string indexName)
+	{
+		const string prefix = "semantic-docs-";
+		const string suffix = "-latest";
+		if (!indexName.StartsWith(prefix, StringComparison.Ordinal) || !indexName.EndsWith(suffix, StringComparison.Ordinal))
+			return null;
+
+		var ns = indexName[prefix.Length..^suffix.Length];
+		return string.IsNullOrEmpty(ns) ? null : $"docs-ruleset-{ns}";
+	}
+
+	/// <summary>
 	/// Tests connectivity to the Elasticsearch cluster.
 	/// </summary>
 	public async Task<bool> CanConnect(Cancel ctx) => (await Client.PingAsync(ctx)).IsValidResponse;

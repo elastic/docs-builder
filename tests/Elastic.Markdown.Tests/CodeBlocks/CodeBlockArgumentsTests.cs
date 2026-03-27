@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 
+using AwesomeAssertions;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
-using FluentAssertions;
 using JetBrains.Annotations;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;

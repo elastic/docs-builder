@@ -4,13 +4,13 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Search.IntegrationTests;
@@ -101,7 +101,7 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		if (results.Count == 0)
 		{
 			var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), TestContext.Current.CancellationToken);
-			output.WriteLine($"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString(CultureInfo.InvariantCulture) : $"ERROR: {countResponse.ElasticsearchServerError?.Error.Reason}")}");
+			output.WriteLine($"Index document count: {(countResponse.IsValidResponse ? countResponse.Count.ToString(CultureInfo.InvariantCulture) : $"ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}")}");
 		}
 
 		results.Should().NotBeEmpty($"Search for '{query}' should return results (index: {clientAccessor.SearchIndex})");

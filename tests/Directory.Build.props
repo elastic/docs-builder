@@ -19,7 +19,7 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="GitHubActionsTestLogger" />
 
-    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>

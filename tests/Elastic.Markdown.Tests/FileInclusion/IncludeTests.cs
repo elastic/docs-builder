@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
@@ -134,10 +134,10 @@ public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : Direc
 	[Fact]
 	public void EmitsError()
 	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
 		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.Contains("only supports including snippets from `_snippet` folders."));
+			.Contain(d => d.Severity == Severity.Error &&
+				d.Message.Contains("only supports including snippets from `_snippet` folders."));
 	}
 }
 

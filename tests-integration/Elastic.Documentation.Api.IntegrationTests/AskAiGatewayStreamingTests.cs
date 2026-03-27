@@ -4,11 +4,11 @@
 
 using System.Net;
 using System.Text;
+using AwesomeAssertions;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Xunit;
