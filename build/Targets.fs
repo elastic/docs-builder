@@ -4,6 +4,8 @@
 
 module Targets
 
+open System.IO
+open System.IO.Compression
 open Argu
 open CommandLine
 open Fake.Core
@@ -150,6 +152,66 @@ let private runTests (testSuite: TestSuite) _ =
         )
     }
     
+let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
+
+let private gzipCompressDirectory (directory: string) =
+    let files =
+        Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
+        |> Seq.filter (fun f ->
+            match Path.GetExtension(f) with
+            | null -> false
+            | ext -> compressibleExtensions.Contains(ext.ToLowerInvariant())
+        )
+        |> Seq.toArray
+
+    printfn $"Compressing %d{files.Length} files in %s{directory}"
+
+    files
+    |> Array.Parallel.iter (fun file ->
+        let gzPath = file + ".gz"
+        use input = File.OpenRead(file)
+        use output = File.Create(gzPath)
+        use gzip = new GZipStream(output, CompressionLevel.SmallestSize)
+        input.CopyTo(gzip)
+    )
+
+    // Replace originals with zero-byte placeholders so nginx try_files can resolve
+    // paths, while gzip_static always serves the .gz version
+    for file in files do
+        File.Delete(file)
+        File.Create(file).Dispose()
+
+    printfn "Compression complete"
+
+let private airGappedBuild _ =
+    exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "clone" "--environment" "prod" }
+    exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "build" "--exporters" "html" "--environment" "prod" }
+
+    let assemblyDir = Path.Combine(Paths.Root.FullName, ".artifacts", "assembly")
+    let searchDir = Path.Combine(assemblyDir, "docs", "_search")
+    if Directory.Exists(searchDir) then
+        Directory.Delete(searchDir, true)
+
+    File.WriteAllText(
+        Path.Combine(assemblyDir, "index.html"),
+        """<meta http-equiv="refresh" content="0;url=/docs">"""
+    )
+
+    gzipCompressDirectory assemblyDir
+
+    exec {
+        run "docker" "build"
+            "-f" "build/air-gapped/Dockerfile"
+            "--build-context" "content=.artifacts/assembly"
+            "--build-context" "config=build/air-gapped"
+            "-t" "elastic-docs-air-gapped"
+            "build/air-gapped"
+    }
+
+let private airGappedRun _ =
+    printfn "Running at http://localhost:8080"
+    exec { run "docker" "run" "-p" "8080:8080" "elastic-docs-air-gapped" }
+
 let private validateLicenses _ =
     let args = ["-u"; "-t"; "-i"; "docs-builder.sln"; "--use-project-assets-json"
                 "--forbidden-license-types"; "build/forbidden-license-types.json"
@@ -196,6 +258,8 @@ let Setup (parsed:ParseResults<Build>) =
         | RunLocalContainer -> Build.Step runLocalContainer
         | PublishZip -> Build.Step publishZip
         | ValidateLicenses -> Build.Step validateLicenses
+        | Air_Gapped_Build -> Build.Cmd [] [] airGappedBuild
+        | Air_Gapped_Run -> Build.Cmd [] [] airGappedRun
 
         // flags
         | Single_Target
