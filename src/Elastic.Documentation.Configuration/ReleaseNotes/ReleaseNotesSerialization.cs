@@ -347,6 +347,7 @@ public static partial class ReleaseNotesSerialization
 		{
 			"any" => MatchMode.Any,
 			"all" => MatchMode.All,
+			"conjunction" => MatchMode.Conjunction,
 			_ => null
 		};
 }
