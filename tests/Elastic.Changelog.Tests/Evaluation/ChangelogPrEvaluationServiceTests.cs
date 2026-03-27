@@ -225,6 +225,35 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task EvaluatePr_NoTypeLabel_WithProductConfig_OutputsProductLabelTable()
+	{
+		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["unrelated-label"], config: "/tmp/config/changelog.yml");
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("@Product:ECH"))).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("cloud-hosted"))).MustHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_NoTypeLabel_WithProductLabels_DoesNotOutputProductLabelTable()
+	{
+		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["@Product:ECH"], config: "/tmp/config/changelog.yml");
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
 	public async Task EvaluatePr_HappyPath_ReturnsSuccess()
 	{
 		await WriteMinimalConfig();
@@ -289,6 +318,40 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	{
 		ChangelogPrEvaluationService.BuildLabelTable(null).Should().BeEmpty();
 		ChangelogPrEvaluationService.BuildLabelTable(new Dictionary<string, string>()).Should().BeEmpty();
+	}
+
+	[Fact]
+	public void BuildProductLabelTable_WithEntries_BuildsMarkdownTable()
+	{
+		var labelToProducts = new Dictionary<string, string>
+		{
+			["@Product:ECH"] = "cloud-hosted",
+			["@Product:ESS"] = "cloud-serverless"
+		};
+
+		var table = ChangelogPrEvaluationService.BuildProductLabelTable(labelToProducts);
+
+		table.Should().Contain("| Label | Product |");
+		table.Should().Contain("| `@Product:ECH` | cloud-hosted |");
+		table.Should().Contain("| `@Product:ESS` | cloud-serverless |");
+	}
+
+	[Fact]
+	public void BuildProductLabelTable_NullOrEmpty_ReturnsEmpty()
+	{
+		ChangelogPrEvaluationService.BuildProductLabelTable(null).Should().BeEmpty();
+		ChangelogPrEvaluationService.BuildProductLabelTable(new Dictionary<string, string>()).Should().BeEmpty();
+	}
+
+	[Fact]
+	public void BuildMappingTable_UsesCustomHeaders()
+	{
+		var mapping = new Dictionary<string, string> { ["key1"] = "value1" };
+
+		var table = ChangelogPrEvaluationService.BuildMappingTable(mapping, "Custom Key", "Custom Value");
+
+		table.Should().Contain("| Custom Key | Custom Value |");
+		table.Should().Contain("| `key1` | value1 |");
 	}
 
 	[Fact]
@@ -396,7 +459,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		ChangelogPrEvaluationService.ContentReferencesPr(content, "42").Should().Be(expected);
 
 	[Fact]
-	public async Task EvaluatePr_WithProductLabels_OutputsProducts()
+	public async Task EvaluatePr_WithProductLabels_OutputsProductsAndNoTable()
 	{
 		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
 		var service = CreateService();
@@ -409,13 +472,13 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		result.Should().BeTrue();
 		VerifyOutputSet("status", "proceed");
-		VerifyOutputSet("should-generate", "true");
 		VerifyOutputSet("type", "enhancement");
 		VerifyOutputSet("products", "cloud-hosted, cloud-serverless");
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
-	public async Task EvaluatePr_WithoutProductLabels_DoesNotOutputProducts()
+	public async Task EvaluatePr_WithoutProductLabels_OutputsProductLabelTable()
 	{
 		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
 		var service = CreateService();
@@ -429,5 +492,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().BeTrue();
 		VerifyOutputSet("status", "proceed");
 		A.CallTo(() => _mockCore.SetOutputAsync("products", A<string>._)).MustNotHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("@Product:ECH"))).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("cloud-hosted"))).MustHaveHappened();
 	}
 }

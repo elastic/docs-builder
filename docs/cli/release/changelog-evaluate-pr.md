@@ -69,6 +69,7 @@ docs-builder changelog evaluate-pr [options...] [-h|--help]
 | `type` | Resolved changelog type |
 | `products` | Comma-separated product specs resolved from PR labels via `pivot.products` mappings (e.g., `cloud-hosted, cloud-serverless`) |
 | `label-table` | Markdown table of configured label-to-type mappings |
+| `product-label-table` | Markdown table of configured label-to-product mappings |
 | `existing-changelog-filename` | Filename of a previously committed changelog for this PR (if any) |
 
 ## Environment variables
