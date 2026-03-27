@@ -78,7 +78,7 @@ public record ProductArgument
 
 		foreach (var entry in entries)
 		{
-			var parts = entry.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+			var parts = entry.Split((char[]?)null, 3, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 			if (parts.Length == 0)
 				continue;
 
