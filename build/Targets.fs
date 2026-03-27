@@ -210,7 +210,7 @@ let private airGappedBuild _ =
 
 let private airGappedRun _ =
     printfn "Running at http://localhost:8080"
-    exec { run "docker" "run" "-p" "8080:8080" "elastic-docs-air-gapped" }
+    exec { run "docker" "run" "-p" "127.0.0.1:8080:8080" "elastic-docs-air-gapped" }
 
 let private validateLicenses _ =
     let args = ["-u"; "-t"; "-i"; "docs-builder.sln"; "--use-project-assets-json"
