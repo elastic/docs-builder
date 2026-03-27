@@ -80,13 +80,6 @@ public record BundleChangelogsArguments
 	/// entries with matching feature-id values will be commented out.
 	/// </summary>
 	public string[]? HideFeatures { get; init; }
-
-	/// <summary>
-	/// Optional override for rule context product. When specified, this product is used for 
-	/// rule resolution instead of the default (first product from output_products or 
-	/// alphabetical first from changelog products).
-	/// </summary>
-	public string? RuleContextProduct { get; init; }
 }
 
 /// <summary>
@@ -243,8 +236,7 @@ public partial class ChangelogBundlingService(
 						collector,
 						filteredEntries,
 						config.Rules.Bundle,
-						outputProductIds,
-						input.RuleContextProduct),
+						outputProductIds),
 					_ => filteredEntries
 				};
 			}
@@ -316,9 +308,8 @@ public partial class ChangelogBundlingService(
 		string? repo = null;
 		string? owner = null;
 		string[]? mergedHideFeatures = null;
-		BundleProfile? profile = null;
 
-		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out profile))
+		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
 			// For github_release profiles, lifecycle is carried from the raw tag (pre-release suffix preserved).
 			// For all other profile types, infer it from the base version string.
@@ -364,7 +355,6 @@ public partial class ChangelogBundlingService(
 			Repo = repo,
 			Owner = owner,
 			HideFeatures = mergedHideFeatures,
-			RuleContextProduct = profile?.RuleContextProduct ?? input.RuleContextProduct
 		};
 	}
 
@@ -701,8 +691,7 @@ public partial class ChangelogBundlingService(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
-		IReadOnlyList<string>? outputProductIds = null,
-		string? ruleContextProductOverride = null)
+		IReadOnlyList<string>? outputProductIds = null)
 	{
 		// Early validation: validate bundle has some product context
 		if ((outputProductIds == null || outputProductIds.Count == 0) &&
@@ -715,8 +704,7 @@ public partial class ChangelogBundlingService(
 
 		// BUNDLE-LEVEL: Determine rule context product once for entire bundle
 		// Always use alphabetical first for consistency, regardless of source
-		var ruleContextProduct = ruleContextProductOverride
-			?? outputProductIds?.OrderBy(id => id, StringComparer.OrdinalIgnoreCase).FirstOrDefault()
+		var ruleContextProduct = outputProductIds?.OrderBy(id => id, StringComparer.OrdinalIgnoreCase).FirstOrDefault()
 			?? entries
 				.SelectMany(e => e.Data.Products?.Select(p => p.ProductId) ?? [])
 				.Distinct(StringComparer.OrdinalIgnoreCase)

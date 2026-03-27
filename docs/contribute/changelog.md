@@ -230,9 +230,8 @@ rules:
 **Mode 3** uses a **single rule-context product** for each bundle:
 
 1. **Rule context product**:
-   - **With `--output-products`**: First product alphabetically from the output products list
-   - **Without `--output-products`**: First product alphabetically from all products aggregated from matched changelog entries (regardless of input method: `--all`, `--prs`, `--issues`, etc.)
-   - **Override**: `--rule-context-product` (CLI) or `rule_context_product:` (profile)
+   - **With `--output-products`** (CLI) or profile **`output_products`**: First product alphabetically from that list
+   - **Without** those: First product alphabetically from all products aggregated from matched changelog entries (regardless of input method: `--all`, `--prs`, `--issues`, etc.)
 
 2. **For each changelog**:
    - **Contains rule context product** and a per-product block exists for that product: apply that block (product rules, then type/area for that block).
@@ -252,7 +251,7 @@ For example, with `--output-products "kibana 9.3.0, security 9.3.0"` (rule conte
 | `[elasticsearch]` | No | **Excluded** (disjoint) |
 | `[]` (empty/missing) | No | **Excluded** with warning |
 
-**Multi-product bundles**: For release notes that need different rule behavior per product, use separate bundles or different `rule_context_product` values, or use **Mode 2** (global-only `rules.bundle`) when you need OR-style product inclusion without disjoint exclusion.
+**Multi-product bundles**: For release notes that need different rule behavior per product, run **separate** `changelog bundle` invocations with a **single** product in `--output-products` (or a profile whose `output_products` resolves to one product), or use **Mode 2** (global-only `rules.bundle`) when you need OR-style product inclusion without disjoint exclusion.
 
 #### `rules.publish`
 
@@ -722,8 +721,7 @@ Profile configuration fields in `bundle.profiles`:
 | `source` | Optional. Set to `github_release` to fetch the PR list from a GitHub release. Mutually exclusive with `products`. Requires `repo` at the profile or `bundle` level. |
 | `products` | Product filter pattern with `{version}` and `{lifecycle}` placeholders. Used to match changelog files. Required when filtering by product metadata. Not used when the filter comes from a promotion report, URL list file, or `source: github_release`. |
 | `output` | Output file path pattern with `{version}` and `{lifecycle}` placeholders. |
-| `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should have a single product ID though it's filtered from many or have a different lifecycle or version than the filter. |
-| `rule_context_product` | Optional override for the product used for rule resolution. When not specified, uses the first product alphabetically from `output_products` (or from all products aggregated from matched entries if `output_products` is not set). Use this to control which per-product rules apply when multiple products exist in the bundle context. |
+| `output_products` | Optional override for the products array written to the bundle. Useful when the bundle should have a single product ID though it's filtered from many or have a different lifecycle or version than the filter. With multiple product IDs, Mode 3 rule resolution uses the first alphabetically; use separate profiles or bundle runs with a single product in `output_products` when you need a different rule context. |
 | `repo` | Optional. Overrides `bundle.repo` for this profile only. Required when `source: github_release` is used and no `bundle.repo` is set. |
 | `owner` | Optional. Overrides `bundle.owner` for this profile only. |
 | `hide_features` | List of feature IDs to embed in the bundle as hidden. |
@@ -748,13 +746,12 @@ bundle:
       output: "serverless/{version}.yaml"
       output_products: "cloud-serverless {version}"
       # inherits repo: elasticsearch and owner: elastic from bundle level
-    # Multi-product profile with explicit rule context
+    # Multi-product profile: rule context for Mode 3 is the first product alphabetically (here: kibana).
+    # For security-specific rules only, use a separate profile with output_products listing only security.
     kibana-security-release:
       products: "kibana {version} {lifecycle}, security {version} {lifecycle}"
       output: "kibana-security/{version}.yaml"
       output_products: "kibana {version}, security {version}"
-      # Use security-specific bundle rules instead of kibana rules (alphabetical default)
-      rule_context_product: security
 ```
 
 #### Bundle changelogs from a GitHub release [changelog-bundle-profile-github-release]
@@ -887,9 +884,7 @@ docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
 3. The owner in the pull request URLs. Not required when using full PR URLs, or when `bundle.owner` is set in the changelog configuration.
 4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
 
-**Advanced filtering**: You can also use `--rule-context-product PRODUCT` to explicitly control which product's bundle rules are used for filtering.
-By default, the first product alphabetically from `--output-products` is used as the rule context.
-Use this option when you have multi-product output but want to use a specific product's filtering rules.
+In Mode 3, the **rule context product** is the first alphabetically from `--output-products` (or from aggregated changelog products if omitted). To apply a different product's per-product rules, use a bundle whose `output_products` contains only that product (separate command or profile).
 
 If you have changelog files that reference those pull requests, the command creates a file like this:
 

@@ -493,7 +493,6 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
-	/// <param name="ruleContextProduct">Optional: Override the product used for rule resolution. When not specified, uses the first product from output-products (alphabetically sorted). Used to control which per-product rules apply when multiple products exist in the bundle context.</param>
 	/// <param name="owner">GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
 	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
 	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
@@ -514,7 +513,6 @@ internal sealed partial class ChangelogCommand(
 		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
 		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
-		string? ruleContextProduct = null,
 		string[]? issues = null,
 		string? owner = null,
 		string[]? prs = null,
@@ -776,8 +774,7 @@ internal sealed partial class ChangelogCommand(
 			ProfileReport = isProfileMode ? profileReport : null,
 			Report = !isProfileMode ? report : null,
 			Config = config,
-			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
-			RuleContextProduct = ruleContextProduct
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
 		};
 
 		serviceInvoker.AddCommand(service, input,

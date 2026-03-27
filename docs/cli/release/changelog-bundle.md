@@ -108,12 +108,7 @@ The `--input-products` option determines which changelog files are gathered for 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
 :   This value replaces information that would otherwise be derived from changelogs.
-:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also sets the bundle product context used for single-product rule resolution. For details, refer to [Single-product rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
-
-`--rule-context-product <string?>`
-:   Optional: Override the product used for rule resolution. When not specified, uses the first product alphabetically from `--output-products` (or from all products aggregated from matched entries if `--output-products` is not specified). 
-:   Use this to control which per-product rules apply when multiple products exist in the bundle context.
-:   For example, `--output-products "kibana, security" --rule-context-product "security"` uses security-specific rules instead of kibana rules (which would be used by default since "kibana" < "security" alphabetically).
+:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also supplies the product IDs used to choose the **rule context product** (first alphabetically) for Mode 3. To use a different product's rules, run a separate bundle with only that product in `--output-products`. For details, refer to [Single-product rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
 
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
@@ -375,11 +370,6 @@ The `products` field determines which changelog files are gathered for considera
 `owner`
 :   Optional. The GitHub owner written to each product entry in the bundle. Overrides `bundle.owner` when set.
 :   Example: `owner: elastic`
-
-`rule_context_product`
-:   Optional. Override the product used for rule resolution. When not specified, uses the first product alphabetically from `output_products` (or from all products aggregated from matched entries if `output_products` is not set).
-:   Use this to control which per-product rules apply when multiple products exist in the bundle context.
-:   Example: `rule_context_product: security` (uses security-specific rules instead of alphabetical default)
 
 `hide_features`
 :   Optional. Feature IDs to mark as hidden in the bundle output (string or list). When the bundle is rendered, entries with matching `feature-id` values are commented out.

@@ -767,7 +767,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 							collector.EmitHint(configPath,
 								$"Per-product rule '{normalizedProductId}' includes disjoint products [{string.Join(", ", disjointProducts)}] " +
 								"which cannot be included due to single-product rule resolution. " +
-								"Use '--rule-context-product', separate bundles, or multi-product changelogs instead. " +
+								"Use separate bundles (each with a single product in output_products or profile output_products), or multi-product changelogs instead. " +
 								"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
 						}
 					}

@@ -258,9 +258,8 @@ bundle:
     #     - feature-flag-1
     #     - feature-flag-2
 
-    # Example: Multi-product profile with explicit rule context
+    # Example: Multi-product profile (Mode 3 rule context = first product alphabetically, e.g. kibana).
+    # For security-only rules, add a separate profile with output_products listing only security.
     # kibana-security-release:
     #   output: "kibana-security-{version}.yaml"
     #   output_products: "kibana {version}, security {version}"
-    #   # Use security-specific bundle rules instead of kibana rules (alphabetical default)
-    #   rule_context_product: security
