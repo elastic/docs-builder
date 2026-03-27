@@ -335,7 +335,14 @@ public partial class ChangelogBundlingService(
 				var outputProductsPattern = profile.OutputProducts
 					.Replace("{version}", filterResult.Version)
 					.Replace("{lifecycle}", resolvedLifecycle);
-				outputProducts = ProfileFilterResolver.ParseProfileProducts(outputProductsPattern);
+				if (!ProfileFilterResolver.TryParseProfileProducts(outputProductsPattern, out var parsedOutputProducts, out var outputProductsParseError))
+				{
+					collector.EmitError(string.Empty,
+						$"Profile '{input.Profile}': bundle.output_products could not be parsed: {outputProductsParseError}");
+					return null;
+				}
+
+				outputProducts = parsedOutputProducts;
 			}
 
 			// Profile-level repo/owner takes precedence; fall back to bundle-level defaults
