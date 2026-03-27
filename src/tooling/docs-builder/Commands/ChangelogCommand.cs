@@ -29,7 +29,8 @@ internal sealed partial class ChangelogCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
@@ -1198,6 +1199,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="headSha">PR head commit SHA</param>
 	/// <param name="eventAction">Optional: GitHub event action (e.g., opened, synchronize, edited). When omitted, body-only-edit and bot-loop checks are skipped.</param>
 	/// <param name="titleChanged">Whether the PR title changed (for edited events)</param>
+	/// <param name="bodyChanged">Whether the PR body changed (for edited events)</param>
 	/// <param name="stripTitlePrefix">Remove square-bracket prefixes from the PR title</param>
 	/// <param name="botName">Bot login name for loop detection</param>
 	/// <param name="ctx"></param>
@@ -1213,6 +1215,7 @@ internal sealed partial class ChangelogCommand(
 		string headSha,
 		string? eventAction = null,
 		bool titleChanged = false,
+		bool bodyChanged = false,
 		bool stripTitlePrefix = false,
 		string botName = "github-actions[bot]",
 		Cancel ctx = default
@@ -1223,6 +1226,8 @@ internal sealed partial class ChangelogCommand(
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService);
 
+		var prBody = environmentVariables.GetEnvironmentVariable("PR_BODY");
+
 		var args = new EvaluatePrArguments
 		{
 			Config = config,
@@ -1230,11 +1235,13 @@ internal sealed partial class ChangelogCommand(
 			Repo = repo,
 			PrNumber = prNumber,
 			PrTitle = prTitle,
+			PrBody = prBody,
 			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
 			HeadRef = headRef,
 			HeadSha = headSha,
 			EventAction = eventAction,
 			TitleChanged = titleChanged,
+			BodyChanged = bodyChanged,
 			StripTitlePrefix = stripTitlePrefix,
 			BotName = botName
 		};
