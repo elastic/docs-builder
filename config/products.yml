@@ -1,4 +1,7 @@
 products:
+  agent-skills:
+    display: 'Elastic Agent Skills'
+    repository: 'agent-skills'
   apm:
     display: 'APM'
     versioning: 'stack'
@@ -130,8 +133,6 @@ products:
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
-  elastic-agent-skills:
-    display: 'Elastic Agent Skills'
   elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
     versioning: 'esf'
