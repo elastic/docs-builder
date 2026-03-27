@@ -496,8 +496,8 @@ nav:
             title: Tags
           - page: docs-content://explore-analyze/find-and-organize/find-apps-and-objects.md
             title: Find apps and objects
-      - group: Share, alert, and automate
-        page: docs-content://explore-analyze/share-alert-and-automate.md
+      - group: Track and respond
+        page: docs-content://explore-analyze/track-and-respond.md
         children:
         - group: Reporting and sharing
           page: docs-content://explore-analyze/report-and-share.md
