@@ -2,6 +2,7 @@ products:
   agent-skills:
     display: 'Elastic Agent Skills'
     repository: 'agent-skills'
+    versioning: 'all'
   apm:
     display: 'APM'
     versioning: 'stack'
@@ -64,6 +65,7 @@ products:
     display: 'Elasticsearch Curator'
   docs-builder:
     display: 'Docs Builder'
+    versioning: 'all'
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:
