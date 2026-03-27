@@ -715,24 +715,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					if (contextIncludeProducts == null && collector.Errors > 0)
 						return null;
 
-					// Validate subset relationship with global rules (emit warnings)
-					if (includeProducts is { Count: > 0 } && contextIncludeProducts is { Count: > 0 })
-					{
-						var extraProducts = contextIncludeProducts.Except(includeProducts, StringComparer.OrdinalIgnoreCase).ToList();
-						if (extraProducts.Count > 0)
-						{
-							collector.EmitWarning(configPath, $"Context '{normalizedProductId}' includes products [{string.Join(", ", extraProducts)}] not in global include_products [{string.Join(", ", includeProducts)}]. This may cause unexpected filtering behavior.");
-						}
-					}
-
-					if (excludeProducts is { Count: > 0 } && contextExcludeProducts is { Count: > 0 })
-					{
-						var missingProducts = excludeProducts.Except(contextExcludeProducts, StringComparer.OrdinalIgnoreCase).ToList();
-						if (missingProducts.Count > 0)
-						{
-							collector.EmitWarning(configPath, $"Context '{normalizedProductId}' excludes products [{string.Join(", ", contextExcludeProducts)}] but global exclude_products also excludes [{string.Join(", ", missingProducts)}]. This may cause unexpected filtering behavior.");
-						}
-					}
+					// Mode 3: global rules.bundle product lists are not used for filtering — do not warn about
+					// subset relationships between global and per-product include/exclude lists (would mislead authors).
 
 					// Parse match_products for this context
 					var contextMatchProducts = matchProducts;

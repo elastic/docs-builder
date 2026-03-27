@@ -1516,9 +1516,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_SubsetValidationWarning_EmitsWarning()
+	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_Mode3_DoesNotEmitGlobalSubsetWarningAsync()
 	{
-		// Arrange
+		// Arrange — Mode 3 ignores global rules.bundle product lists; per-product lists need not align with globals.
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
 		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -1544,8 +1544,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Assert
 		config.Should().NotBeNull();
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Context 'security' includes products [security]"));
+		config!.Rules!.Bundle!.ByProduct.Should().ContainKey("security");
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("not in global include_products", StringComparison.Ordinal));
 	}
 
 	[Fact]
