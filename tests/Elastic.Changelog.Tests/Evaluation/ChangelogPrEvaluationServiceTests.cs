@@ -417,9 +417,12 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_WithoutProductLabels_DoesNotOutputProducts()
 	{
-		await WriteMinimalConfig();
+		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
 		var service = CreateService();
-		var args = DefaultArgs();
+		var args = DefaultArgs(
+			prLabels: ["type:feature"],
+			config: "/tmp/config/changelog.yml"
+		);
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
