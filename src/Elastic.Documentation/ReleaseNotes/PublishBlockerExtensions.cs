@@ -106,55 +106,6 @@ public static class PublishBlockerExtensions
 		};
 	}
 
-	/// <summary>
-	/// Resolves the applicable <see cref="PublishBlocker"/> for an entry from a set of per-product rules.
-	/// </summary>
-	/// <remarks>
-	/// Algorithm — intersection + alphabetical first-match:
-	/// <list type="number">
-	/// <item>Compute the intersection of <paramref name="contextIds"/> and <paramref name="entryOwnIds"/>.
-	///   This restricts rule lookup to products the entry actually claims to belong to.</item>
-	/// <item>Sort the intersection alphabetically (case-insensitive, ascending) for a deterministic result.</item>
-	/// <item>Return the per-product rule for the first matching product ID in the sorted intersection.</item>
-	/// <item>If the intersection is empty (unusual: entry's products are disjoint from the bundle context),
-	///   fall back to <paramref name="entryOwnIds"/> sorted alphabetically, then to <paramref name="globalBlocker"/>.</item>
-	/// </list>
-	/// </remarks>
-	/// <param name="contextIds">
-	/// The product IDs that define this bundle's context — from <c>output_products</c> during bundling,
-	/// or from the bundle's top-level <c>products</c> field during rendering.
-	/// When no context is set, pass the entry's own product IDs here as a fallback.
-	/// </param>
-	/// <param name="entryOwnIds">The product IDs declared on the individual changelog entry.</param>
-	/// <param name="byProduct">Per-product blocker overrides keyed by product ID.</param>
-	/// <param name="globalBlocker">Global blocker returned when no per-product rule matches.</param>
-	public static PublishBlocker? ResolveBlocker(
-		IEnumerable<string> contextIds,
-		IEnumerable<string> entryOwnIds,
-		IReadOnlyDictionary<string, PublishBlocker> byProduct,
-		PublishBlocker? globalBlocker)
-	{
-		var entrySet = new HashSet<string>(entryOwnIds, StringComparer.OrdinalIgnoreCase);
-
-		// Intersection: context products that the entry actually belongs to, sorted alphabetically
-		var candidates = contextIds
-			.Where(id => entrySet.Contains(id))
-			.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-			.ToList();
-
-		// Edge case: empty intersection (entry's products are disjoint from the bundle context).
-		// Fall back to the entry's own products so context-only rules don't bleed across.
-		if (candidates.Count == 0)
-			candidates = entrySet
-				.OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
-				.ToList();
-
-		return candidates
-			.Select(id => byProduct.TryGetValue(id, out var blocker) ? blocker : null)
-			.FirstOrDefault(blocker => blocker is not null)
-			?? globalBlocker;
-	}
-
 	private static bool IsAreaListed(PublishBlocker blocker, string area) =>
 		blocker.Areas?.Any(l => l.Equals(area, StringComparison.OrdinalIgnoreCase)) ?? false;
 }
