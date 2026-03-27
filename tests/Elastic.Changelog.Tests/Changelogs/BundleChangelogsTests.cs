@@ -5165,7 +5165,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  bundle:
 			    include_products:
 			      - elasticsearch
-			      - security
 			    products:
 			      cloud-hosted:
 			        include_products:
@@ -5191,7 +5190,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 			All = true,
 			Config = configPath,
 			Output = outputPath,
-			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }] // No context rule for security, should fall back to global
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+			// No per-product block for "security"; Mode 3 uses pass-through for product lists (globals not applied).
+			// Global include_products intentionally omit "security" so the test fails if global product filters are wrongly applied.
 		};
 
 		// Act
@@ -5199,12 +5200,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		// Rule context = "security" (from output products)
-		// No per-product rule for "security" → falls back to global rules
+		// No per-product rule for "security" → PassThrough (not global include/exclude for products)
 		// elasticsearch and kibana entries are disjoint from security context → excluded
-		// Only security entry remains and uses global rules (include elasticsearch, security) → included
+		// Security-only entry is included (disjoint satisfied; no per-product product filter)
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by global rule");
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (Mode 3 pass-through when no per-product block for context)");
 		// Disjoint entries are excluded entirely in single-product rule resolution
 		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
 		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
