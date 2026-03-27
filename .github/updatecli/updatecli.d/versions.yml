@@ -47,6 +47,19 @@ sources:
       versionfilter:
         kind: latest
 
+  latest-edot-browser-version:
+    name: Get latest release version for the elastic-otel-rum-js
+    kind: githubrelease
+    transformers:
+      - trimprefix: v
+    spec:
+      owner: elastic
+      repository: elastic-otel-rum-js
+      token: '{{ requiredEnv "GITHUB_TOKEN" }}'
+      username: '{{ requiredEnv "GITHUB_ACTOR" }}'
+      versionfilter:
+        kind: latest
+
   latest-edot-cf-aws-version:
     name: Get latest release version for the edot-cf-aws
     kind: githubrelease
@@ -466,6 +479,15 @@ targets:
     spec:
       file: config/versions.yml
       key: versioning_systems.edot-android.current
+
+  update-docs-docset-browser:
+    name: 'Update config/versions.yml edot-browser {{ source "latest-edot-browser-version" }}'
+    scmid: githubConfig
+    sourceid: latest-edot-browser-version
+    kind: yaml
+    spec:
+      file: config/versions.yml
+      key: versioning_systems.edot-browser.current
 
   update-docs-docset-cf-aws:
     name: 'Update config/versions.yml edot-cf-aws {{ source "latest-edot-cf-aws-version" }}'

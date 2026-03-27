@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using AwesomeAssertions;
 using Elastic.Documentation.Links.CrossLinks;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.CrossLinks;
 

@@ -110,6 +110,7 @@ toc:
     children:
       - file: index.md
       - file: quick-ref.md
+      - file: directives.md
       - file: headings.md
       - file: admonitions.md
       - file: agent-skill.md
@@ -123,7 +124,6 @@ toc:
       - file: conditionals.md
       - file: contributors.md
       - file: csv-include.md
-      - file: directives.md
       - file: dropdowns.md
       - file: definition-lists.md
       - file: example_blocks.md

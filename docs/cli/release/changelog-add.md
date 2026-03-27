@@ -138,6 +138,7 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 | `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
 | `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
 | `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
+| `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
 | `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
 | `CHANGELOG_REPO` | `--repo` | `github.event.repository.name` |
 

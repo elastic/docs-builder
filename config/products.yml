@@ -107,6 +107,9 @@ products:
   edot-node:
     display: 'Elastic Distribution of OpenTelemetry Node'
     repository: 'elastic-otel-node'
+  edot-browser:
+    display: 'Elastic Distribution of OpenTelemetry Browser (RUM)'
+    repository: 'elastic-otel-rum-js'
   edot-php:
     display: 'Elastic Distribution of OpenTelemetry PHP'
     repository: 'elastic-otel-php'

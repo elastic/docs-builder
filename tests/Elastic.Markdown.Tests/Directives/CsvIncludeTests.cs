@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 

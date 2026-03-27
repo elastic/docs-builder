@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Sourcing;
@@ -13,7 +14,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown.IO;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Assembler.IntegrationTests;
