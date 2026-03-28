@@ -14,5 +14,9 @@ using var provider = services.BuildServiceProvider();
 
 ConsoleApp.ServiceProvider = provider;
 var app = ConsoleApp.Create();
-app.Add<MigrateCommand>();
+app.Add<InitCommand>("init");
+app.Add<ListCommand>("list");
+app.Add<CloneCommand>("clone");
+app.Add<ConvertCommand>("convert");
+app.Add<ServeCommand>("serve");
 await app.RunAsync(args).ConfigureAwait(false);

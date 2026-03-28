@@ -1,0 +1,35 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using ConsoleAppFramework;
+using ProcNet;
+
+namespace Documentation.Migrate;
+
+internal sealed class ServeCommand
+{
+	/// <summary>Serve the converted output using docs-builder.</summary>
+	/// <param name="workDir">Working directory for migration artifacts</param>
+	/// <param name="port">Port to serve on (default 3000)</param>
+	/// <param name="ctx">Cancellation token</param>
+	[Command("")]
+	public async Task<int> Serve(string? workDir = null, int port = 3000, Cancel ctx = default)
+	{
+		var dir = SharedOptions.ResolveWorkDir(workDir);
+		var outputDir = Path.Combine(dir, "output");
+
+		if (!Directory.Exists(outputDir))
+		{
+			Console.Error.WriteLine($"Output directory not found at {outputDir}. Run 'docs-migrate convert' first.");
+			return 1;
+		}
+
+		string[] args = ["run", "--project", "src/tooling/docs-builder", "--", "serve", "--path", outputDir, "--port", $"{port}"];
+		Console.WriteLine($"dotnet {string.Join(' ', args)}");
+
+		var arguments = new ExecArguments("dotnet", args);
+		var exitCode = await Proc.ExecAsync(arguments, ctx);
+		return exitCode;
+	}
+}
