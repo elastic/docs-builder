@@ -11,7 +11,7 @@
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git show:*)",
-      "Bash(git branch:*)",
+      "Bash(git branch --list:*)",
       "Bash(git grep:*)",
       "Bash(./build.sh:*)",
       "Bash(dotnet build:*)",
