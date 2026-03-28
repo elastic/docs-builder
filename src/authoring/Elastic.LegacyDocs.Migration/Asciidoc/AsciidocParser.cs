@@ -27,7 +27,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	public AsciidocDocument Parse(string filePath)
 	{
 		var content = ReadFile(filePath) ?? throw new FileNotFoundException($"File not found: {filePath}");
-		return Parse(content, System.IO.Path.GetDirectoryName(filePath) ?? "");
+		return Parse(content, Path.GetDirectoryName(filePath) ?? "");
 	}
 
 	public AsciidocDocument Parse(string content, string basePath)
@@ -517,6 +517,10 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	{
 		_pos++;
 
+		var format = blockAttr?.NamedAttributes?.GetValueOrDefault("format")?.ToLowerInvariant();
+		if (format is "dsv" or "csv" or "tsv")
+			return ParseSeparatedTable(blockAttr, format);
+
 		var columns = ParseColumnSpecs(blockAttr);
 		var allRows = new List<TableRowNode>();
 		var currentCells = new List<string>();
@@ -567,8 +571,7 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		if (currentCells.Count > 0)
 			allRows.Add(BuildTableRow(currentCells));
 
-		var hasHeader = blockAttr?.NamedAttributes?.ContainsKey("options") == true
-			&& blockAttr.NamedAttributes["options"].Contains("header", StringComparison.OrdinalIgnoreCase);
+		var hasHeader = HasHeaderOption(blockAttr);
 		if (!hasHeader && allRows.Count > 1 && !firstBlankSeen)
 			hasHeader = false;
 		else if (!hasHeader && allRows.Count > 1)
@@ -578,6 +581,61 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 		var bodyRows = hasHeader && allRows.Count > 0 ? allRows[1..] : allRows;
 
 		return new TableNode { Columns = columns, HeaderRows = headerRows, BodyRows = bodyRows };
+	}
+
+	private IAsciidocNode ParseSeparatedTable(TokenMetadata? blockAttr, string format)
+	{
+		var separator = format switch
+		{
+			"csv" => ',',
+			"tsv" => '\t',
+			_ => blockAttr?.NamedAttributes?.GetValueOrDefault("separator") is { Length: > 0 } sep ? sep[0] : ':'
+		};
+
+		var hasHeader = HasHeaderOption(blockAttr);
+		var rows = new List<TableRowNode>();
+
+		while (_pos < _tokens.Count)
+		{
+			var cur = Current;
+
+			if (cur.Type == TokenType.TableDelimiter)
+			{
+				_pos++;
+				break;
+			}
+
+			if (cur.Type == TokenType.Blank)
+			{
+				_pos++;
+				continue;
+			}
+
+			var line = cur.Raw;
+			if (!string.IsNullOrWhiteSpace(line))
+			{
+				var cells = line.Split(separator).Select(c => c.Trim()).ToList();
+				rows.Add(BuildTableRow(cells));
+			}
+
+			_pos++;
+		}
+
+		var columns = ParseColumnSpecs(blockAttr);
+		List<TableRowNode> headerRows = hasHeader && rows.Count > 0 ? [rows[0]] : [];
+		var bodyRows = hasHeader && rows.Count > 0 ? rows[1..] : rows;
+
+		return new TableNode { Columns = columns, HeaderRows = headerRows, BodyRows = bodyRows };
+	}
+
+	private static bool HasHeaderOption(TokenMetadata? blockAttr)
+	{
+		if (blockAttr?.NamedAttributes?.TryGetValue("options", out var opts) == true
+			&& opts.Contains("header", StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		var content = blockAttr?.Content ?? blockAttr?.BlockStyle ?? "";
+		return content.Contains("%header", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static List<ColumnSpec> ParseColumnSpecs(TokenMetadata? blockAttr)
@@ -954,19 +1012,23 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 	}
 
 	[GeneratedRegex(
-		@"link:([^\[]+)\[([^\]]*)\]|" +
-		@"<<([^,>]+)(?:,([^>]+))?>>>|" +
-		@"<<([^,>]+)(?:,([^>]+))?>>|" +
-		@"image:([^\[]+)\[([^\]]*)\]|" +
-		@"footnote:\[([^\]]*)\]|" +
-		@"\*([^\*]+)\*|" +
-		@"_([^_]+)_|" +
-		@"`([^`]+)`|" +
-		@"\^([^\^]+)\^|" +
-		@"~([^~]+)~|" +
-		@"\{([a-zA-Z0-9_-]+)\}|" +
-		@"(https?://[^\[\s]+)\[([^\]]*)\]|" +
-		@"\s*\+\s*$"
+		@"link:([^\[]+)\[([^\]]*)\]|" +           // groups 1,2: link
+		@"<<([^,>]+)(?:,([^>]+))?>>>|" +           // groups 3,4: triple-xref
+		@"<<([^,>]+)(?:,([^>]+))?>>|" +            // groups 5,6: xref
+		@"image:([^\[]+)\[([^\]]*)\]|" +           // groups 7,8: image
+		@"footnote:\[([^\]]*)\]|" +                // group 9: footnote
+		@"pass:\[([^\]]*)\]|" +                    // group 10: pass:[] passthrough
+		@"\[([a-zA-Z][a-zA-Z0-9_-]*)\]#([^#]+)#|" + // groups 11,12: [role]#text#
+		@"\*\*([^\*]+)\*\*|" +                     // group 13: unconstrained bold
+		@"\*([^\*]+)\*|" +                         // group 14: constrained bold
+		@"_([^_]+)_|" +                            // group 15: italic
+		@"`([^`]+)`|" +                            // group 16: mono
+		@"\^([^\^]+)\^|" +                         // group 17: superscript
+		@"~([^~]+)~|" +                            // group 18: subscript
+		@"\{([a-zA-Z0-9_-]+)\}|" +                // group 19: attr-ref
+		@"(https?://[^\[\s]+)\[([^\]]*)\]|" +      // groups 20,21: url
+		@"\+([^\+]+)\+|" +                         // group 22: +inline+ passthrough
+		@"\s*\+\s*$"                               // line-break (no capture)
 	)]
 	private static partial Regex InlineCombinedRegex();
 
@@ -997,19 +1059,27 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			else if (match.Groups[9].Success)
 				result.Add(new FootnoteInline(ParseInlines(match.Groups[9].Value)));
 			else if (match.Groups[10].Success)
-				result.Add(new BoldInline(ParseInlines(match.Groups[10].Value)));
+				result.Add(new PassthroughInline(match.Groups[10].Value));
 			else if (match.Groups[11].Success)
-				result.Add(new ItalicInline(ParseInlines(match.Groups[11].Value)));
-			else if (match.Groups[12].Success)
-				result.Add(new MonoInline(match.Groups[12].Value));
+				result.Add(new RoleInline(match.Groups[11].Value, ParseInlines(match.Groups[12].Value)));
 			else if (match.Groups[13].Success)
-				result.Add(new SuperscriptInline(ParseInlines(match.Groups[13].Value)));
+				result.Add(new BoldInline(ParseInlines(match.Groups[13].Value)));
 			else if (match.Groups[14].Success)
-				result.Add(new SubscriptInline(ParseInlines(match.Groups[14].Value)));
+				result.Add(new BoldInline(ParseInlines(match.Groups[14].Value)));
 			else if (match.Groups[15].Success)
-				result.Add(new AttributeRefInline(match.Groups[15].Value));
+				result.Add(new ItalicInline(ParseInlines(match.Groups[15].Value)));
 			else if (match.Groups[16].Success)
-				result.Add(new InlineLinkNode(match.Groups[16].Value, NullIfEmpty(match.Groups[17].Value)));
+				result.Add(new MonoInline(match.Groups[16].Value));
+			else if (match.Groups[17].Success)
+				result.Add(new SuperscriptInline(ParseInlines(match.Groups[17].Value)));
+			else if (match.Groups[18].Success)
+				result.Add(new SubscriptInline(ParseInlines(match.Groups[18].Value)));
+			else if (match.Groups[19].Success)
+				result.Add(new AttributeRefInline(match.Groups[19].Value));
+			else if (match.Groups[20].Success)
+				result.Add(new InlineLinkNode(match.Groups[20].Value, NullIfEmpty(match.Groups[21].Value)));
+			else if (match.Groups[22].Success)
+				result.Add(new PassthroughInline(match.Groups[22].Value, Backticks: true));
 			else if (match.Value.TrimEnd().EndsWith('+'))
 				result.Add(new LineBreakInline());
 

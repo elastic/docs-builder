@@ -27,3 +27,7 @@ public record SuperscriptInline(List<IInlineNode> Children) : IInlineNode;
 public record SubscriptInline(List<IInlineNode> Children) : IInlineNode;
 
 public record LineBreakInline : IInlineNode;
+
+public record PassthroughInline(string Content, bool Backticks = false) : IInlineNode;
+
+public record RoleInline(string Role, List<IInlineNode> Children) : IInlineNode;

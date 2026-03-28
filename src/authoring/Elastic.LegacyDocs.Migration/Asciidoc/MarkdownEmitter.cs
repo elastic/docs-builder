@@ -445,6 +445,15 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 				EmitInlineChildren(sub.Children);
 				Write("</sub>");
 				break;
+			case PassthroughInline passthrough:
+				if (passthrough.Backticks)
+					Write($"`{passthrough.Content}`");
+				else
+					Write(passthrough.Content);
+				break;
+			case RoleInline role:
+				EmitInlineChildren(role.Children);
+				break;
 			case LineBreakInline:
 				Write('\\');
 				WriteLine();

@@ -6,11 +6,11 @@ using ConsoleAppFramework;
 using Elastic.LegacyDocs.Migration;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Builder.Commands.Guide;
+namespace Documentation.Migrate;
 
-internal sealed class GuideMigrateCommand(ILoggerFactory logFactory)
+internal sealed class MigrateCommand(ILoggerFactory logFactory)
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<GuideMigrateCommand>();
+	private readonly ILogger _logger = logFactory.CreateLogger<MigrateCommand>();
 
 	/// <summary>Migrate legacy /guide AsciiDoc content to Markdown docsets.</summary>
 	/// <param name="conf">Path to conf.yaml (or fetched from GitHub if omitted)</param>
@@ -19,6 +19,7 @@ internal sealed class GuideMigrateCommand(ILoggerFactory logFactory)
 	/// <param name="mode">Mode: archive, latest, or all (default: all)</param>
 	/// <param name="book">Filter to specific book by prefix (e.g. en/elasticsearch/reference)</param>
 	/// <param name="all">Process all branches, not just M.latest + M.latest-1</param>
+	/// <param name="minVersion">Minimum major version to process (e.g. 7)</param>
 	/// <param name="ctx">Cancellation token</param>
 	[Command("")]
 	public async Task<int> Migrate(
@@ -28,6 +29,7 @@ internal sealed class GuideMigrateCommand(ILoggerFactory logFactory)
 		string mode = "all",
 		string? book = null,
 		bool all = false,
+		int? minVersion = null,
 		Cancel ctx = default
 	)
 	{
@@ -36,6 +38,8 @@ internal sealed class GuideMigrateCommand(ILoggerFactory logFactory)
 			_logger.LogError("--output is required");
 			return 1;
 		}
+
+		reposDir ??= Path.Combine(output, ".repos");
 
 		var yaml = conf is not null
 			? await File.ReadAllTextAsync(conf, ctx)
@@ -51,9 +55,9 @@ internal sealed class GuideMigrateCommand(ILoggerFactory logFactory)
 		var repoOptions = new SourceRepoOptions
 		{
 			ReposDirectory = reposDir,
-			Repos = legacyConf.Repos
+			RepoUrls = legacyConf.Repos
 		};
-		var repoManager = new SourceRepoManager(repoOptions);
+		var repoManager = new SourceRepoManager(repoOptions, logFactory.CreateLogger<SourceRepoManager>());
 
 		var parsedMode = mode.ToLowerInvariant();
 
@@ -64,6 +68,7 @@ internal sealed class GuideMigrateCommand(ILoggerFactory logFactory)
 				OutputDirectory = Path.Combine(output, "archive"),
 				BookFilter = book,
 				AllVersions = all,
+				MinMajorVersion = minVersion,
 				RepoManager = repoManager
 			};
 			var archiveGen = new ArchiveDocsetGenerator(logFactory.CreateLogger<ArchiveDocsetGenerator>());
