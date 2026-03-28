@@ -17,12 +17,24 @@
       "Bash(git show:*)",
       "Bash(git branch:*)",
       "Bash(git grep:*)",
+      "Bash(./build.sh:*)",
       "Bash(dotnet build:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet format:*)",
+      "Bash(dotnet watch:*)",
+      "Bash(dotnet workload:*)",
+      "Bash(npm ci:*)",
       "Bash(npm run compile:check:*)",
-      "Bash(npx tsc:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run fmt::*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run watch:*)",
+      "Bash(npm run build:*)",
       "Bash(npm exec:*)",
       "Bash(npm install:*)",
-      "Bash(npm run build:*)"
+      "Bash(npx tsc:*)"
     ]
   }
 }
