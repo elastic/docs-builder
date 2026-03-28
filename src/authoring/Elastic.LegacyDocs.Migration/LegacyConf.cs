@@ -20,6 +20,7 @@ public record LegacyBook
 {
 	public string Title { get; init; } = "";
 	public string Prefix { get; init; } = "";
+	public string BaseDir { get; init; } = "";
 	public string Index { get; init; } = "";
 	public string Current { get; init; } = "";
 	public List<BranchRef> Branches { get; init; } = [];
@@ -28,6 +29,8 @@ public record LegacyBook
 	public string? Tags { get; init; }
 	public string? Subject { get; init; }
 	public List<LegacySource> Sources { get; init; } = [];
+	/// <summary>Sub-groups within a book entry. Used during conf.yaml parsing only; flattened before use.</summary>
+	public List<LegacyBook> Sections { get; init; } = [];
 }
 
 public record LegacySource
