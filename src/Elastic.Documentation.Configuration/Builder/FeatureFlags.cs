@@ -52,6 +52,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["diagnostics-panel"] = value;
 	}
 
+	public bool GuideNavEnabled
+	{
+		get => IsEnabled("guide-nav");
+		set => _featureFlags["guide-nav"] = value;
+	}
+
 	private bool IsEnabled(string key)
 	{
 		var envKey = $"FEATURE_{key.ToUpperInvariant().Replace('-', '_')}";
