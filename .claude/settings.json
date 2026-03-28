@@ -1,15 +1,28 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
       "Bash(find:*)",
       "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(git log:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git grep:*)",
       "Bash(dotnet build:*)",
       "Bash(npm run compile:check:*)",
       "Bash(npx tsc:*)",
       "Bash(npm exec:*)",
       "Bash(npm install:*)",
-      "Bash(npm run build:*)",
-      "Bash(git grep:*)"
+      "Bash(npm run build:*)"
     ]
   }
 }
