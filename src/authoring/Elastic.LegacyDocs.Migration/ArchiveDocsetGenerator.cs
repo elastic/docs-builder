@@ -12,6 +12,7 @@ public record ArchiveGeneratorOptions
 	public required string OutputDirectory { get; init; }
 	public string? BookFilter { get; init; }
 	public bool AllVersions { get; init; }
+	public int? MinMajorVersion { get; init; }
 	public required SourceRepoManager RepoManager { get; init; }
 }
 
@@ -32,12 +33,14 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		{
 			ct.ThrowIfCancellationRequested();
 
-			var versions = GetVersionsToProcess(book, options.AllVersions);
+			var versions = GetVersionsToProcess(book, options.AllVersions, options.MinMajorVersion);
 			if (versions.Count == 0)
 			{
 				logger.LogWarning("No versions to process for {BookPrefix}", book.Prefix);
 				continue;
 			}
+
+			logger.LogInformation("Book {Prefix}: {Count} versions to process", book.Prefix, versions.Count);
 
 			var prefixDir = Path.Combine(options.OutputDirectory, book.Prefix);
 			var versionEntries = new List<TocEntry>();
@@ -46,18 +49,27 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 			{
 				ct.ThrowIfCancellationRequested();
 
-				var pages = await ProcessBookVersion(book, version, options, ct);
-				if (pages.Count == 0)
-					continue;
+				var versionLabel = version.VersionLabel;
+				try
+				{
+					var pages = await ProcessBookVersion(book, version, options, ct);
+					if (pages.Count == 0)
+						continue;
 
-				var versionDir = Path.Combine(prefixDir, version);
-				_ = Directory.CreateDirectory(versionDir);
+					var versionDir = Path.Combine(prefixDir, versionLabel);
+					_ = Directory.CreateDirectory(versionDir);
 
-				var fileEntries = await WritePages(pages, versionDir, ct);
-				YamlWriter.WriteTocYaml(Path.Combine(versionDir, "toc.yml"), fileEntries);
-				versionEntries.Add(new TocEntry { Folder = version });
+					var fileEntries = await WritePages(pages, versionDir, ct);
+					YamlWriter.WriteTocYaml(Path.Combine(versionDir, "toc.yml"), fileEntries);
+					versionEntries.Add(new TocEntry { Folder = versionLabel });
 
-				logger.LogInformation("Wrote {PageCount} pages for {Prefix}/{Version}", pages.Count, book.Prefix, version);
+					logger.LogInformation("Wrote {PageCount} pages for {Prefix}/{Version}",
+						pages.Count, book.Prefix, versionLabel);
+				}
+				catch (Exception ex) when (ex is not OperationCanceledException)
+				{
+					logger.LogError(ex, "Failed to process {Prefix}/{Version}", book.Prefix, versionLabel);
+				}
 			}
 
 			if (versionEntries.Count > 0)
@@ -74,22 +86,17 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 	}
 
 	private async Task<IReadOnlyList<PageOutput>> ProcessBookVersion(
-		LegacyBook book, string version, ArchiveGeneratorOptions options, CancellationToken ct)
+		LegacyBook book, BranchRef version, ArchiveGeneratorOptions options, CancellationToken ct)
 	{
-		var sources = options.RepoManager.ResolveSources(book, version);
+		var versionLabel = version.VersionLabel;
+		var sources = await options.RepoManager.ResolveSourcesAsync(book, version, ct);
 		if (sources.Count == 0)
 		{
-			logger.LogWarning("No sources resolved for {Prefix} version {Version}", book.Prefix, version);
+			logger.LogWarning("No sources resolved for {Prefix} version {Version}", book.Prefix, versionLabel);
 			return [];
 		}
 
 		var primarySource = sources[0];
-		if (primarySource.LocalPath is null)
-		{
-			logger.LogWarning("No local path for {Repo} — skipping {Prefix}/{Version}", primarySource.RepoName, book.Prefix, version);
-			return [];
-		}
-
 		var indexPath = Path.Combine(primarySource.LocalPath, book.Index);
 		if (!File.Exists(indexPath))
 		{
@@ -103,7 +110,7 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		{
 			Attributes = new Dictionary<string, string>
 			{
-				["branch"] = version,
+				["branch"] = versionLabel,
 				["doc-tests-src"] = primarySource.LocalPath
 			}
 		};
@@ -113,7 +120,7 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		var emitterOptions = new MarkdownEmitterOptions
 		{
 			BookPrefix = book.Prefix,
-			Version = version
+			Version = versionLabel
 		};
 		var emitter = new MarkdownEmitter(emitterOptions);
 
@@ -133,18 +140,20 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		return entries;
 	}
 
-	internal static List<string> GetVersionsToProcess(LegacyBook book, bool allVersions)
+	internal static List<BranchRef> GetVersionsToProcess(LegacyBook book, bool allVersions, int? minMajorVersion = null)
 	{
+		var branches = FilterByMinVersion(book.Branches, minMajorVersion);
+
 		if (allVersions)
-			return SortVersionsDescending(book.Live);
+			return SortBranchesDescending(branches);
 
 		var selected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 		if (!string.IsNullOrEmpty(book.Current))
 			_ = selected.Add(book.Current);
 
-		var grouped = book.Live
-			.Select(v => (Version: v, Parsed: TryParseMajorMinor(v)))
+		var grouped = branches
+			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.Where(x => x.Parsed.HasValue)
 			.GroupBy(x => x.Parsed!.Value.Major);
 
@@ -152,22 +161,35 @@ public class ArchiveDocsetGenerator(ILogger<ArchiveDocsetGenerator> logger)
 		{
 			var topTwo = group
 				.OrderByDescending(x => x.Parsed!.Value.Minor)
-				.Take(2)
-				.Select(x => x.Version);
+				.Take(2);
 
-			foreach (var v in topTwo)
-				_ = selected.Add(v);
+			foreach (var (branch, _) in topTwo)
+				_ = selected.Add(branch.VersionLabel);
 		}
 
-		return SortVersionsDescending(selected);
+		return SortBranchesDescending(branches.Where(b => selected.Contains(b.VersionLabel)));
 	}
 
-	private static List<string> SortVersionsDescending(IEnumerable<string> versions) =>
-		versions
-			.Select(v => (Version: v, Parsed: TryParseMajorMinor(v)))
+	private static List<BranchRef> FilterByMinVersion(IEnumerable<BranchRef> branches, int? minMajor)
+	{
+		if (minMajor is null)
+			return branches.ToList();
+
+		return branches
+			.Where(b =>
+			{
+				var parsed = TryParseMajorMinor(b.VersionLabel);
+				return parsed.HasValue && parsed.Value.Major >= minMajor;
+			})
+			.ToList();
+	}
+
+	private static List<BranchRef> SortBranchesDescending(IEnumerable<BranchRef> branches) =>
+		branches
+			.Select(b => (Branch: b, Parsed: TryParseMajorMinor(b.VersionLabel)))
 			.OrderByDescending(x => x.Parsed?.Major ?? 0)
 			.ThenByDescending(x => x.Parsed?.Minor ?? 0)
-			.Select(x => x.Version)
+			.Select(x => x.Branch)
 			.ToList();
 
 	private static (int Major, int Minor)? TryParseMajorMinor(string version)

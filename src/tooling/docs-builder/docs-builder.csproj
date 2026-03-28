@@ -51,7 +51,6 @@
     <ProjectReference Include="..\..\services\Elastic.Changelog\Elastic.Changelog.csproj" />
     <ProjectReference Include="..\..\services\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
     <ProjectReference Include="..\..\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
-    <ProjectReference Include="..\..\authoring\Elastic.LegacyDocs.Migration\Elastic.LegacyDocs.Migration.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
   

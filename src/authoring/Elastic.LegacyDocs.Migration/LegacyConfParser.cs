@@ -9,13 +9,23 @@ namespace Elastic.LegacyDocs.Migration;
 
 public static class LegacyConfParser
 {
-	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
+	private static readonly IDeserializer RawDeserializer = new DeserializerBuilder().Build();
+
+	private static readonly ISerializer RoundTripSerializer = new SerializerBuilder()
+		.DisableAliases()
+		.Build();
+
+	private static readonly IDeserializer TypedDeserializer = new DeserializerBuilder()
 		.WithNamingConvention(UnderscoredNamingConvention.Instance)
 		.WithTypeConverter(new BranchRefListConverter())
 		.WithTypeConverter(new BranchRefConverter())
 		.IgnoreUnmatchedProperties()
 		.Build();
 
-	public static LegacyConf Parse(string yaml) =>
-		Deserializer.Deserialize<LegacyConf>(yaml) ?? new LegacyConf();
+	public static LegacyConf Parse(string yaml)
+	{
+		var raw = RawDeserializer.Deserialize<object>(yaml);
+		var resolved = RoundTripSerializer.Serialize(raw);
+		return TypedDeserializer.Deserialize<LegacyConf>(resolved) ?? new LegacyConf();
+	}
 }

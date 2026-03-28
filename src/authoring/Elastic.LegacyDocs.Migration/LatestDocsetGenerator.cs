@@ -46,8 +46,10 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 
 	private async Task ProcessBook(LegacyBook book, LatestGeneratorOptions options, CancellationToken ct)
 	{
-		var version = book.Current;
-		var sources = options.RepoManager.ResolveSources(book, version);
+		var currentBranch = book.Branches.FirstOrDefault(b => b.VersionLabel == book.Current)
+			?? new BranchRef(book.Current);
+
+		var sources = await options.RepoManager.ResolveSourcesAsync(book, currentBranch, ct);
 		if (sources.Count == 0)
 		{
 			logger.LogWarning("No sources resolved for {Prefix}", book.Prefix);
@@ -55,12 +57,6 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 		}
 
 		var primarySource = sources[0];
-		if (primarySource.LocalPath is null)
-		{
-			logger.LogWarning("No local path for {Repo} — skipping {Prefix}", primarySource.RepoName, book.Prefix);
-			return;
-		}
-
 		var indexPath = Path.Combine(primarySource.LocalPath, book.Index);
 		if (!File.Exists(indexPath))
 		{
@@ -74,7 +70,7 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 		{
 			Attributes = new Dictionary<string, string>
 			{
-				["branch"] = version,
+				["branch"] = book.Current,
 				["doc-tests-src"] = primarySource.LocalPath
 			}
 		};
@@ -84,7 +80,7 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 		var emitterOptions = new MarkdownEmitterOptions
 		{
 			BookPrefix = book.Prefix,
-			Version = version
+			Version = book.Current
 		};
 		var emitter = new MarkdownEmitter(emitterOptions);
 		var pages = PageChunker.Chunk(document, book.Chunk, emitter);
@@ -111,6 +107,7 @@ public class LatestDocsetGenerator(ILogger<LatestDocsetGenerator> logger)
 		YamlWriter.WriteDocsetYaml(Path.Combine(docsDir, "docset.yml"), projectName, ["."]);
 		YamlWriter.WriteTocYaml(Path.Combine(docsDir, "toc.yml"), fileEntries);
 
-		logger.LogInformation("Wrote {PageCount} pages for {RepoName}/docs (project: {Project})", pages.Count, repoName, projectName);
+		logger.LogInformation("Wrote {PageCount} pages for {RepoName}/docs (project: {Project})",
+			pages.Count, repoName, projectName);
 	}
 }

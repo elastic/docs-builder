@@ -6,13 +6,8 @@ namespace Elastic.LegacyDocs.Migration;
 
 public record LegacyConf
 {
-	public Dictionary<string, LegacyRepo> Repos { get; init; } = [];
+	public Dictionary<string, string> Repos { get; init; } = [];
 	public List<LegacyCategory> Contents { get; init; } = [];
-}
-
-public record LegacyRepo
-{
-	public string Url { get; init; } = "";
 }
 
 public record LegacyCategory
@@ -39,8 +34,17 @@ public record LegacySource
 {
 	public string Repo { get; init; } = "";
 	public string Path { get; init; } = "";
+	public string? Prefix { get; init; }
+	public bool Private { get; init; }
 	public List<BranchRef> ExcludeBranches { get; init; } = [];
 	public Dictionary<string, string> MapBranches { get; init; } = [];
 }
 
-public record BranchRef(string Name, string? Alias = null);
+public record BranchRef(string Name, string? Alias = null)
+{
+	/// <summary>Version label used in output paths and URLs.</summary>
+	public string VersionLabel => Alias ?? Name;
+
+	/// <summary>Actual git branch to clone.</summary>
+	public string GitBranch => Name;
+}
