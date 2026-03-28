@@ -88,7 +88,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 		Endpoints.Environment = environment;
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);
-		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "checkouts", contentSource);
+		var defaultCheckoutDirectory = Path.Combine(Paths.GitCommonRoot.FullName, ".artifacts", "checkouts", contentSource);
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
