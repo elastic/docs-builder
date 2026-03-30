@@ -415,12 +415,12 @@ public class ChangelogRemoveService(
 
 		// 3. {directory}/bundles
 		// Directory is guaranteed non-null at this point (ApplyConfigDefaults + ValidateInput).
-		var sibling = _fileSystem.Path.Join(input.Directory!, "bundles");
+		var sibling = _fileSystem.Path.Join(input.Directory, "bundles");
 		if (_fileSystem.Directory.Exists(sibling))
 			return sibling;
 
 		// 4. {directory}/../bundles
-		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory!);
+		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory);
 		if (!string.IsNullOrWhiteSpace(dirParent))
 		{
 			var parentBundles = _fileSystem.Path.Join(dirParent, "bundles");
