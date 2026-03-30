@@ -1,7 +1,6 @@
 products:
   agent-skills:
     display: 'Elastic Agent Skills'
-    repository: 'agent-skills'
     versioning: 'all'
   apm:
     display: 'APM'
