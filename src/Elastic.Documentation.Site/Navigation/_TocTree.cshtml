@@ -3,11 +3,11 @@
 @using Elastic.Documentation.Navigation
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationViewModel>
 
-<div class="pb-9 pl-3 md:pl-0 font-body">
+<div class="flex min-h-0 h-full flex-col pl-3 font-body md:pl-0">
 	@{
 		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
 	} 
-	<div class="sticky top-0 z-10 bg-white">
+	<div class="sticky top-0 z-10 shrink-0 bg-white">
 		@if (Model.BuildType != BuildType.Codex)
 		{
 			<navigation-search></navigation-search>
@@ -20,7 +20,7 @@
 						<button class="w-full text-left grid grid-cols-[1fr_auto] cursor-pointer font-semibold gap-1 hover:text-black pl-4 pr-2 py-2 group-open:border-b-1 border-grey-20">
 							<div>
 								<a
-									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
+									class="pages-dropdown_active inline-block px-[8px] py-[6px] hover:underline text-blue-elastic hover:text-blue-elastic-100"
 									href="@currentTopLevelItem.Url"
 									@Model.Htmx.GetNavHxAttributes(true)>
 									@currentTopLevelItem.NavigationTitle
@@ -44,7 +44,7 @@
 				{
 								<li class="block">
 									<a
-										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
+										class="block px-[8px] py-[6px] hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
 										href="@item.Url"
 										@Model.Htmx.GetNavHxAttributes(false, "mouseover")>
 							@item.NavigationTitle
@@ -68,10 +68,12 @@
 		</div>
 	</div>
 
+	<div class="pages-nav-menu min-h-0 min-w-0 flex-1 overflow-y-auto">
 	@if (Model.IsNavV2)
 	{
-		<nav data-nav-v2>
-			<ul class="block px-4" id="nav-tree">
+		@* Root for V2-only CSS; JS still uses [data-nav-v2]. Scope overrides: .docs-sidebar-nav-v2 … *@
+		<nav class="docs-sidebar-nav-v2" data-nav-v2>
+			<ul class="docs-sidebar-nav-v2__tree block" id="nav-tree">
 				@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
 				{
 					IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
@@ -98,4 +100,5 @@
 			}))
 		</ul>
 	}
+	</div>
 </div>

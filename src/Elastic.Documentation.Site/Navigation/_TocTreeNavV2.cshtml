@@ -16,10 +16,63 @@
 
 	if (item is LabelNavigationNode label)
 	{
-		<li class="@(isTopLevel ? "mt-4 pt-4 border-t border-grey-20 first:border-t-0 first:pt-0 first:mt-6" : "mt-5") relative">
-			<span class="@(isTopLevel ? "text-xs font-semibold uppercase tracking-widest text-ink" : "text-xs font-semibold uppercase tracking-widest text-ink/65") block py-1 select-none">
-				@label.NavigationTitle
-			</span>
+		var isNestedPlatformSectionLabel = !isTopLevel && (
+			label.NavigationTitle == "Ingest and manage data"
+			|| label.NavigationTitle == "Search, visualize and analyze"
+			|| label.NavigationTitle == "AI and machine learning");
+		<li class="@(isTopLevel ? "border-t border-[#E3E8F2] first:border-t-0 relative" : isNestedPlatformSectionLabel ? "relative mt-[4px]" : "relative")">
+			@if (isTopLevel)
+			{
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--top flex items-center gap-2 px-[8px] py-[6px] text-sm leading-5 font-medium text-[#111C2C]">
+					@if (label.NavigationTitle == "Elasticsearch fundamentals")
+					{
+						@* EUI icon: documentation *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+						</svg>
+					}
+					else if (label.NavigationTitle == "Install, deploy, and administer")
+					{
+						@* EUI icon: cluster *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M4.5 1a3.5 3.5 0 0 1 3.465 3h3.12a1.5 1.5 0 1 1 0 1h-3.12a3.482 3.482 0 0 1-.662 1.596l2.1 2.1A3.5 3.5 0 1 1 8.036 12h-3.12a1.5 1.5 0 1 1 0-.999h3.12a3.482 3.482 0 0 1 .662-1.596l-2.1-2.1A3.5 3.5 0 1 1 4.5 1Zm0 6a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 4.5a.5.5 0 1 0 1 0 .5.5 0 0 0-1 0Zm-.5 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5ZM4 11.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z"/>
+						</svg>
+					}
+					else if (label.NavigationTitle == "The Elasticsearch Platform")
+					{
+						@* EUI icon: layers *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M1.553 4.106a1 1 0 0 0 0 1.788l6 3a1 1 0 0 0 .894 0l6-3a1 1 0 0 0 0-1.788l-6-3a1 1 0 0 0-.894 0l-6 3ZM14 5 8 8 2 5l6-3 6 3Z"/>
+							<path fill="currentColor" d="m8 11 6.894-3.447S15 7.843 15 8a1 1 0 0 1-.553.895l-6 3a1 1 0 0 1-.894 0l-6-3A1 1 0 0 1 1 8c0-.158.106-.447.106-.447L8 11Z"/>
+							<path fill="currentColor" d="m8 14 6.894-3.447s.106.29.106.447a1 1 0 0 1-.553.895l-6 3a1 1 0 0 1-.894 0l-6-3A1 1 0 0 1 1 11c0-.158.106-.447.106-.447L8 14Z"/>
+						</svg>
+					}
+					else if (label.NavigationTitle == "Solutions and project types")
+					{
+						@* EUI icon: folderOpen *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" d="M5.191 2a1 1 0 0 1 .894.553L6.809 4H13a1 1 0 0 1 1 1v1.5h-1V5H6.191l-.138-.276L5.19 3H1v8.751l-.317 1.111a.5.5 0 0 0 .48.638h11.96a.5.5 0 0 0 .48-.362L14 11.75V13a1 1 0 0 1-1 1H1a1 1 0 0 1-.995-.898L0 13V3a1 1 0 0 1 1-1h4.191Z"/>
+							<path fill="currentColor" d="M14.837 6a1 1 0 0 1 .962 1.274l-1.715 6a1 1 0 0 1-.961.726H1.163a1 1 0 0 1-.962-1.274l1.715-6A1 1 0 0 1 2.877 6h11.96ZM1.163 13h11.96l1.714-6H2.877l-1.714 6Z"/>
+						</svg>
+					}
+					else
+					{
+						@* Default: EUI documentation *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+						</svg>
+					}
+					<span class="min-w-0">@label.NavigationTitle</span>
+				</span>
+			}
+			else
+			{
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--nested block px-[8px] py-[6px] text-xs leading-4 font-medium uppercase text-[#5A6D8C]">
+					@label.NavigationTitle
+				</span>
+			}
 			@if (label.NavigationItems.Count > 0)
 			{
 				<ul class="w-full">
@@ -38,11 +91,11 @@
 	}
 	else if (item is PlaceholderNavigationLeaf placeholder)
 	{
-		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
+		<li class="flex group/li">
 			<a
 				href="@placeholder.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link grow text-grey-40">
+				class="sidebar-link grow px-[8px] py-[6px] text-grey-40">
 				@placeholder.NavigationTitle
 			</a>
 		</li>
@@ -50,39 +103,41 @@
 	else if (item is PlaceholderNavigationNode placeholderGroup)
 	{
 		var allHidden = placeholderGroup.NavigationItems.All(n => n.Hidden);
-		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
+		<li class="flex flex-wrap group-navigation relative">
+			<div class="peer nav-folder-peer grid w-full grid-cols-1">
+				@if (!allHidden)
+				{
+					<input
+						id="@placeholderGroup.Id"
+						type="checkbox"
+						class="sr-only pointer-events-none"
+						tabindex="-1"
+						aria-hidden="true">
+				}
 				<a
 					href="@placeholderGroup.Url"
 					@Model.Htmx.GetNavHxAttributes(true)
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") text-grey-40">
-					@placeholderGroup.NavigationTitle
-				</a>
-				@if (!allHidden)
-				{
-					<label for="@placeholderGroup.Id" class="group/label flex mr-2 items-start">
-						<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
+					class="sidebar-link flex w-full items-center gap-2 px-[8px] py-[6px] text-grey-40">
+					<span class="min-w-0 flex-1">@placeholderGroup.NavigationTitle</span>
+					@if (!allHidden)
+					{
+						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
 								stroke-width="1.5"
 								stroke="currentColor"
-								class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
+								>
 								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 							</svg>
-						</div>
-						<input
-							id="@placeholderGroup.Id"
-							type="checkbox"
-							class="hidden"
-							aria-hidden="true">
-					</label>
-				}
+						</span>
+					}
+				</a>
 			</div>
 			@if (placeholderGroup.NavigationItems.Count > 0)
 			{
-				<ul class="w-full hidden peer-has-checked:block ml-4 relative before:content-[''] before:absolute before:-left-[calc(var(--spacing)*4-1px)] before:top-0 before:bottom-0 before:w-px before:bg-grey-20 before:peer-has-checked:block">
+				<ul class="docs-sidebar-nav-v2__folder-children w-full relative pl-3">
 					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
 					{
 						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
@@ -98,11 +153,11 @@
 	}
 	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
 	{
-		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
+		<li class="flex group/li">
 			<a
 				href="@group.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+				class="sidebar-link px-[8px] py-[6px]"
 			>
 				@group.NavigationTitle
 			</a>
@@ -111,39 +166,41 @@
 	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> folder)
 	{
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
-		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
+		<li class="flex flex-wrap group-navigation relative">
+			<div class="peer nav-folder-peer grid w-full grid-cols-1">
+				@if (!allHidden)
+				{
+					<input
+						id="@folder.Id"
+						type="checkbox"
+						class="sr-only pointer-events-none"
+						tabindex="-1"
+						aria-hidden="true">
+				}
 				<a
 					href="@(folder.Url)"
 					@Model.Htmx.GetNavHxAttributes(true)
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
-					@(folder.NavigationTitle)
-				</a>
-				@if (!allHidden)
-				{
-					<label for="@folder.Id" class="group/label flex mr-2 items-start">
-						<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
+					class="sidebar-link flex w-full items-center gap-2 px-[8px] py-[6px]">
+					<span class="min-w-0 flex-1">@(folder.NavigationTitle)</span>
+					@if (!allHidden)
+					{
+						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
 								stroke-width="1.5"
 								stroke="currentColor"
-								class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
+								>
 								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
 							</svg>
-						</div>
-						<input
-							id="@folder.Id"
-							type="checkbox"
-							class="hidden"
-							aria-hidden="true">
-					</label>
-				}
+						</span>
+					}
+				</a>
 			</div>
 			@if (folder.NavigationItems.Count > 0)
 			{
-				<ul class="w-full hidden peer-has-checked:block ml-4 relative before:content-[''] before:absolute before:-left-[calc(var(--spacing)*4-1px)] before:top-0 before:bottom-0 before:w-px before:bg-grey-20 before:peer-has-checked:block peer-has-[.current]:before:bg-grey-40 has-[.current]:before:bg-grey-40">
+				<ul class="docs-sidebar-nav-v2__folder-children w-full relative pl-3">
 					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
 					{
 						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
@@ -159,11 +216,11 @@
 	}
 	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
-		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
+		<li class="flex group/li">
 			<a
 				href="@leaf.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
+				class="sidebar-link grow px-[8px] py-[6px]"
 			>
 				@leaf.NavigationTitle
 			</a>
