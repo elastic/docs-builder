@@ -38,7 +38,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ElasticsearchTypeContext _semanticTypeContext;
 
 	private readonly VersionsConfiguration _versionsConfiguration;
-	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
+	private readonly IReadOnlyList<string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly string _fixedSynonymsHash;
 
@@ -74,12 +74,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_operations = new ElasticsearchOperations(_transport, _logger, collector);
 
 		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
-		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
-		{
-			var id = synonym.Key;
-			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
-			return acc;
-		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
+		var indexTimeSynonyms = _synonyms
+			.Where(s => s.Any(t => fixedSynonyms.Contains(t)))
+			.Select(s => string.Join(", ", s))
+			.ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
 		var synonymSetName = $"docs-{_buildType}-{_environment}";
@@ -235,13 +233,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var setName = $"docs-{_buildType}-{_environment}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
-		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
-		{
-			var id = synonym.Key;
-			var synonyms = string.Join(", ", [id, .. synonym.Value]);
-			acc.Add(new SynonymRule { Id = id, Synonyms = synonyms });
-			return acc;
-		});
+		var synonymRules = _synonyms
+			.Select(s => new SynonymRule { Id = s[0], Synonyms = string.Join(", ", s) })
+			.ToList();
 
 		var synonymsSet = new SynonymsSet { Synonyms = synonymRules };
 		await PutSynonyms(synonymsSet, setName, ctx);
