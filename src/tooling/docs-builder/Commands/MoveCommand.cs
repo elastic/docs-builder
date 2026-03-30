@@ -38,7 +38,7 @@ internal sealed class MoveCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new MoveFileService(logFactory, configurationContext);
-		var fs = FileSystemFactory.RealRead;
+		var fs = FileSystemFactory.ForPath(path);
 
 		serviceInvoker.AddCommand(service, (source, target, dryRun, path, fs),
 			async static (s, collector, state, ctx) => await s.Move(collector, state.source, state.target, state.dryRun, state.path, state.fs, ctx)

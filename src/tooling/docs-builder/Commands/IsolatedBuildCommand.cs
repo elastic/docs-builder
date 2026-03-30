@@ -62,9 +62,9 @@ internal sealed class IsolatedBuildCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var readFs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.RealRead;
+		var readFs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.ForPath(path);
 		// For real builds supply an explicit write FS without .git access; for in-memory null falls back to readFs
-		var writeFs = inMemory ? null : FileSystemFactory.RealWrite;
+		var writeFs = inMemory ? null : FileSystemFactory.ForPathWrite(path, output);
 		var strictCommand = service.IsStrict(strict);
 
 		serviceInvoker.AddCommand(service,

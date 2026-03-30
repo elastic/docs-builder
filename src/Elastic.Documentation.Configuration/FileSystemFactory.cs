@@ -97,4 +97,66 @@ public static class FileSystemFactory
 	/// <summary>Wraps <paramref name="inner"/> with write workspace options (.git not allowed).</summary>
 	public static ScopedFileSystem WrapToWrite(IFileSystem inner) =>
 		new(inner, WriteOptions);
+
+	/// <summary>
+	/// Creates a read <see cref="ScopedFileSystem"/> scoped to the git root of
+	/// <paramref name="path"/>. Falls back to <see cref="RealRead"/> when <paramref name="path"/>
+	/// is <see langword="null"/>. Use in commands that accept an explicit <c>--path</c> argument.
+	/// </summary>
+	public static ScopedFileSystem ForPath(string? path)
+	{
+		if (path is null)
+			return RealRead;
+		var root = FindGitRoot(path);
+		return new ScopedFileSystem(new FileSystem(), new ScopedFileSystemOptions([root, Paths.ApplicationData.FullName])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+		});
+	}
+
+	/// <summary>
+	/// Creates a write <see cref="ScopedFileSystem"/> scoped to the git root of
+	/// <paramref name="path"/> (and <paramref name="output"/> if it falls outside that root).
+	/// Falls back to <see cref="RealWrite"/> when both are <see langword="null"/>.
+	/// Use in commands that accept explicit <c>--path</c> and/or <c>--output</c> arguments.
+	/// </summary>
+	public static ScopedFileSystem ForPathWrite(string? path, string? output = null)
+	{
+		if (path is null && output is null)
+			return RealWrite;
+
+		var gitRoot = path is not null ? FindGitRoot(path) : Paths.WorkingDirectoryRoot.FullName;
+		var roots = new List<string> { gitRoot, Paths.ApplicationData.FullName };
+
+		if (output is not null)
+		{
+			var absOutput = Path.IsPathRooted(output) ? output : Path.GetFullPath(output);
+			if (!absOutput.StartsWith(gitRoot, StringComparison.OrdinalIgnoreCase))
+				roots.Add(absOutput);
+		}
+
+		return new ScopedFileSystem(new FileSystem(), new ScopedFileSystemOptions([.. roots])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" }
+		});
+	}
+
+	// Walks up from startPath to find the nearest .git directory or file (worktree support).
+	// Uses System.IO directly — acceptable bootstrap, same pattern as Paths.DetermineWorkingDirectoryRoot.
+	private static string FindGitRoot(string startPath)
+	{
+		var resolved = Path.IsPathRooted(startPath) ? startPath : Path.GetFullPath(startPath);
+		var dir = Directory.Exists(resolved)
+			? new DirectoryInfo(resolved)
+			: new DirectoryInfo(Path.GetDirectoryName(resolved) ?? resolved);
+		while (dir != null)
+		{
+			if (dir.GetDirectories(".git").Length > 0 || dir.GetFiles(".git").Length > 0)
+				return dir.FullName;
+			dir = dir.Parent;
+		}
+		return Path.GetPathRoot(resolved) ?? resolved;
+	}
 }
