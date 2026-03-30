@@ -155,6 +155,11 @@ let private runTests (testSuite: TestSuite) _ =
 let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
 
 let private gzipCompressDirectory (directory: string) =
+    // Remove stale .gz files from any previous run to avoid orphaned pairs
+    Directory.EnumerateFiles(directory, "*.gz", SearchOption.AllDirectories)
+    |> Seq.toArray
+    |> Array.iter File.Delete
+
     let files =
         Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
         |> Seq.filter (fun f ->
@@ -184,10 +189,12 @@ let private gzipCompressDirectory (directory: string) =
     printfn "Compression complete"
 
 let private airGappedBuild _ =
+    let assemblyDir = Path.Combine(Paths.Root.FullName, ".artifacts", "assembly")
+    if Directory.Exists(assemblyDir) then
+        Directory.Delete(assemblyDir, true)
+
     exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "clone" "--environment" "air-gapped" }
     exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "build" "--exporters" "html" "--environment" "air-gapped" }
-
-    let assemblyDir = Path.Combine(Paths.Root.FullName, ".artifacts", "assembly")
     let searchDir = Path.Combine(assemblyDir, "docs", "_search")
     if Directory.Exists(searchDir) then
         Directory.Delete(searchDir, true)
