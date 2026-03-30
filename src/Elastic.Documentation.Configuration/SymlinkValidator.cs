@@ -47,7 +47,7 @@ public static class SymlinkValidator
 	/// <returns>An error message if validation fails, or <c>null</c> if the file is safe to read.</returns>
 	public static string? ValidateFileAccess(IFileInfo file, IDirectoryInfo docRoot)
 	{
-		if (file is { Exists: true, LinkTarget: not null })
+		if (file.LinkTarget != null)
 			return "Path must not point to a symlink.";
 
 		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem
@@ -60,7 +60,7 @@ public static class SymlinkValidator
 			if (dir.Name.StartsWith('.'))
 				return "Path must not traverse hidden directories.";
 
-			if (dir is { Exists: true, LinkTarget: not null })
+			if (dir.LinkTarget != null)
 				return "Path must not traverse symlinked directories.";
 
 			dir = dir.Parent;
@@ -76,7 +76,7 @@ public static class SymlinkValidator
 	/// <returns>An error message if validation fails, or <c>null</c> if the directory is safe to access.</returns>
 	public static string? ValidateDirectoryAccess(IDirectoryInfo directory, IDirectoryInfo docRoot)
 	{
-		if (directory is { Exists: true, LinkTarget: not null })
+		if (directory.LinkTarget != null)
 			return "Path must not point to a symlinked directory.";
 
 		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem
@@ -89,7 +89,7 @@ public static class SymlinkValidator
 			if (dir.Name.StartsWith('.'))
 				return "Path must not traverse hidden directories.";
 
-			if (dir is { Exists: true, LinkTarget: not null })
+			if (dir.LinkTarget != null)
 				return "Path must not traverse symlinked directories.";
 
 			dir = dir.Parent;

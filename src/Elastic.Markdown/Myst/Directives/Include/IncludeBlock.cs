@@ -77,17 +77,17 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
-		if (Build.ReadFileSystem.File.Exists(IncludePath))
-			Found = true;
-		else
-			this.EmitError($"`{IncludePath}` does not exist.");
-
 		if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
 		{
 			this.EmitError(accessError);
 			Found = false;
 			return;
 		}
+
+		if (Build.ReadFileSystem.File.Exists(IncludePath))
+			Found = true;
+		else
+			this.EmitError($"`{IncludePath}` does not exist.");
 
 		if (Literal)
 			return;
