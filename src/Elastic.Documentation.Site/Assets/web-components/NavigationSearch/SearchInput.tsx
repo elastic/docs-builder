@@ -11,9 +11,10 @@ const useIsMac = () => {
     }, [])
 }
 
-const CustomSearchIcon = () => {
-    const { euiTheme } = useEuiTheme()
+const navSearchMuted = '#cad3e2'
+const navSearchBorder = '#e3e8f2'
 
+const CustomSearchIcon = () => {
     return (
         <svg
             width="16"
@@ -22,7 +23,7 @@ const CustomSearchIcon = () => {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             css={css`
-                color: ${euiTheme.colors.textDisabled};
+                color: ${navSearchMuted};
                 flex-shrink: 0;
             `}
         >
@@ -80,7 +81,14 @@ export const SearchInput = ({
                 `}
             >
                 {isLoading ? (
-                    <EuiLoadingSpinner size="m" />
+                    <span
+                        css={css`
+                            display: flex;
+                            color: ${navSearchMuted};
+                        `}
+                    >
+                        <EuiLoadingSpinner size="m" />
+                    </span>
                 ) : (
                     <CustomSearchIcon />
                 )}
@@ -110,20 +118,27 @@ export const SearchInput = ({
                         ${euiTheme.size.m} + ${isMac ? '2ch' : '4ch'} +
                             ${euiTheme.size.m}
                     );
-                    border: 1px solid ${euiTheme.colors.borderBasePlain};
+                    border: 1px solid ${navSearchBorder};
                     border-radius: ${euiTheme.border.radius.medium};
-                    background: ${euiTheme.colors.backgroundBaseSubdued};
+                    background: #ffffff;
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
                     line-height: ${euiTheme.base * 1.25}px;
                     color: ${euiTheme.colors.textParagraph};
                     outline: none;
+                    box-shadow: none;
 
                     &::placeholder {
-                        color: ${euiTheme.colors.textDisabled};
+                        color: ${navSearchMuted};
                     }
 
-                    &:focus {
-                        border-color: ${euiTheme.colors.primary};
+                    &:focus:not(:focus-visible) {
+                        border-color: ${navSearchBorder};
+                    }
+
+                    &:focus-visible {
+                        border: 1px solid ${navSearchMuted};
+                        outline: none;
+                        box-shadow: none;
                     }
                 `}
             />
@@ -135,7 +150,7 @@ export const SearchInput = ({
                     display: inline-flex;
                     align-items: center;
                     pointer-events: none;
-                    color: ${euiTheme.colors.textDisabled};
+                    color: ${navSearchMuted};
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
                     line-height: ${euiTheme.base * 1.25}px;
                 `}
