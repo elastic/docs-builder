@@ -2,19 +2,28 @@ nav:
   - label: Elasticsearch fundamentals
     children:
     - group: Get started in seconds (New)
+      page: docs-content://get-started/index.md
       children:
-      - title: Evaluate Elastic during a trial
+      - page: docs-content://get-started/evaluate-elastic.md
+        title: Evaluate Elastic during a trial
     - group: Elasticsearch concepts
       children:
-      - title: Elasticsearch essentials (Core document database)
-      - title: Ingest data into Elasticsearch
-      - title: Core search features (indexing, mapping)
-      - title: Visualize and analyze (Kibana)
+      - page: docs-content://manage-data/data-store.md
+        title: Elasticsearch essentials (Core document database)
+      - page: docs-content://manage-data/ingest.md
+        title: Ingest data into Elasticsearch
+      - page: docs-content://solutions/search.md
+        title: Core search features
+      - page: docs-content://explore-analyze/index.md
+        title: Visualize and analyze (Kibana)
       - group: Use cases
         children:
-        - title: Geospatial analysis
-        - title: Add search to your site or app
-        - title: RAG
+        - page: docs-content://explore-analyze/geospatial-analysis.md
+          title: Geospatial analysis
+        - page: docs-content://solutions/search/site-or-app.md
+          title: Add search to your site or app
+        - page: docs-content://solutions/search/rag.md
+          title: RAG
   - label: Install, deploy, and administer
     children:
     - group: Distributed architecture
@@ -227,39 +236,65 @@ nav:
       - group: Data storage and lifecycle
         children:
         - group: The Elasticsearch data store
+          page: docs-content://manage-data/data-store.md
           children:
-          - title: Aliases
-          - title: Data streams
+          - page: docs-content://manage-data/data-store/aliases.md
+            title: Aliases
+          - page: docs-content://manage-data/data-store/data-streams.md
+            title: Data streams
           - group: Index basics
+            page: docs-content://manage-data/data-store/index-basics.md
             children:
-            - title: "[XREF] Index settings reference"
-            - title: Index lifecycle management actions
-          - title: Manage data from the command line
+            - page: elasticsearch://reference/elasticsearch/index-settings/index.md
+              title: Index settings reference
+            - page: elasticsearch://reference/elasticsearch/index-lifecycle-actions/index.md
+              title: Index lifecycle management actions
+          - page: docs-content://manage-data/data-store/manage-data-from-the-command-line.md
+            title: Manage data from the command line
           - group: Mapping
+            page: docs-content://manage-data/data-store/mapping.md
             children:
-            - title: Mapping reference
-          - title: Templates
+            - page: elasticsearch://reference/elasticsearch/mapping-reference/index.md
+              title: Mapping reference
+          - page: docs-content://manage-data/data-store/templates.md
+            title: Templates
           - group: Text analysis
+            page: docs-content://manage-data/data-store/text-analysis.md
             children:
-            - title: "[XREF] Text analysis components"
+            - page: elasticsearch://reference/text-analysis/index.md
+              title: Text analysis components
         - group: Data lifecycle
+          page: docs-content://manage-data/lifecycle.md
           children:
-          - title: Elasticsearch Curator
-          - title: Data stream lifecycle
-          - title: "Data tiers: hot warm cold frozen"
-          - title: Index lifecycle management (ILM)
-          - title: Rollup
-        - title: "Use case: time series data management"
+          - page: docs-content://manage-data/lifecycle/curator.md
+            title: Elasticsearch Curator
+          - page: docs-content://manage-data/lifecycle/data-stream.md
+            title: Data stream lifecycle
+          - page: docs-content://manage-data/lifecycle/data-tiers.md
+            title: "Data tiers: hot warm cold frozen"
+          - page: docs-content://manage-data/lifecycle/index-lifecycle-management.md
+            title: Index lifecycle management (ILM)
+          - page: docs-content://manage-data/lifecycle/rollup.md
+            title: Rollup
+        - page: docs-content://manage-data/use-case-use-elasticsearch-to-manage-time-series-data.md
+          title: "Use case: time series data management"
       - group: Transform and enrich data
+        page: docs-content://manage-data/ingest/transform-enrich.md
         children:
         - group: Data pipelines
           children:
-          - title: Managed pipelines (Otel / Planned)
-          - title: Elasticsearch ingest pipelines
-          - title: Logstash pipelines
-        - title: Data enrichment
-        - title: Index mapping and text analysis
-        - title: Calculate ingest lag metadata
+          - page: opentelemetry://reference/motlp/index.md
+            title: Managed pipelines (mOTLP)
+          - page: docs-content://manage-data/ingest/transform-enrich/ingest-pipelines.md
+            title: Elasticsearch ingest pipelines
+          - page: docs-content://manage-data/ingest/transform-enrich/logstash-pipelines.md
+            title: Logstash pipelines
+        - page: docs-content://manage-data/ingest/transform-enrich/data-enrichment.md
+          title: Data enrichment
+        - page: docs-content://manage-data/ingest/transform-enrich/index-mapping-text-analysis.md
+          title: Index mapping and text analysis
+        - page: docs-content://manage-data/ingest/transform-enrich/ingest-lag.md
+          title: Calculate ingest lag metadata
     - label: Search, visualize and analyze
       children:
       - group: Search and query
