@@ -29,7 +29,7 @@ public class SitemapTests
 		SitemapBuilder.Generate(entries, fs, outputDir);
 
 		// Assert
-		var sitemapPath = fs.Path.Combine("/output", "sitemap.xml");
+		var sitemapPath = fs.Path.Join("/output", "sitemap.xml");
 		fs.File.Exists(sitemapPath).Should().BeTrue();
 
 		var content = fs.File.ReadAllText(sitemapPath);
@@ -63,7 +63,7 @@ public class SitemapTests
 		SitemapBuilder.Generate(entries, fs, outputDir);
 
 		// Assert
-		fs.File.Exists(fs.Path.Combine("/nonexistent/output", "sitemap.xml")).Should().BeTrue();
+		fs.File.Exists(fs.Path.Join("/nonexistent/output", "sitemap.xml")).Should().BeTrue();
 	}
 
 	[Fact]
@@ -86,7 +86,7 @@ public class SitemapTests
 		SitemapBuilder.Generate(entries, fs, outputDir);
 
 		// Assert
-		var content = fs.File.ReadAllText(fs.Path.Combine("/output", "sitemap.xml"));
+		var content = fs.File.ReadAllText(fs.Path.Join("/output", "sitemap.xml"));
 		var doc = XDocument.Parse(content);
 		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 

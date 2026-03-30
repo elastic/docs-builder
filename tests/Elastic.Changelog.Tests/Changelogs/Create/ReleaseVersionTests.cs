@@ -23,7 +23,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		new(LoggerFactory, ConfigurationContext, _mockReleaseService, _mockPrService, FileSystem);
 
 	private string CreateOutputDirectory() =>
-		FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 	// -----------------------------------------------------------------------
 	// Validation: no PR refs in release notes
@@ -107,7 +107,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		yamlFiles.Should().HaveCount(2, "one changelog file per PR reference");
 
 		// No bundle file in the output directory or bundles subdirectory
-		var bundlesDir = FileSystem.Path.Combine(outputDir, "bundles");
+		var bundlesDir = FileSystem.Path.Join(outputDir, "bundles");
 		FileSystem.Directory.Exists(bundlesDir).Should().BeFalse("CreateBundle = false must not create a bundles directory");
 	}
 
@@ -153,7 +153,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundlesDir = FileSystem.Path.Combine(outputDir, "bundles");
+		var bundlesDir = FileSystem.Path.Join(outputDir, "bundles");
 		FileSystem.Directory.Exists(bundlesDir).Should().BeTrue();
 		var bundleFiles = FileSystem.Directory.GetFiles(bundlesDir, "*.yml");
 		bundleFiles.Should().HaveCount(1, "a bundle file should be created when CreateBundle = true");
@@ -268,7 +268,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
 			.Returns(new GitHubPrInfo { Title = "Fix something", Labels = [] });
 
-		var workDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var workDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(workDir);
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try
@@ -289,7 +289,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 
 			// Assert – service resolves output to <cwd>/changelogs
 			result.Should().BeTrue();
-			var expectedOutputDir = FileSystem.Path.Combine(workDir, "changelogs");
+			var expectedOutputDir = FileSystem.Path.Join(workDir, "changelogs");
 			FileSystem.Directory.Exists(expectedOutputDir).Should().BeTrue("service defaults Output to ./changelogs when null");
 			FileSystem.Directory.GetFiles(expectedOutputDir, "*.yaml").Should().HaveCount(1);
 		}

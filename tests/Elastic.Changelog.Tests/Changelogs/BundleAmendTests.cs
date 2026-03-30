@@ -23,7 +23,7 @@ public class BundleAmendTests : ChangelogTestBase
 
 	private string CreateChangelogDir()
 	{
-		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 		return changelogDir;
 	}
@@ -45,10 +45,10 @@ public class BundleAmendTests : ChangelogTestBase
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-existing.yaml");
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, ct);
 
-		var bundlePath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundlePath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
@@ -84,10 +84,10 @@ public class BundleAmendTests : ChangelogTestBase
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-existing.yaml");
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, ct);
 
-		var bundlePath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundlePath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
@@ -112,7 +112,7 @@ public class BundleAmendTests : ChangelogTestBase
 	/// </summary>
 	private async Task<string> CreateNewChangelogFile(CancellationToken ct)
 	{
-		var newDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var newDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(newDir);
 
 		// language=yaml
@@ -128,7 +128,7 @@ public class BundleAmendTests : ChangelogTestBase
 			description: A new enhancement added via amend
 			""";
 
-		var newFile = FileSystem.Path.Combine(newDir, "1755268200-new-feature.yaml");
+		var newFile = FileSystem.Path.Join(newDir, "1755268200-new-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(newFile, newChangelog, ct);
 		return newFile;
 	}

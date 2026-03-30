@@ -129,7 +129,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		if (includePath.StartsWith('/'))
 			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
-		IncludePath = Path.Combine(includeFrom, includePath.TrimStart('/'));
+		IncludePath = Path.Join(includeFrom, includePath.TrimStart('/'));
 		if (Build.ReadFileSystem.File.Exists(IncludePath))
 			Found = true;
 		else

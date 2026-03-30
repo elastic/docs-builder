@@ -88,15 +88,15 @@ public class AssembleContext : IDocumentationConfigurationContext
 		Endpoints.Environment = environment;
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);
-		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "checkouts", contentSource);
+		var defaultCheckoutDirectory = Path.Join(Paths.GitCommonRoot.FullName, ".artifacts", "checkouts", contentSource);
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
-		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
 
 		// Calculate the output directory with path prefix once
 		var pathPrefix = Environment.PathPrefix;
 		OutputWithPathPrefixDirectory = string.IsNullOrEmpty(pathPrefix)
 			? OutputDirectory
-			: WriteFileSystem.DirectoryInfo.New(WriteFileSystem.Path.Combine(OutputDirectory.FullName, pathPrefix));
+			: WriteFileSystem.DirectoryInfo.New(WriteFileSystem.Path.Join(OutputDirectory.FullName, pathPrefix));
 	}
 }

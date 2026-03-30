@@ -144,7 +144,7 @@ public class AwsS3SyncPlanStrategy(
 		// Find deletions (files in S3 but not locally)
 		foreach (var remoteObject in remoteObjects)
 		{
-			var localPath = Path.Combine(context.OutputDirectory.FullName, remoteObject.Key.Replace('/', Path.DirectorySeparatorChar));
+			var localPath = Path.Join(context.OutputDirectory.FullName, remoteObject.Key.Replace('/', Path.DirectorySeparatorChar));
 			if (context.ReadFileSystem.File.Exists(localPath))
 				continue;
 			var deleteRequest = new DeleteRequest

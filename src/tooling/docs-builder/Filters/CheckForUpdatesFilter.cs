@@ -11,7 +11,7 @@ namespace Documentation.Builder.Filters;
 
 internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs cli) : ConsoleAppFilter(next)
 {
-	private readonly FileInfo _stateFile = new(Path.Combine(Paths.ApplicationData.FullName, "docs-build-check.state"));
+	private readonly FileInfo _stateFile = new(Path.Join(Paths.ApplicationData.FullName, "docs-build-check.state"));
 
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{

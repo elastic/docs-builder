@@ -17,7 +17,7 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 	[Fact]
 	public void InjectsNestedTocsIntoDocumentationSet()
 	{
-		var doc = Generator.DocumentationSet.MarkdownFiles.FirstOrDefault(f => f.RelativePath == Path.Combine("development", "index.md"));
+		var doc = Generator.DocumentationSet.MarkdownFiles.FirstOrDefault(f => f.RelativePath == Path.Join("development", "index.md"));
 
 		doc.Should().NotBeNull();
 		INavigationTraversable navigationTraversable = Generator.DocumentationSet;

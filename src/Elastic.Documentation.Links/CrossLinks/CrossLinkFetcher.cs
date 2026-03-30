@@ -145,7 +145,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 	private void WriteLinksJsonCachedFile(string repository, LinkRegistryEntry linkRegistryEntry, RepositoryLinks linkReference)
 	{
 		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
-		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "links", cachedFileName);
+		var cachedPath = Path.Join(Paths.ApplicationData.FullName, "links", cachedFileName);
 		if (File.Exists(cachedPath))
 			return;
 		try
@@ -164,7 +164,7 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 	private async Task<RepositoryLinks?> TryGetCachedLinkReference(string repository, LinkRegistryEntry linkRegistryEntry)
 	{
 		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
-		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "links", cachedFileName);
+		var cachedPath = Path.Join(Paths.ApplicationData.FullName, "links", cachedFileName);
 		if (_cachedLinkReferences.TryGetValue(cachedFileName, out var cachedLinkReference))
 			return cachedLinkReference;
 

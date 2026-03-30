@@ -62,7 +62,7 @@ public partial class Move(ILoggerFactory logFactory, IFileSystem readFileSystem,
 			{
 				var targetDirectory = Path.GetDirectoryName(targetPath)!;
 				var sourceDirectory = Path.GetDirectoryName(sourcePath)!;
-				var fullPath = Path.GetFullPath(Path.Combine(sourceDirectory, originalPath));
+				var fullPath = Path.GetFullPath(Path.Join(sourceDirectory, originalPath));
 				var relativePath = Path.GetRelativePath(targetDirectory, fullPath);
 
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -192,7 +192,7 @@ public partial class Move(ILoggerFactory logFactory, IFileSystem readFileSystem,
 
 			//if toFile has no extension assume move to folder
 			if (toFile.Extension == string.Empty)
-				toFile = readFileSystem.FileInfo.New(Path.Combine(toDirectory.FullName, fromFile.Name));
+				toFile = readFileSystem.FileInfo.New(Path.Join(toDirectory.FullName, fromFile.Name));
 
 			if (!toFile.Extension.Equals(".md", OrdinalIgnoreCase))
 			{
@@ -226,7 +226,7 @@ public partial class Move(ILoggerFactory logFactory, IFileSystem readFileSystem,
 			toFiles = [.. fromFiles.Select(f =>
 			{
 				var relative = Path.GetRelativePath(fromDirectory.FullName, f.FullName);
-				return readFileSystem.FileInfo.New(Path.Combine(toDirectory.FullName, relative));
+				return readFileSystem.FileInfo.New(Path.Join(toDirectory.FullName, relative));
 			})];
 		}
 
@@ -257,7 +257,7 @@ public partial class Move(ILoggerFactory logFactory, IFileSystem readFileSystem,
 	)
 	{
 		var relativeSource = Path.GetRelativePath(currentDir, sourcePath);
-		var relativeSourceWithDotSlash = Path.Combine(".", relativeSource);
+		var relativeSourceWithDotSlash = Path.Join(".", relativeSource);
 		var relativeToDocsFolder = Path.GetRelativePath(documentationSet.SourceDirectory.FullName, sourcePath);
 		var absolutStyleSource = $"/{relativeToDocsFolder}";
 		var relativeToDocsFolderTarget = Path.GetRelativePath(documentationSet.SourceDirectory.FullName, targetPath);

@@ -209,7 +209,7 @@ public class ChangelogPrEvaluationService(
 			return null;
 
 		var prFilename = $"{prNumber}.yaml";
-		if (_fileSystem.File.Exists(_fileSystem.Path.Combine(changelogDir, prFilename)))
+		if (_fileSystem.File.Exists(_fileSystem.Path.Join(changelogDir, prFilename)))
 			return prFilename;
 
 		var prString = prNumber.ToString(CultureInfo.InvariantCulture);

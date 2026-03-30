@@ -29,7 +29,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 
-	public ConfigurationFile Configuration { get; }
+	public ConfigurationFile Configuration { get; private set; }
 
 	public DocumentationSetFile ConfigurationYaml { get; set; }
 
@@ -103,7 +103,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		var rootFolder = !string.IsNullOrWhiteSpace(source)
 			? ReadFileSystem.DirectoryInfo.New(source)
-			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName));
+			: ReadFileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName));
 
 		(DocumentationSourceDirectory, ConfigurationPath) = Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
 
@@ -111,7 +111,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		OutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
-			: WriteFileSystem.DirectoryInfo.New(Path.Combine(rootFolder.FullName, Path.Combine(".artifacts", "docs", "html")));
+			: WriteFileSystem.DirectoryInfo.New(Path.Join(rootFolder.FullName, Path.Join(".artifacts", "docs", "html")));
 
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
@@ -134,4 +134,14 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		};
 	}
 
+	/// <summary>Re-reads docset.yml from disk and rebuilds the configuration. Used by the serve command on file changes.</summary>
+	public void ReloadConfiguration()
+	{
+		var previousFeatures = Configuration.Features;
+		ConfigurationYaml = ConfigurationPath.Exists
+			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem)
+			: new DocumentationSetFile();
+		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
+		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
+	}
 }

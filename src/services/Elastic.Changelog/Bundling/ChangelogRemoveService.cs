@@ -161,7 +161,7 @@ public class ChangelogRemoveService(
 
 			// A placeholder output path is passed to discovery so the bundle file itself is excluded.
 			// Directory is non-null here: ApplyConfigDefaults ensures a value and ValidateInput enforces non-empty.
-			var placeholderOutput = _fileSystem.Path.Combine(input.Directory!, "changelog-bundle.yaml");
+			var placeholderOutput = _fileSystem.Path.Join(input.Directory!, "changelog-bundle.yaml");
 			var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
 			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory!, placeholderOutput, ctx);
 
@@ -415,15 +415,15 @@ public class ChangelogRemoveService(
 
 		// 3. {directory}/bundles
 		// Directory is guaranteed non-null at this point (ApplyConfigDefaults + ValidateInput).
-		var sibling = _fileSystem.Path.Combine(input.Directory!, "bundles");
+		var sibling = _fileSystem.Path.Join(input.Directory, "bundles");
 		if (_fileSystem.Directory.Exists(sibling))
 			return sibling;
 
 		// 4. {directory}/../bundles
-		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory!);
+		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory);
 		if (!string.IsNullOrWhiteSpace(dirParent))
 		{
-			var parentBundles = _fileSystem.Path.Combine(dirParent, "bundles");
+			var parentBundles = _fileSystem.Path.Join(dirParent, "bundles");
 			if (_fileSystem.Directory.Exists(parentBundles))
 				return parentBundles;
 		}
@@ -447,7 +447,7 @@ public class ChangelogRemoveService(
 		if (string.IsNullOrWhiteSpace(repoRoot))
 			return _fileSystem.Path.GetFullPath(outputDirectory);
 
-		return _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(repoRoot, outputDirectory));
+		return _fileSystem.Path.GetFullPath(_fileSystem.Path.Join(repoRoot, outputDirectory));
 	}
 
 	private static string NormalizeEntryFileName(string entryFileName)

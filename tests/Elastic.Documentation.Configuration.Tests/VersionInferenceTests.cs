@@ -495,7 +495,7 @@ public class VersionInferenceTests
 	{
 		// Load the actual versions.yml configuration
 		var fileSystem = new FileSystem();
-		var versionsPath = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
+		var versionsPath = fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
@@ -527,7 +527,7 @@ public class VersionInferenceTests
 	{
 		// Load the actual versions.yml configuration
 		var fileSystem = new FileSystem();
-		var versionsPath = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
+		var versionsPath = fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);

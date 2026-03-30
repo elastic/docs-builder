@@ -16,10 +16,10 @@ public interface IPagesProvider
 public class LocalPagesProvider(string gitRepositoryPath) : IPagesProvider
 {
 	public IEnumerable<string> GetPages() =>
-		Directory.EnumerateFiles(Path.Combine(gitRepositoryPath, "html", "en"), "*.html", SearchOption.AllDirectories)
+		Directory.EnumerateFiles(Path.Join(gitRepositoryPath, "html", "en"), "*.html", SearchOption.AllDirectories)
 			.Select(i =>
 			{
-				var relativePath = "/guide/" + Path.GetRelativePath(Path.Combine(gitRepositoryPath, "html"), i).Replace('\\', '/');
+				var relativePath = "/guide/" + Path.GetRelativePath(Path.Join(gitRepositoryPath, "html"), i).Replace('\\', '/');
 				return relativePath;
 			});
 }
