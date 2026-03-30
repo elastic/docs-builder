@@ -238,7 +238,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
 		{
 			var id = synonym.Key;
-			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
+			var synonyms = string.Join(", ", [id, .. synonym.Value]);
+			acc.Add(new SynonymRule { Id = id, Synonyms = synonyms });
 			return acc;
 		});
 
