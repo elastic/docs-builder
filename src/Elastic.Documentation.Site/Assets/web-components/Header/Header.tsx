@@ -66,17 +66,19 @@ export const Header = ({
                     },
                     ...(!airGapped
                         ? [
-                            {
-                                items: [
-                                    <DeploymentInfo
-                                        gitBranch={gitBranch}
-                                        gitCommit={gitCommit}
-                                        githubRepository={'elastic/' + githubRepository}
-                                        githubRef={githubRef}
-                                    />,
-                                ],
-                            },
-                        ]
+                              {
+                                  items: [
+                                      <DeploymentInfo
+                                          gitBranch={gitBranch}
+                                          gitCommit={gitCommit}
+                                          githubRepository={
+                                              'elastic/' + githubRepository
+                                          }
+                                          githubRef={githubRef}
+                                      />,
+                                  ],
+                              },
+                          ]
                         : []),
                 ]}
             />
