@@ -23,10 +23,10 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
         },
         staleTime: 60 * 60 * 1000, // 60 minutes
         retry: false,
-        enabled: config.buildType !== 'codex',
+        enabled: config.buildType !== 'codex' && !config.airGapped,
     })
 
-    if (!isApiAvailable && config.buildType !== 'codex') {
+    if (config.airGapped || (!isApiAvailable && config.buildType !== 'codex')) {
         return null
     }
 

@@ -48,6 +48,13 @@ environments:
     feature_flags:
       SEARCH_OR_ASK_AI: true
       NAV_V2: true
+  air-gapped:
+    uri: http://localhost:8080
+    path_prefix: docs
+    content_source: current
+    allow_indexing: false
+    feature_flags:
+      AIR_GAPPED: true
 
 shared_configuration:
   stack: &stack

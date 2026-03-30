@@ -2909,6 +2909,112 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithProfile_MalformedOutputProducts_EmitsError()
+	{
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} *"
+			      output: "elasticsearch-{version}.yaml"
+			      output_products: "elasticsearch {version} ga extra-token"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) &&
+			d.Message.Contains("elasticsearch 9.2.0 ga extra-token", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithProfile_MalformedProductsPattern_EmitsError()
+	{
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} ga extra bad"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Message.Contains("Profile 'es-release':", StringComparison.Ordinal) &&
+			d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) &&
+			d.Message.Contains("elasticsearch 9.2.0 ga extra bad", StringComparison.Ordinal));
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithProfile_RepoAndOwner_WritesValuesToProductEntries()
 	{
 		// Arrange - repo and owner in the profile are written to each product entry in the bundle.
@@ -4175,9 +4281,150 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithInputProducts_IgnoresRulesBundle()
+	public async Task BundleChangelogs_WithGlobalExcludeProductsMatchConjunction_ExcludesOnlyWhenAllListedProductsOnEntry()
 	{
-		// Arrange - rules.bundle is bypassed when primary filter is InputProducts
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products:
+			      - elasticsearch
+			      - kibana
+			    match_products: conjunction
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var kibanaOnly = """
+			title: Kibana only
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/100
+			""";
+		var esAndKibana = """
+			title: Elasticsearch and Kibana
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/200
+			""";
+		var changelogDir = CreateChangelogDir();
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Combine(changelogDir, "1755268001-kibana-only.yaml"),
+			kibanaOnly,
+			TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Combine(changelogDir, "1755268002-es-kibana.yaml"),
+			esAndKibana,
+			TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268001-kibana-only.yaml");
+		bundleContent.Should().NotContain("1755268002-es-kibana.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithGlobalIncludeProductsMatchConjunction_RequiresAllListedProductsOnEntry()
+	{
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			      - security
+			    match_products: conjunction
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var esOnly = """
+			title: ES only
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/400
+			""";
+		var esSec = """
+			title: ES and security
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  - product: security
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/500
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Combine(changelogDir, "1755268011-es-only.yaml"),
+			esOnly,
+			TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Combine(changelogDir, "1755268012-es-sec.yaml"),
+			esSec,
+			TestContext.Current.CancellationToken);
+
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268012-es-sec.yaml");
+		bundleContent.Should().NotContain("1755268011-es-only.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithInputProducts_AppliesBundleRules()
+	{
+		// Arrange - rules.bundle always applies regardless of input method
 		// language=yaml
 		var configContent =
 			"""
@@ -4210,7 +4457,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		// Use InputProducts as primary filter — rules.bundle.exclude_products should be ignored
+		// Use InputProducts as primary filter — rules.bundle.exclude_products should still apply
 		var input = new BundleChangelogsArguments
 		{
 			Directory = changelogDir,
@@ -4222,13 +4469,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert - elasticsearch entry is included despite exclude_products rule because InputProducts bypasses rules.bundle
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
-
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("[-bundle-exclude]"));
+		// Assert - elasticsearch entry is excluded by exclude_products rule even with InputProducts
+		result.Should().BeFalse("Bundle should fail because all entries are excluded by rules.bundle");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-exclude]") && d.Message.Contains("1755268130-elasticsearch-feature.yaml"));
+		Collector.Errors.Should().BeGreaterThan(0, "Should have error about no entries remaining");
 	}
 
 	[Fact]
@@ -4473,9 +4717,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 	[Fact]
 	public async Task BundleChangelogs_WithOutputProducts_SingleProductEntry_UsesMatchingProductRule()
 	{
-		// Arrange — output_products has two products; each single-product entry should use its own rule.
+		// Arrange — output_products has two products; rule context = "kibana" (first alphabetically).
+		// Only entries containing "kibana" product use kibana rules; others are disjoint → excluded.
 		// kibana rule: exclude_types: docs
-		// security rule: include_areas: "Detection rules and alerts"
 		// language=yaml
 		var configContent =
 			"""
@@ -4560,13 +4804,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
-
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().NotContain("name: 1755268130-kibana-doc.yaml", "kibana docs type should be excluded by kibana rule");
-		bundleContent.Should().Contain("name: 1755268140-security-entry.yaml", "security entry with matching area should be included by security rule");
-		bundleContent.Should().NotContain("name: 1755268150-security-other.yaml", "security entry with non-matching area should be excluded by security rule");
+		// Rule context = "kibana" (first alphabetically from output products)
+		// All security entries are disjoint from kibana context → excluded
+		// Kibana entry uses kibana rules (exclude docs) → excluded  
+		// Result: No entries remain → bundle should fail
+		result.Should().BeFalse($"Expected bundle to fail when no entries remain. Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().BeGreaterThan(0, "Should have error when no entries remain after filtering");
 	}
 
 	[Fact]
@@ -4778,11 +5021,270 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Act
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert — disjoint entry falls back; no rule applies; entry included
+		// Assert — disjoint entry excluded entirely (new single-product rule resolution behavior)
+		result.Should().BeFalse($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("disjoint from rule context 'kibana'", "elasticsearch entry should be excluded as disjoint from kibana context");
+		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPerProductIncludeProducts_IncludesOnlyContextMatchingProducts()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			      - kibana
+			    products:
+			      security:
+			        include_products:
+			          - security
+			          - kibana
+			        match_products: any
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create test entries
+		var changelogDir = CreateChangelogDir();
+		await CreateTestEntry(changelogDir, "kibana-feature.yaml", "Kibana feature", "kibana");
+		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
+		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
+
+		var outputPath = CreateTempFilePath("bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - single-product rule resolution: only security changelog matches bundle context
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268190-es-feature.yaml", "elasticsearch entry is disjoint from kibana output_products context; kibana rule should not apply");
+
+		// Only security changelog should be included (it matches the bundle context "security")
+		bundleContent.Should().Contain("security-feature.yaml", "security entry matches bundle context and should be included by security-specific rules");
+
+		// Disjoint changelogs are excluded entirely (not included via global fallback)
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context and should be excluded");
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context and should be excluded");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPerProductExcludeProducts_ExcludesContextMatchingProducts()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products:
+			      security:
+			        exclude_products:
+			          - kibana
+			        match_products: any
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create test entries
+		var changelogDir = CreateChangelogDir();
+		await CreateTestEntry(changelogDir, "kibana-feature.yaml", "Kibana feature", "kibana");
+		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
+		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
+
+		// Create multi-product entry that should be excluded by security context rule
+		var multiProductContent = """
+			title: Security+Kibana feature
+			type: feature
+			products:
+			  - product: security
+			    target: 9.3.0
+			  - product: kibana
+			    target: 9.3.0
+			prs:
+			  - "123"
+			""";
+		var multiProductFile = FileSystem.Path.Combine(changelogDir, "security-kibana-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(multiProductFile, multiProductContent, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - single-product rule resolution: disjoint entries are excluded entirely
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+
+		// Rule context = "security" (from output products)
+		// Disjoint entries (kibana, elasticsearch) are excluded entirely
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
+
+		// security entry (matches security context) uses context rule: exclude_products=[kibana] (security not excluded) → INCLUDED
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (not in context exclude list)");
+
+		// Multi-product entry (security + kibana) matches security context and gets excluded by exclude_products=[kibana] → EXCLUDED
+		bundleContent.Should().NotContain("security-kibana-feature.yaml", "security+kibana entry should be excluded by security context rule");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPerProductRules_FallsBackToGlobalWhenNoContextRule()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			    products:
+			      cloud-hosted:
+			        include_products:
+			          - security
+			          - kibana
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create test entries
+		var changelogDir = CreateChangelogDir();
+		await CreateTestEntry(changelogDir, "kibana-feature.yaml", "Kibana feature", "kibana");
+		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
+		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
+
+		var outputPath = CreateTempFilePath("bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+			// No per-product block for "security"; Mode 3 uses pass-through for product lists (globals not applied).
+			// Global include_products intentionally omit "security" so the test fails if global product filters are wrongly applied.
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		// Rule context = "security" (from output products)
+		// No per-product rule for "security" → PassThrough (not global include/exclude for products)
+		// elasticsearch and kibana entries are disjoint from security context → excluded
+		// Security-only entry is included (disjoint satisfied; no per-product product filter)
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (Mode 3 pass-through when no per-product block for context)");
+		// Disjoint entries are excluded entirely in single-product rule resolution
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithPerProductRules_ContextRulesTakePrecedenceOverGlobal()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			    products:
+			      security:
+			        include_products:
+			          - security
+			          - kibana
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Create test entries
+		var changelogDir = CreateChangelogDir();
+		await CreateTestEntry(changelogDir, "kibana-feature.yaml", "Kibana feature", "kibana");
+		await CreateTestEntry(changelogDir, "security-feature.yaml", "Security feature", "security");
+		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
+
+		var outputPath = CreateTempFilePath("bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			InputProducts = [new ProductArgument { Product = "*" }], // Input method should not affect bundle filtering
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - single-product rule resolution: disjoint entries are excluded entirely
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+
+		// Rule context = "security" (from output products)
+		// Disjoint entries (kibana, elasticsearch) are excluded entirely
+		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
+		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
+
+		// security entry (matches security context) uses context rule: include_products=[security, kibana] → INCLUDED
+		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
+	}
+
+	private async Task CreateTestEntry(string changelogDir, string filename, string title, string product)
+	{
+		var content = $"""
+			title: {title}
+			type: feature
+			products:
+			  - product: {product}
+			    target: 9.3.0
+			prs:
+			  - "123"
+			""";
+		var filePath = FileSystem.Path.Combine(changelogDir, filename);
+		await FileSystem.File.WriteAllTextAsync(filePath, content, TestContext.Current.CancellationToken);
+	}
+
+	private string CreateTempFilePath(string filename)
+	{
+		var outputPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), filename);
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
+		return outputPath;
 	}
 
 	private static string ExtractChecksum(string bundleContent)
@@ -4791,5 +5293,667 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var checksumLine = lines.FirstOrDefault(l => l.Contains("checksum:"));
 		checksumLine.Should().NotBeNull("Bundle should contain a checksum line");
 		return checksumLine.Split("checksum:")[1].Trim();
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithNoProductsField_FallsBackToGlobalRules()
+	{
+		// Arrange — global-only rules.bundle (Mode 2): entries with no products get a warning; product filters are skipped;
+		// type/area blocker still applies.
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - "docs"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var noProductsEntry =
+			"""
+			title: Entry with no products field
+			type: docs
+			prs:
+			  - "500"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268200-no-products.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, noProductsEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("no-products-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert — docs entry excluded by global type filter; bundle fails with no entries remained
+		result.Should().BeFalse("bundling should fail when all entries are filtered out");
+
+		Collector.Errors.Should().Be(1, "no entries remained after rules.bundle filter");
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("No changelog entries remained after applying rules.bundle filter");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_GlobalMode_IncludeProductsAny_IncludesEntryMatchingAnyListedProduct()
+	{
+		// Mode 2 — global rules only: match_products: any with include_products lists means OR over changelog products.
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    match_products: any
+			    include_products:
+			      - kibana
+			      - elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var esOnly =
+			"""
+			title: ES only
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/1
+			""";
+		// language=yaml
+		var kibanaOnly =
+			"""
+			title: Kibana only
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/2
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268205-es.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268206-kibana.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, esOnly, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaOnly, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("global-or-bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268205-es.yaml");
+		bundleContent.Should().Contain("1755268206-kibana.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_GlobalMode_EmptyProducts_IncludesFeatureEntryWithWarning()
+	{
+		// Mode 2 — missing/empty changelog products: include with warning; product include/exclude lists are skipped for that entry.
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var noProductsEntry =
+			"""
+			title: No products
+			type: feature
+			prs:
+			  - "901"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268207-no-products-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, noProductsEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("global-empty-products.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268207-no-products-feature.yaml");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithEmptyProductsYamlMap_UsesGlobalRulesWhenGlobalFiltersPresent()
+	{
+		// rules.bundle.products: {} — no per-product rules; same as omitting products (Mode 2 when global filters exist).
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products: {}
+			    exclude_products: kibana
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var es =
+			"""
+			title: ES
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/1
+			""";
+		var kibana =
+			"""
+			title: Kibana
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/2
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Combine(changelogDir, "1755268208-es.yaml"), es, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Combine(changelogDir, "1755268209-kibana.yaml"), kibana, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("empty-products-map-bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268208-es.yaml");
+		bundleContent.Should().NotContain("1755268209-kibana.yaml");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithEmptyProductsList_FallsBackToGlobalRules()
+	{
+		// Arrange - changelog with empty products list should use global rules only
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - "feature"
+			    products:
+			      kibana:
+			        include_types:
+			          - "feature"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var emptyProductsEntry =
+			"""
+			title: Entry with empty products list
+			type: feature
+			products: []
+			prs:
+			  - "501"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268201-empty-products.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, emptyProductsEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("empty-products-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - entry excluded by global type rule (empty products list)
+		// Since all entries are filtered out, the bundling should fail
+		result.Should().BeFalse("bundling should fail when all entries are filtered out");
+
+		// With single-product rule resolution: bundle has no product context (early validation) + no entries remained
+		Collector.Errors.Should().Be(2, "bundle validation error + no entries remained error");
+		// No warnings expected since early validation prevents processing individual entries
+
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("Bundle has no product context", "bundle validation should report lack of product context");
+		errorMessages.Should().Contain("No changelog entries remained after applying rules.bundle filter", "system should report empty bundle error");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithMultipleProducts_UnifiedProductFiltering_AlphabeticalFirstMatch()
+	{
+		// Arrange - entry belongs to both kibana and security; test product filtering uses same resolution as type/area
+		// kibana rule: exclude_products: [security] (alphabetically first → wins)
+		// security rule: include_products: [security]
+		// Expected: kibana rule fires (k < s alphabetically) → entry excluded by product filter
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products:
+			      kibana:
+			        exclude_products:
+			          - "security"
+			      security:
+			        include_products:
+			          - "security"
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var multiProductEntry =
+			"""
+			title: Multi-product entry for unified filtering test
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			  - product: security
+			    target: 9.3.0
+			prs:
+			  - "502"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268202-multi-product.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, multiProductEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("unified-product-filtering-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "kibana", Target = "9.3.0" }, new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - entry excluded by product filter (kibana rule wins alphabetically)
+		// Since all entries are filtered out, the bundling should fail
+		result.Should().BeFalse("bundling should fail when all entries are filtered out");
+
+		// When all entries are filtered out, the system reports this as an error
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+
+		// Should be excluded by kibana product rule (alphabetical first-match)
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-exclude]") && d.Message.Contains("multi-product"));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_DisjointBundleContext_ProductFilteringFollowsSameLogicAsTypeArea()
+	{
+		// Arrange - bundle context [kibana]; entry products [elasticsearch] (disjoint)
+		// Should use global rules, NOT elasticsearch-specific rules
+		// This tests that product filtering uses same disjoint fallback as type/area
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - "elasticsearch"
+			      - "kibana"
+			    products:
+			      kibana:
+			        exclude_products:
+			          - "elasticsearch"  # This should NOT apply to disjoint entry
+			      elasticsearch:
+			        exclude_products:
+			          - "elasticsearch"  # This should NOT apply to disjoint entry (would exclude if used)
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var elasticsearchEntry =
+			"""
+			title: Elasticsearch entry disjoint from kibana context
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - "503"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268203-elasticsearch-disjoint.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("disjoint-context-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "kibana", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - disjoint entry excluded entirely (new single-product rule resolution behavior)
+		// The entry has products=[elasticsearch] but bundle context is kibana, so it's disjoint and excluded
+		result.Should().BeFalse($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("disjoint from rule context 'kibana'", "disjoint entry should be excluded with informative message");
+		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_MultiProductDisjoint_UsesGlobalRules()
+	{
+		// Arrange - bundle context [security]; entry products [kibana, elasticsearch] (both disjoint)
+		// Should use global rules, NOT elasticsearch-specific rules (even though elasticsearch is alphabetically first)
+		// This tests the key fix: multi-product disjoint entries don't get unrelated product-specific rules
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - "security"
+			      - "kibana"
+			      - "elasticsearch"
+			    products:
+			      security:
+			        exclude_products:
+			          - "cloud-hosted"  # This should NOT apply (security not in entry products)
+			      elasticsearch:
+			        exclude_products:
+			          - "kibana"
+			          - "elasticsearch"  # This would exclude the entry if applied, but should NOT apply
+			      kibana:
+			        exclude_products:
+			          - "cloud-serverless"  # This should NOT apply either
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var multiProductEntry =
+			"""
+			title: Multi-product entry disjoint from security context
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - "504"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268204-multiproduct-disjoint.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, multiProductEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("multiproduct-disjoint-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath,
+			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - multi-product disjoint entry excluded entirely (new single-product rule resolution behavior)
+		// The entry has products=[kibana, elasticsearch] but bundle context is security, so it's disjoint and excluded
+		result.Should().BeFalse($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
+
+		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
+		errorMessages.Should().Contain("disjoint from rule context 'security'", "disjoint entry should be excluded with informative message");
+		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_BundleAll_DisjointUsesOwnProductRules()
+	{
+		// Arrange - bundling ALL changelogs (no OutputProducts specified)
+		// Single-product rule resolution: rule context = first alphabetically from all entry products = "elasticsearch"
+		// Only entries containing "elasticsearch" use elasticsearch rules; others are disjoint → excluded
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - "security"
+			      - "kibana"
+			      - "elasticsearch"
+			    products:
+			      elasticsearch:
+			        exclude_products:
+			          - "elasticsearch"  # This SHOULD apply (excludes elasticsearch entries)
+			      kibana:
+			        exclude_products:
+			          - "kibana"  # This SHOULD apply (excludes kibana entries)
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Single-product elasticsearch entry - should be excluded by elasticsearch rule
+		// language=yaml
+		var elasticsearchEntry =
+			"""
+			title: Single-product elasticsearch entry
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - "505"
+			""";
+
+		// Multi-product entry - should be excluded by elasticsearch rule (alphabetically first)
+		// language=yaml  
+		var multiProductEntry =
+			"""
+			title: Multi-product entry with elasticsearch
+			type: feature
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			  - "506"
+			""";
+
+		// Security entry - should be included (no security-specific exclude rule)
+		// language=yaml
+		var securityEntry =
+			"""
+			title: Security entry
+			type: feature
+			products:
+			  - product: security
+			    target: 9.3.0
+			prs:
+			  - "507"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268205-elasticsearch-single.yaml");
+		var file2 = FileSystem.Path.Combine(changelogDir, "1755268206-multiproduct-elasticsearch.yaml");
+		var file3 = FileSystem.Path.Combine(changelogDir, "1755268207-security-included.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, multiProductEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, securityEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("bundle-all-product-rules.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+			// No OutputProducts specified - this is the key difference
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - rule context = "elasticsearch" (first alphabetically from aggregated products)
+		// Security entry is disjoint from elasticsearch context → excluded
+		// All elasticsearch entries are excluded by elasticsearch rule → no entries remain → bundle fails  
+		result.Should().BeFalse($"Expected bundle to fail when no entries remain. Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().BeGreaterThan(0, "Should have error when no entries remain after filtering");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_PartialPerProductRules_AllOrNothingReplacement()
+	{
+		// Arrange - kibana rule has product filters but no type/area filters
+		// With all-or-nothing replacement, entry uses kibana rule entirely (global type rules ignored)
+		// language=yaml
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_types:
+			      - "docs"  # global type rule - will be ignored for kibana entries
+			    products:
+			      kibana:
+			        include_products:
+			          - "kibana"
+			        # No type/area rules here - global type exclusions are NOT inherited
+			""";
+
+		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var docsEntry =
+			"""
+			title: Docs entry with partial per-product rule
+			type: docs
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			prs:
+			  - "504"
+			""";
+
+		var changelogDir = CreateChangelogDir();
+		var file1 = FileSystem.Path.Combine(changelogDir, "1755268204-partial-rule.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, docsEntry, TestContext.Current.CancellationToken);
+
+		var outputPath = CreateTempFilePath("partial-rule-bundle.yaml");
+
+		var input = new BundleChangelogsArguments
+		{
+			All = true,
+			Directory = changelogDir,
+			Config = configPath,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - entry included because kibana rule completely replaces global rules
+		// Global exclude_types is ignored when per-product rule applies (all-or-nothing replacement)
+		result.Should().BeTrue("bundling should succeed - kibana rule allows the entry");
+
+		Collector.Errors.Should().Be(0, "no errors expected when entry is included");
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("1755268204-partial-rule.yaml", "entry should be included - per-product rule ignores global type exclusions");
 	}
 }

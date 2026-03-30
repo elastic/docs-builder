@@ -391,6 +391,7 @@ IEnvironmentVariables? env = null
 
 		var prNumber = env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER");
 		var ciTitle = env.GetEnvironmentVariable("CHANGELOG_TITLE");
+		var ciDescription = env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION");
 		var ciType = env.GetEnvironmentVariable("CHANGELOG_TYPE");
 		var ciOwner = env.GetEnvironmentVariable("CHANGELOG_OWNER");
 		var ciRepo = env.GetEnvironmentVariable("CHANGELOG_REPO");
@@ -414,6 +415,7 @@ IEnvironmentVariables? env = null
 		{
 			Prs = enrichedPrs,
 			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
+			Description = !string.IsNullOrWhiteSpace(input.Description) ? input.Description : ciDescription,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
 			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,
