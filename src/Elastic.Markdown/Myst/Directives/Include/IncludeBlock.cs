@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 
@@ -81,7 +82,12 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");
 
-		ValidateIncludePath(file);
+		if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
+		{
+			this.EmitError(accessError);
+			Found = false;
+			return;
+		}
 
 		if (Literal)
 			return;
@@ -96,41 +102,6 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		{
 			this.EmitError($"{{include}} cyclical include detected `{IncludePath}` points to itself");
 			Found = false;
-		}
-	}
-
-	private void ValidateIncludePath(IFileInfo file)
-	{
-		if (file is { Exists: true, LinkTarget: not null })
-		{
-			this.EmitError("Include path must not point to a symlink.");
-			Found = false;
-			return;
-		}
-
-		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem
-			? StringComparison.Ordinal
-			: StringComparison.OrdinalIgnoreCase;
-
-		var docRootFullName = Build.DocumentationSourceDirectory.FullName;
-		var dir = file.Directory;
-		while (dir != null && !string.Equals(dir.FullName, docRootFullName, cmp))
-		{
-			if (dir.Name.StartsWith('.'))
-			{
-				this.EmitError("Include path must not traverse hidden directories.");
-				Found = false;
-				return;
-			}
-
-			if (dir is { Exists: true, LinkTarget: not null })
-			{
-				this.EmitError("Include path must not traverse symlinked directories.");
-				Found = false;
-				return;
-			}
-
-			dir = dir.Parent;
 		}
 	}
 }

@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Security;
+using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -37,5 +38,63 @@ public static class SymlinkValidator
 		var fileInfo = fileSystem.FileInfo.New(filePath);
 		if (fileInfo.Exists)
 			EnsureNotSymlink(fileInfo);
+	}
+
+	/// <summary>
+	/// Validates that a file and its ancestor directories (up to <paramref name="docRoot"/>) are not symlinks
+	/// and that no ancestor directory is hidden (starts with <c>.</c>).
+	/// </summary>
+	/// <returns>An error message if validation fails, or <c>null</c> if the file is safe to read.</returns>
+	public static string? ValidateFileAccess(IFileInfo file, IDirectoryInfo docRoot)
+	{
+		if (file is { Exists: true, LinkTarget: not null })
+			return "Path must not point to a symlink.";
+
+		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem
+			? StringComparison.Ordinal
+			: StringComparison.OrdinalIgnoreCase;
+
+		var dir = file.Directory;
+		while (dir != null && !string.Equals(dir.FullName, docRoot.FullName, cmp))
+		{
+			if (dir.Name.StartsWith('.'))
+				return "Path must not traverse hidden directories.";
+
+			if (dir is { Exists: true, LinkTarget: not null })
+				return "Path must not traverse symlinked directories.";
+
+			dir = dir.Parent;
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Validates that a directory and its ancestor directories (up to <paramref name="docRoot"/>) are not symlinks
+	/// and that no ancestor directory is hidden (starts with <c>.</c>).
+	/// </summary>
+	/// <returns>An error message if validation fails, or <c>null</c> if the directory is safe to access.</returns>
+	public static string? ValidateDirectoryAccess(IDirectoryInfo directory, IDirectoryInfo docRoot)
+	{
+		if (directory is { Exists: true, LinkTarget: not null })
+			return "Path must not point to a symlinked directory.";
+
+		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem
+			? StringComparison.Ordinal
+			: StringComparison.OrdinalIgnoreCase;
+
+		var dir = directory.Parent;
+		while (dir != null && !string.Equals(dir.FullName, docRoot.FullName, cmp))
+		{
+			if (dir.Name.StartsWith('.'))
+				return "Path must not traverse hidden directories.";
+
+			if (dir is { Exists: true, LinkTarget: not null })
+				return "Path must not traverse symlinked directories.";
+
+			dir = dir.Parent;
+		}
+
+		return null;
 	}
 }
