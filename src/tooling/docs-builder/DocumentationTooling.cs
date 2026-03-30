@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Abstractions;
 using System.Net.Sockets;
 using Actions.Core.Extensions;
 using Actions.Core.Services;
@@ -29,7 +28,6 @@ public static class DocumentationTooling
 	{
 		_ = builder.Services
 			.AddGitHubActionsCore()
-			.AddSingleton<IFileSystem>(_ => FileSystemFactory.Real)
 			.AddSingleton<IEnvironmentVariables>(SystemEnvironmentVariables.Instance)
 			.AddSingleton<DiagnosticsChannel>()
 			.AddServiceDiscovery()

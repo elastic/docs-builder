@@ -46,7 +46,7 @@ public record FetchedCrossLinks
 public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, IFileSystem? fileSystem = null) : IDisposable
 {
 	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.Real;
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.AppData;
 	private LinkRegistry? _linkIndex;
 
 	public static RepositoryLinks Deserialize(string json) =>

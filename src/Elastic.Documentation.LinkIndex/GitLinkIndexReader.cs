@@ -4,8 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.LinkIndex;
 
@@ -17,9 +17,8 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 {
 	private const string LinkIndexOrigin = "elastic/codex-link-index";
 	private static readonly string CloneDirectory = Path.Join(
-		Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-		".docs-builder",
-		"codex-link-index");
+		Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+		"elastic", "docs-builder", "codex-link-index");
 
 	private readonly string _environment;
 	private readonly IFileSystem _fileSystem;
@@ -33,14 +32,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));
 
 		_environment = environment;
-		_fileSystem = fileSystem ?? new ScopedFileSystem(
-			new FileSystem(),
-			new ScopedFileSystemOptions(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
-			{
-				AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".docs-builder", ".git" },
-				AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".gitignore" }
-			}
-		);
+		_fileSystem = fileSystem ?? FileSystemFactory.AppData;
 		_skipFetch = skipFetch;
 	}
 

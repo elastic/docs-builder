@@ -10,9 +10,11 @@ using Elastic.Documentation.Configuration;
 
 namespace Documentation.Builder.Filters;
 
-internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs cli, IFileSystem fileSystem) : ConsoleAppFilter(next)
+internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs cli) : ConsoleAppFilter(next)
 {
-	private readonly IFileInfo _stateFile = fileSystem.FileInfo.New(Path.Join(Paths.ApplicationData.FullName, "docs-build-check.state"));
+	// Only accesses ApplicationData — no workspace access needed
+	private static readonly IFileSystem Fs = FileSystemFactory.AppData;
+	private readonly IFileInfo _stateFile = Fs.FileInfo.New(Path.Join(Paths.ApplicationData.FullName, "docs-build-check.state"));
 
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{
@@ -64,7 +66,7 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs
 		// only check for new versions once per hour
 		if (_stateFile.Exists && _stateFile.LastWriteTimeUtc >= DateTime.UtcNow.Subtract(TimeSpan.FromHours(1)))
 		{
-			var url = await fileSystem.File.ReadAllTextAsync(_stateFile.FullName, ctx);
+			var url = await Fs.File.ReadAllTextAsync(_stateFile.FullName, ctx);
 			if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
 				return uri;
 		}
@@ -77,9 +79,9 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs
 			if (redirectUrl is not null && _stateFile.Directory is not null)
 			{
 				// ensure the 'elastic' folder exists.
-				if (!fileSystem.Directory.Exists(_stateFile.Directory.FullName))
-					_ = fileSystem.Directory.CreateDirectory(_stateFile.Directory.FullName);
-				await fileSystem.File.WriteAllTextAsync(_stateFile.FullName, redirectUrl.ToString(), ctx);
+				if (!Fs.Directory.Exists(_stateFile.Directory.FullName))
+					_ = Fs.Directory.CreateDirectory(_stateFile.Directory.FullName);
+				await Fs.File.WriteAllTextAsync(_stateFile.FullName, redirectUrl.ToString(), ctx);
 			}
 			return redirectUrl;
 		}

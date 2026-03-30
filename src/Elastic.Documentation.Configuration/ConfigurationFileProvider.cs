@@ -45,7 +45,10 @@ public partial class ConfigurationFileProvider
 		_fileSystem = fileSystem;
 		_assemblyName = typeof(ConfigurationFileProvider).Assembly.GetName().Name!;
 		SkipPrivateRepositories = skipPrivateRepositories;
-		TemporaryDirectory = fileSystem.Directory.CreateTempSubdirectory("docs-builder-config");
+		var configRuntimeDir = Path.Join(Paths.ApplicationData.FullName, "config-runtime");
+		TemporaryDirectory = fileSystem.DirectoryInfo.New(configRuntimeDir);
+		if (!TemporaryDirectory.Exists)
+			TemporaryDirectory.Create();
 
 		// TODO: This doesn't work as expected if a github actions consumer repo has a `config` directory.
 		// ConfigurationSource = configurationSource ?? (
