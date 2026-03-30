@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -42,7 +43,7 @@ public record AmendBundleArguments
 public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFileSystem? fileSystem = null) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundleAmendService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.Real;
 
 	[GeneratedRegex(@"\.amend-(\d+)\.ya?ml$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();

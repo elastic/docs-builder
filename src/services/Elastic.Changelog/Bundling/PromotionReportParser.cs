@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Net.Http.Headers;
+using Elastic.Documentation.Configuration;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
@@ -16,7 +17,7 @@ namespace Elastic.Changelog.Bundling;
 public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSystem? fileSystem = null)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<PromotionReportParser>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.Real;
 	private static readonly HttpClient HttpClient = new();
 
 	static PromotionReportParser()

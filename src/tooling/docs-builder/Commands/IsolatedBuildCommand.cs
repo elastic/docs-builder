@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
@@ -63,7 +62,7 @@ internal sealed class IsolatedBuildCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		IFileSystem fs = inMemory ? new MockFileSystem() : new FileSystem();
+		var fs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.Real;
 		var strictCommand = service.IsStrict(strict);
 
 		serviceInvoker.AddCommand(service,

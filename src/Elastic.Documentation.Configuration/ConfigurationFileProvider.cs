@@ -267,7 +267,7 @@ public static class ConfigurationFileProviderServiceCollectionExtensions
 	{
 		using var sp = services.BuildServiceProvider();
 		var logFactory = sp.GetRequiredService<ILoggerFactory>();
-		var provider = new ConfigurationFileProvider(logFactory, new FileSystem(), skipPrivateRepositories, configurationSource);
+		var provider = new ConfigurationFileProvider(logFactory, FileSystemFactory.Real, skipPrivateRepositories, configurationSource);
 		_ = services.AddSingleton(provider);
 		configure(services, provider);
 		return services;

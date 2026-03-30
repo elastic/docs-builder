@@ -49,7 +49,7 @@ public class IsolatedIndexService(
 	/// <param name="ctx"></param>
 	/// <returns></returns>
 	public async Task<bool> Index(IDiagnosticsCollector collector,
-		FileSystem fileSystem,
+		IFileSystem fileSystem,
 		string? path = null,
 		string? endpoint = null,
 		string? apiKey = null,

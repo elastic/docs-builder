@@ -20,7 +20,7 @@ public class IncrementalDeployService(
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	FileSystem fileSystem
+	IFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IncrementalDeployService>();

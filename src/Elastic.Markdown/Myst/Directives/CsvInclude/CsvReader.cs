@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using nietras.SeparatedValues;
 
 namespace Elastic.Markdown.Myst.Directives.CsvInclude;
@@ -11,7 +12,7 @@ public static class CsvReader
 {
 	public static IEnumerable<string[]> ReadCsvFile(string filePath, string separator, IFileSystem? fileSystem = null)
 	{
-		var fs = fileSystem ?? new FileSystem();
+		var fs = fileSystem ?? FileSystemFactory.Real;
 		return ReadWithSep(filePath, separator, fs);
 	}
 

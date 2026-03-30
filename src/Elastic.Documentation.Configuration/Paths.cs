@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -81,9 +82,14 @@ public static class Paths
 
 	private static DirectoryInfo InitGitCommonRoot()
 	{
-		var fs = new FileSystem();
-		var root = fs.DirectoryInfo.New(WorkingDirectoryRoot.FullName);
-		return new DirectoryInfo(ResolveGitCommonRoot(fs, root).FullName);
+		var root = WorkingDirectoryRoot.FullName;
+		var fs = new ScopedFileSystem(new FileSystem(), new ScopedFileSystemOptions(root)
+		{
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
+		});
+		var rootDir = fs.DirectoryInfo.New(root);
+		return new DirectoryInfo(ResolveGitCommonRoot(fs, rootDir).FullName);
 	}
 
 	/// Used in debug to locate static folder, so we can change js/css files while the server is running

@@ -26,7 +26,7 @@ internal sealed class NavigationCommands(
 	public async Task<int> Validate(Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, new FileSystem());
+		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, FileSystemFactory.Real);
 		serviceInvoker.AddCommand(service, static async (s, collector, ctx) => await s.Validate(collector, ctx));
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
@@ -38,7 +38,7 @@ internal sealed class NavigationCommands(
 	public async Task<int> ValidateLocalLinkReference([Argument] string? file = null, Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, new FileSystem());
+		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, FileSystemFactory.Real);
 		serviceInvoker.AddCommand(service, file, static async (s, collector, file, ctx) => await s.ValidateLocalLinkReference(collector, file, ctx));
 		return await serviceInvoker.InvokeAsync(ctx);
 	}

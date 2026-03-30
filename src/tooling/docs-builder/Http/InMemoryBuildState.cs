@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using Actions.Core;
@@ -54,7 +53,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly List<DiagnosticDto> _diagnostics = [];
 
 	// Reuse MockFileSystem across builds to benefit from caching
-	private readonly MockFileSystem _writeFs = new();
+	private readonly IFileSystem _writeFs = FileSystemFactory.InMemory();
 
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();
@@ -169,7 +168,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			// Create a diagnostics collector that streams to our channel
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
-			var readFs = new FileSystem();
+			var readFs = FileSystemFactory.Real;
 			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
 
 			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);

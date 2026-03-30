@@ -8,6 +8,8 @@
 
     <ItemGroup>
       <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="Nullean.ScopedFileSystem" />
+    <PackageReference Include="System.IO.Abstractions" />
     </ItemGroup>
 
     <ItemGroup>

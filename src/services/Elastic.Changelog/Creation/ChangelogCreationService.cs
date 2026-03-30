@@ -66,11 +66,11 @@ IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.Real);
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
-	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? new FileSystem(), logFactory.CreateLogger<ChangelogFileWriter>());
+	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? FileSystemFactory.Real, logFactory.CreateLogger<ChangelogFileWriter>());
 	private readonly ProductInferService _productInferService = new(
 		configurationContext.ProductsConfiguration);
 

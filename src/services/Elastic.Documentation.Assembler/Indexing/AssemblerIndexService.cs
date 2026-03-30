@@ -52,7 +52,7 @@ public class AssemblerIndexService(
 	/// <param name="ctx"></param>
 	/// <returns></returns>
 	public async Task<bool> Index(IDiagnosticsCollector collector,
-		FileSystem fileSystem,
+		IFileSystem fileSystem,
 		string? endpoint = null,
 		string? environment = null,
 		string? apiKey = null,

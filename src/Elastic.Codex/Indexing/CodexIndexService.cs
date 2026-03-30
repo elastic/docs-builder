@@ -30,7 +30,7 @@ public class CodexIndexService(
 	public async Task<bool> Index(
 		CodexContext codexContext,
 		CodexCloneResult cloneResult,
-		FileSystem fileSystem,
+		IFileSystem fileSystem,
 		ElasticsearchIndexOptions esOptions,
 		Cancel ctx = default)
 	{

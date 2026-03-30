@@ -29,7 +29,7 @@ internal sealed class DiffCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new LocalChangeTrackingService(logFactory, configurationContext);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.Real;
 
 		serviceInvoker.AddCommand(service, (path, fs),
 				async static (s, collector, state, _) => await s.ValidateRedirects(collector, state.path, state.fs)

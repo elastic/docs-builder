@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Links;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.LinkIndex;
 
@@ -32,7 +33,14 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));
 
 		_environment = environment;
-		_fileSystem = fileSystem ?? new FileSystem();
+		_fileSystem = fileSystem ?? new ScopedFileSystem(
+			new FileSystem(),
+			new ScopedFileSystemOptions(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
+			{
+				AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".docs-builder", ".git" },
+				AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".gitignore" }
+			}
+		);
 		_skipFetch = skipFetch;
 	}
 

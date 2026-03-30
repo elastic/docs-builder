@@ -17,7 +17,7 @@ public class RepositoryPublishValidationService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
-	FileSystem fileSystem
+	IFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<RepositoryPublishValidationService>();

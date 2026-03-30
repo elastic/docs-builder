@@ -25,7 +25,7 @@ public class AssemblerSitemapService(
 
 	public async Task<bool> GenerateSitemapAsync(
 		IDiagnosticsCollector collector,
-		FileSystem fileSystem,
+		IFileSystem fileSystem,
 		string? endpoint = null,
 		string? environment = null,
 		string? apiKey = null,

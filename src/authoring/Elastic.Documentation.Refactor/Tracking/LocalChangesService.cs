@@ -19,7 +19,7 @@ public class LocalChangeTrackingService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<LocalChangeTrackingService>();
 
-	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, FileSystem fs)
+	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, IFileSystem fs)
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 

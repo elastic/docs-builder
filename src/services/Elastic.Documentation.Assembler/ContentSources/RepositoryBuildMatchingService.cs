@@ -18,7 +18,7 @@ public class RepositoryBuildMatchingService(
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	FileSystem fileSystem
+	IFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<RepositoryBuildMatchingService>();

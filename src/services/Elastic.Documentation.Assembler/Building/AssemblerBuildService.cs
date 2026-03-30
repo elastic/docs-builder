@@ -36,7 +36,7 @@ public class AssemblerBuildService(
 		bool? showHints,
 		IReadOnlySet<Exporter>? exporters,
 		bool? assumeBuild,
-		FileSystem fs,
+		IFileSystem fs,
 		Cancel ctx
 	)
 	{
