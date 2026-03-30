@@ -17,7 +17,7 @@ namespace Elastic.Changelog.Bundling;
 public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSystem? fileSystem = null)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<PromotionReportParser>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.Real;
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 	private static readonly HttpClient HttpClient = new();
 
 	static PromotionReportParser()

@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1783.5699999999997 1041.6" width="1783.5699999999997" height="1041.6" style="--bg:#FFFFFF;--fg:#27272A;--accent:#3b82f6">
+<style>
+  text { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  .mono { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', monospace; }
+  svg {
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 55%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 35%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 20%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 32%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 70%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 4%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 22%, var(--bg)));
+    --_group-fill:    color-mix(in srgb, var(--fg) 3%, var(--bg));
+    --_group-hdr:     color-mix(in srgb, var(--fg) 4%, var(--bg));
+    --_group-stroke:  color-mix(in srgb, var(--fg) 10%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 10%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 8%, var(--bg));
+    --_accent-fill:   color-mix(in srgb, var(--accent, var(--fg)) 8%, var(--bg));
+    --_accent-stroke: color-mix(in srgb, var(--accent, var(--fg)) 20%, var(--bg));
+    --_accent-text:   color-mix(in srgb, var(--accent, var(--fg)) 65%, var(--bg));
+    --fs-xs: 0.75rem;
+    --fs-s:  0.875rem;
+    --fs-m:  1rem;
+    --fs-l:  1.125rem;
+  }
+  .node, .actor, .entity, .class-node { filter: drop-shadow(0 1px 3px rgba(0,0,0,.07)); }
+  .subgraph { filter: drop-shadow(0 1px 2px rgba(0,0,0,.04)); }
+</style>
+
+<defs>
+  <marker id="arrowhead" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="12" refY="6" orient="auto">
+    <polygon points="0 0, 12 6, 0 12" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="1" refY="6" orient="auto-start-reverse">
+    <polygon points="12 0, 0 6, 12 12" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+
+<g class="subgraph" data-id="inputs" data-label="Inputs">
+  <rect x="642.1899999999998" y="40" width="912.2539999999999" height="160.8" rx="8" ry="8" fill="var(--_group-fill)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+</g>
+
+<g class="subgraph" data-id="navAssembly" data-label="Navigation Assembly">
+  <rect x="508.61199999999997" y="234.39999999999998" width="718.9775000000001" height="414.79999999999995" rx="8" ry="8" fill="var(--_group-fill)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+</g>
+
+<g class="subgraph" data-id="dualVal" data-label="Dual Validation — both must pass">
+  <rect x="1099.7619999999997" y="524.8" width="643.808" height="142.60000000000002" rx="8" ry="8" fill="var(--_group-fill)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+</g>
+
+<g class="subgraph" data-id="contentProc" data-label="Content Processing — per file">
+  <rect x="40" y="700.9999999999999" width="1046.6299999999999" height="142.60000000000002" rx="8" ry="8" fill="var(--_group-fill)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+</g>
+
+<g class="subgraph" data-id="outputLayer" data-label="Output">
+  <rect x="535.7859999999998" y="877.1999999999999" width="719.5339999999999" height="124.39999999999998" rx="8" ry="8" fill="var(--_group-fill)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+</g>
+
+<path class="edge" data-from="navYml" data-to="v1Nav" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M1024.388,130.2 L1024.388,234.39999999999998" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="navV2Yml" data-to="v1Nav" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M1209.8389999999997,130.2 L1209.8389999999997,234.39999999999998" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="repoCheckouts" data-to="v1Nav" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M1431.9979999999998,184.8 L1431.9979999999998,304.59999999999997 Q1431.9979999999998,310.59999999999997 1425.9979999999998,310.59999999999997 L1227.5895,310.59999999999997" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="v1Nav" data-to="valV1" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M1211.5895,310.59999999999997 L1247.7289999999998,310.59999999999997 Q1253.7289999999998,310.59999999999997 1253.7289999999998,316.59999999999997 L1253.7289999999998,524.8" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="v1Nav" data-to="fileLookup" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M980.3435,310.59999999999997 L944.2039999999998,310.59999999999997 Q938.2039999999998,310.59999999999997 938.2039999999998,316.59999999999997 L938.2039999999998,568.8" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="fileLookup" data-to="relLinks" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M938.2039999999998,633.1999999999999 L938.2039999999998,700.9999999999999" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="valV1" data-to="relLinks" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="both pass" d="M1253.7289999999998,633.1999999999999 L1253.7289999999998,780.2999999999998 Q1253.7289999999998,786.2999999999998 1247.7289999999998,786.2999999999998 L1086.6299999999999,786.2999999999998" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="relLinks" data-to="pathProvider" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M967.3759999999999,827.5999999999999 L967.3759999999999,868.3999999999999 Q967.3759999999999,874.3999999999999 973.3759999999999,874.3999999999999 L1115.9129999999996,874.3999999999999 Q1117.3129999999996,874.3999999999999 1117.3129999999996,875.8 L1117.3129999999996,877.1999999999999" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="assemblerYml" data-to="pathProvider" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="nav-v2 flag" d="M760.646,148.4 L760.646,272.4 Q760.646,278.4 760.646,284.4 L760.646,562.8 Q760.646,568.8 760.646,574.8 L760.646,650.8999999999999 Q760.646,656.8999999999999 766.646,656.8999999999999 L822.1219999999998,656.8999999999999 Q828.1219999999998,656.8999999999999 828.1219999999998,662.8999999999999 L828.1219999999998,738.9999999999999 Q828.1219999999998,744.9999999999999 828.1219999999998,750.9999999999999 L828.1219999999998,827.0999999999999 Q828.1219999999998,833.0999999999999 834.1219999999998,833.0999999999999 L1111.3129999999996,833.0999999999999 Q1117.3129999999996,833.0999999999999 1117.3129999999996,839.0999999999999 L1117.3129999999996,877.1999999999999" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="repoCheckouts" data-to="relLinks" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label=".md source files" d="M1431.9979999999998,184.8 L1427.97147841529,272.40632736607097 Q1427.696,278.4 1427.696,284.4 L1427.696,562.8 Q1427.696,568.8 1427.696,574.8 L1427.696,780.2999999999998 Q1427.696,786.2999999999998 1421.696,786.2999999999998 L1086.6299999999999,786.2999999999998" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />  <rect x="642.1899999999998" y="40" width="912.2539999999999" height="28" rx="8" ry="8" fill="var(--_group-hdr)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+  <text x="654.1899999999998" y="54" font-size="var(--fs-s)" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Inputs</text>
+  <rect x="508.61199999999997" y="234.39999999999998" width="718.9775000000001" height="28" rx="8" ry="8" fill="var(--_group-hdr)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+  <text x="520.612" y="248.39999999999998" font-size="var(--fs-s)" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Navigation Assembly</text>
+  <rect x="1099.7619999999997" y="524.8" width="643.808" height="28" rx="8" ry="8" fill="var(--_group-hdr)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+  <text x="1111.7619999999997" y="538.8" font-size="var(--fs-s)" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Dual Validation — both must pass</text>
+  <rect x="40" y="700.9999999999999" width="1046.6299999999999" height="28" rx="8" ry="8" fill="var(--_group-hdr)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+  <text x="52" y="714.9999999999999" font-size="var(--fs-s)" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Content Processing — per file</text>
+  <rect x="535.7859999999998" y="877.1999999999999" width="719.5339999999999" height="28" rx="8" ry="8" fill="var(--_group-hdr)" stroke="var(--_group-stroke)" stroke-width="1.75" />
+  <text x="547.7859999999998" y="891.1999999999999" font-size="var(--fs-s)" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Output</text>
+
+<g class="edge-label" data-from="valV1" data-to="relLinks" data-label="both pass">
+  <rect x="1146.6414" y="717.1999999999999" width="67.696" height="31.6" rx="10" ry="10" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+<text x="1180.4894" y="732.9999999999999" text-anchor="middle" font-size="var(--fs-s)" font-weight="400" fill="var(--_text-sec)" dy="4.199999999999999">both pass</text>
+</g>
+<g class="edge-label" data-from="assemblerYml" data-to="pathProvider" data-label="nav-v2 flag">
+  <rect x="723.882" y="378.75999999999993" width="73.52800000000002" height="31.6" rx="10" ry="10" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+<text x="760.646" y="394.55999999999995" text-anchor="middle" font-size="var(--fs-s)" font-weight="400" fill="var(--_text-sec)" dy="4.199999999999999">nav-v2 flag</text>
+</g>
+<g class="edge-label" data-from="repoCheckouts" data-to="relLinks" data-label=".md source files">
+  <rect x="1236.4415999999999" y="717.1999999999999" width="96.85600000000001" height="31.6" rx="10" ry="10" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+<text x="1284.8696" y="732.9999999999999" text-anchor="middle" font-size="var(--fs-s)" font-weight="400" fill="var(--_text-sec)" dy="4.199999999999999">.md source files</text>
+</g>
+<g class="node" data-id="assemblerYml" data-label="assembler.yml
+env config + feature flags" data-shape="rectangle">
+  <rect x="658.1899999999998" y="84" width="204.912" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="760.6459999999998" y="116.2" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="760.6459999999998" dy="-4.2">assembler.yml</tspan><tspan x="760.6459999999998" dy="18.2">env config + feature flags</tspan></text>
+</g>
+<g class="node" data-id="navYml" data-label="navigation.yml" data-shape="rectangle">
+  <rect x="954.6499999999997" y="84" width="139.476" height="46.2" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="1024.3879999999997" y="107.1" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)" dy="4.8999999999999995">navigation.yml</text>
+</g>
+<g class="node" data-id="navV2Yml" data-label="navigation-v2.yml" data-shape="rectangle">
+  <rect x="1130.1259999999997" y="84" width="159.426" height="46.2" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="1209.8389999999997" y="107.1" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)" dy="4.8999999999999995">navigation-v2.yml</text>
+</g>
+<g class="node" data-id="repoCheckouts" data-label="Repo checkouts
+docset.yml / docset-v2.yml
+toc.yml / toc-v2.yml
+content .md files" data-shape="rectangle">
+  <rect x="1325.5519999999997" y="84" width="212.89199999999997" height="100.8" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="1431.9979999999996" y="134.4" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="1431.9979999999996" dy="-22.4">Repo checkouts</tspan><tspan x="1431.9979999999996" dy="18.2">docset.yml / docset-v2.yml</tspan><tspan x="1431.9979999999996" dy="18.2">toc.yml / toc-v2.yml</tspan><tspan x="1431.9979999999996" dy="18.2">content .md files</tspan></text>
+</g>
+<g class="node" data-id="v1Nav" data-label="V1 SiteNavigation
++ V1 NavigationTocMappings" data-shape="rectangle">
+  <rect x="980.3435" y="278.4" width="231.24599999999998" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="1095.9665" y="310.59999999999997" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="1095.9665" dy="-4.2">V1 SiteNavigation</tspan><tspan x="1095.9665" dy="18.2">+ V1 NavigationTocMappings</tspan></text>
+</g>
+<g class="node" data-id="v2Nav" data-label="V2 SiteNavigationV2
++ V2 NavigationTocMappings" data-shape="rectangle">
+  <rect x="524.612" y="568.8" width="236.03399999999993" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="642.6289999999999" y="601" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="642.6289999999999" dy="-4.2">V2 SiteNavigationV2</tspan><tspan x="642.6289999999999" dy="18.2">+ V2 NavigationTocMappings</tspan></text>
+</g>
+<g class="node" data-id="fileLookup" data-label="NavigationDocumentationFileLookup
+file path → output URL" data-shape="rectangle">
+  <rect x="796.646" y="568.8" width="283.11599999999993" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="938.204" y="601" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="938.204" dy="-4.2">NavigationDocumentationFileLookup</tspan><tspan x="938.204" dy="18.2">file path → output URL</tspan></text>
+</g>
+<g class="node" data-id="valV1" data-label="V1
+path prefixes + completeness + links" data-shape="rectangle">
+  <rect x="1115.7619999999997" y="568.8" width="275.93399999999997" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="1253.7289999999998" y="601" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="1253.7289999999998" dy="-4.2">V1</tspan><tspan x="1253.7289999999998" dy="18.2">path prefixes + completeness + links</tspan></text>
+</g>
+<g class="node" data-id="valV2" data-label="V2
+path prefixes + completeness
+cross-nav aliasing + migration warnings" data-shape="rectangle">
+  <rect x="1427.696" y="568.8" width="299.8739999999999" height="82.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="1577.6329999999998" y="610.0999999999999" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="1577.6329999999998" dy="-13.3">V2</tspan><tspan x="1577.6329999999998" dy="18.2">path prefixes + completeness</tspan><tspan x="1577.6329999999998" dy="18.2">cross-nav aliasing + migration warnings</tspan></text>
+</g>
+<g class="node" data-id="relLinks" data-label="Relative links
+validate source-side
+emit URL from nav lookup" data-shape="rectangle">
+  <rect x="864.1219999999998" y="744.9999999999999" width="206.508" height="82.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="967.3759999999999" y="786.2999999999998" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="967.3759999999999" dy="-13.3">Relative links</tspan><tspan x="967.3759999999999" dy="18.2">validate source-side</tspan><tspan x="967.3759999999999" dy="18.2">emit URL from nav lookup</tspan></text>
+</g>
+<g class="node" data-id="images" data-label="Images
+validate source-side
+copy via path provider" data-shape="rectangle">
+  <rect x="56" y="744.9999999999999" width="191.346" height="82.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="151.673" y="786.2999999999998" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="151.673" dy="-13.3">Images</tspan><tspan x="151.673" dy="18.2">validate source-side</tspan><tspan x="151.673" dy="18.2">copy via path provider</tspan></text>
+</g>
+<g class="node" data-id="includes" data-label="Include directives
+100 percent source-based
+unaffected by path changes" data-shape="rectangle">
+  <rect x="283.346" y="744.9999999999999" width="221.67" height="82.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="394.181" y="786.2999999999998" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="394.181" dy="-13.3">Include directives</tspan><tspan x="394.181" dy="18.2">100 percent source-based</tspan><tspan x="394.181" dy="18.2">unaffected by path changes</tspan></text>
+</g>
+<g class="node" data-id="xlinks" data-label="Cross-links repo://path
+resolved via NavigationTocMappings
+→ V1 or V2 output URL" data-shape="rectangle">
+  <rect x="541.016" y="744.9999999999999" width="287.10599999999994" height="82.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="684.569" y="786.2999999999998" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="684.569" dy="-13.3">Cross-links repo://path</tspan><tspan x="684.569" dy="18.2">resolved via NavigationTocMappings</tspan><tspan x="684.569" dy="18.2">→ V1 or V2 output URL</tspan></text>
+</g>
+<g class="node" data-id="pathProvider" data-label="GlobalNavigationPathProvider
+flag-injected: V1 or V2 mappings" data-shape="rectangle">
+  <rect x="995.3059999999998" y="921.1999999999999" width="244.01399999999998" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="1117.3129999999999" y="953.4" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="1117.3129999999999" dy="-4.2">GlobalNavigationPathProvider</tspan><tspan x="1117.3129999999999" dy="18.2">flag-injected: V1 or V2 mappings</tspan></text>
+</g>
+<g class="node" data-id="sidebarHtml" data-label="Sidebar HTML
+V1 or V2 tree per flag" data-shape="rectangle">
+  <rect x="551.7859999999998" y="921.1999999999999" width="176.982" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="640.2769999999998" y="953.4" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="640.2769999999998" dy="-4.2">Sidebar HTML</tspan><tspan x="640.2769999999998" dy="18.2">V1 or V2 tree per flag</tspan></text>
+</g>
+<g class="node" data-id="outputFiles" data-label="Output files
+written at V1 or V2 paths" data-shape="rectangle">
+  <rect x="764.7679999999998" y="921.1999999999999" width="194.538" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="862.0369999999998" y="953.4" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="862.0369999999998" dy="-4.2">Output files</tspan><tspan x="862.0369999999998" dy="18.2">written at V1 or V2 paths</tspan></text>
+</g>
+</svg>

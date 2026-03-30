@@ -14,7 +14,7 @@ namespace Documentation.Builder.Commands;
 
 internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector)
 {
-	private readonly LinkIndexService _linkIndexService = new(logFactory, FileSystemFactory.Real);
+	private readonly LinkIndexService _linkIndexService = new(logFactory, FileSystemFactory.RealRead);
 
 	/// <summary> Validate all published cross_links in all published links.json files. </summary>
 	/// <param name="ctx"></param>

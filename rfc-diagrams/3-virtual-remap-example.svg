@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1173.896 272.6" width="1173.896" height="272.6" style="--bg:#FFFFFF;--fg:#27272A;--accent:#3b82f6">
+<style>
+  text { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  .mono { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', monospace; }
+  svg {
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 55%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 35%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 20%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 32%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 70%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 4%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 22%, var(--bg)));
+    --_group-fill:    color-mix(in srgb, var(--fg) 3%, var(--bg));
+    --_group-hdr:     color-mix(in srgb, var(--fg) 4%, var(--bg));
+    --_group-stroke:  color-mix(in srgb, var(--fg) 10%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 10%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 8%, var(--bg));
+    --_accent-fill:   color-mix(in srgb, var(--accent, var(--fg)) 8%, var(--bg));
+    --_accent-stroke: color-mix(in srgb, var(--accent, var(--fg)) 20%, var(--bg));
+    --_accent-text:   color-mix(in srgb, var(--accent, var(--fg)) 65%, var(--bg));
+    --fs-xs: 0.75rem;
+    --fs-s:  0.875rem;
+    --fs-m:  1rem;
+    --fs-l:  1.125rem;
+  }
+  .node, .actor, .entity, .class-node { filter: drop-shadow(0 1px 3px rgba(0,0,0,.07)); }
+  .subgraph { filter: drop-shadow(0 1px 2px rgba(0,0,0,.04)); }
+</style>
+
+<defs>
+  <marker id="arrowhead" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="12" refY="6" orient="auto">
+    <polygon points="0 0, 12 6, 0 12" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="1" refY="6" orient="auto-start-reverse">
+    <polygon points="12 0, 0 6, 12 12" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+
+<path class="edge" data-from="src" data-to="v1" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M173.57799999999997,100.2 L173.57799999999997,78.2 Q173.57799999999997,72.2 179.57799999999997,72.2 L379.15599999999995,72.2" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="src" data-to="v2" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M173.57799999999997,164.60000000000002 L173.57799999999997,186.60000000000002 Q173.57799999999997,192.60000000000002 179.57799999999997,192.60000000000002 L379.15599999999995,192.60000000000002" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="v1" data-to="v1out" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M483.2079999999999,104.4 L483.2079999999999,88.2 Q483.2079999999999,82.2 489.2079999999999,82.2 L753.424,82.2" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="v2" data-to="v2out" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M530.29,160.4 L530.29,176.60000000000002 Q530.29,182.60000000000002 536.29,182.60000000000002 L753.424,182.60000000000002" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<g class="node" data-id="src" data-label="manage-data/ingest/some-page.md
+(source — unchanged on disk)" data-shape="rectangle">
+  <rect x="40" y="100.2" width="267.15599999999995" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="173.57799999999997" y="132.4" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="173.57799999999997" dy="-4.2">manage-data/ingest/some-page.md</tspan><tspan x="173.57799999999997" dy="18.2">(source — unchanged on disk)</tspan></text>
+</g>
+<g class="node" data-id="v1" data-label="V1 build
+path_prefix: manage-data" data-shape="rectangle">
+  <rect x="379.15599999999995" y="40" width="208.10399999999993" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="483.2079999999999" y="72.2" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="483.2079999999999" dy="-4.2">V1 build</tspan><tspan x="483.2079999999999" dy="18.2">path_prefix: manage-data</tspan></text>
+</g>
+<g class="node" data-id="v2" data-label="V2 build
+path_prefix: elasticsearch-fundamentals" data-shape="rectangle">
+  <rect x="379.15599999999995" y="160.4" width="302.268" height="64.4" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="530.29" y="192.60000000000002" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="530.29" dy="-4.2">V2 build</tspan><tspan x="530.29" dy="18.2">path_prefix: elasticsearch-fundamentals</tspan></text>
+</g>
+<g class="node" data-id="v1out" data-label="/docs/manage-data/ingest/some-page" data-shape="rectangle">
+  <rect x="753.424" y="59.1" width="286.308" height="46.2" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="896.578" y="82.2" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)" dy="4.8999999999999995">/docs/manage-data/ingest/some-page</text>
+</g>
+<g class="node" data-id="v2out" data-label="/docs/elasticsearch-fundamentals/ingest/some-page" data-shape="rectangle">
+  <rect x="753.424" y="159.5" width="380.472" height="46.2" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="943.66" y="182.6" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)" dy="4.8999999999999995">/docs/elasticsearch-fundamentals/ingest/some-page</text>
+</g>
+</svg>

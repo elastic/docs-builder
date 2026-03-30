@@ -10,13 +10,23 @@ namespace Elastic.Documentation.Configuration;
 
 public static class FileSystemFactory
 {
-	// Workspace options: covers working directory root + per-user app data.
-	// Only hidden names with confirmed IFileSystem access are allowed.
-	private static readonly ScopedFileSystemOptions WorkspaceOptions = new(
+	// Read options: workspace + app data, all confirmed hidden names allowed.
+	// Includes .git (GitCheckoutInformation reads it) and .artifacts/.doc.state
+	// (incremental build reads existing output state).
+	private static readonly ScopedFileSystemOptions ReadOptions = new(
 		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+	};
+
+	// Write options: same scope roots but no .git — nothing in the build output
+	// pipeline should ever write into the git repository metadata.
+	private static readonly ScopedFileSystemOptions WriteOptions = new(
+		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
+	{
+		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
+		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" }
 	};
 
 	// AppData-only options: for components that only access caches/state files.
@@ -28,11 +38,19 @@ public static class FileSystemFactory
 	};
 
 	/// <summary>
-	/// A pre-allocated <see cref="ScopedFileSystem"/> wrapping a real <see cref="FileSystem"/>,
-	/// scoped to the working directory root and the per-user <c>elastic/docs-builder</c>
-	/// application data folder. Use for all normal file system operations.
+	/// A pre-allocated <see cref="ScopedFileSystem"/> for reading workspace files.
+	/// Scoped to the working directory root and per-user app data; allows <c>.git</c>
+	/// (read by <c>GitCheckoutInformation</c>), <c>.artifacts</c> and <c>.doc.state</c>
+	/// (read for incremental build state).
 	/// </summary>
-	public static IFileSystem Real { get; } = new ScopedFileSystem(new FileSystem(), WorkspaceOptions);
+	public static IFileSystem RealRead { get; } = new ScopedFileSystem(new FileSystem(), ReadOptions);
+
+	/// <summary>
+	/// A pre-allocated <see cref="ScopedFileSystem"/> for writing build output.
+	/// Same scope as <see cref="RealRead"/> but without <c>.git</c> access —
+	/// nothing in the output pipeline should write into git repository metadata.
+	/// </summary>
+	public static IFileSystem RealWrite { get; } = new ScopedFileSystem(new FileSystem(), WriteOptions);
 
 	/// <summary>
 	/// A pre-allocated <see cref="ScopedFileSystem"/> scoped only to the per-user
@@ -44,16 +62,16 @@ public static class FileSystemFactory
 
 	/// <summary>
 	/// Creates a new <see cref="ScopedFileSystem"/> wrapping a fresh <see cref="MockFileSystem"/>,
-	/// using the standard workspace options. Each call returns a new independent in-memory file system.
+	/// using the read workspace options. Each call returns a new independent in-memory file system.
 	/// </summary>
-	public static IFileSystem InMemory() => CreateScoped(new MockFileSystem());
+	public static IFileSystem InMemory() => new ScopedFileSystem(new MockFileSystem(), ReadOptions);
 
 	/// <summary>
 	/// Creates a <see cref="ScopedFileSystem"/> wrapping any <paramref name="inner"/> <see cref="IFileSystem"/>
-	/// (e.g. <c>MockFileSystem</c>), using the standard workspace options.
+	/// (e.g. <c>MockFileSystem</c>), using the read workspace options.
 	/// </summary>
 	public static IFileSystem CreateScoped(IFileSystem inner) =>
-		new ScopedFileSystem(inner, WorkspaceOptions);
+		new ScopedFileSystem(inner, ReadOptions);
 
 	/// <summary>
 	/// Creates a <see cref="ScopedFileSystem"/> wrapping any <paramref name="inner"/> <see cref="IFileSystem"/>

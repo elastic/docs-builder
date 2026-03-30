@@ -12,7 +12,7 @@ public static class CsvReader
 {
 	public static IEnumerable<string[]> ReadCsvFile(string filePath, string separator, IFileSystem? fileSystem = null)
 	{
-		var fs = fileSystem ?? FileSystemFactory.Real;
+		var fs = fileSystem ?? FileSystemFactory.RealRead;
 		return ReadWithSep(filePath, separator, fs);
 	}
 

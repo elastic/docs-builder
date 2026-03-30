@@ -28,7 +28,7 @@ internal sealed class ConfigurationCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.Real;
+		var fs = FileSystemFactory.RealRead;
 		var service = new ConfigurationCloneService(logFactory, assemblyConfiguration, fs);
 		serviceInvoker.AddCommand(service, (gitRef, local), static async (s, collector, state, ctx) =>
 			await s.InitConfigurationToApplicationData(collector, state.gitRef, state.local, ctx));

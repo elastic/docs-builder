@@ -39,7 +39,7 @@ internal sealed partial class ChangelogCommand(
 	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
 	private static partial Regex BundleOutputDirectoryRegex();
 
-	private readonly IFileSystem _fileSystem = FileSystemFactory.Real;
+	private readonly IFileSystem _fileSystem = FileSystemFactory.RealRead;
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommand>();
 	/// <summary>
 	/// Changelog commands. Use 'changelog add' to create a new changelog or 'changelog bundle' to create a consolidated list of changelogs.

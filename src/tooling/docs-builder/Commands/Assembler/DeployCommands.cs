@@ -33,7 +33,7 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.Real;
+		var fs = FileSystemFactory.RealRead;
 		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, fs);
 		serviceInvoker.AddCommand(service, (environment, s3BucketName, @out, deleteThreshold),
 			static async (s, collector, state, ctx) => await s.Plan(collector, state.environment, state.s3BucketName, state.@out, state.deleteThreshold, ctx)
@@ -51,7 +51,7 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.Real;
+		var fs = FileSystemFactory.RealRead;
 		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, fs);
 		serviceInvoker.AddCommand(service, (environment, s3BucketName, planFile),
 			static async (s, collector, state, ctx) => await s.Apply(collector, state.environment, state.s3BucketName, state.planFile, ctx)
@@ -68,7 +68,7 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.Real;
+		var fs = FileSystemFactory.RealRead;
 		var service = new DeployUpdateRedirectsService(logFactory, fs);
 		serviceInvoker.AddCommand(service, (environment, redirectsFile),
 			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile, ctx: ctx)

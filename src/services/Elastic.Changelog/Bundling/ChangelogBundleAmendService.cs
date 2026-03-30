@@ -43,7 +43,7 @@ public record AmendBundleArguments
 public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFileSystem? fileSystem = null) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundleAmendService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.Real;
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 
 	[GeneratedRegex(@"\.amend-(\d+)\.ya?ml$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();

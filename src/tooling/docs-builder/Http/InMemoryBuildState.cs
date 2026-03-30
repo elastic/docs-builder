@@ -168,7 +168,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			// Create a diagnostics collector that streams to our channel
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
-			var readFs = FileSystemFactory.Real;
+			var readFs = FileSystemFactory.RealRead;
 			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
 
 			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
