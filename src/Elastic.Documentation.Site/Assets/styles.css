@@ -145,7 +145,8 @@ body {
 		grid-template-columns: minmax(0, 280px) 1fr;
 	}
 
-	body:has([data-nav-v2]) div.grid.w-full.h-full:has(> aside.sidebar:first-child) {
+	body:has([data-nav-v2])
+		div.grid.w-full.h-full:has(> aside.sidebar:first-child) {
 		grid-template-columns: minmax(0, 280px) 1fr;
 	}
 }
@@ -167,7 +168,10 @@ body:has([data-nav-v2]) aside.sidebar {
 }
 
 /* Folder child lists: hidden when checkbox unchecked (fixes conflict: global ul{display:flex} beat Tailwind .hidden) */
-#pages-nav nav[data-nav-v2] li.group-navigation > ul.docs-sidebar-nav-v2__folder-children {
+#pages-nav
+	nav[data-nav-v2]
+	li.group-navigation
+	> ul.docs-sidebar-nav-v2__folder-children {
 	display: none;
 	flex-direction: column;
 	list-style: none;
@@ -192,7 +196,9 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--nested {
 }
 
 /* Nav V2: top-level section titles — icon 16×16, 8px gap via gap-2 on flex parent */
-nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top .docs-sidebar-nav-v2__label-icon {
+nav.docs-sidebar-nav-v2
+	.docs-sidebar-nav-v2__label--top
+	.docs-sidebar-nav-v2__label-icon {
 	display: block;
 	width: 16px;
 	height: 16px;
@@ -222,7 +228,9 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top .docs-sidebar-nav-v2__l
 	color: #516381;
 }
 
-#pages-nav nav[data-nav-v2] a.sidebar-link:not(.text-grey-40):not(.current):hover {
+#pages-nav
+	nav[data-nav-v2]
+	a.sidebar-link:not(.text-grey-40):not(.current):hover {
 	color: #1d2a3e;
 	background-color: transparent;
 }
@@ -263,23 +271,35 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top .docs-sidebar-nav-v2__l
 	background-color: transparent;
 }
 
-#pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link:not(.current):hover {
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-subtree
+	a.sidebar-link:not(.current):hover {
 	color: #1d2a3e;
 	background-color: transparent !important;
 }
 
 #pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link.current,
-#pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link.current:hover {
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-subtree
+	a.sidebar-link.current:hover {
 	background-color: transparent !important;
 }
 
-#pages-nav nav[data-nav-v2] li.nav-v2-active-leaf > a.sidebar-link:not(.current):hover {
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-leaf
+	> a.sidebar-link:not(.current):hover {
 	color: #1d2a3e;
 	background-color: transparent !important;
 }
 
 #pages-nav nav[data-nav-v2] li.nav-v2-active-leaf > a.sidebar-link.current,
-#pages-nav nav[data-nav-v2] li.nav-v2-active-leaf > a.sidebar-link.current:hover {
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-leaf
+	> a.sidebar-link.current:hover {
 	background-color: transparent !important;
 }
 
@@ -291,7 +311,10 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top .docs-sidebar-nav-v2__l
 	transform: rotate(-90deg);
 }
 
-.docs-sidebar-nav-v2 .nav-folder-peer:has(input[type='checkbox']:checked) .nav-folder-chevron svg {
+.docs-sidebar-nav-v2
+	.nav-folder-peer:has(input[type='checkbox']:checked)
+	.nav-folder-chevron
+	svg {
 	transform: rotate(0deg);
 }
 
