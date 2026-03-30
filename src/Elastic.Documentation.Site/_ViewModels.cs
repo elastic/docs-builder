@@ -20,7 +20,7 @@ public static class GlobalSections
 }
 
 /// <summary>Configuration injected into the frontend for build-type-specific behavior (OTEL, HTMX).</summary>
-public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath, string ApiBasePath);
+public record FrontendConfig(string BuildType, string ServiceName, bool TelemetryEnabled, string RootPath, string ApiBasePath, bool AirGapped = false);
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
 public record CodexBreadcrumb(string Title, string? Url);
@@ -77,7 +77,10 @@ public record GlobalLayoutViewModel
 	public FrontendConfig FrontendConfig =>
 		BuildType switch
 		{
-			BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
+			BuildType.Assembler when Features.AirGappedEnabled =>
+				new FrontendConfig("assembler", "docs-frontend", false, StaticPathPrefix, ApiBasePath, AirGapped: true),
+			BuildType.Assembler =>
+				new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
 			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
 			_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
 		};

@@ -21,6 +21,11 @@ export const useSearchAvailability = (): AvailabilityResult => {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['search-availability', FAIL_MODE],
         queryFn: async () => {
+            // Air-gapped: no API available
+            if (config.airGapped) {
+                return { available: false }
+            }
+
             // Demo mode: fail=unavailable simulates service unavailability
             if (FAIL_MODE === 'unavailable') {
                 return { available: false }
