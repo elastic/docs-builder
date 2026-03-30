@@ -1,9 +1,13 @@
+import tippy from 'tippy.js'
+import type { Instance } from 'tippy.js'
 import { $$ } from 'select-dom'
 
 const navV2CollapsedStorageKey = 'docs-builder-nav-v2-collapsed-ids'
 
 let navV2FolderLinkToggleBound = false
 let navV2OutsideCollapseBound = false
+
+let navV2TruncationTippyInstances: Instance[] = []
 
 function readCollapsedFolderIds(): Set<string> {
     try {
@@ -326,15 +330,83 @@ function expandToCurrentPage(nav: HTMLElement) {
     }
 }
 
+function destroyNavV2TruncationTooltips() {
+	for (const instance of navV2TruncationTippyInstances) {
+		instance.destroy()
+	}
+
+	navV2TruncationTippyInstances = []
+}
+
+function measureNavTextEl(ref: HTMLElement, textEl: HTMLElement) {
+	return ref === textEl
+		? textEl
+		: (ref.querySelector<HTMLElement>('.docs-sidebar-nav-v2__nav-text') ?? textEl)
+}
+
+/**
+ * Tippy tooltips only when text is truncated (single-line ellipsis). onShow returns false to cancel.
+ */
+function initNavV2TruncationTooltips(nav: HTMLElement) {
+	destroyNavV2TruncationTooltips()
+
+	const els = nav.querySelectorAll<HTMLElement>('.docs-sidebar-nav-v2__nav-text')
+	for (const el of els) {
+		const full = el.textContent?.trim() ?? ''
+		if (!full) {
+			continue
+		}
+
+		const ref: HTMLElement =
+			el.parentElement?.matches('a.sidebar-link') === true
+				? (el.parentElement as HTMLElement)
+				: el
+
+		const instance = tippy(ref, {
+			content: full,
+			placement: 'right-start',
+			offset: [0, 6],
+			animation: 'fade',
+			duration: [200, 150],
+			arrow: true,
+			maxWidth: 360,
+			appendTo: () => document.body,
+			theme: 'nav-v2-truncate',
+			trigger: 'mouseenter focusin',
+			hideOnClick: true,
+			interactive: false,
+			touch: ['hold', 500],
+			aria: { content: 'describedby' },
+			onShow() {
+				const textEl = measureNavTextEl(ref, el)
+				const label = textEl.textContent?.trim() ?? ''
+				if (!label) {
+					return false
+				}
+
+				instance.setContent(label)
+				if (textEl.scrollWidth <= textEl.clientWidth + 1) {
+					return false
+				}
+			},
+		})
+
+		navV2TruncationTippyInstances.push(instance)
+	}
+}
+
 /**
  * Initialize all V2 nav behaviours on the given sidebar element.
  * Call this on every htmx:load when [data-nav-v2] is present.
  */
 export function initNavV2(nav: HTMLElement) {
-    initAccordion(nav)
-    markCurrentPage(nav)
-    expandToCurrentPage(nav)
-    applyActiveSubtreeHighlight(nav)
+	initAccordion(nav)
+	markCurrentPage(nav)
+	expandToCurrentPage(nav)
+	applyActiveSubtreeHighlight(nav)
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => initNavV2TruncationTooltips(nav))
+	})
 }
 
 ensureNavV2FolderLinkToggle()

@@ -206,6 +206,39 @@ nav.docs-sidebar-nav-v2
 	color: #111c2c;
 }
 
+/* Nav V2: single-line labels/links with ellipsis (flex column needs min-width: 0 on li). */
+#pages-nav nav[data-nav-v2] li {
+	min-width: 0;
+}
+
+/* Override .sidebar-link text-pretty / word-break from @layer components (unlayered wins, but be explicit). */
+#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__nav-text {
+	min-width: 0;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap !important;
+	word-break: normal !important;
+	overflow-wrap: normal !important;
+	text-wrap: nowrap !important;
+}
+
+#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__label--top .docs-sidebar-nav-v2__nav-text {
+	flex: 1 1 0%;
+}
+
+/* Flex row links (folders): clip so the inner span can ellipsis inside flex layout. */
+#pages-nav nav[data-nav-v2] a.sidebar-link.flex {
+	min-width: 0;
+	overflow: hidden;
+}
+
+/* Leaf / placeholder links (no inner flex row): ellipsis on the anchor itself. */
+#pages-nav nav[data-nav-v2] a.sidebar-link.docs-sidebar-nav-v2__nav-text:not(.flex) {
+	display: block;
+	overflow: hidden;
+}
+
 /* Nav V2: real nav links #516381 + light; placeholders keep .text-grey-40. Current = regular (400). */
 #pages-nav nav[data-nav-v2] a.sidebar-link {
 	box-sizing: border-box;
@@ -301,6 +334,10 @@ nav.docs-sidebar-nav-v2
 	li.nav-v2-active-leaf
 	> a.sidebar-link.current:hover {
 	background-color: transparent !important;
+}
+
+#pages-nav nav[data-nav-v2] .nav-folder-peer {
+	min-width: 0;
 }
 
 .docs-sidebar-nav-v2 .nav-folder-peer .nav-folder-chevron svg {
@@ -580,6 +617,13 @@ body {
 
 .tippy-content {
 	white-space: pre-line;
+}
+
+.tippy-box[data-theme~='nav-v2-truncate'] .tippy-content {
+	white-space: normal;
+	word-break: break-word;
+	font-size: 13px;
+	line-height: 1.4;
 }
 
 .icon,

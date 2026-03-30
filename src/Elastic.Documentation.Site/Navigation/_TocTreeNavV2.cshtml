@@ -64,12 +64,12 @@
 							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
 						</svg>
 					}
-					<span class="min-w-0">@label.NavigationTitle</span>
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@label.NavigationTitle</span>
 				</span>
 			}
 			else
 			{
-				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--nested block px-[8px] py-[6px] text-xs leading-4 font-medium uppercase text-[#5A6D8C]">
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--nested docs-sidebar-nav-v2__nav-text block px-[8px] py-[6px] text-xs leading-4 font-medium uppercase text-[#5A6D8C]">
 					@label.NavigationTitle
 				</span>
 			}
@@ -95,7 +95,7 @@
 			<a
 				href="@placeholder.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link grow px-[8px] py-[6px] text-grey-40">
+				class="sidebar-link docs-sidebar-nav-v2__nav-text grow px-[8px] py-[6px] text-grey-40">
 				@placeholder.NavigationTitle
 			</a>
 		</li>
@@ -118,7 +118,7 @@
 					href="@placeholderGroup.Url"
 					@Model.Htmx.GetNavHxAttributes(true)
 					class="sidebar-link flex w-full items-center gap-2 px-[8px] py-[6px] text-grey-40">
-					<span class="min-w-0 flex-1">@placeholderGroup.NavigationTitle</span>
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@placeholderGroup.NavigationTitle</span>
 					@if (!allHidden)
 					{
 						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
@@ -157,7 +157,7 @@
 			<a
 				href="@group.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link px-[8px] py-[6px]"
+				class="sidebar-link docs-sidebar-nav-v2__nav-text px-[8px] py-[6px]"
 			>
 				@group.NavigationTitle
 			</a>
@@ -181,7 +181,7 @@
 					href="@(folder.Url)"
 					@Model.Htmx.GetNavHxAttributes(true)
 					class="sidebar-link flex w-full items-center gap-2 px-[8px] py-[6px]">
-					<span class="min-w-0 flex-1">@(folder.NavigationTitle)</span>
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@(folder.NavigationTitle)</span>
 					@if (!allHidden)
 					{
 						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
@@ -220,7 +220,7 @@
 			<a
 				href="@leaf.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link grow px-[8px] py-[6px]"
+				class="sidebar-link docs-sidebar-nav-v2__nav-text grow px-[8px] py-[6px]"
 			>
 				@leaf.NavigationTitle
 			</a>
