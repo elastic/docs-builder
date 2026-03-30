@@ -238,44 +238,213 @@ nav:
         - group: The Elasticsearch data store
           page: docs-content://manage-data/data-store.md
           children:
-          - page: docs-content://manage-data/data-store/aliases.md
-            title: Aliases
-          - page: docs-content://manage-data/data-store/data-streams.md
-            title: Data streams
           - group: Index basics
             page: docs-content://manage-data/data-store/index-basics.md
             children:
+            - page: docs-content://manage-data/data-store/perform-index-operations.md
+              title: Perform index operations
             - page: elasticsearch://reference/elasticsearch/index-settings/index.md
               title: Index settings reference
             - page: elasticsearch://reference/elasticsearch/index-lifecycle-actions/index.md
               title: Index lifecycle management actions
-          - page: docs-content://manage-data/data-store/manage-data-from-the-command-line.md
-            title: Manage data from the command line
+          - page: docs-content://manage-data/data-store/near-real-time-search.md
+            title: Near real-time search
+          - group: Data streams
+            page: docs-content://manage-data/data-store/data-streams.md
+            children:
+            - page: docs-content://manage-data/data-store/data-streams/set-up-data-stream.md
+              title: Set up a data stream
+            - page: docs-content://manage-data/data-store/data-streams/use-data-stream.md
+              title: Use a data stream
+            - page: docs-content://manage-data/data-store/data-streams/modify-data-stream.md
+              title: Modify a data stream
+            - page: docs-content://manage-data/data-store/data-streams/manage-data-stream.md
+              title: Manage a data stream
+            - group: Time series data stream (TSDS)
+              page: docs-content://manage-data/data-store/data-streams/time-series-data-stream-tsds.md
+              children:
+              - page: docs-content://manage-data/data-store/data-streams/quickstart-tsds.md
+                title: Quickstart
+              - page: docs-content://manage-data/data-store/data-streams/set-up-tsds.md
+                title: Set up TSDS
+              - group: Downsampling
+                page: docs-content://manage-data/data-store/data-streams/downsampling-time-series-data-stream.md
+                children:
+                - page: docs-content://manage-data/data-store/data-streams/downsampling-concepts.md
+                  title: Downsampling concepts
+                - page: docs-content://manage-data/data-store/data-streams/run-downsampling.md
+                  title: Run downsampling
+                - page: docs-content://manage-data/data-store/data-streams/query-downsampled-data.md
+                  title: Query downsampled data
+              - group: Advanced topics
+                page: docs-content://manage-data/data-store/data-streams/advanced-topics-tsds.md
+                children:
+                - page: docs-content://manage-data/data-store/data-streams/time-bound-tsds.md
+                  title: Time-bound TSDS
+                - page: docs-content://manage-data/data-store/data-streams/reindex-tsds.md
+                  title: Reindex TSDS
+                - page: docs-content://manage-data/data-store/data-streams/tsds-ingest-otlp.md
+                  title: TSDS ingest OTLP
+            - group: Logs data stream
+              page: docs-content://manage-data/data-store/data-streams/logs-data-stream.md
+              children:
+              - page: docs-content://manage-data/data-store/data-streams/logs-data-stream-configure.md
+                title: Configure
+              - page: docs-content://manage-data/data-store/data-streams/logs-data-stream-integrations.md
+                title: Integrations
+            - group: Failure store
+              page: docs-content://manage-data/data-store/data-streams/failure-store.md
+              children:
+              - page: docs-content://manage-data/data-store/data-streams/failure-store-recipes.md
+                title: Recipes
           - group: Mapping
             page: docs-content://manage-data/data-store/mapping.md
             children:
             - page: elasticsearch://reference/elasticsearch/mapping-reference/index.md
               title: Mapping reference
-          - page: docs-content://manage-data/data-store/templates.md
-            title: Templates
+            - group: Dynamic mapping
+              page: docs-content://manage-data/data-store/mapping/dynamic-mapping.md
+              children:
+              - page: docs-content://manage-data/data-store/mapping/dynamic-field-mapping.md
+                title: Dynamic field mapping
+              - page: docs-content://manage-data/data-store/mapping/dynamic-templates.md
+                title: Dynamic templates
+            - page: docs-content://manage-data/data-store/mapping/explicit-mapping.md
+              title: Explicit mapping
+            - group: Runtime fields
+              page: docs-content://manage-data/data-store/mapping/runtime-fields.md
+              children:
+              - page: docs-content://manage-data/data-store/mapping/map-runtime-field.md
+                title: Map a runtime field
+              - page: docs-content://manage-data/data-store/mapping/define-runtime-fields-in-search-request.md
+                title: Define in search request
+              - page: docs-content://manage-data/data-store/mapping/override-field-values-at-query-time.md
+                title: Override values at query time
+              - page: docs-content://manage-data/data-store/mapping/retrieve-runtime-field.md
+                title: Retrieve a runtime field
+              - page: docs-content://manage-data/data-store/mapping/index-runtime-field.md
+                title: Index a runtime field
+              - page: docs-content://manage-data/data-store/mapping/explore-data-with-runtime-fields.md
+                title: Explore data with runtime fields
+            - page: docs-content://manage-data/data-store/mapping/removal-of-mapping-types.md
+              title: Removal of mapping types
+            - page: docs-content://manage-data/data-store/mapping/update-mappings-examples.md
+              title: Update mappings examples
           - group: Text analysis
             page: docs-content://manage-data/data-store/text-analysis.md
             children:
             - page: elasticsearch://reference/text-analysis/index.md
               title: Text analysis components
+            - group: Concepts
+              page: docs-content://manage-data/data-store/text-analysis/concepts.md
+              children:
+              - page: docs-content://manage-data/data-store/text-analysis/anatomy-of-an-analyzer.md
+                title: Anatomy of an analyzer
+              - page: docs-content://manage-data/data-store/text-analysis/index-search-analysis.md
+                title: Index and search analysis
+              - page: docs-content://manage-data/data-store/text-analysis/stemming.md
+                title: Stemming
+              - page: docs-content://manage-data/data-store/text-analysis/token-graphs.md
+                title: Token graphs
+            - group: Configure text analysis
+              page: docs-content://manage-data/data-store/text-analysis/configure-text-analysis.md
+              children:
+              - page: docs-content://manage-data/data-store/text-analysis/test-an-analyzer.md
+                title: Test an analyzer
+              - page: docs-content://manage-data/data-store/text-analysis/configuring-built-in-analyzers.md
+                title: Configuring built-in analyzers
+              - page: docs-content://manage-data/data-store/text-analysis/create-custom-analyzer.md
+                title: Create custom analyzer
+              - page: docs-content://manage-data/data-store/text-analysis/specify-an-analyzer.md
+                title: Specify an analyzer
+          - group: Templates
+            page: docs-content://manage-data/data-store/templates.md
+            children:
+            - page: docs-content://manage-data/data-store/templates/simulate-multi-component-templates.md
+              title: Simulate multi-component templates
+            - page: docs-content://manage-data/data-store/templates/ignore-missing-component-templates.md
+              title: Ignore missing component templates
+          - page: docs-content://manage-data/data-store/aliases.md
+            title: Aliases
+          - page: docs-content://manage-data/data-store/manage-data-from-the-command-line.md
+            title: Manage data from the command line
         - group: Data lifecycle
           page: docs-content://manage-data/lifecycle.md
           children:
-          - page: docs-content://manage-data/lifecycle/curator.md
-            title: Elasticsearch Curator
-          - page: docs-content://manage-data/lifecycle/data-stream.md
-            title: Data stream lifecycle
           - page: docs-content://manage-data/lifecycle/data-tiers.md
             title: "Data tiers: hot warm cold frozen"
-          - page: docs-content://manage-data/lifecycle/index-lifecycle-management.md
-            title: Index lifecycle management (ILM)
-          - page: docs-content://manage-data/lifecycle/rollup.md
-            title: Rollup
+          - group: Index lifecycle management (ILM)
+            page: docs-content://manage-data/lifecycle/index-lifecycle-management.md
+            children:
+            - page: docs-content://manage-data/lifecycle/index-lifecycle-management/index-lifecycle.md
+              title: Index lifecycle
+            - group: Rollover
+              page: docs-content://manage-data/lifecycle/index-lifecycle-management/rollover.md
+              children:
+              - page: docs-content://manage-data/lifecycle/index-lifecycle-management/skip-rollover.md
+                title: Skip rollover
+            - page: docs-content://manage-data/lifecycle/index-lifecycle-management/configure-lifecycle-policy.md
+              title: Configure lifecycle policy
+            - page: docs-content://manage-data/lifecycle/index-lifecycle-management/policy-apply.md
+              title: Apply policy
+            - page: docs-content://manage-data/lifecycle/index-lifecycle-management/policy-view-status.md
+              title: View policy status
+            - page: docs-content://manage-data/lifecycle/index-lifecycle-management/manage-lifecycle-integrations-data.md
+              title: Manage integrations data
+            - page: docs-content://manage-data/lifecycle/index-lifecycle-management/policy-updates.md
+              title: Policy updates
+            - page: docs-content://manage-data/lifecycle/index-lifecycle-management/start-stop-index-lifecycle-management.md
+              title: Start and stop ILM
+            - page: docs-content://manage-data/lifecycle/index-lifecycle-management/restore-managed-data-stream-index.md
+              title: Restore managed index
+            - group: ILM tutorials
+              page: docs-content://manage-data/lifecycle/index-lifecycle-management/ilm-tutorials.md
+              children:
+              - page: docs-content://manage-data/lifecycle/index-lifecycle-management/tutorial-time-series-with-data-streams.md
+                title: Time series with data streams
+              - page: docs-content://manage-data/lifecycle/index-lifecycle-management/tutorial-time-series-without-data-streams.md
+                title: Time series without data streams
+              - page: docs-content://manage-data/lifecycle/index-lifecycle-management/tutorial-general-content-with-data-streams.md
+                title: General content with data streams
+              - page: docs-content://manage-data/lifecycle/index-lifecycle-management/tutorial-customize-built-in-policies.md
+                title: Customize built-in policies
+            - group: Migrate ILM
+              page: docs-content://manage-data/lifecycle/index-lifecycle-management/migrate-ilm.md
+              children:
+              - page: docs-content://manage-data/lifecycle/index-lifecycle-management/migrate-index-management.md
+                title: Migrate index management
+              - page: docs-content://manage-data/lifecycle/index-lifecycle-management/manage-existing-indices.md
+                title: Manage existing indices
+              - page: docs-content://manage-data/lifecycle/index-lifecycle-management/migrate-index-allocation-filters-to-node-roles.md
+                title: Migrate allocation filters to node roles
+          - group: Data stream lifecycle
+            page: docs-content://manage-data/lifecycle/data-stream.md
+            children:
+            - page: docs-content://manage-data/lifecycle/data-stream/tutorial-create-data-stream-with-lifecycle.md
+              title: "Tutorial: Create with lifecycle"
+            - page: docs-content://manage-data/lifecycle/data-stream/tutorial-update-existing-data-stream.md
+              title: "Tutorial: Update existing"
+            - page: docs-content://manage-data/lifecycle/data-stream/tutorial-data-stream-retention.md
+              title: "Tutorial: Retention"
+            - page: docs-content://manage-data/lifecycle/data-stream/tutorial-migrate-ilm-managed-data-stream-to-data-stream-lifecycle.md
+              title: "Tutorial: Migrate from ILM"
+          - page: docs-content://manage-data/lifecycle/curator.md
+            title: Elasticsearch Curator
+          - group: Rollup
+            page: docs-content://manage-data/lifecycle/rollup.md
+            children:
+            - page: docs-content://manage-data/lifecycle/rollup/getting-started-api.md
+              title: Getting started (API)
+            - page: docs-content://manage-data/lifecycle/rollup/getting-started-kibana.md
+              title: Getting started (Kibana)
+            - page: docs-content://manage-data/lifecycle/rollup/understanding-groups.md
+              title: Understanding groups
+            - page: docs-content://manage-data/lifecycle/rollup/rollup-aggregation-limitations.md
+              title: Aggregation limitations
+            - page: docs-content://manage-data/lifecycle/rollup/rollup-search-limitations.md
+              title: Search limitations
+            - page: docs-content://manage-data/lifecycle/rollup/migrating-from-rollup-to-downsampling.md
+              title: Migrating to downsampling
         - page: docs-content://manage-data/use-case-use-elasticsearch-to-manage-time-series-data.md
           title: "Use case: time series data management"
       - group: Transform and enrich data
@@ -285,12 +454,28 @@ nav:
           children:
           - page: opentelemetry://reference/motlp/index.md
             title: Managed pipelines (mOTLP)
-          - page: docs-content://manage-data/ingest/transform-enrich/ingest-pipelines.md
-            title: Elasticsearch ingest pipelines
+          - group: Elasticsearch ingest pipelines
+            page: docs-content://manage-data/ingest/transform-enrich/ingest-pipelines.md
+            children:
+            - page: docs-content://manage-data/ingest/transform-enrich/example-parse-logs.md
+              title: "Example: Parse logs"
+            - page: docs-content://manage-data/ingest/transform-enrich/readable-maintainable-ingest-pipelines.md
+              title: Readable maintainable pipelines
+            - page: docs-content://manage-data/ingest/transform-enrich/error-handling.md
+              title: Error handling
           - page: docs-content://manage-data/ingest/transform-enrich/logstash-pipelines.md
             title: Logstash pipelines
-        - page: docs-content://manage-data/ingest/transform-enrich/data-enrichment.md
-          title: Data enrichment
+        - group: Data enrichment
+          page: docs-content://manage-data/ingest/transform-enrich/data-enrichment.md
+          children:
+          - page: docs-content://manage-data/ingest/transform-enrich/set-up-an-enrich-processor.md
+            title: Set up an enrich processor
+          - page: docs-content://manage-data/ingest/transform-enrich/example-enrich-data-based-on-geolocation.md
+            title: "Example: Enrich by geolocation"
+          - page: docs-content://manage-data/ingest/transform-enrich/example-enrich-data-based-on-exact-values.md
+            title: "Example: Enrich by exact values"
+          - page: docs-content://manage-data/ingest/transform-enrich/example-enrich-data-by-matching-value-to-range.md
+            title: "Example: Enrich by matching value to range"
         - page: docs-content://manage-data/ingest/transform-enrich/index-mapping-text-analysis.md
           title: Index mapping and text analysis
         - page: docs-content://manage-data/ingest/transform-enrich/ingest-lag.md
