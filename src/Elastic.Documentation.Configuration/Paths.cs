@@ -11,6 +11,8 @@ public static class Paths
 {
 	public static readonly DirectoryInfo WorkingDirectoryRoot = DetermineWorkingDirectoryRoot();
 
+	public static readonly DirectoryInfo GitCommonRoot = InitGitCommonRoot();
+
 	public static readonly DirectoryInfo ApplicationData = GetApplicationFolder();
 
 	private static DirectoryInfo DetermineWorkingDirectoryRoot()
@@ -46,6 +48,42 @@ public static class Paths
 		}
 		sourceRoot ??= directory;
 		return sourceRoot;
+	}
+
+	/// <summary>Resolves the root of the main git repository, following worktree links when present. Disabled on CI.</summary>
+	public static IDirectoryInfo ResolveGitCommonRoot(IFileSystem fileSystem, IDirectoryInfo workingDirectoryRoot, bool? isCI = null)
+	{
+		if (isCI ?? !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+			return workingDirectoryRoot;
+
+		var gitPath = Path.Combine(workingDirectoryRoot.FullName, ".git");
+
+		if (fileSystem.Directory.Exists(gitPath))
+			return workingDirectoryRoot;
+
+		if (!fileSystem.File.Exists(gitPath))
+			return workingDirectoryRoot;
+
+		var content = fileSystem.File.ReadAllText(gitPath).Trim();
+		if (!content.StartsWith("gitdir:", StringComparison.OrdinalIgnoreCase))
+			return workingDirectoryRoot;
+
+		var gitDirPath = content["gitdir:".Length..].Trim();
+		if (!Path.IsPathRooted(gitDirPath))
+			gitDirPath = Path.GetFullPath(gitDirPath, workingDirectoryRoot.FullName);
+
+		var dir = fileSystem.DirectoryInfo.New(gitDirPath);
+		while (dir != null && dir.Name != ".git")
+			dir = dir.Parent;
+
+		return dir?.Parent ?? workingDirectoryRoot;
+	}
+
+	private static DirectoryInfo InitGitCommonRoot()
+	{
+		var fs = new FileSystem();
+		var root = fs.DirectoryInfo.New(WorkingDirectoryRoot.FullName);
+		return new DirectoryInfo(ResolveGitCommonRoot(fs, root).FullName);
 	}
 
 	/// Used in debug to locate static folder, so we can change js/css files while the server is running
