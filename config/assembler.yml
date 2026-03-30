@@ -153,6 +153,11 @@ references:
   # @elastic/admin-docs and @elastic/experience-docs
   kibana:
 
+  # Private Kibana team repo (changelog link filtering; does not publish docs here)
+  kibana-team:
+    private: true
+    skip: true
+
   # @elastic/developer-docs
   eland:
   elasticsearch-hadoop:

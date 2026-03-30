@@ -24,7 +24,8 @@ The directive supports the following options:
 |--------|-------------|---------|
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
-| `:config: path` | Path to changelog.yml configuration (reserved for future use) | auto-discover |
+| `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
+| `:config: path` | Path to `changelog.yml` configuration (reserved for future use) | auto-discover |
 
 ### Example with options
 
@@ -32,6 +33,7 @@ The directive supports the following options:
 :::{changelog} /path/to/bundles
 :type: all
 :subsections:
+:link-visibility: keep-links
 :::
 ```
 
@@ -99,6 +101,19 @@ To show all entries on a single page (previous default behavior):
 :::
 ```
 
+#### `:link-visibility:`
+
+Controls how pull request and issue links are shown when the directive applies source-repo-based privacy.
+Bundles whose repo is listed as private in `assembler.yml` hide links by default.
+
+| Value | Behavior |
+|-------|----------|
+| `auto` | Hide all PR and issue links for bundles from private repos; show links for public repos. |
+| `keep-links` | Show PR and issue links even when the bundle source repo is private (does not undo bundle-time private-target sanitization)). |
+| `hide-links` | Hide all PR and issue links for this directive block. Refer to [Hiding links](#hide-links). |
+
+This aligns with the `changelog render` command's link visibility controls.
+
 #### `:subsections:`
 
 When enabled, entries are grouped by "area" within each section.
@@ -122,7 +137,7 @@ The `{changelog}` directive and the `changelog render` command both do not apply
 `rules.bundle` supports product, type, and area filtering, and per-product overrides.
 For full syntax, refer to the [rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).
 
-## Feature hiding from bundles
+## Hiding features
 
 When bundles contain a `hide-features` field, entries with matching `feature-id` values are automatically filtered out from the rendered output. This allows you to hide unreleased or experimental features without modifying the bundle at render time.
 
@@ -142,21 +157,22 @@ entries:
 
 When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
 
-To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`. For more details, see [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
+To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`.
+For more details, go to [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
 
-## Private repository link hiding
+## Hiding private links [hide-links]
 
-Changelog entries can reference multiple pull requests and issues via the `prs` and `issues` array fields. When an entry is rendered, all of its links are shown inline:
+A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
 
-```md
-* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
-```
-
-PR and issue links are automatically hidden (commented out) for bundles from private repositories. When links are hidden, **all** PR and issue links for an affected entry are hidden together. This is determined by checking the `assembler.yml` configuration:
+PR and issue links are automatically hidden (commented out) for bundles from private repositories.
+When links are hidden, **all** PR and issue links for an affected entry are hidden together.
+This is determined by checking the `assembler.yml` configuration:
 
 - Repositories marked with `private: true` in `assembler.yml` will have their links hidden
-- For merged bundles (e.g., `elasticsearch+kibana`), links are hidden if ANY component repository is private
+- For merged bundles (for example, `elasticsearch+kibana`), links are hidden if ANY component repository is private
 - In standalone builds without `assembler.yml`, all links are shown by default
+
+Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior.
 
 ## Bundle merging
 

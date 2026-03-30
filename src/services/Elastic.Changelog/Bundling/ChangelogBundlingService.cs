@@ -10,9 +10,11 @@ using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -80,6 +82,21 @@ public record BundleChangelogsArguments
 	/// entries with matching feature-id values will be commented out.
 	/// </summary>
 	public string[]? HideFeatures { get; init; }
+
+	/// <summary>
+	/// Effective flag after merging CLI, profile, and config (see <see cref="SanitizePrivateLinksCli"/>).
+	/// </summary>
+	public bool SanitizePrivateLinks { get; init; }
+
+	/// <summary>
+	/// CLI override for option-based bundling only. null = use changelog.yml bundle default.
+	/// </summary>
+	public bool? SanitizePrivateLinksCli { get; init; }
+
+	/// <summary>
+	/// When true, forces sanitization off (overrides other sources).
+	/// </summary>
+	public bool NoSanitizePrivateLinks { get; init; }
 }
 
 /// <summary>
@@ -156,6 +173,9 @@ public partial class ChangelogBundlingService(
 
 			// Validate input
 			if (!ValidateInput(collector, input))
+				return false;
+
+			if (!ValidateSanitizePrivateLinks(collector, input))
 				return false;
 
 			// Load PR or issue filter values
@@ -268,8 +288,25 @@ public partial class ChangelogBundlingService(
 			if (!buildResult.IsValid || buildResult.Data == null)
 				return false;
 
+			var bundleData = buildResult.Data;
+			if (input.SanitizePrivateLinks)
+			{
+				ArgumentNullException.ThrowIfNull(configurationContext);
+				var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+				var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+				if (!PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+					collector,
+					bundleData,
+					assembly,
+					input.Owner ?? "elastic",
+					input.Repo,
+					out var sanitizedBundle))
+					return false;
+				bundleData = sanitizedBundle;
+			}
+
 			// Write bundle file
-			await WriteBundleFileAsync(buildResult.Data, outputPath, ctx);
+			await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
 			return true;
 		}
@@ -308,6 +345,7 @@ public partial class ChangelogBundlingService(
 		string? repo = null;
 		string? owner = null;
 		string[]? mergedHideFeatures = null;
+		var sanitizePrivateLinks = false;
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
@@ -349,6 +387,7 @@ public partial class ChangelogBundlingService(
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
+			sanitizePrivateLinks = profile.SanitizePrivateLinks ?? config.Bundle.SanitizePrivateLinks;
 		}
 
 		return input with
@@ -362,6 +401,7 @@ public partial class ChangelogBundlingService(
 			Repo = repo,
 			Owner = owner,
 			HideFeatures = mergedHideFeatures,
+			SanitizePrivateLinks = sanitizePrivateLinks
 		};
 	}
 
@@ -371,7 +411,13 @@ public partial class ChangelogBundlingService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
-			return input with { Directory = directory };
+		{
+			var sanitizeNoConfig = !input.NoSanitizePrivateLinks &&
+				(string.IsNullOrWhiteSpace(input.Profile)
+					? input.SanitizePrivateLinksCli ?? false
+					: input.SanitizePrivateLinks);
+			return input with { Directory = directory, SanitizePrivateLinks = sanitizeNoConfig };
+		}
 
 		// Apply output default when --output not specified: use bundle.output_directory if set
 		var output = input.Output;
@@ -385,13 +431,19 @@ public partial class ChangelogBundlingService(
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
 
+		var sanitizePrivateLinks = !input.NoSanitizePrivateLinks &&
+			(!string.IsNullOrWhiteSpace(input.Profile)
+				? input.SanitizePrivateLinks
+				: input.SanitizePrivateLinksCli ?? config.Bundle.SanitizePrivateLinks);
+
 		return input with
 		{
 			Directory = directory,
 			Output = output,
 			Resolve = resolve,
 			Repo = repo,
-			Owner = owner
+			Owner = owner,
+			SanitizePrivateLinks = sanitizePrivateLinks
 		};
 	}
 
@@ -430,6 +482,35 @@ public partial class ChangelogBundlingService(
 		{
 			collector.EmitError(string.Empty,
 				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, or --issues");
+			return false;
+		}
+
+		return true;
+	}
+
+	private bool ValidateSanitizePrivateLinks(IDiagnosticsCollector collector, BundleChangelogsArguments input)
+	{
+		if (!input.SanitizePrivateLinks)
+			return true;
+
+		if (!(input.Resolve ?? false))
+		{
+			collector.EmitError(
+				string.Empty,
+				"Private link sanitization requires resolved bundle content. " +
+				"Use --resolve or set bundle.resolve: true in changelog.yml, or disable sanitization " +
+				"(bundle.sanitize_private_links / --sanitize-private-links)."
+			);
+			return false;
+		}
+
+		if (configurationContext == null)
+		{
+			collector.EmitError(
+				string.Empty,
+				"Private link sanitization requires assembler configuration (assembler.yml). " +
+				"Ensure docs-builder runs with a valid configuration source."
+			);
 			return false;
 		}
 

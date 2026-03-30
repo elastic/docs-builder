@@ -458,7 +458,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						Repo = kvp.Value.Repo,
 						Owner = kvp.Value.Owner,
 						HideFeatures = kvp.Value.HideFeatures?.Values,
-						Source = kvp.Value.Source
+						Source = kvp.Value.Source,
+						SanitizePrivateLinks = kvp.Value.SanitizePrivateLinks
 					});
 		}
 
@@ -469,6 +470,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Resolve = yaml.Resolve ?? true,
 			Repo = yaml.Repo,
 			Owner = yaml.Owner,
+			SanitizePrivateLinks = yaml.SanitizePrivateLinks ?? false,
 			Profiles = profiles
 		};
 	}

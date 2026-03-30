@@ -6,8 +6,13 @@ using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Configuration;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -39,10 +44,16 @@ public record AmendBundleArguments
 /// <summary>
 /// Service for amending changelog bundles with additional entries
 /// </summary>
-public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFileSystem? fileSystem = null) : IService
+public partial class ChangelogBundleAmendService(
+	ILoggerFactory logFactory,
+	IFileSystem? fileSystem = null,
+	IConfigurationContext? configurationContext = null) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundleAmendService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
+		: null;
 
 	[GeneratedRegex(@"\.amend-(\d+)\.ya?ml$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();
@@ -99,6 +110,27 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 
 			_logger.LogInformation("Creating amend file: {AmendFilePath} (resolve={Resolve})", amendFilePath, shouldResolve);
 
+			ChangelogConfiguration? changelogConfig = null;
+			if (_configLoader != null)
+				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
+
+			var sanitizePrivateLinks = changelogConfig?.Bundle?.SanitizePrivateLinks == true;
+			if (sanitizePrivateLinks && !shouldResolve)
+			{
+				collector.EmitError(
+					string.Empty,
+					"Private link sanitization requires resolved amend content. Use --resolve or ensure the original bundle is resolved, or disable bundle.sanitize_private_links.");
+				return false;
+			}
+
+			if (sanitizePrivateLinks && configurationContext == null)
+			{
+				collector.EmitError(
+					string.Empty,
+					"Private link sanitization requires assembler configuration. Run docs-builder with a valid configuration context.");
+				return false;
+			}
+
 			// Load and process the files to add
 			var entries = new List<BundledEntry>();
 			foreach (var filePath in addFilePaths)
@@ -116,8 +148,30 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 				Entries = entries
 			};
 
+			var bundleForWrite = amendBundle;
+			if (sanitizePrivateLinks && shouldResolve)
+			{
+				ArgumentNullException.ThrowIfNull(configurationContext);
+				var parentText = await _fileSystem.File.ReadAllTextAsync(input.BundlePath, ctx);
+				var parentBundle = ReleaseNotesSerialization.DeserializeBundle(parentText);
+				var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
+
+				var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+				var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+				if (!PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+					collector,
+					amendBundle,
+					assembly,
+					owner,
+					repo,
+					out var sanitized))
+					return false;
+				bundleForWrite = sanitized;
+			}
+
 			// Serialize and write the amend file
-			var yaml = ReleaseNotesSerialization.SerializeBundle(amendBundle);
+			var yaml = ReleaseNotesSerialization.SerializeBundle(bundleForWrite);
 
 			// Ensure output directory exists
 			var outputDir = _fileSystem.Path.GetDirectoryName(amendFilePath);
