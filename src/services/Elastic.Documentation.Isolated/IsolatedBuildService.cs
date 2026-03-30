@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
+using Nullean.ScopedFileSystem;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
@@ -43,7 +44,7 @@ public class IsolatedBuildService(
 
 	public async Task<bool> Build(
 		IDiagnosticsCollector collector,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		string? path = null,
 		string? output = null,
 		string? pathPrefix = null,
@@ -53,7 +54,7 @@ public class IsolatedBuildService(
 		bool? metadataOnly = null,
 		IReadOnlySet<Exporter>? exporters = null,
 		string? canonicalBaseUrl = null,
-		IFileSystem? writeFileSystem = null,
+		ScopedFileSystem? writeFileSystem = null,
 		bool skipOpenApi = false,
 		bool skipCrossLinks = false,
 		Cancel ctx = default

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -15,8 +16,8 @@ namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext
 {
-	public IFileSystem ReadFileSystem { get; }
-	public IFileSystem WriteFileSystem { get; }
+	public ScopedFileSystem ReadFileSystem { get; }
+	public ScopedFileSystem WriteFileSystem { get; }
 
 	public IDiagnosticsCollector Collector { get; }
 
@@ -61,8 +62,8 @@ public class AssembleContext : IDocumentationConfigurationContext
 		IConfigurationContext configurationContext,
 		string environment,
 		IDiagnosticsCollector collector,
-		IFileSystem readFileSystem,
-		IFileSystem writeFileSystem,
+		ScopedFileSystem readFileSystem,
+		ScopedFileSystem writeFileSystem,
 		string? checkoutDirectory,
 		string? output
 	)

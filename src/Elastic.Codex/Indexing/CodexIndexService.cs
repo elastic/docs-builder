@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Elastic.Codex.Building;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
@@ -30,7 +31,7 @@ public class CodexIndexService(
 	public async Task<bool> Index(
 		CodexContext codexContext,
 		CodexCloneResult cloneResult,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		ElasticsearchIndexOptions esOptions,
 		Cancel ctx = default)
 	{

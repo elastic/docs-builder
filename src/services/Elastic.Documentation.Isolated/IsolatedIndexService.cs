@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -49,7 +50,7 @@ public class IsolatedIndexService(
 	/// <param name="ctx"></param>
 	/// <returns></returns>
 	public async Task<bool> Index(IDiagnosticsCollector collector,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		string? path = null,
 		string? endpoint = null,
 		string? apiKey = null,

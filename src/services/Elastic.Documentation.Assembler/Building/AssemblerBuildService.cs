@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
@@ -36,7 +37,7 @@ public class AssemblerBuildService(
 		bool? showHints,
 		IReadOnlySet<Exporter>? exporters,
 		bool? assumeBuild,
-		IFileSystem fs,
+		ScopedFileSystem fs,
 		Cancel ctx
 	)
 	{

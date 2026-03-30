@@ -4,13 +4,14 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Nullean.ScopedFileSystem;
 using nietras.SeparatedValues;
 
 namespace Elastic.Markdown.Myst.Directives.CsvInclude;
 
 public static class CsvReader
 {
-	public static IEnumerable<string[]> ReadCsvFile(string filePath, string separator, IFileSystem? fileSystem = null)
+	public static IEnumerable<string[]> ReadCsvFile(string filePath, string separator, ScopedFileSystem? fileSystem = null)
 	{
 		var fs = fileSystem ?? FileSystemFactory.RealRead;
 		return ReadWithSep(filePath, separator, fs);

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Transfer;
@@ -20,7 +21,7 @@ public class IncrementalDeployService(
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	IFileSystem fileSystem
+	ScopedFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IncrementalDeployService>();

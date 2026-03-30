@@ -5,6 +5,7 @@
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -3281,7 +3282,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			currentDirectory: "/empty-project"
 		);
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.WrapToRead(cwdFs));
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3340,7 +3341,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 		await cwdFs.File.WriteAllTextAsync("/test-root/changelogs/1755268130-feature.yaml", changelogContent, TestContext.Current.CancellationToken);
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.WrapToRead(cwdFs));
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3399,7 +3400,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 		await cwdFs.File.WriteAllTextAsync("/test-root/changelogs/1755268130-feature.yaml", changelogContent, TestContext.Current.CancellationToken);
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.WrapToRead(cwdFs));
 
 		var input = new BundleChangelogsArguments
 		{

@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.Abstractions.TestingHelpers;
+using Nullean.ScopedFileSystem;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
@@ -44,7 +45,8 @@ public class DocsSyncTests
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var scopedFs = FileSystemFactory.WrapToRead(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedFs, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
 			.Returns(new ListObjectsV2Response
 			{
@@ -185,7 +187,8 @@ public class DocsSyncTests
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var scopedFs2 = FileSystemFactory.WrapToRead(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs2, scopedFs2, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 
 		var s3Objects = new List<S3Object>();
 		foreach (var i in Enumerable.Range(0, remoteFiles))
@@ -235,7 +238,8 @@ public class DocsSyncTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var checkoutDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, checkoutDirectory);
+		var scopedFs3 = FileSystemFactory.WrapToRead(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs3, scopedFs3, null, checkoutDirectory);
 		var plan = new SyncPlan
 		{
 			RemoteListingCompleted = true,

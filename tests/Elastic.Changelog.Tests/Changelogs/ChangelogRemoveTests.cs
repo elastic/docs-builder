@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -616,7 +617,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			currentDirectory: "/empty-project"
 		);
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, cwdFs);
+		var service = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystemFactory.WrapToRead(cwdFs));
 
 		var input = new ChangelogRemoveArguments
 		{

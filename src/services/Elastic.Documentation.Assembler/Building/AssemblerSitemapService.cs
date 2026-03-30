@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -25,7 +26,7 @@ public class AssemblerSitemapService(
 
 	public async Task<bool> GenerateSitemapAsync(
 		IDiagnosticsCollector collector,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		string? endpoint = null,
 		string? environment = null,
 		string? apiKey = null,

@@ -5,11 +5,13 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Codex.Navigation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -78,8 +80,8 @@ internal sealed class TestCodexDocumentationContext(IDiagnosticsCollector collec
 
 	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New("/codex.yml");
 	public IDiagnosticsCollector Collector => collector;
-	public IFileSystem ReadFileSystem => _fileSystem;
-	public IFileSystem WriteFileSystem => _fileSystem;
+	public ScopedFileSystem ReadFileSystem => FileSystemFactory.WrapToRead(_fileSystem);
+	public ScopedFileSystem WriteFileSystem => FileSystemFactory.WrapToRead(_fileSystem);
 	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New("/output");
 	public BuildType BuildType => BuildType.Codex;
 

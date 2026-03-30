@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
@@ -23,7 +24,7 @@ public class MoveFileService(
 		string target,
 		bool? dryRun,
 		string? path,
-		IFileSystem fs,
+		ScopedFileSystem fs,
 		Cancel ctx
 	)
 	{

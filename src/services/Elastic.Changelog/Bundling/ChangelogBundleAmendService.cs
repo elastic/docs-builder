@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration;
@@ -40,7 +41,7 @@ public record AmendBundleArguments
 /// <summary>
 /// Service for amending changelog bundles with additional entries
 /// </summary>
-public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFileSystem? fileSystem = null) : IService
+public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, ScopedFileSystem? fileSystem = null) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundleAmendService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;

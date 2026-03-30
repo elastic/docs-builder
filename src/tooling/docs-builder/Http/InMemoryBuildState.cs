@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
+using Nullean.ScopedFileSystem;
 using System.Threading.Channels;
 using Actions.Core;
 using Actions.Core.Services;
@@ -53,7 +54,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly List<DiagnosticDto> _diagnostics = [];
 
 	// Reuse MockFileSystem across builds to benefit from caching
-	private readonly IFileSystem _writeFs = FileSystemFactory.InMemory();
+	private readonly ScopedFileSystem _writeFs = FileSystemFactory.InMemory();
 
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();

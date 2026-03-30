@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
@@ -16,7 +17,7 @@ public class GlobalNavigationService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
-	IFileSystem fileSystem
+	ScopedFileSystem fileSystem
 ) : IService
 {
 	public async Task<bool> Validate(IDiagnosticsCollector collector, Cancel ctx)

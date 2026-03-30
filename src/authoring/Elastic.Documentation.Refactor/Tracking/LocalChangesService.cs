@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
@@ -19,7 +20,7 @@ public class LocalChangeTrackingService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<LocalChangeTrackingService>();
 
-	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, IFileSystem fs)
+	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, ScopedFileSystem fs)
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 

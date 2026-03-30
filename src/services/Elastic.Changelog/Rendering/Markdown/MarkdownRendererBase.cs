@@ -5,15 +5,16 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
 /// <summary>
 /// Abstract base class for changelog markdown renderers
 /// </summary>
-public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogMarkdownRenderer
+public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChangelogMarkdownRenderer
 {
-	protected IFileSystem FileSystem { get; } = fileSystem;
+	protected ScopedFileSystem FileSystem { get; } = fileSystem;
 
 	/// <inheritdoc />
 	public abstract string OutputFileName { get; }

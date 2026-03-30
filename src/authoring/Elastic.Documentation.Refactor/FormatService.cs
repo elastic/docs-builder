@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.CrossLinks;
@@ -34,7 +35,7 @@ public class FormatService(
 		IDiagnosticsCollector collector,
 		string? path,
 		bool checkOnly,
-		IFileSystem fs,
+		ScopedFileSystem fs,
 		Cancel ctx
 	)
 	{

@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Codex;
 
@@ -19,7 +20,7 @@ public class CodexHtmxCrossLinkTests(ITestOutputHelper output) : LinkTestBase(ou
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, fileSystem, configurationContext)
+		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/r/codex-environments",
 			BuildType = BuildType.Codex
@@ -62,7 +63,7 @@ public class IsolatedCodexCrossLinkTests(ITestOutputHelper output) : LinkTestBas
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, fileSystem, configurationContext)
+		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs",
 			BuildType = BuildType.Isolated

@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.LinkIndex;
@@ -26,7 +27,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	private readonly SemaphoreSlim _cloneLock = new(1, 1);
 	private bool _ensuredClone;
 
-	public GitLinkIndexReader(string environment, IFileSystem? fileSystem = null, bool skipFetch = false)
+	public GitLinkIndexReader(string environment, ScopedFileSystem? fileSystem = null, bool skipFetch = false)
 	{
 		if (string.IsNullOrWhiteSpace(environment))
 			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));

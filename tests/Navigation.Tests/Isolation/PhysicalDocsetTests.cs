@@ -10,6 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -21,7 +22,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
-		var fileSystem = new FileSystem();
+		var fileSystem = FileSystemFactory.RealRead;
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs"));
 		var outputDir = fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "test-output"));
 		var configPath = fileSystem.FileInfo.New(docsetPath);
@@ -74,7 +75,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, FileSystemFactory.RealRead);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -100,7 +101,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, FileSystemFactory.RealRead);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);
@@ -146,7 +147,7 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		var configPath = fileSystem.FileInfo.New(docsetPath);
 
 		var context = new TestDocumentationSetContext(fileSystem, docsDir, outputDir, configPath, output, "docs-builder");
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, configPath, FileSystemFactory.RealRead);
 		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance);

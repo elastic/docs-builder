@@ -8,6 +8,7 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using JetBrains.Annotations;
 using Markdig.Syntax;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -70,7 +71,7 @@ $"""
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var context = new BuildContext(Collector, FileSystem, configurationContext);
+		var context = new BuildContext(Collector, FileSystemFactory.WrapToRead(FileSystem), configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();

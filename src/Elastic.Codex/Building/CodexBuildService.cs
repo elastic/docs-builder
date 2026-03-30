@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text.Json;
+using Nullean.ScopedFileSystem;
 using Elastic.Codex.Navigation;
 using Elastic.Codex.Page;
 using Elastic.Codex.Sourcing;
@@ -46,7 +47,7 @@ public class CodexBuildService(
 	public async Task<CodexBuildResult> BuildAll(
 		CodexContext context,
 		CodexCloneResult cloneResult,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		Cancel ctx,
 		IReadOnlySet<Exporter>? exporters = null)
 	{
@@ -136,7 +137,7 @@ public class CodexBuildService(
 	private async Task<CodexDocumentationSetBuildContext?> LoadDocumentationSet(
 		CodexContext context,
 		CodexCheckout checkout,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		ILinkIndexReader codexLinkIndexReader,
 		Cancel ctx)
 	{
@@ -401,10 +402,10 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public IDiagnosticsCollector Collector => codexContext.Collector;
 
 	/// <inheritdoc />
-	public IFileSystem ReadFileSystem => codexContext.ReadFileSystem;
+	public ScopedFileSystem ReadFileSystem => codexContext.ReadFileSystem;
 
 	/// <inheritdoc />
-	public IFileSystem WriteFileSystem => codexContext.WriteFileSystem;
+	public ScopedFileSystem WriteFileSystem => codexContext.WriteFileSystem;
 
 	/// <inheritdoc />
 	public IDirectoryInfo OutputDirectory => codexContext.OutputDirectory;

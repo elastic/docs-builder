@@ -4,6 +4,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using System.Text.Json.Serialization;
 using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
@@ -65,11 +66,11 @@ public enum ChangelogFileType
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null
+	ScopedFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 
 	public async Task<bool> RenderChangelogs(
 		IDiagnosticsCollector collector,

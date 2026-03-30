@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Nullean.ScopedFileSystem;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
@@ -68,7 +69,7 @@ public class GitHubReleaseChangelogService(
 	IConfigurationContext configurationContext,
 	IGitHubReleaseService? releaseService = null,
 	IGitHubPrService? prService = null,
-	IFileSystem? fileSystem = null,
+	ScopedFileSystem? fileSystem = null,
 	ChangelogBundlingService? bundlingService = null
 ) : IService
 {

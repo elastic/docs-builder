@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
@@ -14,8 +15,8 @@ namespace Elastic.Codex;
 /// </summary>
 public class CodexContext
 {
-	public IFileSystem ReadFileSystem { get; }
-	public IFileSystem WriteFileSystem { get; }
+	public ScopedFileSystem ReadFileSystem { get; }
+	public ScopedFileSystem WriteFileSystem { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public CodexConfiguration Configuration { get; }
 	public IFileInfo ConfigurationPath { get; }
@@ -34,8 +35,8 @@ public class CodexContext
 		CodexConfiguration configuration,
 		IFileInfo configurationPath,
 		IDiagnosticsCollector collector,
-		IFileSystem readFileSystem,
-		IFileSystem writeFileSystem,
+		ScopedFileSystem readFileSystem,
+		ScopedFileSystem writeFileSystem,
 		string? checkoutDirectory,
 		string? outputDirectory)
 	{

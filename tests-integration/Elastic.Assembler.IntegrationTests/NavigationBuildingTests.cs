@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using Nullean.ScopedFileSystem;
 using AngleSharp;
 using AwesomeAssertions;
 using Documentation.Builder;
@@ -46,7 +47,7 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, fs, new MockFileSystem(), null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, FileSystemFactory.WrapToRead(fs), FileSystemFactory.WrapToRead(new MockFileSystem()), null, null);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();

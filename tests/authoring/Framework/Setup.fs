@@ -305,7 +305,7 @@ type Setup =
         )
         let context = BuildContext(
             collector,
-            fileSystem,
+            FileSystemFactory.WrapToRead(fileSystem),
             configurationContext,
             UrlPathPrefix = (options.UrlPathPrefix |> Option.defaultValue ""),
             CanonicalBaseUrl = Uri("https://www.elastic.co/")

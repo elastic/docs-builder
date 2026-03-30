@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ChangelogEntryType;
 
@@ -13,7 +14,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the deprecations.md changelog file
 /// </summary>
-public class DeprecationsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class DeprecationsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "deprecations.md";

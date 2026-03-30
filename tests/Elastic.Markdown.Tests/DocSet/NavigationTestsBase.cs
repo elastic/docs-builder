@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -18,11 +19,12 @@ public class NavigationTestsBase : IAsyncLifetime
 	protected NavigationTestsBase(ITestOutputHelper output)
 	{
 		LoggerFactory = new TestLoggerFactory(output);
-		ReadFileSystem = new FileSystem(); //use real IO to read docs.
-		WriteFileSystem = new MockFileSystem(new MockFileSystemOptions //use in memory mock fs to test generation
+		var mockWriteFs = new MockFileSystem(new MockFileSystemOptions //use in memory mock fs to test generation
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
+		ReadFileSystem = FileSystemFactory.RealRead;
+		WriteFileSystem = FileSystemFactory.WrapToRead(mockWriteFs);
 		var collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(ReadFileSystem);
 		var context = new BuildContext(collector, ReadFileSystem, WriteFileSystem, configurationContext, ExportOptions.Default)
@@ -40,8 +42,8 @@ public class NavigationTestsBase : IAsyncLifetime
 
 	protected ILoggerFactory LoggerFactory { get; }
 
-	protected FileSystem ReadFileSystem { get; set; }
-	protected IFileSystem WriteFileSystem { get; set; }
+	protected ScopedFileSystem ReadFileSystem { get; set; }
+	protected ScopedFileSystem WriteFileSystem { get; set; }
 	protected DocumentationSet Set { get; }
 	protected DocumentationGenerator Generator { get; }
 	protected ConfigurationFile? Configuration { get; set; }

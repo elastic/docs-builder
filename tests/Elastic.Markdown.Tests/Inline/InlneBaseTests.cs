@@ -10,6 +10,7 @@ using Elastic.Markdown.IO;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -132,7 +133,7 @@ $"""
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, fileSystem, configurationContext)
+		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs"
 		};

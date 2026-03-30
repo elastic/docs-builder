@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
@@ -23,7 +24,7 @@ public class ChangelogPrEvaluationService(
 	IConfigurationContext configurationContext,
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
-	IFileSystem? fileSystem = null
+	ScopedFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrEvaluationService>();

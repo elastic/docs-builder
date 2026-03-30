@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
@@ -96,9 +97,10 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
+	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= docsetPath.FileSystem;
+		fileSystem ??= docsetPath.FileSystem as ScopedFileSystem
+			?? throw new InvalidOperationException($"Expected {nameof(ScopedFileSystem)} on {nameof(docsetPath)}");
 		// Validate that the docset.yml is not a symlink (security: prevents path traversal attacks)
 		EnsureNotSymlink(docsetPath);
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
@@ -118,9 +120,10 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
+	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= sourceDirectory.FileSystem;
+		fileSystem ??= sourceDirectory.FileSystem as ScopedFileSystem
+			?? throw new InvalidOperationException($"Expected {nameof(ScopedFileSystem)} on {nameof(sourceDirectory)}");
 		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);

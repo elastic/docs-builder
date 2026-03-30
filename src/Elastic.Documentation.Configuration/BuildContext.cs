@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Reflection;
+using Nullean.ScopedFileSystem;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -21,8 +22,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 		.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
 
-	public IFileSystem ReadFileSystem { get; }
-	public IFileSystem WriteFileSystem { get; }
+	public ScopedFileSystem ReadFileSystem { get; }
+	public ScopedFileSystem WriteFileSystem { get; }
 	public IReadOnlySet<Exporter> AvailableExporters { get; }
 
 	public IDirectoryInfo? DocumentationCheckoutDirectory { get; }
@@ -72,7 +73,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		IConfigurationContext configurationContext
 	)
 		: this(collector, fileSystem, fileSystem, configurationContext, ExportOptions.Default, null, null)
@@ -81,8 +82,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
-		IFileSystem readFileSystem,
-		IFileSystem writeFileSystem,
+		ScopedFileSystem readFileSystem,
+		ScopedFileSystem writeFileSystem,
 		IConfigurationContext configurationContext,
 		IReadOnlySet<Exporter> availableExporters,
 		string? source = null,

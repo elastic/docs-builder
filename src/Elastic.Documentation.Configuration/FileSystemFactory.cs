@@ -43,14 +43,14 @@ public static class FileSystemFactory
 	/// (read by <c>GitCheckoutInformation</c>), <c>.artifacts</c> and <c>.doc.state</c>
 	/// (read for incremental build state).
 	/// </summary>
-	public static IFileSystem RealRead { get; } = new ScopedFileSystem(new FileSystem(), ReadOptions);
+	public static ScopedFileSystem RealRead { get; } = new ScopedFileSystem(new FileSystem(), ReadOptions);
 
 	/// <summary>
 	/// A pre-allocated <see cref="ScopedFileSystem"/> for writing build output.
 	/// Same scope as <see cref="RealRead"/> but without <c>.git</c> access —
 	/// nothing in the output pipeline should write into git repository metadata.
 	/// </summary>
-	public static IFileSystem RealWrite { get; } = new ScopedFileSystem(new FileSystem(), WriteOptions);
+	public static ScopedFileSystem RealWrite { get; } = new ScopedFileSystem(new FileSystem(), WriteOptions);
 
 	/// <summary>
 	/// A pre-allocated <see cref="ScopedFileSystem"/> scoped only to the per-user
@@ -58,24 +58,24 @@ public static class FileSystemFactory
 	/// access caches or state and have no need for workspace files
 	/// (e.g. <c>CrossLinkFetcher</c>, <c>CheckForUpdatesFilter</c>, <c>GitLinkIndexReader</c>).
 	/// </summary>
-	public static IFileSystem AppData { get; } = new ScopedFileSystem(new FileSystem(), AppDataOptions);
+	public static ScopedFileSystem AppData { get; } = new ScopedFileSystem(new FileSystem(), AppDataOptions);
 
 	/// <summary>
 	/// Creates a new <see cref="ScopedFileSystem"/> wrapping a fresh <see cref="MockFileSystem"/>,
 	/// using the read workspace options. Each call returns a new independent in-memory file system.
 	/// </summary>
-	public static IFileSystem InMemory() => new ScopedFileSystem(new MockFileSystem(), ReadOptions);
+	public static ScopedFileSystem InMemory() => new(new MockFileSystem(), ReadOptions);
 
 	/// <summary>Wraps <paramref name="inner"/> with read workspace options (.git allowed).</summary>
-	public static IFileSystem WrapToRead(IFileSystem inner) =>
-		new ScopedFileSystem(inner, ReadOptions);
+	public static ScopedFileSystem WrapToRead(IFileSystem inner) =>
+		new(inner, ReadOptions);
 
 	/// <summary>
 	/// Wraps <paramref name="inner"/> with read workspace options extended by
 	/// <paramref name="extensionRoots"/> (e.g. detection-rules folders declared via
 	/// <see cref="IDocsBuilderExtension.ExternalScopeRoots"/>).
 	/// </summary>
-	public static IFileSystem WrapToRead(IFileSystem inner, IEnumerable<string>? extensionRoots)
+	public static ScopedFileSystem WrapToRead(IFileSystem inner, IEnumerable<string>? extensionRoots)
 	{
 		if (extensionRoots is null)
 			return WrapToRead(inner);
@@ -95,6 +95,6 @@ public static class FileSystemFactory
 	}
 
 	/// <summary>Wraps <paramref name="inner"/> with write workspace options (.git not allowed).</summary>
-	public static IFileSystem WrapToWrite(IFileSystem inner) =>
-		new ScopedFileSystem(inner, WriteOptions);
+	public static ScopedFileSystem WrapToWrite(IFileSystem inner) =>
+		new(inner, WriteOptions);
 }

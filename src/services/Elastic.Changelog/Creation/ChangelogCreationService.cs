@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Configuration;
+using Nullean.ScopedFileSystem;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -61,7 +62,7 @@ public class ChangelogCreationService(
 ILoggerFactory logFactory,
 IConfigurationContext configurationContext,
 IGitHubPrService? githubPrService = null,
-IFileSystem? fileSystem = null,
+ScopedFileSystem? fileSystem = null,
 IEnvironmentVariables? env = null
 ) : IService
 {
