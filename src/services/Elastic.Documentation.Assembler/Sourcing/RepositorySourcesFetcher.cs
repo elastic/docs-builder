@@ -193,7 +193,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 				_logger.LogError(e, "{RepositoryName}: Failed to acquire current commit, falling back to recreating from scratch", repository.Name);
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
-				return CloneRef(repository, gitRef, pull, attempt + 1);
+				return CloneRef(repository, gitRef, pull, attempt + 1, appendRepositoryName, assumeCloned);
 			}
 		}
 		// Repository already checked out the same commit
@@ -222,7 +222,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 					repository.Name, gitRef, checkoutFolder.FullName);
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
-				return CloneRef(repository, gitRef, pull, attempt + 1);
+				return CloneRef(repository, gitRef, pull, attempt + 1, appendRepositoryName, assumeCloned);
 			}
 		}
 
