@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
@@ -35,6 +36,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
 		foreach (var repo in repositories.Values)
 		{
+			Paths.ValidateSinglePathSegment(repo.Name, nameof(repo.Name));
 			var checkoutFolder = fs.DirectoryInfo.New(Path.Join(context.CheckoutDirectory.FullName, repo.Name));
 			// if we are running locally, always allow repository path overrides. Otherwise, only for docs-builder.
 			if (!string.IsNullOrWhiteSpace(repo.Path) && (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")) || repo.Name == "docs-builder"))
@@ -136,6 +138,8 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 	// <param name="gitRef">The git reference to check out. Branch, commit or tag</param>
 	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1, bool appendRepositoryName = true, bool assumeCloned = false)
 	{
+		if (appendRepositoryName)
+			Paths.ValidateSinglePathSegment(repository.Name, nameof(repository.Name));
 		var checkoutFolder =
 			 appendRepositoryName
 				? readFileSystem.DirectoryInfo.New(Path.Join(checkoutDirectory.FullName, repository.Name))

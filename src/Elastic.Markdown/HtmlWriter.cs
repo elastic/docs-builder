@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
@@ -80,13 +81,15 @@ public class HtmlWriter(
 		if (DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
 		{
 			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
-			var path = Path.Join(relativeSourcePath, markdown.RelativePath);
+			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
 			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 		}
 
 		Uri? reportLinkParameter = null;
 		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
-			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Join(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
+		{
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
+		}
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
@@ -190,7 +193,7 @@ public class HtmlWriter(
 		{
 			Position = position++,
 			Name = parent.NavigationTitle,
-			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), Path.Join(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
+			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
 		}));
 		// Add current page
 		breadcrumbItems.Add(new BreadcrumbListItem

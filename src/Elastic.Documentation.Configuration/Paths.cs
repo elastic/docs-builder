@@ -155,6 +155,14 @@ public static class Paths
 		return (docsFolder, configurationPath);
 	}
 
+	/// <summary>Validates that <paramref name="value"/> is a single path segment with no separators or traversal components.
+	/// Throws <see cref="ArgumentException"/> when the value is blank, contains separators, or equals "." / "..".</summary>
+	public static void ValidateSinglePathSegment(string value, string paramName)
+	{
+		if (string.IsNullOrWhiteSpace(value) || Path.GetFileName(value) != value || value == "." || value == "..")
+			throw new ArgumentException($"'{paramName}' must be a single relative path segment.", paramName);
+	}
+
 	public static bool TryFindDocsFolderFromRoot(
 		IFileSystem readFileSystem,
 		IDirectoryInfo rootPath,

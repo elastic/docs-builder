@@ -51,7 +51,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		var name = repository.Name;
 		var path = repository.Path is { } p
 			? fs.DirectoryInfo.New(p)
-			: fs.DirectoryInfo.New(fs.Path.Join(Path.Join(CheckoutDirectory.FullName, name)));
+			: fs.DirectoryInfo.New(fs.Path.Join(CheckoutDirectory.FullName, name));
 		return new Checkout
 		{
 			Repository = new Repository

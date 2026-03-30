@@ -213,7 +213,10 @@ public class DocumentationWebHost
 	{
 		await holder.EnsureApiReferencesAsync(ctx);
 
-		var path = Path.Join(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
+		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
+		var path = Path.GetFullPath(Path.Join(apiRoot, slug.Trim('/'), "index.html"));
+		if (!path.StartsWith(apiRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+			return Results.NotFound();
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)
 		{

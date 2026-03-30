@@ -111,7 +111,10 @@ public class StaticWebHost
 			return Results.NotFound();
 
 		await Task.CompletedTask;
-		var localPath = Path.Join(_contentRoot, slug.Replace('/', Path.DirectorySeparatorChar));
+		var contentRoot = Path.GetFullPath(_contentRoot);
+		var localPath = Path.GetFullPath(Path.Join(contentRoot, slug.Replace('/', Path.DirectorySeparatorChar)));
+		if (!localPath.StartsWith(contentRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+			return Results.NotFound();
 		var fileInfo = new FileInfo(localPath);
 		var directoryInfo = new DirectoryInfo(localPath);
 		if (directoryInfo.Exists)
