@@ -66,28 +66,26 @@ public static class FileSystemFactory
 	/// </summary>
 	public static IFileSystem InMemory() => new ScopedFileSystem(new MockFileSystem(), ReadOptions);
 
-	/// <summary>
-	/// Creates a <see cref="ScopedFileSystem"/> wrapping any <paramref name="inner"/> <see cref="IFileSystem"/>
-	/// (e.g. <c>MockFileSystem</c>), using the read workspace options.
-	/// </summary>
-	public static IFileSystem CreateScoped(IFileSystem inner) =>
+	/// <summary>Wraps <paramref name="inner"/> with read workspace options (.git allowed).</summary>
+	public static IFileSystem WrapToRead(IFileSystem inner) =>
 		new ScopedFileSystem(inner, ReadOptions);
 
 	/// <summary>
-	/// Creates a <see cref="ScopedFileSystem"/> wrapping any <paramref name="inner"/> <see cref="IFileSystem"/>
-	/// with additional scope roots declared by extensions (e.g. detection-rules folders outside the workspace).
+	/// Wraps <paramref name="inner"/> with read workspace options extended by
+	/// <paramref name="extensionRoots"/> (e.g. detection-rules folders declared via
+	/// <see cref="IDocsBuilderExtension.ExternalScopeRoots"/>).
 	/// </summary>
-	public static IFileSystem CreateScoped(IFileSystem inner, IEnumerable<string>? additionalRoots)
+	public static IFileSystem WrapToRead(IFileSystem inner, IEnumerable<string>? extensionRoots)
 	{
-		if (additionalRoots is null)
-			return CreateScoped(inner);
+		if (extensionRoots is null)
+			return WrapToRead(inner);
 
 		var roots = new[] { Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName }
-			.Concat(additionalRoots)
+			.Concat(extensionRoots)
 			.Distinct(StringComparer.OrdinalIgnoreCase)
 			.ToArray();
 		if (roots.Length == 2)
-			return CreateScoped(inner);
+			return WrapToRead(inner);
 
 		return new ScopedFileSystem(inner, new ScopedFileSystemOptions(roots)
 		{
@@ -95,4 +93,8 @@ public static class FileSystemFactory
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
 		});
 	}
+
+	/// <summary>Wraps <paramref name="inner"/> with write workspace options (.git not allowed).</summary>
+	public static IFileSystem WrapToWrite(IFileSystem inner) =>
+		new ScopedFileSystem(inner, WriteOptions);
 }

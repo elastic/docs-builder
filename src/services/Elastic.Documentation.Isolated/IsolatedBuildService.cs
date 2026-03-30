@@ -124,7 +124,7 @@ public class IsolatedBuildService(
 		else
 		{
 			using var codexReader = context.Configuration.Registry != DocSetRegistry.Public
-				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), fileSystem)
+				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
 				: null;
 
 			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
