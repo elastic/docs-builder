@@ -42,7 +42,7 @@ public class ReloadableGeneratorState : IDisposable
 		_isWatchBuild = isWatchBuild;
 		SourcePath = sourcePath;
 		OutputPath = outputPath;
-		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Combine(outputPath.FullName, "api"));
+		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Join(outputPath.FullName, "api"));
 
 		if (context.Configuration.Registry != DocSetRegistry.Public)
 			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), context.ReadFileSystem);

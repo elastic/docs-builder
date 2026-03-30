@@ -25,7 +25,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	public RemoveReleaseVersionTests(ITestOutputHelper output) : base(output)
 	{
 		_removeService = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystem);
-		_changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		_changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}
 
@@ -103,9 +103,9 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		// Matched files were removed; unmatched file was left in place
-		FileSystem.File.Exists(FileSystem.Path.Combine(_changelogDir, "pr-12345.yaml")).Should().BeFalse("PR 12345 is in the release");
-		FileSystem.File.Exists(FileSystem.Path.Combine(_changelogDir, "pr-12346.yaml")).Should().BeFalse("PR 12346 is in the release");
-		FileSystem.File.Exists(FileSystem.Path.Combine(_changelogDir, "pr-99999.yaml")).Should().BeTrue("PR 99999 is not in the release");
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "pr-12345.yaml")).Should().BeFalse("PR 12345 is in the release");
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "pr-12346.yaml")).Should().BeFalse("PR 12346 is in the release");
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "pr-99999.yaml")).Should().BeTrue("PR 99999 is not in the release");
 	}
 
 	[Fact]
@@ -143,7 +143,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		// Assert – file must still exist after a dry run
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		FileSystem.File.Exists(FileSystem.Path.Combine(_changelogDir, "pr-12345.yaml"))
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "pr-12345.yaml"))
 			.Should().BeTrue("dry run must not delete files");
 	}
 
@@ -280,9 +280,9 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		FileSystem.File.Exists(FileSystem.Path.Combine(_changelogDir, "es-pr-100.yaml")).Should().BeFalse();
-		FileSystem.File.Exists(FileSystem.Path.Combine(_changelogDir, "es-pr-200.yaml")).Should().BeFalse();
-		FileSystem.File.Exists(FileSystem.Path.Combine(_changelogDir, "es-pr-300.yaml")).Should().BeTrue("PR 300 is not in the release");
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "es-pr-100.yaml")).Should().BeFalse();
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "es-pr-200.yaml")).Should().BeFalse();
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "es-pr-300.yaml")).Should().BeTrue("PR 300 is not in the release");
 	}
 
 	// -----------------------------------------------------------------------
@@ -291,7 +291,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 
 	private async Task WriteChangelog(string filename, string content)
 	{
-		var path = FileSystem.Path.Combine(_changelogDir, filename);
+		var path = FileSystem.Path.Join(_changelogDir, filename);
 		await FileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, TestContext.Current.CancellationToken);
 	}
 

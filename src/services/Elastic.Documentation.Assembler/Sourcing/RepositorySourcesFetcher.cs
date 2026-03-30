@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
@@ -28,14 +29,15 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		var fs = context.ReadFileSystem;
 		var repositories = Configuration.AvailableRepositories;
 		var checkouts = new List<Checkout>();
-		var linkRegistrySnapshotPath = Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
+		var linkRegistrySnapshotPath = Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
 		if (!fs.File.Exists(linkRegistrySnapshotPath))
 			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
 		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
 		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
 		foreach (var repo in repositories.Values)
 		{
-			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
+			Paths.ValidateSinglePathSegment(repo.Name, nameof(repo.Name));
+			var checkoutFolder = fs.DirectoryInfo.New(Path.Join(context.CheckoutDirectory.FullName, repo.Name));
 			// if we are running locally, always allow repository path overrides. Otherwise, only for docs-builder.
 			if (!string.IsNullOrWhiteSpace(repo.Path) && (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")) || repo.Name == "docs-builder"))
 			{
@@ -106,7 +108,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 				}, c);
 			}).ConfigureAwait(false);
 		await context.WriteFileSystem.File.WriteAllTextAsync(
-			Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
+			Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
 			LinkRegistry.Serialize(linkRegistry),
 			ctx
 		);
@@ -118,7 +120,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 	}
 
 	public async Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default) => await context.WriteFileSystem.File.WriteAllTextAsync(
-			context.WriteFileSystem.Path.Combine(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
+			context.WriteFileSystem.Path.Join(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
 			LinkRegistry.Serialize(linkRegistrySnapshot),
 			ctx
 		);
@@ -136,9 +138,11 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 	// <param name="gitRef">The git reference to check out. Branch, commit or tag</param>
 	public Checkout CloneRef(Repository repository, string gitRef, bool pull = false, int attempt = 1, bool appendRepositoryName = true, bool assumeCloned = false)
 	{
+		if (appendRepositoryName)
+			Paths.ValidateSinglePathSegment(repository.Name, nameof(repository.Name));
 		var checkoutFolder =
 			 appendRepositoryName
-				? readFileSystem.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, repository.Name))
+				? readFileSystem.DirectoryInfo.New(Path.Join(checkoutDirectory.FullName, repository.Name))
 				: checkoutDirectory;
 
 		// if we are running locally, allow for repository path override
@@ -189,7 +193,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 				_logger.LogError(e, "{RepositoryName}: Failed to acquire current commit, falling back to recreating from scratch", repository.Name);
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
-				return CloneRef(repository, gitRef, pull, attempt + 1);
+				return CloneRef(repository, gitRef, pull, attempt + 1, appendRepositoryName, assumeCloned);
 			}
 		}
 		// Repository already checked out the same commit
@@ -218,7 +222,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 					repository.Name, gitRef, checkoutFolder.FullName);
 				checkoutFolder.Delete(true);
 				checkoutFolder.Refresh();
-				return CloneRef(repository, gitRef, pull, attempt + 1);
+				return CloneRef(repository, gitRef, pull, attempt + 1, appendRepositoryName, assumeCloned);
 			}
 		}
 

@@ -113,7 +113,7 @@ public record DetectionRule
 		if (VersionLock != null || checkoutDirectory == null)
 			return;
 
-		var versionLockPath = fileSystem.Path.Combine(
+		var versionLockPath = fileSystem.Path.Join(
 			checkoutDirectory.FullName,
 			"detection_rules",
 			"etc",

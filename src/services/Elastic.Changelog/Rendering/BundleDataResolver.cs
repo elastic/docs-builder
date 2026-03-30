@@ -87,7 +87,7 @@ public class BundleDataResolver(IFileSystem fileSystem)
 			return ReleaseNotesSerialization.ConvertBundledEntry(entry);
 
 		// Load from file (already validated to exist)
-		var filePath = fileSystem.Path.Combine(bundleDirectory, entry.File!.Name);
+		var filePath = fileSystem.Path.Join(bundleDirectory, entry.File!.Name);
 		var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
 
 		// Deserialize YAML

@@ -173,7 +173,7 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 			// to be ignored by Path.Combine.
 			var fullPath = Path.IsPathRooted(relativePath)
 				? relativePath
-				: Path.Combine(homeDirectory, relativePath);
+				: Path.Join(homeDirectory, relativePath);
 			trimmedPath = fullPath;
 		}
 		else if (trimmedPath == "~")

@@ -26,7 +26,7 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 	/// </summary>
 	protected async Task WriteOutputFileAsync(string outputDir, string titleSlug, string content, Cancel ctx)
 	{
-		var outputPath = FileSystem.Path.Combine(outputDir, titleSlug, OutputFileName);
+		var outputPath = FileSystem.Path.Join(outputDir, titleSlug, OutputFileName);
 		var outputDirectory = FileSystem.Path.GetDirectoryName(outputPath);
 		if (!string.IsNullOrWhiteSpace(outputDirectory) && !FileSystem.Directory.Exists(outputDirectory))
 			_ = FileSystem.Directory.CreateDirectory(outputDirectory);

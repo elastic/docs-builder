@@ -122,7 +122,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	{
 		fileSystem ??= sourceDirectory.FileSystem;
 		var docSet = Deserialize(yaml);
-		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
+		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(collector, docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", containerPath: "", context: docsetPath, docSet.SuppressDiagnostics);
 		// Collect excluded paths so they can be skipped during file processing (not just navigation)
@@ -207,8 +207,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			fullTocPath = string.IsNullOrEmpty(parentPath) ? tocRef.PathRelativeToDocumentationSet : $"{parentPath}/{tocRef.PathRelativeToDocumentationSet}";
 		}
 
-		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Combine(baseDirectory.FullName, fullTocPath));
-		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
+		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Join(baseDirectory.FullName, fullTocPath));
+		var tocFilePath = fileSystem.Path.Join(tocDirectory.FullName, "toc.yml");
 		var tocYmlExists = fileSystem.File.Exists(tocFilePath);
 
 		// Validate: TOC should not have children defined in parent YAML
@@ -526,7 +526,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		SortOrder? sortOrder,
 		IReadOnlyCollection<string>? exclude)
 	{
-		var directoryPath = fileSystem.Path.Combine(baseDirectory.FullName, folderPath);
+		var directoryPath = fileSystem.Path.Join(baseDirectory.FullName, folderPath);
 		var directory = fileSystem.DirectoryInfo.New(directoryPath);
 
 		if (!directory.Exists)

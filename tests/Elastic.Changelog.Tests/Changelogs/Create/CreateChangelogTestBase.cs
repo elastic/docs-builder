@@ -17,13 +17,13 @@ public abstract class CreateChangelogTestBase(ITestOutputHelper output) : Change
 
 	protected async Task<string> CreateConfigDirectory(string configContent)
 	{
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(configDir);
-		var configPath = FileSystem.Path.Combine(configDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(configDir, "changelog.yml");
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 		return configPath;
 	}
 
 	protected string CreateOutputDirectory() =>
-		FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 }

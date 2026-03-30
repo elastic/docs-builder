@@ -26,12 +26,12 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	public BundleReleaseVersionTests(ITestOutputHelper output) : base(output)
 	{
 		_bundlingService = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem);
-		_changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		_changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}
 
 	private string BundleOutputPath() =>
-		FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 
 	// -----------------------------------------------------------------------
 	// Core flow: release → PR list → bundle
@@ -228,7 +228,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 
 	private async Task WriteChangelog(string filename, string content)
 	{
-		var path = FileSystem.Path.Combine(_changelogDir, filename);
+		var path = FileSystem.Path.Join(_changelogDir, filename);
 		await FileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, TestContext.Current.CancellationToken);
 	}
 
