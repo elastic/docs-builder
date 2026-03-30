@@ -183,7 +183,7 @@ public partial class ChangelogBundlingService(
 			var directory = input.Directory!;
 
 			// Determine output path
-			var outputPath = input.Output ?? _fileSystem.Path.Combine(directory, "changelog-bundle.yaml");
+			var outputPath = input.Output ?? _fileSystem.Path.Join(directory, "changelog-bundle.yaml");
 
 			// Discover changelog files
 			var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
@@ -326,7 +326,7 @@ public partial class ChangelogBundlingService(
 					?? input.OutputDirectory
 					?? config.Bundle.Directory
 					?? _fileSystem.Directory.GetCurrentDirectory();
-				outputPath = _fileSystem.Path.Combine(outputDir, outputPattern);
+				outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -376,7 +376,7 @@ public partial class ChangelogBundlingService(
 		// Apply output default when --output not specified: use bundle.output_directory if set
 		var output = input.Output;
 		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
-			output = Path.Combine(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+			output = Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
 
 		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
 		var resolve = input.Resolve ?? config.Bundle.Resolve;
@@ -484,7 +484,7 @@ public partial class ChangelogBundlingService(
 			var extension = _fileSystem.Path.GetExtension(outputPath);
 			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 			var uniqueFileName = $"{fileNameWithoutExtension}-{timestamp}{extension}";
-			outputPath = _fileSystem.Path.Combine(directory, uniqueFileName);
+			outputPath = _fileSystem.Path.Join(directory, uniqueFileName);
 			_logger.LogInformation("Output file already exists, using unique filename: {OutputPath}", outputPath);
 		}
 

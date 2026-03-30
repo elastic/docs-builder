@@ -420,11 +420,11 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 				A<CancellationToken>._))
 			.Returns(pr3Info);
 
-		var tempDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var tempDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with newline-delimited PRs (simulating what ChangelogCommand would read)
-		var prsFile = FileSystem.Path.Combine(tempDir, "prs.txt");
+		var prsFile = FileSystem.Path.Join(tempDir, "prs.txt");
 		var prsFileContent =
 			"""
 			https://github.com/elastic/elasticsearch/pull/1111
@@ -518,11 +518,11 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 				A<CancellationToken>._))
 			.Returns(pr2Info);
 
-		var tempDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var tempDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with PRs
-		var prsFile = FileSystem.Path.Combine(tempDir, "prs.txt");
+		var prsFile = FileSystem.Path.Join(tempDir, "prs.txt");
 		var prsFileContent =
 			"""
 			https://github.com/elastic/elasticsearch/pull/2222

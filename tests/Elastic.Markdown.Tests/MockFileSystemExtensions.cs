@@ -47,6 +47,6 @@ public static class MockFileSystemExtensions
 				yaml.WriteLine($"  {key}: {value}");
 		}
 
-		fileSystem.AddFile(Path.Combine(root.FullName, "docset.yml"), new MockFileData(yaml.ToString()));
+		fileSystem.AddFile(Path.Join(root.FullName, "docset.yml"), new MockFileData(yaml.ToString()));
 	}
 }

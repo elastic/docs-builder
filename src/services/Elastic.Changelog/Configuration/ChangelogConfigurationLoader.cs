@@ -66,7 +66,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	public async Task<ChangelogConfiguration?> LoadChangelogConfiguration(IDiagnosticsCollector collector, string? configPath, Cancel ctx)
 	{
 		// Determine config file path
-		var finalConfigPath = configPath ?? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), "docs", "changelog.yml");
+		var finalConfigPath = configPath ?? fileSystem.Path.Join(fileSystem.Directory.GetCurrentDirectory(), "docs", "changelog.yml");
 
 		if (!fileSystem.File.Exists(finalConfigPath))
 		{
@@ -524,8 +524,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		var cwd = fileSystem.Directory.GetCurrentDirectory();
 		var candidates = new[]
 		{
-			fileSystem.Path.Combine(cwd, "changelog.yml"),
-			fileSystem.Path.Combine(cwd, "docs", "changelog.yml")
+			fileSystem.Path.Join(cwd, "changelog.yml"),
+			fileSystem.Path.Join(cwd, "docs", "changelog.yml")
 		};
 
 		var foundPath = candidates.FirstOrDefault(fileSystem.File.Exists);

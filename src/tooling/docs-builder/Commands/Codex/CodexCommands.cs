@@ -227,7 +227,7 @@ internal sealed class CodexCommands(
 		Cancel ctx = default)
 	{
 		var fs = new FileSystem();
-		var servePath = path ?? fs.Path.Combine(
+		var servePath = path ?? fs.Path.Join(
 			Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
 		var host = new StaticWebHost(port, servePath);

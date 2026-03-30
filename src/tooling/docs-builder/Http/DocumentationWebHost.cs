@@ -213,7 +213,7 @@ public class DocumentationWebHost
 	{
 		await holder.EnsureApiReferencesAsync(ctx);
 
-		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
+		var path = Path.Join(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)
 		{
@@ -243,7 +243,7 @@ public class DocumentationWebHost
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		slug = slug.TrimEnd('/');
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
+		var s = Path.GetExtension(slug) == string.Empty ? Path.Join(slug, "index.md") : slug;
 		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
 		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))

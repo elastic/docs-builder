@@ -12,7 +12,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
@@ -73,7 +73,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetContainsExpectedFolders()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
@@ -93,7 +93,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetHasValidNestedStructure()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
@@ -118,7 +118,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetContainsFileReferencesWithChildren()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);

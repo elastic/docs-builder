@@ -220,7 +220,7 @@ public class AssemblerBuilder(
 		var uniqueRedirects = redirects
 			.Where(x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
 			.ToDictionary();
-		var redirectsFile = context.WriteFileSystem.FileInfo.New(Path.Combine(context.OutputDirectory.FullName, "redirects.json"));
+		var redirectsFile = context.WriteFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, "redirects.json"));
 		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", uniqueRedirects.Count, redirectsFile.FullName);
 
 		var redirectsJson = JsonSerializer.Serialize(uniqueRedirects, SourceGenerationContext.Default.DictionaryStringString);

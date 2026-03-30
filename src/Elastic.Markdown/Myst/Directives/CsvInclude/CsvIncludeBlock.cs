@@ -50,7 +50,7 @@ public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context)
 		if (csvPath.StartsWith('/'))
 			csvFrom = Build.DocumentationSourceDirectory.FullName;
 
-		CsvFilePath = Path.Combine(csvFrom, csvPath.TrimStart('/'));
+		CsvFilePath = Path.Join(csvFrom, csvPath.TrimStart('/'));
 		CsvFilePathRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, CsvFilePath);
 
 		if (Build.ReadFileSystem.File.Exists(CsvFilePath))

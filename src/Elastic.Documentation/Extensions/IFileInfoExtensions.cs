@@ -34,7 +34,7 @@ public static class IFileInfoExtensions
 		List<string> intermediaryDirectories = ["x"];
 		while (!file.IsSubPathOf(parentDirectory))
 		{
-			var path = Path.GetFullPath(fs.Path.Combine([parentDirectory.FullName, .. intermediaryDirectories, relativePath]));
+			var path = Path.GetFullPath(fs.Path.Join([parentDirectory.FullName, .. intermediaryDirectories, relativePath]));
 			file = fs.FileInfo.New(path);
 			intermediaryDirectories.Add("x");
 		}
@@ -52,7 +52,7 @@ public static class IFileInfoExtensions
 	public static IFileInfo NewCombine(this IFileInfoFactory fileInfo, params string[] paths)
 	{
 		paths = paths.Select(f => f.OptionalWindowsReplace()).ToArray();
-		var fi = fileInfo.New(Path.Combine(paths));
+		var fi = fileInfo.New(Path.Join(paths));
 		return fi;
 	}
 }
@@ -61,7 +61,7 @@ public static class IFileSystemExtensions
 {
 	public static IDirectoryInfo NewDirInfo(this IFileSystem fs, string path) => fs.DirectoryInfo.New(path);
 
-	public static IDirectoryInfo NewDirInfo(this IFileSystem fs, params string[] paths) => fs.DirectoryInfo.New(Path.Combine(paths));
+	public static IDirectoryInfo NewDirInfo(this IFileSystem fs, params string[] paths) => fs.DirectoryInfo.New(Path.Join(paths));
 
 	public static IFileInfo NewFileInfo(this IFileSystem fs, string path) => fs.FileInfo.NewCombine(path);
 
@@ -174,7 +174,7 @@ public static class IDirectoryInfoExtensions
 		// Handle directory-relative paths (convention: paths starting with '/')
 		// This convention means "relative to this directory" rather than an absolute filesystem path
 		if (relativePath.StartsWith('/'))
-			return fsPath.Combine(directory.FullName, normalizedPath.TrimStart(fsPath.DirectorySeparatorChar));
+			return fsPath.Join(directory.FullName, normalizedPath.TrimStart(fsPath.DirectorySeparatorChar));
 
 		// Handle absolute filesystem paths - use directly
 		// This prevents Path.Combine from silently dropping the base directory
@@ -182,6 +182,6 @@ public static class IDirectoryInfoExtensions
 			return normalizedPath;
 
 		// Handle relative paths
-		return fsPath.Combine(directory.FullName, normalizedPath);
+		return fsPath.Join(directory.FullName, normalizedPath);
 	}
 }

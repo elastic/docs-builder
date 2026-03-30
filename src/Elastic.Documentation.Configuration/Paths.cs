@@ -56,7 +56,7 @@ public static class Paths
 		if (isCI ?? !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
 			return workingDirectoryRoot;
 
-		var gitPath = Path.Combine(workingDirectoryRoot.FullName, ".git");
+		var gitPath = Path.Join(workingDirectoryRoot.FullName, ".git");
 
 		if (fileSystem.Directory.Exists(gitPath))
 			return workingDirectoryRoot;
@@ -101,7 +101,7 @@ public static class Paths
 	private static DirectoryInfo GetApplicationFolder()
 	{
 		var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		var elasticPath = Path.Combine(localPath, "elastic", "docs-builder");
+		var elasticPath = Path.Join(localPath, "elastic", "docs-builder");
 		return new DirectoryInfo(elasticPath);
 	}
 
@@ -129,11 +129,11 @@ public static class Paths
 	private static string? GetDocsetPathFromKnownLocations(IFileSystem readFileSystem, IDirectoryInfo rootPath)
 	{
 		string[] files = ["docset.yml", "_docset.yml"];
-		string[] knownFolders = [rootPath.FullName, Path.Combine(rootPath.FullName, "docs")];
+		string[] knownFolders = [rootPath.FullName, Path.Join(rootPath.FullName, "docs")];
 		var mostLikelyTargets =
 			from file in files
 			from folder in knownFolders
-			select Path.Combine(folder, file);
+			select Path.Join(folder, file);
 
 		return mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
 	}

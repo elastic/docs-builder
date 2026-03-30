@@ -24,13 +24,13 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		_mockReleaseService = A.Fake<IGitHubReleaseService>();
 		_service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem, _mockReleaseService);
 
-		_changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		_changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}
 
 	private async Task<string> CreateConfigAsync(string configContent)
 	{
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 		return configPath;
@@ -84,8 +84,8 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/200
 			""";
 
-		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-first-feature.yaml");
-		var file2 = FileSystem.Path.Combine(_changelogDir, "1755268140-second-feature.yaml");
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-first-feature.yaml");
+		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-second-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
@@ -100,7 +100,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
 			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
-		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -160,7 +160,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
-		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-some-feature.yaml");
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-some-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
 		var releaseBody = "* Some feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
@@ -169,7 +169,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
 			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
-		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -312,7 +312,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/999
 			""";
 
-		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-latest-feature.yaml");
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-latest-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
 		var releaseBody = "* Latest feature by @user in https://github.com/elastic/elasticsearch/pull/999\n";
@@ -320,7 +320,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "latest", TestContext.Current.CancellationToken))
 			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
-		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -491,7 +491,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
-		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-beta-feature.yaml");
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-beta-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
 		var releaseBody = "* Beta feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
@@ -499,7 +499,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0-beta.1", TestContext.Current.CancellationToken))
 			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0-beta.1", Name = "9.2.0 beta 1", Body = releaseBody });
 
-		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -560,7 +560,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			  - https://github.com/elastic/apm-agent-dotnet/pull/42
 			""";
 
-		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-preview-feature.yaml");
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-preview-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
 		var releaseBody = "* Preview feature by @user in https://github.com/elastic/apm-agent-dotnet/pull/42\n";
@@ -568,7 +568,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "apm-agent-dotnet", "v1.34.1-preview.1", TestContext.Current.CancellationToken))
 			.Returns(new GitHubReleaseInfo { TagName = "v1.34.1-preview.1", Name = "1.34.1 preview 1", Body = releaseBody });
 
-		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -628,7 +628,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 
-		var file1 = FileSystem.Path.Combine(_changelogDir, "1755268130-some-feature.yaml");
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-some-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
 		var releaseBody = "* Some feature by @user in https://github.com/elastic/elasticsearch/pull/100\n";
@@ -637,7 +637,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		A.CallTo(() => _mockReleaseService.FetchReleaseAsync("elastic", "elasticsearch", "9.2.0", TestContext.Current.CancellationToken))
 			.Returns(new GitHubReleaseInfo { TagName = "v9.2.0", Name = "9.2.0", Body = releaseBody });
 
-		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments

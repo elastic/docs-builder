@@ -15,7 +15,7 @@ namespace Elastic.Documentation.LinkIndex;
 public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 {
 	private const string LinkIndexOrigin = "elastic/codex-link-index";
-	private static readonly string CloneDirectory = Path.Combine(
+	private static readonly string CloneDirectory = Path.Join(
 		Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
 		".docs-builder",
 		"codex-link-index");
@@ -51,7 +51,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		await EnsureCloneAsync(cancellationToken);
 		if (Path.IsPathRooted(_environment))
 			throw new ArgumentException($"Environment '{_environment}' must be a relative path segment.");
-		var registryPath = Path.Combine(CloneDirectory, _environment, "link-index.json");
+		var registryPath = Path.Join(CloneDirectory, _environment, "link-index.json");
 		if (!_fileSystem.File.Exists(registryPath))
 			throw new FileNotFoundException($"Link index registry not found at {registryPath}. Ensure the codex-link-index repository has {_environment}/link-index.json.");
 
@@ -65,7 +65,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 		await EnsureCloneAsync(cancellationToken);
 		if (Path.IsPathRooted(key))
 			throw new ArgumentException($"Repository key '{key}' must be a relative path.", nameof(key));
-		var linksPath = Path.Combine(CloneDirectory, key);
+		var linksPath = Path.Join(CloneDirectory, key);
 		if (!_fileSystem.File.Exists(linksPath))
 			throw new FileNotFoundException($"Repository links not found at {linksPath}.");
 
@@ -81,7 +81,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			if (_ensuredClone)
 				return;
 
-			var gitDir = Path.Combine(CloneDirectory, ".git");
+			var gitDir = Path.Join(CloneDirectory, ".git");
 			if (_skipFetch)
 			{
 				if (!_fileSystem.Directory.Exists(gitDir))

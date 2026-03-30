@@ -35,7 +35,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		_output = output;
 		FileSystem = new FileSystem();
 		var checkoutDirectory = FileSystem.DirectoryInfo.New(
-			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		CheckoutDirectory = checkoutDirectory.Exists
 			? checkoutDirectory.GetDirectories().FirstOrDefault(d => d.Name is "next" or "current") ?? checkoutDirectory
@@ -51,7 +51,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		var name = repository.Name;
 		var path = repository.Path is { } p
 			? fs.DirectoryInfo.New(p)
-			: fs.DirectoryInfo.New(fs.Path.Combine(Path.Combine(CheckoutDirectory.FullName, name)));
+			: fs.DirectoryInfo.New(fs.Path.Join(Path.Join(CheckoutDirectory.FullName, name)));
 		return new Checkout
 		{
 			Repository = new Repository

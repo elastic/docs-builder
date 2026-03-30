@@ -28,14 +28,14 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		var fs = context.ReadFileSystem;
 		var repositories = Configuration.AvailableRepositories;
 		var checkouts = new List<Checkout>();
-		var linkRegistrySnapshotPath = Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
+		var linkRegistrySnapshotPath = Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
 		if (!fs.File.Exists(linkRegistrySnapshotPath))
 			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
 		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
 		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
 		foreach (var repo in repositories.Values)
 		{
-			var checkoutFolder = fs.DirectoryInfo.New(Path.Combine(context.CheckoutDirectory.FullName, repo.Name));
+			var checkoutFolder = fs.DirectoryInfo.New(Path.Join(context.CheckoutDirectory.FullName, repo.Name));
 			// if we are running locally, always allow repository path overrides. Otherwise, only for docs-builder.
 			if (!string.IsNullOrWhiteSpace(repo.Path) && (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")) || repo.Name == "docs-builder"))
 			{
@@ -106,7 +106,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 				}, c);
 			}).ConfigureAwait(false);
 		await context.WriteFileSystem.File.WriteAllTextAsync(
-			Path.Combine(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
+			Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
 			LinkRegistry.Serialize(linkRegistry),
 			ctx
 		);
@@ -118,7 +118,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 	}
 
 	public async Task WriteLinkRegistrySnapshot(LinkRegistry linkRegistrySnapshot, Cancel ctx = default) => await context.WriteFileSystem.File.WriteAllTextAsync(
-			context.WriteFileSystem.Path.Combine(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
+			context.WriteFileSystem.Path.Join(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
 			LinkRegistry.Serialize(linkRegistrySnapshot),
 			ctx
 		);
@@ -138,7 +138,7 @@ public class RepositorySourcer(ILoggerFactory logFactory, IDirectoryInfo checkou
 	{
 		var checkoutFolder =
 			 appendRepositoryName
-				? readFileSystem.DirectoryInfo.New(Path.Combine(checkoutDirectory.FullName, repository.Name))
+				? readFileSystem.DirectoryInfo.New(Path.Join(checkoutDirectory.FullName, repository.Name))
 				: checkoutDirectory;
 
 		// if we are running locally, allow for repository path override

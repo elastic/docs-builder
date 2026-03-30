@@ -65,7 +65,7 @@ public class ConfigurationCloneService(
 			return false;
 		}
 
-		var gitRefInformationFile = Path.Combine(checkoutFolder.FullName, "config", "git-ref.txt");
+		var gitRefInformationFile = Path.Join(checkoutFolder.FullName, "config", "git-ref.txt");
 		await fs.File.WriteAllTextAsync(gitRefInformationFile, checkout.HeadReference, ctx);
 
 		return collector.Errors == 0;

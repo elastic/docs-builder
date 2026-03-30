@@ -55,10 +55,10 @@ public class LlmMarkdownExporter : IMarkdownExporter
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
 		var outputDirectory = outputFolder.FullName;
-		var zipPath = Path.Combine(outputDirectory, "llm.zip");
+		var zipPath = Path.Join(outputDirectory, "llm.zip");
 
 		// Create the llms.txt file with boilerplate content
-		var llmsTxt = Path.Combine(outputDirectory, "llms.txt");
+		var llmsTxt = Path.Join(outputDirectory, "llms.txt");
 		await outputFolder.FileSystem.File.WriteAllTextAsync(llmsTxt, LlmsTxtTemplate, ctx);
 
 		using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
@@ -106,7 +106,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			return false;
 
 		var fs = fileContext.BuildContext.ReadFileSystem;
-		var expected = fs.FileInfo.New(Path.Combine(fileContext.BuildContext.OutputDirectory.FullName, "index.html"));
+		var expected = fs.FileInfo.New(Path.Join(fileContext.BuildContext.OutputDirectory.FullName, "index.html"));
 		return fileContext.DefaultOutputFile.FullName == expected.FullName;
 	}
 	private static IFileInfo GetLlmOutputFile(IFileSystem writeFileSystem, MarkdownExportFileContext fileContext)
@@ -121,12 +121,12 @@ public class LlmMarkdownExporter : IMarkdownExporter
 			var root = fileContext.BuildContext.OutputDirectory;
 
 			if (fileContext.BuildContext.BuildType != BuildType.Codex && defaultOutputFile.Directory!.FullName == root.FullName)
-				return writeFileSystem.FileInfo.New(Path.Combine(root.FullName, "llms.txt"));
+				return writeFileSystem.FileInfo.New(Path.Join(root.FullName, "llms.txt"));
 
 			// For index files: /docs/section/index.html -> /docs/section.md
 			// This allows users to append .md to any URL path
 			var folderName = defaultOutputFile.Directory!.Name;
-			return writeFileSystem.FileInfo.New(Path.Combine(
+			return writeFileSystem.FileInfo.New(Path.Join(
 				defaultOutputFile.Directory!.Parent!.FullName,
 				$"{folderName}.md"
 			));
@@ -134,7 +134,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		// Regular files: /docs/section/page.html -> /docs/section/page.llm.md
 		var directory = defaultOutputFile.Directory!.FullName;
 		var baseName = Path.GetFileNameWithoutExtension(defaultOutputFile.Name);
-		return writeFileSystem.FileInfo.New(Path.Combine(directory, $"{baseName}.md"));
+		return writeFileSystem.FileInfo.New(Path.Join(directory, $"{baseName}.md"));
 	}
 
 

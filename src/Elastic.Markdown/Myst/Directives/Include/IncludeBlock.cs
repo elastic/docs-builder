@@ -65,7 +65,7 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			return;
 		}
 
-		IncludePath = Path.GetFullPath(Path.Combine(includeFrom, trimmedPath));
+		IncludePath = Path.GetFullPath(Path.Join(includeFrom, trimmedPath));
 		IncludePathRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, IncludePath);
 
 		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);

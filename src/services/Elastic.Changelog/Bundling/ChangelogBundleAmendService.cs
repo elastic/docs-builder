@@ -185,7 +185,7 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 		var baseName = _fileSystem.Path.GetFileNameWithoutExtension(bundlePath);
 		var extension = _fileSystem.Path.GetExtension(bundlePath);
 
-		return _fileSystem.Path.Combine(directory, $"{baseName}.amend-{amendNumber}{extension}");
+		return _fileSystem.Path.Join(directory, $"{baseName}.amend-{amendNumber}{extension}");
 	}
 
 	private async Task<BundledEntry?> LoadChangelogFileAsync(
