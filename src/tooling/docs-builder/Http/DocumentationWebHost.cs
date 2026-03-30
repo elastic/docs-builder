@@ -211,6 +211,8 @@ public class DocumentationWebHost
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
+		await holder.EnsureApiReferencesAsync(ctx);
+
 		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)

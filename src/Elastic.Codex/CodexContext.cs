@@ -45,7 +45,7 @@ public class CodexContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "clone");
+		var defaultCheckoutDirectory = Path.Combine(Paths.GitCommonRoot.FullName, ".artifacts", "codex", "clone");
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 
 		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
