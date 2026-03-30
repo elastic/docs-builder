@@ -20,6 +20,8 @@ interface Props {
     gitCommit: string
     /** Full ref from GitHub Actions (e.g. refs/pull/123/merge). */
     githubRef?: string
+    /** When true, deployment info is hidden (not relevant in air-gapped environments). */
+    airGapped?: boolean
 }
 
 export const Header = ({
@@ -29,6 +31,7 @@ export const Header = ({
     gitBranch,
     gitCommit,
     githubRef,
+    airGapped = false,
 }: Props) => {
     const { euiTheme } = useEuiTheme()
     const containerRef = useRef<HTMLSpanElement>(null)
@@ -61,16 +64,20 @@ export const Header = ({
                             </span>,
                         ],
                     },
-                    {
-                        items: [
-                            <DeploymentInfo
-                                gitBranch={gitBranch}
-                                gitCommit={gitCommit}
-                                githubRepository={'elastic/' + githubRepository}
-                                githubRef={githubRef}
-                            />,
-                        ],
-                    },
+                    ...(!airGapped
+                        ? [
+                            {
+                                items: [
+                                    <DeploymentInfo
+                                        gitBranch={gitBranch}
+                                        gitCommit={gitCommit}
+                                        githubRepository={'elastic/' + githubRepository}
+                                        githubRef={githubRef}
+                                    />,
+                                ],
+                            },
+                        ]
+                        : []),
                 ]}
             />
         </EuiProvider>
@@ -88,6 +95,7 @@ customElements.define(
             gitBranch: 'string',
             gitCommit: 'string',
             githubRef: 'string',
+            airGapped: 'boolean',
         },
     })
 )

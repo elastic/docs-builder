@@ -184,8 +184,8 @@ let private gzipCompressDirectory (directory: string) =
     printfn "Compression complete"
 
 let private airGappedBuild _ =
-    exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "clone" "--environment" "prod" }
-    exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "build" "--exporters" "html" "--environment" "prod" }
+    exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "clone" "--environment" "air-gapped" }
+    exec { run "dotnet" "run" "--project" "src/tooling/docs-builder" "--" "assembler" "build" "--exporters" "html" "--environment" "air-gapped" }
 
     let assemblyDir = Path.Combine(Paths.Root.FullName, ".artifacts", "assembly")
     let searchDir = Path.Combine(assemblyDir, "docs", "_search")
