@@ -100,11 +100,15 @@ public class IsolatedBuildService(
 		// At some point in the future we can remove this try catch
 		catch (Exception e) when (runningOnCi && e.Message.StartsWith("Can not locate docset.yml file in", OrdinalIgnoreCase))
 		{
+			// Derive the default output from `path` so it stays within the write FS scope.
+			// Using Paths.WorkingDirectoryRoot would be wrong when --path points to a different repo.
+			var rootFolder = !string.IsNullOrWhiteSpace(path) ? path : Paths.WorkingDirectoryRoot.FullName;
+			var writeFs = writeFileSystem ?? fileSystem;
 			var outputDirectory = !string.IsNullOrWhiteSpace(output)
-				? fileSystem.DirectoryInfo.New(output)
-				: fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts/docs/html"));
+				? writeFs.DirectoryInfo.New(output)
+				: writeFs.DirectoryInfo.New(Path.Join(rootFolder, ".artifacts/docs/html"));
 			// we temporarily do not error when pointed to a non-documentation folder.
-			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
+			_ = writeFs.Directory.CreateDirectory(outputDirectory.FullName);
 
 			_logger.LogInformation("Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {Message}",
 				e.Message);

@@ -133,7 +133,8 @@ public static class FileSystemFactory
 		if (output is not null)
 		{
 			var absOutput = Path.IsPathRooted(output) ? output : Path.GetFullPath(output);
-			if (!absOutput.StartsWith(gitRoot, StringComparison.OrdinalIgnoreCase))
+			var plain = new FileSystem();
+			if (!plain.DirectoryInfo.New(absOutput).IsSubPathOf(plain.DirectoryInfo.New(gitRoot)))
 				roots.Add(absOutput);
 		}
 

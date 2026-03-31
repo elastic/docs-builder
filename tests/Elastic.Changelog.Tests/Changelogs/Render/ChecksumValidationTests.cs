@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
@@ -118,7 +119,7 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 	public async Task ValidateBundle_ResolvedEntry_SkipsChecksumValidation()
 	{
 		// Arrange — resolved entry has inline data, no file reference needed
-		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -164,14 +165,14 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		string fileOnDisk,
 		string storedChecksum)
 	{
-		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		var changelogFileName = "1755268130-feature.yaml";
 		var changelogFile = FileSystem.Path.Join(changelogDir, changelogFileName);
 		await FileSystem.File.WriteAllTextAsync(changelogFile, fileOnDisk, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -195,7 +196,7 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		new()
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
-			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString()),
 			Title = "9.2.0"
 		};
 }
