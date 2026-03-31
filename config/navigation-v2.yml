@@ -1,7 +1,7 @@
 nav:
   - label: Elasticsearch fundamentals
     children:
-    - group: Get started in seconds (New)
+    - group: Get started in seconds
       page: docs-content://get-started/index.md
       children:
       - page: docs-content://get-started/evaluate-elastic.md
@@ -177,21 +177,63 @@ nav:
           title: Choose/Plan your ingest method
         - page: docs-content://manage-data/ingest/ingest-reference-architectures.md
           title: Ingest architectures
-        - group: Ingest by solution (New - Crosslinks)
+        - group: Ingest by solution
           children:
           - page: docs-content://solutions/search/ingest-for-search.md
             title: Ingesting data for search use cases
-          - title: Ingesting data for observability (New)
+          - title: Ingesting data for observability
           - page: docs-content://solutions/security/get-started/ingest-data-to-elastic-security.md
             title: Ingesting data for security (Move from Solutions)
         - page: docs-content://manage-data/ingest/ingesting-timeseries-data.md
           title: Ingesting time series data
-        - title: Logs (Solutions / Obs)
-        - group: Ingest data from applications (New)
+        - group: Ingest logs
+          page: docs-content://solutions/observability/logs.md
           children:
-          - page: docs-content://manage-data/ingest/ingesting-data-from-applications.md
-            title: Collect application data (Solutions / Obs)
-          - title: APM agents
+          - page: docs-content://solutions/observability/logs/get-started-with-system-logs.md
+            title: Get started with system logs
+          - page: docs-content://solutions/observability/logs/stream-any-log-file.md
+            title: Stream any log file
+          - page: docs-content://solutions/observability/logs/stream-any-log-file-using-edot-collector.md
+            title: Stream any log file using EDOT Collector
+          - group: Stream application logs
+            page: docs-content://solutions/observability/logs/stream-application-logs.md
+            children:
+            - page: docs-content://solutions/observability/logs/plaintext-application-logs.md
+              title: Plaintext application logs
+            - page: docs-content://solutions/observability/logs/ecs-formatted-application-logs.md
+              title: ECS formatted application logs
+            - page: docs-content://solutions/observability/logs/apm-agent-log-sending.md
+              title: APM agent log sending
+          - page: docs-content://solutions/observability/logs/parse-route-logs.md
+            title: Parse and route logs
+          - page: docs-content://solutions/observability/logs/filter-aggregate-logs.md
+            title: Filter and aggregate logs
+          - group: Explore logs
+            page: docs-content://solutions/observability/logs/explore-logs.md
+            children:
+            - page: docs-content://solutions/observability/logs/discover-logs.md
+              title: Discover logs
+            - page: docs-content://solutions/observability/logs/categorize-log-entries.md
+              title: Categorize log entries
+            - page: docs-content://solutions/observability/logs/inspect-log-anomalies.md
+              title: Inspect log anomalies
+          - page: docs-content://solutions/observability/logs/run-pattern-analysis-on-log-data.md
+            title: Run pattern analysis on log data
+          - page: docs-content://solutions/observability/logs/log-data-sources.md
+            title: Log data sources
+          - page: docs-content://solutions/observability/logs/logs-data-retention.md
+            title: Logs data retention
+          - page: docs-content://solutions/observability/logs/add-service-name-to-logs.md
+            title: Add service name to logs
+          - group: Logs index template reference
+            page: docs-content://solutions/observability/logs/logs-index-template-reference.md
+            children:
+            - page: docs-content://solutions/observability/logs/logs-index-template-defaults.md
+              title: Logs index template defaults
+        - group: Ingest data from applications
+          page: docs-content://manage-data/ingest/ingesting-data-from-applications.md
+          children:
+          - toc: docs-content://reference/apm-agents
           - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-data-with-nodejs-on-elasticsearch-service.md
             title: Ingest data with Node.js
           - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-data-with-python-on-elasticsearch-service.md
@@ -204,7 +246,7 @@ nav:
             title: Ingest logs from a Python application using Filebeat
           - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-logs-from-nodejs-web-application-using-filebeat.md
             title: Ingest logs from a Node.js web application using Filebeat
-        - title: Ingest data using the API (New)
+        - title: Ingest data using the API
         - page: docs-content://manage-data/ingest/upload-data-files.md
           title: Upload data files
         - page: docs-content://manage-data/ingest/sample-data.md
@@ -220,7 +262,8 @@ nav:
             title: Minimal-downtime migration using snapshots
           - page: docs-content://manage-data/migrate/migrate-internal-indices.md
             title: Migrate system indices
-      - group: Ingest tools (from Reference)
+      - group: Ingest tools
+        page: docs-content://reference/ingestion-tools/index.md
         children:
         - toc: docs-content://reference/fleet
         - toc: opentelemetry://reference
