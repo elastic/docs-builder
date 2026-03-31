@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj"/>
     <ProjectReference Include="..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
     <ProjectReference Include="..\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj"/>
+    <ProjectReference Include="..\Elastic.Documentation.Integrations\Elastic.Documentation.Integrations.csproj"/>
   </ItemGroup>
 
 </Project>
