@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.Linq;
-using Nullean.ScopedFileSystem;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
@@ -13,6 +12,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 

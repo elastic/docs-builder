@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.Security.Cryptography;
-using Nullean.ScopedFileSystem;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
@@ -17,6 +16,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 

@@ -5,13 +5,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
-using Nullean.ScopedFileSystem;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 

@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
-using Nullean.ScopedFileSystem;
 using AngleSharp;
 using AwesomeAssertions;
 using Documentation.Builder;
@@ -22,6 +21,7 @@ using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Nullean.ScopedFileSystem;
 using RazorSlices;
 
 namespace Elastic.Assembler.IntegrationTests;

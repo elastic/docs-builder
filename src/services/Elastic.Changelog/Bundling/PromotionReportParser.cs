@@ -4,11 +4,11 @@
 
 using System.IO.Abstractions;
 using System.Net.Http.Headers;
-using Nullean.ScopedFileSystem;
-using Elastic.Documentation.Configuration;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 

@@ -4,7 +4,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
 using System.Text.Json.Serialization;
 using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
@@ -15,6 +14,7 @@ using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
+using Nullean.ScopedFileSystem;
 using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Rendering;

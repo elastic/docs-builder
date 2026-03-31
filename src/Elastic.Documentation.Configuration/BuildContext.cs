@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.Reflection;
-using Nullean.ScopedFileSystem;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
@@ -14,6 +13,7 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
 

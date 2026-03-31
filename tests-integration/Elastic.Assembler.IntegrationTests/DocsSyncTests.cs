@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.IO.Abstractions.TestingHelpers;
-using Nullean.ScopedFileSystem;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
@@ -17,6 +16,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 

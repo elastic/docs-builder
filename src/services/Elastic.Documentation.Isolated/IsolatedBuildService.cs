@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using Nullean.ScopedFileSystem;
 using Elastic.ApiExplorer;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
@@ -21,6 +20,7 @@ using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 using static System.StringComparison;
 
 namespace Elastic.Documentation.Isolated;

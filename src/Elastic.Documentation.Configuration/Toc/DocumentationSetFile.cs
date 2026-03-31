@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Nullean.ScopedFileSystem;
 using YamlDotNet.Serialization;
 using static Elastic.Documentation.Configuration.SymlinkValidator;
 

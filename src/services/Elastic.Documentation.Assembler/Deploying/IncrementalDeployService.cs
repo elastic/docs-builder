@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Transfer;
@@ -13,6 +12,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Deploying;
 

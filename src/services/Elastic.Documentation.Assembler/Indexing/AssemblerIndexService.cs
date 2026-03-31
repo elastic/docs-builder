@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation.Assembler.Indexing;

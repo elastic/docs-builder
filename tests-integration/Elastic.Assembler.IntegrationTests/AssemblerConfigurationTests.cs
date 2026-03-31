@@ -6,10 +6,10 @@ using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Assembler.IntegrationTests;
 

@@ -7,10 +7,10 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Links.CrossLinks;
 

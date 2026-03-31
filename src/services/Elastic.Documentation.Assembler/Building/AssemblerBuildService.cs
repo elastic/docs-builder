@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.Text;
-using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
@@ -16,6 +15,7 @@ using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Building;
 

@@ -5,8 +5,8 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
 using Elastic.Documentation.Links;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.LinkIndex;
 

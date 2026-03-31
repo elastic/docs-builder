@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
 using Elastic.Codex.Building;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
@@ -11,6 +10,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex.Indexing;
 

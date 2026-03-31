@@ -5,7 +5,6 @@
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text.Json;
-using Nullean.ScopedFileSystem;
 using Elastic.Codex.Navigation;
 using Elastic.Codex.Page;
 using Elastic.Codex.Sourcing;
@@ -26,6 +25,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex.Building;
 

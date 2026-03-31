@@ -7,8 +7,6 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Nullean.ScopedFileSystem;
-using Elastic.Documentation;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
@@ -133,11 +131,9 @@ public class CrossLinkRegistryTests
 		IDirectoryInfo documentationSourceDirectory)
 		: IDocumentationSetContext
 	{
-		private readonly ScopedFileSystem _scopedFileSystem = FileSystemFactory.WrapToRead(fileSystem);
-
 		public IDiagnosticsCollector Collector => collector;
-		public ScopedFileSystem ReadFileSystem => _scopedFileSystem;
-		public ScopedFileSystem WriteFileSystem => _scopedFileSystem;
+		public ScopedFileSystem ReadFileSystem => WriteFileSystem;
+		public ScopedFileSystem WriteFileSystem { get; } = FileSystemFactory.WrapToRead(fileSystem);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

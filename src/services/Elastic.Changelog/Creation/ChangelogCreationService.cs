@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using Elastic.Changelog.Configuration;
-using Nullean.ScopedFileSystem;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -12,6 +11,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Creation;
 

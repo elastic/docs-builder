@@ -22,11 +22,13 @@ public static class FileSystemFactory
 
 	// Write options: same scope roots but no .git — nothing in the build output
 	// pipeline should ever write into the git repository metadata.
+	// Temp is allowed because deploy operations (e.g. S3 sync) stage files there.
 	private static readonly ScopedFileSystemOptions WriteOptions = new(
 		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
-		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" }
+		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" },
+		AllowedSpecialFolders = AllowedSpecialFolder.Temp
 	};
 
 	// AppData-only options: for components that only access caches/state files.

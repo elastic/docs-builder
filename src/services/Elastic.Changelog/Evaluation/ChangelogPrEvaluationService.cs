@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
 using Actions.Core.Services;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
@@ -15,6 +14,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Evaluation;
 

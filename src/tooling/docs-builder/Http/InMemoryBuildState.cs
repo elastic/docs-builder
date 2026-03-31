@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
-using Nullean.ScopedFileSystem;
 using System.Threading.Channels;
 using Actions.Core;
 using Actions.Core.Services;
@@ -15,6 +14,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Documentation.Builder.Http;
 

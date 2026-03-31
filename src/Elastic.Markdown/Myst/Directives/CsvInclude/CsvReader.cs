@@ -4,8 +4,8 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
 using nietras.SeparatedValues;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Myst.Directives.CsvInclude;
 
