@@ -101,8 +101,27 @@ public partial class ChangelogBundleAmendService(
 				addFilePaths.Add(addFile);
 			}
 
-			// Determine resolve: explicit CLI value takes precedence, otherwise infer from original bundle
-			var shouldResolve = InferResolve(input);
+			// Resolve flag: explicit CLI wins; otherwise infer from parent bundle (single read + deserialize).
+			Bundle? parentBundleFromInfer = null;
+			bool shouldResolve;
+			if (input.Resolve.HasValue)
+				shouldResolve = input.Resolve.Value;
+			else
+			{
+				var (ok, inferredBundle) = await TryDeserializeParentBundleAsync(
+					input.BundlePath,
+					collector,
+					emitParseErrorToCollector: false,
+					ctx);
+				if (!ok)
+					shouldResolve = false;
+				else
+				{
+					parentBundleFromInfer = inferredBundle;
+					shouldResolve = inferredBundle!.IsResolved;
+					_logger.LogInformation("Inferred resolve={Resolve} from original bundle", shouldResolve);
+				}
+			}
 
 			// Determine the next amend file number
 			var nextAmendNumber = GetNextAmendNumber(input.BundlePath);
@@ -128,20 +147,22 @@ public partial class ChangelogBundleAmendService(
 					return false;
 				}
 
-				var parentText = await _fileSystem.File.ReadAllTextAsync(input.BundlePath, ctx);
-				try
+				if (parentBundleFromInfer != null)
+					parentBundleForSanitize = parentBundleFromInfer;
+				else
 				{
-					parentBundleForSanitize = ReleaseNotesSerialization.DeserializeBundle(parentText);
-				}
-				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-				{
-					collector.EmitError(
+					var (ok, loaded) = await TryDeserializeParentBundleAsync(
 						input.BundlePath,
-						$"Failed to parse parent bundle YAML: {ex.Message}",
-						ex);
-					return false;
+						collector,
+						emitParseErrorToCollector: true,
+						ctx);
+					if (!ok)
+						return false;
+					ArgumentNullException.ThrowIfNull(loaded);
+					parentBundleForSanitize = loaded;
 				}
 
+				ArgumentNullException.ThrowIfNull(parentBundleForSanitize);
 				if (!parentBundleForSanitize.IsResolved)
 				{
 					collector.EmitError(
@@ -256,23 +277,31 @@ public partial class ChangelogBundleAmendService(
 		}
 	}
 
-	private bool InferResolve(AmendBundleArguments input)
+	private async Task<(bool Ok, Bundle? Bundle)> TryDeserializeParentBundleAsync(
+		string bundlePath,
+		IDiagnosticsCollector collector,
+		bool emitParseErrorToCollector,
+		Cancel ctx)
 	{
-		if (input.Resolve.HasValue)
-			return input.Resolve.Value;
-
 		try
 		{
-			var bundleContent = _fileSystem.File.ReadAllText(input.BundlePath);
-			var originalBundle = ReleaseNotesSerialization.DeserializeBundle(bundleContent);
-			var inferred = originalBundle.IsResolved;
-			_logger.LogInformation("Inferred resolve={Resolve} from original bundle", inferred);
-			return inferred;
+			var text = await _fileSystem.File.ReadAllTextAsync(bundlePath, ctx);
+			var bundle = ReleaseNotesSerialization.DeserializeBundle(text);
+			return (true, bundle);
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
 		{
-			_logger.LogWarning(ex, "Could not read original bundle to infer resolve; defaulting to false");
-			return false;
+			if (emitParseErrorToCollector)
+			{
+				collector.EmitError(
+					bundlePath,
+					$"Failed to parse parent bundle YAML: {ex.Message}",
+					ex);
+			}
+			else
+				_logger.LogWarning(ex, "Could not read original bundle to infer resolve; defaulting to false");
+
+			return (false, null);
 		}
 	}
 

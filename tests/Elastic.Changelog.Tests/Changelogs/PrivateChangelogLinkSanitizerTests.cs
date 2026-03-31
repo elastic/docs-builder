@@ -141,6 +141,41 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 	}
 
 	[Fact]
+	public void TrySanitizeBundle_ReferenceKey_ElasticSlashRepo_Resolves()
+	{
+		var yaml =
+			"""
+			references:
+			  elastic/kibana-team:
+			    private: true
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = ["https://github.com/elastic/kibana-team/pull/99"]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector,
+			bundle,
+			asm,
+			"elastic",
+			"elasticsearch",
+			out var sanitized);
+
+		ok.Should().BeTrue();
+		sanitized.Entries[0].Prs![0].Should().StartWith("# PRIVATE:");
+	}
+
+	[Fact]
 	public void TrySanitizeBundle_UnknownRepo_EmitsError()
 	{
 		var yaml =

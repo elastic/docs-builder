@@ -130,28 +130,16 @@ public static class PrivateChangelogLinkSanitizer
 		AssemblyConfiguration assembly,
 		out Repository? repository)
 	{
-		var key = string.Equals(owner, "elastic", StringComparison.OrdinalIgnoreCase)
-			? repo
-			: $"{owner}/{repo}";
+		var fullName = $"{owner}/{repo}";
+		var isElasticOwner = string.Equals(owner, "elastic", StringComparison.OrdinalIgnoreCase);
 
 		foreach (var kvp in assembly.ReferenceRepositories)
 		{
-			if (string.Equals(kvp.Key, key, StringComparison.OrdinalIgnoreCase))
+			if (string.Equals(kvp.Key, fullName, StringComparison.OrdinalIgnoreCase) ||
+				(isElasticOwner && string.Equals(kvp.Key, repo, StringComparison.OrdinalIgnoreCase)))
 			{
 				repository = kvp.Value;
 				return true;
-			}
-		}
-
-		if (string.Equals(owner, "elastic", StringComparison.OrdinalIgnoreCase))
-		{
-			foreach (var kvp in assembly.ReferenceRepositories)
-			{
-				if (string.Equals(kvp.Key, repo, StringComparison.OrdinalIgnoreCase))
-				{
-					repository = kvp.Value;
-					return true;
-				}
 			}
 		}
 
