@@ -84,7 +84,7 @@ public partial class ChangelogUploadService(
 
 		_logger.LogInformation("Found {Count} upload target(s) from {Directory}", targets.Count, changelogDir);
 
-		var s3Client = new AmazonS3Client();
+		using var s3Client = new AmazonS3Client();
 		var uploader = new S3IncrementalUploader(logFactory, s3Client, _fileSystem, args.S3BucketName);
 		var result = await uploader.Upload(targets, ctx);
 
