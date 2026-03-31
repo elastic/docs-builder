@@ -80,8 +80,8 @@ internal sealed class TestCodexDocumentationContext(IDiagnosticsCollector collec
 
 	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New("/codex.yml");
 	public IDiagnosticsCollector Collector => collector;
-	public ScopedFileSystem ReadFileSystem => FileSystemFactory.WrapToRead(_fileSystem);
-	public ScopedFileSystem WriteFileSystem => FileSystemFactory.WrapToRead(_fileSystem);
+	public ScopedFileSystem ReadFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectory(_fileSystem);
+	public ScopedFileSystem WriteFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(_fileSystem);
 	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New("/output");
 	public BuildType BuildType => BuildType.Codex;
 

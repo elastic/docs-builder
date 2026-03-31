@@ -29,7 +29,7 @@ public abstract class ChangelogTestBase : IDisposable
 	{
 		Output = output;
 		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
-		FileSystem = FileSystemFactory.WrapToRead(mockFileSystem);
+		FileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFileSystem);
 		Collector = new TestDiagnosticsCollector(output);
 		LoggerFactory = new TestLoggerFactory(output);
 

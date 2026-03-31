@@ -99,8 +99,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= docsetPath.FileSystem as ScopedFileSystem
-			?? throw new InvalidOperationException($"Expected {nameof(ScopedFileSystem)} on {nameof(docsetPath)}");
+		fileSystem ??= FileSystemFactory.ScopeSourceDirectory(docsetPath.FileSystem, docsetPath.Directory!.FullName);
 		// Validate that the docset.yml is not a symlink (security: prevents path traversal attacks)
 		EnsureNotSymlink(docsetPath);
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
@@ -122,8 +121,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= sourceDirectory.FileSystem as ScopedFileSystem
-			?? throw new InvalidOperationException($"Expected {nameof(ScopedFileSystem)} on {nameof(sourceDirectory)}");
+		fileSystem ??= FileSystemFactory.ScopeSourceDirectory(sourceDirectory.FileSystem, sourceDirectory.FullName);
 		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);

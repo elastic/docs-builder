@@ -13,7 +13,7 @@ public static class FileSystemFactory
 	// Read options: workspace + app data, all confirmed hidden names allowed.
 	// Includes .git (GitCheckoutInformation reads it) and .artifacts/.doc.state
 	// (incremental build reads existing output state).
-	private static readonly ScopedFileSystemOptions ReadOptions = new(
+	private static readonly ScopedFileSystemOptions WorkingDirectoryReadOptions = new(
 		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
@@ -23,7 +23,7 @@ public static class FileSystemFactory
 	// Write options: same scope roots but no .git — nothing in the build output
 	// pipeline should ever write into the git repository metadata.
 	// Temp is allowed because deploy operations (e.g. S3 sync) stage files there.
-	private static readonly ScopedFileSystemOptions WriteOptions = new(
+	private static readonly ScopedFileSystemOptions WorkingDirectoryWriteOptions = new(
 		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
@@ -44,14 +44,14 @@ public static class FileSystemFactory
 	/// (read by <c>GitCheckoutInformation</c>), <c>.artifacts</c> and <c>.doc.state</c>
 	/// (read for incremental build state).
 	/// </summary>
-	public static ScopedFileSystem RealRead { get; } = new ScopedFileSystem(new FileSystem(), ReadOptions);
+	public static ScopedFileSystem RealRead { get; } = new ScopedFileSystem(new FileSystem(), WorkingDirectoryReadOptions);
 
 	/// <summary>
 	/// A pre-allocated <see cref="ScopedFileSystem"/> for writing build output.
 	/// Same scope as <see cref="RealRead"/> but without <c>.git</c> access —
 	/// nothing in the output pipeline should write into git repository metadata.
 	/// </summary>
-	public static ScopedFileSystem RealWrite { get; } = new ScopedFileSystem(new FileSystem(), WriteOptions);
+	public static ScopedFileSystem RealWrite { get; } = new ScopedFileSystem(new FileSystem(), WorkingDirectoryWriteOptions);
 
 	/// <summary>
 	/// A pre-allocated <see cref="ScopedFileSystem"/> scoped only to the per-user
@@ -63,30 +63,36 @@ public static class FileSystemFactory
 
 	/// <summary>
 	/// Creates a new <see cref="ScopedFileSystem"/> wrapping a fresh <see cref="MockFileSystem"/>,
-	/// using the read workspace options. Each call returns a new independent in-memory file system.
+	/// using the working-directory read options. Each call returns a new independent in-memory file system.
 	/// </summary>
-	public static ScopedFileSystem InMemory() => new(new MockFileSystem(), ReadOptions);
-
-	/// <summary>Wraps <paramref name="inner"/> with read workspace options (.git allowed).</summary>
-	public static ScopedFileSystem WrapToRead(IFileSystem inner) =>
-		new(inner, ReadOptions);
+	public static ScopedFileSystem InMemory() => new(new MockFileSystem(), WorkingDirectoryReadOptions);
 
 	/// <summary>
-	/// Wraps <paramref name="inner"/> with read workspace options extended by
-	/// <paramref name="extensionRoots"/> (e.g. detection-rules folders declared via
+	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
+	/// <see cref="Paths.ApplicationData"/> for reading. Use when the inner FS contains files
+	/// that live within the current working-directory tree (e.g. a test <c>MockFileSystem</c>
+	/// seeded with workspace-relative paths).
+	/// </summary>
+	public static ScopedFileSystem ScopeCurrentWorkingDirectory(IFileSystem inner) =>
+		new(inner, WorkingDirectoryReadOptions);
+
+	/// <summary>
+	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
+	/// <see cref="Paths.ApplicationData"/> for reading, extended by <paramref name="extensionRoots"/>
+	/// (e.g. detection-rules folders declared via
 	/// <see cref="IDocsBuilderExtension.ExternalScopeRoots"/>).
 	/// </summary>
-	public static ScopedFileSystem WrapToRead(IFileSystem inner, IEnumerable<string>? extensionRoots)
+	public static ScopedFileSystem ScopeCurrentWorkingDirectory(IFileSystem inner, IEnumerable<string>? extensionRoots)
 	{
 		if (extensionRoots is null)
-			return WrapToRead(inner);
+			return ScopeCurrentWorkingDirectory(inner);
 
 		var roots = new[] { Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName }
 			.Concat(extensionRoots)
 			.Distinct(StringComparer.OrdinalIgnoreCase)
 			.ToArray();
 		if (roots.Length == 2)
-			return WrapToRead(inner);
+			return ScopeCurrentWorkingDirectory(inner);
 
 		return new ScopedFileSystem(inner, new ScopedFileSystemOptions(roots)
 		{
@@ -95,14 +101,48 @@ public static class FileSystemFactory
 		});
 	}
 
-	/// <summary>Wraps <paramref name="inner"/> with write workspace options (.git not allowed).</summary>
-	public static ScopedFileSystem WrapToWrite(IFileSystem inner) =>
-		new(inner, WriteOptions);
+	/// <summary>
+	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
+	/// <see cref="Paths.ApplicationData"/> for writing (.git not allowed). Use when
+	/// the inner FS writes into the working-directory tree.
+	/// </summary>
+	public static ScopedFileSystem ScopeCurrentWorkingDirectoryForWrite(IFileSystem inner) =>
+		new(inner, WorkingDirectoryWriteOptions);
+
+	/// <summary>
+	/// Scopes <paramref name="inner"/> to an explicit <paramref name="sourceRoot"/> and
+	/// <see cref="Paths.ApplicationData"/> for reading. Use when the files to be read live under
+	/// a specific known root that is not <see cref="Paths.WorkingDirectoryRoot"/> — for example
+	/// test fixtures with assembler-checkout paths or service code operating on a given directory.
+	/// </summary>
+	public static ScopedFileSystem ScopeSourceDirectory(IFileSystem inner, string sourceRoot) =>
+		new(inner, new ScopedFileSystemOptions([sourceRoot, Paths.ApplicationData.FullName])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+		});
+
+	/// <summary>
+	/// Scopes <paramref name="inner"/> to an explicit <paramref name="sourceRoot"/> and
+	/// <see cref="Paths.ApplicationData"/> for writing (.git not allowed). Write variant
+	/// of <see cref="ScopeSourceDirectory(IFileSystem, string)"/>.
+	/// </summary>
+	public static ScopedFileSystem ScopeSourceDirectoryForWrite(IFileSystem inner, string sourceRoot) =>
+		new(inner, new ScopedFileSystemOptions([sourceRoot, Paths.ApplicationData.FullName])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" },
+			AllowedSpecialFolders = AllowedSpecialFolder.Temp
+		});
 
 	/// <summary>
 	/// Creates a read <see cref="ScopedFileSystem"/> scoped to the git root of
 	/// <paramref name="path"/>. Falls back to <see cref="RealRead"/> when <paramref name="path"/>
 	/// is <see langword="null"/>. Use in commands that accept an explicit <c>--path</c> argument.
+	/// <para>
+	/// Suitable for command-layer code. Service-layer tests use <see cref="InMemory()"/> directly
+	/// and do not exercise this method.
+	/// </para>
 	/// </summary>
 	public static ScopedFileSystem RealForPath(string? path)
 	{
@@ -144,5 +184,4 @@ public static class FileSystemFactory
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" }
 		});
 	}
-
 }

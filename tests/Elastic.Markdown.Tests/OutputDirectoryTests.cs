@@ -33,7 +33,7 @@ toc:
 		});
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var context = new BuildContext(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);

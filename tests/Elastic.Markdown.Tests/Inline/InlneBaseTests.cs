@@ -133,7 +133,7 @@ $"""
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs"
 		};

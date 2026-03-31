@@ -44,7 +44,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.WrapToRead(FileSystem);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
 	}
 
@@ -98,7 +98,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFileSystem = FileSystemFactory.WrapToRead(fileSystem);
+		var scopedFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFileSystem, scopedFileSystem, null, null);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
@@ -191,7 +191,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		var fs = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.WrapToRead(fs);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
 		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, scopedFs, scopedFs, null, null);
 		var repos = assembleContext.Configuration.AvailableRepositories
 			.Where(kv => !kv.Value.Skip)

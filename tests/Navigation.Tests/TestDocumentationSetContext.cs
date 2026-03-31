@@ -83,8 +83,8 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		TestDiagnosticsCollector? collector = null
 	)
 	{
-		ReadFileSystem = FileSystemFactory.WrapToRead(fileSystem);
-		WriteFileSystem = FileSystemFactory.WrapToRead(fileSystem);
+		ReadFileSystem = FileSystemFactory.ScopeSourceDirectory(fileSystem, sourceDirectory.FullName);
+		WriteFileSystem = FileSystemFactory.ScopeSourceDirectoryForWrite(fileSystem, outputDirectory.FullName);
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;
 		ConfigurationPath = configPath;

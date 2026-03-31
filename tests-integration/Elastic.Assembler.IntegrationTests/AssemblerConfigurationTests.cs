@@ -29,7 +29,7 @@ public class PublicOnlyAssemblerConfigurationTests
 		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem, skipPrivateRepositories: true);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.WrapToRead(FileSystem);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
 	}
 
@@ -66,7 +66,7 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.WrapToRead(FileSystem);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
 	}
 

@@ -93,7 +93,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var buildContext = new BuildContext(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		var buildContext = new BuildContext(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs",
 			BuildType = buildType

@@ -47,7 +47,7 @@ public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper
 		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, FileSystemFactory.WrapToRead(fs), FileSystemFactory.WrapToRead(new MockFileSystem()), null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fs), FileSystemFactory.ScopeCurrentWorkingDirectory(new MockFileSystem()), null, null);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();

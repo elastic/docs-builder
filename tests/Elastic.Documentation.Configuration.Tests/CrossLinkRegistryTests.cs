@@ -133,7 +133,7 @@ public class CrossLinkRegistryTests
 	{
 		public IDiagnosticsCollector Collector => collector;
 		public ScopedFileSystem ReadFileSystem => WriteFileSystem;
-		public ScopedFileSystem WriteFileSystem { get; } = FileSystemFactory.WrapToRead(fileSystem);
+		public ScopedFileSystem WriteFileSystem { get; } = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

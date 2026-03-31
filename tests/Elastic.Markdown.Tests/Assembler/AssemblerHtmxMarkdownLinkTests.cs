@@ -21,7 +21,7 @@ public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTest
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
@@ -57,7 +57,7 @@ public class AssemblerHtmxInternalLinkTests(ITestOutputHelper output) : LinkTest
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
@@ -88,7 +88,7 @@ public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : Link
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs",
 			BuildType = BuildType.Assembler
@@ -119,7 +119,7 @@ public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTes
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
@@ -150,7 +150,7 @@ Go to [](kibana://index.md)
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
@@ -189,7 +189,7 @@ public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkT
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler
@@ -219,7 +219,7 @@ public class AssemblerHtmxExternalLinkTests(ITestOutputHelper output) : LinkTest
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs/platform/elasticsearch",
 			BuildType = BuildType.Assembler

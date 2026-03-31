@@ -617,7 +617,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			currentDirectory: "/empty-project"
 		);
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystemFactory.WrapToRead(cwdFs));
+		var service = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
 
 		var input = new ChangelogRemoveArguments
 		{

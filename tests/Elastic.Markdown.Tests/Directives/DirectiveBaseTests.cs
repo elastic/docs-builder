@@ -71,7 +71,7 @@ $"""
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var context = new BuildContext(Collector, FileSystemFactory.WrapToRead(FileSystem), configurationContext);
+		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();

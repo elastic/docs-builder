@@ -20,7 +20,7 @@ public class CodexHtmxCrossLinkTests(ITestOutputHelper output) : LinkTestBase(ou
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/r/codex-environments",
 			BuildType = BuildType.Codex
@@ -63,7 +63,7 @@ public class IsolatedCodexCrossLinkTests(ITestOutputHelper output) : LinkTestBas
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, FileSystemFactory.WrapToRead(fileSystem), configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs",
 			BuildType = BuildType.Isolated
