@@ -65,10 +65,9 @@ function linkPathMatchesCurrentPage(anchor: HTMLAnchorElement) {
 }
 
 /**
- * Primary click on a folder row link toggles expand/collapse (checkbox) and still follows href.
- * Skips modified clicks (new tab, etc.). Same-URL clicks use preventDefault so HTMX does not
- * re-run expandToCurrentPage and undo the collapse. Collapsed folder ids are stored so
- * expandToCurrentPage can respect user collapse after in-section navigation.
+ * Primary click on a folder row link: same-URL toggles expand/collapse only (preventDefault);
+ * navigating to another URL keeps the folder open (checkbox checked) and follows href.
+ * Skips modified clicks (new tab, etc.). Collapsed folder ids are stored for expandToCurrentPage.
  */
 function ensureNavV2FolderLinkToggle() {
     if (navV2FolderLinkToggleBound) {
@@ -112,23 +111,43 @@ function ensureNavV2FolderLinkToggle() {
                 return
             }
 
-            cb.checked = !cb.checked
-            cb.dispatchEvent(new Event('change', { bubbles: true }))
-            persistFolderCheckboxCollapsedState(cb)
-
-            // Same URL: never navigate so expand/collapse toggles reliably (second click closes).
             if (linkPathMatchesCurrentPage(a)) {
+                cb.checked = !cb.checked
+                cb.dispatchEvent(new Event('change', { bubbles: true }))
+                persistFolderCheckboxCollapsedState(cb)
                 e.preventDefault()
                 e.stopPropagation()
+                return
             }
+
+            cb.checked = true
+            cb.dispatchEvent(new Event('change', { bubbles: true }))
+            persistFolderCheckboxCollapsedState(cb)
         },
         true
     )
 }
 
+/** True if this folder row's li contains the click or an ancestor folder li (same branch) does. */
+function folderStaysOpenForNavClick(folderLi: Element, target: Node, nav: Element): boolean {
+    if (folderLi.contains(target)) {
+        return true
+    }
+
+    let node: Element | null = folderLi.parentElement
+    while (node && node !== nav) {
+        if (node.matches('li.group-navigation') && node.contains(target)) {
+            return true
+        }
+        node = node.parentElement
+    }
+
+    return false
+}
+
 /**
- * Collapse every expanded folder whose subtree does not contain the click target.
- * Runs in capture phase after {@link ensureNavV2FolderLinkToggle} so folder rows toggle first.
+ * Collapse expanded folders when the click is outside their branch (not under an ancestor folder row
+ * in the same hierarchy). Runs in capture phase after {@link ensureNavV2FolderLinkToggle}.
  */
 function ensureNavV2CollapseOutsideExpandedFolders() {
     if (navV2OutsideCollapseBound) {
@@ -168,7 +187,7 @@ function ensureNavV2CollapseOutsideExpandedFolders() {
                 'li.group-navigation input[type="checkbox"]:checked'
             ).forEach((cb) => {
                 const li = cb.closest('li.group-navigation')
-                if (!li || li.contains(target)) {
+                if (!li || folderStaysOpenForNavClick(li, target, nav)) {
                     return
                 }
 
@@ -226,11 +245,18 @@ function initAccordion(nav: HTMLElement) {
 }
 
 function clearActiveSubtreeHighlight(nav: HTMLElement) {
-    nav.querySelectorAll('.nav-v2-active-subtree, .nav-v2-active-leaf').forEach(
-        (el) => {
-            el.classList.remove('nav-v2-active-subtree', 'nav-v2-active-leaf')
-        }
-    )
+    nav
+        .querySelectorAll(
+            '.nav-v2-active-subtree, .nav-v2-active-leaf, .nav-v2-active-ancestor, .nav-v2-active-label-ancestor'
+        )
+        .forEach((el) => {
+            el.classList.remove(
+                'nav-v2-active-subtree',
+                'nav-v2-active-leaf',
+                'nav-v2-active-ancestor',
+                'nav-v2-active-label-ancestor'
+            )
+        })
 }
 
 /**
@@ -263,10 +289,28 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
         childUl
     ) {
         hostLi.classList.add('nav-v2-active-subtree')
-        return
+    } else {
+        hostLi.classList.add('nav-v2-active-leaf')
     }
 
-    hostLi.classList.add('nav-v2-active-leaf')
+    /*
+     * Walk DOM ancestors: folder rows (li.group-navigation) whose own link is not .current
+     * match .current ink (chevron uses currentColor). Section titles (label--top / label--nested)
+     * are not links and must not receive ancestor styling.
+     */
+    let walk: Element | null = hostLi
+    while (walk && walk !== nav) {
+        if (walk.matches('li.group-navigation')) {
+            const ancestorRow = walk.querySelector<HTMLAnchorElement>(
+                ':scope > .nav-folder-peer > a.sidebar-link'
+            )
+            if (ancestorRow && ancestorRow !== current) {
+                walk.classList.add('nav-v2-active-ancestor')
+            }
+        }
+
+        walk = walk.parentElement
+    }
 }
 
 /**
