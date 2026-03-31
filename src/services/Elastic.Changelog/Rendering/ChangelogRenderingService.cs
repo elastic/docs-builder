@@ -70,7 +70,7 @@ public class ChangelogRenderingService(
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealWrite;
 
 	public async Task<bool> RenderChangelogs(
 		IDiagnosticsCollector collector,

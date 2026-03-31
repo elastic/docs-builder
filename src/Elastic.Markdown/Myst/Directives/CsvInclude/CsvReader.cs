@@ -22,35 +22,16 @@ public static class CsvReader
 		var separatorChar = separator == "," ? ',' : separator[0];
 		var spec = Sep.New(separatorChar);
 
-		// Sep works with actual file paths, not virtual file systems
-		// For testing with MockFileSystem, we'll read content first
-		if (fileSystem.GetType().Name == "MockFileSystem")
-		{
-			var content = fileSystem.File.ReadAllText(filePath);
-			using var reader = spec.Reader(o => o with { HasHeader = false, Unescape = true }).FromText(content);
+		// Always read via IFileSystem so that scoped and mock file systems are respected.
+		var content = fileSystem.File.ReadAllText(filePath);
+		using var reader = spec.Reader(o => o with { HasHeader = false, Unescape = true }).FromText(content);
 
-			foreach (var row in reader)
-			{
-				var rowData = new string[row.ColCount];
-				for (var i = 0; i < row.ColCount; i++)
-					rowData[i] = row[i].ToString();
-				yield return rowData;
-			}
-		}
-		else
+		foreach (var row in reader)
 		{
-			using var reader = spec.Reader(o => o with { HasHeader = false, Unescape = true }).FromFile(filePath);
-
-			foreach (var row in reader)
-			{
-				var rowData = new string[row.ColCount];
-				for (var i = 0; i < row.ColCount; i++)
-				{
-					rowData[i] = row[i].ToString();
-				}
-				yield return rowData;
-			}
+			var rowData = new string[row.ColCount];
+			for (var i = 0; i < row.ColCount; i++)
+				rowData[i] = row[i].ToString();
+			yield return rowData;
 		}
 	}
-
 }
