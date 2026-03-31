@@ -46,7 +46,9 @@ public class CodexContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var defaultCheckoutDirectory = Path.Join(Paths.GitCommonRoot.FullName, ".artifacts", "codex", "clone");
+		var workingRoot = ReadFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		var gitCommonRoot = Paths.ResolveGitCommonRoot(ReadFileSystem, workingRoot);
+		var defaultCheckoutDirectory = Path.Join(gitCommonRoot.FullName, ".artifacts", "codex", "clone");
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");

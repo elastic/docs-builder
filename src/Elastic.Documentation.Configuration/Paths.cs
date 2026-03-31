@@ -4,7 +4,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -12,9 +11,27 @@ public static class Paths
 {
 	public static readonly DirectoryInfo WorkingDirectoryRoot = DetermineWorkingDirectoryRoot();
 
-	public static readonly DirectoryInfo GitCommonRoot = InitGitCommonRoot();
-
 	public static readonly DirectoryInfo ApplicationData = GetApplicationFolder();
+
+	/// <summary>
+	/// Walks up from <paramref name="startPath"/> until a <c>.git</c> directory or file
+	/// (worktree pointer) is found and returns that ancestor. Returns <paramref name="startPath"/>
+	/// itself when no git root is found.
+	/// </summary>
+	public static string FindGitRoot(string startPath)
+	{
+		var resolved = Path.IsPathRooted(startPath) ? startPath : Path.GetFullPath(startPath);
+		var dir = Directory.Exists(resolved)
+			? new DirectoryInfo(resolved)
+			: new DirectoryInfo(Path.GetDirectoryName(resolved) ?? resolved);
+		while (dir != null)
+		{
+			if (dir.GetDirectories(".git").Length > 0 || dir.GetFiles(".git").Length > 0)
+				return dir.FullName;
+			dir = dir.Parent;
+		}
+		return resolved;
+	}
 
 	private static DirectoryInfo DetermineWorkingDirectoryRoot()
 	{
@@ -33,22 +50,23 @@ public static class Paths
 		return directory ?? new DirectoryInfo(Directory.GetCurrentDirectory());
 	}
 
+	/// <summary>
+	/// Walks up from <paramref name="sourceDirectory"/> via <see cref="IFileSystem"/> until a
+	/// <c>.git</c> directory or file (worktree pointer) is found.
+	/// </summary>
 	public static IDirectoryInfo? DetermineSourceDirectoryRoot(IDirectoryInfo sourceDirectory)
 	{
-		IDirectoryInfo? sourceRoot = null;
 		var directory = sourceDirectory;
-		while (directory != null && directory.GetDirectories(".git").Length == 0)
+		while (directory != null)
 		{
 			if (directory.GetDirectories(".git").Length > 0)
-				break;
+				return directory;
 			// support for git worktrees
 			if (directory.GetFiles(".git").Length > 0)
-				break;
-
+				return directory;
 			directory = directory.Parent;
 		}
-		sourceRoot ??= directory;
-		return sourceRoot;
+		return null;
 	}
 
 	/// <summary>Resolves the root of the main git repository, following worktree links when present. Disabled on CI.</summary>
@@ -78,18 +96,6 @@ public static class Paths
 			dir = dir.Parent;
 
 		return dir?.Parent ?? workingDirectoryRoot;
-	}
-
-	private static DirectoryInfo InitGitCommonRoot()
-	{
-		var root = WorkingDirectoryRoot.FullName;
-		var fs = new ScopedFileSystem(new FileSystem(), new ScopedFileSystemOptions(root)
-		{
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
-		});
-		var rootDir = fs.DirectoryInfo.New(root);
-		return new DirectoryInfo(ResolveGitCommonRoot(fs, rootDir).FullName);
 	}
 
 	/// Used in debug to locate static folder, so we can change js/css files while the server is running
