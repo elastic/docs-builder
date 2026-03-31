@@ -30,8 +30,7 @@ public static class FileSystemFactory
 	};
 
 	// AppData-only options: for components that only access caches/state files.
-	private static readonly ScopedFileSystemOptions AppDataOptions = new(
-		[Paths.ApplicationData.FullName])
+	private static readonly ScopedFileSystemOptions AppDataOptions = new([Paths.ApplicationData.FullName])
 	{
 		// .git needed for codex-link-index clone directory inside ApplicationData
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
@@ -103,7 +102,7 @@ public static class FileSystemFactory
 	/// <paramref name="path"/>. Falls back to <see cref="RealRead"/> when <paramref name="path"/>
 	/// is <see langword="null"/>. Use in commands that accept an explicit <c>--path</c> argument.
 	/// </summary>
-	public static ScopedFileSystem ForPath(string? path)
+	public static ScopedFileSystem RealForPath(string? path)
 	{
 		if (path is null)
 			return RealRead;
@@ -121,7 +120,7 @@ public static class FileSystemFactory
 	/// Falls back to <see cref="RealWrite"/> when both are <see langword="null"/>.
 	/// Use in commands that accept explicit <c>--path</c> and/or <c>--output</c> arguments.
 	/// </summary>
-	public static ScopedFileSystem ForPathWrite(string? path, string? output = null)
+	public static ScopedFileSystem RealForPathWrite(string? path, string? output = null)
 	{
 		if (path is null && output is null)
 			return RealWrite;

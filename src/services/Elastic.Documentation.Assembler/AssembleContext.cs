@@ -89,9 +89,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 		Endpoints.Environment = environment;
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);
-		var workingRoot = ReadFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var gitCommonRoot = Paths.ResolveGitCommonRoot(ReadFileSystem, workingRoot);
-		var defaultCheckoutDirectory = Path.Join(gitCommonRoot.FullName, ".artifacts", "checkouts", contentSource);
+		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "checkouts", contentSource);
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);

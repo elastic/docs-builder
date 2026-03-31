@@ -16,86 +16,103 @@ public static class Paths
 	/// <summary>
 	/// Walks up from <paramref name="startPath"/> until a <c>.git</c> directory or file
 	/// (worktree pointer) is found and returns that ancestor. Returns <paramref name="startPath"/>
-	/// itself when no git root is found.
+	/// itself when no git root is found within the allowed depth.
 	/// </summary>
+	/// <remarks>
+	/// Depth protection: in release builds the <c>.git</c> anchor must be at most 1 directory
+	/// above <paramref name="startPath"/> — documentation is not expected to live deep inside
+	/// a repo. In debug builds a deeper <c>.git</c> is accepted when a <c>*.slnx</c> file is
+	/// adjacent (developer running the binary from an IDE output directory).
+	/// </remarks>
 	public static string FindGitRoot(string startPath)
 	{
 		var resolved = Path.IsPathRooted(startPath) ? startPath : Path.GetFullPath(startPath);
 		var dir = Directory.Exists(resolved)
 			? new DirectoryInfo(resolved)
 			: new DirectoryInfo(Path.GetDirectoryName(resolved) ?? resolved);
+		var depth = 0;
 		while (dir != null)
 		{
-			if (dir.GetDirectories(".git").Length > 0 || dir.GetFiles(".git").Length > 0)
-				return dir.FullName;
+			var hasGit = dir.GetDirectories(".git").Length > 0 || dir.GetFiles(".git").Length > 0;
+			if (hasGit)
+			{
+#if DEBUG
+				if (depth <= 1 || dir.GetFiles("*.slnx").Length > 0)
+					return dir.FullName;
+#else
+				if (depth <= 1)
+					return dir.FullName;
+#endif
+				// .git found but too deep — stop searching
+				return resolved;
+			}
+			depth++;
 			dir = dir.Parent;
 		}
 		return resolved;
 	}
 
-	private static DirectoryInfo DetermineWorkingDirectoryRoot()
-	{
-		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
-		while (directory != null)
-		{
-			if (directory.GetFiles("*.slnx").Length > 0)
-				break;
-			if (directory.GetDirectories(".git").Length > 0)
-				break;
-			// support for git worktrees
-			if (directory.GetFiles(".git").Length > 0)
-				break;
-			directory = directory.Parent;
-		}
-		return directory ?? new DirectoryInfo(Directory.GetCurrentDirectory());
-	}
-
 	/// <summary>
-	/// Walks up from <paramref name="sourceDirectory"/> via <see cref="IFileSystem"/> until a
-	/// <c>.git</c> directory or file (worktree pointer) is found.
+	/// Walks up from <paramref name="startDirectory"/> via <see cref="IFileSystem"/> until
+	/// a <c>.git</c> directory or file (worktree pointer) is found.
+	/// Returns <see langword="null"/> if no git root is found within the allowed depth.
 	/// </summary>
-	public static IDirectoryInfo? DetermineSourceDirectoryRoot(IDirectoryInfo sourceDirectory)
+	/// <remarks>Same depth protection as <see cref="FindGitRoot(string)"/>.</remarks>
+	public static IDirectoryInfo? FindGitRoot(IDirectoryInfo startDirectory)
 	{
-		var directory = sourceDirectory;
+		var directory = startDirectory;
+		var depth = 0;
 		while (directory != null)
 		{
-			if (directory.GetDirectories(".git").Length > 0)
-				return directory;
-			// support for git worktrees
-			if (directory.GetFiles(".git").Length > 0)
-				return directory;
+			var hasGit = directory.GetDirectories(".git").Length > 0
+					  || directory.GetFiles(".git").Length > 0;
+			if (hasGit)
+			{
+#if DEBUG
+				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
+					return directory;
+#else
+				if (depth <= 1)
+					return directory;
+#endif
+				// .git found but too deep
+				return null;
+			}
+			depth++;
 			directory = directory.Parent;
 		}
 		return null;
 	}
 
-	/// <summary>Resolves the root of the main git repository, following worktree links when present. Disabled on CI.</summary>
-	public static IDirectoryInfo ResolveGitCommonRoot(IFileSystem fileSystem, IDirectoryInfo workingDirectoryRoot, bool? isCI = null)
+	private static DirectoryInfo DetermineWorkingDirectoryRoot()
 	{
-		if (isCI ?? !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
-			return workingDirectoryRoot;
-
-		var gitPath = Path.Join(workingDirectoryRoot.FullName, ".git");
-
-		if (fileSystem.Directory.Exists(gitPath))
-			return workingDirectoryRoot;
-
-		if (!fileSystem.File.Exists(gitPath))
-			return workingDirectoryRoot;
-
-		var content = fileSystem.File.ReadAllText(gitPath).Trim();
-		if (!content.StartsWith("gitdir:", StringComparison.OrdinalIgnoreCase))
-			return workingDirectoryRoot;
-
-		var gitDirPath = content["gitdir:".Length..].Trim();
-		if (!Path.IsPathRooted(gitDirPath))
-			gitDirPath = Path.GetFullPath(gitDirPath, workingDirectoryRoot.FullName);
-
-		var dir = fileSystem.DirectoryInfo.New(gitDirPath);
-		while (dir != null && dir.Name != ".git")
-			dir = dir.Parent;
-
-		return dir?.Parent ?? workingDirectoryRoot;
+		var cwd = new DirectoryInfo(Directory.GetCurrentDirectory());
+		var directory = cwd;
+		var depth = 0;
+		while (directory != null)
+		{
+			if (directory.GetFiles("*.slnx").Length > 0)
+				return directory;
+			var hasGit = directory.GetDirectories(".git").Length > 0
+					  || directory.GetFiles(".git").Length > 0;
+			if (hasGit)
+			{
+				// Only accept .git beyond 1 level up in debug when a *.slnx is adjacent
+				// (developer running from IDE output directory such as bin/Debug/net10.0/).
+#if DEBUG
+				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
+					return directory;
+#else
+				if (depth <= 1)
+					return directory;
+#endif
+				// .git found but too deep — stop without adopting it
+				return cwd;
+			}
+			depth++;
+			directory = directory.Parent;
+		}
+		return cwd;
 	}
 
 	/// Used in debug to locate static folder, so we can change js/css files while the server is running

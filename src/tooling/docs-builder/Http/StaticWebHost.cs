@@ -25,7 +25,7 @@ public class StaticWebHost
 	public StaticWebHost(int port, string? path)
 	{
 		_contentRoot = path ?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var fs = FileSystemFactory.ForPath(path);
+		var fs = FileSystemFactory.RealForPath(path);
 		var dir = fs.DirectoryInfo.New(_contentRoot);
 		if (!dir.Exists)
 			throw new Exception($"Can not serve empty directory: {_contentRoot}");

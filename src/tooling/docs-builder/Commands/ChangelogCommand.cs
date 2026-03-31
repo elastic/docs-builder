@@ -91,7 +91,7 @@ internal sealed partial class ChangelogCommand(
 
 		var useNonDefaultChangelogDir = changelogDir != null;
 		var useNonDefaultBundlesDir = bundlesDir != null;
-		var repoRoot = Paths.DetermineSourceDirectoryRoot(docsFolder)?.FullName ?? docsFolder.FullName;
+		var repoRoot = Paths.FindGitRoot(docsFolder)?.FullName ?? docsFolder.FullName;
 
 		// Create changelog.yml from example if it does not exist
 		if (!_fileSystem.File.Exists(configPath))

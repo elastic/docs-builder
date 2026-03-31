@@ -39,7 +39,7 @@ public class LocalChangeTrackingService(
 			return Task.FromResult(false);
 		}
 
-		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
+		var root = Paths.FindGitRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
 			collector.EmitError(redirectFile.Source, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");
