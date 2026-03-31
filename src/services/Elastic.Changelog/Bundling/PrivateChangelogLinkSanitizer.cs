@@ -17,7 +17,8 @@ public static class PrivateChangelogLinkSanitizer
 
 	/// <summary>
 	/// Rewrites PR/issue strings that target repositories marked private in <paramref name="assembly"/> to
-	/// <c># PRIVATE:</c> sentinels. Emits errors for unknown repos or empty references registry.
+	/// <c># PRIVATE:</c> sentinels. Emits errors for unknown repos. The empty <c>references</c> registry error is
+	/// emitted only when a parseable PR/issue reference requires classification.
 	/// </summary>
 	/// <param name="collector">Diagnostic sink for validation errors.</param>
 	/// <param name="bundle">Input bundle; unchanged when this method returns false.</param>
@@ -35,17 +36,6 @@ public static class PrivateChangelogLinkSanitizer
 		out Bundle sanitized)
 	{
 		sanitized = bundle;
-
-		if (assembly.ReferenceRepositories.Count == 0)
-		{
-			collector.EmitError(
-				string.Empty,
-				"Private link sanitization requires a non-empty assembler.yml references section. " +
-				"Ensure configuration is loaded (for example ./config relative to the current directory, embedded defaults, or --configuration-source). " +
-				"See documentation for changelog bundle private link filtering."
-			);
-			return false;
-		}
 
 		var ownerDefault = string.IsNullOrWhiteSpace(defaultOwner) ? "elastic" : defaultOwner;
 		var newEntries = new List<BundledEntry>(bundle.Entries.Count);
@@ -99,6 +89,17 @@ public static class PrivateChangelogLinkSanitizer
 					string.Empty,
 					$"Private link sanitization could not parse {referenceKind} reference '{r}'. " +
 					"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set."
+				);
+				return null;
+			}
+
+			if (assembly.ReferenceRepositories.Count == 0)
+			{
+				collector.EmitError(
+					string.Empty,
+					"Private link sanitization requires a non-empty assembler.yml references section. " +
+					"Ensure configuration is loaded (for example ./config relative to the current directory, embedded defaults, or --configuration-source). " +
+					"See documentation for changelog bundle private link filtering."
 				);
 				return null;
 			}

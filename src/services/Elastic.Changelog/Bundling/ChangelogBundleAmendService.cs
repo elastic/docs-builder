@@ -116,6 +116,7 @@ public partial class ChangelogBundleAmendService(
 
 			var sanitizePrivateLinks = changelogConfig?.Bundle?.SanitizePrivateLinks == true;
 			Bundle? parentBundleForSanitize = null;
+			AssemblyConfiguration? assemblyForSanitize = null;
 
 			if (sanitizePrivateLinks)
 			{
@@ -128,13 +129,60 @@ public partial class ChangelogBundleAmendService(
 				}
 
 				var parentText = await _fileSystem.File.ReadAllTextAsync(input.BundlePath, ctx);
-				parentBundleForSanitize = ReleaseNotesSerialization.DeserializeBundle(parentText);
+				try
+				{
+					parentBundleForSanitize = ReleaseNotesSerialization.DeserializeBundle(parentText);
+				}
+				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+				{
+					collector.EmitError(
+						input.BundlePath,
+						$"Failed to parse parent bundle YAML: {ex.Message}",
+						ex);
+					return false;
+				}
+
 				if (!parentBundleForSanitize.IsResolved)
 				{
 					collector.EmitError(
 						string.Empty,
 						"Private link sanitization requires the parent bundle to be resolved (inline entry content). " +
 						"Re-create the bundle with resolve enabled, or disable bundle.sanitize_private_links.");
+					return false;
+				}
+
+				var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+				try
+				{
+					assemblyForSanitize = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+				}
+				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+				{
+					collector.EmitError(
+						string.Empty,
+						$"Failed to parse assembler configuration YAML: {ex.Message}",
+						ex);
+					return false;
+				}
+
+				var owner = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Repo : null;
+				if (!PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+					collector,
+					parentBundleForSanitize,
+					assemblyForSanitize,
+					owner,
+					repo,
+					out var sanitizedParent))
+					return false;
+
+				if (sanitizedParent != parentBundleForSanitize)
+				{
+					collector.EmitError(
+						string.Empty,
+						"Private link sanitization requires the parent bundle to already reflect sanitized PR/issue references. " +
+						"Re-create the parent bundle with bundle.sanitize_private_links enabled and resolve enabled, " +
+						"or disable bundle.sanitize_private_links for amend.");
 					return false;
 				}
 			}
@@ -167,17 +215,15 @@ public partial class ChangelogBundleAmendService(
 			var bundleForWrite = amendBundle;
 			if (sanitizePrivateLinks && shouldResolve)
 			{
-				ArgumentNullException.ThrowIfNull(configurationContext);
 				ArgumentNullException.ThrowIfNull(parentBundleForSanitize);
+				ArgumentNullException.ThrowIfNull(assemblyForSanitize);
 				var owner = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Owner ?? "elastic" : "elastic";
 				var repo = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Repo : null;
 
-				var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-				var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
 				if (!PrivateChangelogLinkSanitizer.TrySanitizeBundle(
 					collector,
 					amendBundle,
-					assembly,
+					assemblyForSanitize,
 					owner,
 					repo,
 					out var sanitized))

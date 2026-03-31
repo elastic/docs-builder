@@ -167,4 +167,66 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 		ok.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 	}
+
+	[Fact]
+	public void TrySanitizeBundle_EmptyReferences_NoPrIssueRefs_Succeeds()
+	{
+		var yaml =
+			"""
+			references: {}
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = [],
+					Issues = []
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector,
+			bundle,
+			asm,
+			"elastic",
+			"elasticsearch",
+			out var sanitized);
+
+		ok.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		sanitized.Entries.Should().HaveCount(1);
+	}
+
+	[Fact]
+	public void TrySanitizeBundle_EmptyReferences_ParseableRef_EmitsEmptyRegistryError()
+	{
+		var yaml =
+			"""
+			references: {}
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries = [new() { Title = "t", Prs = ["https://github.com/elastic/kibana/pull/1"] }]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector,
+			bundle,
+			asm,
+			"elastic",
+			"elasticsearch",
+			out _);
+
+		ok.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("non-empty assembler.yml references", StringComparison.Ordinal));
+	}
 }
