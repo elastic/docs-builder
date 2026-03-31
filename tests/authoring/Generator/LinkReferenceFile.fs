@@ -64,15 +64,6 @@ Through various means $$$including-this-inline-syntax$$$
          },
          "url_path_prefix": "",
          "links": {
-           "cli/changelog/add.md": {},
-           "cli/changelog/bundle-amend.md": {},
-           "cli/changelog/bundle.md": {},
-           "cli/changelog/evaluate-pr.md": {},
-           "cli/changelog/gh-release.md": {},
-           "cli/changelog/index.md": {},
-           "cli/changelog/init.md": {},
-           "cli/changelog/remove.md": {},
-           "cli/changelog/render.md": {},
            "file.md": {},
            "index.md": {
              "anchors": [
@@ -105,38 +96,11 @@ Through various means $$$including-this-inline-syntax$$$
            "cli/mcp.md": {
              "to": "index.md"
            },
-           "cli/release/changelog-add.md": {
-             "to": "cli/changelog/add.md"
-           },
            "cli/release/changelog-evaluate-artifact.md": {
              "to": "index.md"
            },
-           "cli/release/changelog-evaluate-pr.md": {
-             "to": "cli/changelog/evaluate-pr.md"
-           },
-           "cli/release/changelog-bundle.md": {
-             "to": "cli/changelog/bundle.md"
-           },
-           "cli/release/changelog-bundle-amend.md": {
-             "to": "cli/changelog/bundle-amend.md"
-           },
-           "cli/release/changelog-gh-release.md": {
-             "to": "cli/changelog/gh-release.md"
-           },
-           "cli/release/changelog-init.md": {
-             "to": "cli/changelog/init.md"
-           },
            "cli/release/changelog-prepare-artifact.md": {
              "to": "index.md"
-           },
-           "cli/release/changelog-remove.md": {
-             "to": "cli/changelog/remove.md"
-           },
-           "cli/release/changelog-render.md": {
-             "to": "cli/changelog/render.md"
-           },
-           "cli/release/index.md": {
-             "to": "cli/changelog/index.md"
            },
            "testing/redirects/4th-page.md": {
              "to": "testing/redirects/5th-page.md"
