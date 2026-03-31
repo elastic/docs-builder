@@ -11,6 +11,7 @@ open System.Collections.Generic
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
+open YamlDotNet.RepresentationModel
 open Elastic.Documentation
 open Elastic.Documentation.Configuration
 open Elastic.Documentation.Configuration.LegacyUrlMappings
@@ -26,6 +27,146 @@ open Xunit
 do()
 
 type Markdown = string
+
+/// For each local redirect target in production `docs/_redirects.yml`, if that path exists under the real `docs/`
+/// tree, ensures the mock has a markdown file at the same relative path. Content is a minimal stub (not a byte copy
+/// of the real file) so redirect validation passes without running the full docset through production pages.
+[<RequireQualifiedAccess>]
+module private RedirectMockTargets =
+    let private stubMarkdown =
+        """---
+navigation_title: Stub
+---
+# Stub
+"""
+
+    let private addLocal (path: string) (set: Set<string>) =
+        if String.IsNullOrWhiteSpace path then
+            set
+        else
+            let t = path.TrimStart('!')
+            if t.Contains("://") then set else Set.add t set
+
+    let private readScalar (node: YamlNode) =
+        match node with
+        | :? YamlScalarNode as s -> s.Value
+        | _ -> null
+
+    let private collectMany (outerFromKey: string) (seq: YamlSequenceNode) =
+        seq.Children
+        |> Seq.fold
+            (fun acc (node: YamlNode) ->
+                match node with
+                | :? YamlMappingNode as m ->
+                    let mutable toVal = None
+                    let mutable hasAnchors = false
+                    for kv in m.Children do
+                        match kv.Key with
+                        | :? YamlScalarNode as k ->
+                            match k.Value with
+                            | "to" ->
+                                match readScalar kv.Value with
+                                | null -> ()
+                                | s -> toVal <- Some s
+                            | "anchors" -> hasAnchors <- true
+                            | _ -> ()
+                        | _ -> ()
+
+                    let effectiveTo =
+                        match toVal with
+                        | Some t -> t
+                        | None when hasAnchors -> outerFromKey
+                        | None -> outerFromKey
+
+                    addLocal effectiveTo acc
+                | _ -> acc)
+            Set.empty
+
+    let collectRedirectTargetPaths (yamlText: string) =
+        let stream = YamlStream()
+        use reader = new StringReader(yamlText)
+        stream.Load(reader)
+
+        if stream.Documents.Count = 0 then
+            Set.empty
+        else
+            match stream.Documents[0].RootNode with
+            | :? YamlMappingNode as rootMap ->
+                match
+                    rootMap.Children
+                    |> Seq.tryPick (fun kv ->
+                        match kv.Key with
+                        | :? YamlScalarNode as k when k.Value = "redirects" -> Some(kv.Value :?> YamlMappingNode)
+                        | _ -> None)
+                with
+                | None -> Set.empty
+                | Some redirectsMap ->
+                    redirectsMap.Children
+                    |> Seq.fold
+                        (fun acc kv ->
+                            let fromNode = kv.Key
+                            let valueNode = kv.Value
+
+                            let fromKey =
+                                match fromNode with
+                                | :? YamlScalarNode as s -> s.Value |> Option.ofObj |> Option.defaultValue ""
+                                | _ -> ""
+
+                            match valueNode with
+                            | :? YamlScalarNode as s ->
+                                let v = s.Value |> Option.ofObj |> Option.defaultValue ""
+
+                                if String.IsNullOrEmpty v then
+                                    addLocal "index.md" acc
+                                else
+                                    addLocal v acc
+                            | :? YamlMappingNode as m ->
+                                let mutable toVal = None
+                                let mutable manyNode = None
+
+                                for child in m.Children do
+                                    match child.Key with
+                                    | :? YamlScalarNode as k ->
+                                        match k.Value with
+                                        | "to" ->
+                                            match readScalar child.Value with
+                                            | null -> ()
+                                            | s -> toVal <- Some s
+                                        | "many" ->
+                                            match child.Value with
+                                            | :? YamlSequenceNode as seq -> manyNode <- Some seq
+                                            | _ -> ()
+                                        | _ -> ()
+                                    | _ -> ()
+
+                                let acc =
+                                    match toVal, manyNode with
+                                    | Some t, _ -> addLocal t acc
+                                    | None, None -> addLocal fromKey acc
+                                    | None, Some _ -> acc
+
+                                match manyNode with
+                                | Some seq -> Set.union acc (collectMany fromKey seq)
+                                | None -> acc
+                            | _ -> acc)
+                        Set.empty
+            | _ -> Set.empty
+
+    let copyTargetsFromRealDocsIntoMock (fileSystem: MockFileSystem) (redirectYaml: string) (mockDocsRoot: string) =
+        let targets = collectRedirectTargetPaths redirectYaml
+        let repoRoot = Paths.WorkingDirectoryRoot.FullName
+
+        targets
+        |> Set.iter (fun rel ->
+            let normalized = rel.Replace('/', Path.DirectorySeparatorChar)
+            let destPath = Path.Combine(mockDocsRoot, normalized)
+
+            // Tests supply their own minimal pages; do not replace them with production content.
+            if not (fileSystem.File.Exists destPath) then
+                let sourcePath = Path.Combine(repoRoot, "docs", normalized)
+
+                if File.Exists sourcePath then
+                    fileSystem.AddFile(destPath, MockFileData(stubMarkdown)))
 
 [<AutoOpen>]
 type TestFile =
@@ -61,6 +202,9 @@ type Setup =
         docsetProducts: string list option
     ) =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
+        let redirectYaml = File.ReadAllText(Path.Combine(root.FullName, "_redirects.yml"))
+        RedirectMockTargets.copyTargetsFromRealDocsIntoMock fileSystem redirectYaml root.FullName
+
         let yaml = new StringWriter();
         yaml.WriteLine("cross_links:")
         yaml.WriteLine("  - docs-content")
@@ -109,7 +253,6 @@ type Setup =
         fileSystem.AddFile(Path.Combine(root.FullName, name), MockFileData(yaml.ToString()))
 
         let redirectsName = if name.StartsWith '_' then "_redirects.yml" else "redirects.yml"
-        let redirectYaml = File.ReadAllText(Path.Combine(root.FullName, "_redirects.yml"))
         fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(redirectYaml))
 
     static member Generator (files: TestFile seq) (options: SetupOptions option) : Task<GeneratorResults> =
