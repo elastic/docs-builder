@@ -37,7 +37,7 @@ docs-builder changelog render [options...] [-h|--help]
 :   Paths support tilde (`~`) expansion and relative paths.
 
 :::{note}
-The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information about amended bundles, go to [](changelog-bundle-amend.md).
+The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information about amended bundles, go to [](bundle-amend.md).
 :::
 
 `--file-type <string>`
