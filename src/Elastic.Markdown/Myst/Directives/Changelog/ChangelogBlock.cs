@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Extensions;
@@ -214,8 +215,28 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (string.IsNullOrWhiteSpace(folderPath))
 			folderPath = DefaultBundlesFolder;
 
-		BundlesFolderPath = Build.DocumentationSourceDirectory.ResolvePathFrom(folderPath);
+		var trimmedPath = folderPath.TrimStart('/');
+		if (Path.IsPathRooted(trimmedPath))
+		{
+			this.EmitError("Changelog bundles path must not be an absolute path.");
+			return;
+		}
+
+		BundlesFolderPath = Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(folderPath));
 		BundlesFolderRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, BundlesFolderPath);
+
+		var dir = Build.ReadFileSystem.DirectoryInfo.New(BundlesFolderPath);
+		if (!dir.IsSubPathOf(Build.DocumentationSourceDirectory))
+		{
+			this.EmitError("Changelog bundles path must resolve within the documentation source directory.");
+			return;
+		}
+
+		if (SymlinkValidator.ValidateDirectoryAccess(dir, Build.DocumentationSourceDirectory) is { } accessError)
+		{
+			this.EmitError(accessError);
+			return;
+		}
 
 		if (!Build.ReadFileSystem.Directory.Exists(BundlesFolderPath))
 		{
@@ -246,9 +267,28 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (string.IsNullOrWhiteSpace(ConfigPath))
 			return;
 
-		var fileSystem = Build.ReadFileSystem;
-		var explicitPath = Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath);
-		if (!fileSystem.File.Exists(explicitPath))
+		var trimmedPath = ConfigPath.TrimStart('/');
+		if (Path.IsPathRooted(trimmedPath))
+		{
+			this.EmitError("Changelog config path must not be an absolute path.");
+			return;
+		}
+
+		var explicitPath = Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath));
+		var file = Build.ReadFileSystem.FileInfo.New(explicitPath);
+		if (!file.IsSubPathOf(Build.DocumentationSourceDirectory))
+		{
+			this.EmitError("Changelog config path must resolve within the documentation source directory.");
+			return;
+		}
+
+		if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
+		{
+			this.EmitError(accessError);
+			return;
+		}
+
+		if (!Build.ReadFileSystem.File.Exists(explicitPath))
 			this.EmitWarning($"Specified changelog config path '{ConfigPath}' not found.");
 	}
 

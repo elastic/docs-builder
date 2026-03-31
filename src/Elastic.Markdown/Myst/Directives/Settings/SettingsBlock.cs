@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
@@ -129,7 +130,27 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		if (includePath.StartsWith('/'))
 			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
-		IncludePath = Path.Join(includeFrom, includePath.TrimStart('/'));
+		var trimmedPath = includePath.TrimStart('/');
+		if (Path.IsPathRooted(trimmedPath))
+		{
+			this.EmitError("Settings path must not be an absolute path.");
+			return;
+		}
+
+		IncludePath = Path.GetFullPath(Path.Join(includeFrom, trimmedPath));
+		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
+		if (!file.IsSubPathOf(Build.DocumentationSourceDirectory))
+		{
+			this.EmitError("Settings path must resolve within the documentation source directory.");
+			return;
+		}
+
+		if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
+		{
+			this.EmitError(accessError);
+			return;
+		}
+
 		if (Build.ReadFileSystem.File.Exists(IncludePath))
 			Found = true;
 		else
