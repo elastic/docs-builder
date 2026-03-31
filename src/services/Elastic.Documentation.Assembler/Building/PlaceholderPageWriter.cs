@@ -74,6 +74,10 @@ public class PlaceholderPageWriter(
 					foreach (var child in CollectPlaceholders(label.NavigationItems.ToList()))
 						yield return child;
 					break;
+				case INodeNavigationItem<INavigationModel, INavigationItem> node:
+					foreach (var child in CollectPlaceholders(node.NavigationItems.ToList()))
+						yield return child;
+					break;
 			}
 		}
 	}
