@@ -28,6 +28,19 @@ docs-builder changelog bundle-amend [arguments...] [options...] [-h|--help]
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array. Defaults to false.
 
+## Resolve behaviour
+
+By default, the `bundle-amend` command **infers** whether to resolve entries from the original bundle.
+If the original bundle contains resolved entries (with inline `title`, `type`, and so on), the amend file will also be resolved.
+If the original bundle contains only file references, the amend file will also contain only file references.
+
+This inference ensures that amend files are portable—they contain everything needed to be understood alongside the original bundle, even when copied to another repository.
+
+You can override this behaviour:
+
+- `--resolve`: Force entries to be resolved (inline content), regardless of the original bundle.
+- `--no-resolve`: Force entries to contain only file references, regardless of the original bundle.
+
 ## Output
 
 Amend bundles contain only the additional entries, they are not a full repetition of the original bundle.
@@ -49,27 +62,6 @@ Amend bundles do not need to include `products` or `hide-features` fields—they
 
 `rules.bundle` filtering does not apply to `changelog bundle-amend`. The command is designed as a direct-injection escape hatch: the files you specify with `--add` are always included regardless of any product, type, or area filter configuration. Filtering only applies during the initial `changelog bundle` or `changelog gh-release` run.
 :::
-
-## Resolve behavior
-
-By default, the `bundle-amend` command **infers** whether to resolve entries from the original bundle.
-If the original bundle contains resolved entries (with inline `title`, `type`, and so on), the amend file will also be resolved.
-If the original bundle contains only file references, the amend file will also contain only file references.
-
-This inference ensures that amend files are portable—they contain everything needed to be understood alongside the original bundle, even when copied to another repository.
-
-You can override this behavior:
-
-- `--resolve`: Force entries to be resolved (inline content), regardless of the original bundle.
-- `--no-resolve`: Force entries to contain only file references, regardless of the original bundle.
-
-## Private link behavior
-
-When `bundle.sanitize_private_links` and `resolve` changelog configuration settings are `true` (or the parent bundle was created with `--sanitize-private-links` and `--resolve` options), links to private repositories are also sanitized in the amended bundles.
-
-Sanitization requires access to the assembler configuration to determine which repos are private (for example `./config` or the embedded defaults shipped with `docs-builder`).
-For full details, refer to [Private link sanitization at bundle time](/contribute/changelog.md#changelog-bundle-private-link-sanitization).
-
 ## Examples
 
 ### Add a single changelog to a bundle
