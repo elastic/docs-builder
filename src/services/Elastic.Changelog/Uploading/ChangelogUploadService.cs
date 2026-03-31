@@ -139,9 +139,10 @@ public partial class ChangelogUploadService(
 				return [];
 
 			return entry.Products
-				.Select(p => p.Product)
+				.Select(p => p?.Product)
 				.Where(p => !string.IsNullOrWhiteSpace(p))
-				.ToList()!;
+				.Select(p => p!)
+				.ToList();
 		}
 		catch (Exception ex)
 		{
