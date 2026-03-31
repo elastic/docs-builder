@@ -239,6 +239,10 @@ products:
   serverless-security:
     display: 'Elastic Security Serverless'
     versioning: 'all'
+  transport-go:
+    display: 'Elastic Transport Go'
+    repository: 'elastic-transport-go'
+    versioning: 'all'
   winlogbeat:
     display: 'Winlogbeat'
     versioning: 'stack'
