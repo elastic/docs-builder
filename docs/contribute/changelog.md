@@ -24,7 +24,7 @@ To use the `docs-builder changelog` commands in your development workflow:
 1. Optional: Add labels to your GitHub pull requests to indicate that they are not notable and should not generate changelogs. For example, `non-issue` or `release_notes:skip`. Alternatively, you can assume that all PRs are *not* notable unless a specific label is present (for example, `@Public`).
 1. [Configure changelog settings](#changelog-settings) to correctly interpret your PR labels.
 1. [Create changelogs](#changelog-add) with the `docs-builder changelog add` command.
-   - Alternatively, if you already have automated release notes for GitHub releases, you can use the `docs-builder changelog gh-release` command to create changelog files and a bundle from your GitHub release notes. Refer to [](/cli/release/changelog-gh-release.md).
+   - Alternatively, if you already have automated release notes for GitHub releases, you can use the `docs-builder changelog gh-release` command to create changelog files and a bundle from your GitHub release notes. Refer to [](/cli/changelog/gh-release.md).
 1. [Create changelog bundles](#changelog-bundle) with the `docs-builder changelog bundle` command. For example, create a bundle for the pull requests that are included in a product release.
 1. [Create documentation](#render-changelogs) with the `docs-builder changelog render` command.
 
@@ -363,7 +363,7 @@ Ideally this task will be automated such that it's performed by a bot or GitHub 
 If you run it from the command line, you must precede any special characters (such as backquotes) with a backslash escape character (`\`).
 :::
 
-For up-to-date command usage information, use the `-h` option or refer to [](/cli/release/changelog-add.md).
+For up-to-date command usage information, use the `-h` option or refer to [](/cli/changelog/add.md).
 
 ### Authorization
 
@@ -506,7 +506,7 @@ docs-builder changelog add \
   --strip-title-prefix
 ```
 
-In this case, the changelog file derives the title, type, areas, and products from the pull request. If none of the PR's labels match `pivot.products`, the command falls back to `products.default` or repository name inference from `--repo` (refer to [Products resolution](/cli/release/changelog-add.md#products-resolution) for more details).
+In this case, the changelog file derives the title, type, areas, and products from the pull request. If none of the PR's labels match `pivot.products`, the command falls back to `products.default` or repository name inference from `--repo` (refer to [Products resolution](/cli/changelog/add.md#products-resolution) for more details).
 The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues. Similarly, when using `--issues`, the command extracts linked PRs from the issue body (for example, "Fixed by #123"). You can turn off this behavior in either case with the `--no-extract-issues` flag or by setting `extract.issues: false` in the changelog configuration file. The `extract.issues` setting applies to both directions: issues extracted from PR bodies (when using `--prs`) and PRs extracted from issue bodies (when using `--issues`).
 
 The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
@@ -629,7 +629,7 @@ The option precedence is: CLI option > `changelog.yml` bundle section > built-in
 :::
 
 You can use the `docs-builder changelog gh-release` command as a one-shot alternative to `changelog add` and `changelog bundle` commands.
-The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/release/changelog-gh-release.md)
+The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
 
 :::{note}
 This command requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API. Refer to [Authorization](#authorization) for details.
@@ -640,7 +640,7 @@ This command requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an
 You can use the `docs-builder changelog bundle` command to create a YAML file that lists multiple changelogs.
 The command has two modes of operation: you can specify all the command options or you can define "profiles" in the changelog configuration file.
 The latter is more convenient and consistent for repetitive workflows.
-For up-to-date details, use the `-h` option or refer to [](/cli/release/changelog-bundle.md).
+For up-to-date details, use the `-h` option or refer to [](/cli/changelog/bundle.md).
 
 The command supports two mutually exclusive usage modes:
 
@@ -950,7 +950,7 @@ You can also combine multiple `--prs` options:
 4. Optionally include the contents of each changelog in the output file.
 
 :::{tip}
-You can use these files with profile-based bundling too. Refer to [](/cli/release/changelog-bundle.md).
+You can use these files with profile-based bundling too. Refer to [](/cli/changelog/bundle.md).
 :::
 
 If you have changelog files that reference those pull requests, the command creates a file like this:
@@ -1001,7 +1001,7 @@ The bundle's product metadata is inferred automatically from the release tag and
 
 :::{tip}
 If you are not creating changelogs when you create your pull requests, consider the `docs-builder changelog gh-release` command as a one-shot alternative to the `changelog add` and `changelog bundle` commands.
-It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/release/changelog-gh-release.md)
+It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
 :::
 
 ### Hide features [changelog-bundle-hide-features]
@@ -1020,7 +1020,7 @@ docs-builder changelog bundle \
 <!--
 TO-DO: Add info about how to do this in bundle.
 :::{tip}
-You can do this with profile-based bundling too. Refer to [](/cli/release/changelog-bundle.md).
+You can do this with profile-based bundling too. Refer to [](/cli/changelog/bundle.md).
 ::: -->
 
 The bundle output will include a `hide-features` field:
@@ -1068,7 +1068,7 @@ The changelogs from all matching amend files are combined with the parent bundle
 If you explicitly list the amend bundles in the `--input` option of the `docs-builder changelog render` command, you'll get duplicate entries in the output files. List only the original bundles.
 :::
 
-For more details and examples, go to [](/cli/release/changelog-bundle-amend.md).
+For more details and examples, go to [](/cli/changelog/bundle-amend.md).
 
 ## Create documentation
 
@@ -1141,7 +1141,7 @@ All product-specific filtering must be configured at bundle time via `rules.bund
 ### Generate markdown or asciidoc [render-changelogs]
 
 The `docs-builder changelog render` command creates markdown or asciidoc files from changelog bundles for documentation purposes.
-For up-to-date details, use the `-h` command option or refer to [](/cli/release/changelog-render.md).
+For up-to-date details, use the `-h` command option or refer to [](/cli/changelog/render.md).
 
 Before you can use this command you must create changelog files and collect them into bundles.
 For example, the `docs-builder changelog bundle` command creates a file like this:
@@ -1335,4 +1335,4 @@ When using a file for `--prs` or `--issues`, every line must be a fully-qualifie
 docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
 ```
 
-For full option details, go to [](/cli/release/changelog-remove.md).
+For full option details, go to [](/cli/changelog/remove.md).

@@ -2,7 +2,7 @@
 
 Generate markdown or asciidoc files from changelog bundle files.
 
-To create the bundle files, use [](/cli/release/changelog-bundle.md).
+To create the bundle files, use [](/cli/changelog/bundle.md).
 For details and examples, go to [](/contribute/changelog.md).
 
 ## Usage
