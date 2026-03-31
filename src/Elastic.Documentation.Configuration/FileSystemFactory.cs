@@ -144,7 +144,7 @@ public static class FileSystemFactory
 	/// and do not exercise this method.
 	/// </para>
 	/// </summary>
-	public static ScopedFileSystem RealForPath(string? path)
+	public static ScopedFileSystem RealGitRootForPath(string? path)
 	{
 		if (path is null)
 			return RealRead;
@@ -162,7 +162,7 @@ public static class FileSystemFactory
 	/// Falls back to <see cref="RealWrite"/> when both are <see langword="null"/>.
 	/// Use in commands that accept explicit <c>--path</c> and/or <c>--output</c> arguments.
 	/// </summary>
-	public static ScopedFileSystem RealForPathWrite(string? path, string? output = null)
+	public static ScopedFileSystem RealGitRootForPathWrite(string? path, string? output = null)
 	{
 		if (path is null && output is null)
 			return RealWrite;

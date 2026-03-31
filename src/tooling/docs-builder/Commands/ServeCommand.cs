@@ -27,7 +27,7 @@ internal sealed class ServeCommand(ILoggerFactory logFactory, IConfigurationCont
 	[Command("")]
 	public async Task Serve(string? path = null, int port = 3000, bool watch = false, Cancel ctx = default)
 	{
-		var host = new DocumentationWebHost(logFactory, path, port, FileSystemFactory.RealForPath(path), FileSystemFactory.InMemory(), configurationContext, watch);
+		var host = new DocumentationWebHost(logFactory, path, port, FileSystemFactory.RealGitRootForPath(path), FileSystemFactory.InMemory(), configurationContext, watch);
 		await host.RunAsync(ctx);
 		_logger.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')
