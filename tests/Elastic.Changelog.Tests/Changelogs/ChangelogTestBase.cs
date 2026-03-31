@@ -28,7 +28,7 @@ public abstract class ChangelogTestBase : IDisposable
 	protected ChangelogTestBase(ITestOutputHelper output)
 	{
 		Output = output;
-		var mockFileSystem = new MockFileSystem();
+		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		FileSystem = FileSystemFactory.WrapToRead(mockFileSystem);
 		Collector = new TestDiagnosticsCollector(output);
 		LoggerFactory = new TestLoggerFactory(output);

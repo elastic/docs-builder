@@ -3307,25 +3307,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 	public async Task BundleChangelogs_WithProfileMode_ConfigAtCurrentDir_LoadsSuccessfully()
 	{
 		// Arrange - changelog.yml is at ./changelog.yml (in the current working directory)
+		var root = Paths.WorkingDirectoryRoot.FullName;
 		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
 			null,
-			currentDirectory: "/test-root"
+			currentDirectory: root
 		);
-		cwdFs.Directory.CreateDirectory("/test-root");
-		cwdFs.Directory.CreateDirectory("/test-root/changelogs");
-		cwdFs.Directory.CreateDirectory("/test-root/output");
+		cwdFs.Directory.CreateDirectory(root);
+		cwdFs.Directory.CreateDirectory(Path.Join(root, "changelogs"));
+		cwdFs.Directory.CreateDirectory(Path.Join(root, "output"));
 
 		// language=yaml
 		var configContent =
-			"""
+			$$"""
 			bundle:
-			  directory: /test-root/changelogs
+			  directory: {{Path.Join(root, "changelogs")}}
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
 			      output: "elasticsearch-{version}.yaml"
 			""";
-		await cwdFs.File.WriteAllTextAsync("/test-root/changelog.yml", configContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelog.yml"), configContent, TestContext.Current.CancellationToken);
 
 		// language=yaml
 		var changelogContent =
@@ -3339,7 +3340,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
-		await cwdFs.File.WriteAllTextAsync("/test-root/changelogs/1755268130-feature.yaml", changelogContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
 
 		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.WrapToRead(cwdFs));
 
@@ -3347,8 +3348,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Profile = "es-release",
 			ProfileArgument = "9.2.0",
-			OutputDirectory = "/test-root/output"
-			// Config intentionally omitted — should discover /test-root/changelog.yml
+			OutputDirectory = Path.Join(root, "output")
+			// Config intentionally omitted — should discover changelog.yml in CWD
 		};
 
 		// Act
@@ -3357,34 +3358,35 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles("/test-root/output", "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
 	}
 
 	[Fact]
 	public async Task BundleChangelogs_WithProfileMode_ConfigAtDocsSubdir_LoadsSuccessfully()
 	{
 		// Arrange - changelog.yml is at ./docs/changelog.yml (the second discovery candidate)
+		var root = Paths.WorkingDirectoryRoot.FullName;
 		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
 			null,
-			currentDirectory: "/test-root"
+			currentDirectory: root
 		);
-		cwdFs.Directory.CreateDirectory("/test-root");
-		cwdFs.Directory.CreateDirectory("/test-root/docs");
-		cwdFs.Directory.CreateDirectory("/test-root/changelogs");
-		cwdFs.Directory.CreateDirectory("/test-root/output");
+		cwdFs.Directory.CreateDirectory(root);
+		cwdFs.Directory.CreateDirectory(Path.Join(root, "docs"));
+		cwdFs.Directory.CreateDirectory(Path.Join(root, "changelogs"));
+		cwdFs.Directory.CreateDirectory(Path.Join(root, "output"));
 
 		// language=yaml
 		var configContent =
-			"""
+			$$"""
 			bundle:
-			  directory: /test-root/changelogs
+			  directory: {{Path.Join(root, "changelogs")}}
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
 			      output: "elasticsearch-{version}.yaml"
 			""";
 		// Config is in docs/ subdir, not in CWD directly
-		await cwdFs.File.WriteAllTextAsync("/test-root/docs/changelog.yml", configContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "docs/changelog.yml"), configContent, TestContext.Current.CancellationToken);
 
 		// language=yaml
 		var changelogContent =
@@ -3398,7 +3400,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
-		await cwdFs.File.WriteAllTextAsync("/test-root/changelogs/1755268130-feature.yaml", changelogContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
 
 		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.WrapToRead(cwdFs));
 
@@ -3406,8 +3408,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Profile = "es-release",
 			ProfileArgument = "9.2.0",
-			OutputDirectory = "/test-root/output"
-			// Config intentionally omitted — should discover /test-root/docs/changelog.yml
+			OutputDirectory = Path.Join(root, "output")
+			// Config intentionally omitted — should discover docs/changelog.yml in CWD
 		};
 
 		// Act
@@ -3416,7 +3418,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles("/test-root/output", "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
 	}
 
 	// ─── Phase 3: URL list file and combined version+report ─────────────────────────────
