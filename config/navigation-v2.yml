@@ -230,13 +230,15 @@ nav:
             children:
             - page: docs-content://solutions/observability/logs/logs-index-template-defaults.md
               title: Logs index template defaults
-        - group: Agentless integrations
+        - group: Ingest data with agentless integrations
           page: docs-content://manage-data/ingest/agentless/agentless-integrations.md
           children:
           - page: docs-content://manage-data/ingest/agentless/cloud-connector-deployment.md
             title: Cloud connector deployment
           - page: docs-content://manage-data/ingest/agentless/agentless-integrations-faq.md
             title: Agentless integrations FAQ
+          - page: integration-docs://reference/agentless_integrations.md
+            title: Agentless integrations reference
         - group: Ingest data from applications
           page: docs-content://manage-data/ingest/ingesting-data-from-applications.md
           children:
