@@ -319,7 +319,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
-			var path = fileSystem.FileInfo.New(Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.PathRelativeToDocumentationSet));
+			var path = fileSystem.FileInfo.New(Path.Join(context.DocumentationSourceDirectory.FullName, fileRef.PathRelativeToDocumentationSet));
 			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
 		}
 

@@ -35,7 +35,7 @@ public record AssemblyConfiguration
 				&& Paths.GetSolutionDirectory() is { } solutionDir
 			   )
 			{
-				var docsRepositoryPath = Path.Combine(solutionDir.FullName, "docs");
+				var docsRepositoryPath = Path.Join(solutionDir.FullName, "docs");
 				config.ReferenceRepositories["docs-builder"] = docsContentRepository with
 				{
 					Skip = false,

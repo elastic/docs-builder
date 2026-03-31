@@ -49,7 +49,7 @@ public static class LiveReloadMiddlewareExtensions
 				var folder = config.FolderToMonitor[1..];
 				if (folder.StartsWith('/') || folder.StartsWith('\\'))
 					folder = folder[1..];
-				config.FolderToMonitor = Path.Combine(env!.ContentRootPath, folder);
+				config.FolderToMonitor = Path.Join(env!.ContentRootPath, folder);
 				config.FolderToMonitor = Path.GetFullPath(config.FolderToMonitor);
 			}
 			else

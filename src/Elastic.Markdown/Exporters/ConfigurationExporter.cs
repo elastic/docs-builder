@@ -32,7 +32,7 @@ public class ConfigurationExporter(
 	{
 		var fs = context.WriteFileSystem;
 		var outputDirectory = context.OutputDirectory;
-		var configFolder = fs.DirectoryInfo.New(Path.Combine(outputDirectory.FullName, "config"));
+		var configFolder = fs.DirectoryInfo.New(Path.Join(outputDirectory.FullName, "config"));
 		if (!configFolder.Exists)
 			configFolder.Create();
 
@@ -40,23 +40,23 @@ public class ConfigurationExporter(
 
 		var assemblerConfig = configurationFileProvider.AssemblerFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", assemblerConfig.Name, configFolder.FullName);
-		fs.File.Copy(assemblerConfig.FullName, Path.Combine(configFolder.FullName, assemblerConfig.Name), true);
+		fs.File.Copy(assemblerConfig.FullName, Path.Join(configFolder.FullName, assemblerConfig.Name), true);
 
 		var navigationConfig = configurationFileProvider.NavigationFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", navigationConfig.Name, configFolder.FullName);
-		fs.File.Copy(navigationConfig.FullName, Path.Combine(configFolder.FullName, navigationConfig.Name), true);
+		fs.File.Copy(navigationConfig.FullName, Path.Join(configFolder.FullName, navigationConfig.Name), true);
 
 		var legacyUrlMappingsConfig = configurationFileProvider.LegacyUrlMappingsFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", legacyUrlMappingsConfig.Name, configFolder.FullName);
-		fs.File.Copy(legacyUrlMappingsConfig.FullName, Path.Combine(configFolder.FullName, legacyUrlMappingsConfig.Name), true);
+		fs.File.Copy(legacyUrlMappingsConfig.FullName, Path.Join(configFolder.FullName, legacyUrlMappingsConfig.Name), true);
 
 		var versionsConfig = configurationFileProvider.VersionFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", versionsConfig.Name, configFolder.FullName);
-		fs.File.Copy(versionsConfig.FullName, Path.Combine(configFolder.FullName, versionsConfig.Name), true);
+		fs.File.Copy(versionsConfig.FullName, Path.Join(configFolder.FullName, versionsConfig.Name), true);
 
 		var productsConfig = configurationFileProvider.ProductsFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", productsConfig.Name, configFolder.FullName);
-		fs.File.Copy(productsConfig.FullName, Path.Combine(configFolder.FullName, productsConfig.Name), true);
+		fs.File.Copy(productsConfig.FullName, Path.Join(configFolder.FullName, productsConfig.Name), true);
 
 		return default;
 	}

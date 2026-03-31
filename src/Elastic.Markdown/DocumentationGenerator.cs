@@ -339,7 +339,7 @@ public partial class DocumentationGenerator
 
 	private IFileInfo? OutputFile(string relativePath)
 	{
-		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputDirectory.FullName, relativePath));
+		var outputFile = _writeFileSystem.FileInfo.New(Path.Join(DocumentationSet.OutputDirectory.FullName, relativePath));
 		if (relativePath.StartsWith("_static"))
 			return outputFile;
 

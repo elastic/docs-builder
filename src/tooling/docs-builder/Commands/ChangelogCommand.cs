@@ -75,7 +75,7 @@ internal sealed partial class ChangelogCommand(
 		}
 		else
 		{
-			var docsFolderPath = Path.Combine(rootPath, "docs");
+			var docsFolderPath = Path.Join(rootPath, "docs");
 			if (!_fileSystem.Directory.Exists(docsFolderPath))
 			{
 				_logger.LogInformation("Creating docs folder at {DocsFolderPath}", docsFolderPath);
@@ -85,7 +85,7 @@ internal sealed partial class ChangelogCommand(
 			docsFolder = _fileSystem.DirectoryInfo.New(docsFolderPath);
 		}
 
-		var configPath = _fileSystem.Path.Combine(docsFolder.FullName, "changelog.yml");
+		var configPath = _fileSystem.Path.Join(docsFolder.FullName, "changelog.yml");
 		var changelogPath = NormalizePath(changelogDir ?? "changelog");
 		var bundlesPath = NormalizePath(bundlesDir ?? "releases");
 
@@ -102,8 +102,8 @@ internal sealed partial class ChangelogCommand(
 				if (stream == null)
 				{
 					// Fallback: try config relative to current directory (for development)
-					var localConfigDir = _fileSystem.Path.Combine(Directory.GetCurrentDirectory(), "config");
-					var localConfigPath = _fileSystem.Path.Combine(localConfigDir, "changelog.example.yml");
+					var localConfigDir = _fileSystem.Path.Join(Directory.GetCurrentDirectory(), "config");
+					var localConfigPath = _fileSystem.Path.Join(localConfigDir, "changelog.example.yml");
 					if (_fileSystem.File.Exists(localConfigPath))
 					{
 						templateBytes = _fileSystem.File.ReadAllBytes(localConfigPath);
@@ -749,7 +749,7 @@ internal sealed partial class ChangelogCommand(
 				}
 
 				// It's a directory path - append default filename
-				processedOutput = Path.Combine(output, "changelog-bundle.yaml");
+				processedOutput = Path.Join(output, "changelog-bundle.yaml");
 			}
 		}
 

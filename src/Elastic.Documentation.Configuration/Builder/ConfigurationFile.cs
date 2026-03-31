@@ -140,7 +140,7 @@ public record ConfigurationFile
 				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
 				foreach (var (k, v) in docSetFile.Api)
 				{
-					var path = Path.Combine(context.DocumentationSourceDirectory.FullName, v);
+					var path = Path.Join(context.DocumentationSourceDirectory.FullName, v);
 					var fi = context.ReadFileSystem.FileInfo.New(path);
 					specs[k] = fi;
 				}

@@ -150,8 +150,8 @@ public class CodexBuildService(
 
 			// Build output path: {outputDir}/{sitePrefix}/r/{repoName} or {outputDir}/r/{repoName} if no prefix
 			var outputPath = string.IsNullOrEmpty(sitePrefix)
-				? fileSystem.Path.Combine(context.OutputDirectory.FullName, "r", repoName)
-				: fileSystem.Path.Combine(context.OutputDirectory.FullName, sitePrefix, "r", repoName);
+				? fileSystem.Path.Join(context.OutputDirectory.FullName, "r", repoName)
+				: fileSystem.Path.Join(context.OutputDirectory.FullName, sitePrefix, "r", repoName);
 
 			// Build URL path prefix: /r/{repoName} or /{sitePrefix}/r/{repoName}
 			var pathPrefix = string.IsNullOrEmpty(sitePrefix)
@@ -311,7 +311,7 @@ public class CodexBuildService(
 		var uniqueRedirects = redirects
 			.Where(x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
 			.ToDictionary();
-		var redirectsFile = context.WriteFileSystem.FileInfo.New(context.WriteFileSystem.Path.Combine(context.OutputDirectory.FullName, "redirects.json"));
+		var redirectsFile = context.WriteFileSystem.FileInfo.New(context.WriteFileSystem.Path.Join(context.OutputDirectory.FullName, "redirects.json"));
 		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", uniqueRedirects.Count, redirectsFile.FullName);
 
 		var redirectsJson = JsonSerializer.Serialize(uniqueRedirects, SourceGenerationContext.Default.DictionaryStringString);

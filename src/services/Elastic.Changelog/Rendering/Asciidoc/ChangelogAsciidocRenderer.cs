@@ -131,7 +131,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		}
 
 		// Write the asciidoc file
-		var asciidocPath = fileSystem.Path.Combine(context.OutputDir, $"{context.TitleSlug}.asciidoc");
+		var asciidocPath = fileSystem.Path.Join(context.OutputDir, $"{context.TitleSlug}.asciidoc");
 		var asciidocDir = fileSystem.Path.GetDirectoryName(asciidocPath);
 		if (!string.IsNullOrWhiteSpace(asciidocDir) && !fileSystem.Directory.Exists(asciidocDir))
 			_ = fileSystem.Directory.CreateDirectory(asciidocDir);

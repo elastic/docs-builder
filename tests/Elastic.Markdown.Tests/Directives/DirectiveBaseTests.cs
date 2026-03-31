@@ -64,7 +64,7 @@ $"""
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
 
-		var root = FileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
+		var root = FileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/"));
 		// ReSharper disable once VirtualMemberCallInConstructor
 		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts());
 

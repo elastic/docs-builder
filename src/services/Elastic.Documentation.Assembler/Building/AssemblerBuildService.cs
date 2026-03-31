@@ -69,7 +69,7 @@ public class AssemblerBuildService(
 		// Early return if --assume-build is specified and output already exists
 		if (assumeBuild.GetValueOrDefault(false))
 		{
-			var indexHtmlPath = Path.Combine(assembleContext.OutputDirectory.FullName, "docs", "index.html");
+			var indexHtmlPath = Path.Join(assembleContext.OutputDirectory.FullName, "docs", "index.html");
 			if (assembleContext.OutputDirectory.Exists && fs.File.Exists(indexHtmlPath))
 			{
 				_logger.LogInformation("Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.", indexHtmlPath);
@@ -150,7 +150,7 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.LinkMetadata))
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
-		var redirectsPath = Path.Combine(assembleContext.OutputDirectory.FullName, "redirects.json");
+		var redirectsPath = Path.Join(assembleContext.OutputDirectory.FullName, "redirects.json");
 		if (File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
@@ -185,7 +185,7 @@ public class AssemblerBuildService(
 	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
 	{
 		var pathPrefixedOutputFolder = context.OutputWithPathPrefixDirectory;
-		var llmsTxtPath = context.ReadFileSystem.Path.Combine(pathPrefixedOutputFolder.FullName, "llms.txt");
+		var llmsTxtPath = context.ReadFileSystem.Path.Join(pathPrefixedOutputFolder.FullName, "llms.txt");
 
 		if (!context.ReadFileSystem.File.Exists(llmsTxtPath))
 			return; // No llms.txt file to enhance

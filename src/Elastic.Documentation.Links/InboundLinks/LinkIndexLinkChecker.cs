@@ -61,7 +61,7 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 		var repository = GitCheckoutInformation.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
-		var localLinksJson = fileSystem.FileInfo.New(Path.Combine(root.FullName, file));
+		var localLinksJson = fileSystem.FileInfo.New(Path.Join(root.FullName, file));
 
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 		if (runningOnCi && !localLinksJson.Exists)

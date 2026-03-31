@@ -19,10 +19,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config without pivot - should use defaults
 		// language=yaml
 		var configContent =
@@ -59,10 +59,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with pivot.types - should derive available types from keys
 		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
@@ -109,10 +109,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config without lifecycles - should use defaults
 		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
@@ -153,10 +153,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with pivot.areas
 		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
@@ -206,10 +206,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with pivot.types having labels
 		// language=yaml
 		var configContent =
@@ -255,10 +255,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with invalid type in pivot.types
 		// language=yaml
 		var configContent =
@@ -299,10 +299,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config missing required type 'breaking-change'
 		// language=yaml
 		var configContent =
@@ -340,10 +340,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with subtypes on a non-breaking-change type (feature)
 		// language=yaml
 		var configContent =
@@ -386,10 +386,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with subtypes on breaking-change type (valid)
 		// language=yaml
 		var configContent =
@@ -430,10 +430,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with invalid subtype value
 		// language=yaml
 		var configContent =
@@ -874,10 +874,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	private async Task<ChangelogConfiguration?> LoadConfig(string yamlContent)
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		await FileSystem.File.WriteAllTextAsync(configPath, yamlContent, TestContext.Current.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
@@ -902,10 +902,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		await FileSystem.File.WriteAllTextAsync(configPath,
 			"""
@@ -943,10 +943,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		await FileSystem.File.WriteAllTextAsync(configPath,
 			"""
@@ -979,7 +979,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange – no changelog.yml on disk; simulates running from a directory without a config
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(configDir);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
@@ -1005,10 +1005,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -1053,10 +1053,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -1099,10 +1099,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -1140,7 +1140,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1172,7 +1172,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	public async Task LoadChangelogConfiguration_WithRulesBundle_MatchProductsConjunction_LoadsCorrectly()
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		var configContent =
 			"""
@@ -1197,7 +1197,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1268,7 +1268,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1293,7 +1293,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1318,7 +1318,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1442,7 +1442,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 
 		var configContent =
@@ -1490,7 +1490,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 
 		var configContent =
@@ -1520,7 +1520,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange — Mode 3 ignores global rules.bundle product lists; per-product lists need not align with globals.
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 
 		var configContent =
@@ -1553,7 +1553,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 
 		var configContent =
@@ -1586,7 +1586,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 
 		var configContent =
