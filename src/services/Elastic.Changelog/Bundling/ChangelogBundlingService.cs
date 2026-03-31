@@ -431,6 +431,7 @@ public partial class ChangelogBundlingService(
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
 
+		// Profile mode forbids --sanitize-private-links on the CLI; SanitizePrivateLinksCli is only set for option-based bundle.
 		var sanitizePrivateLinks = !input.NoSanitizePrivateLinks &&
 			(!string.IsNullOrWhiteSpace(input.Profile)
 				? input.SanitizePrivateLinks

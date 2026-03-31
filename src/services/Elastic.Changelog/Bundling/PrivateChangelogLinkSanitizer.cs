@@ -16,8 +16,16 @@ public static class PrivateChangelogLinkSanitizer
 	private const string SentinelPrefix = "# PRIVATE:";
 
 	/// <summary>
-	/// Sanitizes <paramref name="bundle"/> entries in-place (new bundle instance with updated lists).
+	/// Rewrites PR/issue strings that target repositories marked private in <paramref name="assembly"/> to
+	/// <c># PRIVATE:</c> sentinels. Emits errors for unknown repos or empty references registry.
 	/// </summary>
+	/// <param name="collector">Diagnostic sink for validation errors.</param>
+	/// <param name="bundle">Input bundle; unchanged when this method returns false.</param>
+	/// <param name="assembly">Parsed <c>assembler.yml</c> (must list every referenced <c>owner/repo</c>).</param>
+	/// <param name="defaultOwner">Default GitHub organization for bare numeric references.</param>
+	/// <param name="defaultBundleRepo">Bundle repo field (supports <c>repo1+repo2</c>; first segment used for defaults).</param>
+	/// <param name="sanitized">Bundle with updated <c>Prs</c>/<c>Issues</c> when return value is true.</param>
+	/// <returns>True if all references were validated and any rewrites applied successfully.</returns>
 	public static bool TrySanitizeBundle(
 		IDiagnosticsCollector collector,
 		Bundle bundle,

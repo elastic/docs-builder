@@ -115,19 +115,35 @@ public partial class ChangelogBundleAmendService(
 				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
 
 			var sanitizePrivateLinks = changelogConfig?.Bundle?.SanitizePrivateLinks == true;
+			Bundle? parentBundleForSanitize = null;
+
+			if (sanitizePrivateLinks)
+			{
+				if (configurationContext == null)
+				{
+					collector.EmitError(
+						string.Empty,
+						"Private link sanitization requires assembler configuration. Run docs-builder with a valid configuration context.");
+					return false;
+				}
+
+				var parentText = await _fileSystem.File.ReadAllTextAsync(input.BundlePath, ctx);
+				parentBundleForSanitize = ReleaseNotesSerialization.DeserializeBundle(parentText);
+				if (!parentBundleForSanitize.IsResolved)
+				{
+					collector.EmitError(
+						string.Empty,
+						"Private link sanitization requires the parent bundle to be resolved (inline entry content). " +
+						"Re-create the bundle with resolve enabled, or disable bundle.sanitize_private_links.");
+					return false;
+				}
+			}
+
 			if (sanitizePrivateLinks && !shouldResolve)
 			{
 				collector.EmitError(
 					string.Empty,
 					"Private link sanitization requires resolved amend content. Use --resolve or ensure the original bundle is resolved, or disable bundle.sanitize_private_links.");
-				return false;
-			}
-
-			if (sanitizePrivateLinks && configurationContext == null)
-			{
-				collector.EmitError(
-					string.Empty,
-					"Private link sanitization requires assembler configuration. Run docs-builder with a valid configuration context.");
 				return false;
 			}
 
@@ -152,10 +168,9 @@ public partial class ChangelogBundleAmendService(
 			if (sanitizePrivateLinks && shouldResolve)
 			{
 				ArgumentNullException.ThrowIfNull(configurationContext);
-				var parentText = await _fileSystem.File.ReadAllTextAsync(input.BundlePath, ctx);
-				var parentBundle = ReleaseNotesSerialization.DeserializeBundle(parentText);
-				var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
-				var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
+				ArgumentNullException.ThrowIfNull(parentBundleForSanitize);
+				var owner = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Repo : null;
 
 				var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
 				var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);

@@ -42,6 +42,45 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 	}
 
 	[Fact]
+	public void TryGetGitHubRepo_PullUrl_InvalidNumber_ReturnsFalse()
+	{
+		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
+			"https://github.com/elastic/kibana-team/pull/not-a-number",
+			"elastic",
+			"elasticsearch",
+			out _,
+			out _);
+
+		ok.Should().BeFalse();
+	}
+
+	[Fact]
+	public void TryGetGitHubRepo_ShortForm_NonNumericFragment_ReturnsFalse()
+	{
+		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
+			"elastic/kibana-team#abc",
+			"elastic",
+			"elasticsearch",
+			out _,
+			out _);
+
+		ok.Should().BeFalse();
+	}
+
+	[Fact]
+	public void TryGetGitHubRepo_ShortForm_TooManySlashes_ReturnsFalse()
+	{
+		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
+			"a/b/c#123",
+			"elastic",
+			"elasticsearch",
+			out _,
+			out _);
+
+		ok.Should().BeFalse();
+	}
+
+	[Fact]
 	public void TryGetGitHubRepo_BareNumber_UsesDefaults()
 	{
 		var ok = ChangelogTextUtilities.TryGetGitHubRepo(

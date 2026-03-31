@@ -237,7 +237,17 @@ public static partial class ChangelogTextUtilities
 			{
 				var uri = new Uri(trimmed);
 				var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-				if (segments.Length >= 2)
+				if (segments.Length == 2)
+				{
+					owner = segments[0];
+					repo = segments[1];
+					return true;
+				}
+
+				if (segments.Length == 4 &&
+					(segments[2].Equals("pull", StringComparison.OrdinalIgnoreCase) ||
+					 segments[2].Equals("issues", StringComparison.OrdinalIgnoreCase)) &&
+					int.TryParse(segments[3], out _))
 				{
 					owner = segments[0];
 					repo = segments[1];
@@ -256,13 +266,17 @@ public static partial class ChangelogTextUtilities
 		if (hashIndex > 0 && hashIndex < trimmed.Length - 1)
 		{
 			var beforeHash = trimmed[..hashIndex];
-			var slashIndex = beforeHash.LastIndexOf('/');
-			if (slashIndex > 0 && slashIndex < beforeHash.Length - 1)
-			{
-				owner = beforeHash[..slashIndex];
-				repo = beforeHash[(slashIndex + 1)..];
-				return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo);
-			}
+			var fragment = trimmed[(hashIndex + 1)..];
+			if (!uint.TryParse(fragment, out _))
+				return false;
+
+			var pathParts = beforeHash.Split('/', StringSplitOptions.RemoveEmptyEntries);
+			if (pathParts.Length != 2)
+				return false;
+
+			owner = pathParts[0];
+			repo = pathParts[1];
+			return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo);
 		}
 
 		if (int.TryParse(trimmed, out _))
