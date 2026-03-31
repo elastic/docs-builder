@@ -8,12 +8,12 @@ using Amazon.S3;
 using Elastic.Changelog.Configuration;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Integrations.S3;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Changelog.Uploading;
 
@@ -45,11 +45,8 @@ public partial class ChangelogUploadService(
 	[GeneratedRegex(@"^[a-zA-Z0-9_-]+$")]
 	private static partial Regex ProductNameRegex();
 
-	private static readonly IDeserializer FragmentDeserializer =
-		new DeserializerBuilder()
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.IgnoreUnmatchedProperties()
-			.Build();
+	private static readonly YamlDotNet.Serialization.IDeserializer EntryDeserializer =
+		ReleaseNotesSerialization.GetEntryDeserializer();
 
 	public async Task<bool> Upload(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
@@ -136,11 +133,12 @@ public partial class ChangelogUploadService(
 		try
 		{
 			var content = _fileSystem.File.ReadAllText(filePath);
-			var fragment = FragmentDeserializer.Deserialize<ChangelogFragment>(content);
-			if (fragment?.Products == null)
+			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
+			var entry = EntryDeserializer.Deserialize<ChangelogEntryDto>(normalized);
+			if (entry?.Products == null)
 				return [];
 
-			return fragment.Products
+			return entry.Products
 				.Select(p => p.Product)
 				.Where(p => !string.IsNullOrWhiteSpace(p))
 				.ToList()!;
@@ -162,15 +160,5 @@ public partial class ChangelogUploadService(
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
 		return config?.Bundle?.Directory ?? "docs/changelog";
-	}
-
-	private sealed class ChangelogFragment
-	{
-		public List<ChangelogFragmentProduct>? Products { get; set; }
-	}
-
-	private sealed class ChangelogFragmentProduct
-	{
-		public string? Product { get; set; }
 	}
 }
