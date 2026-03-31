@@ -183,14 +183,14 @@ public partial class AwsS3SyncApplyStrategy(
 				LogFileOperation(_logger, operation, upload.DestinationPath, fileSize);
 			}
 
-			var tempDir = Path.Combine(context.WriteFileSystem.Path.GetTempPath(), context.WriteFileSystem.Path.GetRandomFileName());
+			var tempDir = Path.Join(context.WriteFileSystem.Path.GetTempPath(), context.WriteFileSystem.Path.GetRandomFileName());
 			_ = context.WriteFileSystem.Directory.CreateDirectory(tempDir);
 			try
 			{
 				_logger.LogInformation("Copying {Count} files to temp directory", uploadRequests.Count);
 				foreach (var upload in uploadRequests)
 				{
-					var destPath = context.WriteFileSystem.Path.Combine(tempDir, upload.DestinationPath);
+					var destPath = context.WriteFileSystem.Path.Join(tempDir, upload.DestinationPath);
 					var destDirPath = context.WriteFileSystem.Path.GetDirectoryName(destPath)!;
 					_ = context.WriteFileSystem.Directory.CreateDirectory(destDirPath);
 					context.WriteFileSystem.File.Copy(upload.LocalPath, destPath);

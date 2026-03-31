@@ -32,10 +32,10 @@ public class ChangelogPrEvaluationService(
 
 	public async Task<bool> EvaluatePr(IDiagnosticsCollector collector, EvaluatePrArguments input, Cancel ctx)
 	{
-		// Body-only edit check
-		if (input.EventAction == "edited" && !input.TitleChanged)
+		// Body-only edit check: skip when neither title nor body changed
+		if (input is { EventAction: "edited", TitleChanged: false, BodyChanged: false })
 		{
-			_logger.LogInformation("Skipping: body-only edit (title unchanged)");
+			_logger.LogInformation("Skipping: edit with no title or body change");
 			return await SetOutputs(PrEvaluationResult.Skipped);
 		}
 
@@ -80,10 +80,33 @@ public class ChangelogPrEvaluationService(
 			return await SetOutputs(PrEvaluationResult.Skipped);
 		}
 
-		// Resolve title
-		var title = input.PrTitle;
+		// Resolve title: prefer release notes from PR body, fall back to PR title
+		var prTitle = input.PrTitle;
 		if (input.StripTitlePrefix)
-			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
+			prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
+
+		string? title = null;
+		string? description = null;
+
+		if (config.Extract.ReleaseNotes && !string.IsNullOrWhiteSpace(input.PrBody))
+		{
+			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(input.PrBody);
+
+			if (releaseNoteTitle != null)
+			{
+				title = releaseNoteTitle;
+				_logger.LogInformation("Using extracted release note as title: {Title}", title);
+			}
+
+			if (releaseNoteDescription != null)
+			{
+				description = releaseNoteDescription;
+				_logger.LogInformation("Using extracted release note as description (length: {Length} characters)", description.Length);
+			}
+		}
+
+		// Fall back to PR title when no short release note was found
+		title ??= prTitle;
 
 		if (string.IsNullOrWhiteSpace(title))
 		{
@@ -116,6 +139,7 @@ public class ChangelogPrEvaluationService(
 			_logger.LogInformation("No type label found on PR");
 			return await SetOutputs(
 				PrEvaluationResult.NoLabel, title,
+				resolvedDescription: description,
 				labelTable: BuildLabelTable(config.LabelToType),
 				productLabelTable: productLabelTable
 			);
@@ -124,6 +148,7 @@ public class ChangelogPrEvaluationService(
 		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}", title, resolvedType, resolvedProducts, existingFilename);
 		return await SetOutputs(
 			PrEvaluationResult.Success, title, resolvedType,
+			resolvedDescription: description,
 			resolvedProducts: resolvedProducts,
 			productLabelTable: productLabelTable,
 			changelogDir: changelogDir,
@@ -138,6 +163,7 @@ public class ChangelogPrEvaluationService(
 		PrEvaluationResult status,
 		string? resolvedTitle = null,
 		string? resolvedType = null,
+		string? resolvedDescription = null,
 		string? resolvedProducts = null,
 		string? labelTable = null,
 		string? productLabelTable = null,
@@ -155,6 +181,8 @@ public class ChangelogPrEvaluationService(
 
 		if (resolvedTitle != null)
 			await coreService.SetOutputAsync("title", resolvedTitle);
+		if (resolvedDescription != null)
+			await coreService.SetOutputAsync("description", resolvedDescription);
 		if (resolvedType != null)
 			await coreService.SetOutputAsync("type", resolvedType);
 		if (resolvedProducts != null)
@@ -181,7 +209,7 @@ public class ChangelogPrEvaluationService(
 			return null;
 
 		var prFilename = $"{prNumber}.yaml";
-		if (_fileSystem.File.Exists(_fileSystem.Path.Combine(changelogDir, prFilename)))
+		if (_fileSystem.File.Exists(_fileSystem.Path.Join(changelogDir, prFilename)))
 			return prFilename;
 
 		var prString = prNumber.ToString(CultureInfo.InvariantCulture);

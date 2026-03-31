@@ -81,7 +81,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			else if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
 				// Load from file reference - look in changelog directory (parent of bundles)
-				var filePath = fileSystem.Path.Combine(changelogDirectory, entry.File.Name);
+				var filePath = fileSystem.Path.Join(changelogDirectory, entry.File.Name);
 
 				if (!fileSystem.File.Exists(filePath))
 				{
@@ -318,7 +318,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		// Remove the .amend-N part from the filename
 		var parentFileName = AmendFileRegex().Replace(fileName, extension);
 
-		return fileSystem.Path.Combine(directory, parentFileName);
+		return fileSystem.Path.Join(directory, parentFileName);
 	}
 
 	[GeneratedRegex(@"\.amend-\d+\.ya?ml$", RegexOptions.IgnoreCase)]

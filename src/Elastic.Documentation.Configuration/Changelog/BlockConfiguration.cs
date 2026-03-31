@@ -48,7 +48,7 @@ public record CreateRules
 	public FieldMode Mode { get; init; } = FieldMode.Exclude;
 
 	/// <summary>
-	/// Match mode for labels (any or all). Inherited from RulesConfiguration.Match if not set.
+	/// Match mode for labels (any, all, or conjunction). Inherited from RulesConfiguration.Match if not set.
 	/// </summary>
 	public MatchMode Match { get; init; } = MatchMode.Any;
 
@@ -59,9 +59,98 @@ public record CreateRules
 }
 
 /// <summary>
+/// Per-product bundle rule combining product filtering with type/area blocking.
+/// </summary>
+public record BundlePerProductRule
+{
+	/// <summary>
+	/// Optional type/area blocker (existing functionality).
+	/// </summary>
+	public PublishBlocker? Blocker { get; init; }
+
+	/// <summary>
+	/// Product IDs to include (mutually exclusive with ExcludeProducts).
+	/// </summary>
+	public IReadOnlyList<string>? IncludeProducts { get; init; }
+
+	/// <summary>
+	/// Product IDs to exclude (mutually exclusive with IncludeProducts).
+	/// </summary>
+	public IReadOnlyList<string>? ExcludeProducts { get; init; }
+
+	/// <summary>
+	/// Match mode for products (any, all, or conjunction).
+	/// </summary>
+	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
+}
+
+/// <summary>
+/// Result of bundle rule resolution for a changelog entry.
+/// Provides explicit, type-safe indication of how the entry should be handled.
+/// </summary>
+public enum ResolveResult
+{
+	/// <summary>
+	/// Use global bundle rules (no per-product rule applies).
+	/// </summary>
+	UseGlobal,
+
+	/// <summary>
+	/// Use the specified per-product rule.
+	/// </summary>
+	UsePerProduct,
+
+	/// <summary>
+	/// Exclude the entry because its products are disjoint from the bundle context.
+	/// </summary>
+	ExcludeDisjoint,
+
+	/// <summary>
+	/// Exclude the entry because it has no products declared.
+	/// </summary>
+	ExcludeMissingProducts,
+
+	/// <summary>
+	/// Include the entry without per-product filtering (per-product context mode when no override exists for the rule context product).
+	/// </summary>
+	PassThrough
+}
+
+/// <summary>
+/// Container for rule resolution result when using a per-product rule.
+/// </summary>
+public record ResolveResultWithRule(ResolveResult Result, BundlePerProductRule? Rule)
+{
+	/// <summary>
+	/// Creates a UseGlobal result.
+	/// </summary>
+	public static ResolveResultWithRule UseGlobal() => new(ResolveResult.UseGlobal, null);
+
+	/// <summary>
+	/// Creates a PassThrough result (no per-product rule applies; global rules are not used in per-product mode).
+	/// </summary>
+	public static ResolveResultWithRule PassThrough() => new(ResolveResult.PassThrough, null);
+
+	/// <summary>
+	/// Creates a UsePerProduct result with the specified rule.
+	/// </summary>
+	public static ResolveResultWithRule UsePerProduct(BundlePerProductRule rule) => new(ResolveResult.UsePerProduct, rule);
+
+	/// <summary>
+	/// Creates an ExcludeDisjoint result.
+	/// </summary>
+	public static ResolveResultWithRule ExcludeDisjoint() => new(ResolveResult.ExcludeDisjoint, null);
+
+	/// <summary>
+	/// Creates an ExcludeMissingProducts result.
+	/// </summary>
+	public static ResolveResultWithRule ExcludeMissingProducts() => new(ResolveResult.ExcludeMissingProducts, null);
+}
+
+/// <summary>
 /// Rules for bundle-time filtering by product, type, and area.
-/// Applied during <c>changelog bundle</c> after the primary filter (PR/issue/all) matches entries.
-/// Ignored when the primary filter is already product-based (<c>--input-products</c>).
+/// Applied during <c>changelog bundle</c> after the input stage gathers entries.
+/// Always applies regardless of input method (<c>--input-products</c>, <c>--prs</c>, <c>--all</c>, etc.).
 /// </summary>
 public record BundleRules
 {
@@ -76,7 +165,7 @@ public record BundleRules
 	public IReadOnlyList<string>? IncludeProducts { get; init; }
 
 	/// <summary>
-	/// Match mode for products (any or all). Inherited from RulesConfiguration.Match if not set.
+	/// Match mode for products (any, all, or conjunction). Inherited from RulesConfiguration.Match if not set.
 	/// </summary>
 	public MatchMode MatchProducts { get; init; } = MatchMode.Any;
 
@@ -86,9 +175,52 @@ public record BundleRules
 	public PublishBlocker? Blocker { get; init; }
 
 	/// <summary>
-	/// Per-product type/area blocker overrides. Keys are product IDs.
+	/// Per-product rule overrides. Keys are product IDs.
 	/// </summary>
-	public IReadOnlyDictionary<string, PublishBlocker>? ByProduct { get; init; }
+	public IReadOnlyDictionary<string, BundlePerProductRule>? ByProduct { get; init; }
+}
+
+/// <summary>
+/// Bundle-time filtering mode: none, global rules (changelog content only), or per-product rule context.
+/// </summary>
+public enum BundleFilterMode
+{
+	/// <summary>
+	/// No bundle rules apply (no product/type/area filtering from rules.bundle).
+	/// </summary>
+	NoFiltering,
+
+	/// <summary>
+	/// Global rules.bundle only; filters use each changelog's fields (no disjoint exclusion).
+	/// </summary>
+	GlobalContent,
+
+	/// <summary>
+	/// Non-empty <c>rules.bundle.products</c>; single rule-context product and per-product rules only (global bundle keys ignored).
+	/// </summary>
+	PerProductContext
+}
+
+/// <summary>
+/// Resolves <see cref="BundleFilterMode"/> from parsed <see cref="BundleRules"/>.
+/// </summary>
+public static class BundleRulesExtensions
+{
+	/// <summary>
+	/// Determines mode: per-product when <see cref="BundleRules.ByProduct"/> is non-empty; else global when any global filter exists; else no filtering.
+	/// </summary>
+	public static BundleFilterMode DetermineFilterMode(this BundleRules bundleRules)
+	{
+		if (bundleRules.ByProduct is { Count: > 0 })
+			return BundleFilterMode.PerProductContext;
+
+		if ((bundleRules.ExcludeProducts?.Count ?? 0) > 0 ||
+			(bundleRules.IncludeProducts?.Count ?? 0) > 0 ||
+			bundleRules.Blocker != null)
+			return BundleFilterMode.GlobalContent;
+
+		return BundleFilterMode.NoFiltering;
+	}
 }
 
 /// <summary>

@@ -68,7 +68,9 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	private EvaluatePrArguments DefaultArgs(
 		string eventAction = "opened",
 		bool titleChanged = false,
+		bool bodyChanged = false,
 		string prTitle = "Fix something",
+		string? prBody = null,
 		string[]? prLabels = null,
 		string? config = null
 	)
@@ -81,11 +83,13 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 			Repo = "test-repo",
 			PrNumber = 42,
 			PrTitle = prTitle,
+			PrBody = prBody,
 			PrLabels = prLabels ?? ["type:feature"],
 			HeadRef = "feature/test",
 			HeadSha = "abc123",
 			EventAction = eventAction,
-			TitleChanged = titleChanged
+			TitleChanged = titleChanged,
+			BodyChanged = bodyChanged
 		};
 	}
 
@@ -100,10 +104,10 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync(name, value)).MustHaveHappened();
 
 	[Fact]
-	public async Task EvaluatePr_BodyOnlyEdit_ReturnsSkipped()
+	public async Task EvaluatePr_EditedNoRelevantChange_ReturnsSkipped()
 	{
 		var service = CreateService();
-		var args = DefaultArgs(eventAction: "edited", titleChanged: false);
+		var args = DefaultArgs(eventAction: "edited", titleChanged: false, bodyChanged: false);
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
@@ -118,6 +122,20 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		await WriteMinimalConfig();
 		var service = CreateService();
 		var args = DefaultArgs(eventAction: "edited", titleChanged: true);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("should-generate", "true");
+	}
+
+	[Fact]
+	public async Task EvaluatePr_EditedWithBodyChange_DoesNotSkip()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(eventAction: "edited", bodyChanged: true);
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
@@ -494,5 +512,124 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("products", A<string>._)).MustNotHaveHappened();
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("@Product:ECH"))).MustHaveHappened();
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("cloud-hosted"))).MustHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_ShortReleaseNote_OverridesPrTitle()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(
+			prTitle: "Some PR title",
+			prBody: "Release Notes: Added new search API endpoint"
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("title", "Added new search API endpoint");
+		A.CallTo(() => _mockCore.SetOutputAsync("description", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_LongReleaseNote_UsedAsDescription_PrTitleAsTitle()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var longNote = new string('x', 130);
+		var args = DefaultArgs(
+			prTitle: "Some PR title",
+			prBody: $"Release Notes: {longNote}"
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("title", "Some PR title");
+		VerifyOutputSet("description", longNote);
+	}
+
+	[Fact]
+	public async Task EvaluatePr_NoReleaseNote_FallsBackToPrTitle()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(
+			prTitle: "Fix something",
+			prBody: "This PR fixes a bug in the search API."
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("title", "Fix something");
+		A.CallTo(() => _mockCore.SetOutputAsync("description", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_NullBody_FallsBackToPrTitle()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prTitle: "Fix something", prBody: null);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("title", "Fix something");
+	}
+
+	[Fact]
+	public async Task EvaluatePr_ExtractionDisabled_IgnoresReleaseNote()
+	{
+		var configWithExtractionDisabled = """
+			extract:
+			  release_notes: false
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    breaking-change: "type:breaking"
+			    enhancement:
+			    deprecation:
+			    docs:
+			    known-issue:
+			    other:
+			    regression:
+			    security:
+			""";
+		await WriteMinimalConfig(content: configWithExtractionDisabled);
+		var service = CreateService();
+		var args = DefaultArgs(
+			prTitle: "Original PR title",
+			prBody: "Release Notes: Should be ignored"
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("title", "Original PR title");
+	}
+
+	[Fact]
+	public async Task EvaluatePr_ReleaseNoteHeader_ExtractedAsTitle()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(
+			prTitle: "Some PR title",
+			prBody: """
+				## Description
+				This PR adds a new feature.
+
+				## Release Note
+				New aggregation pipeline support
+				"""
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("title", "New aggregation pipeline support");
 	}
 }

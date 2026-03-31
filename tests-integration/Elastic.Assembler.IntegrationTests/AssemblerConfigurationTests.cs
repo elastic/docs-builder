@@ -22,7 +22,7 @@ public class PublicOnlyAssemblerConfigurationTests
 	{
 		FileSystem = new FileSystem();
 		CheckoutDirectory = FileSystem.DirectoryInfo.New(
-			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
 		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem, skipPrivateRepositories: true);
@@ -59,7 +59,7 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		_output = output;
 		FileSystem = new FileSystem();
 		CheckoutDirectory = FileSystem.DirectoryInfo.New(
-			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);

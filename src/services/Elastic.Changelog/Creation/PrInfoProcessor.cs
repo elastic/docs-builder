@@ -269,11 +269,14 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 		if (mode == FieldMode.Exclude)
 		{
-			// Exclude mode: skip if any/all labels match
+			// Exclude mode: skip if any/all/conjunction labels match
 			var matchingLabel = match switch
 			{
 				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
 					? string.Join(", ", prLabels)
+					: null,
+				MatchMode.Conjunction => rules.Labels.All(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
+					? string.Join(", ", rules.Labels)
 					: null,
 				_ => rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
 			};
@@ -290,6 +293,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			var hasMatch = match switch
 			{
 				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
+				MatchMode.Conjunction => rules.Labels.All(l => prLabels.Contains(l, StringComparer.OrdinalIgnoreCase)),
 				_ => prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
 			};
 
@@ -375,9 +379,12 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		if (rules.Labels is not { Count: > 0 })
 			return false;
 
-		var labelsMatch = rules.Match == MatchMode.All
-			? prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
-			: prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
+		var labelsMatch = rules.Match switch
+		{
+			MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
+			MatchMode.Conjunction => rules.Labels.All(l => prLabels.Contains(l, StringComparer.OrdinalIgnoreCase)),
+			_ => prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+		};
 
 		return rules.Mode == FieldMode.Exclude ? labelsMatch : !labelsMatch;
 	}

@@ -66,7 +66,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	public async Task<ChangelogConfiguration?> LoadChangelogConfiguration(IDiagnosticsCollector collector, string? configPath, Cancel ctx)
 	{
 		// Determine config file path
-		var finalConfigPath = configPath ?? fileSystem.Path.Combine(fileSystem.Directory.GetCurrentDirectory(), "docs", "changelog.yml");
+		var finalConfigPath = configPath ?? fileSystem.Path.Join(fileSystem.Directory.GetCurrentDirectory(), "docs", "changelog.yml");
 
 		if (!fileSystem.File.Exists(finalConfigPath))
 		{
@@ -524,8 +524,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		var cwd = fileSystem.Directory.GetCurrentDirectory();
 		var candidates = new[]
 		{
-			fileSystem.Path.Combine(cwd, "changelog.yml"),
-			fileSystem.Path.Combine(cwd, "docs", "changelog.yml")
+			fileSystem.Path.Join(cwd, "changelog.yml"),
+			fileSystem.Path.Join(cwd, "docs", "changelog.yml")
 		};
 
 		var foundPath = candidates.FirstOrDefault(fileSystem.File.Exists);
@@ -581,7 +581,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(rulesYaml.Match);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"rules.match: '{rulesYaml.Match}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"rules.match: '{rulesYaml.Match}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			globalMatch = parsed.Value;
@@ -646,7 +646,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchProducts);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"rules.bundle.match_products: '{yaml.MatchProducts}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"rules.bundle.match_products: '{yaml.MatchProducts}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			matchProducts = parsed.Value;
@@ -659,7 +659,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchAreas);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"rules.bundle.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"rules.bundle.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			matchAreas = parsed.Value;
@@ -679,10 +679,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		// Parse per-product overrides
-		Dictionary<string, PublishBlocker>? byProduct = null;
+		Dictionary<string, BundlePerProductRule>? byProduct = null;
 		if (yaml.Products is { Count: > 0 })
 		{
-			byProduct = new Dictionary<string, PublishBlocker>(StringComparer.OrdinalIgnoreCase);
+			byProduct = new Dictionary<string, BundlePerProductRule>(StringComparer.OrdinalIgnoreCase);
 			foreach (var (productKey, productYaml) in yaml.Products)
 			{
 				var productIds = productKey.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -699,13 +699,71 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					if (productYaml == null)
 						continue;
 
+					// Validate mutual exclusivity for products within this context
+					if (productYaml.ExcludeProducts?.Values is { Count: > 0 } && productYaml.IncludeProducts?.Values is { Count: > 0 })
+					{
+						collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}: cannot have both 'exclude_products' and 'include_products'. Use one or the other.");
+						return null;
+					}
+
+					// Parse product lists for this context
+					var contextExcludeProducts = ParseAndValidateProductList(collector, productYaml.ExcludeProducts, configPath, validProductIds, $"rules.bundle.products.{normalizedProductId}.exclude_products");
+					if (contextExcludeProducts == null && collector.Errors > 0)
+						return null;
+
+					var contextIncludeProducts = ParseAndValidateProductList(collector, productYaml.IncludeProducts, configPath, validProductIds, $"rules.bundle.products.{normalizedProductId}.include_products");
+					if (contextIncludeProducts == null && collector.Errors > 0)
+						return null;
+
+					// Mode 3: global rules.bundle product lists are not used for filtering — do not warn about
+					// subset relationships between global and per-product include/exclude lists (would mislead authors).
+
+					// Parse match_products for this context
+					var contextMatchProducts = matchProducts;
+					if (!string.IsNullOrWhiteSpace(productYaml.MatchProducts))
+					{
+						var parsed = ParseMatchMode(productYaml.MatchProducts);
+						if (parsed == null)
+						{
+							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_products: '{productYaml.MatchProducts}' is not valid. Use 'any', 'all', or 'conjunction'.");
+							return null;
+						}
+						contextMatchProducts = parsed.Value;
+					}
+
+					// Validate per-product ineffective patterns
+					if (contextMatchProducts == MatchMode.Any && contextIncludeProducts is { Count: > 0 })
+					{
+						collector.EmitWarning(configPath,
+							$"Configuration pattern 'match_products: any' with 'include_products' in per-product rule '{normalizedProductId}' provides no selective filtering. " +
+							"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
+							"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+					}
+
+					// Detect disjoint products in per-product include_products
+					if (contextIncludeProducts is { Count: > 1 })
+					{
+						var disjointProducts = contextIncludeProducts.Where(p =>
+							!string.Equals(p, normalizedProductId, StringComparison.OrdinalIgnoreCase)).ToList();
+
+						if (disjointProducts.Count > 0)
+						{
+							collector.EmitHint(configPath,
+								$"Per-product rule '{normalizedProductId}' includes disjoint products [{string.Join(", ", disjointProducts)}] " +
+								"which cannot be included due to single-product rule resolution. " +
+								"Use separate bundles (each with a single product in output_products or profile output_products), or multi-product changelogs instead. " +
+								"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+						}
+					}
+
+					// Parse type/area blocker
 					var productMatchAreas = matchAreas;
 					if (!string.IsNullOrWhiteSpace(productYaml.MatchAreas))
 					{
 						var parsedMode = ParseMatchMode(productYaml.MatchAreas);
 						if (parsedMode == null)
 						{
-							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
 							return null;
 						}
 						productMatchAreas = parsedMode.Value;
@@ -722,9 +780,30 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					var productBlocker = ParsePublishBlockerFromYaml(collector, productBlockerYaml, configPath, $"rules.bundle.products.{normalizedProductId}", productMatchAreas);
 					if (productBlocker == null && collector.Errors > 0)
 						return null;
-					if (productBlocker != null)
-						byProduct[normalizedProductId] = productBlocker;
+
+					// Create per-product rule if any rules are defined (product filtering OR type/area blocking)
+					if (productBlocker != null || contextIncludeProducts != null || contextExcludeProducts != null)
+					{
+						byProduct[normalizedProductId] = new BundlePerProductRule
+						{
+							Blocker = productBlocker,
+							IncludeProducts = contextIncludeProducts,
+							ExcludeProducts = contextExcludeProducts,
+							MatchProducts = contextMatchProducts
+						};
+					}
 				}
+			}
+		}
+
+		if (yaml.Products is { Count: > 0 })
+		{
+			var hasGlobalProductFilters = (excludeProducts?.Count ?? 0) > 0 || (includeProducts?.Count ?? 0) > 0;
+			if (hasGlobalProductFilters || blocker != null)
+			{
+				collector.EmitHint(configPath,
+					"rules.bundle: When 'products' is present, global include_products, exclude_products, and type/area rules are not applied for filtering; configure filters under each product key or use global-only rules.bundle (no 'products' section). " +
+					"See: https://elastic.github.io/docs-builder/contribute/changelog/#bundle-rule-modes");
 			}
 		}
 
@@ -788,7 +867,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.Match);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"{path}.match: '{yaml.Match}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"{path}.match: '{yaml.Match}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			match = parsed.Value;
@@ -851,7 +930,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchAreas);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"{path}.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+				collector.EmitError(configPath, $"{path}.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
 				return null;
 			}
 			matchAreas = parsed.Value;
@@ -889,7 +968,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						var parsed = ParseMatchMode(productYaml.MatchAreas);
 						if (parsed == null)
 						{
-							collector.EmitError(configPath, $"{path}.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any' or 'all'.");
+							collector.EmitError(configPath, $"{path}.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
 							return null;
 						}
 						productMatchAreas = parsed.Value;
@@ -986,6 +1065,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		{
 			"any" => MatchMode.Any,
 			"all" => MatchMode.All,
+			"conjunction" => MatchMode.Conjunction,
 			_ => string.IsNullOrWhiteSpace(value) ? null : null
 		};
 

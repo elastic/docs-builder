@@ -46,7 +46,7 @@ public static class SitemapBuilder
 		if (!outputFolder.Exists)
 			_ = fileSystem.Directory.CreateDirectory(outputFolder.FullName);
 
-		using var fileStream = fileSystem.File.Create(fileSystem.Path.Combine(outputFolder.FullName, "sitemap.xml"));
+		using var fileStream = fileSystem.File.Create(fileSystem.Path.Join(outputFolder.FullName, "sitemap.xml"));
 		doc.Save(fileStream);
 	}
 }

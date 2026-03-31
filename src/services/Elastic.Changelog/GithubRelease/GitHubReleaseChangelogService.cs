@@ -159,7 +159,7 @@ public class GitHubReleaseChangelogService(
 			};
 
 			// 7. Process each PR and create changelog files
-			var outputDir = input.Output ?? _fileSystem.Path.Combine(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
+			var outputDir = input.Output ?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
 			if (!_fileSystem.Directory.Exists(outputDir))
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
@@ -286,7 +286,7 @@ public class GitHubReleaseChangelogService(
 		// Write file with prettier name: <pr_number>-<type>-<slug>.yaml
 		var slug = ChangelogTextUtilities.GenerateSlug(title);
 		var filename = $"{prRef.PrNumber}-{finalType.ToStringFast(true)}-{slug}.yaml";
-		var filePath = _fileSystem.Path.Combine(outputDir, filename);
+		var filePath = _fileSystem.Path.Join(outputDir, filename);
 		await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
 
 		createdFiles.Add(filename);
@@ -309,13 +309,13 @@ public class GitHubReleaseChangelogService(
 		Cancel ctx)
 	{
 		// Build the bundles subfolder path (mirrors the previous CreateBundleFile convention)
-		var bundlesDir = _fileSystem.Path.Combine(outputDir, "bundles");
+		var bundlesDir = _fileSystem.Path.Join(outputDir, "bundles");
 		if (!_fileSystem.Directory.Exists(bundlesDir))
 			_ = _fileSystem.Directory.CreateDirectory(bundlesDir);
 
 		// Name format: <version>-<product>-bundle.yml
 		var bundleFilename = $"{productInfo.Target}-{productInfo.Product}-bundle.yml";
-		var bundlePath = _fileSystem.Path.Combine(bundlesDir, bundleFilename);
+		var bundlePath = _fileSystem.Path.Join(bundlesDir, bundleFilename);
 
 		// Build PR URL list from created file names — gh-release names files as <pr_number>-<type>-<slug>.yaml
 		var prUrls = createdFileNames

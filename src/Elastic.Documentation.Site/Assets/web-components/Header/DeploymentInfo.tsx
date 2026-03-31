@@ -180,7 +180,7 @@ const DeploymentInfoRow = ({
             <EuiText
                 size="xs"
                 css={css`
-                    color: ${euiTheme.colors.textInk};
+                    color: ${euiTheme.colors.ink};
                     font-family: ${euiTheme.font.familyCode};
                 `}
             >

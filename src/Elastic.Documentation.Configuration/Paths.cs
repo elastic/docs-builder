@@ -11,6 +11,8 @@ public static class Paths
 {
 	public static readonly DirectoryInfo WorkingDirectoryRoot = DetermineWorkingDirectoryRoot();
 
+	public static readonly DirectoryInfo GitCommonRoot = InitGitCommonRoot();
+
 	public static readonly DirectoryInfo ApplicationData = GetApplicationFolder();
 
 	private static DirectoryInfo DetermineWorkingDirectoryRoot()
@@ -48,6 +50,42 @@ public static class Paths
 		return sourceRoot;
 	}
 
+	/// <summary>Resolves the root of the main git repository, following worktree links when present. Disabled on CI.</summary>
+	public static IDirectoryInfo ResolveGitCommonRoot(IFileSystem fileSystem, IDirectoryInfo workingDirectoryRoot, bool? isCI = null)
+	{
+		if (isCI ?? !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+			return workingDirectoryRoot;
+
+		var gitPath = Path.Join(workingDirectoryRoot.FullName, ".git");
+
+		if (fileSystem.Directory.Exists(gitPath))
+			return workingDirectoryRoot;
+
+		if (!fileSystem.File.Exists(gitPath))
+			return workingDirectoryRoot;
+
+		var content = fileSystem.File.ReadAllText(gitPath).Trim();
+		if (!content.StartsWith("gitdir:", StringComparison.OrdinalIgnoreCase))
+			return workingDirectoryRoot;
+
+		var gitDirPath = content["gitdir:".Length..].Trim();
+		if (!Path.IsPathRooted(gitDirPath))
+			gitDirPath = Path.GetFullPath(gitDirPath, workingDirectoryRoot.FullName);
+
+		var dir = fileSystem.DirectoryInfo.New(gitDirPath);
+		while (dir != null && dir.Name != ".git")
+			dir = dir.Parent;
+
+		return dir?.Parent ?? workingDirectoryRoot;
+	}
+
+	private static DirectoryInfo InitGitCommonRoot()
+	{
+		var fs = new FileSystem();
+		var root = fs.DirectoryInfo.New(WorkingDirectoryRoot.FullName);
+		return new DirectoryInfo(ResolveGitCommonRoot(fs, root).FullName);
+	}
+
 	/// Used in debug to locate static folder, so we can change js/css files while the server is running
 	public static DirectoryInfo? GetSolutionDirectory()
 	{
@@ -63,7 +101,7 @@ public static class Paths
 	private static DirectoryInfo GetApplicationFolder()
 	{
 		var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		var elasticPath = Path.Combine(localPath, "elastic", "docs-builder");
+		var elasticPath = Path.Join(localPath, "elastic", "docs-builder");
 		return new DirectoryInfo(elasticPath);
 	}
 
@@ -91,11 +129,11 @@ public static class Paths
 	private static string? GetDocsetPathFromKnownLocations(IFileSystem readFileSystem, IDirectoryInfo rootPath)
 	{
 		string[] files = ["docset.yml", "_docset.yml"];
-		string[] knownFolders = [rootPath.FullName, Path.Combine(rootPath.FullName, "docs")];
+		string[] knownFolders = [rootPath.FullName, Path.Join(rootPath.FullName, "docs")];
 		var mostLikelyTargets =
 			from file in files
 			from folder in knownFolders
-			select Path.Combine(folder, file);
+			select Path.Join(folder, file);
 
 		return mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
 	}
@@ -115,6 +153,14 @@ public static class Paths
 		var docsFolder = configurationPath.Directory ?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 
 		return (docsFolder, configurationPath);
+	}
+
+	/// <summary>Validates that <paramref name="value"/> is a single path segment with no separators or traversal components.
+	/// Throws <see cref="ArgumentException"/> when the value is blank, contains separators, or equals "." / "..".</summary>
+	public static void ValidateSinglePathSegment(string value, string paramName)
+	{
+		if (string.IsNullOrWhiteSpace(value) || Path.GetFileName(value) != value || value == "." || value == "..")
+			throw new ArgumentException($"'{paramName}' must be a single relative path segment.", paramName);
 	}
 
 	public static bool TryFindDocsFolderFromRoot(

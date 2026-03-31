@@ -281,7 +281,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return;
 
 
-		var pathOnDisk = Path.GetFullPath(Path.Combine(includeFrom, url.TrimStart('/')));
+		var pathOnDisk = Path.GetFullPath(Path.Join(includeFrom, url.TrimStart('/')));
 		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
 		{
 			if (context.Configuration.Redirects is not null && context.Configuration.Redirects.TryGetValue(url.TrimStart('/'), out var redirect))
@@ -335,8 +335,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		string.IsNullOrWhiteSpace(url)
 			? context.MarkdownSourcePath
 			: url.StartsWith('/')
-				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.MarkdownSourcePath.Directory!.FullName, url));
+				? context.Build.ReadFileSystem.FileInfo.New(Path.Join(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
+				: context.Build.ReadFileSystem.FileInfo.New(Path.Join(context.MarkdownSourcePath.Directory!.FullName, url));
 
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
 	{
@@ -395,7 +395,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var newUrl = url;
 		if (!newUrl.StartsWith('/') && !string.IsNullOrEmpty(newUrl))
 		{
-			var path = Path.GetFullPath(fi.FileSystem.Path.Combine(fi.Directory!.FullName, newUrl));
+			var path = Path.GetFullPath(fi.FileSystem.Path.Join(fi.Directory!.FullName, newUrl));
 			var pathInfo = fi.FileSystem.FileInfo.New(path);
 			pathInfo = pathInfo.EnsureSubPathOf(context.Configuration.ScopeDirectory, newUrl);
 			var relativePath = fi.FileSystem.Path.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName).OptionalWindowsReplace();

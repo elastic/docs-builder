@@ -140,10 +140,10 @@ public partial record GitCheckoutInformation
 		return info;
 
 		IFileInfo Git(IDirectoryInfo directoryInfo, string path) =>
-			fileSystem.FileInfo.New(Path.Combine(directoryInfo.FullName, path));
+			fileSystem.FileInfo.New(Path.Join(directoryInfo.FullName, path));
 
 		IDirectoryInfo GitDir(IDirectoryInfo directoryInfo, string path) =>
-			fileSystem.DirectoryInfo.New(Path.Combine(directoryInfo.FullName, path));
+			fileSystem.DirectoryInfo.New(Path.Join(directoryInfo.FullName, path));
 
 		string? Read(IDirectoryInfo directoryInfo, string path)
 		{

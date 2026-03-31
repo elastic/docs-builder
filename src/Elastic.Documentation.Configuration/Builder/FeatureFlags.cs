@@ -38,6 +38,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["staging-elastic-nav"] = value;
 	}
 
+	public bool AirGappedEnabled
+	{
+		get => IsEnabled("air-gapped");
+		set => _featureFlags["air-gapped"] = value;
+	}
+
 	public bool DiagnosticsPanelEnabled
 	{
 		get => IsEnabled("diagnostics-panel");

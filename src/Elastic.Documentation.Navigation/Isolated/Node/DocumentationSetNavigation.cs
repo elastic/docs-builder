@@ -185,7 +185,7 @@ public class DocumentationSetNavigation<TModel>
 	{
 		var fs = context.ReadFileSystem;
 		// FileRef.Path already contains the correct path from LoadAndResolve
-		return fs.FileInfo.New(fs.Path.Combine(context.DocumentationSourceDirectory.FullName, filePath));
+		return fs.FileInfo.New(fs.Path.Join(context.DocumentationSourceDirectory.FullName, filePath));
 	}
 
 	/// <summary>
@@ -379,7 +379,7 @@ public class DocumentationSetNavigation<TModel>
 		var fullTocPath = tocRef.PathRelativeToDocumentationSet;
 
 		var tocDirectory = context.ReadFileSystem.DirectoryInfo.New(
-			context.ReadFileSystem.Path.Combine(context.DocumentationSourceDirectory.FullName, fullTocPath)
+			context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, fullTocPath)
 		);
 
 		var assemblerBuild = context.BuildType == BuildType.Assembler;
