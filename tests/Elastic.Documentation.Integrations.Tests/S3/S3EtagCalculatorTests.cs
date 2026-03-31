@@ -61,6 +61,7 @@ public class S3EtagCalculatorTests
 
 		var ct = TestContext.Current.CancellationToken;
 		var first = await _calculator.CalculateS3ETag(path, ct);
+		_fileSystem.File.WriteAllBytes(path, "changed content"u8.ToArray());
 		var second = await _calculator.CalculateS3ETag(path, ct);
 
 		first.Should().Be(second);
