@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
@@ -165,21 +166,29 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 				{
 					foreach (var pr in entry.Prs ?? [])
 					{
+						var formatted = ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner);
+						if (string.IsNullOrEmpty(formatted))
+							continue;
+
 						_ = sb.AppendLine();
 						if (shouldHide)
 							_ = sb.Append("% ");
 						_ = sb.Append("  ");
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner));
+						_ = sb.Append(formatted);
 						hasCommentedLinks = true;
 					}
 
 					foreach (var issue in entry.Issues ?? [])
 					{
+						var formatted = ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner);
+						if (string.IsNullOrEmpty(formatted))
+							continue;
+
 						_ = sb.AppendLine();
 						if (shouldHide)
 							_ = sb.Append("% ");
 						_ = sb.Append("  ");
-						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner));
+						_ = sb.Append(formatted);
 						hasCommentedLinks = true;
 					}
 
@@ -188,17 +197,32 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 				}
 				else
 				{
-					_ = sb.Append(' ');
+					var linkParts = new List<string>();
 					foreach (var pr in entry.Prs ?? [])
 					{
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner));
-						_ = sb.Append(' ');
+						var s = ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner);
+						if (!string.IsNullOrEmpty(s))
+							linkParts.Add(s);
 					}
 
 					foreach (var issue in entry.Issues ?? [])
 					{
-						_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner));
+						var s = ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner);
+						if (!string.IsNullOrEmpty(s))
+							linkParts.Add(s);
+					}
+
+					if (linkParts.Count > 0)
+					{
 						_ = sb.Append(' ');
+						var first = true;
+						foreach (var s in linkParts)
+						{
+							if (!first)
+								_ = sb.Append(' ');
+							_ = sb.Append(s);
+							first = false;
+						}
 					}
 				}
 

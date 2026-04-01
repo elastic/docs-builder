@@ -36,7 +36,8 @@ public static class ChangelogInlineRenderer
 				block.PublishBlocker,
 				block.PrivateRepositories,
 				block.HideFeatures,
-				typeFilter);
+				typeFilter,
+				block.LinkVisibility);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -51,7 +52,8 @@ public static class ChangelogInlineRenderer
 		PublishBlocker? publishBlocker,
 		HashSet<string> privateRepositories,
 		HashSet<string> hideFeatures,
-		ChangelogTypeFilter typeFilter)
+		ChangelogTypeFilter typeFilter,
+		ChangelogLinkVisibility linkVisibility)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -69,9 +71,12 @@ public static class ChangelogInlineRenderer
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => g.ToList());
 
-		// Check if the bundle's repo (which may be merged like "elasticsearch+kibana")
-		// contains any private repositories - if so, hide links for this bundle
-		var hideLinks = ShouldHideLinksForRepo(bundle.Repo, privateRepositories);
+		var hideLinks = linkVisibility switch
+		{
+			ChangelogLinkVisibility.KeepLinks => false,
+			ChangelogLinkVisibility.HideLinks => true,
+			_ => ShouldHideLinksForRepo(bundle.Repo, privateRepositories)
+		};
 
 		var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
 		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker);
