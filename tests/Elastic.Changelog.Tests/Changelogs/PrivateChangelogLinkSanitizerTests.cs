@@ -430,4 +430,171 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 		var s = ChangelogTextUtilities.FormatIssueLinkAsciidoc("# PRIVATE: https://github.com/elastic/x/issues/1", "x", hidePrivateLinks: false);
 		s.Should().BeEmpty();
 	}
+
+	[Fact]
+	public void TrySanitizeBundle_SentinelWithValidPrivateRef_Succeeds()
+	{
+		var yaml =
+			"""
+			references:
+			  elasticsearch:
+			    private: false
+			  kibana-team:
+			    private: true
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = ["# PRIVATE: https://github.com/elastic/kibana-team/pull/1"]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector, bundle, asm, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+		sanitized.Entries[0].Prs![0].Should().Be("# PRIVATE: https://github.com/elastic/kibana-team/pull/1");
+		Collector.Errors.Should().Be(0);
+	}
+
+	[Fact]
+	public void TrySanitizeBundle_SentinelWithPublicRepo_Fails()
+	{
+		var yaml =
+			"""
+			references:
+			  elasticsearch:
+			    private: false
+			  kibana-team:
+			    private: true
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = ["# PRIVATE: https://github.com/elastic/elasticsearch/pull/1"]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector, bundle, asm, "elastic", "elasticsearch",
+			out _, out _);
+
+		ok.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("marked as public", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public void TrySanitizeBundle_SentinelWithUnknownRepo_Fails()
+	{
+		var yaml =
+			"""
+			references:
+			  elasticsearch:
+			    private: false
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = ["# PRIVATE: https://github.com/unknown-org/unknown-repo/pull/1"]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector, bundle, asm, "elastic", "elasticsearch",
+			out _, out _);
+
+		ok.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("not listed in assembler.yml", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public void TrySanitizeBundle_SentinelWithMalformedRef_Fails()
+	{
+		var yaml =
+			"""
+			references:
+			  elasticsearch:
+			    private: false
+			  kibana-team:
+			    private: true
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = ["# PRIVATE: not-a-valid-ref"]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector, bundle, asm, "elastic", "elasticsearch",
+			out _, out _);
+
+		ok.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be parsed", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public void TrySanitizeBundle_SentinelWithEmptyRef_Fails()
+	{
+		var yaml =
+			"""
+			references:
+			  elasticsearch:
+			    private: false
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = ["# PRIVATE:   "]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector, bundle, asm, "elastic", "elasticsearch",
+			out _, out _);
+
+		ok.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("no underlying reference found", StringComparison.Ordinal));
+	}
 }

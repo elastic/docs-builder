@@ -85,6 +85,9 @@ public static class PrivateChangelogLinkSanitizer
 
 			if (r.StartsWith(SentinelPrefix, StringComparison.OrdinalIgnoreCase))
 			{
+				if (!ValidateSentinelReference(collector, r, defaultOwner, defaultBundleRepo, assembly, referenceKind))
+					return null;
+
 				list.Add(r);
 				continue;
 			}
@@ -131,6 +134,72 @@ public static class PrivateChangelogLinkSanitizer
 		}
 
 		return list;
+	}
+
+	private static bool ValidateSentinelReference(
+		IDiagnosticsCollector collector,
+		string sentinelRef,
+		string defaultOwner,
+		string? defaultBundleRepo,
+		AssemblyConfiguration assembly,
+		string referenceKind)
+	{
+		var underlyingRef = sentinelRef.Substring(SentinelPrefix.Length).Trim();
+
+		if (string.IsNullOrWhiteSpace(underlyingRef))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Invalid {referenceKind} sentinel '{sentinelRef}': no underlying reference found. " +
+				"Sentinels must have the format '# PRIVATE: <reference>'."
+			);
+			return false;
+		}
+
+		if (!ChangelogTextUtilities.TryGetGitHubRepo(underlyingRef, defaultOwner, defaultBundleRepo ?? string.Empty, out var owner, out var repo))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Invalid {referenceKind} sentinel '{sentinelRef}': underlying reference '{underlyingRef}' could not be parsed. " +
+				"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set."
+			);
+			return false;
+		}
+
+		if (assembly.ReferenceRepositories.Count == 0)
+		{
+			collector.EmitError(
+				string.Empty,
+				"Private link sanitization requires a non-empty assembler.yml references section. " +
+				"Ensure configuration is loaded (for example ./config relative to the current directory, embedded defaults, or --configuration-source). " +
+				"See documentation for changelog bundle private link filtering."
+			);
+			return false;
+		}
+
+		if (!TryFindReferenceRepository(owner, repo, assembly, out var repository) || repository is null)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Invalid {referenceKind} sentinel '{sentinelRef}': repository '{owner}/{repo}' is not listed in assembler.yml references. " +
+				"Add it under references with private: true or false. " +
+				"Ensure assembler configuration is up to date (local ./config, embedded binary, or --configuration-source)."
+			);
+			return false;
+		}
+
+		if (!repository.Private)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"Invalid {referenceKind} sentinel '{sentinelRef}': repository '{owner}/{repo}' is marked as public, not private. " +
+				"Sentinels must only wrap references to private repositories. " +
+				"Remove the sentinel or update assembler.yml to mark the repository as private: true."
+			);
+			return false;
+		}
+
+		return true;
 	}
 
 	private static bool TryFindReferenceRepository(
