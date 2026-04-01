@@ -16,6 +16,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -46,13 +47,13 @@ public record AmendBundleArguments
 /// </summary>
 public partial class ChangelogBundleAmendService(
 	ILoggerFactory logFactory,
-	IFileSystem? fileSystem = null,
+	ScopedFileSystem? fileSystem = null,
 	IConfigurationContext? configurationContext = null) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundleAmendService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
 		: null;
 
 	[GeneratedRegex(@"\.amend-(\d+)\.ya?ml$", RegexOptions.IgnoreCase)]

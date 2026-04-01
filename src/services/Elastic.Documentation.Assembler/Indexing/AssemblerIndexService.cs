@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation.Assembler.Indexing;
@@ -52,7 +53,7 @@ public class AssemblerIndexService(
 	/// <param name="ctx"></param>
 	/// <returns></returns>
 	public async Task<bool> Index(IDiagnosticsCollector collector,
-		FileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		string? endpoint = null,
 		string? environment = null,
 		string? apiKey = null,

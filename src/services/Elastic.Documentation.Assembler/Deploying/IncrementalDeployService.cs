@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Deploying;
 
@@ -20,7 +21,7 @@ public class IncrementalDeployService(
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	FileSystem fileSystem
+	ScopedFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IncrementalDeployService>();
