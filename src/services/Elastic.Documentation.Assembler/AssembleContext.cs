@@ -92,7 +92,7 @@ public class AssembleContext : IDocumentationConfigurationContext
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "checkouts", contentSource);
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
+		OutputDirectory = WriteFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
 
 		// Calculate the output directory with path prefix once
 		var pathPrefix = Environment.PathPrefix;

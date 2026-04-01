@@ -123,7 +123,7 @@ public class AssemblerBuildService(
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
 		var redirectsPath = Path.Join(assembleContext.OutputDirectory.FullName, "redirects.json");
-		if (File.Exists(redirectsPath))
+		if (fs.File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
 		if (exporters.Contains(Exporter.Html))
