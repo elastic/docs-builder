@@ -30,6 +30,7 @@ public static class Paths
 		var dir = Directory.Exists(resolved)
 			? new DirectoryInfo(resolved)
 			: new DirectoryInfo(Path.GetDirectoryName(resolved) ?? resolved);
+		var startDir = dir.FullName; // always a directory, used as fallback
 		var depth = 0;
 		while (dir != null)
 		{
@@ -44,12 +45,12 @@ public static class Paths
 					return dir.FullName;
 #endif
 				// .git found but too deep — stop searching
-				return resolved;
+				return startDir;
 			}
 			depth++;
 			dir = dir.Parent;
 		}
-		return resolved;
+		return startDir;
 	}
 
 	/// <summary>
