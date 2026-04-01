@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex;
 
@@ -15,8 +14,8 @@ namespace Elastic.Codex;
 /// </summary>
 public class CodexContext
 {
-	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
+	public IFileSystem ReadFileSystem { get; }
+	public IFileSystem WriteFileSystem { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public CodexConfiguration Configuration { get; }
 	public IFileInfo ConfigurationPath { get; }
@@ -35,8 +34,8 @@ public class CodexContext
 		CodexConfiguration configuration,
 		IFileInfo configurationPath,
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFileSystem,
-		ScopedFileSystem writeFileSystem,
+		IFileSystem readFileSystem,
+		IFileSystem writeFileSystem,
 		string? checkoutDirectory,
 		string? outputDirectory)
 	{
@@ -46,10 +45,10 @@ public class CodexContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
+		var defaultCheckoutDirectory = Path.Join(Paths.GitCommonRoot.FullName, ".artifacts", "codex", "clone");
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
-		OutputDirectory = WriteFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);
+		OutputDirectory = ReadFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);
 	}
 }

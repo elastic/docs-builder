@@ -4,7 +4,6 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
@@ -253,8 +252,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 
 	private (string BundleDir, string ChangelogDir) CreateTestDirs()
 	{
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 		FileSystem.Directory.CreateDirectory(changelogDir);
 		return (bundleDir, changelogDir);
@@ -284,7 +283,7 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		new()
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString()),
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
 			Title = "9.2.0"
 		};
 }

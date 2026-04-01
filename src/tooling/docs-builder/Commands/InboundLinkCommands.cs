@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using ConsoleAppFramework;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Services;
@@ -14,7 +13,7 @@ namespace Documentation.Builder.Commands;
 
 internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector)
 {
-	private readonly LinkIndexService _linkIndexService = new(logFactory, FileSystemFactory.RealRead);
+	private readonly LinkIndexService _linkIndexService = new(logFactory, new FileSystem());
 
 	/// <summary> Validate all published cross_links in all published links.json files. </summary>
 	/// <param name="ctx"></param>

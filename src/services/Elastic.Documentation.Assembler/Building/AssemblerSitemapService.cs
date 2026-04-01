@@ -11,7 +11,6 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.Services;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Building;
 
@@ -26,7 +25,7 @@ public class AssemblerSitemapService(
 
 	public async Task<bool> GenerateSitemapAsync(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem fileSystem,
+		FileSystem fileSystem,
 		string? endpoint = null,
 		string? environment = null,
 		string? apiKey = null,

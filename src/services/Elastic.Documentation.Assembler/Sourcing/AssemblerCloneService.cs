@@ -25,7 +25,7 @@ public class AssemblerCloneService(
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
-		var fs = FileSystemFactory.RealRead;
+		var fs = new FileSystem();
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 

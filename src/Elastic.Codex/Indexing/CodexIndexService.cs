@@ -10,7 +10,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex.Indexing;
 
@@ -31,7 +30,7 @@ public class CodexIndexService(
 	public async Task<bool> Index(
 		CodexContext codexContext,
 		CodexCloneResult cloneResult,
-		ScopedFileSystem fileSystem,
+		FileSystem fileSystem,
 		ElasticsearchIndexOptions esOptions,
 		Cancel ctx = default)
 	{

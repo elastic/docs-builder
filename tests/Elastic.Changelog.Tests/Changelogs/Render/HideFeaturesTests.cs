@@ -5,7 +5,6 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
@@ -16,7 +15,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithHideFeatures_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog with feature-id
@@ -54,7 +53,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -74,7 +73,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -112,7 +111,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithHideFeatures_BreakingChange_UsesBlockComments()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -134,7 +133,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-breaking.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -151,7 +150,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -187,7 +186,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithHideFeatures_Deprecation_UsesBlockComments()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -207,7 +206,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-deprecation.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -224,7 +223,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -255,7 +254,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithHideFeatures_CommaSeparated_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -303,7 +302,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(changelogFile3, changelog3, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -326,7 +325,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -355,7 +354,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithHideFeatures_FromFile_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -374,7 +373,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-hidden.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -392,11 +391,11 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Create feature IDs file
-		var featureIdsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "feature-ids.txt");
+		var featureIdsFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "feature-ids.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(featureIdsFile)!);
 		await FileSystem.File.WriteAllTextAsync(featureIdsFile, "feature:from-file\nfeature:another", TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -422,7 +421,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithHideFeatures_CaseInsensitive_MatchesFeatureIds()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -441,7 +440,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-hidden.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -458,7 +457,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -485,7 +484,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithBundleHideFeatures_CommentsOutMatchingEntries()
 	{
 		// Arrange - Test that hide-features from bundle metadata are used to hide entries
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -518,7 +517,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -541,7 +540,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -571,7 +570,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_MergesCLIAndBundleHideFeatures()
 	{
 		// Arrange - Test that CLI and bundle hide-features are merged
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -619,7 +618,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(changelogFile3, changelog3, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -645,7 +644,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{

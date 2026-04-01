@@ -13,7 +13,6 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -22,8 +21,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 		.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
 
-	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
+	public IFileSystem ReadFileSystem { get; }
+	public IFileSystem WriteFileSystem { get; }
 	public IReadOnlySet<Exporter> AvailableExporters { get; }
 
 	public IDirectoryInfo? DocumentationCheckoutDirectory { get; }
@@ -73,7 +72,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem fileSystem,
+		IFileSystem fileSystem,
 		IConfigurationContext configurationContext
 	)
 		: this(collector, fileSystem, fileSystem, configurationContext, ExportOptions.Default, null, null)
@@ -82,8 +81,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFileSystem,
-		ScopedFileSystem writeFileSystem,
+		IFileSystem readFileSystem,
+		IFileSystem writeFileSystem,
 		IConfigurationContext configurationContext,
 		IReadOnlySet<Exporter> availableExporters,
 		string? source = null,
@@ -108,7 +107,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		(DocumentationSourceDirectory, ConfigurationPath) = Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
 
-		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory);
+		DocumentationCheckoutDirectory = Paths.DetermineSourceDirectoryRoot(DocumentationSourceDirectory);
 
 		OutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)

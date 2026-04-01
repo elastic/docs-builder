@@ -10,7 +10,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.ContentSources;
 
@@ -19,7 +18,7 @@ public class RepositoryBuildMatchingService(
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	ScopedFileSystem fileSystem
+	FileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<RepositoryBuildMatchingService>();

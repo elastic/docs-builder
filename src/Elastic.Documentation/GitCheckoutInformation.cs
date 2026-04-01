@@ -7,7 +7,6 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Extensions;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 using SoftCircuits.IniFileParser;
 
 namespace Elastic.Documentation;
@@ -46,11 +45,7 @@ public partial record GitCheckoutInformation
 		if (source is null)
 			return Unavailable;
 
-		// Return test data for in-memory (mock) file systems. Use ScopedFileSystem.InnerType
-		// (available since Nullean.ScopedFileSystem 0.4.0) to inspect through the scope wrapper
-		// rather than relying on the outer type name.
-		var fsType = fileSystem is ScopedFileSystem sf ? sf.InnerType : fileSystem.GetType();
-		if (fsType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase))
+		if (fileSystem is not FileSystem)
 		{
 			return new GitCheckoutInformation
 			{

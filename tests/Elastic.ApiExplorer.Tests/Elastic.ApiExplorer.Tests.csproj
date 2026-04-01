@@ -9,8 +9,4 @@
     <ProjectReference Include="..\authoring\authoring.fsproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Nullean.ScopedFileSystem" />
-  </ItemGroup>
-
 </Project>

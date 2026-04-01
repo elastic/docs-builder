@@ -14,7 +14,6 @@ using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
-using Nullean.ScopedFileSystem;
 using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Rendering;
@@ -66,11 +65,11 @@ public enum ChangelogFileType
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	ScopedFileSystem? fileSystem = null
+	IFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
-	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealWrite;
+	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
 
 	public async Task<bool> RenderChangelogs(
 		IDiagnosticsCollector collector,

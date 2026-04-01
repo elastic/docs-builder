@@ -5,7 +5,6 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
@@ -16,8 +15,8 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 	public async Task RenderChangelogs_WithDuplicateFileName_EmitsWarning()
 	{
 		// Arrange
-		var changelogDir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		var changelogDir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir1 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir2 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir1);
 		FileSystem.Directory.CreateDirectory(changelogDir2);
 
@@ -41,7 +40,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		await FileSystem.File.WriteAllTextAsync(file2, changelog, TestContext.Current.CancellationToken);
 
 		// Create bundle files
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
@@ -72,7 +71,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -100,7 +99,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 	public async Task RenderChangelogs_WithDuplicateFileNameInSameBundle_EmitsWarning()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog file
@@ -121,7 +120,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
 		// Create bundle file with the same file referenced twice
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -141,7 +140,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -169,8 +168,8 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 	public async Task RenderChangelogs_WithDuplicatePr_EmitsWarning()
 	{
 		// Arrange
-		var changelogDir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		var changelogDir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir1 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir2 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir1);
 		FileSystem.Directory.CreateDirectory(changelogDir2);
 
@@ -204,7 +203,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
 		// Create bundle files
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
@@ -235,7 +234,7 @@ public class DuplicateHandlingTests(ITestOutputHelper output) : RenderChangelogT
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{

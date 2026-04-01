@@ -5,7 +5,6 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
-using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -15,7 +14,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 	public async Task RenderChangelogs_WithHighlightedEntries_CreatesHighlightsFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog file with highlight
@@ -38,7 +37,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
@@ -54,7 +53,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -90,7 +89,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 	public async Task RenderChangelogs_WithoutHighlightedEntries_DoesNotCreateHighlightsFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog file without highlight
@@ -110,7 +109,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
@@ -126,7 +125,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -150,7 +149,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 	public async Task RenderChangelogs_WithHighlightedEntries_IncludesHighlightsInAsciidoc()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog file with highlight
@@ -172,7 +171,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
@@ -188,7 +187,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -219,7 +218,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 	public async Task RenderChangelogs_WithMultipleHighlightedEntries_GroupsByArea()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog files with highlights
@@ -259,7 +258,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
@@ -278,7 +277,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{

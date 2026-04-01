@@ -63,7 +63,7 @@ internal sealed class AssembleCommands(
 		);
 
 		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
-		var fs = FileSystemFactory.RealRead;
+		var fs = new FileSystem();
 		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, showHints, exporters, assumeBuild, fs), strict ?? false,
 			static async (s, collector, state, ctx) =>
 				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.fs, ctx)
@@ -141,7 +141,7 @@ internal sealed class AssemblerCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
+		var fs = new FileSystem();
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
 		serviceInvoker.AddCommand(service, (strict, environment, assumeBuild, metadataOnly, showHints, exporters, fs), strict ?? false,
 			static async (s, collector, state, ctx) =>

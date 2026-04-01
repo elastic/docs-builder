@@ -5,7 +5,6 @@
 using AwesomeAssertions;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
-using Elastic.Documentation.Configuration;
 using FakeItEasy;
 using Xunit;
 
@@ -24,7 +23,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		new(LoggerFactory, ConfigurationContext, _mockReleaseService, _mockPrService, FileSystem);
 
 	private string CreateOutputDirectory() =>
-		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 	// -----------------------------------------------------------------------
 	// Validation: no PR refs in release notes
@@ -269,7 +268,7 @@ public class ReleaseVersionTests(ITestOutputHelper output) : ChangelogTestBase(o
 		A.CallTo(() => _mockPrService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._))
 			.Returns(new GitHubPrInfo { Title = "Fix something", Labels = [] });
 
-		var workDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var workDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(workDir);
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
 		try

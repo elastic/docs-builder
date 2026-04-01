@@ -25,7 +25,6 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex.Building;
 
@@ -47,7 +46,7 @@ public class CodexBuildService(
 	public async Task<CodexBuildResult> BuildAll(
 		CodexContext context,
 		CodexCloneResult cloneResult,
-		ScopedFileSystem fileSystem,
+		IFileSystem fileSystem,
 		Cancel ctx,
 		IReadOnlySet<Exporter>? exporters = null)
 	{
@@ -67,7 +66,7 @@ public class CodexBuildService(
 		var buildContexts = new List<CodexDocumentationSetBuildContext>();
 
 		var environment = context.Configuration.Environment ?? "internal";
-		using var codexLinkIndexReader = new GitLinkIndexReader(environment, FileSystemFactory.AppData, skipFetch: true);
+		using var codexLinkIndexReader = new GitLinkIndexReader(environment, context.ReadFileSystem, skipFetch: true);
 
 		// Phase 1: Load and parse all documentation sets
 		foreach (var checkout in cloneResult.Checkouts)
@@ -137,7 +136,7 @@ public class CodexBuildService(
 	private async Task<CodexDocumentationSetBuildContext?> LoadDocumentationSet(
 		CodexContext context,
 		CodexCheckout checkout,
-		ScopedFileSystem fileSystem,
+		IFileSystem fileSystem,
 		ILinkIndexReader codexLinkIndexReader,
 		Cancel ctx)
 	{
@@ -402,10 +401,10 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public IDiagnosticsCollector Collector => codexContext.Collector;
 
 	/// <inheritdoc />
-	public ScopedFileSystem ReadFileSystem => codexContext.ReadFileSystem;
+	public IFileSystem ReadFileSystem => codexContext.ReadFileSystem;
 
 	/// <inheritdoc />
-	public ScopedFileSystem WriteFileSystem => codexContext.WriteFileSystem;
+	public IFileSystem WriteFileSystem => codexContext.WriteFileSystem;
 
 	/// <inheritdoc />
 	public IDirectoryInfo OutputDirectory => codexContext.OutputDirectory;

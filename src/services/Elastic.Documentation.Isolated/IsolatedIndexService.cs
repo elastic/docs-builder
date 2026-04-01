@@ -7,7 +7,6 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation.Isolated;
@@ -50,7 +49,7 @@ public class IsolatedIndexService(
 	/// <param name="ctx"></param>
 	/// <returns></returns>
 	public async Task<bool> Index(IDiagnosticsCollector collector,
-		ScopedFileSystem fileSystem,
+		FileSystem fileSystem,
 		string? path = null,
 		string? endpoint = null,
 		string? apiKey = null,

@@ -4,7 +4,6 @@
 
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
-using Elastic.Documentation.Configuration;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
@@ -18,7 +17,7 @@ public abstract class CreateChangelogTestBase(ITestOutputHelper output) : Change
 
 	protected async Task<string> CreateConfigDirectory(string configContent)
 	{
-		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(configDir);
 		var configPath = FileSystem.Path.Join(configDir, "changelog.yml");
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
@@ -26,5 +25,5 @@ public abstract class CreateChangelogTestBase(ITestOutputHelper output) : Change
 	}
 
 	protected string CreateOutputDirectory() =>
-		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 }

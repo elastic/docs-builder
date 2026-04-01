@@ -5,7 +5,6 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
@@ -16,7 +15,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 	public async Task RenderChangelogs_WithoutTitleAndNoTargets_EmitsWarning()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog file without target
@@ -35,7 +34,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 		// Create bundle file without target
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -51,7 +50,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -77,7 +76,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 	public async Task RenderChangelogs_WithTitleAndNoTargets_NoWarning()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog file without target
@@ -96,7 +95,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 		// Create bundle file without target
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -112,7 +111,7 @@ public class TitleTargetTests(ITestOutputHelper output) : RenderChangelogTestBas
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{

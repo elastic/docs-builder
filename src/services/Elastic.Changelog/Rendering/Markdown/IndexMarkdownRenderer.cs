@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
-using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ChangelogEntryType;
 
@@ -14,7 +13,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the index.md changelog file containing features, enhancements, fixes, docs, regressions, and other changes
 /// </summary>
-public class IndexMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "index.md";

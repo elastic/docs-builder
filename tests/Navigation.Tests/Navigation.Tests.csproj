@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <PackageReference Include="Markdig" />
-    <PackageReference Include="Nullean.ScopedFileSystem" />
   </ItemGroup>
 
 

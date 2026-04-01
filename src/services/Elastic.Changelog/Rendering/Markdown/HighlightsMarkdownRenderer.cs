@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
-using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 
 namespace Elastic.Changelog.Rendering.Markdown;
@@ -13,7 +12,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the highlights.md changelog file
 /// </summary>
-public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class HighlightsMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "highlights.md";

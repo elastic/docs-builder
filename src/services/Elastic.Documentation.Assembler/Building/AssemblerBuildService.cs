@@ -15,7 +15,6 @@ using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Building;
 
@@ -37,7 +36,7 @@ public class AssemblerBuildService(
 		bool? showHints,
 		IReadOnlySet<Exporter>? exporters,
 		bool? assumeBuild,
-		ScopedFileSystem fs,
+		FileSystem fs,
 		Cancel ctx
 	)
 	{
@@ -123,7 +122,7 @@ public class AssemblerBuildService(
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
 		var redirectsPath = Path.Join(assembleContext.OutputDirectory.FullName, "redirects.json");
-		if (fs.File.Exists(redirectsPath))
+		if (File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
 		if (exporters.Contains(Exporter.Html))

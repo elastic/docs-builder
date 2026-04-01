@@ -43,7 +43,7 @@ internal sealed class FormatCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new FormatService(logFactory, configurationContext);
-		var fs = FileSystemFactory.RealGitRootForPath(path);
+		var fs = new FileSystem();
 
 		serviceInvoker.AddCommand(service, (path, check, fs),
 			async static (s, collector, state, ctx) => await s.Format(collector, state.path, state.check, state.fs, ctx)

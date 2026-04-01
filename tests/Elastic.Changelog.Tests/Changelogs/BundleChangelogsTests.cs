@@ -5,7 +5,6 @@
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -25,7 +24,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 	private string CreateChangelogDir()
 	{
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 		return changelogDir;
 	}
@@ -66,7 +65,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -126,7 +125,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -193,7 +192,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/200"],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -258,7 +257,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Issues = ["https://github.com/elastic/elasticsearch/issues/100", "https://github.com/elastic/elasticsearch/issues/200"],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -296,7 +295,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Prs = ["https://github.com/elastic/elasticsearch/pull/999"],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -337,7 +336,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 				"https://github.com/elastic/elasticsearch/pull/200",
 				"https://github.com/elastic/elasticsearch/pull/300"
 			],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -389,7 +388,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
 		// Create PRs file
-		var prsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		var prsFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(prsFile)!);
 		// language=yaml
 		var prsContent =
@@ -403,7 +402,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Prs = [prsFile],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -444,7 +443,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Prs = ["100"],
 			Owner = "elastic",
 			Repo = "elasticsearch",
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -482,7 +481,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Prs = ["elastic/elasticsearch#133609"],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -505,7 +504,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -521,13 +520,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 	public async Task BundleChangelogs_WithInvalidDirectory_ReturnsError()
 	{
 		// Arrange
-		var invalidDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "nonexistent");
+		var invalidDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent");
 
 		var input = new BundleChangelogsArguments
 		{
 			Directory = invalidDir,
 			All = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -577,7 +576,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -599,7 +598,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -652,7 +651,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "*" },
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "*" }
 			],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -709,7 +708,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			InputProducts = [new ProductArgument { Product = "*", Target = "9.2.0", Lifecycle = "ga" }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -763,7 +762,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			InputProducts = [new ProductArgument { Product = "*", Target = "*", Lifecycle = "*" }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -831,7 +830,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.3.*", Lifecycle = "*" }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -853,12 +852,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Arrange
 
 		// Provide a non-existent file path - should return error since there are no other PRs
-		var nonexistentFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "nonexistent.txt");
+		var nonexistentFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.txt");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = [nonexistentFile],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -895,7 +894,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Prs = ["https://github.com/elastic/elasticsearch/pull/123"],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -931,12 +930,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
 
 		// Provide a non-existent file path along with a valid PR - should emit warning for file but continue with PR
-		var nonexistentFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "nonexistent.txt");
+		var nonexistentFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.txt");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			Prs = [nonexistentFile, "https://github.com/elastic/elasticsearch/pull/123"],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -997,7 +996,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "beta" }
 			],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1075,7 +1074,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1137,7 +1136,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
 				new ProductArgument { Product = "elasticsearch", Target = "9.3.0", Lifecycle = "beta" }
 			],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1185,7 +1184,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-06", Lifecycle = "beta" }
 			],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1243,7 +1242,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1291,7 +1290,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			[
 				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "*" }
 			],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1365,7 +1364,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1411,7 +1410,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Resolve = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1449,7 +1448,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  resolve: true
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -1474,7 +1473,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			All = true,
 			Resolve = false,
 			Config = configPath,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1520,7 +1519,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-special-chars.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, Encoding.UTF8, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
@@ -1601,7 +1600,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
 		// Use a directory path with default filename (simulating command layer processing)
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		var outputPath = FileSystem.Path.Join(outputDir, "changelog-bundle.yaml");
 
 		var input = new BundleChangelogsArguments
@@ -1648,7 +1647,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Resolve = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1682,7 +1681,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Resolve = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1714,7 +1713,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Resolve = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1748,7 +1747,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Resolve = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1786,7 +1785,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			HideFeatures = ["feature:hidden-api", "feature:another-hidden"],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1828,7 +1827,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			// No HideFeatures
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1865,7 +1864,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
 		// Create feature IDs file
-		var featureIdsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "feature-ids.txt");
+		var featureIdsFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "feature-ids.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(featureIdsFile)!);
 		await FileSystem.File.WriteAllTextAsync(featureIdsFile, "feature:from-file\nfeature:another", TestContext.Current.CancellationToken);
 
@@ -1874,7 +1873,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			HideFeatures = [featureIdsFile],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1916,7 +1915,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Repo = "cloud", // Set repo to "cloud" - different from product ID "cloud-serverless"
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1957,7 +1956,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			// No --repo option
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -1986,7 +1985,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  owner: elastic
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2006,7 +2005,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -2041,7 +2040,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  repo: wrong-repo
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2061,7 +2060,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -2115,7 +2114,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 				new ProductArgument { Product = "cloud-serverless", Target = "2025-12-02", Lifecycle = "ga" },
 				new ProductArgument { Product = "elasticsearch-serverless", Target = "2025-12-02", Lifecycle = "ga" }
 			],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -2138,7 +2137,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	{
 		// Arrange - When --output is not specified, use bundle.output_directory from config if set
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		// language=yaml
@@ -2149,7 +2148,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  output_directory: "{outputDir.Replace("\\", "/")}"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-output-dir", "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), "config-output-dir", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2196,7 +2195,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	{
 		// Arrange - When --directory is not specified (null), use bundle.directory from config if set
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		// language=yaml
@@ -2207,7 +2206,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  output_directory: "{outputDir.Replace("\\", "/")}"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-dir", "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), "config-dir", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2255,9 +2254,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Arrange - config has directory pointing elsewhere, but CLI passes --directory explicitly.
 		// The explicit CLI value must win (e.g. --directory . when cwd has changelogs).
 
-		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var configDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(configDir);
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		// language=yaml
@@ -2268,7 +2267,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  output_directory: "{outputDir.Replace("\\", "/")}"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-dir-override", "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), "config-dir-override", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2325,7 +2324,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        - feature:another-profile-hidden
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), "config", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2346,7 +2345,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -2395,7 +2394,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        - feature:from-profile
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config2", "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), "config2", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2415,7 +2414,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -2462,7 +2461,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        - feature:profile-two
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config3", "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), "config3", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2482,7 +2481,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -2548,7 +2547,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -2604,24 +2603,24 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		// Bundle with comments
-		var dir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var dir1 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir1);
 		var file1 = FileSystem.Path.Join(dir1, "1755268130-shared.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelogWithComments, TestContext.Current.CancellationToken);
 
-		var output1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle1.yaml");
+		var output1 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle1.yaml");
 		var result1 = await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
 		{
 			Directory = dir1, All = true, Output = output1
 		}, TestContext.Current.CancellationToken);
 
 		// Bundle without comments
-		var dir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var dir2 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir2);
 		var file2 = FileSystem.Path.Join(dir2, "1755268130-shared.yaml");
 		await FileSystem.File.WriteAllTextAsync(file2, changelogWithoutComments, TestContext.Current.CancellationToken);
 
-		var output2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle2.yaml");
+		var output2 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle2.yaml");
 		var result2 = await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
 		{
 			Directory = dir2, All = true, Output = output2
@@ -2672,22 +2671,22 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		// Bundle first file
-		var dir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var dir1 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir1);
 		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(dir1, "1755268130-a.yaml"), changelog1, TestContext.Current.CancellationToken);
 
-		var output1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle1.yaml");
+		var output1 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle1.yaml");
 		await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
 		{
 			Directory = dir1, All = true, Output = output1
 		}, TestContext.Current.CancellationToken);
 
 		// Bundle second file
-		var dir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var dir2 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir2);
 		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(dir2, "1755268130-b.yaml"), changelog2, TestContext.Current.CancellationToken);
 
-		var output2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle2.yaml");
+		var output2 = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle2.yaml");
 		await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
 		{
 			Directory = dir2, All = true, Output = output2
@@ -2710,7 +2709,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Arrange - Amend service should also use normalized checksums
 
 		// Create a base bundle file
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -2725,7 +2724,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Create a changelog file with comments
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -2778,7 +2777,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Arrange - Amend with --resolve should also use normalized checksums
 
 		// Create a base bundle file
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -2793,7 +2792,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Create a changelog file with comments
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// language=yaml
@@ -2861,7 +2860,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      output_products: "elasticsearch {version} ga"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2881,7 +2880,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -2922,7 +2921,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      output_products: "elasticsearch {version} ga extra-token"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2941,7 +2940,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -2974,7 +2973,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      output: "elasticsearch-{version}.yaml"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -2993,7 +2992,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -3035,7 +3034,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      owner: elastic
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3055,7 +3054,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -3099,7 +3098,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      output: "elasticsearch-{version}.yaml"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3119,7 +3118,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -3162,7 +3161,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      repo: elasticsearch
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3182,7 +3181,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -3225,7 +3224,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      output: "elasticsearch-{version}.yaml"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3245,7 +3244,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -3282,7 +3281,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			currentDirectory: "/empty-project"
 		);
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3307,26 +3306,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 	public async Task BundleChangelogs_WithProfileMode_ConfigAtCurrentDir_LoadsSuccessfully()
 	{
 		// Arrange - changelog.yml is at ./changelog.yml (in the current working directory)
-		var root = Paths.WorkingDirectoryRoot.FullName;
 		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
 			null,
-			currentDirectory: root
+			currentDirectory: "/test-root"
 		);
-		cwdFs.Directory.CreateDirectory(root);
-		cwdFs.Directory.CreateDirectory(Path.Join(root, "changelogs"));
-		cwdFs.Directory.CreateDirectory(Path.Join(root, "output"));
+		cwdFs.Directory.CreateDirectory("/test-root");
+		cwdFs.Directory.CreateDirectory("/test-root/changelogs");
+		cwdFs.Directory.CreateDirectory("/test-root/output");
 
 		// language=yaml
 		var configContent =
-			$$"""
+			"""
 			bundle:
-			  directory: {{Path.Join(root, "changelogs")}}
+			  directory: /test-root/changelogs
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
 			      output: "elasticsearch-{version}.yaml"
 			""";
-		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelog.yml"), configContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync("/test-root/changelog.yml", configContent, TestContext.Current.CancellationToken);
 
 		// language=yaml
 		var changelogContent =
@@ -3340,16 +3338,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
-		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync("/test-root/changelogs/1755268130-feature.yaml", changelogContent, TestContext.Current.CancellationToken);
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
 
 		var input = new BundleChangelogsArguments
 		{
 			Profile = "es-release",
 			ProfileArgument = "9.2.0",
-			OutputDirectory = Path.Join(root, "output")
-			// Config intentionally omitted — should discover changelog.yml in CWD
+			OutputDirectory = "/test-root/output"
+			// Config intentionally omitted — should discover /test-root/changelog.yml
 		};
 
 		// Act
@@ -3358,35 +3356,34 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs.Directory.GetFiles("/test-root/output", "*.yaml").Should().NotBeEmpty("Expected output file to be created");
 	}
 
 	[Fact]
 	public async Task BundleChangelogs_WithProfileMode_ConfigAtDocsSubdir_LoadsSuccessfully()
 	{
 		// Arrange - changelog.yml is at ./docs/changelog.yml (the second discovery candidate)
-		var root = Paths.WorkingDirectoryRoot.FullName;
 		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
 			null,
-			currentDirectory: root
+			currentDirectory: "/test-root"
 		);
-		cwdFs.Directory.CreateDirectory(root);
-		cwdFs.Directory.CreateDirectory(Path.Join(root, "docs"));
-		cwdFs.Directory.CreateDirectory(Path.Join(root, "changelogs"));
-		cwdFs.Directory.CreateDirectory(Path.Join(root, "output"));
+		cwdFs.Directory.CreateDirectory("/test-root");
+		cwdFs.Directory.CreateDirectory("/test-root/docs");
+		cwdFs.Directory.CreateDirectory("/test-root/changelogs");
+		cwdFs.Directory.CreateDirectory("/test-root/output");
 
 		// language=yaml
 		var configContent =
-			$$"""
+			"""
 			bundle:
-			  directory: {{Path.Join(root, "changelogs")}}
+			  directory: /test-root/changelogs
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
 			      output: "elasticsearch-{version}.yaml"
 			""";
 		// Config is in docs/ subdir, not in CWD directly
-		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "docs/changelog.yml"), configContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync("/test-root/docs/changelog.yml", configContent, TestContext.Current.CancellationToken);
 
 		// language=yaml
 		var changelogContent =
@@ -3400,16 +3397,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
-		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync("/test-root/changelogs/1755268130-feature.yaml", changelogContent, TestContext.Current.CancellationToken);
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, cwdFs);
 
 		var input = new BundleChangelogsArguments
 		{
 			Profile = "es-release",
 			ProfileArgument = "9.2.0",
-			OutputDirectory = Path.Join(root, "output")
-			// Config intentionally omitted — should discover docs/changelog.yml in CWD
+			OutputDirectory = "/test-root/output"
+			// Config intentionally omitted — should discover /test-root/docs/changelog.yml
 		};
 
 		// Act
@@ -3418,7 +3415,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs.Directory.GetFiles("/test-root/output", "*.yaml").Should().NotBeEmpty("Expected output file to be created");
 	}
 
 	// ─── Phase 3: URL list file and combined version+report ─────────────────────────────
@@ -3434,7 +3431,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    release:
 			      output: "bundle.yaml"
 			""";
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3468,7 +3465,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		var urlFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
@@ -3509,7 +3506,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    release:
 			      output: "bundle.yaml"
 			""";
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3543,7 +3540,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "issues.txt");
+		var urlFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "issues.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
@@ -3585,7 +3582,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    release:
 			      output: "bundle.yaml"
 			""";
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3602,7 +3599,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""", TestContext.Current.CancellationToken);
 
-		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		var urlFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(urlFile, "100\n200\n", TestContext.Current.CancellationToken);
 
@@ -3638,7 +3635,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    release:
 			      output: "bundle.yaml"
 			""";
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3655,7 +3652,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""", TestContext.Current.CancellationToken);
 
-		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "mixed.txt");
+		var urlFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "mixed.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
@@ -3696,7 +3693,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      output_products: "cloud-serverless {version}"
 			      output: "serverless-{version}.yaml"
 			""";
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -3730,7 +3727,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		var urlFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
@@ -3738,7 +3735,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			TestContext.Current.CancellationToken
 		);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 
 		var input = new BundleChangelogsArguments
@@ -3784,16 +3781,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    serverless-release:
 			      output: "serverless-{version}.yaml"
 			""";
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
 		// A "fake" HTML file to act as the profile arg (simulating user accidentally reversing the order)
-		var reportFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "report.html");
+		var reportFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "report.html");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(reportFile)!);
 		await FileSystem.File.WriteAllTextAsync(reportFile, "<html></html>", TestContext.Current.CancellationToken);
 
-		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		var urlFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(urlFile, "https://github.com/elastic/cloud/pull/100\n", TestContext.Current.CancellationToken);
 
@@ -3831,11 +3828,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      products: "elasticsearch 9.2.0 ga"
 			      output: "bundle.yaml"
 			""";
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
-		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		var urlFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(urlFile, "https://github.com/elastic/elasticsearch/pull/100\n", TestContext.Current.CancellationToken);
 
@@ -3872,7 +3869,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  <a href="https://github.com/elastic/elasticsearch/pull/200">PR #200</a>
 			</body></html>
 			""";
-		var reportFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "report.html");
+		var reportFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "report.html");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(reportFile)!);
 		await FileSystem.File.WriteAllTextAsync(reportFile, htmlReportContent, TestContext.Current.CancellationToken);
 
@@ -3906,7 +3903,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -3949,7 +3946,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	public async Task BundleChangelogs_WithPrsFile_ContainingNumbers_ReturnsError()
 	{
 		// Arrange - prs file contains bare numbers (not fully-qualified URLs)
-		var prsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		var prsFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(prsFile)!);
 		await FileSystem.File.WriteAllTextAsync(prsFile, "100\n200\n", TestContext.Current.CancellationToken);
 
@@ -3970,7 +3967,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Prs = [prsFile],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), "bundle.yaml")
 		};
 
 		// Act
@@ -3990,7 +3987,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	public async Task BundleChangelogs_WithIssuesFile_ContainingShortForms_ReturnsError()
 	{
 		// Arrange - issues file contains short forms (not fully-qualified URLs)
-		var issuesFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "issues.txt");
+		var issuesFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "issues.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(issuesFile)!);
 		await FileSystem.File.WriteAllTextAsync(issuesFile, "elastic/elasticsearch#100\n", TestContext.Current.CancellationToken);
 
@@ -4011,7 +4008,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Issues = [issuesFile],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "bundle.yaml")
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), "bundle.yaml")
 		};
 
 		// Act
@@ -4031,7 +4028,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	public async Task BundleChangelogs_WithPrsFile_ContainingValidUrls_FiltersCorrectly()
 	{
 		// Verify that a prs file with valid fully-qualified URLs still works correctly
-		var prsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		var prsFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(prsFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			prsFile,
@@ -4054,7 +4051,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file, changelog, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4082,7 +4079,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    exclude_products: cloud-hosted
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4117,7 +4114,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, cloudChangelog, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4154,7 +4151,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    include_products: elasticsearch
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4189,7 +4186,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, kibanaChangelog, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4225,7 +4222,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    exclude_products: kibana
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4260,7 +4257,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, kibanaChangelog, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4296,7 +4293,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    match_products: conjunction
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4333,7 +4330,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			esAndKibana,
 			TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4367,7 +4364,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    match_products: conjunction
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4403,7 +4400,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			esSec,
 			TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4436,7 +4433,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    exclude_products: elasticsearch
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4457,7 +4454,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-elasticsearch-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		// Use InputProducts as primary filter — rules.bundle.exclude_products should still apply
@@ -4490,7 +4487,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    exclude_types: enhancement
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4525,7 +4522,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, featureChangelog, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, enhancementChangelog, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4561,7 +4558,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    include_areas: "Search"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4600,7 +4597,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, searchChangelog, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, internalChangelog, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4638,7 +4635,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        include_areas: "Search"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4691,7 +4688,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file2, serverlessSearch, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file3, serverlessOther, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4736,7 +4733,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        include_areas: "Detection rules and alerts"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4791,7 +4788,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file2, securityEntry, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file3, securityOtherArea, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4837,7 +4834,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        include_areas: "Detection rules and alerts"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4877,7 +4874,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, sharedEntry, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, kibanaOtherEntry, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4916,7 +4913,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        exclude_types: docs
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -4950,7 +4947,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(file1, kibanaDoc, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, esDoc, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -4989,7 +4986,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        exclude_types: feature
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5009,7 +5006,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268190-es-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, esFeature, TestContext.Current.CancellationToken);
 
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
 		var input = new BundleChangelogsArguments
@@ -5052,7 +5049,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        match_products: any
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5103,7 +5100,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        match_products: any
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5175,7 +5172,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			          - kibana
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5231,7 +5228,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			          - kibana
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5285,7 +5282,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 	private string CreateTempFilePath(string filename)
 	{
-		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), filename);
+		var outputPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), filename);
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 		return outputPath;
 	}
@@ -5312,7 +5309,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "docs"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5366,7 +5363,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - elasticsearch
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5432,7 +5429,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - elasticsearch
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5479,7 +5476,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    exclude_products: kibana
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5546,7 +5543,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			          - "feature"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5611,7 +5608,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			          - "security"
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5682,7 +5679,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			          - "elasticsearch"  # This should NOT apply to disjoint entry (would exclude if used)
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5754,7 +5751,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			          - "cloud-serverless"  # This should NOT apply either
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5824,7 +5821,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			          - "kibana"  # This SHOULD apply (excludes kibana entries)
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 
@@ -5917,7 +5914,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			        # No type/area rules here - global type exclusions are NOT inherited
 			""";
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
 

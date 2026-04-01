@@ -94,7 +94,7 @@ internal sealed class CodexIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealRead;
+		var fs = new FileSystem();
 
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);

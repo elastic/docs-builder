@@ -19,13 +19,6 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 	private BuildContext Build { get; } = build;
 	private bool _versionLockInitialized;
 
-	public IEnumerable<string> ExternalScopeRoots =>
-		Build.ConfigurationYaml.TableOfContents
-			.OfType<FileRef>()
-			.SelectMany(f => f.Children.OfType<DetectionRuleOverviewRef>())
-			.SelectMany(r => r.DetectionRuleFolders)
-			.Distinct();
-
 	public IDocumentationFileExporter? FileExporter { get; } = new RuleDocumentationFileExporter(build.ReadFileSystem, build.WriteFileSystem);
 
 	public DocumentationFile? CreateDocumentationFile(IFileInfo file, MarkdownParser markdownParser)

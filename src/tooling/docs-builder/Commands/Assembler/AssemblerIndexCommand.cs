@@ -88,7 +88,7 @@ internal sealed class AssemblerIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealRead;
+		var fs = new FileSystem();
 		var service = new AssemblerIndexService(logFactory, configuration, configurationContext, githubActionsService, environmentVariables);
 		var state = (fs,
 				// endpoint options
