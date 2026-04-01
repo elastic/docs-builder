@@ -202,8 +202,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var loadTask = _contentDateLookup.LoadAsync(ctx);
 		var orchestratorTask = _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
 
-		await loadTask;
-		var orchestratorContext = await orchestratorTask;
+		await Task.WhenAll(loadTask, orchestratorTask);
+		var orchestratorContext = orchestratorTask.Result;
 
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",

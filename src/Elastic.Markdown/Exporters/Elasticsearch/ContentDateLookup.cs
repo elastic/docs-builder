@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -21,8 +23,8 @@ public class ContentDateLookup(DistributedTransport transport, ILogger logger, s
 	private const string PitKeepAlive = "2m";
 
 	private readonly string _indexName = $"docs-{buildType}-content-dates-{environment}";
-	private readonly Dictionary<string, (string Hash, DateTimeOffset Date)> _existing = [];
-	private readonly Dictionary<string, (string Hash, DateTimeOffset Date)> _changed = [];
+	private readonly ConcurrentDictionary<string, (string Hash, DateTimeOffset Date)> _existing = [];
+	private readonly ConcurrentDictionary<string, (string Hash, DateTimeOffset Date)> _changed = [];
 
 	/// <summary>Creates the lookup index if it does not already exist.</summary>
 	public async Task BootstrapAsync(Cancel ct)
@@ -148,7 +150,7 @@ public class ContentDateLookup(DistributedTransport transport, ILogger logger, s
 	/// <summary>Bulk upserts changed/new entries back to the lookup index.</summary>
 	public async Task SaveAsync(Cancel ct)
 	{
-		if (_changed.Count == 0)
+		if (_changed.IsEmpty)
 		{
 			logger.LogInformation("No content date changes to save");
 			return;
@@ -176,7 +178,7 @@ public class ContentDateLookup(DistributedTransport transport, ILogger logger, s
 		Documentation.Search.ContentHash.Create(url);
 
 	private static string EscapeJson(string value) =>
-		value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+		JsonEncodedText.Encode(value).ToString();
 
 	private async Task<string> OpenPitAsync(Cancel ct)
 	{
