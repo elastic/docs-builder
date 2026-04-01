@@ -84,6 +84,16 @@ public record DocumentationDocument
 	[JsonPropertyName("last_updated")]
 	public DateTimeOffset LastUpdated { get; set; }
 
+	/// The date this document's content (stripped_body) was last updated.
+	/// Only advances when the whitespace-normalized content hash changes.
+	[JsonPropertyName("content_last_updated")]
+	public DateTimeOffset ContentLastUpdated { get; set; }
+
+	/// A hash of the whitespace-normalized stripped_body, used to detect content-only changes.
+	[Keyword]
+	[JsonPropertyName("content_hash")]
+	public string ContentBodyHash { get; set; } = string.Empty;
+
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }
 

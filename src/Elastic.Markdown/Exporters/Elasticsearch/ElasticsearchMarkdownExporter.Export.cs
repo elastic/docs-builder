@@ -39,6 +39,12 @@ public partial class ElasticsearchMarkdownExporter
 		doc.Hash = hash;
 	}
 
+	private void AssignContentDate(DocumentationDocument doc)
+	{
+		doc.ContentBodyHash = ContentHash.CreateNormalized(doc.StrippedBody ?? string.Empty);
+		doc.ContentLastUpdated = _contentDateLookup.Resolve(doc.Url, doc.ContentBodyHash, _orchestrator.BatchTimestamp);
+	}
+
 	private static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
 	{
 		doc.SearchTitle = CreateSearchTitle();
@@ -154,6 +160,7 @@ public partial class ElasticsearchMarkdownExporter
 			: null;
 
 		CommonEnrichments(doc, currentNavigation);
+		AssignContentDate(doc);
 		AssignDocumentMetadata(doc);
 
 		return await WriteDocumentAsync(doc, ctx);
@@ -191,6 +198,7 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
 			CommonEnrichments(doc, null);
+			AssignContentDate(doc);
 			AssignDocumentMetadata(doc);
 
 			if (!await WriteDocumentAsync(doc, ctx))

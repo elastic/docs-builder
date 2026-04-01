@@ -45,6 +45,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
 
+	// Content date tracking - persistent lookup for content_last_updated
+	private readonly ContentDateLookup _contentDateLookup;
+
 	// Per-channel running totals for progress logging
 	private int _primaryIndexed;
 	private int _secondaryIndexed;
@@ -72,6 +75,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_transport = ElasticsearchTransportFactory.Create(es);
 		_operations = new ElasticsearchOperations(_transport, _logger, collector);
+		_contentDateLookup = new ContentDateLookup(_transport, _logger, endpoints.BuildType, endpoints.Environment);
 
 		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
 		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
@@ -192,15 +196,26 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
-		var orchestratorContext = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+		// Bootstrap lookup first (creates index if needed), then load in parallel with orchestrator start
+		await _contentDateLookup.BootstrapAsync(ctx);
+
+		var loadTask = _contentDateLookup.LoadAsync(ctx);
+		var orchestratorTask = _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+
+		await loadTask;
+		var orchestratorContext = await orchestratorTask;
+
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
 			orchestratorContext.Strategy, orchestratorContext.PrimaryWriteAlias, orchestratorContext.SecondaryWriteAlias);
 	}
 
 	/// <inheritdoc />
-	public async ValueTask StopAsync(Cancel ctx = default) =>
+	public async ValueTask StopAsync(Cancel ctx = default)
+	{
 		_ = await _orchestrator.CompleteAsync(null, ctx);
+		await _contentDateLookup.SaveAsync(ctx);
+	}
 
 	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
 	{

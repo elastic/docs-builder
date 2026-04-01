@@ -128,7 +128,7 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.Html))
 		{
 			// Build-time sitemap uses current date as placeholder for backwards compatibility.
-			// Production sitemap with correct last_updated dates is generated via
+			// Production sitemap with correct content_last_updated dates is generated via
 			// `assembler sitemap` after ES indexing, which overwrites this file.
 			var urls = navigation.NavigationItems
 				.SelectMany(SitemapNavigationHelper.Flatten)
