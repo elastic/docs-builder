@@ -133,9 +133,11 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 			asm,
 			"elastic",
 			"elasticsearch",
-			out var sanitized);
+			out var sanitized,
+			out var changed);
 
 		ok.Should().BeTrue();
+		changed.Should().BeTrue();
 		sanitized.Entries[0].Prs![0].Should().StartWith("# PRIVATE:");
 		sanitized.Entries[0].Prs![1].Should().Be("123");
 	}
@@ -169,7 +171,8 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 			asm,
 			"elastic",
 			"elasticsearch",
-			out var sanitized);
+			out var sanitized,
+			out _);
 
 		ok.Should().BeTrue();
 		sanitized.Entries[0].Prs![0].Should().StartWith("# PRIVATE:");
@@ -197,6 +200,7 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 			asm,
 			"elastic",
 			"elasticsearch",
+			out _,
 			out _);
 
 		ok.Should().BeFalse();
@@ -231,9 +235,11 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 			asm,
 			"elastic",
 			"elasticsearch",
-			out var sanitized);
+			out var sanitized,
+			out var changed);
 
 		ok.Should().BeTrue();
+		changed.Should().BeFalse();
 		Collector.Errors.Should().Be(0);
 		sanitized.Entries.Should().HaveCount(1);
 	}
@@ -258,10 +264,170 @@ public class PrivateChangelogLinkSanitizerTests(ITestOutputHelper output) : Chan
 			asm,
 			"elastic",
 			"elasticsearch",
+			out _,
 			out _);
 
 		ok.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("non-empty assembler.yml references", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public void TrySanitizeBundle_AllPublicRefs_ChangesAppliedIsFalse()
+	{
+		var yaml =
+			"""
+			references:
+			  elasticsearch:
+			    private: false
+			  kibana:
+			    private: false
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = ["https://github.com/elastic/elasticsearch/pull/100"],
+					Issues = ["https://github.com/elastic/kibana/issues/200"]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector, bundle, asm, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+		sanitized.Entries[0].Prs![0].Should().Be("https://github.com/elastic/elasticsearch/pull/100");
+		sanitized.Entries[0].Issues![0].Should().Be("https://github.com/elastic/kibana/issues/200");
+	}
+
+	[Fact]
+	public void TrySanitizeBundle_AlreadySanitizedBundle_ChangesAppliedIsFalse()
+	{
+		var yaml =
+			"""
+			references:
+			  elasticsearch:
+			    private: false
+			  kibana-team:
+			    private: true
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = ["https://github.com/elastic/elasticsearch/pull/100",
+						"# PRIVATE: https://github.com/elastic/kibana-team/pull/1"]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector, bundle, asm, "elastic", "elasticsearch",
+			out _, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+	}
+
+	[Fact]
+	public void TrySanitizeBundle_MixedPublicAndPrivateRefs_SanitizesOnlyPrivate()
+	{
+		var yaml =
+			"""
+			references:
+			  elasticsearch:
+			    private: false
+			  kibana-team:
+			    private: true
+			""";
+
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "public entry",
+					Prs = ["https://github.com/elastic/elasticsearch/pull/1"],
+					Issues = ["https://github.com/elastic/elasticsearch/issues/2"]
+				},
+				new()
+				{
+					Title = "mixed entry",
+					Prs = ["https://github.com/elastic/elasticsearch/pull/3"],
+					Issues = ["https://github.com/elastic/kibana-team/issues/4"]
+				}
+			]
+		};
+
+		var ok = PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+			Collector, bundle, asm, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeTrue();
+		sanitized.Entries[0].Prs![0].Should().Be("https://github.com/elastic/elasticsearch/pull/1");
+		sanitized.Entries[0].Issues![0].Should().Be("https://github.com/elastic/elasticsearch/issues/2");
+		sanitized.Entries[1].Prs![0].Should().Be("https://github.com/elastic/elasticsearch/pull/3");
+		sanitized.Entries[1].Issues![0].Should().StartWith("# PRIVATE:");
+	}
+
+	[Fact]
+	public void GetFirstRepoSegmentFromBundleRepo_Null_ReturnsEmpty() =>
+		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo(null).Should().BeEmpty();
+
+	[Fact]
+	public void GetFirstRepoSegmentFromBundleRepo_Empty_ReturnsEmpty() =>
+		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("").Should().BeEmpty();
+
+	[Fact]
+	public void GetFirstRepoSegmentFromBundleRepo_Whitespace_ReturnsEmpty() =>
+		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("   ").Should().BeEmpty();
+
+	[Fact]
+	public void GetFirstRepoSegmentFromBundleRepo_SingleRepo_ReturnsSame() =>
+		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("elasticsearch").Should().Be("elasticsearch");
+
+	[Fact]
+	public void GetFirstRepoSegmentFromBundleRepo_MergedRepo_ReturnsFirst() =>
+		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("elasticsearch+kibana").Should().Be("elasticsearch");
+
+	[Fact]
+	public void GetFirstRepoSegmentFromBundleRepo_ThreeSegments_ReturnsFirst() =>
+		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("a+b+c").Should().Be("a");
+
+	[Fact]
+	public void FormatIssueLink_Sentinel_ReturnsEmpty()
+	{
+		var s = ChangelogTextUtilities.FormatIssueLink("# PRIVATE: https://github.com/elastic/x/issues/1", "x", hidePrivateLinks: false);
+		s.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void FormatPrLinkAsciidoc_Sentinel_ReturnsEmpty()
+	{
+		var s = ChangelogTextUtilities.FormatPrLinkAsciidoc("# PRIVATE: https://github.com/elastic/x/pull/1", "x", hidePrivateLinks: false);
+		s.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void FormatIssueLinkAsciidoc_Sentinel_ReturnsEmpty()
+	{
+		var s = ChangelogTextUtilities.FormatIssueLinkAsciidoc("# PRIVATE: https://github.com/elastic/x/issues/1", "x", hidePrivateLinks: false);
+		s.Should().BeEmpty();
 	}
 }

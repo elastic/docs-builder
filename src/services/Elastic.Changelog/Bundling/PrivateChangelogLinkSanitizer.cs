@@ -26,6 +26,7 @@ public static class PrivateChangelogLinkSanitizer
 	/// <param name="defaultOwner">Default GitHub organization for bare numeric references.</param>
 	/// <param name="defaultBundleRepo">Bundle repo field (supports <c>repo1+repo2</c>; first segment used for defaults).</param>
 	/// <param name="sanitized">Bundle with updated <c>Prs</c>/<c>Issues</c> when return value is true.</param>
+	/// <param name="changesApplied">True when at least one reference was rewritten to a sentinel.</param>
 	/// <returns>True if all references were validated and any rewrites applied successfully.</returns>
 	public static bool TrySanitizeBundle(
 		IDiagnosticsCollector collector,
@@ -33,20 +34,23 @@ public static class PrivateChangelogLinkSanitizer
 		AssemblyConfiguration assembly,
 		string defaultOwner,
 		string? defaultBundleRepo,
-		out Bundle sanitized)
+		out Bundle sanitized,
+		out bool changesApplied)
 	{
 		sanitized = bundle;
+		changesApplied = false;
 
 		var ownerDefault = string.IsNullOrWhiteSpace(defaultOwner) ? "elastic" : defaultOwner;
+		var anyRewritten = false;
 		var newEntries = new List<BundledEntry>(bundle.Entries.Count);
 
 		foreach (var entry in bundle.Entries)
 		{
-			var prs = SanitizeReferenceList(collector, entry.Prs, ownerDefault, defaultBundleRepo, assembly, "PR");
+			var prs = SanitizeReferenceList(collector, entry.Prs, ownerDefault, defaultBundleRepo, assembly, "PR", ref anyRewritten);
 			if (prs == null)
 				return false;
 
-			var issues = SanitizeReferenceList(collector, entry.Issues, ownerDefault, defaultBundleRepo, assembly, "issue");
+			var issues = SanitizeReferenceList(collector, entry.Issues, ownerDefault, defaultBundleRepo, assembly, "issue", ref anyRewritten);
 			if (issues == null)
 				return false;
 
@@ -54,6 +58,7 @@ public static class PrivateChangelogLinkSanitizer
 		}
 
 		sanitized = bundle with { Entries = newEntries };
+		changesApplied = anyRewritten;
 		return true;
 	}
 
@@ -63,7 +68,8 @@ public static class PrivateChangelogLinkSanitizer
 		string defaultOwner,
 		string? defaultBundleRepo,
 		AssemblyConfiguration assembly,
-		string referenceKind)
+		string referenceKind,
+		ref bool anyRewritten)
 	{
 		if (refs is null || refs.Count == 0)
 			return refs ?? [];
@@ -116,7 +122,10 @@ public static class PrivateChangelogLinkSanitizer
 			}
 
 			if (repository.Private)
+			{
 				list.Add($"{SentinelPrefix} {r}");
+				anyRewritten = true;
+			}
 			else
 				list.Add(r);
 		}
