@@ -45,7 +45,9 @@ public partial record GitCheckoutInformation
 		if (source is null)
 			return Unavailable;
 
-		if (fileSystem is not FileSystem)
+		// Return test data for in-memory (mock) file systems. ScopedFileSystem wraps the real
+		// FileSystem so we check if the FS implementation name indicates an in-memory mock.
+		if (fileSystem.GetType().Name.Contains("Mock", StringComparison.OrdinalIgnoreCase))
 		{
 			return new GitCheckoutInformation
 			{
