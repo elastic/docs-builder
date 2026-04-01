@@ -130,6 +130,14 @@ public static class Paths
 	private static DirectoryInfo GetApplicationFolder()
 	{
 		var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+		if (string.IsNullOrEmpty(localPath))
+		{
+			// Docker / CI containers often have no XDG_DATA_HOME or HOME configured,
+			// causing LocalApplicationData to return "". Path.Join("", ...) produces a
+			// relative path that resolves under CWD, becoming a subdirectory of
+			// WorkingDirectoryRoot and breaking the disjoint-scope-roots requirement.
+			localPath = Path.GetTempPath();
+		}
 		var elasticPath = Path.Join(localPath, "elastic", "docs-builder");
 		return new DirectoryInfo(elasticPath);
 	}
