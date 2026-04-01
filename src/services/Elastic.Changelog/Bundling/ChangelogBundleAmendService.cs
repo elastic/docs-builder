@@ -194,10 +194,11 @@ public partial class ChangelogBundleAmendService(
 					assemblyForSanitize,
 					owner,
 					repo,
-					out var sanitizedParent))
+					out _,
+					out var parentHadUnsanitizedLinks))
 					return false;
 
-				if (sanitizedParent != parentBundleForSanitize)
+				if (parentHadUnsanitizedLinks)
 				{
 					collector.EmitError(
 						string.Empty,
@@ -247,7 +248,8 @@ public partial class ChangelogBundleAmendService(
 					assemblyForSanitize,
 					owner,
 					repo,
-					out var sanitized))
+					out var sanitized,
+					out _))
 					return false;
 				bundleForWrite = sanitized;
 			}

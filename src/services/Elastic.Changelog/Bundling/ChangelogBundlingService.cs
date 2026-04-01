@@ -300,7 +300,8 @@ public partial class ChangelogBundlingService(
 					assembly,
 					input.Owner ?? "elastic",
 					input.Repo,
-					out var sanitizedBundle))
+					out var sanitizedBundle,
+					out _))
 					return false;
 				bundleData = sanitizedBundle;
 			}
