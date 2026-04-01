@@ -39,7 +39,7 @@ public record CreateChangelogArguments
 	public bool UseIssueNumber { get; init; }
 	public bool? StripTitlePrefix { get; init; }
 	/// <summary>
-	/// Whether to extract release notes from PR/issue descriptions. null = use config default.
+	/// Whether to extract release note text from PR/issue descriptions for the entry description. null = use config default.
 	/// </summary>
 	public bool? ExtractReleaseNotes { get; init; }
 

@@ -359,7 +359,8 @@ internal record BundleProfileYaml
 internal record ExtractConfigurationYaml
 {
 	/// <summary>
-	/// Whether to extract release notes from PR descriptions by default.
+	/// Whether to extract release note text from PR or issue descriptions for the changelog entry description by default.
+	/// Does not affect the title (title comes from <c>--title</c> or the PR/issue title).
 	/// Defaults to true.
 	/// </summary>
 	public bool? ReleaseNotes { get; set; }

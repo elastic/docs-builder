@@ -214,7 +214,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="description">Optional: Additional information about the change (max 600 characters)</param>
-	/// <param name="noExtractReleaseNotes">Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.</param>
+	/// <param name="noExtractReleaseNotes">Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Matched release note text is used as the changelog description (only if --description is not explicitly provided). The changelog title comes from --title or the PR title, not from the release note section.</param>
 	/// <param name="noExtractIssues">Optional: Turn off extraction of linked references. When using --prs: turns off extraction of linked issues from the PR body (e.g., "Fixes #123"). When using --issues: turns off extraction of linked PRs from the issue body (e.g., "Fixed by #123"). By default, linked references are extracted in both cases.</param>
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
