@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -23,7 +24,7 @@ public class BundleAmendTests : ChangelogTestBase
 
 	private string CreateChangelogDir()
 	{
-		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 		return changelogDir;
 	}
@@ -48,7 +49,7 @@ public class BundleAmendTests : ChangelogTestBase
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, ct);
 
-		var bundlePath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundlePath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
@@ -87,7 +88,7 @@ public class BundleAmendTests : ChangelogTestBase
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, ct);
 
-		var bundlePath = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundlePath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
@@ -112,7 +113,7 @@ public class BundleAmendTests : ChangelogTestBase
 	/// </summary>
 	private async Task<string> CreateNewChangelogFile(CancellationToken ct)
 	{
-		var newDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var newDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(newDir);
 
 		// language=yaml
