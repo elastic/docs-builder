@@ -210,7 +210,11 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--nested {
 }
 
 /* First nested header directly under a top icon title (e.g. Platform → Ingest) */
-nav.docs-sidebar-nav-v2 li:has(> .docs-sidebar-nav-v2__label--top) > ul > li:first-child .docs-sidebar-nav-v2__label--nested {
+nav.docs-sidebar-nav-v2
+	li:has(> .docs-sidebar-nav-v2__label--top)
+	> ul
+	> li:first-child
+	.docs-sidebar-nav-v2__label--nested {
 	margin-top: 12px;
 }
 
@@ -238,7 +242,10 @@ nav.docs-sidebar-nav-v2
 	overflow-wrap: break-word;
 }
 
-#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__label--top .docs-sidebar-nav-v2__nav-text {
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__label--top
+	.docs-sidebar-nav-v2__nav-text {
 	flex: 1 1 0%;
 }
 
@@ -249,7 +256,9 @@ nav.docs-sidebar-nav-v2
 }
 
 /* Leaf / placeholder links (no inner flex row) */
-#pages-nav nav[data-nav-v2] a.sidebar-link.docs-sidebar-nav-v2__nav-text:not(.flex) {
+#pages-nav
+	nav[data-nav-v2]
+	a.sidebar-link.docs-sidebar-nav-v2__nav-text:not(.flex) {
 	display: block;
 }
 
@@ -351,12 +360,20 @@ nav.docs-sidebar-nav-v2
 }
 
 /* Open ancestor folder rows when current is deeper: match .current link + chevron (currentColor) */
-#pages-nav nav[data-nav-v2] li.nav-v2-active-ancestor > .nav-folder-peer > a.sidebar-link {
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link {
 	color: #0b64dd !important;
 	font-weight: 400 !important;
 }
 
-#pages-nav nav[data-nav-v2] li.nav-v2-active-ancestor > .nav-folder-peer > a.sidebar-link:hover {
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link:hover {
 	color: #0b64dd !important;
 }
 

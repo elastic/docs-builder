@@ -1,6 +1,6 @@
+import { $$ } from 'select-dom'
 import tippy from 'tippy.js'
 import type { Instance } from 'tippy.js'
-import { $$ } from 'select-dom'
 
 const navV2CollapsedStorageKey = 'docs-builder-nav-v2-collapsed-ids'
 
@@ -129,7 +129,11 @@ function ensureNavV2FolderLinkToggle() {
 }
 
 /** True if this folder row's li contains the click or an ancestor folder li (same branch) does. */
-function folderStaysOpenForNavClick(folderLi: Element, target: Node, nav: Element): boolean {
+function folderStaysOpenForNavClick(
+    folderLi: Element,
+    target: Node,
+    nav: Element
+): boolean {
     if (folderLi.contains(target)) {
         return true
     }
@@ -245,18 +249,16 @@ function initAccordion(nav: HTMLElement) {
 }
 
 function clearActiveSubtreeHighlight(nav: HTMLElement) {
-    nav
-        .querySelectorAll(
-            '.nav-v2-active-subtree, .nav-v2-active-leaf, .nav-v2-active-ancestor, .nav-v2-active-label-ancestor'
+    nav.querySelectorAll(
+        '.nav-v2-active-subtree, .nav-v2-active-leaf, .nav-v2-active-ancestor, .nav-v2-active-label-ancestor'
+    ).forEach((el) => {
+        el.classList.remove(
+            'nav-v2-active-subtree',
+            'nav-v2-active-leaf',
+            'nav-v2-active-ancestor',
+            'nav-v2-active-label-ancestor'
         )
-        .forEach((el) => {
-            el.classList.remove(
-                'nav-v2-active-subtree',
-                'nav-v2-active-leaf',
-                'nav-v2-active-ancestor',
-                'nav-v2-active-label-ancestor'
-            )
-        })
+    })
 }
 
 /**
@@ -375,68 +377,71 @@ function expandToCurrentPage(nav: HTMLElement) {
 }
 
 function destroyNavV2TruncationTooltips() {
-	for (const instance of navV2TruncationTippyInstances) {
-		instance.destroy()
-	}
+    for (const instance of navV2TruncationTippyInstances) {
+        instance.destroy()
+    }
 
-	navV2TruncationTippyInstances = []
+    navV2TruncationTippyInstances = []
 }
 
 function measureNavTextEl(ref: HTMLElement, textEl: HTMLElement) {
-	return ref === textEl
-		? textEl
-		: (ref.querySelector<HTMLElement>('.docs-sidebar-nav-v2__nav-text') ?? textEl)
+    return ref === textEl
+        ? textEl
+        : (ref.querySelector<HTMLElement>('.docs-sidebar-nav-v2__nav-text') ??
+              textEl)
 }
 
 /**
  * Tippy tooltips only when text is truncated (single-line ellipsis). onShow returns false to cancel.
  */
 function initNavV2TruncationTooltips(nav: HTMLElement) {
-	destroyNavV2TruncationTooltips()
+    destroyNavV2TruncationTooltips()
 
-	const els = nav.querySelectorAll<HTMLElement>('.docs-sidebar-nav-v2__nav-text')
-	for (const el of els) {
-		const full = el.textContent?.trim() ?? ''
-		if (!full) {
-			continue
-		}
+    const els = nav.querySelectorAll<HTMLElement>(
+        '.docs-sidebar-nav-v2__nav-text'
+    )
+    for (const el of els) {
+        const full = el.textContent?.trim() ?? ''
+        if (!full) {
+            continue
+        }
 
-		const ref: HTMLElement =
-			el.parentElement?.matches('a.sidebar-link') === true
-				? (el.parentElement as HTMLElement)
-				: el
+        const ref: HTMLElement =
+            el.parentElement?.matches('a.sidebar-link') === true
+                ? (el.parentElement as HTMLElement)
+                : el
 
-		const instance = tippy(ref, {
-			content: full,
-			placement: 'right-start',
-			offset: [0, 6],
-			animation: 'fade',
-			duration: [200, 150],
-			arrow: true,
-			maxWidth: 360,
-			appendTo: () => document.body,
-			theme: 'nav-v2-truncate',
-			trigger: 'mouseenter focusin',
-			hideOnClick: true,
-			interactive: false,
-			touch: ['hold', 500],
-			aria: { content: 'describedby' },
-			onShow() {
-				const textEl = measureNavTextEl(ref, el)
-				const label = textEl.textContent?.trim() ?? ''
-				if (!label) {
-					return false
-				}
+        const instance = tippy(ref, {
+            content: full,
+            placement: 'right-start',
+            offset: [0, 6],
+            animation: 'fade',
+            duration: [200, 150],
+            arrow: true,
+            maxWidth: 360,
+            appendTo: () => document.body,
+            theme: 'nav-v2-truncate',
+            trigger: 'mouseenter focusin',
+            hideOnClick: true,
+            interactive: false,
+            touch: ['hold', 500],
+            aria: { content: 'describedby' },
+            onShow() {
+                const textEl = measureNavTextEl(ref, el)
+                const label = textEl.textContent?.trim() ?? ''
+                if (!label) {
+                    return false
+                }
 
-				instance.setContent(label)
-				if (textEl.scrollWidth <= textEl.clientWidth + 1) {
-					return false
-				}
-			},
-		})
+                instance.setContent(label)
+                if (textEl.scrollWidth <= textEl.clientWidth + 1) {
+                    return false
+                }
+            },
+        })
 
-		navV2TruncationTippyInstances.push(instance)
-	}
+        navV2TruncationTippyInstances.push(instance)
+    }
 }
 
 /**
@@ -444,13 +449,13 @@ function initNavV2TruncationTooltips(nav: HTMLElement) {
  * Call this on every htmx:load when [data-nav-v2] is present.
  */
 export function initNavV2(nav: HTMLElement) {
-	initAccordion(nav)
-	markCurrentPage(nav)
-	expandToCurrentPage(nav)
-	applyActiveSubtreeHighlight(nav)
-	requestAnimationFrame(() => {
-		requestAnimationFrame(() => initNavV2TruncationTooltips(nav))
-	})
+    initAccordion(nav)
+    markCurrentPage(nav)
+    expandToCurrentPage(nav)
+    applyActiveSubtreeHighlight(nav)
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => initNavV2TruncationTooltips(nav))
+    })
 }
 
 ensureNavV2FolderLinkToggle()
