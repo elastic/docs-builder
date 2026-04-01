@@ -101,13 +101,36 @@ public static class FileSystemFactory
 		});
 	}
 
+	// Builds write options that include AllowedSpecialFolders.Temp PLUS the inner FS's own
+	// GetTempPath() as an explicit root. This is necessary because MockFileSystem on non-Windows
+	// returns a hardcoded Unix-ified path ("/temp/") instead of System.IO.Path.GetTempPath(),
+	// causing a mismatch with the AllowedSpecialFolder.Temp validation which uses the real API.
+	private static ScopedFileSystemOptions BuildWriteOptions(IFileSystem inner, params string[] roots)
+	{
+		var allRoots = roots.ToList();
+		if (!OperatingSystem.IsWindows())
+		{
+			// Cover MockFileSystem's unixified hardcoded temp path
+			var innerTemp = inner.Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			if (!string.IsNullOrEmpty(innerTemp) && !allRoots.Contains(innerTemp, StringComparer.OrdinalIgnoreCase))
+				allRoots.Add(innerTemp);
+		}
+		return new ScopedFileSystemOptions([.. allRoots])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" },
+			AllowedSpecialFolders = AllowedSpecialFolder.Temp
+		};
+	}
+
 	/// <summary>
 	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
 	/// <see cref="Paths.ApplicationData"/> for writing (.git not allowed). Use when
 	/// the inner FS writes into the working-directory tree.
 	/// </summary>
 	public static ScopedFileSystem ScopeCurrentWorkingDirectoryForWrite(IFileSystem inner) =>
-		new(inner, WorkingDirectoryWriteOptions);
+		new(inner, BuildWriteOptions(
+			inner, Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName));
 
 	/// <summary>
 	/// Scopes <paramref name="inner"/> to an explicit <paramref name="sourceRoot"/> and
@@ -128,12 +151,7 @@ public static class FileSystemFactory
 	/// of <see cref="ScopeSourceDirectory(IFileSystem, string)"/>.
 	/// </summary>
 	public static ScopedFileSystem ScopeSourceDirectoryForWrite(IFileSystem inner, string sourceRoot) =>
-		new(inner, new ScopedFileSystemOptions([sourceRoot, Paths.ApplicationData.FullName])
-		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" },
-			AllowedSpecialFolders = AllowedSpecialFolder.Temp
-		});
+		new(inner, BuildWriteOptions(inner, sourceRoot, Paths.ApplicationData.FullName));
 
 	/// <summary>
 	/// Creates a read <see cref="ScopedFileSystem"/> scoped to the git root of

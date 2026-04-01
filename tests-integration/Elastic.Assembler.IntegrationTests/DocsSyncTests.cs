@@ -40,7 +40,7 @@ public class DocsSyncTests
 			{ "docs/update.md", new MockFileData("# Existing Document") },
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
 		});
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
@@ -181,7 +181,7 @@ public class DocsSyncTests
 		var mockS3Client = A.Fake<IAmazonS3>();
 		var fileSystem = new MockFileSystem(new MockFileSystemOptions
 		{
-			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
 		});
 		foreach (var i in Enumerable.Range(0, localFiles))
 			fileSystem.AddFile($"docs/file-{i}.md", new MockFileData($"# Local Document {i}"));
@@ -235,7 +235,7 @@ public class DocsSyncTests
 			{ "docs/update.md", new MockFileData("# Existing Document") },
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
 		});
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
