@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
@@ -39,17 +40,31 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 	/// </summary>
 	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, string entryOwner, bool entryHideLinks)
 	{
-		var hasPrs = entry.Prs is { Count: > 0 };
-		var hasIssues = entry.Issues is { Count: > 0 };
-		if (!hasPrs && !hasIssues)
+		var prParts = new List<string>();
+		foreach (var pr in entry.Prs ?? [])
+		{
+			var s = ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner);
+			if (!string.IsNullOrEmpty(s))
+				prParts.Add(s);
+		}
+
+		var issueParts = new List<string>();
+		foreach (var issue in entry.Issues ?? [])
+		{
+			var s = ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner);
+			if (!string.IsNullOrEmpty(s))
+				issueParts.Add(s);
+		}
+
+		if (prParts.Count == 0 && issueParts.Count == 0)
 			return;
 
 		if (entryHideLinks)
 		{
-			foreach (var pr in entry.Prs ?? [])
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner));
-			foreach (var issue in entry.Issues ?? [])
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner));
+			foreach (var s in prParts)
+				_ = sb.AppendLine(s);
+			foreach (var s in issueParts)
+				_ = sb.AppendLine(s);
 
 			_ = sb.AppendLine("For more information, check the pull request or issue above.");
 		}
@@ -57,18 +72,19 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 		{
 			_ = sb.Append("For more information, check ");
 			var first = true;
-			foreach (var pr in entry.Prs ?? [])
+			foreach (var s in prParts)
 			{
 				if (!first)
 					_ = sb.Append(' ');
-				_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner));
+				_ = sb.Append(s);
 				first = false;
 			}
-			foreach (var issue in entry.Issues ?? [])
+
+			foreach (var s in issueParts)
 			{
 				if (!first)
 					_ = sb.Append(' ');
-				_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner));
+				_ = sb.Append(s);
 				first = false;
 			}
 

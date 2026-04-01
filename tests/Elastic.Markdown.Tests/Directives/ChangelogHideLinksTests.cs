@@ -479,3 +479,200 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 		markdown.Should().Contain("github.com");
 	}
 }
+
+/// <summary>
+/// Tests that :link-visibility: keep-links shows links even when the source repo is private.
+/// </summary>
+public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityKeepLinksTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:link-visibility: keep-links
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	public override async ValueTask InitializeAsync()
+	{
+		await base.InitializeAsync();
+		Block!.PrivateRepositories.Add("elasticsearch");
+	}
+
+	[Fact]
+	public void LinkVisibilityIsParsedAsKeepLinks() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.KeepLinks);
+
+	[Fact]
+	public void ShowsLinksEvenWhenRepoIsPrivate()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		markdown.Should().Contain("[#123456]");
+		markdown.Should().Contain("github.com/elastic/elasticsearch/pull/123456");
+		markdown.Should().NotContain("%");
+	}
+}
+
+/// <summary>
+/// Tests that :link-visibility: hide-links hides links even when the source repo is public.
+/// </summary>
+public class ChangelogLinkVisibilityHideLinksTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityHideLinksTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:link-visibility: hide-links
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	[Fact]
+	public void LinkVisibilityIsParsedAsHideLinks() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.HideLinks);
+
+	[Fact]
+	public void HidesLinksEvenWhenRepoIsPublic()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		markdown.Should().Contain("123456");
+		markdown.Should().Contain("%");
+	}
+}
+
+/// <summary>
+/// Tests that :link-visibility: auto (and default/unset) uses the standard private-repo logic.
+/// </summary>
+public class ChangelogLinkVisibilityAutoTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityAutoTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:link-visibility: auto
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	[Fact]
+	public void LinkVisibilityIsParsedAsAuto() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
+
+	[Fact]
+	public void ShowsLinksWhenRepoIsPublic()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		markdown.Should().Contain("[#123456]");
+		markdown.Should().Contain("github.com");
+	}
+}
+
+/// <summary>
+/// Tests that omitting :link-visibility: defaults to Auto.
+/// </summary>
+public class ChangelogLinkVisibilityDefaultTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityDefaultTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	[Fact]
+	public void LinkVisibilityDefaultsToAuto() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
+}
+
+/// <summary>
+/// Tests that an invalid :link-visibility: value falls back to Auto with a warning.
+/// </summary>
+public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityInvalidTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:link-visibility: banana
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	[Fact]
+	public void LinkVisibilityFallsBackToAuto() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
+
+	[Fact]
+	public void EmitsWarning() =>
+		Collector.Warnings.Should().BeGreaterThan(0);
+}

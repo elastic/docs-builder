@@ -97,6 +97,9 @@ The `--input-products` option determines which changelog files are gathered for 
 :   Each occurrence can be either comma-separated issues ( `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (for example `--issues /path/to/file.txt`).
 :   When using a file, every line must be a fully-qualified GitHub issue URL such as `https://github.com/owner/repo/issues/123`. Bare numbers and short forms are not allowed in files.
 
+`--no-sanitize-private-links`
+:   Optional: Explicitly turn off the `sanitize_private_links` option if it's specified in the changelog configuration file.
+
 `--no-resolve`
 :   Optional: Explicitly turn off the `resolve` option if it's specified in the changelog configuration file.
 
@@ -136,6 +139,13 @@ The `--input-products` option determines which changelog files are gathered for 
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array.
 :   By default, the bundle contains only the file names and checksums.
+
+`--sanitize-private-links`
+:   Optional: Turn on [private link sanitization](/cli/release/changelog-bundle.md#private-link-sanitization).
+:   Pull requests and issues that target repositories marked `private: true` in the `references` section of `assembler.yml` are rewritten as quoted `# PRIVATE:` sentinel strings in the bundle file.
+:   This option requires a resolved bundle: use `--resolve` or set `bundle.resolve: true` in the `changelog.yml`.
+:   If sanitization is enabled and the bundle is not resolved, the command fails.
+:   When you omit this option, it defaults to `bundle.sanitize_private_links` in your changelog configuration file, which defaults to `false`.
 
 ## Output files
 
@@ -183,6 +193,46 @@ If you specify a file path with a different extension (not `.yml` or `.yaml`), t
 :::{note}
 "Current working directory" means the directory you are in when you run the command (`pwd`).
 Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
+:::
+
+## Repository name in bundles [changelog-bundle-repo]
+
+The repository name is stored in each bundle product entry to ensure that PR and issue links are generated correctly when the bundle is rendered.
+It can be set in three ways, in order of precedence:
+
+1. **`--repo` option** (option-based mode only)
+2. **`repo` field in the profile** (profile-based mode only; overrides the bundle-level default)
+3. **`bundle.repo` in `changelog.yml`** (applies to both modes as a default when neither of the above is set)
+
+Setting `bundle.repo` and `bundle.owner` in your configuration means you rarely need to pass `--repo` and `--owner` on the command line:
+
+```yaml
+bundle:
+  repo: elasticsearch
+  owner: elastic
+```
+
+You can still override them per profile if a project has multiple products with different repos.
+
+The bundle output includes a `repo` field in each product:
+
+```yaml
+products:
+- product: cloud-serverless
+  target: 2025-12-02
+  repo: elasticsearch
+  owner: elastic
+entries:
+- file:
+    name: 1765495972-new-feature.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+```
+
+When rendering, pull request and issue links use `https://github.com/elastic/elasticsearch/...` instead of the product ID.
+
+:::{note}
+If no `repo` is set at any level, the product ID is used as a fallback for link generation.
+This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` product ID in the `elasticsearch` repo).
 :::
 
 ## Rules for filtered bundles [changelog-bundle-rules]
@@ -234,44 +284,25 @@ rules:
           - "Monitoring"
 ```
 
-## Repository name in bundles [changelog-bundle-repo]
+## Private link sanitization [private-link-sanitization]
 
-The repository name is stored in each bundle product entry to ensure that PR and issue links are generated correctly when the bundle is rendered.
-It can be set in three ways, in order of precedence:
+A changelog in a public repository might contain links to pull requests or issues in private repositories.
+To prevent that information from appearing in the documentation, use `bundle.sanitize_private_links` in the changelog configuration file (or a product-specific profile override) or the `--sanitize-private-links` command option.
 
-1. **`--repo` option** (option-based mode only)
-2. **`repo` field in the profile** (profile-based mode only; overrides the bundle-level default)
-3. **`bundle.repo` in `changelog.yml`** (applies to both modes as a default when neither of the above is set)
+This feature relies on the [`assembler.yml`](/configure/site/content.md) file and the existence of `private: true` to determine which repo links should be sanitized.
+Every repository that appears in a PR or issue link must be listed under `assembler.yml` `references`. References to unknown repositories fail the command so you can fix the registry.
+Repos are assumed to be `private: false` unless you specify otherwise.
 
-Setting `bundle.repo` and `bundle.owner` in your configuration means you rarely need to pass `--repo` and `--owner` on the command line:
+:::{important}
+When you use these options, you must also set `bundle.resolve: true` or specify `--resolve`.
+Unresolved bundles that only store `file:` pointers do not get this rewrite; if you need private link sanitization, you must use a resolved bundle.
+:::
 
-```yaml
-bundle:
-  repo: elasticsearch
-  owner: elastic
-```
+The `changelog bundle`, `changelog gh-release`, and `changelog bundle-amend` commands rewrite PR and issue references that **target** private repositories into quoted sentinel strings such as `"# PRIVATE: …"` in the bundle file.
+The changelog directive and `changelog render` command then omit these sentinels from the documentation.
 
-You can still override them per profile if a project has multiple products with different repos.
-
-The bundle output includes a `repo` field in each product:
-
-```yaml
-products:
-- product: cloud-serverless
-  target: 2025-12-02
-  repo: elasticsearch
-  owner: elastic
-entries:
-- file:
-    name: 1765495972-new-feature.yaml
-    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
-```
-
-When rendering, pull request and issue links use `https://github.com/elastic/elasticsearch/...` instead of the product ID.
-
-:::{note}
-If no `repo` is set at any level, the product ID is used as a fallback for link generation.
-This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` product ID in the `elasticsearch` repo).
+:::{warning}
+Sentinel values are omitted from rendered documentation but remain in bundle files; they are not cryptographic redaction.
 :::
 
 ## Option-based examples

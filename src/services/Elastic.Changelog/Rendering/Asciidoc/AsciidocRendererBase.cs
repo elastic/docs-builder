@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
@@ -26,22 +27,35 @@ public abstract class AsciidocRendererBase
 		_ = sb.Append("* ");
 		_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
 
-		var hasPrs = entry.Prs is { Count: > 0 };
-		var hasIssues = entry.Issues is { Count: > 0 };
+		var prParts = new List<string>();
+		foreach (var pr in entry.Prs ?? [])
+		{
+			var s = ChangelogTextUtilities.FormatPrLinkAsciidoc(pr, entryRepo, hideLinks);
+			if (!string.IsNullOrEmpty(s))
+				prParts.Add(s);
+		}
 
-		if (!hasPrs && !hasIssues)
+		var issueParts = new List<string>();
+		foreach (var issue in entry.Issues ?? [])
+		{
+			var s = ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks);
+			if (!string.IsNullOrEmpty(s))
+				issueParts.Add(s);
+		}
+
+		if (prParts.Count == 0 && issueParts.Count == 0)
 			return;
 
 		_ = sb.Append(' ');
-		foreach (var pr in entry.Prs ?? [])
+		foreach (var s in prParts)
 		{
-			_ = sb.Append(ChangelogTextUtilities.FormatPrLinkAsciidoc(pr, entryRepo, hideLinks));
+			_ = sb.Append(s);
 			_ = sb.Append(' ');
 		}
 
-		foreach (var issue in entry.Issues ?? [])
+		foreach (var s in issueParts)
 		{
-			_ = sb.Append(ChangelogTextUtilities.FormatIssueLinkAsciidoc(issue, entryRepo, hideLinks));
+			_ = sb.Append(s);
 			_ = sb.Append(' ');
 		}
 	}

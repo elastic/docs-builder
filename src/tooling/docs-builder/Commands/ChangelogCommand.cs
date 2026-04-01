@@ -502,6 +502,8 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
+	/// <param name="sanitizePrivateLinks">Optional: Enable bundle-time private link sanitization (requires --resolve). Uses bundle.sanitize_private_links when omitted.</param>
+	/// <param name="noSanitizePrivateLinks">Optional: Disable private link sanitization even when enabled in config.</param>
 	/// <param name="ctx"></param>
 	[Command("bundle")]
 	public async Task<int> Bundle(
@@ -523,6 +525,8 @@ internal sealed partial class ChangelogCommand(
 		string? report = null,
 		bool? resolve = null,
 		bool noResolve = false,
+		bool? sanitizePrivateLinks = null,
+		bool noSanitizePrivateLinks = false,
 		Cancel ctx = default
 	)
 	{
@@ -612,6 +616,10 @@ internal sealed partial class ChangelogCommand(
 				forbidden.Add("--config");
 			if (!string.IsNullOrWhiteSpace(directory))
 				forbidden.Add("--directory");
+			if (sanitizePrivateLinks.HasValue)
+				forbidden.Add("--sanitize-private-links");
+			if (noSanitizePrivateLinks)
+				forbidden.Add("--no-sanitize-private-links");
 
 			if (forbidden.Count > 0)
 			{
@@ -776,7 +784,9 @@ internal sealed partial class ChangelogCommand(
 			ProfileReport = isProfileMode ? profileReport : null,
 			Report = !isProfileMode ? report : null,
 			Config = config,
-			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
+			SanitizePrivateLinksCli = sanitizePrivateLinks,
+			NoSanitizePrivateLinks = noSanitizePrivateLinks
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1152,7 +1162,7 @@ internal sealed partial class ChangelogCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundleAmendService(logFactory);
+		var service = new ChangelogBundleAmendService(logFactory, configurationContext: configurationContext);
 
 		if (add == null || add.Length == 0)
 		{
