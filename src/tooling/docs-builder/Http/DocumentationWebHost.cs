@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.Net;
-using Nullean.ScopedFileSystem;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -35,15 +34,15 @@ public class DocumentationWebHost
 	private readonly WebApplication _webApplication;
 
 	private readonly IHostedService _hostedService;
-	private readonly ScopedFileSystem _writeFileSystem;
+	private readonly IFileSystem _writeFileSystem;
 
 	public InMemoryBuildState InMemoryBuildState { get; }
 
 	public DocumentationWebHost(ILoggerFactory logFactory,
 		string? path,
 		int port,
-		ScopedFileSystem readFs,
-		ScopedFileSystem writeFs,
+		IFileSystem readFs,
+		IFileSystem writeFs,
 		IConfigurationContext configurationContext,
 		bool isWatchBuild
 	)

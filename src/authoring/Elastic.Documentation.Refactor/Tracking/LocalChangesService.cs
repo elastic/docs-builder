@@ -9,7 +9,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Refactor.Tracking;
 
@@ -20,7 +19,7 @@ public class LocalChangeTrackingService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<LocalChangeTrackingService>();
 
-	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, ScopedFileSystem fs)
+	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, FileSystem fs)
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 
@@ -39,7 +38,7 @@ public class LocalChangeTrackingService(
 			return Task.FromResult(false);
 		}
 
-		var root = Paths.FindGitRoot(buildContext.DocumentationSourceDirectory);
+		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
 			collector.EmitError(redirectFile.Source, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");

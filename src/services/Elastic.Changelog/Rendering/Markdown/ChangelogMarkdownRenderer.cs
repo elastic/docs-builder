@@ -4,14 +4,13 @@
 
 using System.Collections.Generic;
 using System.IO.Abstractions;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
 /// <summary>
 /// Coordinates rendering of all markdown changelog files.
 /// </summary>
-public class ChangelogMarkdownRenderer(ScopedFileSystem fileSystem)
+public class ChangelogMarkdownRenderer(IFileSystem fileSystem)
 {
 	/// <summary>
 	/// Renders all markdown changelog files (index, breaking changes, deprecations, known issues, highlights).

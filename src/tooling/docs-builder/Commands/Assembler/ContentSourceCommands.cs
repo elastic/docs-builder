@@ -27,7 +27,7 @@ internal sealed class ContentSourceCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
+		var fs = new FileSystem();
 		var service = new RepositoryPublishValidationService(logFactory, configuration, configurationContext, fs);
 		serviceInvoker.AddCommand(service, static async (s, collector, ctx) => await s.ValidatePublishStatus(collector, ctx));
 
@@ -43,7 +43,7 @@ internal sealed class ContentSourceCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
+		var fs = new FileSystem();
 		var service = new RepositoryBuildMatchingService(logFactory, configuration, configurationContext, githubActionsService, fs);
 		serviceInvoker.AddCommand(service, (repository, branchOrTag),
 			static async (s, collector, state, ctx) =>

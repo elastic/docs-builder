@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using System.Reflection;
 using ConsoleAppFramework;
 using Elastic.Documentation;
@@ -12,9 +11,7 @@ namespace Documentation.Builder.Filters;
 
 internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs cli) : ConsoleAppFilter(next)
 {
-	// Only accesses ApplicationData — no workspace access needed
-	private static readonly IFileSystem Fs = FileSystemFactory.AppData;
-	private readonly IFileInfo _stateFile = Fs.FileInfo.New(Path.Join(Paths.ApplicationData.FullName, "docs-build-check.state"));
+	private readonly FileInfo _stateFile = new(Path.Join(Paths.ApplicationData.FullName, "docs-build-check.state"));
 
 	public override async Task InvokeAsync(ConsoleAppContext context, Cancel ctx)
 	{
@@ -66,7 +63,7 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs
 		// only check for new versions once per hour
 		if (_stateFile.Exists && _stateFile.LastWriteTimeUtc >= DateTime.UtcNow.Subtract(TimeSpan.FromHours(1)))
 		{
-			var url = await Fs.File.ReadAllTextAsync(_stateFile.FullName, ctx);
+			var url = await File.ReadAllTextAsync(_stateFile.FullName, ctx);
 			if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
 				return uri;
 		}
@@ -79,9 +76,9 @@ internal sealed class CheckForUpdatesFilter(ConsoleAppFilter next, GlobalCliArgs
 			if (redirectUrl is not null && _stateFile.Directory is not null)
 			{
 				// ensure the 'elastic' folder exists.
-				if (!Fs.Directory.Exists(_stateFile.Directory.FullName))
-					_ = Fs.Directory.CreateDirectory(_stateFile.Directory.FullName);
-				await Fs.File.WriteAllTextAsync(_stateFile.FullName, redirectUrl.ToString(), ctx);
+				if (!Directory.Exists(_stateFile.Directory.FullName))
+					_ = Directory.CreateDirectory(_stateFile.Directory.FullName);
+				await File.WriteAllTextAsync(_stateFile.FullName, redirectUrl.ToString(), ctx);
 			}
 			return redirectUrl;
 		}

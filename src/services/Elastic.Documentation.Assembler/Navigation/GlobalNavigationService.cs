@@ -9,7 +9,6 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Navigation;
 
@@ -17,7 +16,7 @@ public class GlobalNavigationService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
-	ScopedFileSystem fileSystem
+	IFileSystem fileSystem
 ) : IService
 {
 	public async Task<bool> Validate(IDiagnosticsCollector collector, Cancel ctx)

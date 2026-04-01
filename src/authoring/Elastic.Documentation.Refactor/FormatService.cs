@@ -10,7 +10,6 @@ using Elastic.Documentation.Refactor.Formatters;
 using Elastic.Documentation.Services;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Refactor;
 
@@ -35,7 +34,7 @@ public class FormatService(
 		IDiagnosticsCollector collector,
 		string? path,
 		bool checkOnly,
-		ScopedFileSystem fs,
+		IFileSystem fs,
 		Cancel ctx
 	)
 	{

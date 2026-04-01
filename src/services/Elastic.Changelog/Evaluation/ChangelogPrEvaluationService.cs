@@ -14,7 +14,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -24,12 +23,12 @@ public class ChangelogPrEvaluationService(
 	IConfigurationContext configurationContext,
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
-	ScopedFileSystem? fileSystem = null
+	IFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrEvaluationService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
+	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
 
 	public async Task<bool> EvaluatePr(IDiagnosticsCollector collector, EvaluatePrArguments input, Cancel ctx)
 	{

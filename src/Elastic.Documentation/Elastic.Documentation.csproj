@@ -15,7 +15,6 @@
     <PackageReference Include="NetEscapades.EnumGenerators"/>
     <PackageReference Include="Proc" />
     <PackageReference Include="SoftCircuits.IniFileParser" />
-    <PackageReference Include="Nullean.ScopedFileSystem" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
     <PackageReference Include="YamlDotNet"/>

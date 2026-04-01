@@ -15,7 +15,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.GithubRelease;
 
@@ -69,13 +68,13 @@ public class GitHubReleaseChangelogService(
 	IConfigurationContext configurationContext,
 	IGitHubReleaseService? releaseService = null,
 	IGitHubPrService? prService = null,
-	ScopedFileSystem? fileSystem = null,
+	IFileSystem? fileSystem = null,
 	ChangelogBundlingService? bundlingService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
+	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly ChangelogBundlingService _bundlingService = bundlingService ?? new ChangelogBundlingService(logFactory, configurationContext, fileSystem);

@@ -5,7 +5,6 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
@@ -16,7 +15,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithCustomConfigPath_UsesSpecifiedConfigFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog
@@ -37,7 +36,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
 
 		// Create config file in a custom location (not in docs/ subdirectory)
-		var customConfigDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var customConfigDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(customConfigDir);
 		var customConfigPath = FileSystem.Path.Join(customConfigDir, "custom-changelog.yml");
 		// language=yaml
@@ -54,7 +53,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(customConfigPath, configContent, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -72,7 +71,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Don't change directory - use custom config path via Config property
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -101,7 +100,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithAsciidocFileType_CreatesSingleAsciidocFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog file
@@ -122,7 +121,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
@@ -138,7 +137,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -179,7 +178,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithAsciidocFileType_ValidatesAsciidocFormat()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog files with different types
@@ -233,7 +232,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(breakingFile, breakingChangeChangelog, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
@@ -255,7 +254,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{

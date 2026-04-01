@@ -10,14 +10,13 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext
 {
-	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
+	public IFileSystem ReadFileSystem { get; }
+	public IFileSystem WriteFileSystem { get; }
 
 	public IDiagnosticsCollector Collector { get; }
 
@@ -62,8 +61,8 @@ public class AssembleContext : IDocumentationConfigurationContext
 		IConfigurationContext configurationContext,
 		string environment,
 		IDiagnosticsCollector collector,
-		ScopedFileSystem readFileSystem,
-		ScopedFileSystem writeFileSystem,
+		IFileSystem readFileSystem,
+		IFileSystem writeFileSystem,
 		string? checkoutDirectory,
 		string? output
 	)
@@ -89,10 +88,10 @@ public class AssembleContext : IDocumentationConfigurationContext
 		Endpoints.Environment = environment;
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);
-		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "checkouts", contentSource);
+		var defaultCheckoutDirectory = Path.Join(Paths.GitCommonRoot.FullName, ".artifacts", "checkouts", contentSource);
 		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		OutputDirectory = WriteFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
+		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
 
 		// Calculate the output directory with path prefix once
 		var pathPrefix = Environment.PathPrefix;

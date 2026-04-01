@@ -6,7 +6,6 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Rendering;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
@@ -17,12 +16,12 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 	public async Task RenderChangelogs_WithMissingBundleFile_ReturnsError()
 	{
 		// Arrange
-		var missingBundle = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "nonexistent.yaml");
+		var missingBundle = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "nonexistent.yaml");
 
 		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = missingBundle }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString())
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
@@ -38,7 +37,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 	public async Task RenderChangelogs_WithMissingChangelogFile_ReturnsError()
 	{
 		// Arrange
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -58,7 +57,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = bundleDir }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString())
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
@@ -74,7 +73,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 	public async Task RenderChangelogs_WithInvalidBundleStructure_ReturnsError()
 	{
 		// Arrange
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -88,7 +87,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString())
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
@@ -104,7 +103,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 	public async Task RenderChangelogs_WithInvalidChangelogFile_ReturnsError()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create invalid changelog file (missing required fields)
@@ -119,7 +118,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		await FileSystem.File.WriteAllTextAsync(changelogFile, invalidChangelog, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -139,7 +138,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		var input = new RenderChangelogsArguments
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString())
+			Output = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString())
 		};
 
 		// Act
@@ -155,7 +154,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 	public async Task RenderChangelogs_WithResolvedEntry_ValidatesAndRenders()
 	{
 		// Arrange
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
@@ -176,7 +175,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -205,7 +204,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		// Arrange
 		// When an unknown type string is encountered during YAML deserialization,
 		// it should be parsed as Invalid and an error should be emitted.
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create changelog with an unknown type that will be marked as Invalid
@@ -224,7 +223,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
@@ -240,7 +239,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{

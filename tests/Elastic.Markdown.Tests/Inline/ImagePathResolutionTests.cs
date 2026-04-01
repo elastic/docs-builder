@@ -15,7 +15,6 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Tests;
-using Nullean.ScopedFileSystem;
 using Xunit;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -93,7 +92,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var buildContext = new BuildContext(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
+		var buildContext = new BuildContext(collector, fileSystem, configurationContext)
 		{
 			UrlPathPrefix = "/docs",
 			BuildType = buildType

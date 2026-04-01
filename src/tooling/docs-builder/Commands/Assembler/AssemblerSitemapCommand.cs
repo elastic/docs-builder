@@ -59,7 +59,7 @@ internal sealed class AssemblerSitemapCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealRead;
+		var fs = new FileSystem();
 		var service = new AssemblerSitemapService(logFactory, configuration, configurationContext, githubActionsService);
 		var state = (fs,
 			endpoint, environment, apiKey, username, password,

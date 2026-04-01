@@ -15,7 +15,6 @@
   <ItemGroup>
     <PackageReference Include="GitHub.Actions.Core" />
     <PackageReference Include="ModelContextProtocol" />
-    <PackageReference Include="Nullean.ScopedFileSystem" />
   </ItemGroup>
 
   <ItemGroup>
