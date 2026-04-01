@@ -227,7 +227,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		GC.SuppressFinalize(this);
 		if (TestContext.Current.TestState?.Result is TestResult.Passed)
 			return default;
-		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs)
+		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs.ToList())
 			_output.WriteLine(resource.Message);
 		return default;
 	}
