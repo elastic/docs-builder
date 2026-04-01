@@ -90,7 +90,9 @@ public class AssembleContext : IDocumentationConfigurationContext
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "checkouts", contentSource);
-		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
+		CheckoutDirectory = checkoutDirectory is null
+			? FileSystemFactory.AppData.DirectoryInfo.New(defaultCheckoutDirectory)
+			: ReadFileSystem.DirectoryInfo.New(checkoutDirectory);
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		OutputDirectory = WriteFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
 

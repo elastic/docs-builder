@@ -18,8 +18,8 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 {
 	private const string LinkIndexOrigin = "elastic/codex-link-index";
 	private static readonly string CloneDirectory = Path.Join(
-		Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-		"elastic", "docs-builder", "codex-link-index");
+		Paths.ApplicationData.FullName,
+		"codex-link-index");
 
 	private readonly string _environment;
 	private readonly IFileSystem _fileSystem;

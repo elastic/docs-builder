@@ -91,22 +91,21 @@ public static class Paths
 		var depth = 0;
 		while (directory != null)
 		{
-			if (directory.GetFiles("*.slnx").Length > 0)
-				return directory;
+			var hasSlnx = directory.GetFiles("*.slnx").Length > 0;
 			var hasGit = directory.GetDirectories(".git").Length > 0
 					  || directory.GetFiles(".git").Length > 0;
-			if (hasGit)
+			if (hasGit || hasSlnx)
 			{
-				// Only accept .git beyond 1 level up in debug when a *.slnx is adjacent
+				// Only accept .git/.slnx beyond 1 level up in debug when a *.slnx is adjacent
 				// (developer running from IDE output directory such as bin/Debug/net10.0/).
 #if DEBUG
-				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
+				if (depth <= 1 || hasSlnx)
 					return directory;
 #else
 				if (depth <= 1)
 					return directory;
 #endif
-				// .git found but too deep — stop without adopting it
+				// .git/.slnx found but too deep — stop without adopting it
 				return cwd;
 			}
 			depth++;

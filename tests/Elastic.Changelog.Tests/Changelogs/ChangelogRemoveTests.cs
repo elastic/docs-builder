@@ -505,7 +505,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
 
 		var reportContent = "<html><body>https://github.com/elastic/elasticsearch/pull/1001</body></html>";
-		var reportPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "report.html");
+		var reportPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, $"report-{Guid.NewGuid()}.html");
 		await FileSystem.File.WriteAllTextAsync(reportPath, reportContent, TestContext.Current.CancellationToken);
 
 		// language=yaml

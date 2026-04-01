@@ -198,18 +198,14 @@ public static class FileSystemFactory
 		var gitRoot = path is not null ? Paths.FindGitRoot(path) : Paths.WorkingDirectoryRoot.FullName;
 		var roots = new List<string> { gitRoot, Paths.ApplicationData.FullName };
 
+		var plain = new FileSystem();
 		if (output is not null)
 		{
 			var absOutput = Path.IsPathRooted(output) ? output : Path.GetFullPath(output);
-			var plain = new FileSystem();
 			if (!plain.DirectoryInfo.New(absOutput).IsSubPathOf(plain.DirectoryInfo.New(gitRoot)))
 				roots.Add(absOutput);
 		}
 
-		return new ScopedFileSystem(new FileSystem(), new ScopedFileSystemOptions([.. roots])
-		{
-			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" }
-		});
+		return new ScopedFileSystem(plain, BuildWriteOptions(plain, [.. roots]));
 	}
 }

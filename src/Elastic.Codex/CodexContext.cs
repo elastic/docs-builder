@@ -47,7 +47,9 @@ public class CodexContext
 		WriteFileSystem = writeFileSystem;
 
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
-		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
+		CheckoutDirectory = checkoutDirectory is null
+			? FileSystemFactory.AppData.DirectoryInfo.New(defaultCheckoutDirectory)
+			: ReadFileSystem.DirectoryInfo.New(checkoutDirectory);
 
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
 		OutputDirectory = WriteFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);

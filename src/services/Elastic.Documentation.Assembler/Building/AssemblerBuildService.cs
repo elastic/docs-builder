@@ -37,7 +37,8 @@ public class AssemblerBuildService(
 		bool? showHints,
 		IReadOnlySet<Exporter>? exporters,
 		bool? assumeBuild,
-		ScopedFileSystem fs,
+		ScopedFileSystem readFs,
+		ScopedFileSystem writeFs,
 		Cancel ctx
 	)
 	{
@@ -57,7 +58,7 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Creating assemble context");
 
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, readFs, writeFs, null, null);
 
 		// --assume-build is not allowed on CI: it could serve stale content from a previous/cached build
 		// CI builds must always produce fresh, reproducible output
@@ -68,7 +69,7 @@ public class AssemblerBuildService(
 		if (assumeBuild.GetValueOrDefault(false))
 		{
 			var indexHtmlPath = Path.Join(assembleContext.OutputDirectory.FullName, "docs", "index.html");
-			if (assembleContext.OutputDirectory.Exists && fs.File.Exists(indexHtmlPath))
+			if (assembleContext.OutputDirectory.Exists && readFs.File.Exists(indexHtmlPath))
 			{
 				_logger.LogInformation("Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.", indexHtmlPath);
 				return true;
@@ -101,7 +102,7 @@ public class AssemblerBuildService(
 		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
+		var siteNavigationFile = SiteNavigationFile.Deserialize(await readFs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
 
@@ -123,7 +124,7 @@ public class AssemblerBuildService(
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
 		var redirectsPath = Path.Join(assembleContext.OutputDirectory.FullName, "redirects.json");
-		if (fs.File.Exists(redirectsPath))
+		if (writeFs.File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
 		if (exporters.Contains(Exporter.Html))

@@ -42,7 +42,7 @@ public class DeployUpdateRedirectsService(ILoggerFactory logFactory, IFileSystem
 		}
 
 		var kvsName = $"{kvsNamePrefix}-{environment}-redirects-kvs";
-		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, logFactory, fileSystem.DirectoryInfo.New(Directory.GetCurrentDirectory()));
+		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, logFactory, fileSystem.DirectoryInfo.New(fileSystem.Directory.GetCurrentDirectory()));
 
 		cloudFrontClient.UpdateRedirects(kvsName, sourcedRedirects);
 		return collector.Errors == 0;

@@ -76,13 +76,13 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 
 internal sealed class TestCodexDocumentationContext(IDiagnosticsCollector collector) : ICodexDocumentationContext
 {
-	private readonly MockFileSystem _fileSystem = new();
+	private readonly MockFileSystem _fileSystem = new() { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName };
 
-	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New("/codex.yml");
+	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New(_fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
 	public IDiagnosticsCollector Collector => collector;
 	public ScopedFileSystem ReadFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectory(_fileSystem);
 	public ScopedFileSystem WriteFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(_fileSystem);
-	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New("/output");
+	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New(_fileSystem.Path.Join(Paths.ApplicationData.FullName, "codex", "output"));
 	public BuildType BuildType => BuildType.Codex;
 
 	public void EmitError(string message) => collector.EmitError(ConfigurationPath, message);
