@@ -92,21 +92,26 @@ public static class Paths
 		var depth = 0;
 		while (directory != null)
 		{
-			var hasSlnx = directory.GetFiles("*.slnx").Length > 0;
+			// *.slnx is the primary anchor: always adopt it at any depth.
+			// This covers both the local developer case (running from the IDE output directory
+			// such as bin/Debug/net10.0/) and CI (Aspire starts the binary from the project
+			// directory, which is several levels below the solution root).
+			if (directory.GetFiles("*.slnx").Length > 0)
+				return directory;
 			var hasGit = directory.GetDirectories(".git").Length > 0
 					  || directory.GetFiles(".git").Length > 0;
-			if (hasGit || hasSlnx)
+			if (hasGit)
 			{
-				// Only accept .git/.slnx beyond 1 level up in debug when a *.slnx is adjacent
+				// Only accept .git beyond 1 level up in debug when a *.slnx is adjacent
 				// (developer running from IDE output directory such as bin/Debug/net10.0/).
 #if DEBUG
-				if (depth <= 1 || hasSlnx)
+				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
 					return directory;
 #else
 				if (depth <= 1)
 					return directory;
 #endif
-				// .git/.slnx found but too deep — stop without adopting it
+				// .git found but too deep — stop without adopting it
 				return cwd;
 			}
 			depth++;
