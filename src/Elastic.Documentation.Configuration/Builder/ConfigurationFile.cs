@@ -64,6 +64,8 @@ public record ConfigurationFile
 
 	public IReadOnlySet<string> StorybookAllowedRoots { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+	public string? StorybookBundle { get; }
+
 	/// <summary>
 	/// Set of diagnostic hint types to suppress for this documentation set.
 	/// </summary>
@@ -150,6 +152,7 @@ public record ConfigurationFile
 			{
 				StorybookRoot = NormalizeStorybookValue(docSetFile.Storybook.Root);
 				StorybookServerRoot = NormalizeStorybookValue(docSetFile.Storybook.ServerRoot);
+				StorybookBundle = docSetFile.Storybook.Bundle?.Trim();
 			}
 
 			if (docSetFile.Storybook?.AllowedRoots is { Count: > 0 })

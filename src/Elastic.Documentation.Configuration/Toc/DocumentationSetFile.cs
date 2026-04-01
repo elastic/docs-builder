@@ -592,6 +592,9 @@ public class DocumentationSetStorybook
 
 	[YamlMember(Alias = "allowed_roots")]
 	public List<string> AllowedRoots { get; set; } = [];
+
+	[YamlMember(Alias = "bundle")]
+	public string? Bundle { get; set; }
 }
 
 /// <summary>

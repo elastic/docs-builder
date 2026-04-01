@@ -1,10 +1,20 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Storybook.StorybookViewModel>
 <div class="storybook-embed">
+@if (Model.HasBundle)
+{
+<storybook-story
+	story-id="@Model.StoryId"
+	bundle="@Model.BundleUrl">
+</storybook-story>
+}
+else
+{
 	<iframe
 		src="@Model.StoryUrl"
 		title="@Model.IframeTitle"
 		style="width:100%;height:@Model.HeightStyle;border:none;"
 		loading="lazy"></iframe>
+}
 	@if (Model.HasBody)
 	{
 		<div class="storybook-embed-body">

@@ -253,9 +253,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			StoryUrl = block.StoryUrl,
+			StoryId = block.StoryId ?? string.Empty,
 			Height = block.Height,
 			IframeTitle = block.IframeTitle,
-			HasBody = block.Count > 0
+			HasBody = block.Count > 0,
+			BundleUrl = block.BundleUrl,
 		});
 		RenderRazorSlice(slice, renderer);
 	}

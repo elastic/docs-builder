@@ -20,6 +20,8 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	public string IframeTitle { get; private set; } = "Storybook story";
 
+	public string? BundleUrl { get; private set; }
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		if (!string.IsNullOrWhiteSpace(Arguments))
@@ -69,6 +71,12 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 		var rawTitle = Prop("title");
 		if (!string.IsNullOrWhiteSpace(rawTitle))
 			IframeTitle = rawTitle.Trim();
+
+		var rawBundle = Prop("bundle")?.Trim();
+		if (string.IsNullOrWhiteSpace(rawBundle))
+			rawBundle = Build.Configuration.StorybookBundle;
+		if (!string.IsNullOrWhiteSpace(rawBundle))
+			BundleUrl = rawBundle;
 	}
 
 	private bool TryValidateStoryRoot(string rawRoot, out string? validatedRoot, out string validationError)

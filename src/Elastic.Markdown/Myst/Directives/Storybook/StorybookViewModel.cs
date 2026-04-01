@@ -8,11 +8,17 @@ public class StorybookViewModel : DirectiveViewModel
 {
 	public required string StoryUrl { get; init; }
 
+	public required string StoryId { get; init; }
+
 	public required int Height { get; init; }
 
 	public required string IframeTitle { get; init; }
 
 	public bool HasBody { get; init; }
+
+	public string? BundleUrl { get; init; }
+
+	public bool HasBundle => !string.IsNullOrWhiteSpace(BundleUrl);
 
 	public string HeightStyle => $"{Height}px";
 }
