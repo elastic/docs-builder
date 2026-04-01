@@ -293,8 +293,6 @@ nav:
           - group: Index basics
             page: docs-content://manage-data/data-store/index-basics.md
             children:
-            - page: docs-content://manage-data/data-store/perform-index-operations.md
-              title: Perform index operations
             - page: elasticsearch://reference/elasticsearch/index-settings/index.md
               title: Index settings reference
             - page: elasticsearch://reference/elasticsearch/index-lifecycle-actions/index.md
@@ -418,6 +416,11 @@ nav:
               title: Ignore missing component templates
           - page: docs-content://manage-data/data-store/aliases.md
             title: Aliases
+          - group: Perform index operations
+            page: docs-content://manage-data/data-store/perform-index-operations.md
+            children:
+            - page: docs-content://manage-data/data-store/index-operations-reference.md
+              title: Index operations reference
           - page: docs-content://manage-data/data-store/manage-data-from-the-command-line.md
             title: Manage data from the command line
         - group: Data lifecycle
