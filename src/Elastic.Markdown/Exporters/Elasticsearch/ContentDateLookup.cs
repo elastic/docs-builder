@@ -34,20 +34,21 @@ public class ContentDateLookup(DistributedTransport transport, ILogger logger, s
 			return;
 		}
 
-		var mapping = """
+		var mapping = new JsonObject
 		{
-			"settings": { "number_of_shards": 1, "number_of_replicas": 0 },
-			"mappings": {
-				"properties": {
-					"url": { "type": "keyword" },
-					"content_hash": { "type": "keyword" },
-					"content_last_updated": { "type": "date" }
+			["settings"] = new JsonObject { ["number_of_shards"] = 1, ["number_of_replicas"] = 0 },
+			["mappings"] = new JsonObject
+			{
+				["properties"] = new JsonObject
+				{
+					["url"] = new JsonObject { ["type"] = "keyword" },
+					["content_hash"] = new JsonObject { ["type"] = "keyword" },
+					["content_last_updated"] = new JsonObject { ["type"] = "date" }
 				}
 			}
-		}
-		""";
+		};
 
-		var response = await transport.PutAsync<StringResponse>(_indexName, PostData.String(mapping), ct);
+		var response = await transport.PutAsync<StringResponse>(_indexName, PostData.String(mapping.ToJsonString()), ct);
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 			logger.LogWarning("Failed to create content date lookup index {Index}: {Info}", _indexName, response.ApiCallDetails.DebugInformation);
 		else
