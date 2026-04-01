@@ -44,14 +44,14 @@ public static class FileSystemFactory
 	/// (read by <c>GitCheckoutInformation</c>), <c>.artifacts</c> and <c>.doc.state</c>
 	/// (read for incremental build state).
 	/// </summary>
-	public static ScopedFileSystem RealRead { get; } = new ScopedFileSystem(new FileSystem(), WorkingDirectoryReadOptions);
+	public static ScopedFileSystem RealRead { get; } = new(new FileSystem(), WorkingDirectoryReadOptions);
 
 	/// <summary>
 	/// A pre-allocated <see cref="ScopedFileSystem"/> for writing build output.
 	/// Same scope as <see cref="RealRead"/> but without <c>.git</c> access —
 	/// nothing in the output pipeline should write into git repository metadata.
 	/// </summary>
-	public static ScopedFileSystem RealWrite { get; } = new ScopedFileSystem(new FileSystem(), WorkingDirectoryWriteOptions);
+	public static ScopedFileSystem RealWrite { get; } = new(new FileSystem(), WorkingDirectoryWriteOptions);
 
 	/// <summary>
 	/// A pre-allocated <see cref="ScopedFileSystem"/> scoped only to the per-user
@@ -59,7 +59,7 @@ public static class FileSystemFactory
 	/// access caches or state and have no need for workspace files
 	/// (e.g. <c>CrossLinkFetcher</c>, <c>CheckForUpdatesFilter</c>, <c>GitLinkIndexReader</c>).
 	/// </summary>
-	public static ScopedFileSystem AppData { get; } = new ScopedFileSystem(new FileSystem(), AppDataOptions);
+	public static ScopedFileSystem AppData { get; } = new(new FileSystem(), AppDataOptions);
 
 	/// <summary>
 	/// Creates a new <see cref="ScopedFileSystem"/> wrapping a fresh <see cref="MockFileSystem"/>,
