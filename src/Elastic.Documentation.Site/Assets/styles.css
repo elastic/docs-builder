@@ -359,13 +359,13 @@ nav.docs-sidebar-nav-v2
 	background-color: transparent !important;
 }
 
-/* Open ancestor folder rows when current is deeper: match .current link + chevron (currentColor) */
-#pages-nav
-	nav[data-nav-v2]
-	li.nav-v2-active-ancestor
-	> .nav-folder-peer
-	> a.sidebar-link {
-	color: #0b64dd !important;
+/*
+ * Ancestor folder rows (current is deeper): default ink + font-weight like .current.
+ * !important on color beats #pages-nav .current / a.sidebar-link.current when the folder href
+ * is also marked .current (common duplicate index URL), and keeps chevron currentColor in sync.
+ */
+#pages-nav nav[data-nav-v2] li.nav-v2-active-ancestor > .nav-folder-peer > a.sidebar-link {
+	color: #1d2a3e !important;
 	font-weight: 400 !important;
 }
 
@@ -373,8 +373,24 @@ nav.docs-sidebar-nav-v2
 	nav[data-nav-v2]
 	li.nav-v2-active-ancestor
 	> .nav-folder-peer
+	> a.sidebar-link.text-grey-40 {
+	color: var(--color-grey-40) !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
 	> a.sidebar-link:hover {
-	color: #0b64dd !important;
+	color: #1d2a3e !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link.text-grey-40:hover {
+	color: #1d2a3e !important;
 }
 
 #pages-nav nav[data-nav-v2] .nav-folder-peer {
@@ -631,7 +647,8 @@ nav.docs-sidebar-nav-v2
 	);
 }
 
-#pages-nav .current {
+/* V1 toc only: V2 current styling is #pages-nav nav[data-nav-v2] a.sidebar-link.current */
+#pages-nav .current:not(nav.docs-sidebar-nav-v2 a.sidebar-link) {
 	@apply text-blue-elastic! font-semibold;
 }
 

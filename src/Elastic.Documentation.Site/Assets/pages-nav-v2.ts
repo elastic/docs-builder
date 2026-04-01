@@ -262,14 +262,51 @@ function clearActiveSubtreeHighlight(nav: HTMLElement) {
 }
 
 /**
+ * Counts {@code li} ancestors from {@code anchor} up to (but not including) {@code nav}.
+ */
+function navListItemDepthFromAnchor(anchor: Element, nav: HTMLElement): number {
+    let depth = 0
+    let el: Element | null = anchor
+    while (el && el !== nav) {
+        if (el.matches('li')) {
+            depth++
+        }
+        el = el.parentElement
+    }
+    return depth
+}
+
+/**
+ * Prefer the deepest {@code a.sidebar-link.current} when several share the URL (folder index
+ * and child, or duplicate toc entries). Otherwise {@code querySelector} picks the first in DOM
+ * order (usually a parent folder) and subtree/ancestor classes apply to the wrong rows.
+ */
+function deepestCurrentSidebarLink(nav: HTMLElement): HTMLAnchorElement | null {
+    const anchors = nav.querySelectorAll<HTMLAnchorElement>('a.sidebar-link.current')
+    if (anchors.length === 0) {
+        return null
+    }
+
+    let best = anchors[0]
+    let bestDepth = navListItemDepthFromAnchor(best, nav)
+    for (let i = 1; i < anchors.length; i++) {
+        const candidate = anchors[i]
+        const d = navListItemDepthFromAnchor(candidate, nav)
+        if (d > bestDepth) {
+            bestDepth = d
+            best = candidate
+        }
+    }
+    return best
+}
+
+/**
  * Apply #F1F6FF background per design: folder index → whole folder + visible children;
  * nested folder index → that folder + its children only; leaf → that row only.
  */
 function applyActiveSubtreeHighlight(nav: HTMLElement) {
     clearActiveSubtreeHighlight(nav)
-    const current = nav.querySelector<HTMLAnchorElement>(
-        'a.sidebar-link.current'
-    )
+    const current = deepestCurrentSidebarLink(nav)
     if (!current || !nav.contains(current)) {
         return
     }
@@ -297,8 +334,8 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
 
     /*
      * Walk DOM ancestors: folder rows (li.group-navigation) whose own link is not .current
-     * match .current ink (chevron uses currentColor). Section titles (label--top / label--nested)
-     * are not links and must not receive ancestor styling.
+     * get nav-v2-active-ancestor (CSS: font-weight like .current; default link color). Section
+     * titles (label--top / label--nested) are not links and must not receive ancestor styling.
      */
     let walk: Element | null = hostLi
     while (walk && walk !== nav) {
