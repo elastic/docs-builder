@@ -279,7 +279,7 @@ public static partial class ChangelogTextUtilities
 			return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo);
 		}
 
-		if (int.TryParse(trimmed, out _))
+		if (uint.TryParse(trimmed, out _))
 			return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo);
 
 		return false;
