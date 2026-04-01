@@ -76,7 +76,7 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 
 internal sealed class TestCodexDocumentationContext(IDiagnosticsCollector collector) : ICodexDocumentationContext
 {
-	private readonly MockFileSystem _fileSystem = new() { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName };
+	private readonly MockFileSystem _fileSystem = new(new Dictionary<string, MockFileData>(), Paths.WorkingDirectoryRoot.FullName);
 
 	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New(_fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
 	public IDiagnosticsCollector Collector => collector;

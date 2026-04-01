@@ -110,6 +110,6 @@ public class AssemblerIndexService(
 
 		var exporters = new HashSet<Exporter> { Elasticsearch };
 
-		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, assumeBuild: false, fileSystem, ctx);
+		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, assumeBuild: false, fileSystem, fileSystem, ctx);
 	}
 }
