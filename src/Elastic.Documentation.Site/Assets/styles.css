@@ -364,7 +364,11 @@ nav.docs-sidebar-nav-v2
  * !important on color beats #pages-nav .current / a.sidebar-link.current when the folder href
  * is also marked .current (common duplicate index URL), and keeps chevron currentColor in sync.
  */
-#pages-nav nav[data-nav-v2] li.nav-v2-active-ancestor > .nav-folder-peer > a.sidebar-link {
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link {
 	color: #1d2a3e !important;
 	font-weight: 400 !important;
 }

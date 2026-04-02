@@ -282,7 +282,9 @@ function navListItemDepthFromAnchor(anchor: Element, nav: HTMLElement): number {
  * order (usually a parent folder) and subtree/ancestor classes apply to the wrong rows.
  */
 function deepestCurrentSidebarLink(nav: HTMLElement): HTMLAnchorElement | null {
-    const anchors = nav.querySelectorAll<HTMLAnchorElement>('a.sidebar-link.current')
+    const anchors = nav.querySelectorAll<HTMLAnchorElement>(
+        'a.sidebar-link.current'
+    )
     if (anchors.length === 0) {
         return null
     }
