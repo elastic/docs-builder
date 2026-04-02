@@ -50,6 +50,7 @@ public class ContentDateEnrichment(
 
 		await DeleteLookupContentsAsync(ct);
 		await ReindexToLookupAsync(lexicalAlias, ct);
+		await RefreshLookupIndexAsync(ct);
 		await ExecutePolicyAsync(ct);
 
 		logger.LogInformation("Content date lookup sync complete");
@@ -88,9 +89,10 @@ public class ContentDateEnrichment(
 			ct
 		);
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			logger.LogWarning("Failed to create content date lookup index {Index}: {Info}", _lookupIndex, response.ApiCallDetails.DebugInformation);
-		else
-			logger.LogInformation("Created content date lookup index {Index}", _lookupIndex);
+			throw new InvalidOperationException(
+				$"Failed to create content date lookup index {_lookupIndex}: {response.ApiCallDetails.DebugInformation}");
+
+		logger.LogInformation("Created content date lookup index {Index}", _lookupIndex);
 	}
 
 	private async Task PutEnrichPolicyAsync(Cancel ct)
@@ -112,9 +114,10 @@ public class ContentDateEnrichment(
 		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			logger.LogWarning("Failed to create enrich policy {Policy}: {Info}", PolicyName, response.ApiCallDetails.DebugInformation);
-		else
-			logger.LogInformation("Created enrich policy {Policy}", PolicyName);
+			throw new InvalidOperationException(
+				$"Failed to create enrich policy {PolicyName}: {response.ApiCallDetails.DebugInformation}");
+
+		logger.LogInformation("Created enrich policy {Policy}", PolicyName);
 	}
 
 	private async Task ExecutePolicyAsync(Cancel ct)
@@ -126,9 +129,10 @@ public class ContentDateEnrichment(
 		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			logger.LogWarning("Failed to execute enrich policy {Policy}: {Info}", PolicyName, response.ApiCallDetails.DebugInformation);
-		else
-			logger.LogInformation("Executed enrich policy {Policy}", PolicyName);
+			throw new InvalidOperationException(
+				$"Failed to execute enrich policy {PolicyName}: {response.ApiCallDetails.DebugInformation}");
+
+		logger.LogInformation("Executed enrich policy {Policy}", PolicyName);
 	}
 
 	private async Task PutPipelineAsync(Cancel ct)
@@ -174,9 +178,24 @@ public class ContentDateEnrichment(
 		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			logger.LogWarning("Failed to create pipeline {Pipeline}: {Info}", PipelineName, response.ApiCallDetails.DebugInformation);
+			throw new InvalidOperationException(
+				$"Failed to create ingest pipeline {PipelineName}: {response.ApiCallDetails.DebugInformation}");
+
+		logger.LogInformation("Created ingest pipeline {Pipeline}", PipelineName);
+	}
+
+	private async Task RefreshLookupIndexAsync(Cancel ct)
+	{
+		var response = await operations.WithRetryAsync(
+			() => transport.PostAsync<StringResponse>($"/{_lookupIndex}/_refresh", PostData.Empty, ct),
+			$"POST {_lookupIndex}/_refresh",
+			ct
+		);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			logger.LogWarning("Failed to refresh lookup index {Index}: {Info}", _lookupIndex, response.ApiCallDetails.DebugInformation);
 		else
-			logger.LogInformation("Created ingest pipeline {Pipeline}", PipelineName);
+			logger.LogInformation("Refreshed lookup index {Index}", _lookupIndex);
 	}
 
 	private async Task DeleteLookupContentsAsync(Cancel ct)
