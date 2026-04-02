@@ -156,9 +156,9 @@ public class ElasticsearchOperations(
 		PostData query,
 		CancellationToken ct)
 	{
-		var taskId = await DeleteByQueryFireAndForgetAsync(index, query, ct);
-		if (taskId is not null)
-			await PollTaskUntilCompleteAsync(taskId, "_delete_by_query", index, null, ct);
+		var taskId = await DeleteByQueryFireAndForgetAsync(index, query, ct)
+			?? throw new InvalidOperationException($"Failed to start _delete_by_query on {index}");
+		await PollTaskUntilCompleteAsync(taskId, "_delete_by_query", index, null, ct);
 	}
 
 	/// <summary>
@@ -171,9 +171,9 @@ public class ElasticsearchOperations(
 		CancellationToken ct)
 	{
 		var url = "/_reindex?wait_for_completion=false";
-		var taskId = await PostAsyncTaskAsync(url, request, $"POST _reindex ({sourceIndex} => {destIndex})", ct);
-		if (taskId is not null)
-			await PollTaskUntilCompleteAsync(taskId, "_reindex", sourceIndex, destIndex, ct);
+		var taskId = await PostAsyncTaskAsync(url, request, $"POST _reindex ({sourceIndex} => {destIndex})", ct)
+			?? throw new InvalidOperationException($"Failed to start _reindex ({sourceIndex} => {destIndex})");
+		await PollTaskUntilCompleteAsync(taskId, "_reindex", sourceIndex, destIndex, ct);
 	}
 
 	/// <summary>
@@ -187,8 +187,8 @@ public class ElasticsearchOperations(
 	{
 		var pipelineParam = pipeline is not null ? $"&pipeline={pipeline}" : "";
 		var url = $"/{index}/_update_by_query?wait_for_completion=false{pipelineParam}";
-		var taskId = await PostAsyncTaskAsync(url, query, $"POST {index}/_update_by_query", ct);
-		if (taskId is not null)
-			await PollTaskUntilCompleteAsync(taskId, "_update_by_query", index, null, ct);
+		var taskId = await PostAsyncTaskAsync(url, query, $"POST {index}/_update_by_query", ct)
+			?? throw new InvalidOperationException($"Failed to start _update_by_query on {index}");
+		await PollTaskUntilCompleteAsync(taskId, "_update_by_query", index, null, ct);
 	}
 }
