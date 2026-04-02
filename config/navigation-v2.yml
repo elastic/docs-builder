@@ -275,6 +275,17 @@ nav:
         page: docs-content://reference/ingestion-tools/index.md
         children:
         - toc: opentelemetry://reference
+        - group: EDOT SDKs
+          page: opentelemetry://reference/edot-sdks/index.md
+          children:
+          - toc: apm-agent-android://reference/edot-android
+          - toc: elastic-otel-dotnet://reference/edot-dotnet
+          - toc: apm-agent-ios://reference/edot-ios
+          - toc: elastic-otel-java://reference/edot-java
+          - toc: elastic-otel-node://reference/edot-node
+          - toc: elastic-otel-php://reference/edot-php
+          - toc: elastic-otel-python://reference/edot-python
+          - toc: elastic-otel-rum-js://reference/edot-browser
         - toc: docs-content://reference/fleet
         - toc: integration-docs://reference
         - toc: elasticsearch://reference/search-connectors
