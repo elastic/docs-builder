@@ -1,9 +1,15 @@
 /* Assembler build type specific styles */
 
 /* Elastic global nav is position:static (scrolls with page).
-   Only the secondary nav (Docs sub-header) is sticky, so offset-top matches its height. */
+   The secondary nav (Docs sub-header) is sticky on md+ viewports. */
 :root {
-	--offset-top: calc(var(--spacing) * 18);
+	--offset-top: 0px;
+}
+
+@media screen and (min-width: 768px) {
+	:root {
+		--offset-top: calc(var(--spacing) * 18);
+	}
 }
 
 /* Air-gapped: uses elastic-docs-header web component instead of elastic nav */
