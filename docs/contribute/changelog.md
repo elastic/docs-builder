@@ -714,7 +714,7 @@ Top-level `bundle` fields:
 | `repo` | Default GitHub repository name applied to all profiles. Falls back to product ID if not set at any level. |
 | `owner` | Default GitHub repository owner applied to all profiles. |
 | `resolve` | When `true`, embeds full changelog entry content in the bundle (same as `--resolve`). Required when `sanitize_private_links` is enabled. |
-| `sanitize_private_links` | When `true`, rewrites PR/issue references that target private repositories (per `assembler.yml` `references`) to quoted `# PRIVATE:` sentinel strings in bundle YAML. Requires `resolve: true` and a non-empty `references` section in `assembler.yml`. Default `false`. Refer to  [Private link sanitization at bundle time](/cli/release/changelog-bundle.md#private-link-sanitization). |
+| `sanitize_private_links` | When `true`, rewrites PR/issue references that target private repositories (per `assembler.yml` `references`) to quoted `# PRIVATE:` sentinel strings in bundle YAML. Requires `resolve: true` and a non-empty `references` section in `assembler.yml`. Default `false`. Refer to  [Private link sanitization at bundle time](/cli/changelog/bundle.md#private-link-sanitization). |
 
 Profile configuration fields in `bundle.profiles`:
 
@@ -1048,9 +1048,9 @@ The `--hide-features` option on the `render` command and the `hide-features` fie
 
 A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
 
-To comment out the private links in all changelogs in your bundles, refer to [changelog bundle](/cli/release/changelog-bundle.md#private-link-sanitization).
+To comment out the private links in all changelogs in your bundles, refer to [changelog bundle](/cli/changelog/bundle.md#private-link-sanitization).
 
-If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you also have the option to configure link visibiblity in the [changelog directive](/syntax/changelog.md) and [changelog render](/cli/release/changelog-render.md) command.
+If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you also have the option to configure link visibiblity in the [changelog directive](/syntax/changelog.md) and [changelog render](/cli/changelog/render.md) command.
 
 :::{tip}
 You must run the `docs-builder changelog bundle` command with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained) in order to hide the private links.

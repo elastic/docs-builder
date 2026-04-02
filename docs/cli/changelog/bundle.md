@@ -141,7 +141,7 @@ The `--input-products` option determines which changelog files are gathered for 
 :   By default, the bundle contains only the file names and checksums.
 
 `--sanitize-private-links`
-:   Optional: Turn on [private link sanitization](/cli/release/changelog-bundle.md#private-link-sanitization).
+:   Optional: Turn on [private link sanitization](#private-link-sanitization).
 :   Pull requests and issues that target repositories marked `private: true` in the `references` section of `assembler.yml` are rewritten as quoted `# PRIVATE:` sentinel strings in the bundle file.
 :   This option requires a resolved bundle: use `--resolve` or set `bundle.resolve: true` in the `changelog.yml`.
 :   If sanitization is enabled and the bundle is not resolved, the command fails.
