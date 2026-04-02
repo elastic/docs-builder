@@ -117,7 +117,9 @@ public class HtmlWriter(
 			?? throw new InvalidOperationException($"No versioning system available for page '{markdown.RelativePath}'. " +
 				"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined.");
 
-		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
+		var currentBaseVersion = pageVersioning.IsVersionless
+			? null
+			: $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
 		//TODO should we even distinctby
 		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
