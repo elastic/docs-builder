@@ -118,7 +118,7 @@ public class AssemblerBuildService(
 		if (featureFlags.NavV2Enabled && navV2FileInfo is not null)
 		{
 			_logger.LogInformation("nav-v2 feature flag enabled — loading navigation-v2.yml");
-			var v2File = NavigationV2File.Deserialize(await fs.File.ReadAllTextAsync(navV2FileInfo.FullName, ctx));
+			var v2File = NavigationV2File.Deserialize(await readFs.File.ReadAllTextAsync(navV2FileInfo.FullName, ctx));
 			navigation = new SiteNavigationV2(v2File, siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
 		}
 		else
