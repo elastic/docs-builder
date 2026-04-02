@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ChangelogEntryType;
 
@@ -13,7 +14,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the known-issues.md changelog file
 /// </summary>
-public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class KnownIssuesMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "known-issues.md";

@@ -4,7 +4,9 @@
 
 using System.Diagnostics;
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.LinkIndex;
 
@@ -16,8 +18,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 {
 	private const string LinkIndexOrigin = "elastic/codex-link-index";
 	private static readonly string CloneDirectory = Path.Join(
-		Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-		".docs-builder",
+		Paths.ApplicationData.FullName,
 		"codex-link-index");
 
 	private readonly string _environment;
@@ -26,13 +27,13 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	private readonly SemaphoreSlim _cloneLock = new(1, 1);
 	private bool _ensuredClone;
 
-	public GitLinkIndexReader(string environment, IFileSystem? fileSystem = null, bool skipFetch = false)
+	public GitLinkIndexReader(string environment, ScopedFileSystem? fileSystem = null, bool skipFetch = false)
 	{
 		if (string.IsNullOrWhiteSpace(environment))
 			throw new ArgumentException("Environment must be specified in the codex configuration (e.g., 'internal', 'security').", nameof(environment));
 
 		_environment = environment;
-		_fileSystem = fileSystem ?? new FileSystem();
+		_fileSystem = fileSystem ?? FileSystemFactory.AppData;
 		_skipFetch = skipFetch;
 	}
 

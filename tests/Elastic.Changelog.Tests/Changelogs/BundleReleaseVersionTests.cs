@@ -6,6 +6,7 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 using Xunit;
@@ -26,12 +27,12 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 	public BundleReleaseVersionTests(ITestOutputHelper output) : base(output)
 	{
 		_bundlingService = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystem);
-		_changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}
 
 	private string BundleOutputPath() =>
-		FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 
 	// -----------------------------------------------------------------------
 	// Core flow: release → PR list → bundle

@@ -7,6 +7,7 @@
   <ItemGroup>
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="AngleSharp.Diffing" />
+    <PackageReference Include="Nullean.ScopedFileSystem" />
   </ItemGroup>
 
   <ItemGroup>
