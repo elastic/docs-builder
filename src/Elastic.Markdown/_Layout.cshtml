@@ -60,7 +60,7 @@
 		@(await RenderPartialAsync(_IsolatedHeader.Create<GlobalLayoutViewModel>(Model)))
 	}
 }
-<div id="main-container" class="@(RenderHeaderAndFooter ? "border-t-1 border-grey-20" : "")">
+<div id="main-container">
 @switch (Model.Layout)
 {
 	case MarkdownPageLayout.NotFound:
