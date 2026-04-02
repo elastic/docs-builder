@@ -33,8 +33,9 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		    cloud-serverless: "@Product:ESS"
 		""";
 
-	private async Task WriteConfig(string content, string path = "/tmp/config/changelog.yml")
+	private async Task WriteConfig(string content, string? path = null)
 	{
+		path ??= Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		var dir = FileSystem.Path.GetDirectoryName(path)!;
 		FileSystem.Directory.CreateDirectory(dir);
 		await FileSystem.File.WriteAllTextAsync(path, content);
@@ -67,7 +68,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	public async Task CreateChangelog_CIWithProducts_SkipsPrFetchAndSucceeds()
 	{
 		await WriteConfig(ConfigWithProductLabels);
-		FileSystem.Directory.CreateDirectory("/tmp/output");
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
 		var env = FakeCIEnv(
 			prNumber: "153344",
@@ -82,8 +83,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
-			Config = "/tmp/config/changelog.yml",
-			Output = "/tmp/output",
+			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"),
 			Concise = true
 		};
 
@@ -104,7 +105,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	public async Task CreateChangelog_CIWithoutProducts_FallsBackToPrFetchForProducts()
 	{
 		await WriteConfig(ConfigWithProductLabels);
-		FileSystem.Directory.CreateDirectory("/tmp/output");
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
 		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
 			.Returns(new GitHubPrInfo
@@ -125,8 +126,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
-			Config = "/tmp/config/changelog.yml",
-			Output = "/tmp/output",
+			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"),
 			Concise = true
 		};
 
@@ -147,7 +148,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	public async Task CreateChangelog_CIWithoutProducts_NoPrProductLabels_FailsWithProductRequired()
 	{
 		await WriteConfig(ConfigWithProductLabels);
-		FileSystem.Directory.CreateDirectory("/tmp/output");
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
 		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
 			.Returns(new GitHubPrInfo
@@ -168,8 +169,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
-			Config = "/tmp/config/changelog.yml",
-			Output = "/tmp/output",
+			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"),
 			Concise = true
 		};
 

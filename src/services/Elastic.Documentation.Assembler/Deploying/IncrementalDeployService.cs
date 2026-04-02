@@ -13,6 +13,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Deploying;
 
@@ -21,7 +22,7 @@ public class IncrementalDeployService(
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	FileSystem fileSystem
+	ScopedFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IncrementalDeployService>();
@@ -51,7 +52,7 @@ public class IncrementalDeployService(
 		if (!string.IsNullOrEmpty(@out))
 		{
 			var output = SyncPlan.Serialize(plan);
-			await using var fileStream = new FileStream(@out, FileMode.Create, FileAccess.Write);
+			await using var fileStream = fileSystem.File.Create(@out);
 			await using var writer = new StreamWriter(fileStream);
 			await writer.WriteAsync(output);
 			_logger.LogInformation("Plan written to {OutputFile}", @out);
@@ -74,7 +75,7 @@ public class IncrementalDeployService(
 			collector.EmitError(planFile, "Plan file does not exist.");
 			return false;
 		}
-		var planJson = await File.ReadAllTextAsync(planFile, ctx);
+		var planJson = await fileSystem.File.ReadAllTextAsync(planFile, ctx);
 		var plan = SyncPlan.Deserialize(planJson);
 		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
 		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);

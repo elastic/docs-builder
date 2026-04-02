@@ -40,7 +40,7 @@ internal sealed partial class ChangelogCommand(
 	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
 	private static partial Regex BundleOutputDirectoryRegex();
 
-	private readonly IFileSystem _fileSystem = new FileSystem();
+	private readonly IFileSystem _fileSystem = FileSystemFactory.RealRead;
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommand>();
 	/// <summary>
 	/// Changelog commands. Use 'changelog add' to create a new changelog or 'changelog bundle' to create a consolidated list of changelogs.
@@ -92,7 +92,7 @@ internal sealed partial class ChangelogCommand(
 
 		var useNonDefaultChangelogDir = changelogDir != null;
 		var useNonDefaultBundlesDir = bundlesDir != null;
-		var repoRoot = Paths.DetermineSourceDirectoryRoot(docsFolder)?.FullName ?? docsFolder.FullName;
+		var repoRoot = Paths.FindGitRoot(docsFolder)?.FullName ?? docsFolder.FullName;
 
 		// Create changelog.yml from example if it does not exist
 		if (!_fileSystem.File.Exists(configPath))
@@ -289,7 +289,7 @@ internal sealed partial class ChangelogCommand(
 		// Load changelog config and apply fallbacks for all modes.
 		// Precedence: CLI option > bundle section in changelog.yml > built-in default.
 		// This applies to --prs, --issues, and --release-version alike.
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 			.LoadChangelogConfiguration(collector, config, ctx);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
@@ -547,7 +547,7 @@ internal sealed partial class ChangelogCommand(
 			}
 
 			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 				.LoadChangelogConfiguration(collector, config, ctx);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
@@ -856,7 +856,7 @@ internal sealed partial class ChangelogCommand(
 			}
 
 			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 				.LoadChangelogConfiguration(collector, config, ctx);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
@@ -1115,7 +1115,7 @@ internal sealed partial class ChangelogCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		// --output CLI > bundle.directory config > ./changelogs (service default)
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 			.LoadChangelogConfiguration(collector, config, ctx);
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 

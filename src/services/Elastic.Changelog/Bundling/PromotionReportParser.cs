@@ -5,18 +5,20 @@
 using System.IO.Abstractions;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
 /// <summary>
 /// Parser for promotion report HTML files to extract PR lists
 /// </summary>
-public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSystem? fileSystem = null)
+public partial class PromotionReportParser(ILoggerFactory logFactory, ScopedFileSystem? fileSystem = null)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<PromotionReportParser>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 	private static readonly HttpClient HttpClient = new();
 
 	static PromotionReportParser()
