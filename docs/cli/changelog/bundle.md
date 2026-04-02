@@ -54,6 +54,13 @@ The second argument (`[1]`) and optional third argument (`[2]`) accept the follo
 - **Promotion report file** — A path to a downloaded `.html` file containing a promotion report.
 - **URL list file** — A path to a plain-text file containing one fully-qualified GitHub PR or issue URL per line. For example, `https://github.com/elastic/elasticsearch/pull/123`. The file must contain only PR URLs or only issue URLs, not a mix. Bare numbers and short forms such as `owner/repo#123` are not allowed.
 
+## General options
+
+These options work with both profile-based and option-based modes.
+
+`--plan`
+:   Output a structured set of CI step outputs (`needs_network`, `needs_github_token`, `output_path`) describing Docker flags, network requirements, and the resolved output path, then exit without generating the bundle. Intended for CI actions that need to determine container configuration before running the actual bundle step. When running outside GitHub Actions, the output is written to stdout.
+
 ## Options
 
 The following options are only valid in option-based mode (no profile argument).
