@@ -502,7 +502,8 @@ public partial class ChangelogBundlingService(
 			}
 		}
 
-		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults
+		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults.
+		// Uses UrlPath.Join so the result always has forward slashes (CI runners expect this).
 		var outputPath = input.Output;
 		if (string.IsNullOrWhiteSpace(outputPath) && profileDef?.Output != null)
 		{
@@ -514,10 +515,10 @@ public partial class ChangelogBundlingService(
 			var outputDir = config?.Bundle?.OutputDirectory
 				?? config?.Bundle?.Directory
 				?? _fileSystem.Directory.GetCurrentDirectory();
-			outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
+			outputPath = UrlPath.Join(outputDir, outputPattern);
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
-			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+			outputPath = UrlPath.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
 
 		return new BundlePlanResult
 		{
