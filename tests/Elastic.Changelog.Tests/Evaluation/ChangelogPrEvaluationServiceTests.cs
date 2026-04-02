@@ -663,7 +663,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
 
 		result.Should().NotBeNull();
-		result!.Split(',').Should().BeEquivalentTo([">non-issue", ">test"]);
+		result.Split(',').Should().BeEquivalentTo([">non-issue", ">test"]);
 	}
 
 	[Fact]
@@ -693,7 +693,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
 
 		result.Should().NotBeNull();
-		result!.Split(',').Should().BeEquivalentTo([">skip-ech", ">skip-ess"]);
+		result.Split(',').Should().BeEquivalentTo([">skip-ech", ">skip-ess"]);
 	}
 
 	[Fact]
@@ -712,7 +712,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
 
 		result.Should().NotBeNull();
-		result!.Split(',').Should().BeEquivalentTo([">skip-all", ">shared", ">skip-ech"]);
+		result.Split(',').Should().BeEquivalentTo([">skip-all", ">shared", ">skip-ech"]);
 	}
 
 	[Fact]
@@ -731,7 +731,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
 
 		result.Should().NotBeNull();
-		result!.Split(',').Should().BeEquivalentTo([">global"]);
+		result.Split(',').Should().BeEquivalentTo([">global"]);
 	}
 
 	// --- skip-labels output integration tests ---
