@@ -143,6 +143,14 @@ public class ContentDateEnrichment(
 			["processors"] = new JsonArray(
 				new JsonObject
 				{
+					["set"] = new JsonObject
+					{
+						["field"] = "content_last_updated",
+						["value"] = "{{{_ingest.timestamp}}}"
+					}
+				},
+				new JsonObject
+				{
 					["enrich"] = new JsonObject
 					{
 						["policy_name"] = PolicyName,
@@ -161,8 +169,6 @@ public class ContentDateEnrichment(
 							def lookup = ctx._content_date_lookup;
 							if (lookup != null && lookup.content_hash != null && lookup.content_hash == ctx.content_hash) {
 								ctx.content_last_updated = lookup.content_last_updated;
-							} else {
-								ctx.content_last_updated = ctx._ingest.timestamp;
 							}
 							ctx.remove('_content_date_lookup');
 							"""
