@@ -501,6 +501,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
+	/// <param name="plan">Output a structured JSON plan describing Docker flags, network requirements, and the resolved output path, then exit without generating the bundle. Intended for CI actions.</param>
 	/// <param name="sanitizePrivateLinks">Optional: Enable bundle-time private link sanitization (requires --resolve). Uses bundle.sanitize_private_links when omitted.</param>
 	/// <param name="noSanitizePrivateLinks">Optional: Disable private link sanitization even when enabled in config.</param>
 	/// <param name="ctx"></param>
@@ -518,6 +519,7 @@ internal sealed partial class ChangelogCommand(
 		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
 		string[]? issues = null,
 		string? owner = null,
+		bool plan = false,
 		string[]? prs = null,
 		string? releaseVersion = null,
 		string? repo = null,
@@ -545,39 +547,42 @@ internal sealed partial class ChangelogCommand(
 				return 1;
 			}
 
-			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
-				.LoadChangelogConfiguration(collector, config, ctx);
-			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
-			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
-
-			if (string.IsNullOrWhiteSpace(resolvedRepo))
+			if (!plan)
 			{
-				collector.EmitError(string.Empty, "--release-version requires --repo to be specified (or bundle.repo set in changelog.yml).");
-				return 1;
-			}
+				// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
+				var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+					.LoadChangelogConfiguration(collector, config, ctx);
+				var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
+				var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 
-			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
-			var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
-			if (release == null)
-			{
-				collector.EmitError(string.Empty,
-					$"Failed to fetch release '{releaseVersion}' for {resolvedOwner}/{resolvedRepo}. Ensure the tag exists and credentials are set.");
-				return 1;
-			}
+				if (string.IsNullOrWhiteSpace(resolvedRepo))
+				{
+					collector.EmitError(string.Empty, "--release-version requires --repo to be specified (or bundle.repo set in changelog.yml).");
+					return 1;
+				}
 
-			var parsedNotes = ReleaseNoteParser.Parse(release.Body);
-			if (parsedNotes.PrReferences.Count == 0)
-			{
-				collector.EmitWarning(string.Empty,
-					$"No PR references found in release notes for {resolvedOwner}/{resolvedRepo}@{release.TagName}. No bundle will be created.");
-				return 0;
-			}
+				IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+				var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
+				if (release == null)
+				{
+					collector.EmitError(string.Empty,
+						$"Failed to fetch release '{releaseVersion}' for {resolvedOwner}/{resolvedRepo}. Ensure the tag exists and credentials are set.");
+					return 1;
+				}
 
-			// Build full PR URLs and inject them as the PR filter
-			prs = parsedNotes.PrReferences
-				.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
-				.ToArray();
+				var parsedNotes = ReleaseNoteParser.Parse(release.Body);
+				if (parsedNotes.PrReferences.Count == 0)
+				{
+					collector.EmitWarning(string.Empty,
+						$"No PR references found in release notes for {resolvedOwner}/{resolvedRepo}@{release.TagName}. No bundle will be created.");
+					return 0;
+				}
+
+				// Build full PR URLs and inject them as the PR filter
+				prs = parsedNotes.PrReferences
+					.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
+					.ToArray();
+			}
 		}
 
 		var allPrs = ExpandCommaSeparated(prs);
@@ -759,6 +764,27 @@ internal sealed partial class ChangelogCommand(
 				// It's a directory path - append default filename
 				processedOutput = Path.Join(output, "changelog-bundle.yaml");
 			}
+		}
+
+		// --plan mode: resolve config/profile metadata and set CI outputs without executing
+		if (plan)
+		{
+			var planInput = new BundleChangelogsArguments
+			{
+				Output = processedOutput,
+				Profile = profile,
+				ProfileArgument = profileArg,
+				Config = config
+			};
+			var planResult = await service.PlanBundleAsync(collector, planInput, releaseVersion != null, ctx);
+			if (planResult == null)
+				return 1;
+
+			await githubActionsService.SetOutputAsync("needs_network", planResult.NeedsNetwork ? "true" : "false");
+			await githubActionsService.SetOutputAsync("needs_github_token", planResult.NeedsGithubToken ? "true" : "false");
+			if (planResult.OutputPath != null)
+				await githubActionsService.SetOutputAsync("output_path", planResult.OutputPath);
+			return 0;
 		}
 
 		// Determine resolve: CLI --no-resolve and --resolve override config. null = use config default.
