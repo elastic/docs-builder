@@ -23,11 +23,11 @@ public class S3IncrementalUploader(
 	ILoggerFactory logFactory,
 	IAmazonS3 s3Client,
 	IFileSystem fileSystem,
+	IS3EtagCalculator etagCalculator,
 	string bucketName
 )
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<S3IncrementalUploader>();
-	private readonly IS3EtagCalculator _etagCalculator = new S3EtagCalculator(logFactory, fileSystem);
 
 	public async Task<UploadResult> Upload(IReadOnlyList<UploadTarget> targets, Cancel ctx = default)
 	{
@@ -42,7 +42,7 @@ public class S3IncrementalUploader(
 			try
 			{
 				var remoteEtag = await GetRemoteEtag(target.S3Key, ctx);
-				var localEtag = await _etagCalculator.CalculateS3ETag(target.LocalPath, ctx);
+				var localEtag = await etagCalculator.CalculateS3ETag(target.LocalPath, ctx);
 
 				if (remoteEtag != null && localEtag == remoteEtag)
 				{

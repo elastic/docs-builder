@@ -1348,7 +1348,7 @@ internal sealed partial class ChangelogCommand(
 		var resolvedConfig = config != null ? NormalizePath(config) : null;
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var service = new ChangelogUploadService(logFactory, configurationContext, _fileSystem);
+		var service = new ChangelogUploadService(logFactory, configurationContext);
 		var args = new ChangelogUploadArguments
 		{
 			ArtifactType = parsedArtifactType,

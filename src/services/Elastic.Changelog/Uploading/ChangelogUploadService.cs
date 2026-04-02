@@ -14,6 +14,7 @@ using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Uploading;
 
@@ -33,13 +34,14 @@ public record ChangelogUploadArguments
 public partial class ChangelogUploadService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null
+	ScopedFileSystem? fileSystem = null,
+	IAmazonS3? s3Client = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogUploadService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
 		: null;
 
 	[GeneratedRegex(@"^[a-zA-Z0-9_-]+$")]
@@ -81,8 +83,10 @@ public partial class ChangelogUploadService(
 
 		_logger.LogInformation("Found {Count} upload target(s) from {Directory}", targets.Count, changelogDir);
 
-		using var s3Client = new AmazonS3Client();
-		var uploader = new S3IncrementalUploader(logFactory, s3Client, _fileSystem, args.S3BucketName);
+		using var defaultClient = s3Client == null ? new AmazonS3Client() : null;
+		var client = s3Client ?? defaultClient!;
+		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
+		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
 		var result = await uploader.Upload(targets, ctx);
 
 		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed", result.Uploaded, result.Skipped, result.Failed);

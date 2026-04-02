@@ -23,7 +23,7 @@ public class S3IncrementalUploaderTests
 	private const string BucketName = "test-bucket";
 
 	private S3IncrementalUploader CreateUploader() =>
-		new(NullLoggerFactory.Instance, _s3Client, _fileSystem, BucketName);
+		new(NullLoggerFactory.Instance, _s3Client, _fileSystem, new S3EtagCalculator(NullLoggerFactory.Instance, _fileSystem), BucketName);
 
 	private string UniquePath(string name) =>
 		_fileSystem.Path.Join(_fileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), name);

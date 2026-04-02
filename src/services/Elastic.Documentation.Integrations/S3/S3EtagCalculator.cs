@@ -19,14 +19,14 @@ public class S3EtagCalculator(ILoggerFactory logFactory, IFileSystem readFileSys
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<S3EtagCalculator>();
 
-	private static readonly ConcurrentDictionary<string, string> EtagCache = new();
+	private readonly ConcurrentDictionary<string, string> _etagCache = new();
 
 	public const long PartSize = 5 * 1024 * 1024; // 5MB — matches TransferUtility default
 
 	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms")]
 	public async Task<string> CalculateS3ETag(string filePath, Cancel ctx = default)
 	{
-		if (EtagCache.TryGetValue(filePath, out var cachedEtag))
+		if (_etagCache.TryGetValue(filePath, out var cachedEtag))
 		{
 			_logger.LogDebug("Using cached ETag for {Path}", filePath);
 			return cachedEtag;
@@ -42,7 +42,7 @@ public class S3EtagCalculator(ILoggerFactory logFactory, IFileSystem readFileSys
 			var bytesRead = await stream.ReadAsync(smallBuffer.AsMemory(0, (int)fileSize), ctx);
 			var hash = MD5.HashData(smallBuffer.AsSpan(0, bytesRead));
 			var etag = Convert.ToHexStringLower(hash);
-			EtagCache[filePath] = etag;
+			_etagCache[filePath] = etag;
 			return etag;
 		}
 
@@ -61,7 +61,7 @@ public class S3EtagCalculator(ILoggerFactory logFactory, IFileSystem readFileSys
 		var concatenatedHashes = partHashes.SelectMany(h => h).ToArray();
 		var finalHash = MD5.HashData(concatenatedHashes);
 		var multipartEtag = $"{Convert.ToHexStringLower(finalHash)}-{parts}";
-		EtagCache[filePath] = multipartEtag;
+		_etagCache[filePath] = multipartEtag;
 		return multipartEtag;
 	}
 }
