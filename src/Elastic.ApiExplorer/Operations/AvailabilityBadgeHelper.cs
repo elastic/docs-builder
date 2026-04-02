@@ -28,8 +28,8 @@ public sealed record AvailabilityBadgeData(
 /// </summary>
 public static partial class AvailabilityBadgeHelper
 {
-	[GeneratedRegex(@"Added in (\d+\.\d+\.\d+)", RegexOptions.IgnoreCase)]
-	private static partial Regex AddedInVersionRegex();
+	[GeneratedRegex(@"(\d+\.\d+\.\d+)")]
+	private static partial Regex SemVersionRegex();
 
 	/// <summary>
 	/// Extracts badge data from an OpenAPI operation's x-state extension.
@@ -81,7 +81,7 @@ public static partial class AvailabilityBadgeHelper
 		if (version is not null && version != AllVersionsSpec.Instance)
 		{
 			var currentVersion = GetCurrentStackVersion(versionsConfig);
-			var isReleased = currentVersion is not null && version.Min <= currentVersion;
+			var isReleased = currentVersion is null || version.Min <= currentVersion;
 
 			if (isReleased)
 			{
@@ -167,7 +167,7 @@ public static partial class AvailabilityBadgeHelper
 
 	private static VersionSpec? ParseVersion(string stateValue)
 	{
-		var match = AddedInVersionRegex().Match(stateValue);
+		var match = SemVersionRegex().Match(stateValue);
 		if (!match.Success)
 			return null;
 
