@@ -713,6 +713,8 @@ Top-level `bundle` fields:
 |---|---|
 | `repo` | Default GitHub repository name applied to all profiles. Falls back to product ID if not set at any level. |
 | `owner` | Default GitHub repository owner applied to all profiles. |
+| `resolve` | When `true`, embeds full changelog entry content in the bundle (same as `--resolve`). Required when `sanitize_private_links` is enabled. |
+| `sanitize_private_links` | When `true`, rewrites PR/issue references that target private repositories (per `assembler.yml` `references`) to quoted `# PRIVATE:` sentinel strings in bundle YAML. Requires `resolve: true` and a non-empty `references` section in `assembler.yml`. Default `false`. Refer to  [Private link sanitization at bundle time](/cli/release/changelog-bundle.md#private-link-sanitization). |
 
 Profile configuration fields in `bundle.profiles`:
 
@@ -725,6 +727,7 @@ Profile configuration fields in `bundle.profiles`:
 | `repo` | Optional. Overrides `bundle.repo` for this profile only. Required when `source: github_release` is used and no `bundle.repo` is set. |
 | `owner` | Optional. Overrides `bundle.owner` for this profile only. |
 | `hide_features` | List of feature IDs to embed in the bundle as hidden. |
+| `sanitize_private_links` | Optional. Overrides `bundle.sanitize_private_links` for this profile. |
 
 Example profile configuration:
 
@@ -1001,7 +1004,7 @@ If you are not creating changelogs when you create your pull requests, consider 
 It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/release/changelog-gh-release.md)
 :::
 
-### Hide features in bundles [changelog-bundle-hide-features]
+### Hide features [changelog-bundle-hide-features]
 
 You can use the `--hide-features` option to embed feature IDs that should be hidden when the bundle is rendered. This is useful for features that are not yet ready for public documentation.
 
@@ -1039,6 +1042,18 @@ When this bundle is rendered (either via the `changelog render` command or the `
 
 :::{note}
 The `--hide-features` option on the `render` command and the `hide-features` field in bundles are **combined**. If you specify `--hide-features` on both the `bundle` and `render` commands, all specified features are hidden. The `{changelog}` directive automatically reads `hide-features` from all loaded bundles and applies them.
+:::
+
+### Hide private links
+
+A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
+
+To comment out the private links in all changelogs in your bundles, refer to [changelog bundle](/cli/release/changelog-bundle.md#private-link-sanitization).
+
+If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you also have the option to configure link visibiblity in the [changelog directive](/syntax/changelog.md) and [changelog render](/cli/release/changelog-render.md) command.
+
+:::{tip}
+You must run the `docs-builder changelog bundle` command with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained) in order to hide the private links.
 :::
 
 ### Amend bundles [changelog-bundle-amend]
@@ -1281,7 +1296,7 @@ docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 The command automatically discovers `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
 If no configuration file is found, the command returns an error with advice to create one or to run from the directory where the file exists.
 
-The `output`, `output_products`, and `hide_features` fields are bundle-specific and are always ignored for removal.
+The `output`, `output_products`, `hide_features`, `sanitize_private_links`, and `resolve` fields are bundle-specific and are always ignored for removal (along with other bundle-only settings that do not affect which changelog files match the filter).
 Which other fields are used depends on the profile type:
 
 - Standard profiles: only the `products` field is used. The `repo` and `owner` fields are ignored (they only affect bundle output metadata).

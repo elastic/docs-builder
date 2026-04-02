@@ -50,7 +50,11 @@ public partial class ConfigurationFileProvider
 		_fileSystem = fileSystem;
 		_assemblyName = typeof(ConfigurationFileProvider).Assembly.GetName().Name!;
 		SkipPrivateRepositories = skipPrivateRepositories;
-		TemporaryDirectory = fileSystem.Directory.CreateTempSubdirectory("docs-builder-config");
+		// Use a unique subdirectory per instance to avoid file-locking collisions when
+		// multiple processes or parallel tests share the same ApplicationData path.
+		var configRuntimeDir = Path.Join(Paths.ApplicationData.FullName, "config-runtime", Guid.NewGuid().ToString("N"));
+		TemporaryDirectory = fileSystem.DirectoryInfo.New(configRuntimeDir);
+		TemporaryDirectory.Create();
 
 		// TODO: This doesn't work as expected if a github actions consumer repo has a `config` directory.
 		// ConfigurationSource = configurationSource ?? (
@@ -301,7 +305,7 @@ public static class ConfigurationFileProviderServiceCollectionExtensions
 	{
 		using var sp = services.BuildServiceProvider();
 		var logFactory = sp.GetRequiredService<ILoggerFactory>();
-		var provider = new ConfigurationFileProvider(logFactory, new FileSystem(), skipPrivateRepositories, configurationSource);
+		var provider = new ConfigurationFileProvider(logFactory, FileSystemFactory.RealRead, skipPrivateRepositories, configurationSource);
 		_ = services.AddSingleton(provider);
 		configure(services, provider);
 		return services;

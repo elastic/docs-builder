@@ -51,7 +51,7 @@ internal sealed class CodexCommands(
 		Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 
 		// Load codex configuration
 		var configPath = fs.Path.GetFullPath(config);
@@ -125,7 +125,7 @@ internal sealed class CodexCommands(
 		Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);
@@ -173,7 +173,7 @@ internal sealed class CodexCommands(
 		Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);
@@ -226,7 +226,7 @@ internal sealed class CodexCommands(
 		string? path = null,
 		Cancel ctx = default)
 	{
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 		var servePath = path ?? fs.Path.Join(
 			Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 

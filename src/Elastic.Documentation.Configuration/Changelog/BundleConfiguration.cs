@@ -39,6 +39,12 @@ public record BundleConfiguration
 	public string? Owner { get; init; }
 
 	/// <summary>
+	/// When true, PR/issue references targeting repositories marked <c>private: true</c> in
+	/// <c>assembler.yml</c> are rewritten to sentinel values at bundle time (requires <see cref="Resolve"/>).
+	/// </summary>
+	public bool SanitizePrivateLinks { get; init; }
+
+	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
@@ -98,4 +104,9 @@ public record BundleProfile
 	/// Mutually exclusive with <see cref="Products"/>.
 	/// </summary>
 	public string? Source { get; init; }
+
+	/// <summary>
+	/// When set, overrides <see cref="BundleConfiguration.SanitizePrivateLinks"/> for this profile.
+	/// </summary>
+	public bool? SanitizePrivateLinks { get; init; }
 }

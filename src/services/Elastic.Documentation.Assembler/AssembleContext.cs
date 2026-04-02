@@ -10,13 +10,14 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler;
 
 public class AssembleContext : IDocumentationConfigurationContext
 {
-	public IFileSystem ReadFileSystem { get; }
-	public IFileSystem WriteFileSystem { get; }
+	public ScopedFileSystem ReadFileSystem { get; }
+	public ScopedFileSystem WriteFileSystem { get; }
 
 	public IDiagnosticsCollector Collector { get; }
 
@@ -61,8 +62,8 @@ public class AssembleContext : IDocumentationConfigurationContext
 		IConfigurationContext configurationContext,
 		string environment,
 		IDiagnosticsCollector collector,
-		IFileSystem readFileSystem,
-		IFileSystem writeFileSystem,
+		ScopedFileSystem readFileSystem,
+		ScopedFileSystem writeFileSystem,
 		string? checkoutDirectory,
 		string? output
 	)
@@ -88,10 +89,12 @@ public class AssembleContext : IDocumentationConfigurationContext
 		Endpoints.Environment = environment;
 
 		var contentSource = Environment.ContentSource.ToStringFast(true);
-		var defaultCheckoutDirectory = Path.Join(Paths.GitCommonRoot.FullName, ".artifacts", "checkouts", contentSource);
-		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
+		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "checkouts", contentSource);
+		CheckoutDirectory = checkoutDirectory is null
+			? FileSystemFactory.AppData.DirectoryInfo.New(defaultCheckoutDirectory)
+			: ReadFileSystem.DirectoryInfo.New(checkoutDirectory);
 		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		OutputDirectory = ReadFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
+		OutputDirectory = WriteFileSystem.DirectoryInfo.New(output ?? defaultOutputDirectory);
 
 		// Calculate the output directory with path prefix once
 		var pathPrefix = Environment.PathPrefix;
