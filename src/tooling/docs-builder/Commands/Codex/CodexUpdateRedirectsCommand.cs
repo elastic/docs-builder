@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using ConsoleAppFramework;
 using Elastic.Documentation.Assembler.Deploying;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -34,7 +35,7 @@ internal sealed class CodexUpdateRedirectsCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);
 

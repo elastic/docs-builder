@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
@@ -77,7 +78,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		string? config = null
 	)
 	{
-		config ??= "/tmp/config/changelog.yml";
+		config ??= Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		return new()
 		{
 			Config = config,
@@ -95,8 +96,9 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		};
 	}
 
-	private async Task WriteMinimalConfig(string configPath = "/tmp/config/changelog.yml", string? content = null)
+	private async Task WriteMinimalConfig(string? configPath = null, string? content = null)
 	{
+		configPath ??= Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		var dir = FileSystem.Path.GetDirectoryName(configPath)!;
 		FileSystem.Directory.CreateDirectory(dir);
 		await FileSystem.File.WriteAllTextAsync(configPath, content ?? MinimalConfig);
@@ -164,8 +166,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_ManuallyEdited_PrFilename_ReturnsManuallyEdited()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/42.yaml", "title: test", TestContext.Current.CancellationToken);
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/42.yaml"), "title: test", TestContext.Current.CancellationToken);
 
 		A.CallTo(() => _mockGitHub.FetchLastFileCommitAuthorAsync(
 				"elastic", "test-repo", "docs/changelog/42.yaml", "feature/test", A<CancellationToken>._))
@@ -183,8 +185,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_ManuallyEdited_TimestampFilename_ReturnsManuallyEdited()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/1735689600-fix-something.yaml",
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/1735689600-fix-something.yaml"),
 			"title: Fix something\nprs:\n  - \"42\"", TestContext.Current.CancellationToken);
 
 		A.CallTo(() => _mockGitHub.FetchLastFileCommitAuthorAsync(
@@ -247,9 +249,9 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_NoTypeLabel_WithProductConfig_OutputsProductLabelTable()
 	{
-		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
-		var args = DefaultArgs(prLabels: ["unrelated-label"], config: "/tmp/config/changelog.yml");
+		var args = DefaultArgs(prLabels: ["unrelated-label"], config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"));
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
@@ -262,9 +264,9 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_NoTypeLabel_WithProductLabels_DoesNotOutputProductLabelTable()
 	{
-		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
-		var args = DefaultArgs(prLabels: ["@Product:ECH"], config: "/tmp/config/changelog.yml");
+		var args = DefaultArgs(prLabels: ["@Product:ECH"], config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"));
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
@@ -378,8 +380,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	public async Task EvaluatePr_ExistingTimestampFile_OutputsFilename()
 	{
 		await WriteMinimalConfig();
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/1735689600-fix-something.yaml",
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/1735689600-fix-something.yaml"),
 			"title: Fix something\nprs:\n  - \"42\"", TestContext.Current.CancellationToken);
 
 		var service = CreateService();
@@ -396,8 +398,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	public async Task EvaluatePr_ExistingPrFile_OutputsFilename()
 	{
 		await WriteMinimalConfig();
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/42.yaml", "title: Fix something", TestContext.Current.CancellationToken);
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/42.yaml"), "title: Fix something", TestContext.Current.CancellationToken);
 
 		var service = CreateService();
 		var args = DefaultArgs();
@@ -412,11 +414,12 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public void FindExistingChangelog_PrFilename_FindsByName()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		FileSystem.File.WriteAllText("docs/changelog/42.yaml", "title: test");
+		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
+		FileSystem.Directory.CreateDirectory(dir);
+		FileSystem.File.WriteAllText(Path.Join(dir, "42.yaml"), "title: test");
 
 		var service = CreateService();
-		var result = service.FindExistingChangelog("docs/changelog", 42);
+		var result = service.FindExistingChangelog(dir, 42);
 
 		result.Should().Be("42.yaml");
 	}
@@ -424,12 +427,13 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public void FindExistingChangelog_TimestampFilename_FindsByContent()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		FileSystem.File.WriteAllText("docs/changelog/1735689600-fix.yaml",
+		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
+		FileSystem.Directory.CreateDirectory(dir);
+		FileSystem.File.WriteAllText(Path.Join(dir, "1735689600-fix.yaml"),
 			"title: Fix\nprs:\n  - \"42\"");
 
 		var service = CreateService();
-		var result = service.FindExistingChangelog("docs/changelog", 42);
+		var result = service.FindExistingChangelog(dir, 42);
 
 		result.Should().Be("1735689600-fix.yaml");
 	}
@@ -437,12 +441,13 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public void FindExistingChangelog_GitHubUrl_FindsByContent()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		FileSystem.File.WriteAllText("docs/changelog/1735689600-fix.yaml",
+		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
+		FileSystem.Directory.CreateDirectory(dir);
+		FileSystem.File.WriteAllText(Path.Join(dir, "1735689600-fix.yaml"),
 			"title: Fix\nprs:\n  - \"https://github.com/elastic/test-repo/pull/42\"");
 
 		var service = CreateService();
-		var result = service.FindExistingChangelog("docs/changelog", 42);
+		var result = service.FindExistingChangelog(dir, 42);
 
 		result.Should().Be("1735689600-fix.yaml");
 	}
@@ -450,11 +455,12 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public void FindExistingChangelog_NoMatch_ReturnsNull()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		FileSystem.File.WriteAllText("docs/changelog/99.yaml", "title: other PR");
+		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
+		FileSystem.Directory.CreateDirectory(dir);
+		FileSystem.File.WriteAllText(Path.Join(dir, "99.yaml"), "title: other PR");
 
 		var service = CreateService();
-		var result = service.FindExistingChangelog("docs/changelog", 42);
+		var result = service.FindExistingChangelog(dir, 42);
 
 		result.Should().BeNull();
 	}
@@ -463,7 +469,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	public void FindExistingChangelog_DirectoryMissing_ReturnsNull()
 	{
 		var service = CreateService();
-		var result = service.FindExistingChangelog("nonexistent/path", 42);
+		var result = service.FindExistingChangelog(Path.Join(Paths.WorkingDirectoryRoot.FullName, "nonexistent/path"), 42);
 
 		result.Should().BeNull();
 	}
@@ -481,11 +487,11 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_WithProductLabels_OutputsProductsAndNoTable()
 	{
-		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
 		var args = DefaultArgs(
 			prLabels: [">enhancement", "@Product:ECH", "@Product:ESS"],
-			config: "/tmp/config/changelog.yml"
+			config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml")
 		);
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
@@ -500,11 +506,11 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_WithoutProductLabels_OutputsProductLabelTable()
 	{
-		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
 		var args = DefaultArgs(
 			prLabels: ["type:feature"],
-			config: "/tmp/config/changelog.yml"
+			config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml")
 		);
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);

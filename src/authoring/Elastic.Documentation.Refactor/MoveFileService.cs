@@ -9,6 +9,7 @@ using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Services;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Refactor;
 
@@ -23,7 +24,7 @@ public class MoveFileService(
 		string target,
 		bool? dryRun,
 		string? path,
-		IFileSystem fs,
+		ScopedFileSystem fs,
 		Cancel ctx
 	)
 	{

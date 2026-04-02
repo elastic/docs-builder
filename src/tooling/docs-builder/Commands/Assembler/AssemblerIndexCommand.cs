@@ -88,9 +88,10 @@ internal sealed class AssemblerIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var readFs = FileSystemFactory.RealRead;
+		var writeFs = FileSystemFactory.RealWrite;
 		var service = new AssemblerIndexService(logFactory, configuration, configurationContext, githubActionsService, environmentVariables);
-		var state = (fs,
+		var state = (readFs, writeFs,
 				// endpoint options
 				endpoint, environment, apiKey, username, password,
 				// inference options
@@ -103,7 +104,7 @@ internal sealed class AssemblerIndexCommand(
 				disableSslVerification, certificateFingerprint, certificatePath, certificateNotRoot
 			);
 		serviceInvoker.AddCommand(service, state,
-			static async (s, collector, state, ctx) => await s.Index(collector, state.fs,
+			static async (s, collector, state, ctx) => await s.Index(collector, state.readFs, state.writeFs,
 				// endpoint options
 				state.endpoint, state.environment, state.apiKey, state.username, state.password,
 				// inference options

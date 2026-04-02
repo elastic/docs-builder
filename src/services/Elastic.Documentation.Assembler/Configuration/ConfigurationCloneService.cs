@@ -15,7 +15,7 @@ namespace Elastic.Documentation.Assembler.Configuration;
 public class ConfigurationCloneService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration assemblyConfiguration,
-	FileSystem fs
+	IFileSystem fs
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ConfigurationCloneService>();

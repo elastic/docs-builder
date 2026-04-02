@@ -9,15 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj"/>
+    <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
+    <PackageReference Include="Nullean.ScopedFileSystem" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
     <PackageReference Include="Samboy063.Tomlet" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
-    <PackageReference Include="YamlDotNet"/>
+    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>
