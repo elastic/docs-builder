@@ -382,10 +382,6 @@ nav:
         page: docs-content://reference/ingestion-tools/index.md
         children:
         - toc: opentelemetry://reference
-          children:
-          - toc: opentelemetry://reference/motlp
-          - toc: opentelemetry://reference/edot-cloud-forwarder
-          - toc: elastic-agent://reference/edot-collector
         - group: EDOT SDKs
           page: opentelemetry://reference/edot-sdks/index.md
           children:
