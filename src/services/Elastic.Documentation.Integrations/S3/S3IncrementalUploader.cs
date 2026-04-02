@@ -55,7 +55,7 @@ public class S3IncrementalUploader(
 				await PutObject(target, ctx);
 				uploaded++;
 			}
-			catch (Exception ex)
+			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
 				_logger.LogError(ex, "Failed to upload {LocalPath} → s3://{Bucket}/{S3Key}", target.LocalPath, bucketName, target.S3Key);
 				failed++;
