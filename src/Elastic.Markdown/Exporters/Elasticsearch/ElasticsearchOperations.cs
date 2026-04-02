@@ -162,6 +162,21 @@ public class ElasticsearchOperations(
 	}
 
 	/// <summary>
+	/// Executes a reindex operation and waits for completion.
+	/// </summary>
+	public async Task ReindexAsync(
+		string sourceIndex,
+		PostData request,
+		string destIndex,
+		CancellationToken ct)
+	{
+		var url = "/_reindex?wait_for_completion=false";
+		var taskId = await PostAsyncTaskAsync(url, request, $"POST _reindex ({sourceIndex} => {destIndex})", ct);
+		if (taskId is not null)
+			await PollTaskUntilCompleteAsync(taskId, "_reindex", sourceIndex, destIndex, ct);
+	}
+
+	/// <summary>
 	/// Executes an update_by_query operation and waits for completion.
 	/// </summary>
 	public async Task UpdateByQueryAsync(

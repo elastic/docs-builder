@@ -45,8 +45,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
 
-	// Content date tracking - persistent lookup for content_last_updated
-	private readonly ContentDateLookup _contentDateLookup;
+	// Content date tracking - enrich policy + pipeline for content_last_updated
+	private readonly ContentDateEnrichment _contentDateEnrichment;
 
 	// Per-channel running totals for progress logging
 	private int _primaryIndexed;
@@ -75,7 +75,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_transport = ElasticsearchTransportFactory.Create(es);
 		_operations = new ElasticsearchOperations(_transport, _logger, collector);
-		_contentDateLookup = new ContentDateLookup(_transport, _logger, endpoints.BuildType, endpoints.Environment);
+		_contentDateEnrichment = new ContentDateEnrichment(_transport, _operations, _logger, endpoints.BuildType, endpoints.Environment);
 
 		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
 		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
@@ -91,13 +91,21 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument
 			.CreateContext(type: _buildType, env: endpoints.Environment) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			IndexSettings = new Dictionary<string, string>
+			{
+				["index.default_pipeline"] = _contentDateEnrichment.PipelineName
+			}
 		};
 
 		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic
 			.CreateContext(type: _buildType, env: endpoints.Environment) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			IndexSettings = new Dictionary<string, string>
+			{
+				["index.final_pipeline"] = _contentDateEnrichment.PipelineName
+			}
 		};
 
 		if (es.EnableAiEnrichment)
@@ -109,10 +117,11 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 				"AI enrichment enabled — pipeline: {Pipeline}, policy: {Policy}, lookup: {Lookup}",
 				infra.PipelineName, infra.EnrichPolicyName, infra.LookupIndexName);
 
-			_semanticTypeContext = _semanticTypeContext with
+			var semanticSettings = new Dictionary<string, string>(_semanticTypeContext.IndexSettings ?? new Dictionary<string, string>())
 			{
-				IndexSettings = new Dictionary<string, string> { ["index.default_pipeline"] = infra.PipelineName }
+				["index.default_pipeline"] = infra.PipelineName
 			};
+			_semanticTypeContext = _semanticTypeContext with { IndexSettings = semanticSettings };
 		}
 		else
 		{
@@ -141,6 +150,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		};
 		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
 		{
+			_logger.LogInformation("Initializing content date enrichment infrastructure...");
+			await _contentDateEnrichment.InitializeAsync(ct);
+			_logger.LogInformation("Content date enrichment infrastructure ready");
+
 			if (_aiEnrichment is not null)
 			{
 				_logger.LogInformation("Initializing AI enrichment infrastructure...");
@@ -196,14 +209,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	/// <inheritdoc />
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
-		// Bootstrap lookup first (creates index if needed), then load in parallel with orchestrator start
-		await _contentDateLookup.BootstrapAsync(ctx);
-
-		var loadTask = _contentDateLookup.LoadAsync(ctx);
-		var orchestratorTask = _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
-
-		await Task.WhenAll(loadTask, orchestratorTask);
-		var orchestratorContext = orchestratorTask.Result;
+		var orchestratorContext = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
 
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
@@ -214,7 +220,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	public async ValueTask StopAsync(Cancel ctx = default)
 	{
 		_ = await _orchestrator.CompleteAsync(null, ctx);
-		await _contentDateLookup.SaveAsync(ctx);
+		await _contentDateEnrichment.SyncLookupIndexAsync(_lexicalTypeContext.IndexStrategy!.WriteTarget!, ctx);
 	}
 
 	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
