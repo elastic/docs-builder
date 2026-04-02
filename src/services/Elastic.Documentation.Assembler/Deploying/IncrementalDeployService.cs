@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Actions.Core.Services;
 using Amazon.S3;
 using Amazon.S3.Transfer;
@@ -22,14 +21,15 @@ public class IncrementalDeployService(
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	ScopedFileSystem fileSystem
+	ScopedFileSystem readFileSystem,
+	ScopedFileSystem writeFileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IncrementalDeployService>();
 
 	public async Task<bool> Plan(IDiagnosticsCollector collector, string environment, string s3BucketName, string @out, float? deleteThreshold, Cancel ctx)
 	{
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem, fileSystem, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, readFileSystem, writeFileSystem, null, null);
 		var s3Client = new AmazonS3Client();
 		var planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, assembleContext);
 		var plan = await planner.Plan(deleteThreshold, ctx);
@@ -52,7 +52,7 @@ public class IncrementalDeployService(
 		if (!string.IsNullOrEmpty(@out))
 		{
 			var output = SyncPlan.Serialize(plan);
-			await using var fileStream = fileSystem.File.Create(@out);
+			await using var fileStream = writeFileSystem.File.Create(@out);
 			await using var writer = new StreamWriter(fileStream);
 			await writer.WriteAsync(output);
 			_logger.LogInformation("Plan written to {OutputFile}", @out);
@@ -63,19 +63,19 @@ public class IncrementalDeployService(
 
 	public async Task<bool> Apply(IDiagnosticsCollector collector, string environment, string s3BucketName, string planFile, Cancel ctx)
 	{
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem, fileSystem, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, readFileSystem, writeFileSystem, null, null);
 		var s3Client = new AmazonS3Client();
 		var transferUtility = new TransferUtility(s3Client, new TransferUtilityConfig
 		{
 			ConcurrentServiceRequests = Environment.ProcessorCount * 2,
 			MinSizeBeforePartUpload = S3EtagCalculator.PartSize
 		});
-		if (!fileSystem.File.Exists(planFile))
+		if (!readFileSystem.File.Exists(planFile))
 		{
 			collector.EmitError(planFile, "Plan file does not exist.");
 			return false;
 		}
-		var planJson = await fileSystem.File.ReadAllTextAsync(planFile, ctx);
+		var planJson = await readFileSystem.File.ReadAllTextAsync(planFile, ctx);
 		var plan = SyncPlan.Deserialize(planJson);
 		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
 		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);
