@@ -3,7 +3,7 @@
 Amend a bundle with additional changelog entries.
 Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
 
-To create a bundle, use [](/cli/release/changelog-bundle.md).
+To create a bundle, use [](/cli/changelog/bundle.md).
 For details and examples, go to [](/contribute/changelog.md).
 
 ## Usage

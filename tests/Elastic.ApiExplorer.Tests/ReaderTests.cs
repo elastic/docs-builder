@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -19,7 +20,7 @@ public class ReaderTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, new FileSystem(), configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.RealRead, configurationContext);
 
 		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
 
@@ -34,7 +35,7 @@ public class ReaderTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, new FileSystem(), configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.RealRead, configurationContext);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
 

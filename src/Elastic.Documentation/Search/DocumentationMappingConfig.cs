@@ -90,9 +90,6 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 
 public class SemanticConfig : IConfigureElasticsearch<DocumentationDocument>
 {
-	private const string ElserInferenceId = ".elser-2-elastic";
-	private const string JinaInferenceId = ".jina-embeddings-v5-text-small";
-
 	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => analysis;
 
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
@@ -104,18 +101,12 @@ public class SemanticConfig : IConfigureElasticsearch<DocumentationDocument>
 				.SearchAnalyzer("synonyms_analyzer")
 				.TermVector("with_positions_offsets")
 			)
-			// ELSER sparse embeddings
-			.AddField("title.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("abstract.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_questions.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			.AddField("ai_use_cases.semantic_text", f => f.SemanticText().InferenceId(ElserInferenceId))
-			// Jina v5 dense embeddings
-			.AddField("title.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("abstract.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_rag_optimized_summary.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_questions.jina", f => f.SemanticText().InferenceId(JinaInferenceId))
-			.AddField("ai_use_cases.jina", f => f.SemanticText().InferenceId(JinaInferenceId));
+			// Semantic text fields — uses platform default inference
+			.AddField("title.semantic_text", f => f.SemanticText())
+			.AddField("abstract.semantic_text", f => f.SemanticText())
+			.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText())
+			.AddField("ai_questions.semantic_text", f => f.SemanticText())
+			.AddField("ai_use_cases.semantic_text", f => f.SemanticText());
 }
 
 /// <summary>

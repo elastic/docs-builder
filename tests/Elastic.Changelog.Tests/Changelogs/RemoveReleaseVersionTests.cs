@@ -6,6 +6,7 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 
@@ -25,7 +26,7 @@ public class RemoveReleaseVersionTests : ChangelogTestBase
 	public RemoveReleaseVersionTests(ITestOutputHelper output) : base(output)
 	{
 		_removeService = new ChangelogRemoveService(LoggerFactory, ConfigurationContext, FileSystem);
-		_changelogDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		_changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(_changelogDir);
 	}
 

@@ -7,6 +7,9 @@ using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
@@ -75,7 +78,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		string? config = null
 	)
 	{
-		config ??= "/tmp/config/changelog.yml";
+		config ??= Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		return new()
 		{
 			Config = config,
@@ -93,8 +96,9 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		};
 	}
 
-	private async Task WriteMinimalConfig(string configPath = "/tmp/config/changelog.yml", string? content = null)
+	private async Task WriteMinimalConfig(string? configPath = null, string? content = null)
 	{
+		configPath ??= Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		var dir = FileSystem.Path.GetDirectoryName(configPath)!;
 		FileSystem.Directory.CreateDirectory(dir);
 		await FileSystem.File.WriteAllTextAsync(configPath, content ?? MinimalConfig);
@@ -162,8 +166,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_ManuallyEdited_PrFilename_ReturnsManuallyEdited()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/42.yaml", "title: test", TestContext.Current.CancellationToken);
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/42.yaml"), "title: test", TestContext.Current.CancellationToken);
 
 		A.CallTo(() => _mockGitHub.FetchLastFileCommitAuthorAsync(
 				"elastic", "test-repo", "docs/changelog/42.yaml", "feature/test", A<CancellationToken>._))
@@ -181,8 +185,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_ManuallyEdited_TimestampFilename_ReturnsManuallyEdited()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/1735689600-fix-something.yaml",
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/1735689600-fix-something.yaml"),
 			"title: Fix something\nprs:\n  - \"42\"", TestContext.Current.CancellationToken);
 
 		A.CallTo(() => _mockGitHub.FetchLastFileCommitAuthorAsync(
@@ -245,9 +249,9 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_NoTypeLabel_WithProductConfig_OutputsProductLabelTable()
 	{
-		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
-		var args = DefaultArgs(prLabels: ["unrelated-label"], config: "/tmp/config/changelog.yml");
+		var args = DefaultArgs(prLabels: ["unrelated-label"], config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"));
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
@@ -260,9 +264,9 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_NoTypeLabel_WithProductLabels_DoesNotOutputProductLabelTable()
 	{
-		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
-		var args = DefaultArgs(prLabels: ["@Product:ECH"], config: "/tmp/config/changelog.yml");
+		var args = DefaultArgs(prLabels: ["@Product:ECH"], config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"));
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
@@ -376,8 +380,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	public async Task EvaluatePr_ExistingTimestampFile_OutputsFilename()
 	{
 		await WriteMinimalConfig();
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/1735689600-fix-something.yaml",
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/1735689600-fix-something.yaml"),
 			"title: Fix something\nprs:\n  - \"42\"", TestContext.Current.CancellationToken);
 
 		var service = CreateService();
@@ -394,8 +398,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	public async Task EvaluatePr_ExistingPrFile_OutputsFilename()
 	{
 		await WriteMinimalConfig();
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		await FileSystem.File.WriteAllTextAsync("docs/changelog/42.yaml", "title: Fix something", TestContext.Current.CancellationToken);
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/42.yaml"), "title: Fix something", TestContext.Current.CancellationToken);
 
 		var service = CreateService();
 		var args = DefaultArgs();
@@ -410,11 +414,12 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public void FindExistingChangelog_PrFilename_FindsByName()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		FileSystem.File.WriteAllText("docs/changelog/42.yaml", "title: test");
+		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
+		FileSystem.Directory.CreateDirectory(dir);
+		FileSystem.File.WriteAllText(Path.Join(dir, "42.yaml"), "title: test");
 
 		var service = CreateService();
-		var result = service.FindExistingChangelog("docs/changelog", 42);
+		var result = service.FindExistingChangelog(dir, 42);
 
 		result.Should().Be("42.yaml");
 	}
@@ -422,12 +427,13 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public void FindExistingChangelog_TimestampFilename_FindsByContent()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		FileSystem.File.WriteAllText("docs/changelog/1735689600-fix.yaml",
+		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
+		FileSystem.Directory.CreateDirectory(dir);
+		FileSystem.File.WriteAllText(Path.Join(dir, "1735689600-fix.yaml"),
 			"title: Fix\nprs:\n  - \"42\"");
 
 		var service = CreateService();
-		var result = service.FindExistingChangelog("docs/changelog", 42);
+		var result = service.FindExistingChangelog(dir, 42);
 
 		result.Should().Be("1735689600-fix.yaml");
 	}
@@ -435,12 +441,13 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public void FindExistingChangelog_GitHubUrl_FindsByContent()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		FileSystem.File.WriteAllText("docs/changelog/1735689600-fix.yaml",
+		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
+		FileSystem.Directory.CreateDirectory(dir);
+		FileSystem.File.WriteAllText(Path.Join(dir, "1735689600-fix.yaml"),
 			"title: Fix\nprs:\n  - \"https://github.com/elastic/test-repo/pull/42\"");
 
 		var service = CreateService();
-		var result = service.FindExistingChangelog("docs/changelog", 42);
+		var result = service.FindExistingChangelog(dir, 42);
 
 		result.Should().Be("1735689600-fix.yaml");
 	}
@@ -448,11 +455,12 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public void FindExistingChangelog_NoMatch_ReturnsNull()
 	{
-		FileSystem.Directory.CreateDirectory("docs/changelog");
-		FileSystem.File.WriteAllText("docs/changelog/99.yaml", "title: other PR");
+		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
+		FileSystem.Directory.CreateDirectory(dir);
+		FileSystem.File.WriteAllText(Path.Join(dir, "99.yaml"), "title: other PR");
 
 		var service = CreateService();
-		var result = service.FindExistingChangelog("docs/changelog", 42);
+		var result = service.FindExistingChangelog(dir, 42);
 
 		result.Should().BeNull();
 	}
@@ -461,7 +469,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	public void FindExistingChangelog_DirectoryMissing_ReturnsNull()
 	{
 		var service = CreateService();
-		var result = service.FindExistingChangelog("nonexistent/path", 42);
+		var result = service.FindExistingChangelog(Path.Join(Paths.WorkingDirectoryRoot.FullName, "nonexistent/path"), 42);
 
 		result.Should().BeNull();
 	}
@@ -479,11 +487,11 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_WithProductLabels_OutputsProductsAndNoTable()
 	{
-		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
 		var args = DefaultArgs(
 			prLabels: [">enhancement", "@Product:ECH", "@Product:ESS"],
-			config: "/tmp/config/changelog.yml"
+			config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml")
 		);
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
@@ -498,11 +506,11 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	[Fact]
 	public async Task EvaluatePr_WithoutProductLabels_OutputsProductLabelTable()
 	{
-		await WriteMinimalConfig("/tmp/config/changelog.yml", ConfigWithProducts);
+		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
 		var args = DefaultArgs(
 			prLabels: ["type:feature"],
-			config: "/tmp/config/changelog.yml"
+			config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml")
 		);
 
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
@@ -631,5 +639,175 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		result.Should().BeTrue();
 		VerifyOutputSet("title", "New aggregation pipeline support");
+	}
+
+	// --- CollectExcludeLabels unit tests ---
+
+	[Fact]
+	public void CollectExcludeLabels_Null_ReturnsNull() =>
+		ChangelogPrEvaluationService.CollectExcludeLabels(null).Should().BeNull();
+
+	[Fact]
+	public void CollectExcludeLabels_NoLabels_ReturnsNull() =>
+		ChangelogPrEvaluationService.CollectExcludeLabels(new CreateRules()).Should().BeNull();
+
+	[Fact]
+	public void CollectExcludeLabels_GlobalExcludeLabels_ReturnsCommaSeparated()
+	{
+		var rules = new CreateRules
+		{
+			Mode = FieldMode.Exclude,
+			Labels = [">non-issue", ">test"]
+		};
+
+		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
+
+		result.Should().NotBeNull();
+		result.Split(',').Should().BeEquivalentTo([">non-issue", ">test"]);
+	}
+
+	[Fact]
+	public void CollectExcludeLabels_IncludeMode_ReturnsNull()
+	{
+		var rules = new CreateRules
+		{
+			Mode = FieldMode.Include,
+			Labels = [">non-issue"]
+		};
+
+		ChangelogPrEvaluationService.CollectExcludeLabels(rules).Should().BeNull();
+	}
+
+	[Fact]
+	public void CollectExcludeLabels_PerProductExcludeOnly_ReturnsLabels()
+	{
+		var rules = new CreateRules
+		{
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["cloud-hosted"] = new() { Mode = FieldMode.Exclude, Labels = [">skip-ech"] },
+				["cloud-serverless"] = new() { Mode = FieldMode.Exclude, Labels = [">skip-ess"] }
+			}
+		};
+
+		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
+
+		result.Should().NotBeNull();
+		result.Split(',').Should().BeEquivalentTo([">skip-ech", ">skip-ess"]);
+	}
+
+	[Fact]
+	public void CollectExcludeLabels_GlobalAndPerProduct_MergesUniqueLabels()
+	{
+		var rules = new CreateRules
+		{
+			Mode = FieldMode.Exclude,
+			Labels = [">skip-all", ">shared"],
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["cloud-hosted"] = new() { Mode = FieldMode.Exclude, Labels = [">shared", ">skip-ech"] }
+			}
+		};
+
+		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
+
+		result.Should().NotBeNull();
+		result.Split(',').Should().BeEquivalentTo([">skip-all", ">shared", ">skip-ech"]);
+	}
+
+	[Fact]
+	public void CollectExcludeLabels_PerProductIncludeMode_IgnoresIncludeProducts()
+	{
+		var rules = new CreateRules
+		{
+			Mode = FieldMode.Exclude,
+			Labels = [">global"],
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["cloud-hosted"] = new() { Mode = FieldMode.Include, Labels = [">include-only"] }
+			}
+		};
+
+		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
+
+		result.Should().NotBeNull();
+		result.Split(',').Should().BeEquivalentTo([">global"]);
+	}
+
+	// --- skip-labels output integration tests ---
+
+	private const string ConfigWithExcludeRules = """
+		pivot:
+		  types:
+		    feature: "type:feature"
+		    bug-fix: "type:bug"
+		    breaking-change: "type:breaking"
+		    enhancement:
+		    deprecation:
+		    docs:
+		    known-issue:
+		    other:
+		    regression:
+		    security:
+		rules:
+		  create:
+		    exclude: ">non-issue, >test"
+		""";
+
+	[Fact]
+	public async Task EvaluatePr_WithExcludeRules_AllBlocked_OutputsSkipLabels()
+	{
+		await WriteMinimalConfig(content: ConfigWithExcludeRules);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: [">non-issue"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "skipped");
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">non-issue"))).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">test"))).MustHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_WithExcludeRules_NoLabel_OutputsSkipLabels()
+	{
+		await WriteMinimalConfig(content: ConfigWithExcludeRules);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["unrelated-label"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">non-issue"))).MustHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_WithoutExcludeRules_DoesNotOutputSkipLabels()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs();
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_HappyPath_WithExcludeRules_DoesNotOutputSkipLabels()
+	{
+		await WriteMinimalConfig(content: ConfigWithExcludeRules);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:feature"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>._)).MustNotHaveHappened();
 	}
 }

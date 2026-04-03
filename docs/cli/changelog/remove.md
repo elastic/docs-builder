@@ -4,7 +4,7 @@ Remove changelog YAML files from a directory.
 
 You can use either profile-based or command-option-based removal:
 
-- **Profile-based**: `docs-builder changelog remove <profile> <version|promotion-report>` — uses the same `bundle.profiles` configuration as [`changelog bundle`](/cli/release/changelog-bundle.md) to determine which changelogs to remove.
+- **Profile-based**: `docs-builder changelog remove <profile> <version|promotion-report>` — uses the same `bundle.profiles` configuration as [`changelog bundle`](/cli/changelog/bundle.md) to determine which changelogs to remove.
 - **Option-based**: `docs-builder changelog remove --products "..." ` (or `--prs`, `--issues`, `--all`, `--release-version`, `--report`) — specify the filter directly.
 
 These modes are mutually exclusive. You can't combine a profile argument with the command filter options.
@@ -31,7 +31,7 @@ These arguments apply to profile-based removal:
 `[1] <string?>`
 :   Version number, promotion report URL/path, or URL list file.
 :   For example, `9.2.0`, `https://buildkite.../promotion-report.html`, or `/path/to/prs.txt`.
-:   See [Profile argument types](/cli/release/changelog-bundle.md#profile-argument-types) for details on accepted formats.
+:   See [Profile argument types](/cli/changelog/bundle.md#profile-argument-types) for details on accepted formats.
 
 `[2] <string?>`
 :   Optional: Promotion report URL/path or URL list file when the second argument is a version string.
@@ -150,7 +150,7 @@ You can use `--release-version` to fetch pull request references directly from G
 Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 :::
 
-This mirrors the equivalent [`--release-version` option on `changelog bundle`](/cli/release/changelog-bundle.md#changelog-bundle-release-version) and is useful when cleaning up after a release-based bundle.
+This mirrors the equivalent [`--release-version` option on `changelog bundle`](/cli/changelog/bundle.md#changelog-bundle-release-version) and is useful when cleaning up after a release-based bundle.
 For example:
 
 ```sh
@@ -223,7 +223,7 @@ You can remove the matching changelogs with:
 docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 ```
 
-This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include. The lifecycle is inferred from the version string: `9.2.0` → `ga`, `9.2.0-beta.1` → `beta`. Refer to [Lifecycle inference for standard profiles](/cli/release/changelog-bundle.md#changelog-bundle-standard-profile-lifecycle) for details.
+This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include. The lifecycle is inferred from the version string: `9.2.0` → `ga`, `9.2.0-beta.1` → `beta`. Refer to [Lifecycle inference for standard profiles](/cli/changelog/bundle.md#changelog-bundle-standard-profile-lifecycle) for details.
 
 ### Remove by report or URL list
 
@@ -283,4 +283,4 @@ docs-builder changelog remove agent-gh-release 1.34.0 --dry-run
 The `repo` and `owner` used to identify the release follow the same precedence as bundling: profile-level `repo`/`owner` override `bundle.repo`/`bundle.owner`, which in turn override the default owner `elastic`.
 :::
 
-For the full list of profile configuration fields, go to [Profile configuration fields](/cli/release/changelog-bundle.md#changelog-bundle-profile-config).
+For the full list of profile configuration fields, go to [Profile configuration fields](/cli/changelog/bundle.md#changelog-bundle-profile-config).

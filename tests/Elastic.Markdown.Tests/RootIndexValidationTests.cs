@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests;
 
@@ -33,7 +34,7 @@ public class RootIndexValidationTests(ITestOutputHelper output)
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var context = new BuildContext(collector, fileSystem, configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext);
 		_ = new DocumentationSet(context, logger, new TestCrossLinkResolver());
 
 		collector.Errors.Should().BeGreaterThan(0);
@@ -64,7 +65,7 @@ public class RootIndexValidationTests(ITestOutputHelper output)
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var context = new BuildContext(collector, fileSystem, configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext);
 		_ = new DocumentationSet(context, logger, new TestCrossLinkResolver());
 
 		collector.Diagnostics
@@ -92,7 +93,7 @@ public class RootIndexValidationTests(ITestOutputHelper output)
 		var collector = new TestDiagnosticsCollector(output);
 		_ = collector.StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var context = new BuildContext(collector, fileSystem, configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext);
 		_ = new DocumentationSet(context, logger, new TestCrossLinkResolver());
 
 		collector.Diagnostics
