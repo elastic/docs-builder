@@ -212,9 +212,13 @@ bundle:
   output_directory: docs/releases
   # Whether to resolve (copy contents) by default
   resolve: true
-  # When true, PR/issue links to repos marked private in assembler.yml are rewritten in bundle output
-  # (requires resolve: true). Option-based: --sanitize-private-links / --no-sanitize-private-links.
-  sanitize_private_links: false
+  # PR/issue link allowlist: when set (including []), only links to these owner/repo pairs are kept
+  # in bundle output; others are rewritten to '# PRIVATE:' sentinels (requires resolve: true).
+  # When omitted, no link filtering is applied.
+  # Add your repository and any others whose PR/issue links should appear in published docs.
+  link_allow_repos:
+    - elastic/elasticsearch
+    - elastic/kibana
   # Optional: default GitHub repo name applied to all profiles that do not specify their own.
   # Used by the {changelog} directive to generate correct PR/issue links when the product ID
   # differs from the GitHub repository name. Can be overridden per profile.
@@ -238,9 +242,6 @@ bundle:
     #   output: "elasticsearch-{version}.yaml"
     #   # Optional: override the products array written to the bundle output.
     #   # output_products: "elasticsearch {version}"
-    #   # Optional: override bundle.sanitize_private_links for this profile only (requires bundle.resolve: true).
-    #   sanitize_private_links: true
-
     # Example: GitHub release profile (fetches PR list directly from a GitHub release)
     # Use when you want to bundle or remove changelogs based on a published GitHub release.
     # elasticsearch-gh-release:
