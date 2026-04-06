@@ -363,7 +363,7 @@ Ideally this task will be automated such that it's performed by a bot or GitHub 
 If you run it from the command line, you must precede any special characters (such as backquotes) with a backslash escape character (`\`).
 :::
 
-#### CI two-step flow
+### CI two-step flow
 
 When automated via the [changelog GitHub Actions](https://github.com/elastic/docs-actions/tree/main/changelog), changelog creation is a two-step process:
 
