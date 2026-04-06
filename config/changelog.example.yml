@@ -245,9 +245,6 @@ bundle:
     #   output: "elasticsearch-{version}.yaml"
     #   # Optional: override the products array written to the bundle output.
     #   # output_products: "elasticsearch {version}"
-    #   # Optional: override bundle.sanitize_private_links for this profile only (requires bundle.resolve: true).
-    #   sanitize_private_links: true
-
     # Example: GitHub release profile (fetches PR list directly from a GitHub release)
     # Use when you want to bundle or remove changelogs based on a published GitHub release.
     # elasticsearch-gh-release:

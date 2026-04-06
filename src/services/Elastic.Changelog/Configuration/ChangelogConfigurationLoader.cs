@@ -286,7 +286,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		// Process bundle configuration
 		BundleConfiguration? bundleConfig = null;
 		if (yamlConfig.Bundle != null)
-			bundleConfig = ParseBundleConfiguration(yamlConfig.Bundle);
+		{
+			bundleConfig = ParseBundleConfiguration(collector, configPath, yamlConfig.Bundle);
+			if (bundleConfig == null)
+				return null;
+		}
 
 		// Process extract configuration
 		var extract = new ExtractConfiguration
@@ -441,8 +445,66 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 	}
 
-	private static BundleConfiguration ParseBundleConfiguration(BundleConfigurationYaml yaml)
+	private static BundleConfiguration? ParseBundleConfiguration(IDiagnosticsCollector collector, string configPath, BundleConfigurationYaml yaml)
 	{
+		if (!string.IsNullOrWhiteSpace(yaml.Repo) && yaml.Repo.Contains('+', StringComparison.Ordinal))
+		{
+			collector.EmitError(
+				configPath,
+				"bundle.repo must name a single GitHub repository. Remove '+' merged-repo syntax from bundle.repo.");
+			return null;
+		}
+
+		if (yaml.Profiles is { Count: > 0 })
+		{
+			foreach (var kvp in yaml.Profiles)
+			{
+				var profileRepo = kvp.Value?.Repo;
+				if (!string.IsNullOrWhiteSpace(profileRepo) && profileRepo.Contains('+', StringComparison.Ordinal))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.profiles.{kvp.Key}.repo must name a single GitHub repository. Remove '+' merged-repo syntax.");
+					return null;
+				}
+			}
+		}
+
+		IReadOnlyList<string>? linkAllowRepos = null;
+		if (yaml.LinkAllowRepos != null)
+		{
+			var raw = yaml.LinkAllowRepos.Values ?? [];
+			var list = new List<string>();
+			foreach (var v in raw)
+			{
+				if (string.IsNullOrWhiteSpace(v))
+					continue;
+
+				var trimmed = v.Trim();
+				if (trimmed.IndexOf('/') < 0 ||
+					trimmed.IndexOf('/') != trimmed.LastIndexOf('/'))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: '{v}'.");
+					return null;
+				}
+
+				var slash = trimmed.IndexOf('/');
+				if (slash <= 0 || slash >= trimmed.Length - 1)
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: '{v}'.");
+					return null;
+				}
+
+				list.Add(trimmed);
+			}
+
+			linkAllowRepos = list;
+		}
+
 		Dictionary<string, BundleProfile>? profiles = null;
 		if (yaml.Profiles is { Count: > 0 })
 		{
@@ -458,8 +520,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						Repo = kvp.Value.Repo,
 						Owner = kvp.Value.Owner,
 						HideFeatures = kvp.Value.HideFeatures?.Values,
-						Source = kvp.Value.Source,
-						SanitizePrivateLinks = kvp.Value.SanitizePrivateLinks
+						Source = kvp.Value.Source
 					});
 		}
 
@@ -470,7 +531,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Resolve = yaml.Resolve ?? true,
 			Repo = yaml.Repo,
 			Owner = yaml.Owner,
-			SanitizePrivateLinks = yaml.SanitizePrivateLinks ?? false,
+			LinkAllowRepos = linkAllowRepos,
 			Profiles = profiles
 		};
 	}
