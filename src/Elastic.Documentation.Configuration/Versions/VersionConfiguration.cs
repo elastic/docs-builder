@@ -23,8 +23,6 @@ public record VersionsConfiguration
 [EnumExtensions]
 public enum VersioningSystemId
 {
-	[Display(Name = "none")]
-	None,
 	[Display(Name = "stack")]
 	Stack,
 	[Display(Name = "all")]
@@ -143,6 +141,9 @@ public enum VersioningSystemId
 	ElasticsearchClientRuby,
 	[Display(Name = "elasticsearch-client-rust")]
 	ElasticsearchClientRust,
+
+	[Display(Name = "none")]
+	None = -1,
 }
 
 [YamlSerializable]
