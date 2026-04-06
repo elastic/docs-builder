@@ -45,7 +45,16 @@ public static class GitRemoteConfigurationReader
 				? gitDir
 				: fileSystem.Path.GetFullPath(fileSystem.Path.Combine(repositoryRoot, gitDir));
 
-			var worktreeConfigPath = fileSystem.Path.Combine(resolvedGitDir, "config");
+			var commonDirFile = fileSystem.Path.Combine(resolvedGitDir, "commondir");
+			if (!fileSystem.File.Exists(commonDirFile))
+				return false;
+
+			var commonDirRelative = fileSystem.File.ReadAllText(commonDirFile).Trim();
+			var commonDir = fileSystem.Path.IsPathFullyQualified(commonDirRelative)
+				? commonDirRelative
+				: fileSystem.Path.GetFullPath(fileSystem.Path.Combine(resolvedGitDir, commonDirRelative));
+
+			var worktreeConfigPath = fileSystem.Path.Combine(commonDir, "config");
 			return TryReadOriginUrlFromConfigPath(fileSystem, worktreeConfigPath, out url);
 		}
 		catch (IOException)
