@@ -22,9 +22,14 @@ public static class ProductExtensions
 			{
 				Id = kvp.Key,
 				DisplayName = kvp.Value.Display,
-				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersionsConfigurationExtensions.ToVersioningSystemId(kvp.Value.Versioning ?? kvp.Key)),
-				Repository = kvp.Value.Repository ?? kvp.Key
+				VersioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key),
+				Repository = kvp.Value.Repository ?? kvp.Key,
+				Features = ResolveFeatures(kvp.Key, kvp.Value.Features)
 			});
+
+		var publicReferenceProducts = products
+			.Where(kvp => kvp.Value.Features.PublicReference)
+			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
 		var productDisplayNames = productsDto.Products.ToDictionary(
 			kvp => kvp.Key,
@@ -33,7 +38,37 @@ public static class ProductExtensions
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = publicReferenceProducts.ToFrozenDictionary(),
 			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
+		};
+	}
+
+	private static VersioningSystem? ResolveVersioningSystem(VersionsConfiguration versionsConfiguration, string id) =>
+		VersioningSystemIdExtensions.TryParse(id, out var versioningSystemId, ignoreCase: true, allowMatchingMetadataAttribute: true)
+			? versionsConfiguration.GetVersioningSystem(versioningSystemId)
+			: null;
+
+	private static ProductFeatures ResolveFeatures(string productId, Dictionary<string, bool>? featuresDto)
+	{
+		if (featuresDto is null)
+			return ProductFeatures.All;
+
+		var unknownKeys = featuresDto.Keys
+			.Where(k => !ProductFeatures.KnownKeys.Contains(k))
+			.ToList();
+
+		if (unknownKeys is { Count: > 0 })
+		{
+			var known = string.Join(", ", ProductFeatures.KnownKeys.Order());
+			throw new InvalidOperationException(
+				$"Product '{productId}' has unknown feature key(s): {string.Join(", ", unknownKeys)}. Known features: {known}."
+			);
+		}
+
+		return new ProductFeatures
+		{
+			PublicReference = featuresDto.GetValueOrDefault("public-reference"),
+			ReleaseNotes = featuresDto.GetValueOrDefault("release-notes")
 		};
 	}
 }
@@ -52,5 +87,9 @@ internal sealed record ProductDto
 
 	[YamlMember(Alias = "versioning")]
 	public string? Versioning { get; set; }
+
 	public string? Repository { get; set; }
+
+	[YamlMember(Alias = "features")]
+	public Dictionary<string, bool>? Features { get; set; }
 }
