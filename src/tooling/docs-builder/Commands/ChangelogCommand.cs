@@ -1332,16 +1332,23 @@ internal sealed partial class ChangelogCommand(
 			gitMatched = true;
 		}
 
-		var resolvedRepo = repoCli ?? gitRepo;
-		var resolvedOwner = ownerCli ?? gitOwner;
-		if (resolvedRepo != null && resolvedOwner == null)
+		// Simple normalization - treat whitespace as absent
+		var resolvedRepo = string.IsNullOrWhiteSpace(repoCli) ? gitRepo : repoCli.Trim();
+		var resolvedOwner = string.IsNullOrWhiteSpace(ownerCli) ? gitOwner : ownerCli.Trim();
+		if (!string.IsNullOrWhiteSpace(resolvedRepo) && string.IsNullOrWhiteSpace(resolvedOwner))
 			resolvedOwner = "elastic";
 
-		var shouldSeed = resolvedOwner != null && resolvedRepo != null
-			&& (ownerCli != null || repoCli != null || gitMatched);
+		var shouldSeed = !string.IsNullOrWhiteSpace(resolvedOwner) && !string.IsNullOrWhiteSpace(resolvedRepo)
+			&& (!string.IsNullOrWhiteSpace(ownerCli) || !string.IsNullOrWhiteSpace(repoCli) || gitMatched);
+
+		// Reuse existing YAML quoting pattern from GetPathForConfig
+		static string QuoteForYaml(string value) =>
+			value.Contains(':') || value.Contains(' ') || value.Contains('#') || value.Contains('"')
+				? $"\"{value.Replace("\"", "\\\"")}\""
+				: value;
 
 		var block = shouldSeed
-			? $"  owner: {resolvedOwner}\n  repo: {resolvedRepo}\n  link_allow_repos:\n    - {resolvedOwner}/{resolvedRepo}\n"
+			? $"  owner: {QuoteForYaml(resolvedOwner!)}\n  repo: {QuoteForYaml(resolvedRepo!)}\n  link_allow_repos:\n    - {QuoteForYaml($"{resolvedOwner}/{resolvedRepo}")}\n"
 			: "";
 
 		if (content.Contains(placeholder + "\r\n", StringComparison.Ordinal))

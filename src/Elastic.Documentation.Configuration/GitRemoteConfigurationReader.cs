@@ -18,42 +18,68 @@ public static class GitRemoteConfigurationReader
 	public static bool TryReadOriginUrl(IFileSystem fileSystem, string repositoryRoot, [NotNullWhen(true)] out string? url)
 	{
 		url = null;
-		var gitPath = fileSystem.Path.Combine(repositoryRoot, ".git");
-		if (fileSystem.Directory.Exists(gitPath))
+		try
 		{
-			var configPath = fileSystem.Path.Combine(gitPath, "config");
-			return TryReadOriginUrlFromConfigPath(fileSystem, configPath, out url);
+			var gitPath = fileSystem.Path.Combine(repositoryRoot, ".git");
+			if (fileSystem.Directory.Exists(gitPath))
+			{
+				var configPath = fileSystem.Path.Combine(gitPath, "config");
+				return TryReadOriginUrlFromConfigPath(fileSystem, configPath, out url);
+			}
+
+			if (!fileSystem.File.Exists(gitPath))
+				return false;
+
+			var gitFileText = fileSystem.File.ReadAllText(gitPath);
+			var firstLineBreak = gitFileText.IndexOfAny(['\r', '\n']);
+			var firstLine = firstLineBreak >= 0 ? gitFileText[..firstLineBreak] : gitFileText;
+			firstLine = firstLine.Trim();
+			if (!firstLine.StartsWith("gitdir:", StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			var gitDir = firstLine["gitdir:".Length..].Trim();
+			if (string.IsNullOrEmpty(gitDir))
+				return false;
+
+			var resolvedGitDir = fileSystem.Path.IsPathFullyQualified(gitDir)
+				? gitDir
+				: fileSystem.Path.GetFullPath(fileSystem.Path.Combine(repositoryRoot, gitDir));
+
+			var worktreeConfigPath = fileSystem.Path.Combine(resolvedGitDir, "config");
+			return TryReadOriginUrlFromConfigPath(fileSystem, worktreeConfigPath, out url);
 		}
-
-		if (!fileSystem.File.Exists(gitPath))
+		catch (IOException)
+		{
+			url = null;
 			return false;
-
-		var gitFileText = fileSystem.File.ReadAllText(gitPath);
-		var firstLineBreak = gitFileText.IndexOfAny(['\r', '\n']);
-		var firstLine = firstLineBreak >= 0 ? gitFileText[..firstLineBreak] : gitFileText;
-		firstLine = firstLine.Trim();
-		if (!firstLine.StartsWith("gitdir:", StringComparison.OrdinalIgnoreCase))
+		}
+		catch (UnauthorizedAccessException)
+		{
+			url = null;
 			return false;
-
-		var gitDir = firstLine["gitdir:".Length..].Trim();
-		if (string.IsNullOrEmpty(gitDir))
-			return false;
-
-		var resolvedGitDir = fileSystem.Path.IsPathFullyQualified(gitDir)
-			? gitDir
-			: fileSystem.Path.GetFullPath(fileSystem.Path.Combine(repositoryRoot, gitDir));
-
-		var worktreeConfigPath = fileSystem.Path.Combine(resolvedGitDir, "config");
-		return TryReadOriginUrlFromConfigPath(fileSystem, worktreeConfigPath, out url);
+		}
 	}
 
 	private static bool TryReadOriginUrlFromConfigPath(IFileSystem fileSystem, string configPath, [NotNullWhen(true)] out string? url)
 	{
 		url = null;
-		if (!fileSystem.File.Exists(configPath))
-			return false;
+		try
+		{
+			if (!fileSystem.File.Exists(configPath))
+				return false;
 
-		var content = fileSystem.File.ReadAllText(configPath);
-		return GitConfigOriginParser.TryGetRemoteOriginUrl(content, out url);
+			var content = fileSystem.File.ReadAllText(configPath);
+			return GitConfigOriginParser.TryGetRemoteOriginUrl(content, out url);
+		}
+		catch (IOException)
+		{
+			url = null;
+			return false;
+		}
+		catch (UnauthorizedAccessException)
+		{
+			url = null;
+			return false;
+		}
 	}
 }
