@@ -8,6 +8,8 @@ using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
@@ -637,5 +639,175 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 		result.Should().BeTrue();
 		VerifyOutputSet("title", "New aggregation pipeline support");
+	}
+
+	// --- CollectExcludeLabels unit tests ---
+
+	[Fact]
+	public void CollectExcludeLabels_Null_ReturnsNull() =>
+		ChangelogPrEvaluationService.CollectExcludeLabels(null).Should().BeNull();
+
+	[Fact]
+	public void CollectExcludeLabels_NoLabels_ReturnsNull() =>
+		ChangelogPrEvaluationService.CollectExcludeLabels(new CreateRules()).Should().BeNull();
+
+	[Fact]
+	public void CollectExcludeLabels_GlobalExcludeLabels_ReturnsCommaSeparated()
+	{
+		var rules = new CreateRules
+		{
+			Mode = FieldMode.Exclude,
+			Labels = [">non-issue", ">test"]
+		};
+
+		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
+
+		result.Should().NotBeNull();
+		result.Split(',').Should().BeEquivalentTo([">non-issue", ">test"]);
+	}
+
+	[Fact]
+	public void CollectExcludeLabels_IncludeMode_ReturnsNull()
+	{
+		var rules = new CreateRules
+		{
+			Mode = FieldMode.Include,
+			Labels = [">non-issue"]
+		};
+
+		ChangelogPrEvaluationService.CollectExcludeLabels(rules).Should().BeNull();
+	}
+
+	[Fact]
+	public void CollectExcludeLabels_PerProductExcludeOnly_ReturnsLabels()
+	{
+		var rules = new CreateRules
+		{
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["cloud-hosted"] = new() { Mode = FieldMode.Exclude, Labels = [">skip-ech"] },
+				["cloud-serverless"] = new() { Mode = FieldMode.Exclude, Labels = [">skip-ess"] }
+			}
+		};
+
+		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
+
+		result.Should().NotBeNull();
+		result.Split(',').Should().BeEquivalentTo([">skip-ech", ">skip-ess"]);
+	}
+
+	[Fact]
+	public void CollectExcludeLabels_GlobalAndPerProduct_MergesUniqueLabels()
+	{
+		var rules = new CreateRules
+		{
+			Mode = FieldMode.Exclude,
+			Labels = [">skip-all", ">shared"],
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["cloud-hosted"] = new() { Mode = FieldMode.Exclude, Labels = [">shared", ">skip-ech"] }
+			}
+		};
+
+		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
+
+		result.Should().NotBeNull();
+		result.Split(',').Should().BeEquivalentTo([">skip-all", ">shared", ">skip-ech"]);
+	}
+
+	[Fact]
+	public void CollectExcludeLabels_PerProductIncludeMode_IgnoresIncludeProducts()
+	{
+		var rules = new CreateRules
+		{
+			Mode = FieldMode.Exclude,
+			Labels = [">global"],
+			ByProduct = new Dictionary<string, CreateRules>
+			{
+				["cloud-hosted"] = new() { Mode = FieldMode.Include, Labels = [">include-only"] }
+			}
+		};
+
+		var result = ChangelogPrEvaluationService.CollectExcludeLabels(rules);
+
+		result.Should().NotBeNull();
+		result.Split(',').Should().BeEquivalentTo([">global"]);
+	}
+
+	// --- skip-labels output integration tests ---
+
+	private const string ConfigWithExcludeRules = """
+		pivot:
+		  types:
+		    feature: "type:feature"
+		    bug-fix: "type:bug"
+		    breaking-change: "type:breaking"
+		    enhancement:
+		    deprecation:
+		    docs:
+		    known-issue:
+		    other:
+		    regression:
+		    security:
+		rules:
+		  create:
+		    exclude: ">non-issue, >test"
+		""";
+
+	[Fact]
+	public async Task EvaluatePr_WithExcludeRules_AllBlocked_OutputsSkipLabels()
+	{
+		await WriteMinimalConfig(content: ConfigWithExcludeRules);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: [">non-issue"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "skipped");
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">non-issue"))).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">test"))).MustHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_WithExcludeRules_NoLabel_OutputsSkipLabels()
+	{
+		await WriteMinimalConfig(content: ConfigWithExcludeRules);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["unrelated-label"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">non-issue"))).MustHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_WithoutExcludeRules_DoesNotOutputSkipLabels()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs();
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_HappyPath_WithExcludeRules_DoesNotOutputSkipLabels()
+	{
+		await WriteMinimalConfig(content: ConfigWithExcludeRules);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:feature"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>._)).MustNotHaveHappened();
 	}
 }
