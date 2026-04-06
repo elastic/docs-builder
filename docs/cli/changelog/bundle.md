@@ -111,7 +111,7 @@ The `--input-products` option determines which changelog files are gathered for 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
 :   This value replaces information that would otherwise be derived from changelogs.
-:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also supplies the product IDs used to choose the **rule context product** (first alphabetically) for Mode 3. To use a different product's rules, run a separate bundle with only that product in `--output-products`. For details, refer to [Single-product rule resolution algorithm](/contribute/configure-changelogs.md#changelog-bundle-rule-resolution).
+:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also supplies the product IDs used to choose the **rule context product** (first alphabetically) for Mode 3. To use a different product's rules, run a separate bundle with only that product in `--output-products`. For details, refer to [Product-specific bundle rules](/contribute/configure-changelogs.md#rules-bundle-products).
 
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
@@ -268,7 +268,7 @@ The following fields are supported:
 :   Match mode for the area filter (`any`, `all`, or `conjunction`). Inherits from `rules.match` when not specified.
 
 `products`
-:   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists). When this map is **non-empty**, the bundler uses **per-product rule context** mode: global `rules.bundle` product/type/area fields are **not** used for filtering (repeat constraints under each product key if you still need them). For details, refer to [Bundle rule modes](/contribute/configure-changelogs.md#bundle-rule-modes) and [Single-product rule resolution (Mode 3 only)](/contribute/configure-changelogs.md#changelog-bundle-rule-resolution).
+:   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists). When this map is **non-empty**, the bundler uses **per-product rule context** mode: global `rules.bundle` product/type/area fields are **not** used for filtering (repeat constraints under each product key if you still need them). For details, refer to [Bundle rule modes](/contribute/configure-changelogs.md#bundle-rule-modes) and [Product-specific bundle rules](/contribute/configure-changelogs.md#rules-bundle-products).
 
 ```yaml
 rules:

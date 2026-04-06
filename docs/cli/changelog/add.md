@@ -163,3 +163,19 @@ When you run the `changelog add` command without the `--products` option, it res
 5. **Error** — if none of the above resolves to at least one product, an error is raised.
 
 Product-specific `rules.create` rules are evaluated *after* products are resolved from labels, so label-derived products correctly participate in per-product create rule checks.
+
+## Configuration checks
+
+By default, the command checks the following path for a configuration file: `docs/changelog.yml`.
+You can specify a different path with the `--config` command option.
+
+If a configuration file exists, the command validates its values before generating changelog files:
+
+- If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the values in `ChangelogEntryType.cs`, `ChangelogEntrySubtype.cs`, or `Lifecycle.cs`, validation fails.
+- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails.
+- If the configuration file contains `lifecycles` or `products` values that are a subset of the available values and you try to create a changelog with values outside that subset, validation fails.
+
+In each of these cases where validation fails, a changelog file is not created.
+
+If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
+For more information, refer to [Rules for creation and publishing](/contribute/configure-changelogs.md#rules).

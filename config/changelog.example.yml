@@ -150,7 +150,7 @@ pivot:
 #   - Comma-separated string: "value1, value2, value3"
 #   - YAML list: [value1, value2, value3]
 #
-# For details and examples, refer to the [rules documentation](https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md#rules-for-creation-and-bundling).
+# For details and examples, refer to the [rules documentation](https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md#rules).
 rules:
   # match: any
 
