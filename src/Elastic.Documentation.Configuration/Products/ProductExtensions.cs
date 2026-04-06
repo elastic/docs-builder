@@ -23,8 +23,10 @@ public static class ProductExtensions
 				var features = ResolveFeatures(kvp.Key, kvp.Value.Features);
 				var versioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key);
 
-				if (versioningSystem is null && !features.PublicReference)
-					versioningSystem = VersioningSystem.None;
+				versioningSystem ??= !features.PublicReference
+					? VersioningSystem.None
+					: throw new InvalidOperationException(
+						$"Product '{kvp.Key}' has invalid or missing versioning '{kvp.Value.Versioning ?? kvp.Key}' while 'public-reference' is enabled.");
 
 				return new Product
 				{
