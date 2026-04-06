@@ -363,6 +363,17 @@ Ideally this task will be automated such that it's performed by a bot or GitHub 
 If you run it from the command line, you must precede any special characters (such as backquotes) with a backslash escape character (`\`).
 :::
 
+#### CI two-step flow
+
+When automated via the [changelog GitHub Actions](https://github.com/elastic/docs-actions/tree/main/changelog), changelog creation is a two-step process:
+
+1. **`changelog evaluate-pr`** inspects the PR (title, labels, body) and produces outputs such as `title`, `type`, `description`, and `products`.
+2. **`changelog add`** reads those outputs from `CHANGELOG_*` environment variables and generates the changelog YAML file.
+
+The `description` output from step 1 contains the release note extracted from the PR body (when `extract.release_notes` is enabled). If extraction is disabled — either by setting `extract.release_notes: false` in `changelog.yml` or by passing `--no-extract-release-notes` to `changelog add` — the `CHANGELOG_DESCRIPTION` environment variable is ignored and the extracted description is not written to the changelog.
+
+Refer to [CI auto-detection](/cli/changelog/add.md#ci-auto-detection) for the full list of environment variables and precedence rules.
+
 For up-to-date command usage information, use the `-h` option or refer to [](/cli/changelog/add.md).
 
 ### Authorization

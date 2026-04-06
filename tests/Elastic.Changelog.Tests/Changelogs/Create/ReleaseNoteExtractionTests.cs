@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Configuration;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
@@ -463,6 +464,146 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Implement new aggregation API");
+		yamlContent.Should().NotContain("Adds support for new aggregation types");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_InCI_ExtractionDisabledByCli_ClearsCIDescription()
+	{
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = "Release Notes: Adds support for new aggregation types",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		// Simulate CI environment where evaluate-pr exported the extracted note
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER")).Returns("12345");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TITLE")).Returns("Implement new aggregation API");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION")).Returns("Adds support for new aggregation types");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TYPE")).Returns("feature");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_OWNER")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_REPO")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PRODUCTS")).Returns(null);
+
+		var service = CreateService(env);
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = false
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - extraction disabled, so CI description should be suppressed
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Implement new aggregation API");
+		yamlContent.Should().NotContain("Adds support for new aggregation types");
+	}
+
+	[Fact]
+	public async Task CreateChangelog_InCI_ExtractionDisabledByConfig_ClearsCIDescription()
+	{
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Implement new aggregation API",
+			Body = "Release Notes: Adds support for new aggregation types",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			extract:
+			  release_notes: false
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		// Simulate CI where evaluate-pr (using a different config) exported the note
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER")).Returns("12345");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TITLE")).Returns("Implement new aggregation API");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION")).Returns("Adds support for new aggregation types");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TYPE")).Returns("feature");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_OWNER")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_REPO")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PRODUCTS")).Returns(null);
+
+		var service = CreateService(env);
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = null
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert - config disables extraction, so CI description should be cleared
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);

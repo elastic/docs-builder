@@ -79,6 +79,7 @@ IEnvironmentVariables? env = null
 	{
 		try
 		{
+			var cliDescription = input.Description;
 			input = EnrichFromCI(input);
 
 			// Load changelog configuration
@@ -91,6 +92,16 @@ IEnvironmentVariables? env = null
 
 			// Apply config defaults to input (for extract_release_notes, extract_issues)
 			input = ApplyConfigDefaults(input, config);
+
+			// When extraction is disabled (by CLI or config), discard any CI-injected description
+			// that originated from evaluate-pr's release-note extraction.
+			if (input.ExtractReleaseNotes == false
+				&& string.IsNullOrWhiteSpace(cliDescription)
+				&& !string.IsNullOrWhiteSpace(input.Description))
+			{
+				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
+				input = input with { Description = null };
+			}
 
 			// Multiple PRs: one changelog per PR (--use-pr-number uses PR number as each filename)
 			if (input.Prs != null && input.Prs.Length > 1)
@@ -412,11 +423,16 @@ IEnvironmentVariables? env = null
 			? input.Products
 			: ProductArgument.ParseProductSpecs(ciProducts);
 
+		// Skip CI-provided description when extraction is explicitly disabled via CLI
+		var enrichedDescription = !string.IsNullOrWhiteSpace(input.Description)
+			? input.Description
+			: input.ExtractReleaseNotes == false ? null : ciDescription;
+
 		return input with
 		{
 			Prs = enrichedPrs,
 			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
-			Description = !string.IsNullOrWhiteSpace(input.Description) ? input.Description : ciDescription,
+			Description = enrichedDescription,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
 			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,
