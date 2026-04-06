@@ -1313,47 +1313,14 @@ internal sealed partial class ChangelogCommand(
 		return pathForConfig;
 	}
 
-	/// <summary>
-	/// Replaces or removes the changelog-init-bundle-seed placeholder line in the changelog template.
-	/// CLI owner/repo take precedence over values from git remote origin.
-	/// </summary>
 	private string ApplyChangelogInitBundleRepoSeed(string content, string? ownerCli, string? repoCli, string repoRoot)
 	{
-		const string placeholder = "  # changelog-init-bundle-seed";
-
-		var gitMatched = false;
 		string? gitOwner = null;
 		string? gitRepo = null;
-		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl)
-			&& GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out var go, out var gr))
-		{
-			gitOwner = go;
-			gitRepo = gr;
-			gitMatched = true;
-		}
+		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
+			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
 
-		// Simple normalization - treat whitespace as absent
-		var resolvedRepo = string.IsNullOrWhiteSpace(repoCli) ? gitRepo : repoCli.Trim();
-		var resolvedOwner = string.IsNullOrWhiteSpace(ownerCli) ? gitOwner : ownerCli.Trim();
-		if (!string.IsNullOrWhiteSpace(resolvedRepo) && string.IsNullOrWhiteSpace(resolvedOwner))
-			resolvedOwner = "elastic";
-
-		var shouldSeed = !string.IsNullOrWhiteSpace(resolvedOwner) && !string.IsNullOrWhiteSpace(resolvedRepo)
-			&& (!string.IsNullOrWhiteSpace(ownerCli) || !string.IsNullOrWhiteSpace(repoCli) || gitMatched);
-
-		// Reuse existing YAML quoting pattern from GetPathForConfig
-		static string QuoteForYaml(string value) =>
-			value.Contains(':') || value.Contains(' ') || value.Contains('#') || value.Contains('"')
-				? $"\"{value.Replace("\"", "\\\"")}\""
-				: value;
-
-		var eol = content.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-
-		var block = shouldSeed
-			? $"  owner: {QuoteForYaml(resolvedOwner!)}{eol}  repo: {QuoteForYaml(resolvedRepo!)}{eol}  link_allow_repos:{eol}    - {QuoteForYaml($"{resolvedOwner}/{resolvedRepo}")}{eol}"
-			: "";
-
-		return content.Replace(placeholder + eol, block, StringComparison.Ordinal);
+		return ChangelogTemplateSeeder.ApplyBundleRepoSeed(content, ownerCli, repoCli, gitOwner, gitRepo);
 	}
 
 	/// <summary>
