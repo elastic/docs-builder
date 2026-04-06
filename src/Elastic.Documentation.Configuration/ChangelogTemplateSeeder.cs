@@ -34,11 +34,25 @@ public static class ChangelogTemplateSeeder
 			? $"  owner: {QuoteForYaml(resolvedOwner!)}{eol}  repo: {QuoteForYaml(resolvedRepo!)}{eol}  link_allow_repos:{eol}    - {QuoteForYaml($"{resolvedOwner}/{resolvedRepo}")}{eol}"
 			: "";
 
-		return content.Replace(Placeholder + eol, block, StringComparison.Ordinal);
+		var placeholderWithEol = Placeholder + eol;
+		if (content.Contains(placeholderWithEol, StringComparison.Ordinal))
+			return content.Replace(placeholderWithEol, block, StringComparison.Ordinal);
+
+		return content.Replace(
+			Placeholder,
+			shouldSeed ? block.TrimEnd('\r', '\n') : string.Empty,
+			StringComparison.Ordinal
+		);
 	}
 
 	internal static string QuoteForYaml(string value) =>
 		value.Contains(':') || value.Contains(' ') || value.Contains('#') || value.Contains('"')
-			? $"\"{value.Replace("\"", "\\\"")}\""
+			|| value.Contains('\\') || value.Contains('\n') || value.Contains('\r') || value.Contains('\t')
+			? $"\"{value
+				.Replace("\\", "\\\\")
+				.Replace("\"", "\\\"")
+				.Replace("\r", "\\r")
+				.Replace("\n", "\\n")
+				.Replace("\t", "\\t")}\""
 			: value;
 }

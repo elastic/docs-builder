@@ -135,4 +135,48 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("  repo: other-repo\n");
 		result.Should().Contain("    - elastic/other-repo\n");
 	}
+
+	[Fact]
+	public void ApplyBundleRepoSeed_PlaceholderAtEofWithoutNewline_Seeds()
+	{
+		var content = "bundle:\n  resolve: true\n  # changelog-init-bundle-seed";
+
+		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
+			content, ownerCli: null, repoCli: null, gitOwner: "elastic", gitRepo: "kibana");
+
+		result.Should().Contain("  owner: elastic");
+		result.Should().Contain("  repo: kibana");
+		result.Should().NotContain("changelog-init-bundle-seed");
+	}
+
+	[Fact]
+	public void ApplyBundleRepoSeed_PlaceholderAtEofWithoutNewline_RemovesWhenNoSeed()
+	{
+		var content = "bundle:\n  resolve: true\n  # changelog-init-bundle-seed";
+
+		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
+			content, ownerCli: null, repoCli: null, gitOwner: null, gitRepo: null);
+
+		result.Should().Be("bundle:\n  resolve: true\n");
+		result.Should().NotContain("changelog-init-bundle-seed");
+	}
+
+	[Fact]
+	public void ApplyBundleRepoSeed_BackslashInValue_IsEscapedInYaml()
+	{
+		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
+			Template, ownerCli: @"path\org", repoCli: "repo", gitOwner: null, gitRepo: null);
+
+		result.Should().Contain(@"  owner: ""path\\org""");
+		result.Should().Contain("  repo: repo\n");
+	}
+
+	[Fact]
+	public void ApplyBundleRepoSeed_ControlCharsInValue_AreEscapedInYaml()
+	{
+		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
+			Template, ownerCli: "org\tname", repoCli: "repo", gitOwner: null, gitRepo: null);
+
+		result.Should().Contain(@"  owner: ""org\tname""");
+	}
 }
