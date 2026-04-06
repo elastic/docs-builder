@@ -212,9 +212,16 @@ bundle:
   output_directory: docs/releases
   # Whether to resolve (copy contents) by default
   resolve: true
-  # When true, PR/issue links to repos marked private in assembler.yml are rewritten in bundle output
-  # (requires resolve: true). Option-based: --sanitize-private-links / --no-sanitize-private-links.
-  sanitize_private_links: false
+  # changelog-init-bundle-seed
+  # PR/issue link allowlist: when set (including []), only links to these owner/repo pairs are kept
+  # in bundle output; others are rewritten to '# PRIVATE:' sentinels (requires resolve: true).
+  # There is no implicit allow: you must list every repo whose links should appear, including your
+  # own (bundle.repo as owner/repo). When omitted entirely, no link filtering is applied.
+  # Run `changelog init` in a GitHub clone to pre-fill owner, repo, and link_allow_repos, or set
+  # bundle.owner, bundle.repo, and link_allow_repos manually. Example — allow only this repo:
+  # link_allow_repos:
+  #   - elastic/kibana
+  # To allow cross-repo links, add more owner/repo entries (for example elastic/elasticsearch).
   # Optional: default GitHub repo name applied to all profiles that do not specify their own.
   # Used by the {changelog} directive to generate correct PR/issue links when the product ID
   # differs from the GitHub repository name. Can be overridden per profile.

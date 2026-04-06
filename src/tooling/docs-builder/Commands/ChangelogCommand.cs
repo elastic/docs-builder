@@ -54,15 +54,20 @@ internal sealed partial class ChangelogCommand(
 	/// <summary>
 	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template in the docs folder (discovered via docset.yml when present, or at {path}/docs which is created if needed), and creates changelog and releases subdirectories if they do not exist.
 	/// When changelog.yml already exists and --changelog-dir or --bundles-dir is specified, updates the bundle.directory and/or bundle.output_directory fields accordingly.
+	/// When creating a new changelog.yml, seeds bundle.owner, bundle.repo, and bundle.link_allow_repos from git remote origin (github.com only) and/or --owner / --repo.
 	/// </summary>
 	/// <param name="path">Optional: Repository root path. Defaults to the output of pwd (current directory). Docs folder is {path}/docs, created if it does not exist.</param>
 	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docsFolder}/changelog.</param>
 	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to {docsFolder}/releases.</param>
+	/// <param name="owner">Optional: GitHub owner for bundle defaults and link_allow_repos seeding. Overrides the owner inferred from git remote origin.</param>
+	/// <param name="repo">Optional: GitHub repository name for bundle defaults and link_allow_repos seeding. Overrides the repo inferred from git remote origin.</param>
 	[Command("init")]
 	public Task<int> Init(
 		string? path = null,
 		string? changelogDir = null,
-		string? bundlesDir = null
+		string? bundlesDir = null,
+		string? owner = null,
+		string? repo = null
 	)
 	{
 		var rootPath = NormalizePath(path ?? ".");
@@ -137,6 +142,8 @@ internal sealed partial class ChangelogCommand(
 				var outputValue = GetPathForConfig(repoRoot, bundlesPath);
 				content = content.Replace("output_directory: docs/releases", $"output_directory: {outputValue}");
 			}
+
+			content = ApplyChangelogInitBundleRepoSeed(content, owner, repo, repoRoot);
 
 			try
 			{
@@ -1304,6 +1311,43 @@ internal sealed partial class ChangelogCommand(
 			return $"\"{pathForConfig.Replace("\"", "\\\"")}\"";
 
 		return pathForConfig;
+	}
+
+	/// <summary>
+	/// Replaces or removes the changelog-init-bundle-seed placeholder line in the changelog template.
+	/// CLI owner/repo take precedence over values from git remote origin.
+	/// </summary>
+	private string ApplyChangelogInitBundleRepoSeed(string content, string? ownerCli, string? repoCli, string repoRoot)
+	{
+		const string placeholder = "  # changelog-init-bundle-seed";
+
+		var gitMatched = false;
+		string? gitOwner = null;
+		string? gitRepo = null;
+		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl)
+			&& GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out var go, out var gr))
+		{
+			gitOwner = go;
+			gitRepo = gr;
+			gitMatched = true;
+		}
+
+		var resolvedRepo = repoCli ?? gitRepo;
+		var resolvedOwner = ownerCli ?? gitOwner;
+		if (resolvedRepo != null && resolvedOwner == null)
+			resolvedOwner = "elastic";
+
+		var shouldSeed = resolvedOwner != null && resolvedRepo != null
+			&& (ownerCli != null || repoCli != null || gitMatched);
+
+		var block = shouldSeed
+			? $"  owner: {resolvedOwner}\n  repo: {resolvedRepo}\n  link_allow_repos:\n    - {resolvedOwner}/{resolvedRepo}\n"
+			: "";
+
+		if (content.Contains(placeholder + "\r\n", StringComparison.Ordinal))
+			return content.Replace(placeholder + "\r\n", block, StringComparison.Ordinal);
+
+		return content.Replace(placeholder + "\n", block, StringComparison.Ordinal);
 	}
 
 	/// <summary>
