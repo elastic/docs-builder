@@ -18,13 +18,22 @@ public static class ProductExtensions
 
 		var products = productsDto.Products.ToDictionary(
 			kvp => kvp.Key,
-			kvp => new Product
+			kvp =>
 			{
-				Id = kvp.Key,
-				DisplayName = kvp.Value.Display,
-				VersioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key),
-				Repository = kvp.Value.Repository ?? kvp.Key,
-				Features = ResolveFeatures(kvp.Key, kvp.Value.Features)
+				var features = ResolveFeatures(kvp.Key, kvp.Value.Features);
+				var versioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key);
+
+				if (versioningSystem is null && !features.PublicReference)
+					versioningSystem = VersioningSystem.None;
+
+				return new Product
+				{
+					Id = kvp.Key,
+					DisplayName = kvp.Value.Display,
+					VersioningSystem = versioningSystem,
+					Repository = kvp.Value.Repository ?? kvp.Key,
+					Features = features
+				};
 			});
 
 		var publicReferenceProducts = products

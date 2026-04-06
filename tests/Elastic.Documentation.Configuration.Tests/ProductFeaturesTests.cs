@@ -33,6 +33,17 @@ public class ProductFeaturesTests
 	}
 
 	[Fact]
+	public void ProductWithoutPublicReference_GetsNoneVersioningSystem()
+	{
+		var config = LoadActualProductsConfiguration();
+		var docsBuilder = config.Products["docs-builder"];
+
+		docsBuilder.VersioningSystem.Should().Be(VersioningSystem.None);
+		docsBuilder.VersioningSystem.IsVersionless.Should().BeTrue();
+		docsBuilder.VersioningSystem.Id.Should().Be(VersioningSystemId.None);
+	}
+
+	[Fact]
 	public void PublicReferenceProducts_ExcludesReleaseNotesOnlyProducts()
 	{
 		var config = LoadActualProductsConfiguration();
