@@ -231,7 +231,7 @@ public partial class ChangelogBundleAmendService(
 					return false;
 				bundleForWrite = sanitized;
 
-				if (configurationContext != null)
+				if (configurationContext != null && linkAllowRepos!.Count > 0)
 				{
 					try
 					{

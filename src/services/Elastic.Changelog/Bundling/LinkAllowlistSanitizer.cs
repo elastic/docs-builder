@@ -47,7 +47,7 @@ public static class LinkAllowlistSanitizer
 				allow,
 				"PR",
 				ref anyRewritten);
-			if (prs == null)
+			if (prs == null && entry.Prs is not null)
 				return false;
 
 			var issues = ApplyToReferenceList(
@@ -58,7 +58,7 @@ public static class LinkAllowlistSanitizer
 				allow,
 				"issue",
 				ref anyRewritten);
-			if (issues == null)
+			if (issues == null && entry.Issues is not null)
 				return false;
 
 			newEntries.Add(entry with { Prs = prs, Issues = issues });
@@ -130,8 +130,11 @@ public static class LinkAllowlistSanitizer
 		string referenceKind,
 		ref bool anyRewritten)
 	{
-		if (refs is null || refs.Count == 0)
-			return refs ?? [];
+		if (refs is null)
+			return null;
+
+		if (refs.Count == 0)
+			return refs;
 
 		var list = new List<string>(refs.Count);
 		foreach (var r in refs)

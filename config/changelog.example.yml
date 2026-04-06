@@ -216,9 +216,9 @@ bundle:
   # in bundle output; others are rewritten to '# PRIVATE:' sentinels (requires resolve: true).
   # When omitted, no link filtering is applied.
   # Add your repository and any others whose PR/issue links should appear in published docs.
-  link_allow_repos:
-    - elastic/elasticsearch
-    - elastic/kibana
+  # link_allow_repos:
+    # - elastic/elasticsearch
+    # - elastic/kibana
   # Optional: default GitHub repo name applied to all profiles that do not specify their own.
   # Used by the {changelog} directive to generate correct PR/issue links when the product ID
   # differs from the GitHub repository name. Can be overridden per profile.

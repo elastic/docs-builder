@@ -293,7 +293,7 @@ public partial class ChangelogBundlingService(
 					return false;
 				bundleData = sanitizedBundle;
 
-				if (configurationContext != null)
+				if (configurationContext != null && input.LinkAllowRepos.Count > 0)
 				{
 					try
 					{

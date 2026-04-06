@@ -136,6 +136,38 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
+	public void TryApplyBundle_NullPrsAndIssues_PreservesNull_WhenUnchanged()
+	{
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "t",
+					Prs = null,
+					Issues = null
+				}
+			]
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+		var ok = LinkAllowlistSanitizer.TryApplyBundle(
+			Collector,
+			bundle,
+			allow,
+			"elastic",
+			"elasticsearch",
+			out var sanitized,
+			out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+		sanitized.Entries[0].Prs.Should().BeNull();
+		sanitized.Entries[0].Issues.Should().BeNull();
+	}
+
+	[Fact]
 	public void TryApplyBundle_NotAllowed_ReplacesWithSentinel()
 	{
 		var bundle = new Bundle
