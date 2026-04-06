@@ -1,7 +1,7 @@
 # changelog add
 
 Create a changelog file that describes a single item in the release documentation.
-For details and examples, go to [](/contribute/changelog.md).
+For details and examples, go to [](/contribute/create-changelogs.md).
 
 ## Usage
 

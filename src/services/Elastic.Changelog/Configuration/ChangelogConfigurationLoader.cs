@@ -739,7 +739,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						collector.EmitWarning(configPath,
 							$"Configuration pattern 'match_products: any' with 'include_products' in per-product rule '{normalizedProductId}' provides no selective filtering. " +
 							"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
-							"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+							"See: https://elastic.github.io/docs-builder/contribute/configure-changelogs/#ineffective-configuration-patterns");
 					}
 
 					// Detect disjoint products in per-product include_products
@@ -754,7 +754,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 								$"Per-product rule '{normalizedProductId}' includes disjoint products [{string.Join(", ", disjointProducts)}] " +
 								"which cannot be included due to single-product rule resolution. " +
 								"Use separate bundles (each with a single product in output_products or profile output_products), or multi-product changelogs instead. " +
-								"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+								"See: https://elastic.github.io/docs-builder/contribute/configure-changelogs/#ineffective-configuration-patterns");
 						}
 					}
 
@@ -805,7 +805,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			{
 				collector.EmitHint(configPath,
 					"rules.bundle: When 'products' is present, global include_products, exclude_products, and type/area rules are not applied for filtering; configure filters under each product key or use global-only rules.bundle (no 'products' section). " +
-					"See: https://elastic.github.io/docs-builder/contribute/changelog/#bundle-rule-modes");
+					"See: https://elastic.github.io/docs-builder/contribute/configure-changelogs/#bundle-rule-modes");
 			}
 		}
 
