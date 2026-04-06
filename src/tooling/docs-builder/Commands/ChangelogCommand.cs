@@ -1347,14 +1347,13 @@ internal sealed partial class ChangelogCommand(
 				? $"\"{value.Replace("\"", "\\\"")}\""
 				: value;
 
+		var eol = content.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+
 		var block = shouldSeed
-			? $"  owner: {QuoteForYaml(resolvedOwner!)}\n  repo: {QuoteForYaml(resolvedRepo!)}\n  link_allow_repos:\n    - {QuoteForYaml($"{resolvedOwner}/{resolvedRepo}")}\n"
+			? $"  owner: {QuoteForYaml(resolvedOwner!)}{eol}  repo: {QuoteForYaml(resolvedRepo!)}{eol}  link_allow_repos:{eol}    - {QuoteForYaml($"{resolvedOwner}/{resolvedRepo}")}{eol}"
 			: "";
 
-		if (content.Contains(placeholder + "\r\n", StringComparison.Ordinal))
-			return content.Replace(placeholder + "\r\n", block, StringComparison.Ordinal);
-
-		return content.Replace(placeholder + "\n", block, StringComparison.Ordinal);
+		return content.Replace(placeholder + eol, block, StringComparison.Ordinal);
 	}
 
 	/// <summary>
