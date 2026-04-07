@@ -502,7 +502,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
-	/// <param name="plan">Output a structured JSON plan describing Docker flags, network requirements, and the resolved output path, then exit without generating the bundle. Intended for CI actions.</param>
+	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>) describing network requirements and the resolved output path, then exit without generating the bundle. Intended for CI actions.</param>
 	/// <param name="ctx"></param>
 	[Command("bundle")]
 	public async Task<int> Bundle(

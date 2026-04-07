@@ -451,7 +451,8 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// Resolves a bundle plan from config and profile metadata without executing any network calls or
-	/// file-scanning. Used by <c>--plan</c> mode to emit structured JSON that CI actions consume.
+	/// file-scanning. Used by <c>--plan</c> mode to emit GitHub Actions step outputs
+	/// (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>) that CI actions consume.
 	/// </summary>
 	public async Task<BundlePlanResult?> PlanBundleAsync(
 		IDiagnosticsCollector collector,
@@ -491,7 +492,6 @@ public partial class ChangelogBundlingService(
 		}
 
 		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults.
-		// Uses UrlPath.Join so the result always has forward slashes (CI runners expect this).
 		var outputPath = input.Output;
 		if (string.IsNullOrWhiteSpace(outputPath) && profileDef?.Output != null)
 		{
@@ -503,10 +503,10 @@ public partial class ChangelogBundlingService(
 			var outputDir = config?.Bundle?.OutputDirectory
 				?? config?.Bundle?.Directory
 				?? _fileSystem.Directory.GetCurrentDirectory();
-			outputPath = UrlPath.Join(outputDir, outputPattern);
+			outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
-			outputPath = UrlPath.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
 
 		return new BundlePlanResult
 		{
