@@ -17,6 +17,7 @@ using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Rendering;
+using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -47,7 +48,7 @@ internal sealed partial class ChangelogCommand(
 	[Command("")]
 	public Task<int> Default()
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog init': Initialize changelog configuration and folder structure\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n  - 'changelog evaluate-pr': (CI) Evaluate a PR for changelog generation eligibility\n\nRun 'changelog <subcommand> --help' for usage information.");
+		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog init': Initialize changelog configuration and folder structure\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog upload': Upload changelog or bundle artifacts to S3 or Elasticsearch\n  - 'changelog gh-release': Create changelogs from a GitHub release\n  - 'changelog evaluate-pr': (CI) Evaluate a PR for changelog generation eligibility\n\nRun 'changelog <subcommand> --help' for usage information.");
 		return Task.FromResult(1);
 	}
 
@@ -501,8 +502,6 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
-	/// <param name="sanitizePrivateLinks">Optional: Enable bundle-time private link sanitization (requires --resolve). Uses bundle.sanitize_private_links when omitted.</param>
-	/// <param name="noSanitizePrivateLinks">Optional: Disable private link sanitization even when enabled in config.</param>
 	/// <param name="ctx"></param>
 	[Command("bundle")]
 	public async Task<int> Bundle(
@@ -524,8 +523,6 @@ internal sealed partial class ChangelogCommand(
 		string? report = null,
 		bool? resolve = null,
 		bool noResolve = false,
-		bool? sanitizePrivateLinks = null,
-		bool noSanitizePrivateLinks = false,
 		Cancel ctx = default
 	)
 	{
@@ -615,10 +612,6 @@ internal sealed partial class ChangelogCommand(
 				forbidden.Add("--config");
 			if (!string.IsNullOrWhiteSpace(directory))
 				forbidden.Add("--directory");
-			if (sanitizePrivateLinks.HasValue)
-				forbidden.Add("--sanitize-private-links");
-			if (noSanitizePrivateLinks)
-				forbidden.Add("--no-sanitize-private-links");
 
 			if (forbidden.Count > 0)
 			{
@@ -783,9 +776,7 @@ internal sealed partial class ChangelogCommand(
 			ProfileReport = isProfileMode ? profileReport : null,
 			Report = !isProfileMode ? report : null,
 			Config = config,
-			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
-			SanitizePrivateLinksCli = sanitizePrivateLinks,
-			NoSanitizePrivateLinks = noSanitizePrivateLinks
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1304,6 +1295,62 @@ internal sealed partial class ChangelogCommand(
 			return $"\"{pathForConfig.Replace("\"", "\\\"")}\"";
 
 		return pathForConfig;
+	}
+
+	/// <summary>
+	/// Upload changelog or bundle artifacts to S3 or Elasticsearch.
+	/// Uses content-hash–based incremental upload: only files whose content has changed are transferred.
+	/// </summary>
+	/// <param name="artifactType">Artifact type to upload: 'changelog' (individual entries) or 'bundle' (consolidated bundles).</param>
+	/// <param name="target">Upload destination: 's3' or 'elasticsearch'.</param>
+	/// <param name="s3BucketName">S3 bucket name (required when target is 's3').</param>
+	/// <param name="config">Path to changelog.yml configuration file. Defaults to docs/changelog.yml.</param>
+	/// <param name="directory">Override changelog directory instead of reading it from config.</param>
+	[Command("upload")]
+	public async Task<int> Upload(
+		string artifactType,
+		string target,
+		string s3BucketName = "",
+		string? config = null,
+		string? directory = null,
+		Cancel ctx = default
+	)
+	{
+		if (!Enum.TryParse<ArtifactType>(artifactType, ignoreCase: true, out var parsedArtifactType))
+		{
+			collector.EmitError(string.Empty, $"Invalid artifact type '{artifactType}'. Valid values: changelog, bundle");
+			return 1;
+		}
+
+		if (!Enum.TryParse<UploadTargetKind>(target, ignoreCase: true, out var parsedTarget))
+		{
+			collector.EmitError(string.Empty, $"Invalid target '{target}'. Valid values: s3, elasticsearch");
+			return 1;
+		}
+
+		if (parsedTarget == UploadTargetKind.S3 && string.IsNullOrWhiteSpace(s3BucketName))
+		{
+			collector.EmitError(string.Empty, "--s3-bucket-name is required when target is 's3'");
+			return 1;
+		}
+
+		var resolvedDirectory = directory != null ? NormalizePath(directory) : null;
+		var resolvedConfig = config != null ? NormalizePath(config) : null;
+
+		await using var serviceInvoker = new ServiceInvoker(collector);
+		var service = new ChangelogUploadService(logFactory, configurationContext);
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = parsedArtifactType,
+			Target = parsedTarget,
+			S3BucketName = s3BucketName,
+			Config = resolvedConfig,
+			Directory = resolvedDirectory
+		};
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.Upload(c, state, ct)
+		);
+		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
 	/// <summary>
