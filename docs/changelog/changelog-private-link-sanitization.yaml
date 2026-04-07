@@ -1,5 +1,5 @@
 type: feature
-title: Add bundle-time private link sanitization and changelog directive link visibility
+title: Add bundle-time link allowlist for PR and issue references
 products:
   - product: docs-builder
     target: 0.100.0
@@ -9,7 +9,8 @@ areas:
 prs:
   - https://github.com/elastic/docs-builder/pull/3002
 description: |
-  Adds opt-in `bundle.sanitize_private_links` in changelog configuration (and per-profile override),
-  with `--sanitize-private-links` and `--no-sanitize-private-links` on option-based changelog bundle.
-  Rewrites PR/issue references targeting private `assembler.yml` repos to quoted `# PRIVATE` sentinels
-  when resolve is true. The `{changelog}` directive gains `:link-visibility:` (`auto`, `keep-links`, `hide-links`).
+  Replaces `bundle.sanitize_private_links` with explicit `bundle.link_allow_repos` (`owner/repo` list).
+  When set (including an empty list), PR/issue references not in the allowlist are rewritten to quoted
+  `# PRIVATE:` sentinels when the bundle is resolved. `bundle.repo` must be a single repository (no `+` syntax).
+  Optional assembler.yml warnings when an allowlisted repo is missing or marked private.
+  The `{changelog}` directive retains `:link-visibility:` (`auto`, `keep-links`, `hide-links`).

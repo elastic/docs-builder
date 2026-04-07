@@ -137,12 +137,19 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 | --- | --- | --- |
 | `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
 | `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
+| `CHANGELOG_DESCRIPTION` | `--description` | `steps.evaluate.outputs.description` |
 | `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
 | `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
 | `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
 | `CHANGELOG_REPO` | `--repo` | `github.event.repository.name` |
 
 **Precedence**: explicit CLI arguments always take priority over environment variables. Environment variables are only used when the corresponding CLI argument is not provided.
+
+`CHANGELOG_DESCRIPTION` has additional precedence rules related to release note extraction:
+
+- If `--description` is provided on the command line, it always wins.
+- If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored. This prevents a description that was extracted by `evaluate-pr` from being applied when extraction has been disabled.
+- Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
 
 The filename strategy is controlled by the `filename` option in `changelog.yml` (defaulting to `timestamp`). Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for details.
 

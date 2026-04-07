@@ -104,9 +104,6 @@ The `--input-products` option determines which changelog files are gathered for 
 :   Each occurrence can be either comma-separated issues ( `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (for example `--issues /path/to/file.txt`).
 :   When using a file, every line must be a fully-qualified GitHub issue URL such as `https://github.com/owner/repo/issues/123`. Bare numbers and short forms are not allowed in files.
 
-`--no-sanitize-private-links`
-:   Optional: Explicitly turn off the `sanitize_private_links` option if it's specified in the changelog configuration file.
-
 `--no-resolve`
 :   Optional: Explicitly turn off the `resolve` option if it's specified in the changelog configuration file.
 
@@ -146,13 +143,6 @@ The `--input-products` option determines which changelog files are gathered for 
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array.
 :   By default, the bundle contains only the file names and checksums.
-
-`--sanitize-private-links`
-:   Optional: Turn on [private link sanitization](#private-link-sanitization).
-:   Pull requests and issues that target repositories marked `private: true` in the `references` section of `assembler.yml` are rewritten as quoted `# PRIVATE:` sentinel strings in the bundle file.
-:   This option requires a resolved bundle: use `--resolve` or set `bundle.resolve: true` in the `changelog.yml`.
-:   If sanitization is enabled and the bundle is not resolved, the command fails.
-:   When you omit this option, it defaults to `bundle.sanitize_private_links` in your changelog configuration file, which defaults to `false`.
 
 ## Output files
 
@@ -291,26 +281,25 @@ rules:
           - "Monitoring"
 ```
 
-## Private link sanitization [private-link-sanitization]
+## PR and issue link allowlist [link-allowlist]
 
-A changelog in a public repository might contain links to pull requests or issues in private repositories.
-To prevent that information from appearing in the documentation, use `bundle.sanitize_private_links` in the changelog configuration file (or a product-specific profile override) or the `--sanitize-private-links` command option.
+A changelog in a public repository might contain links to pull requests or issues in repositories that should not appear in published documentation.
 
-This feature relies on the [`assembler.yml`](/configure/site/content.md) file and the existence of `private: true` to determine which repo links should be sanitized.
-Every repository that appears in a PR or issue link must be listed under `assembler.yml` `references`. References to unknown repositories fail the command so you can fix the registry.
-Repos are assumed to be `private: false` unless you specify otherwise.
+Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/repo` strings (for example, `elastic/elasticsearch`). When this key is present (including as an empty list), PR and issue references are filtered at bundle time: only links whose resolved repository is in the list are kept; others are rewritten to quoted `# PRIVATE:` sentinel strings in the bundle YAML.
 
 :::{important}
-When you use these options, you must also set `bundle.resolve: true` or specify `--resolve`.
-Unresolved bundles that only store `file:` pointers do not get this rewrite; if you need private link sanitization, you must use a resolved bundle.
+`bundle.link_allow_repos` requires a **resolved** bundle. Set `bundle.resolve: true` or pass `--resolve`. Unresolved bundles that only store `file:` pointers are not rewritten.
 :::
 
-The `changelog bundle`, `changelog gh-release`, and `changelog bundle-amend` commands rewrite PR and issue references that **target** private repositories into quoted sentinel strings such as `"# PRIVATE: …"` in the bundle file.
-The changelog directive and `changelog render` command then omit these sentinels from the documentation.
+When [`assembler.yml`](/configure/site/content.md) is available, docs-builder emits **warnings** (non-fatal) if an allowlisted repo is missing from `references` or is marked `private: true`, so you can verify the registry before publishing.
+
+The `changelog bundle`, `changelog gh-release`, and `changelog bundle-amend` commands apply the same rules. The changelog directive and `changelog render` command omit `# PRIVATE:` sentinels from rendered documentation.
 
 :::{warning}
 Sentinel values are omitted from rendered documentation but remain in bundle files; they are not cryptographic redaction.
 :::
+
+`bundle.repo` must name a **single** GitHub repository (do not use `repo1+repo2` merged-repo syntax).
 
 ## Option-based examples
 
