@@ -62,6 +62,7 @@ nav:
     - group: Install and deploy Elasticsearch
       page: docs-content://deploy-manage/deploy.md
       children:
+      - title: Skills for installation and deployment
       - page: docs-content://deploy-manage/deploy/elastic-cloud.md
         title: Deploy in Elastic Cloud
       - page: docs-content://deploy-manage/deploy/cloud-enterprise.md
@@ -75,6 +76,7 @@ nav:
           title: Command line tools
     - group: Administer your deployment
       children:
+      - title: Skills for cluster and deployment administration
       - page: docs-content://deploy-manage/stack-settings.md
         title: Elastic Stack settings
       - group: Autoscaling
@@ -270,6 +272,7 @@ nav:
           title: Uninstall Elastic Cloud on Kubernetes
     - group: Deployment and administration tools
       children:
+      - title: Overview (roundup)
       - toc: ecctl://reference
   - label: The Elasticsearch Platform
     children:
