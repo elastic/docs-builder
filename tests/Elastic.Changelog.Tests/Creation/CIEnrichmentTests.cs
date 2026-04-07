@@ -18,6 +18,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 	private static IEnvironmentVariables FakeCIEnv(
 		string? prNumber = null,
 		string? title = null,
+		string? description = null,
 		string? type = null,
 		string? owner = null,
 		string? repo = null,
@@ -27,6 +28,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		A.CallTo(() => env.IsRunningOnCI).Returns(true);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER")).Returns(prNumber);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TITLE")).Returns(title);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION")).Returns(description);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TYPE")).Returns(type);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_OWNER")).Returns(owner);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_REPO")).Returns(repo);
@@ -230,5 +232,77 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var result = service.EnrichFromCI(input);
 
 		result.Products.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_Description_FillsMissingDescription()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput();
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("Extracted release note");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExplicitDescription_CLIWins()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "CI description");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { Description = "My explicit description" };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("My explicit description");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExtractionDisabled_SkipsCIDescription()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { ExtractReleaseNotes = false };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().BeNull();
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExtractionDisabled_ExplicitDescription_CLIWins()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "CI description");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { ExtractReleaseNotes = false, Description = "My explicit description" };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("My explicit description");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExtractionNull_UsesCIDescription()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { ExtractReleaseNotes = null };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("Extracted release note");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExtractionEnabled_UsesCIDescription()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { ExtractReleaseNotes = true };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("Extracted release note");
 	}
 }
