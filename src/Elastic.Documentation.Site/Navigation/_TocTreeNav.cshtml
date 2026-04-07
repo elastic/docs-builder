@@ -23,7 +23,7 @@
 			<a
 				href="@group.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+				class="sidebar-link px-[8px] py-[6px] group-[.current]/li:text-blue-elastic!"
 			>
 				@group.NavigationTitle
 			</a>
@@ -34,11 +34,11 @@
 		var g = folder;
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
+			<div class="peer grid w-full grid-cols-[1fr_auto] gap-2">
 				<a
 					href="@(g.Url)"
 					@Model.Htmx.GetNavHxAttributes(true)
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
+					class="sidebar-link content-center px-[8px] py-[6px] @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
 					@(g.NavigationTitle)
 				</a>
 				@if (!allHidden)
@@ -86,7 +86,7 @@
 			<a
 				href="@leaf.Url"
 				@Model.Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
-				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
+				class="sidebar-link grow px-[8px] py-[6px] group-[.current]/li:text-blue-elastic!"
 			>
 				@leaf.NavigationTitle
 			</a>

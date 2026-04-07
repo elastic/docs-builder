@@ -14,8 +14,10 @@ public interface IHtmxAttributeProvider
 	string GetHxSelectOob(bool hasSameTopLevelGroup);
 
 	/// <summary>Gets HTMX attributes for a link.</summary>
+	/// <param name="preload">htmx-ext-preload trigger (e.g. mousedown). Null or empty omits preload (avoids duplicate GET with the real navigation request).</param>
 	string GetHxAttributes(bool hasSameTopLevelGroup = false, string? preload = "mousedown", string? hxSwapOob = null);
 
 	/// <summary>Gets HTMX attributes for navigation links.</summary>
+	/// <param name="preload">Same as <see cref="GetHxAttributes"/>; pass null for sidebar V2 links to disable preload.</param>
 	string GetNavHxAttributes(bool hasSameTopLevelGroup = false, string? preload = "mousedown");
 }

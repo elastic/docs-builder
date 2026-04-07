@@ -30,6 +30,11 @@ public partial class ConfigurationFileProvider
 		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
 		.Build();
 
+	public static IDeserializer NavV2Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
+		.WithNamingConvention(UnderscoredNamingConvention.Instance)
+		.WithTypeConverter(new NavV2FileYamlConverter())
+		.Build();
+
 	public ConfigurationSource ConfigurationSource { get; }
 
 	public string? GitReference { get; }
@@ -102,6 +107,7 @@ public partial class ConfigurationFileProvider
 		ProductsFile = CreateTemporaryConfigurationFile("products.yml");
 		AssemblerFile = CreateTemporaryConfigurationFile("assembler.yml");
 		NavigationFile = CreateTemporaryConfigurationFile("navigation.yml");
+		NavigationV2File = TryCreateTemporaryConfigurationFile("navigation-v2.yml");
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
 		// reading from synonyms.yml is temporary. If you spot this again as a future reader, feel free to remove it.
 		SearchFile = CreateTemporaryConfigurationFile("search.yml", "synonyms.yml");
@@ -112,6 +118,9 @@ public partial class ConfigurationFileProvider
 	private IDirectoryInfo TemporaryDirectory { get; }
 
 	public IFileInfo NavigationFile { get; private set; }
+
+	/// <summary>Optional — present only when <c>config/navigation-v2.yml</c> exists.</summary>
+	public IFileInfo? NavigationV2File { get; }
 
 	public IFileInfo VersionFile { get; }
 
@@ -195,6 +204,31 @@ public partial class ConfigurationFileProvider
 		return NavigationFile;
 
 
+	}
+
+	private IFileInfo? TryCreateTemporaryConfigurationFile(string fileName)
+	{
+		if (ConfigurationSource == ConfigurationSource.Local)
+		{
+			var localPath = GetLocalPath(fileName);
+			if (!_fileSystem.File.Exists(localPath))
+				return null;
+		}
+		else if (ConfigurationSource == ConfigurationSource.Remote)
+		{
+			var appDataPath = GetAppDataPath(fileName);
+			if (!_fileSystem.File.Exists(appDataPath))
+				return null;
+		}
+		else
+		{
+			// Embedded — check if resource exists
+			var resourceName = $"{_assemblyName}.{fileName}";
+			if (typeof(ConfigurationFileProvider).Assembly.GetManifestResourceStream(resourceName) is null)
+				return null;
+		}
+
+		return CreateTemporaryConfigurationFile(fileName);
 	}
 
 	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)

@@ -97,7 +97,14 @@ public record DetectionRuleFile : MarkdownFile
 	{
 		RuleSourceMarkdownPath = SourcePath(sourceFile, build);
 		LinkReferenceRelativePath = Path.GetRelativePath(build.DocumentationSourceDirectory.FullName, RuleSourceMarkdownPath.FullName);
-		Rule = DetectionRule.From(sourceFile);
+		try
+		{
+			Rule = DetectionRule.From(sourceFile);
+		}
+		catch (Exception ex)
+		{
+			Rule = DetectionRule.ForUnparsableSource(sourceFile, ex.InnerException?.Message ?? ex.Message);
+		}
 	}
 
 	private static IFileInfo SourcePath(IFileInfo rulePath, BuildContext build)

@@ -38,6 +38,7 @@ environments:
     path_prefix: docs
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      NAV_V2: true
   preview:
     uri: https://docs-v3-preview.elastic.dev
     path_prefix: ${ASSEMBLER_PREVIEW_PATH_PREFIX}
@@ -46,6 +47,7 @@ environments:
       enabled: false
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      NAV_V2: true
   air-gapped:
     uri: http://localhost:8080
     path_prefix: docs

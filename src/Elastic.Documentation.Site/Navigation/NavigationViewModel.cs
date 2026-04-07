@@ -23,4 +23,7 @@ public class NavigationViewModel
 	public required IHtmxAttributeProvider Htmx { get; init; }
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
+
+	/// <summary>When true, the sidebar renders using the V2 nav partial with accordion behaviour.</summary>
+	public bool IsNavV2 { get; init; }
 }

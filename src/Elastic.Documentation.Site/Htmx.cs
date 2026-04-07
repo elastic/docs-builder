@@ -16,7 +16,7 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 	public virtual string GetHxSelectOob(bool hasSameTopLevelGroup) =>
 		hasSameTopLevelGroup
 			? "#content-container,#toc-nav"
-			: "#content-container,#toc-nav,#nav-tree,#nav-dropdown";
+			: "#content-container,#toc-nav,#pages-nav";
 
 	public string GetHxAttributes(
 		bool hasSameTopLevelGroup = false,
@@ -26,7 +26,8 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 	{
 		var attributes = new StringBuilder();
 		_ = attributes.Append($" hx-select-oob={hxSwapOob ?? GetHxSelectOob(hasSameTopLevelGroup)}");
-		_ = attributes.Append($" preload={preload}");
+		if (!string.IsNullOrEmpty(preload))
+			_ = attributes.Append($" preload={preload}");
 		return attributes.ToString();
 	}
 
@@ -34,7 +35,8 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 	{
 		var attributes = new StringBuilder();
 		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(hasSameTopLevelGroup)}");
-		_ = attributes.Append($" preload={preload}");
+		if (!string.IsNullOrEmpty(preload))
+			_ = attributes.Append($" preload={preload}");
 		return attributes.ToString();
 	}
 }
