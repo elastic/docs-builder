@@ -19,7 +19,7 @@ const getHxSelectOob = (targetUrl: string, currentPathname: string): string => {
     const base =
         currentSegment === targetSegment
             ? '#content-container,#toc-nav'
-            : '#content-container,#toc-nav,#nav-tree,#nav-dropdown'
+            : '#content-container,#toc-nav,#pages-nav'
     return config.buildType === 'codex' ? `${base},#codex-breadcrumbs` : base
 }
 
@@ -29,7 +29,7 @@ const getHxSelectOob = (targetUrl: string, currentPathname: string): string => {
  *
  * - For simple swap paths (landing, /docs/api/*, /g/*): swap only #main-container
  * - For same top-level group: swap #content-container,#toc-nav
- * - For different top-level group: swap #content-container,#toc-nav,#nav-tree,#nav-dropdown
+ * - For different top-level group: swap #content-container,#toc-nav,#pages-nav
  */
 export const applyHtmxAttributes = (
     anchor: HTMLAnchorElement,
