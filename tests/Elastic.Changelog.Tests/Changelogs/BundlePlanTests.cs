@@ -159,7 +159,7 @@ public class BundlePlanTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task Plan_ProfileNotFound_ReturnsNull()
+	public async Task Plan_ProfileNotFound_ReturnsResultWithNeedsNetworkFalse()
 	{
 		// language=yaml
 		var configContent =
