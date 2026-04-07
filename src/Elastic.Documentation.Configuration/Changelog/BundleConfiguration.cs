@@ -39,10 +39,11 @@ public record BundleConfiguration
 	public string? Owner { get; init; }
 
 	/// <summary>
-	/// When true, PR/issue references targeting repositories marked <c>private: true</c> in
-	/// <c>assembler.yml</c> are rewritten to sentinel values at bundle time (requires <see cref="Resolve"/>).
+	/// When set (including an empty list), PR/issue references whose resolved <c>owner/repo</c> is not listed
+	/// are rewritten to <c># PRIVATE:</c> sentinels at bundle time. When absent, no link filtering is applied.
+	/// Requires <see cref="Resolve"/>.
 	/// </summary>
-	public bool SanitizePrivateLinks { get; init; }
+	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.
@@ -104,9 +105,4 @@ public record BundleProfile
 	/// Mutually exclusive with <see cref="Products"/>.
 	/// </summary>
 	public string? Source { get; init; }
-
-	/// <summary>
-	/// When set, overrides <see cref="BundleConfiguration.SanitizePrivateLinks"/> for this profile.
-	/// </summary>
-	public bool? SanitizePrivateLinks { get; init; }
 }
