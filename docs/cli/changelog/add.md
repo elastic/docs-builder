@@ -29,8 +29,8 @@ docs-builder changelog add [options...] [-h|--help]
 :   If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--no-extract-release-notes`
-:   Optional: Turn off extraction of release notes from PR descriptions.
-:   The extractor looks for content in various formats in the PR description:
+:   Optional: Turn off extraction of release notes from PR or issue descriptions.
+:   The extractor looks for content in various formats in the PR or issue description:
 :   - `Release Notes: ...`
 :   - `Release-Notes: ...`
 :   - `release notes: ...`
