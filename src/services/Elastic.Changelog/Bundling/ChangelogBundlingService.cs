@@ -375,10 +375,11 @@ public partial class ChangelogBundlingService(
 			{
 				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
 				// → bundle.directory → CWD
-				var outputDir = config.Bundle.OutputDirectory
+				var outputDir = (config.Bundle.OutputDirectory
 					?? input.OutputDirectory
 					?? config.Bundle.Directory
-					?? _fileSystem.Directory.GetCurrentDirectory();
+					?? _fileSystem.Directory.GetCurrentDirectory())
+					.Replace('/', _fileSystem.Path.DirectorySeparatorChar);
 				outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
 			}
 
@@ -418,10 +419,10 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
-	private static BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
+	private BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
 	{
 		// Apply directory: CLI takes precedence. Only use config when --directory not specified.
-		var directory = input.Directory ?? config?.Bundle?.Directory ?? Directory.GetCurrentDirectory();
+		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
 			return input with { Directory = directory, LinkAllowRepos = null };
@@ -429,7 +430,7 @@ public partial class ChangelogBundlingService(
 		// Apply output default when --output not specified: use bundle.output_directory if set
 		var output = input.Output;
 		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
-			output = Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+			output = _fileSystem.Path.Join(config.Bundle.OutputDirectory.Replace('/', _fileSystem.Path.DirectorySeparatorChar), "changelog-bundle.yaml");
 
 		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
 		var resolve = input.Resolve ?? config.Bundle.Resolve;
@@ -500,13 +501,14 @@ public partial class ChangelogBundlingService(
 			var outputPattern = profileDef.Output
 				.Replace("{version}", version)
 				.Replace("{lifecycle}", lifecycle);
-			var outputDir = config?.Bundle?.OutputDirectory
+			var outputDir = (config?.Bundle?.OutputDirectory
 				?? config?.Bundle?.Directory
-				?? _fileSystem.Directory.GetCurrentDirectory();
+				?? _fileSystem.Directory.GetCurrentDirectory())
+				.Replace('/', _fileSystem.Path.DirectorySeparatorChar);
 			outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
-			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory.Replace('/', _fileSystem.Path.DirectorySeparatorChar), "changelog-bundle.yaml");
 
 		return new BundlePlanResult
 		{
