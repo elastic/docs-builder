@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Elastic.Documentation</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +16,7 @@
     <PackageReference Include="NetEscapades.EnumGenerators"/>
     <PackageReference Include="Proc" />
     <PackageReference Include="SoftCircuits.IniFileParser" />
+    <PackageReference Include="Nullean.ScopedFileSystem" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
     <PackageReference Include="YamlDotNet"/>

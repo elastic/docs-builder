@@ -39,7 +39,7 @@ internal sealed partial class ChangelogCommand(
 	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
 	private static partial Regex BundleOutputDirectoryRegex();
 
-	private readonly IFileSystem _fileSystem = new FileSystem();
+	private readonly IFileSystem _fileSystem = FileSystemFactory.RealRead;
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommand>();
 	/// <summary>
 	/// Changelog commands. Use 'changelog add' to create a new changelog or 'changelog bundle' to create a consolidated list of changelogs.
@@ -91,7 +91,7 @@ internal sealed partial class ChangelogCommand(
 
 		var useNonDefaultChangelogDir = changelogDir != null;
 		var useNonDefaultBundlesDir = bundlesDir != null;
-		var repoRoot = Paths.DetermineSourceDirectoryRoot(docsFolder)?.FullName ?? docsFolder.FullName;
+		var repoRoot = Paths.FindGitRoot(docsFolder)?.FullName ?? docsFolder.FullName;
 
 		// Create changelog.yml from example if it does not exist
 		if (!_fileSystem.File.Exists(configPath))
@@ -288,7 +288,7 @@ internal sealed partial class ChangelogCommand(
 		// Load changelog config and apply fallbacks for all modes.
 		// Precedence: CLI option > bundle section in changelog.yml > built-in default.
 		// This applies to --prs, --issues, and --release-version alike.
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 			.LoadChangelogConfiguration(collector, config, ctx);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
@@ -501,8 +501,6 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
-	/// <param name="sanitizePrivateLinks">Optional: Enable bundle-time private link sanitization (requires --resolve). Uses bundle.sanitize_private_links when omitted.</param>
-	/// <param name="noSanitizePrivateLinks">Optional: Disable private link sanitization even when enabled in config.</param>
 	/// <param name="ctx"></param>
 	[Command("bundle")]
 	public async Task<int> Bundle(
@@ -524,8 +522,6 @@ internal sealed partial class ChangelogCommand(
 		string? report = null,
 		bool? resolve = null,
 		bool noResolve = false,
-		bool? sanitizePrivateLinks = null,
-		bool noSanitizePrivateLinks = false,
 		Cancel ctx = default
 	)
 	{
@@ -546,7 +542,7 @@ internal sealed partial class ChangelogCommand(
 			}
 
 			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 				.LoadChangelogConfiguration(collector, config, ctx);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
@@ -615,10 +611,6 @@ internal sealed partial class ChangelogCommand(
 				forbidden.Add("--config");
 			if (!string.IsNullOrWhiteSpace(directory))
 				forbidden.Add("--directory");
-			if (sanitizePrivateLinks.HasValue)
-				forbidden.Add("--sanitize-private-links");
-			if (noSanitizePrivateLinks)
-				forbidden.Add("--no-sanitize-private-links");
 
 			if (forbidden.Count > 0)
 			{
@@ -783,9 +775,7 @@ internal sealed partial class ChangelogCommand(
 			ProfileReport = isProfileMode ? profileReport : null,
 			Report = !isProfileMode ? report : null,
 			Config = config,
-			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
-			SanitizePrivateLinksCli = sanitizePrivateLinks,
-			NoSanitizePrivateLinks = noSanitizePrivateLinks
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -855,7 +845,7 @@ internal sealed partial class ChangelogCommand(
 			}
 
 			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
-			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 				.LoadChangelogConfiguration(collector, config, ctx);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
@@ -1114,7 +1104,7 @@ internal sealed partial class ChangelogCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		// --output CLI > bundle.directory config > ./changelogs (service default)
-		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, new System.IO.Abstractions.FileSystem())
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 			.LoadChangelogConfiguration(collector, config, ctx);
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 

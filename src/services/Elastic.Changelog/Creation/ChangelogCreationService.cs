@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Creation;
 
@@ -43,6 +44,9 @@ public record CreateChangelogArguments
 	/// </summary>
 	public bool? ExtractReleaseNotes { get; init; }
 
+	/// <summary>null and true both mean enabled; only explicit false disables extraction.</summary>
+	public bool ExtractionDisabled => ExtractReleaseNotes == false;
+
 	/// <summary>
 	/// Whether to extract linked issues/PRs from PR/issue body. null = use config default.
 	/// </summary>
@@ -61,16 +65,16 @@ public class ChangelogCreationService(
 ILoggerFactory logFactory,
 IConfigurationContext configurationContext,
 IGitHubPrService? githubPrService = null,
-IFileSystem? fileSystem = null,
+ScopedFileSystem? fileSystem = null,
 IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
-	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? new FileSystem(), logFactory.CreateLogger<ChangelogFileWriter>());
+	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? FileSystemFactory.RealRead, logFactory.CreateLogger<ChangelogFileWriter>());
 	private readonly ProductInferService _productInferService = new(
 		configurationContext.ProductsConfiguration);
 
@@ -78,6 +82,7 @@ IEnvironmentVariables? env = null
 	{
 		try
 		{
+			var cliDescription = input.Description;
 			input = EnrichFromCI(input);
 
 			// Load changelog configuration
@@ -90,6 +95,16 @@ IEnvironmentVariables? env = null
 
 			// Apply config defaults to input (for extract_release_notes, extract_issues)
 			input = ApplyConfigDefaults(input, config);
+
+			// When extraction is disabled (by CLI or config), discard any CI-injected description
+			// that originated from evaluate-pr's release-note extraction.
+			if (input.ExtractionDisabled
+				&& string.IsNullOrWhiteSpace(cliDescription)
+				&& !string.IsNullOrWhiteSpace(input.Description))
+			{
+				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
+				input = input with { Description = null };
+			}
 
 			// Multiple PRs: one changelog per PR (--use-pr-number uses PR number as each filename)
 			if (input.Prs != null && input.Prs.Length > 1)
@@ -411,11 +426,15 @@ IEnvironmentVariables? env = null
 			? input.Products
 			: ProductArgument.ParseProductSpecs(ciProducts);
 
+		var enrichedDescription = !string.IsNullOrWhiteSpace(input.Description)
+			? input.Description
+			: input.ExtractionDisabled ? null : ciDescription;
+
 		return input with
 		{
 			Prs = enrichedPrs,
 			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
-			Description = !string.IsNullOrWhiteSpace(input.Description) ? input.Description : ciDescription,
+			Description = enrichedDescription,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
 			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,

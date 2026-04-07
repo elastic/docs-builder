@@ -86,7 +86,7 @@ internal sealed class IndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealGitRootForPath(path);
 		var service = new IsolatedIndexService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var state = (fs, path,
 				// endpoint options

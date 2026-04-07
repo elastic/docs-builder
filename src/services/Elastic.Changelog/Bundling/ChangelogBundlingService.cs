@@ -18,6 +18,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -84,19 +85,9 @@ public record BundleChangelogsArguments
 	public string[]? HideFeatures { get; init; }
 
 	/// <summary>
-	/// Effective flag after merging CLI, profile, and config (see <see cref="SanitizePrivateLinksCli"/>).
+	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
 	/// </summary>
-	public bool SanitizePrivateLinks { get; init; }
-
-	/// <summary>
-	/// CLI override for option-based bundling only. null = use changelog.yml bundle default.
-	/// </summary>
-	public bool? SanitizePrivateLinksCli { get; init; }
-
-	/// <summary>
-	/// When true, forces sanitization off (overrides other sources).
-	/// </summary>
-	public bool NoSanitizePrivateLinks { get; init; }
+	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 }
 
 /// <summary>
@@ -105,15 +96,15 @@ public record BundleChangelogsArguments
 public partial class ChangelogBundlingService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null,
+	ScopedFileSystem? fileSystem = null,
 	IGitHubReleaseService? releaseService = null)
 	: IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? new FileSystem())
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
 		: null;
 
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
@@ -175,7 +166,7 @@ public partial class ChangelogBundlingService(
 			if (!ValidateInput(collector, input))
 				return false;
 
-			if (!ValidateSanitizePrivateLinks(collector, input))
+			if (!ValidateLinkAllowlist(collector, input))
 				return false;
 
 			// Load PR or issue filter values
@@ -289,21 +280,34 @@ public partial class ChangelogBundlingService(
 				return false;
 
 			var bundleData = buildResult.Data;
-			if (input.SanitizePrivateLinks)
+			if (input.LinkAllowRepos != null)
 			{
-				ArgumentNullException.ThrowIfNull(configurationContext);
-				var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-				var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-				if (!PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+				if (!LinkAllowlistSanitizer.TryApplyBundle(
 					collector,
 					bundleData,
-					assembly,
+					input.LinkAllowRepos,
 					input.Owner ?? "elastic",
 					input.Repo,
 					out var sanitizedBundle,
 					out _))
 					return false;
 				bundleData = sanitizedBundle;
+
+				if (configurationContext != null && input.LinkAllowRepos.Count > 0)
+				{
+					try
+					{
+						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, input.LinkAllowRepos, assembly);
+					}
+					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+					{
+						collector.EmitWarning(
+							string.Empty,
+							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
+					}
+				}
 			}
 
 			// Write bundle file
@@ -346,7 +350,6 @@ public partial class ChangelogBundlingService(
 		string? repo = null;
 		string? owner = null;
 		string[]? mergedHideFeatures = null;
-		var sanitizePrivateLinks = false;
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
@@ -388,7 +391,6 @@ public partial class ChangelogBundlingService(
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
-			sanitizePrivateLinks = profile.SanitizePrivateLinks ?? config.Bundle.SanitizePrivateLinks;
 		}
 
 		return input with
@@ -401,8 +403,7 @@ public partial class ChangelogBundlingService(
 			OutputProducts = outputProducts,
 			Repo = repo,
 			Owner = owner,
-			HideFeatures = mergedHideFeatures,
-			SanitizePrivateLinks = sanitizePrivateLinks
+			HideFeatures = mergedHideFeatures
 		};
 	}
 
@@ -412,13 +413,7 @@ public partial class ChangelogBundlingService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
-		{
-			var sanitizeNoConfig = !input.NoSanitizePrivateLinks &&
-				(string.IsNullOrWhiteSpace(input.Profile)
-					? input.SanitizePrivateLinksCli ?? false
-					: input.SanitizePrivateLinks);
-			return input with { Directory = directory, SanitizePrivateLinks = sanitizeNoConfig };
-		}
+			return input with { Directory = directory, LinkAllowRepos = null };
 
 		// Apply output default when --output not specified: use bundle.output_directory if set
 		var output = input.Output;
@@ -432,12 +427,6 @@ public partial class ChangelogBundlingService(
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
 
-		// Profile mode forbids --sanitize-private-links on the CLI; SanitizePrivateLinksCli is only set for option-based bundle.
-		var sanitizePrivateLinks = !input.NoSanitizePrivateLinks &&
-			(!string.IsNullOrWhiteSpace(input.Profile)
-				? input.SanitizePrivateLinks
-				: input.SanitizePrivateLinksCli ?? config.Bundle.SanitizePrivateLinks);
-
 		return input with
 		{
 			Directory = directory,
@@ -445,7 +434,7 @@ public partial class ChangelogBundlingService(
 			Resolve = resolve,
 			Repo = repo,
 			Owner = owner,
-			SanitizePrivateLinks = sanitizePrivateLinks
+			LinkAllowRepos = config.Bundle.LinkAllowRepos
 		};
 	}
 
@@ -490,29 +479,17 @@ public partial class ChangelogBundlingService(
 		return true;
 	}
 
-	private bool ValidateSanitizePrivateLinks(IDiagnosticsCollector collector, BundleChangelogsArguments input)
+	private static bool ValidateLinkAllowlist(IDiagnosticsCollector collector, BundleChangelogsArguments input)
 	{
-		if (!input.SanitizePrivateLinks)
+		if (input.LinkAllowRepos == null)
 			return true;
 
 		if (!(input.Resolve ?? false))
 		{
 			collector.EmitError(
 				string.Empty,
-				"Private link sanitization requires resolved bundle content. " +
-				"Use --resolve or set bundle.resolve: true in changelog.yml, or disable sanitization " +
-				"(bundle.sanitize_private_links / --sanitize-private-links)."
-			);
-			return false;
-		}
-
-		if (configurationContext == null)
-		{
-			collector.EmitError(
-				string.Empty,
-				"Private link sanitization requires assembler configuration (assembler.yml). " +
-				"Ensure docs-builder runs with a valid configuration source."
-			);
+				"bundle.link_allow_repos requires resolved bundle content. " +
+				"Use --resolve or set bundle.resolve: true in changelog.yml, or remove bundle.link_allow_repos.");
 			return false;
 		}
 

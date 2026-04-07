@@ -291,9 +291,9 @@ internal record BundleConfigurationYaml
 	public string? Owner { get; set; }
 
 	/// <summary>
-	/// When true, sanitize private-repo PR/issue links at bundle time (requires resolve).
+	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels (requires resolve).
 	/// </summary>
-	public bool? SanitizePrivateLinks { get; set; }
+	public YamlLenientList? LinkAllowRepos { get; set; }
 
 	/// <summary>
 	/// Named bundle profiles.
@@ -346,11 +346,6 @@ internal record BundleProfileYaml
 	/// Mutually exclusive with <see cref="Products"/>.
 	/// </summary>
 	public string? Source { get; set; }
-
-	/// <summary>
-	/// When set, overrides bundle.sanitize_private_links for this profile.
-	/// </summary>
-	public bool? SanitizePrivateLinks { get; set; }
 }
 
 /// <summary>

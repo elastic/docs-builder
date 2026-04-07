@@ -3,7 +3,7 @@ versioning_systems:
   # Updates for Stack versions are manual
   stack: &stack
     base: 9.0
-    current: 9.3.2
+    current: 9.3.3
 
   # Using an unlikely high version
   # So that our logic that would display "planned" doesn't trigger
@@ -19,7 +19,7 @@ versioning_systems:
   ech: *all
   eck:
     base: 3.0
-    current: 3.3.1
+    current: 3.3.2
   ess: *all
   ecs:
     base: 9.0
@@ -103,7 +103,7 @@ versioning_systems:
     current: 1.4.0
   edot-cf-azure:
     base: 0.1
-    current: 0.6.0
+    current: 0.7.1
   edot-cf-gcp:
     base: 0.1
     current: 0.1.2

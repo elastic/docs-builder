@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Deploying;
 
-public class DeployUpdateRedirectsService(ILoggerFactory logFactory, FileSystem fileSystem) : IService
+public class DeployUpdateRedirectsService(ILoggerFactory logFactory, IFileSystem fileSystem) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<DeployUpdateRedirectsService>();
 
@@ -42,7 +42,7 @@ public class DeployUpdateRedirectsService(ILoggerFactory logFactory, FileSystem 
 		}
 
 		var kvsName = $"{kvsNamePrefix}-{environment}-redirects-kvs";
-		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, logFactory, fileSystem.DirectoryInfo.New(Directory.GetCurrentDirectory()));
+		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, logFactory, fileSystem.DirectoryInfo.New(fileSystem.Directory.GetCurrentDirectory()));
 
 		cloudFrontClient.UpdateRedirects(kvsName, sourcedRedirects);
 		return collector.Errors == 0;

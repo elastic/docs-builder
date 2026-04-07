@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Configuration;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
@@ -420,7 +421,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 				A<CancellationToken>._))
 			.Returns(pr3Info);
 
-		var tempDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var tempDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with newline-delimited PRs (simulating what ChangelogCommand would read)
@@ -518,7 +519,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 				A<CancellationToken>._))
 			.Returns(pr2Info);
 
-		var tempDir = FileSystem.Path.Join(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var tempDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with PRs

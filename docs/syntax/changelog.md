@@ -132,10 +132,10 @@ Reserved for future configuration use. The directive does not currently load or 
 
 You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
 
-The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/release/changelog-bundle.md#changelog-bundle-rules) for full syntax.
+The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/changelog/bundle.md#changelog-bundle-rules) for full syntax.
 
 `rules.bundle` supports product, type, and area filtering, and per-product overrides.
-For full syntax, refer to the [rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).
+For full syntax, refer to the [rules for filtered bundles](/cli/changelog/bundle.md#changelog-bundle-rules).
 
 ## Hiding features
 
@@ -299,12 +299,12 @@ The following renders all changelog bundles from the default `changelog/bundles/
 | Generating static markdown files for external use | `changelog render` command |
 | Selective rendering of specific versions | `changelog render` command |
 
-The `{changelog}` directive is ideal for release notes pages that should always show the complete changelog history. For more selective workflows or external publishing, use the [`changelog render`](../cli/release/changelog-render.md) command.
+The `{changelog}` directive is ideal for release notes pages that should always show the complete changelog history. For more selective workflows or external publishing, use the [`changelog render`](/cli/changelog/render.md) command.
 
 ## Related
 
-- [Create and bundle changelogs](../contribute/changelog.md) — Learn how to create changelog entries and bundles
-- [`changelog add`](../cli/release/changelog-add.md) — CLI command to create changelog entries
-- [`changelog bundle`](../cli/release/changelog-bundle.md) — CLI command to bundle changelog entries
-- [`changelog remove`](../cli/release/changelog-remove.md) — CLI command to remove changelog files
-- [`changelog render`](../cli/release/changelog-render.md) — CLI command to render changelogs to markdown files
+- [Create and bundle changelogs](/contribute/changelog.md) — Learn how to create changelog entries and bundles
+- [`changelog add`](/cli/changelog/add.md) — CLI command to create changelog entries
+- [`changelog bundle`](/cli/changelog/bundle.md) — CLI command to bundle changelog entries
+- [`changelog remove`](/cli/changelog/remove.md) — CLI command to remove changelog files
+- [`changelog render`](/cli/changelog/render.md) — CLI command to render changelogs to markdown files
