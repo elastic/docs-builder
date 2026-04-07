@@ -91,6 +91,17 @@ public record BundleChangelogsArguments
 }
 
 /// <summary>
+/// Structured plan output for CI actions. Describes what Docker flags and output path to expect
+/// without actually executing the bundle.
+/// </summary>
+public record BundlePlanResult
+{
+	public bool NeedsNetwork { get; init; }
+	public bool NeedsGithubToken { get; init; }
+	public string? OutputPath { get; init; }
+}
+
+/// <summary>
 /// Service for bundling changelog files
 /// </summary>
 public partial class ChangelogBundlingService(
@@ -368,7 +379,7 @@ public partial class ChangelogBundlingService(
 					?? input.OutputDirectory
 					?? config.Bundle.Directory
 					?? _fileSystem.Directory.GetCurrentDirectory();
-				outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
+				outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -407,10 +418,10 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
-	private static BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
+	private BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
 	{
 		// Apply directory: CLI takes precedence. Only use config when --directory not specified.
-		var directory = input.Directory ?? config?.Bundle?.Directory ?? Directory.GetCurrentDirectory();
+		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
 			return input with { Directory = directory, LinkAllowRepos = null };
@@ -418,7 +429,7 @@ public partial class ChangelogBundlingService(
 		// Apply output default when --output not specified: use bundle.output_directory if set
 		var output = input.Output;
 		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
-			output = Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+			output = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
 
 		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
 		var resolve = input.Resolve ?? config.Bundle.Resolve;
@@ -435,6 +446,73 @@ public partial class ChangelogBundlingService(
 			Repo = repo,
 			Owner = owner,
 			LinkAllowRepos = config.Bundle.LinkAllowRepos
+		};
+	}
+
+	/// <summary>
+	/// Resolves a bundle plan from config and profile metadata without executing any network calls or
+	/// file-scanning. Used by <c>--plan</c> mode to emit GitHub Actions step outputs
+	/// (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>) that CI actions consume.
+	/// </summary>
+	public async Task<BundlePlanResult?> PlanBundleAsync(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		bool hasReleaseVersion,
+		Cancel ctx)
+	{
+		var needsNetwork = hasReleaseVersion;
+		var needsGithubToken = hasReleaseVersion;
+
+		ChangelogConfiguration? config = null;
+		if (!string.IsNullOrWhiteSpace(input.Profile))
+		{
+			if (_configLoader == null)
+			{
+				collector.EmitError(string.Empty, "Changelog configuration loader is required for profile-based bundling.");
+				return null;
+			}
+			config = string.IsNullOrWhiteSpace(input.Config)
+				? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
+				: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+			if (config == null)
+				return null;
+		}
+		else if (_configLoader != null)
+			config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+
+		BundleProfile? profileDef = null;
+		if (!string.IsNullOrWhiteSpace(input.Profile) &&
+			config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
+		{
+			if (string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase))
+			{
+				needsNetwork = true;
+				needsGithubToken = true;
+			}
+		}
+
+		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults.
+		var outputPath = input.Output;
+		if (string.IsNullOrWhiteSpace(outputPath) && profileDef?.Output != null)
+		{
+			var version = input.ProfileArgument ?? "unknown";
+			var lifecycle = VersionLifecycleInference.InferLifecycle(version);
+			var outputPattern = profileDef.Output
+				.Replace("{version}", version)
+				.Replace("{lifecycle}", lifecycle);
+			var outputDir = config?.Bundle?.OutputDirectory
+				?? config?.Bundle?.Directory
+				?? _fileSystem.Directory.GetCurrentDirectory();
+			outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
+		}
+		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
+			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
+
+		return new BundlePlanResult
+		{
+			NeedsNetwork = needsNetwork,
+			NeedsGithubToken = needsGithubToken,
+			OutputPath = outputPath
 		};
 	}
 
