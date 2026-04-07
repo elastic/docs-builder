@@ -363,6 +363,17 @@ Ideally this task will be automated such that it's performed by a bot or GitHub 
 If you run it from the command line, you must precede any special characters (such as backquotes) with a backslash escape character (`\`).
 :::
 
+### CI two-step flow
+
+When automated via the [changelog GitHub Actions](https://github.com/elastic/docs-actions/tree/main/changelog), changelog creation is a two-step process:
+
+1. **`changelog evaluate-pr`** inspects the PR (title, labels, body) and produces outputs such as `title`, `type`, `description`, and `products`.
+2. **`changelog add`** reads those outputs from `CHANGELOG_*` environment variables and generates the changelog YAML file.
+
+The `description` output from step 1 contains the release note extracted from the PR body (when `extract.release_notes` is enabled). If extraction is disabled — either by setting `extract.release_notes: false` in `changelog.yml` or by passing `--no-extract-release-notes` to `changelog add` — the `CHANGELOG_DESCRIPTION` environment variable is ignored and the extracted description is not written to the changelog.
+
+Refer to [CI auto-detection](/cli/changelog/add.md#ci-auto-detection) for the full list of environment variables and precedence rules.
+
 For up-to-date command usage information, use the `-h` option or refer to [](/cli/changelog/add.md).
 
 ### Authorization
@@ -713,8 +724,8 @@ Top-level `bundle` fields:
 |---|---|
 | `repo` | Default GitHub repository name applied to all profiles. Falls back to product ID if not set at any level. |
 | `owner` | Default GitHub repository owner applied to all profiles. |
-| `resolve` | When `true`, embeds full changelog entry content in the bundle (same as `--resolve`). Required when `sanitize_private_links` is enabled. |
-| `sanitize_private_links` | When `true`, rewrites PR/issue references that target private repositories (per `assembler.yml` `references`) to quoted `# PRIVATE:` sentinel strings in bundle YAML. Requires `resolve: true` and a non-empty `references` section in `assembler.yml`. Default `false`. Refer to  [Private link sanitization at bundle time](/cli/changelog/bundle.md#private-link-sanitization). |
+| `resolve` | When `true`, embeds full changelog entry content in the bundle (same as `--resolve`). Required when `link_allow_repos` is set. |
+| `link_allow_repos` | When set (including an empty list), only PR/issue links whose resolved repository is in this `owner/repo` list are kept; others are rewritten to `# PRIVATE:` sentinels in bundle YAML. When absent, no link filtering is applied. Requires `resolve: true`. Refer to [PR and issue link allowlist](/cli/changelog/bundle.md#link-allowlist). |
 
 Profile configuration fields in `bundle.profiles`:
 
@@ -727,7 +738,6 @@ Profile configuration fields in `bundle.profiles`:
 | `repo` | Optional. Overrides `bundle.repo` for this profile only. Required when `source: github_release` is used and no `bundle.repo` is set. |
 | `owner` | Optional. Overrides `bundle.owner` for this profile only. |
 | `hide_features` | List of feature IDs to embed in the bundle as hidden. |
-| `sanitize_private_links` | Optional. Overrides `bundle.sanitize_private_links` for this profile. |
 
 Example profile configuration:
 
@@ -1048,7 +1058,7 @@ The `--hide-features` option on the `render` command and the `hide-features` fie
 
 A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
 
-To comment out the private links in all changelogs in your bundles, refer to [changelog bundle](/cli/changelog/bundle.md#private-link-sanitization).
+To comment out links that are not in your allowlist in all changelogs in your bundles, refer to [changelog bundle](/cli/changelog/bundle.md#link-allowlist).
 
 If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you also have the option to configure link visibiblity in the [changelog directive](/syntax/changelog.md) and [changelog render](/cli/changelog/render.md) command.
 
@@ -1296,7 +1306,7 @@ docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 The command automatically discovers `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
 If no configuration file is found, the command returns an error with advice to create one or to run from the directory where the file exists.
 
-The `output`, `output_products`, `hide_features`, `sanitize_private_links`, and `resolve` fields are bundle-specific and are always ignored for removal (along with other bundle-only settings that do not affect which changelog files match the filter).
+The `output`, `output_products`, `hide_features`, `link_allow_repos`, and `resolve` fields are bundle-specific and are always ignored for removal (along with other bundle-only settings that do not affect which changelog files match the filter).
 Which other fields are used depends on the profile type:
 
 - Standard profiles: only the `products` field is used. The `repo` and `owner` fields are ignored (they only affect bundle output metadata).
