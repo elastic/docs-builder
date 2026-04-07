@@ -5,7 +5,7 @@ import type { Instance } from 'tippy.js'
 const navV2CollapsedStorageKey = 'docs-builder-nav-v2-collapsed-ids'
 
 let navV2FolderLinkToggleBound = false
-let navV2OutsideCollapseBound = false
+let navV2OptimisticNavigateBound = false
 
 let navV2TruncationTippyInstances: Instance[] = []
 
@@ -49,6 +49,11 @@ function persistFolderCheckboxCollapsedState(cb: HTMLInputElement) {
 function normalizeDocPathname(pathname: string) {
     const p = pathname.replace(/\/$/, '')
     return p === '' ? '/' : p
+}
+
+/** Matches {@link markCurrentPage} / {@link expandToCurrentPage} href selectors (not root-normalized). */
+function stripTrailingSlashForNavHref(pathname: string) {
+    return pathname.replace(/\/$/, '')
 }
 
 function linkPathMatchesCurrentPage(anchor: HTMLAnchorElement) {
@@ -128,77 +133,78 @@ function ensureNavV2FolderLinkToggle() {
     )
 }
 
-/** True if this folder row's li contains the click or an ancestor folder li (same branch) does. */
-function folderStaysOpenForNavClick(
-    folderLi: Element,
-    target: Node,
-    nav: Element
-): boolean {
-    if (folderLi.contains(target)) {
-        return true
-    }
-
-    let node: Element | null = folderLi.parentElement
-    while (node && node !== nav) {
-        if (node.matches('li.group-navigation') && node.contains(target)) {
-            return true
-        }
-        node = node.parentElement
-    }
-
-    return false
-}
-
 /**
- * Collapse expanded folders when the click is outside their branch (not under an ancestor folder row
- * in the same hierarchy). Runs in capture phase after {@link ensureNavV2FolderLinkToggle}.
+ * Apply current + subtree highlight from the clicked href before HTMX finishes (hx-boost),
+ * so the sidebar does not wait for the network response to update.
  */
-function ensureNavV2CollapseOutsideExpandedFolders() {
-    if (navV2OutsideCollapseBound) {
+function ensureNavV2OptimisticCurrentOnNavigate() {
+    if (navV2OptimisticNavigateBound) {
         return
     }
 
-    navV2OutsideCollapseBound = true
+    navV2OptimisticNavigateBound = true
 
     document.addEventListener(
         'click',
         (e: MouseEvent) => {
-            if (!(e.target instanceof Node)) {
+            if (!(e.target instanceof Element)) {
                 return
             }
 
-            if (e.button !== 0) {
-                return
-            }
-
-            const nav = document.querySelector<HTMLElement>('[data-nav-v2]')
-            if (!nav) {
-                return
-            }
-
-            // Clicks on top-level section titles should not close nested open folders.
             if (
-                e.target instanceof Element &&
-                e.target.closest(
-                    'nav[data-nav-v2] .docs-sidebar-nav-v2__label--top'
-                )
+                e.defaultPrevented ||
+                e.button !== 0 ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey
             ) {
                 return
             }
 
-            const target = e.target
-            nav.querySelectorAll<HTMLInputElement>(
-                'li.group-navigation input[type="checkbox"]:checked'
-            ).forEach((cb) => {
-                const li = cb.closest('li.group-navigation')
-                if (!li || folderStaysOpenForNavClick(li, target, nav)) {
-                    return
-                }
+            const a = e.target.closest(
+                'nav[data-nav-v2] a.sidebar-link'
+            ) as HTMLAnchorElement | null
 
-                cb.checked = false
-                cb.dispatchEvent(new Event('change', { bubbles: true }))
-                persistFolderCheckboxCollapsedState(cb)
-            })
+            if (!a || a.hasAttribute('hx-disable')) {
+                return
+            }
+
+            const nav = a.closest('[data-nav-v2]') as HTMLElement | null
+            if (!nav) {
+                return
+            }
+
+            const li = a.closest('li.group-navigation')
+            const folderRowInLi =
+                li?.querySelector<HTMLAnchorElement>(
+                    ':scope > .nav-folder-peer > a.sidebar-link'
+                ) ?? null
+            if (folderRowInLi === a && linkPathMatchesCurrentPage(a)) {
+                return
+            }
+
+            const href = a.getAttribute('href')
+            if (!href) {
+                return
+            }
+
+            let path: string
+            try {
+                path = new URL(href, window.location.href).pathname
+            } catch {
+                return
+            }
+
+            const here = window.location.pathname.replace(/\/$/, '')
+            const pathStripped = path.replace(/\/$/, '')
+            if (pathStripped === here) {
+                return
+            }
+
+            markCurrentPageForPath(nav, path)
+            expandToCurrentPageForPath(nav, path)
+            applyActiveSubtreeHighlight(nav)
         },
         true
     )
@@ -237,6 +243,11 @@ function initAccordion(nav: HTMLElement) {
     nav.querySelectorAll<HTMLInputElement>(
         '[data-v2-accordion] > .peer input[type=checkbox]'
     ).forEach((cb) => {
+        if (cb.dataset.navV2AccordionBound === 'true') {
+            return
+        }
+
+        cb.dataset.navV2AccordionBound = 'true'
         cb.addEventListener('change', (e) => {
             const target = e.target as HTMLInputElement
             if (target.checked) {
@@ -250,13 +261,12 @@ function initAccordion(nav: HTMLElement) {
 
 function clearActiveSubtreeHighlight(nav: HTMLElement) {
     nav.querySelectorAll(
-        '.nav-v2-active-subtree, .nav-v2-active-leaf, .nav-v2-active-ancestor, .nav-v2-active-label-ancestor'
+        '.nav-v2-active-subtree, .nav-v2-active-leaf, .nav-v2-active-ancestor'
     ).forEach((el) => {
         el.classList.remove(
             'nav-v2-active-subtree',
             'nav-v2-active-leaf',
-            'nav-v2-active-ancestor',
-            'nav-v2-active-label-ancestor'
+            'nav-v2-active-ancestor'
         )
     })
 }
@@ -336,8 +346,7 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
 
     /*
      * Walk DOM ancestors: folder rows (li.group-navigation) whose own link is not .current
-     * get nav-v2-active-ancestor (CSS: font-weight like .current; default link color). Section
-     * titles (label--top / label--nested) are not links and must not receive ancestor styling.
+     * get nav-v2-active-ancestor (CSS: semibold + #1D2A3E on clickable rows only).
      */
     let walk: Element | null = hostLi
     while (walk && walk !== nav) {
@@ -355,29 +364,55 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
 }
 
 /**
- * Mark the current page's nav link with the "current" CSS class.
+ * Mark all nav links whose href matches {@code pathname} with the "current" CSS class.
  */
-function markCurrentPage(nav: HTMLElement) {
-    // Remove stale current markers
+function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
     $$('.current', nav).forEach((el) => el.classList.remove('current'))
 
-    const pathname = window.location.pathname.replace(/\/$/, '')
+    const pathname = stripTrailingSlashForNavHref(pathnameRaw)
     $$(`a[href="${pathname}"], a[href="${pathname}/"]`, nav).forEach((el) =>
         el.classList.add('current')
     )
 }
 
 /**
- * Expand all ancestor collapsible sections that contain the current page link,
- * so that navigating directly to a URL reveals its location in the sidebar.
- * Does not re-open a folder row that the user collapsed while that folder index
- * is the current page (see session storage + folder row link match).
+ * Mark the current page's nav link with the "current" CSS class.
  */
-function expandToCurrentPage(nav: HTMLElement) {
-    const pathname = window.location.pathname.replace(/\/$/, '')
-    const link = nav.querySelector<HTMLElement>(
+function markCurrentPage(nav: HTMLElement) {
+    markCurrentPageForPath(nav, window.location.pathname)
+}
+
+function pickDeepestAnchorMatchingPath(
+    nav: HTMLElement,
+    pathnameRaw: string
+): HTMLElement | null {
+    const pathname = stripTrailingSlashForNavHref(pathnameRaw)
+    const matches = nav.querySelectorAll<HTMLElement>(
         `a[href="${pathname}"], a[href="${pathname}/"]`
     )
+    if (matches.length === 0) {
+        return null
+    }
+
+    let best = matches[0]
+    let bestDepth = navListItemDepthFromAnchor(best, nav)
+    for (let i = 1; i < matches.length; i++) {
+        const m = matches[i]
+        const d = navListItemDepthFromAnchor(m, nav)
+        if (d > bestDepth) {
+            bestDepth = d
+            best = m
+        }
+    }
+    return best
+}
+
+/**
+ * Expand all ancestor collapsible sections that contain the link for {@code pathnameRaw}.
+ * Uses the deepest matching anchor when several share the URL.
+ */
+function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
+    const link = pickDeepestAnchorMatchingPath(nav, pathnameRaw)
     if (!link) {
         return
     }
@@ -398,7 +433,11 @@ function expandToCurrentPage(nav: HTMLElement) {
                     rowLink !== null && rowLink === link
 
                 if (collapsedIds.has(cb.id)) {
-                    if (!currentIsThisFolderRow) {
+                    if (currentIsThisFolderRow) {
+                        // User collapsed this folder while its index is current; HTML swap often
+                        // re-checks the input — force closed so a second click can stay collapsed.
+                        cb.checked = false
+                    } else {
                         collapsedIds.delete(cb.id)
                         writeCollapsedFolderIds(collapsedIds)
                         cb.checked = true
@@ -413,6 +452,16 @@ function expandToCurrentPage(nav: HTMLElement) {
 
         el = el.parentElement
     }
+}
+
+/**
+ * Expand all ancestor collapsible sections that contain the current page link,
+ * so that navigating directly to a URL reveals its location in the sidebar.
+ * Does not re-open a folder row that the user collapsed while that folder index
+ * is the current page (see session storage + folder row link match).
+ */
+function expandToCurrentPage(nav: HTMLElement) {
+    expandToCurrentPageForPath(nav, window.location.pathname)
 }
 
 function destroyNavV2TruncationTooltips() {
@@ -498,4 +547,4 @@ export function initNavV2(nav: HTMLElement) {
 }
 
 ensureNavV2FolderLinkToggle()
-ensureNavV2CollapseOutsideExpandedFolders()
+ensureNavV2OptimisticCurrentOnNavigate()

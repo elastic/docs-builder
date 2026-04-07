@@ -101,13 +101,7 @@ function initMath() {
     })
 }
 
-// Initialize on initial page load
-document.addEventListener('DOMContentLoaded', function () {
-    initMath()
-    initMermaid()
-})
-
-document.addEventListener('htmx:load', function () {
+function initPageAfterContentSwap() {
     initTocNav()
     initHighlight()
     initCopyButton()
@@ -132,6 +126,20 @@ document.addEventListener('htmx:load', function () {
     if (editParam) {
         $('.edit-this-page.hidden')?.classList.remove('hidden')
     }
+}
+
+// htmx defers the initial htmx:load to setTimeout(0); prime V2 sidebar on first paint so isolated serve shows behaviour before that tick.
+document.addEventListener('DOMContentLoaded', function () {
+    initMath()
+    initMermaid()
+    const v2Nav = document.querySelector<HTMLElement>('[data-nav-v2]')
+    if (v2Nav) {
+        initNavV2(v2Nav)
+    }
+})
+
+document.addEventListener('htmx:load', function () {
+    initPageAfterContentSwap()
 })
 
 // Don't remove style tags because they are used by the elastic global nav.

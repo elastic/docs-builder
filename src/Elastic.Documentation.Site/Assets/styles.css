@@ -131,10 +131,15 @@ body {
 				max-height 0.3s ease;
 		}
 
-		/* Shared by V1 and V2. V2-only rules: nest under .docs-sidebar-nav-v2 (see _TocTree.cshtml). */
+		/* Shared by V1 and V2 base. Hover ink: V1 pages tree + non-pages sidebars only — Nav V2 keeps color on hover (see #pages-nav nav[data-nav-v2]). */
 		.sidebar-link {
-			@apply text-ink-light inline-block text-[14px] leading-[20px] text-pretty hover:text-black;
+			@apply text-ink-light inline-block text-[14px] leading-[20px] text-pretty;
 			word-break: break-word;
+		}
+
+		#pages-nav .pages-nav-menu > ul .sidebar-link:hover,
+		.sidebar-nav:not(#pages-nav) .sidebar-link:hover {
+			@apply text-black;
 		}
 	}
 }
@@ -167,6 +172,24 @@ body:has([data-nav-v2]) aside.sidebar {
 	list-style: none;
 }
 
+/* No gap between rows inside a subsection list (links under a nested subtitle). */
+#pages-nav nav[data-nav-v2] li > .docs-sidebar-nav-v2__label--nested + ul {
+	gap: 0 !important;
+}
+
+/* Gap between sibling subsection blocks (each li: nested subtitle + its ul) under a top icon section only. */
+#pages-nav nav[data-nav-v2] li > .docs-sidebar-nav-v2__label--top + ul {
+	gap: 0 !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li
+	> .docs-sidebar-nav-v2__label--top
+	+ ul:has(> li > .docs-sidebar-nav-v2__label--nested) {
+	gap: 0.5rem !important;
+}
+
 /* Folder child lists: hidden when checkbox unchecked (fixes conflict: global ul{display:flex} beat Tailwind .hidden) */
 #pages-nav
 	nav[data-nav-v2]
@@ -187,7 +210,7 @@ body:has([data-nav-v2]) aside.sidebar {
 /* Nav V2: vertical padding on top-level li under the root ul (not nested folder children). */
 #pages-nav nav[data-nav-v2] ul.docs-sidebar-nav-v2__tree > li {
 	padding-top: 16px;
-	padding-bottom: 32px;
+	padding-bottom: 24px;
 }
 
 /* Tippy mounts inside nav; clip tooltips so nothing paints outside the sidebar column */
@@ -196,26 +219,17 @@ nav.docs-sidebar-nav-v2 {
 	overflow: hidden;
 }
 
-/* Nav V2: top-level section titles (with icon) — sans stack from theme */
+/* Nav V2: top-level section titles (with icon) — inherit body font stack */
 nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
-	font-family: var(--font-sans);
 	font-weight: 600;
 	margin: 8px 0 12px 0;
 }
 
-/* Nav V2: nested subgroup section titles */
+/* Nav V2: nested subgroup section titles (non-clickable; color never overridden by active path) */
 nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--nested {
 	font-weight: 500;
-	margin: 16px 0 8px 0;
-}
-
-/* First nested header directly under a top icon title (e.g. Platform → Ingest) */
-nav.docs-sidebar-nav-v2
-	li:has(> .docs-sidebar-nav-v2__label--top)
-	> ul
-	> li:first-child
-	.docs-sidebar-nav-v2__label--nested {
-	margin-top: 12px;
+	margin: 12px 0 4px 0;
+	color: #a2b1c9;
 }
 
 /* Nav V2: top-level section titles — icon 16×16, 8px gap via gap-2 on flex parent */
@@ -262,14 +276,14 @@ nav.docs-sidebar-nav-v2
 	display: block;
 }
 
-/* Nav V2: default link ink; placeholders keep .text-grey-40. Current = blue + regular (400). */
+/* Nav V2: default link ink; placeholders keep .text-grey-40. Current = blue + semibold (600). */
 #pages-nav nav[data-nav-v2] a.sidebar-link {
 	box-sizing: border-box;
 	width: 100%;
 	max-width: 100%;
 	min-width: 0;
-	font-weight: 300;
-	border-radius: 6px;
+	font-weight: 400;
+	border-radius: 8px;
 	background-color: transparent;
 	transition:
 		color 0s ease,
@@ -287,8 +301,7 @@ nav.docs-sidebar-nav-v2
 #pages-nav
 	nav[data-nav-v2]
 	a.sidebar-link:not(.text-grey-40):not(.current):hover {
-	color: #1d2a3e;
-	background-color: #f1f6ff;
+	background-color: #ecf1f9;
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link.text-grey-40 {
@@ -296,13 +309,12 @@ nav.docs-sidebar-nav-v2
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link.text-grey-40:not(.current):hover {
-	color: #1d2a3e;
-	background-color: #f1f6ff;
+	background-color: #ecf1f9;
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link.current {
 	color: #0b64dd !important;
-	font-weight: 400 !important;
+	font-weight: 600 !important;
 	background-color: #f1f6ff !important;
 }
 
@@ -311,15 +323,15 @@ nav.docs-sidebar-nav-v2
 	background-color: #f1f6ff !important;
 }
 
-/* Nav V2: active section background (#F1F6FF) — subtree vs leaf driven by pages-nav-v2.ts */
+/* Nav V2: active section background — subtree vs leaf driven by pages-nav-v2.ts */
 #pages-nav nav[data-nav-v2] li.nav-v2-active-subtree {
-	background-color: #f1f6ff;
-	border-radius: 6px;
+	background-color: #d9e8ff;
+	border-radius: 8px;
 }
 
 #pages-nav nav[data-nav-v2] li.nav-v2-active-leaf {
-	background-color: #f1f6ff;
-	border-radius: 6px;
+	background-color: #d9e8ff;
+	border-radius: 8px;
 }
 
 #pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link,
@@ -331,8 +343,7 @@ nav.docs-sidebar-nav-v2
 	nav[data-nav-v2]
 	li.nav-v2-active-subtree
 	a.sidebar-link:not(.current):hover {
-	color: #1d2a3e;
-	background-color: #f1f6ff !important;
+	background-color: #bfdbff !important;
 }
 
 #pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link.current,
@@ -347,8 +358,7 @@ nav.docs-sidebar-nav-v2
 	nav[data-nav-v2]
 	li.nav-v2-active-leaf
 	> a.sidebar-link:not(.current):hover {
-	color: #1d2a3e;
-	background-color: #f1f6ff !important;
+	background-color: #ecf1f9 !important;
 }
 
 #pages-nav nav[data-nav-v2] li.nav-v2-active-leaf > a.sidebar-link.current,
@@ -360,9 +370,8 @@ nav.docs-sidebar-nav-v2
 }
 
 /*
- * Ancestor folder rows (current is deeper): default ink + font-weight like .current.
- * !important on color beats #pages-nav .current / a.sidebar-link.current when the folder href
- * is also marked .current (common duplicate index URL), and keeps chevron currentColor in sync.
+ * Ancestor folder rows (current is deeper): semibold + dark ink on the open path.
+ * .current on the same row (duplicate index URL) stays blue.
  */
 #pages-nav
 	nav[data-nav-v2]
@@ -370,7 +379,16 @@ nav.docs-sidebar-nav-v2
 	> .nav-folder-peer
 	> a.sidebar-link {
 	color: #1d2a3e !important;
-	font-weight: 400 !important;
+	font-weight: 600 !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link.current {
+	color: #0b64dd !important;
+	font-weight: 600 !important;
 }
 
 #pages-nav
@@ -379,26 +397,46 @@ nav.docs-sidebar-nav-v2
 	> .nav-folder-peer
 	> a.sidebar-link.text-grey-40 {
 	color: var(--color-grey-40) !important;
+	font-weight: 600 !important;
 }
 
 #pages-nav
 	nav[data-nav-v2]
 	li.nav-v2-active-ancestor
 	> .nav-folder-peer
-	> a.sidebar-link:hover {
-	color: #1d2a3e !important;
+	> a.sidebar-link:not(.current):hover {
+	background-color: #ecf1f9;
 }
 
 #pages-nav
 	nav[data-nav-v2]
 	li.nav-v2-active-ancestor
 	> .nav-folder-peer
-	> a.sidebar-link.text-grey-40:hover {
-	color: #1d2a3e !important;
+	> a.sidebar-link.current:hover {
+	color: #0b64dd !important;
 }
 
 #pages-nav nav[data-nav-v2] .nav-folder-peer {
 	min-width: 0;
+}
+
+/* Chevrons: muted by default; match link ink when row is current or ancestor-active */
+#pages-nav nav[data-nav-v2] .nav-folder-chevron {
+	color: #a2b1c9;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	.nav-folder-peer
+	> a.sidebar-link.current
+	.nav-folder-chevron,
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link
+	.nav-folder-chevron {
+	color: currentColor;
 }
 
 .docs-sidebar-nav-v2 .nav-folder-peer .nav-folder-chevron svg {
