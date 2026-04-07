@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -76,7 +77,7 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 		result.NeedsGithubToken.Should().BeFalse();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml"));
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
@@ -107,7 +108,7 @@ public class BundlePlanTests : ChangelogTestBase
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeTrue();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-v9.2.0.yaml"));
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-v9.2.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
@@ -136,7 +137,7 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "dotnet-1.0.0-beta.1-beta.yaml"));
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "dotnet-1.0.0-beta.1-beta.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]
@@ -155,7 +156,7 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "changelog-bundle.yaml"));
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "changelog-bundle.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]

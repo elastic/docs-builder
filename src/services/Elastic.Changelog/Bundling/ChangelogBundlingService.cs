@@ -375,12 +375,11 @@ public partial class ChangelogBundlingService(
 			{
 				// Resolution order: bundle.output_directory → input.OutputDirectory (programmatic override)
 				// → bundle.directory → CWD
-				var outputDir = (config.Bundle.OutputDirectory
+				var outputDir = config.Bundle.OutputDirectory
 					?? input.OutputDirectory
 					?? config.Bundle.Directory
-					?? _fileSystem.Directory.GetCurrentDirectory())
-					.Replace('/', _fileSystem.Path.DirectorySeparatorChar);
-				outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
+					?? _fileSystem.Directory.GetCurrentDirectory();
+				outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -430,7 +429,7 @@ public partial class ChangelogBundlingService(
 		// Apply output default when --output not specified: use bundle.output_directory if set
 		var output = input.Output;
 		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
-			output = _fileSystem.Path.Join(config.Bundle.OutputDirectory.Replace('/', _fileSystem.Path.DirectorySeparatorChar), "changelog-bundle.yaml");
+			output = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
 
 		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
 		var resolve = input.Resolve ?? config.Bundle.Resolve;
@@ -501,14 +500,13 @@ public partial class ChangelogBundlingService(
 			var outputPattern = profileDef.Output
 				.Replace("{version}", version)
 				.Replace("{lifecycle}", lifecycle);
-			var outputDir = (config?.Bundle?.OutputDirectory
+			var outputDir = config?.Bundle?.OutputDirectory
 				?? config?.Bundle?.Directory
-				?? _fileSystem.Directory.GetCurrentDirectory())
-				.Replace('/', _fileSystem.Path.DirectorySeparatorChar);
-			outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
+				?? _fileSystem.Directory.GetCurrentDirectory();
+			outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
 		}
 		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
-			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory.Replace('/', _fileSystem.Path.DirectorySeparatorChar), "changelog-bundle.yaml");
+			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
 
 		return new BundlePlanResult
 		{
