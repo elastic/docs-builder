@@ -66,6 +66,7 @@ docs-builder changelog evaluate-pr [options...] [-h|--help]
 | `should-generate` | `true` if `changelog add` should run |
 | `should-upload` | `true` if the artifact should be uploaded |
 | `title` | Resolved PR title |
+| `description` | Release note extracted from the PR body (when `extract.release_notes` is enabled and a release note is found). Long or multi-line release notes (>120 characters) are placed here. Passed downstream as `CHANGELOG_DESCRIPTION` for `changelog add`. |
 | `type` | Resolved changelog type |
 | `products` | Comma-separated product specs resolved from PR labels via `pivot.products` mappings (e.g., `cloud-hosted, cloud-serverless`) |
 | `label-table` | Markdown table of configured label-to-type mappings |
