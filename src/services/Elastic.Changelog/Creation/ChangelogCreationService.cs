@@ -44,6 +44,9 @@ public record CreateChangelogArguments
 	/// </summary>
 	public bool? ExtractReleaseNotes { get; init; }
 
+	/// <summary>null and true both mean enabled; only explicit false disables extraction.</summary>
+	public bool ExtractionDisabled => ExtractReleaseNotes == false;
+
 	/// <summary>
 	/// Whether to extract linked issues/PRs from PR/issue body. null = use config default.
 	/// </summary>
@@ -95,7 +98,7 @@ IEnvironmentVariables? env = null
 
 			// When extraction is disabled (by CLI or config), discard any CI-injected description
 			// that originated from evaluate-pr's release-note extraction.
-			if (input.ExtractReleaseNotes == false
+			if (input.ExtractionDisabled
 				&& string.IsNullOrWhiteSpace(cliDescription)
 				&& !string.IsNullOrWhiteSpace(input.Description))
 			{
@@ -423,10 +426,9 @@ IEnvironmentVariables? env = null
 			? input.Products
 			: ProductArgument.ParseProductSpecs(ciProducts);
 
-		// Skip CI-provided description when extraction is explicitly disabled via CLI
 		var enrichedDescription = !string.IsNullOrWhiteSpace(input.Description)
 			? input.Description
-			: input.ExtractReleaseNotes == false ? null : ciDescription;
+			: input.ExtractionDisabled ? null : ciDescription;
 
 		return input with
 		{
