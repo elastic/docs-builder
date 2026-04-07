@@ -503,8 +503,6 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
 	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
 	/// <param name="plan">Output a structured JSON plan describing Docker flags, network requirements, and the resolved output path, then exit without generating the bundle. Intended for CI actions.</param>
-	/// <param name="sanitizePrivateLinks">Optional: Enable bundle-time private link sanitization (requires --resolve). Uses bundle.sanitize_private_links when omitted.</param>
-	/// <param name="noSanitizePrivateLinks">Optional: Disable private link sanitization even when enabled in config.</param>
 	/// <param name="ctx"></param>
 	[Command("bundle")]
 	public async Task<int> Bundle(
