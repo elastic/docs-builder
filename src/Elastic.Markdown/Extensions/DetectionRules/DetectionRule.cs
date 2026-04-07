@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -134,6 +135,36 @@ public record DetectionRule
 			// If we can't load the version lock, continue without it
 			VersionLock = FrozenDictionary<string, VersionLockEntry>.Empty;
 		}
+	}
+
+	/// <summary>Fallback when upstream TOML uses constructs Tomlet cannot parse (e.g. newer table-array forms).</summary>
+	public static DetectionRule ForUnparsableSource(IFileInfo source, string parseErrorDetail)
+	{
+		var fullHex = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source.FullName)));
+		var idSuffix = fullHex[..8].ToLowerInvariant();
+		return new DetectionRule
+		{
+			Name = Path.GetFileNameWithoutExtension(source.Name),
+			Authors = [],
+			Note = parseErrorDetail,
+			Query = null,
+			Setup = null,
+			Tags = null,
+			Severity = "unknown",
+			RuleId = $"unparsed-{idSuffix}",
+			RiskScore = 0,
+			License = "Elastic-2.0",
+			Description = "This detection rule file could not be parsed as TOML during the documentation build.",
+			Type = "unknown",
+			Language = null,
+			Indices = null,
+			RunsEvery = null,
+			IndicesFromDateMath = null,
+			MaximumAlertsPerExecution = 100,
+			References = null,
+			Version = 1,
+			Threats = []
+		};
 	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
