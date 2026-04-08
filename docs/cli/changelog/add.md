@@ -29,16 +29,15 @@ docs-builder changelog add [options...] [-h|--help]
 :   If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--no-extract-release-notes`
-:   Optional: Turn off extraction of release notes from PR descriptions.
-:   The extractor looks for content in various formats in the PR description:
+:   Optional: Turn off extraction of release notes from PR or issue descriptions.
+:   The extractor looks for content in various formats in the PR or issue description:
 :   - `Release Notes: ...`
 :   - `Release-Notes: ...`
 :   - `release notes: ...`
 :   - `Release Note: ...`
 :   - `Release Notes - ...`
 :   - `## Release Note` (as a markdown header)
-:   Short release notes (≤120 characters, single line) are used as the changelog title (only if `--title` is not explicitly provided).
-:   Long release notes (>120 characters or multi-line) are used as the changelog description (only if `--description` is not explicitly provided).
+:   Matched release note text is used as the changelog description (only if `--description` is not explicitly provided). The changelog title is always taken from `--title` or from the PR or issue title, not from the release note section.
 :   By default, the behavior is determined by the `extract.release_notes` changelog configuration setting.
 
 `--feature-id <string?>`
