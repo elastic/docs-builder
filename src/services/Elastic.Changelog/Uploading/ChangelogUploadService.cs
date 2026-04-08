@@ -189,6 +189,8 @@ public partial class ChangelogUploadService(
 		{
 			var content = _fileSystem.File.ReadAllText(filePath);
 			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+			if (bundle?.Products == null)
+				return [];
 
 			return bundle.Products
 				.Select(p => p.ProductId)
