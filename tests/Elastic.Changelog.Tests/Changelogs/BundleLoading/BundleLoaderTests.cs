@@ -1091,6 +1091,95 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void LoadBundles_DescriptionSerializesAndDeserializesCorrectly()
+	{
+		// Arrange - Test round-trip serialization of description field
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var multilineDescription = """
+			This is a test description with multiple paragraphs.
+
+			It includes:
+			- A bullet list
+			- Multiple lines
+			- And a [link](https://example.com) for testing
+
+			This ensures proper YAML serialization and deserialization.
+			""";
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			Description = multilineDescription,
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().Be(multilineDescription);
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_DescriptionCanBeNull()
+	{
+		// Arrange - Test that null description is handled correctly
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			Description = null,
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().BeNull();
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
 	public void LoadedBundle_HideFeatures_ExposedFromBundleData()
 	{
 		// Arrange - Verify that LoadedBundle.HideFeatures properly exposes Data.HideFeatures

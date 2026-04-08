@@ -32,6 +32,13 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		_ = sb.AppendLine(InvariantCulture, $"== {context.Title}");
 		_ = sb.AppendLine();
 
+		// Add description if present
+		if (!string.IsNullOrEmpty(context.Description))
+		{
+			_ = sb.AppendLine(context.Description);
+			_ = sb.AppendLine();
+		}
+
 		// Group entries by type
 		var entriesByType = context.EntriesByType;
 		var security = entriesByType.GetValueOrDefault(Security, []);

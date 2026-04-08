@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Changelog;
@@ -21,6 +22,27 @@ using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
+
+/// <summary>
+/// Helper for performing placeholder substitution in bundle descriptions
+/// </summary>
+internal static class BundleDescriptionSubstitution
+{
+	/// <summary>
+	/// Substitutes placeholders in a description string with provided values
+	/// </summary>
+	public static string SubstitutePlaceholders(string description, string? version, string? lifecycle, string? owner, string? repo)
+	{
+		if (string.IsNullOrEmpty(description))
+			return description;
+
+		return description
+			.Replace("{version}", version ?? string.Empty)
+			.Replace("{lifecycle}", lifecycle ?? string.Empty)
+			.Replace("{owner}", owner ?? string.Empty)
+			.Replace("{repo}", repo ?? string.Empty);
+	}
+}
 
 /// <summary>
 /// Arguments for the BundleChangelogs method
@@ -83,6 +105,12 @@ public record BundleChangelogsArguments
 	/// entries with matching feature-id values will be commented out.
 	/// </summary>
 	public string[]? HideFeatures { get; init; }
+
+	/// <summary>
+	/// Optional bundle description with placeholder substitution.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
 
 	/// <summary>
 	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
@@ -321,6 +349,23 @@ public partial class ChangelogBundlingService(
 				}
 			}
 
+			// Apply description with placeholder substitution
+			if (!string.IsNullOrEmpty(input.Description))
+			{
+				// Get version/lifecycle from the first output product or first product in the bundle
+				var version = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Target : null)
+							  ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Target : null);
+				var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
+								?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
+				var owner = input.Owner ?? "elastic";
+				var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
+
+				var substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+					input.Description, version, lifecycle, owner, repo);
+
+				bundleData = bundleData with { Description = substitutedDescription };
+			}
+
 			// Write bundle file
 			await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
@@ -355,12 +400,13 @@ public partial class ChangelogBundlingService(
 		if (filterResult == null)
 			return null;
 
-		// Resolve bundle-specific output path, output products, repo, owner, and hide-features from profile
+		// Resolve bundle-specific output path, output products, repo, owner, hide-features, and description from profile
 		string? outputPath = null;
 		IReadOnlyList<ProductArgument>? outputProducts = null;
 		string? repo = null;
 		string? owner = null;
 		string[]? mergedHideFeatures = null;
+		string? profileDescription = null;
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
@@ -402,6 +448,26 @@ public partial class ChangelogBundlingService(
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
+
+			// Handle profile-specific description with placeholder substitution
+			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
+			if (!string.IsNullOrEmpty(descriptionTemplate))
+			{
+				// Validate placeholder usage in profile mode
+				var hasVersionPlaceholder = descriptionTemplate.Contains("{version}") || descriptionTemplate.Contains("{lifecycle}");
+				if (hasVersionPlaceholder &&
+					filterResult.Version == "unknown" &&
+					string.IsNullOrEmpty(profile.OutputProducts))
+				{
+					collector.EmitError(string.Empty,
+						$"Profile '{input.Profile}' uses placeholders in description but no version is available for substitution. " +
+						"Either provide a version argument, or add 'output_products' pattern to the profile configuration.");
+					return null;
+				}
+
+				profileDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+					descriptionTemplate, filterResult.Version, resolvedLifecycle, owner, repo);
+			}
 		}
 
 		return input with
@@ -414,7 +480,8 @@ public partial class ChangelogBundlingService(
 			OutputProducts = outputProducts,
 			Repo = repo,
 			Owner = owner,
-			HideFeatures = mergedHideFeatures
+			HideFeatures = mergedHideFeatures,
+			Description = profileDescription
 		};
 	}
 
@@ -438,6 +505,9 @@ public partial class ChangelogBundlingService(
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
 
+		// Apply description: CLI takes precedence; fall back to bundle-level config default
+		var description = input.Description ?? config.Bundle.Description;
+
 		return input with
 		{
 			Directory = directory,
@@ -445,6 +515,7 @@ public partial class ChangelogBundlingService(
 			Resolve = resolve,
 			Repo = repo,
 			Owner = owner,
+			Description = description,
 			LinkAllowRepos = config.Bundle.LinkAllowRepos
 		};
 	}

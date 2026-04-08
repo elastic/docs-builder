@@ -78,6 +78,13 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 :   Optional: The directory that contains the changelog YAML files.
 :   When not specified, falls back to `bundle.directory` from the changelog configuration, then the current working directory. See [Output files](#output-files) for the full resolution order.
 
+`--description <string?>`
+:   Optional: Bundle description text with placeholder support.
+:   Supports `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` placeholders. Overrides `bundle.description` from config.
+:   When using `{version}` or `{lifecycle}` placeholders, predictable substitution values are required:
+:   - **Option-based mode**: Requires `--output-products` to be explicitly specified
+:   - **Profile-based mode**: Requires either a version argument OR `output_products` in the profile configuration
+
 `--hide-features <string[]?>`
 :   Optional: A list of feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs.
 :   Can be specified multiple times.
@@ -354,6 +361,33 @@ docs-builder changelog bundle \
 By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
 To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).
 
+### Bundle with description
+
+You can add a description to bundles using the `--description` option. For simple descriptions, use regular quotes:
+
+```sh
+docs-builder changelog bundle \
+  --all \
+  --description "This release includes new features and bug fixes."
+```
+
+For multiline descriptions with multiple paragraphs, lists, and links, use ANSI-C quoting (`$'...'`) with `\n` for line breaks:
+
+```sh
+docs-builder changelog bundle \
+  --all \
+  --description $'This release includes significant improvements:\n\n- Enhanced performance\n- Bug fixes and stability improvements\n\nFor more information, see the [release notes](https://example.com/docs).'
+```
+
+When using placeholders in option-based mode, you must explicitly specify `--output-products` for predictable substitution:
+
+```sh
+docs-builder changelog bundle \
+  --all \
+  --output-products "elasticsearch 9.1.0 ga" \
+  --description "Elasticsearch {version} includes performance improvements. Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
+```
+
 ## Profile-based examples
 
 When the changelog configuration file defines `bundle.profiles`, you can use those profiles with the `changelog bundle` command.
@@ -441,6 +475,28 @@ docs-builder changelog bundle elasticsearch-gh-release 9.2.0
 # Use "latest" to fetch the most recent release
 docs-builder changelog bundle elasticsearch-gh-release latest
 ```
+
+:::{warning}
+**Placeholder validation**: If your profile uses `{version}` or `{lifecycle}` placeholders in the description, you must ensure predictable substitution values:
+
+```sh
+# ✅ Good: Version provided for placeholder substitution
+docs-builder changelog bundle elasticsearch-release 9.2.0 ./report.html
+
+# ❌ Bad: No version, placeholders will fail unless profile has output_products
+docs-builder changelog bundle elasticsearch-release ./report.html
+```
+
+To fix the second case, either provide a version argument or add an `output_products` pattern to your profile:
+
+```yaml
+profiles:
+  elasticsearch-release:
+    products: "elasticsearch * *"
+    output_products: "elasticsearch {version}"  # Enables placeholder substitution
+    description: "Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
+```
+:::
 
 ### Bundle by product
 
