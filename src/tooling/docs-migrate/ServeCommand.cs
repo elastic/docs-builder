@@ -10,14 +10,12 @@ namespace Documentation.Migrate;
 internal sealed class ServeCommand
 {
 	/// <summary>Serve the converted output using docs-builder.</summary>
-	/// <param name="workDir">Working directory for migration artifacts</param>
 	/// <param name="port">Port to serve on (default 3000)</param>
 	/// <param name="ctx">Cancellation token</param>
 	[Command("")]
-	public async Task<int> Serve(string? workDir = null, int port = 3000, Cancel ctx = default)
+	public async Task<int> Serve(int port = 3000, Cancel ctx = default)
 	{
-		var dir = SharedOptions.ResolveWorkDir(workDir);
-		var outputDir = Path.Combine(dir, "output");
+		var outputDir = Path.Combine(Directory.GetCurrentDirectory(), ".artifacts", "migrated");
 
 		if (!Directory.Exists(outputDir))
 		{
