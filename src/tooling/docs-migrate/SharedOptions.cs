@@ -19,8 +19,20 @@ internal static class SharedOptions
 		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 	};
 
+	public static readonly DirectoryInfo DefaultWorkDir = ResolveDefaultWorkDir();
+
 	public static string ResolveWorkDir(string? workDir) =>
-		workDir ?? Path.Combine(Directory.GetCurrentDirectory(), ".artifacts", "docs-migrate");
+		workDir ?? DefaultWorkDir.FullName;
+
+	private static DirectoryInfo ResolveDefaultWorkDir()
+	{
+		var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+		// Docker/CI containers often have no XDG_DATA_HOME or HOME set, causing
+		// LocalApplicationData to return "". Fall back to the system temp directory.
+		if (string.IsNullOrEmpty(localAppData))
+			localAppData = Path.GetTempPath();
+		return new DirectoryInfo(Path.Join(localAppData, "elastic", "docs-migrate"));
+	}
 
 	public static async Task<LegacyConf> LoadConfAsync(string workDir, CancellationToken ct)
 	{
