@@ -198,9 +198,12 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		writeFs.Directory.CreateDirectory(writeFs.Path.GetDirectoryName(configPath)!);
-		await writeFs.File.WriteAllTextAsync(configPath, ConfigWithProductLabels);
+		await writeFs.File.WriteAllTextAsync(configPath, ConfigWithProductLabels, TestContext.Current.CancellationToken);
 
-		var tempOutput = Path.Join(mockFs.Path.GetTempPath(), "changelog-staging");
+		// Use the real system temp path so AllowedSpecialFolder.Temp matches cross-platform.
+		// MockFileSystem's GetTempPath() returns a hardcoded "C:\temp" that diverges from the
+		// real temp on Windows CI (D:\Temp), causing scope validation to fail.
+		var tempOutput = Path.Join(Path.GetTempPath(), "changelog-staging");
 
 		var env = FakeCIEnv(
 			prNumber: "1044",
@@ -220,7 +223,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			Concise = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, CancellationToken.None);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
