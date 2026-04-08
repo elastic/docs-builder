@@ -541,11 +541,10 @@ In particular, it looks for content in these formats in the PR description:
 - `Release Notes - This is the extracted sentence.`
 - `## Release Note` (as a markdown header)
 
-The extracted content is handled differently based on its length:
+How the extracted text is used:
 
-- **Short release notes (≤120 characters, single line)**: Used as the changelog title (only if `--title` is not explicitly provided)
-- **Long release notes (>120 characters or multi-line)**: Used as the changelog description (only if `--description` is not explicitly provided)
-- **No release note found**: No changes are made to the title or description
+- **Release note found**: The extracted text is used as the changelog description (only if `--description` is not explicitly provided). The changelog title comes from `--title` or the PR title, not from the release note section.
+- **No release note found**: No description is filled from the PR body; the title still comes from `--title` or the PR title as usual.
 
 :::{note}
 If you explicitly provide `--title` or `--description`, those values take precedence over extracted release notes.
