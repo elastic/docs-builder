@@ -42,7 +42,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		var books = SharedOptions.FilterBooks(conf, opts.Book);
 
 		var reposDir = Path.Combine(dir, "repos");
-		var outputDir = Path.Combine(dir, "output");
+		var outputDir = Path.Combine(Directory.GetCurrentDirectory(), ".artifacts", "migrated");
 
 		var sparsePaths = SourceRepoManager.CollectSparsePaths(conf);
 		var repoOptions = new SourceRepoOptions { ReposDirectory = reposDir, RepoUrls = conf.Repos, SparsePaths = sparsePaths };
