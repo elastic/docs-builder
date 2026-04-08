@@ -102,28 +102,19 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	{
 		var derived = new DerivedPrFields();
 
-		// Extract release notes from PR body if requested
+		// Extract release note text from PR body for description if requested
 		if (input.ExtractReleaseNotes ?? false)
 		{
-			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(prInfo.Body);
-
-			// Use short release note as title if title was not explicitly provided
-			if (releaseNoteTitle != null && string.IsNullOrWhiteSpace(input.Title))
+			var releaseNote = ReleaseNotesExtractor.FindReleaseNote(prInfo.Body);
+			if (releaseNote != null && string.IsNullOrWhiteSpace(input.Description))
 			{
-				derived.Title = releaseNoteTitle;
-				logger.LogInformation("Using extracted release note as title: {Title}", derived.Title);
-			}
-
-			// Use long release note as description if description was not explicitly provided
-			if (releaseNoteDescription != null && string.IsNullOrWhiteSpace(input.Description))
-			{
-				derived.Description = releaseNoteDescription;
-				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNoteDescription.Length);
+				derived.Description = releaseNote;
+				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNote.Length);
 			}
 		}
 
-		// Use PR title if title was not explicitly provided and not already derived
-		if (string.IsNullOrWhiteSpace(input.Title) && derived.Title == null)
+		// Use PR title if title was not explicitly provided
+		if (string.IsNullOrWhiteSpace(input.Title))
 		{
 			if (string.IsNullOrWhiteSpace(prInfo.Title))
 			{

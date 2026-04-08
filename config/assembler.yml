@@ -169,6 +169,9 @@ references:
   response-ops-team:
     private: true
     skip: true
+  roadmap:
+    private: false
+    skip: true
   search-team:
     private: true
     skip: true
@@ -184,6 +187,7 @@ references:
 
   # @elastic/developer-docs
   eland:
+  elasticsearch-dsl-js:
   elasticsearch-hadoop:
   elasticsearch-java:
   elasticsearch-js:

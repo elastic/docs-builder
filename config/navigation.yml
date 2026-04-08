@@ -276,6 +276,11 @@ toc:
                 path_prefix: reference/elasticsearch/clients/javascript
                 # Children include the entire AsciiDoc book
 
+              # JavaScript/TypeScript DSL
+              # https://github.com/elastic/elasticsearch-dsl-js/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-dsl-js://reference
+                path_prefix: reference/elasticsearch/clients/javascript-dsl
+
               # .NET
               # https://github.com/elastic/elasticsearch-net/blob/main/docs/reference/toc.yml
               - toc: elasticsearch-net://reference
