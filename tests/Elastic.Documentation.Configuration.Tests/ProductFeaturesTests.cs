@@ -23,7 +23,7 @@ public class ProductFeaturesTests
 	}
 
 	[Fact]
-	public void ProductWithReleaseNotesOnly_ExcludedFromPublicReference()
+	public void ProductWithPublicReferenceDisabled_HasCorrectFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
 		var docsBuilder = config.Products["docs-builder"];
@@ -44,7 +44,7 @@ public class ProductFeaturesTests
 	}
 
 	[Fact]
-	public void PublicReferenceProducts_ExcludesReleaseNotesOnlyProducts()
+	public void PublicReferenceProducts_ExcludesProductsWithPublicReferenceDisabled()
 	{
 		var config = LoadActualProductsConfiguration();
 
@@ -62,7 +62,7 @@ public class ProductFeaturesTests
 	}
 
 	[Fact]
-	public void AllProducts_ContainsBothStandardAndReleaseNotesOnly()
+	public void AllProducts_ContainsBothStandardAndOptedOutProducts()
 	{
 		var config = LoadActualProductsConfiguration();
 
@@ -88,7 +88,7 @@ public class ProductFeaturesTests
 	}
 
 	[Fact]
-	public void GetDisplayName_WorksForReleaseNotesOnlyProducts()
+	public void GetDisplayName_WorksForProductsWithDisabledFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
 
@@ -96,7 +96,7 @@ public class ProductFeaturesTests
 	}
 
 	[Fact]
-	public void GetProductByRepositoryName_WorksForReleaseNotesOnlyProducts()
+	public void GetProductByRepositoryName_WorksForProductsWithDisabledFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
 		var product = config.GetProductByRepositoryName("docs-builder");

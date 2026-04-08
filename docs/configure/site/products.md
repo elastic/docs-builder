@@ -15,7 +15,7 @@ products:
     display: 'Elastic Docs Builder'
     repository: 'docs-builder'
     features:
-      release-notes: true
+      public-reference: false
 #...
 ```
 
@@ -26,12 +26,12 @@ products:
 * `display`: A friendly name for the product.
 * `versioning`: The versioning system used by the project. The value for this field must match one of the versioning systems defined in [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml). Optional for products that only participate in release notes.
 * `repository`: The repository name for the product. It's optional and primarily intended for handling edge cases where there is a mismatch between the repository name and the product identifier.
-* `features`: An optional mapping that controls which docs-builder subsystems the product participates in. When omitted, all features are enabled (backward compatible). When present, only the listed features are active. The available features are:
+* `features`: An optional mapping that controls which docs-builder subsystems the product participates in. When omitted, all features are enabled (backward compatible). When present, all features default to `true` and individual features can be opted out by setting them to `false`. The available features are:
   * `public-reference`: The product can be referenced in `applies_to` blocks, page frontmatter `products`, and gets `{{ product.<id> }}` substitutions. This is what "being a documentation product" means today.
   * `release-notes`: The product participates in the changelog and release notes system.
 
 :::{note}
-Products without a `features` mapping behave exactly as before -- they participate in all subsystems. The `features` mapping is only needed for products that should participate in a subset of features, such as internal tools that need release notes but don't have public-facing documentation.
+Products without a `features` mapping behave exactly as before -- they participate in all subsystems. The `features` mapping uses opt-out semantics: all features are enabled by default, and you only need to set a feature to `false` to disable it. For example, internal tools that need release notes but don't have public-facing documentation can set `public-reference: false`.
 :::
 
 ## Substitutions

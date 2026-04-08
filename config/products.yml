@@ -63,7 +63,7 @@ products:
     display: 'Elastic Docs Builder'
     repository: 'docs-builder'
     features:
-      release-notes: true
+      public-reference: false
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:

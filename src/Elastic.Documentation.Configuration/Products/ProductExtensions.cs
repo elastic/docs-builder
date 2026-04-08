@@ -78,8 +78,8 @@ public static class ProductExtensions
 
 		return new ProductFeatures
 		{
-			PublicReference = featuresDto.GetValueOrDefault("public-reference"),
-			ReleaseNotes = featuresDto.GetValueOrDefault("release-notes")
+			PublicReference = featuresDto.GetValueOrDefault("public-reference", true),
+			ReleaseNotes = featuresDto.GetValueOrDefault("release-notes", true)
 		};
 	}
 }
