@@ -56,11 +56,49 @@ public class SiteNavigationV2 : SiteNavigation
 		{
 			LabelNavV2Item label => CreateLabel(label, nodes, parent, sitePrefix),
 			GroupNavV2Item group => CreateGroup(group, nodes, parent, sitePrefix),
-			TocNavV2Item toc => nodes.TryGetValue(toc.Source, out var node) ? node : null,
+			TocNavV2Item toc => CreateToc(toc, nodes, parent, sitePrefix),
 			PageNavV2Item { Page: null, Title: var title } => new PlaceholderNavigationLeaf(title ?? "Untitled", sitePrefix, parent),
 			PageNavV2Item { Page: var page, Title: var title } => new PageCrossLinkLeaf(page, title ?? page.ToString(), sitePrefix, parent),
 			_ => null
 		};
+
+	private static INavigationItem? CreateToc(
+		TocNavV2Item toc,
+		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		string sitePrefix
+	)
+	{
+		if (!nodes.TryGetValue(toc.Source, out var node))
+			return null;
+		if (toc.Children.Count == 0)
+			return node;
+		var children = BuildV2Items(toc.Children, nodes, parent, sitePrefix);
+		return new TocOverrideNode(node, children, parent.NavigationRoot, parent);
+	}
+
+	/// <summary>
+	/// Wraps an existing toc node but replaces its children with a V2-specified subset.
+	/// Used when a <c>toc:</c> entry in <c>navigation-v2.yml</c> declares explicit children,
+	/// so we can show fewer items without mutating the shared V1 node.
+	/// </summary>
+	private sealed class TocOverrideNode(
+		IRootNavigationItem<IDocumentationFile, INavigationItem> source,
+		IReadOnlyList<INavigationItem> children,
+		IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent
+	) : INodeNavigationItem<INavigationModel, INavigationItem>
+	{
+		public string Id => source.Id;
+		public string Url => source.Url;
+		public string NavigationTitle => source.NavigationTitle;
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => navigationRoot;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
+		public bool Hidden => source.Hidden;
+		public int NavigationIndex { get; set; }
+		public ILeafNavigationItem<INavigationModel> Index => source.Index;
+		public IReadOnlyCollection<INavigationItem> NavigationItems => children;
+	}
 
 	private static LabelNavigationNode CreateLabel(
 		LabelNavV2Item label,
