@@ -376,7 +376,7 @@ For multiline descriptions with multiple paragraphs, lists, and links, use ANSI-
 ```sh
 docs-builder changelog bundle \
   --all \
-  --description $'This release includes significant improvements:\n\n- Enhanced performance\n- Bug fixes and stability improvements\n\nFor more information, see the [release notes](https://example.com/docs).'
+  --description $'This release includes significant improvements:\n\n- Enhanced performance\n- Bug fixes and stability improvements\n\nFor security updates, go to [security announcements](https://example.com/docs).'
 ```
 
 When using placeholders in option-based mode, you must explicitly specify `--output-products` for predictable substitution:
@@ -490,11 +490,12 @@ docs-builder changelog bundle elasticsearch-release ./report.html
 To fix the second case, either provide a version argument or add an `output_products` pattern to your profile:
 
 ```yaml
-profiles:
-  elasticsearch-release:
-    products: "elasticsearch * *"
-    output_products: "elasticsearch {version}"  # Enables placeholder substitution
-    description: "Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
+bundle:
+  profiles:
+    elasticsearch-release:
+      products: "elasticsearch * *"
+      output_products: "elasticsearch {version}"  # Enables placeholder substitution
+      description: "Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
 ```
 :::
 

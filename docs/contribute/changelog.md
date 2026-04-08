@@ -848,7 +848,7 @@ bundle:
     - Bug fixes and stability improvements
     - New features for better user experience
     
-    For more information, see the [release notes](https://example.com/docs/release-notes).
+    For security updates, go to [security announcements](https://example.com/docs).
     
     Download the release binaries: https://github.com/{owner}/{repo}/releases/tag/v{version}
 ```
