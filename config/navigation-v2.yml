@@ -27,146 +27,253 @@ nav:
   - label: Install, deploy, and administer
     children:
     - group: Distributed architecture
+      page: docs-content://deploy-manage/distributed-architecture.md
       children:
-      - title: Clusters nodes and shards
-      - title: Discovery and cluster formation
-      - title: Kibana task management
-      - title: Reading and writing documents
-      - title: Shard allocation relocation and recovery
-      - title: The shard request cache
-    - group: Plan your install (name TBD)
+      - page: docs-content://deploy-manage/distributed-architecture/clusters-nodes-shards.md
+        title: Clusters nodes and shards
+      - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation.md
+        title: Discovery and cluster formation
+      - page: docs-content://deploy-manage/distributed-architecture/kibana-tasks-management.md
+        title: Kibana task management
+      - page: docs-content://deploy-manage/distributed-architecture/reading-and-writing-documents.md
+        title: Reading and writing documents
+      - page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery.md
+        title: Shard allocation relocation and recovery
+      - page: docs-content://deploy-manage/distributed-architecture/shard-request-cache.md
+        title: The shard request cache
+    - group: Plan your install
       children:
-      - title: Versioning and compatibility
-      - title: Detailed deployment comparison
+      - page: docs-content://get-started/versioning-availability.md
+        title: Versioning and compatibility
+      - page: docs-content://deploy-manage/deploy/deployment-comparison.md
+        title: Detailed deployment comparison
       - group: Reference architectures
+        page: docs-content://deploy-manage/reference-architectures.md
         children:
-        - title: Hot/Frozen - High Availability
+        - page: docs-content://deploy-manage/reference-architectures/hotfrozen-high-availability.md
+          title: Hot/Frozen - High Availability
       - group: Production guidance
+        page: docs-content://deploy-manage/production-guidance.md
         children:
-        - title: Run Elasticsearch in production
-        - title: Run Kibana in production
+        - page: docs-content://deploy-manage/production-guidance/elasticsearch-in-production-environments.md
+          title: Run Elasticsearch in production
+        - page: docs-content://deploy-manage/production-guidance/kibana-in-production-environments.md
+          title: Run Kibana in production
     - group: Install and deploy Elasticsearch
+      page: docs-content://deploy-manage/deploy.md
       children:
       - title: Skills for installation and deployment
-      - title: Deploy in Elastic Cloud
-      - title: Elastic Cloud Enterprise
-      - title: Elastic Cloud on Kubernetes
+      - page: docs-content://deploy-manage/deploy/elastic-cloud.md
+        title: Deploy in Elastic Cloud
+      - page: docs-content://deploy-manage/deploy/cloud-enterprise.md
+        title: Elastic Cloud Enterprise
+      - page: docs-content://deploy-manage/deploy/cloud-on-k8s.md
+        title: Elastic Cloud on Kubernetes
       - group: Self-managed cluster
+        page: docs-content://deploy-manage/deploy/self-managed.md
         children:
-        - title: "[XREF] Command line tools"
+        - page: elasticsearch://reference/elasticsearch/command-line-tools/index.md
+          title: Command line tools
     - group: Administer your deployment
       children:
       - title: Skills for cluster and deployment administration
-      - title: Elastic Stack settings
+      - page: docs-content://deploy-manage/stack-settings.md
+        title: Elastic Stack settings
       - group: Autoscaling
+        page: docs-content://deploy-manage/autoscaling.md
         children:
-        - title: Autoscaling deciders
-        - title: Autoscaling in ECE and ECH
-        - title: Autoscaling in ECK
-        - title: Trained model autoscaling
+        - page: docs-content://deploy-manage/autoscaling/autoscaling-deciders.md
+          title: Autoscaling deciders
+        - page: docs-content://deploy-manage/autoscaling/autoscaling-in-ece-and-ech.md
+          title: Autoscaling in ECE and ECH
+        - page: docs-content://deploy-manage/autoscaling/autoscaling-in-eck.md
+          title: Autoscaling in ECK
+        - page: docs-content://deploy-manage/autoscaling/trained-model-autoscaling.md
+          title: Trained model autoscaling
       - group: Backup high availability and resilience tools
+        page: docs-content://deploy-manage/tools.md
         children:
-        - title: Cross-cluster replication
-        - title: Snapshot and restore
-      - title: Cloud Connect
+        - page: docs-content://deploy-manage/tools/cross-cluster-replication.md
+          title: Cross-cluster replication
+        - page: docs-content://deploy-manage/tools/snapshot-and-restore.md
+          title: Snapshot and restore
+      - page: docs-content://deploy-manage/cloud-connect.md
+        title: Cloud Connect
       - group: Security and encryption
+        page: docs-content://deploy-manage/security.md
         children:
-        - title: Encrypt your deployment data
-        - title: Elastic Cloud Static IPs
-        - title: Enabling cipher suites for stronger encryption
-        - title: Use a customer-managed encryption key
-        - title: Securing HTTP client applications
-        - title: Manage IP filtering in ECK and self-managed
-        - title: Manage IP filters in ECH or Serverless
-        - title: Manage HTTP certificates on ECK
-        - title: Kubernetes network policies
-        - title: Secure settings on ECK
-        - title: Manage transport certificates on ECK
-        - title: Mutual TLS between Kibana and Elasticsearch
-        - title: Kibana session management
-        - title: Security limitations
-        - title: Security logging
-        - title: Network security
-        - title: Private connectivity
-        - title: Secure other Elastic Stack components
-        - title: TLS encryption for cluster communications
-        - title: Secure Kibana saved objects
-        - title: Secure your settings
-        - title: Secure your ECK orchestrator
-        - title: Secure your ECE installation
-        - title: Set up security in self-managed
+        - page: docs-content://deploy-manage/security/data-security.md
+          title: Encrypt your deployment data
+        - page: docs-content://deploy-manage/security/elastic-cloud-static-ips.md
+          title: Elastic Cloud Static IPs
+        - page: docs-content://deploy-manage/security/enabling-cipher-suites-for-stronger-encryption.md
+          title: Enabling cipher suites for stronger encryption
+        - page: docs-content://deploy-manage/security/encrypt-deployment-with-customer-managed-encryption-key.md
+          title: Use a customer-managed encryption key
+        - page: docs-content://deploy-manage/security/httprest-clients-security.md
+          title: Securing HTTP client applications
+        - page: docs-content://deploy-manage/security/ip-filtering-basic.md
+          title: Manage IP filtering in ECK and self-managed
+        - page: docs-content://deploy-manage/security/ip-filtering-cloud.md
+          title: Manage IP filters in ECH or Serverless
+        - page: docs-content://deploy-manage/security/k8s-https-settings.md
+          title: Manage HTTP certificates on ECK
+        - page: docs-content://deploy-manage/security/k8s-network-policies.md
+          title: Kubernetes network policies
+        - page: docs-content://deploy-manage/security/k8s-secure-settings.md
+          title: Secure settings on ECK
+        - page: docs-content://deploy-manage/security/k8s-transport-settings.md
+          title: Manage transport certificates on ECK
+        - page: docs-content://deploy-manage/security/kibana-es-mutual-tls.md
+          title: Mutual TLS between Kibana and Elasticsearch
+        - page: docs-content://deploy-manage/security/kibana-session-management.md
+          title: Kibana session management
+        - page: docs-content://deploy-manage/security/limitations.md
+          title: Security limitations
+        - page: docs-content://deploy-manage/security/logging-configuration/security-event-audit-logging.md
+          title: Security logging
+        - page: docs-content://deploy-manage/security/network-security.md
+          title: Network security
+        - page: docs-content://deploy-manage/security/private-connectivity.md
+          title: Private connectivity
+        - page: docs-content://deploy-manage/security/secure-clients-integrations.md
+          title: Secure other Elastic Stack components
+        - page: docs-content://deploy-manage/security/secure-cluster-communications.md
+          title: TLS encryption for cluster communications
+        - page: docs-content://deploy-manage/security/secure-saved-objects.md
+          title: Secure Kibana saved objects
+        - page: docs-content://deploy-manage/security/secure-settings.md
+          title: Secure your settings
+        - page: docs-content://deploy-manage/security/secure-your-eck-installation.md
+          title: Secure your ECK orchestrator
+        - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation.md
+          title: Secure your ECE installation
+        - page: docs-content://deploy-manage/security/self-setup.md
+          title: Set up security in self-managed
       - group: Authentication and authorization
+        page: docs-content://deploy-manage/users-roles.md
         children:
-        - group: Users and roles
-          children:
-          - title: Elastic Cloud Enterprise orchestrator users
-          - title: Cloud organization users
-          - title: Cluster or deployment users
-          - title: Serverless project custom roles
-        - title: Spaces
-        - title: "[child] Using Spaces with Fleet"
+        - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator.md
+          title: Elastic Cloud Enterprise orchestrator users
+        - page: docs-content://deploy-manage/users-roles/cloud-organization.md
+          title: Cloud organization users
+        - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth.md
+          title: Cluster or deployment users
+        - page: docs-content://deploy-manage/users-roles/serverless-custom-roles.md
+          title: Serverless project custom roles
+        - page: docs-content://deploy-manage/manage-spaces.md
+          title: Spaces
+        - page: docs-content://deploy-manage/manage-spaces-fleet.md
+          title: Using Spaces with Fleet
       - group: Elastic API keys
+        page: docs-content://deploy-manage/api-keys.md
         children:
-        - title: Elastic Cloud API keys
-        - title: Elastic Cloud Enterprise API keys
-        - title: Elasticsearch API keys
-        - title: Serverless project API keys
-      - title: Connectors
+        - page: docs-content://deploy-manage/api-keys/elastic-cloud-api-keys.md
+          title: Elastic Cloud API keys
+        - page: docs-content://deploy-manage/api-keys/elastic-cloud-enterprise-api-keys.md
+          title: Elastic Cloud Enterprise API keys
+        - page: docs-content://deploy-manage/api-keys/elasticsearch-api-keys.md
+          title: Elasticsearch API keys
+        - page: docs-content://deploy-manage/api-keys/serverless-project-api-keys.md
+          title: Serverless project API keys
+      - page: docs-content://deploy-manage/manage-connectors.md
+        title: Connectors
       - group: Remote clusters
+        page: docs-content://deploy-manage/remote-clusters.md
         children:
-        - title: Remote cluster connection modes
-        - title: Remote clusters on Elastic Cloud Hosted
-        - title: Remote clusters on Elastic Cloud Enterprise
-        - title: Remote clusters on ECK
-        - title: Remote clusters on self-managed
-        - title: Remote cluster security models
+        - page: docs-content://deploy-manage/remote-clusters/connection-modes.md
+          title: Remote cluster connection modes
+        - page: docs-content://deploy-manage/remote-clusters/ec-enable-ccs.md
+          title: Remote clusters on Elastic Cloud Hosted
+        - page: docs-content://deploy-manage/remote-clusters/ece-enable-ccs.md
+          title: Remote clusters on Elastic Cloud Enterprise
+        - page: docs-content://deploy-manage/remote-clusters/eck-remote-clusters-landing.md
+          title: Remote clusters on ECK
+        - page: docs-content://deploy-manage/remote-clusters/remote-clusters-self-managed.md
+          title: Remote clusters on self-managed
+        - page: docs-content://deploy-manage/remote-clusters/security-models.md
+          title: Remote cluster security models
       - group: Monitoring
+        page: docs-content://deploy-manage/monitor.md
         children:
-        - title: Performance metrics on Elastic Cloud
-        - title: AutoOps
-        - title: AutoOps and Stack Monitoring comparison
-        - title: Cloud deployment health and performance
-        - title: JVM memory pressure indicator
-        - title: Kibana task manager health monitoring
+        - page: docs-content://deploy-manage/monitor/access-performance-metrics-on-elastic-cloud.md
+          title: Performance metrics on Elastic Cloud
+        - page: docs-content://deploy-manage/monitor/autoops.md
+          title: AutoOps
+        - page: docs-content://deploy-manage/monitor/autoops-vs-stack-monitoring.md
+          title: AutoOps and Stack Monitoring comparison
+        - page: docs-content://deploy-manage/monitor/cloud-health-perf.md
+          title: Cloud deployment health and performance
+        - page: docs-content://deploy-manage/monitor/ec-memory-pressure.md
+          title: JVM memory pressure indicator
+        - page: docs-content://deploy-manage/monitor/kibana-task-manager-health-monitoring.md
+          title: Kibana task manager health monitoring
         - group: Logging
+          page: docs-content://deploy-manage/monitor/logging-configuration.md
           children:
-          - title: "[REF] Audit events"
-        - title: Monitoring orchestrators
-        - title: Stack monitoring
-      - title: Configure Kibana reporting
+          - page: elasticsearch://reference/elasticsearch/elasticsearch-audit-events.md
+            title: Audit events
+        - page: docs-content://deploy-manage/monitor/orchestrators.md
+          title: Monitoring orchestrators
+        - page: docs-content://deploy-manage/monitor/stack-monitoring.md
+          title: Stack monitoring
+      - page: docs-content://deploy-manage/kibana-reporting-configuration.md
+        title: Configure Kibana reporting
       - group: Cloud organization
+        page: docs-content://deploy-manage/cloud-organization.md
         children:
-        - title: Billing
-        - title: Operational emails
-        - title: Service status
-        - title: Tools and APIs for your Cloud organization
+        - page: docs-content://deploy-manage/cloud-organization/billing.md
+          title: Billing
+        - page: docs-content://deploy-manage/cloud-organization/operational-emails.md
+          title: Operational emails
+        - page: docs-content://deploy-manage/cloud-organization/service-status.md
+          title: Service status
+        - page: docs-content://deploy-manage/cloud-organization/tools-and-apis.md
+          title: Tools and APIs for your Cloud organization
       - group: Licenses and subscriptions
+        page: docs-content://deploy-manage/license.md
         children:
-        - title: Manage your license in ECE
-        - title: Manage your license in ECK
-        - title: Manage your license in self-managed
+        - page: docs-content://deploy-manage/license/manage-your-license-in-ece.md
+          title: Manage your license in ECE
+        - page: docs-content://deploy-manage/license/manage-your-license-in-eck.md
+          title: Manage your license in ECK
+        - page: docs-content://deploy-manage/license/manage-your-license-in-self-managed-cluster.md
+          title: Manage your license in self-managed
       - group: Maintenance
+        page: docs-content://deploy-manage/maintenance.md
         children:
-        - title: Add and remove Elasticsearch nodes
-        - title: ECE maintenance
-        - title: Start and stop routing requests
-        - title: Start and stop services
+        - page: docs-content://deploy-manage/maintenance/add-and-remove-elasticsearch-nodes.md
+          title: Add and remove Elasticsearch nodes
+        - page: docs-content://deploy-manage/maintenance/ece.md
+          title: ECE maintenance
+        - page: docs-content://deploy-manage/maintenance/start-stop-routing-requests.md
+          title: Start and stop routing requests
+        - page: docs-content://deploy-manage/maintenance/start-stop-services.md
+          title: Start and stop services
       - group: Upgrade your deployment, cluster, or orchestrator
+        page: docs-content://deploy-manage/upgrade.md
         children:
-        - title: Upgrade your deployment or cluster
-        - title: Upgrade your ingest components
-        - title: Upgrade your orchestrator
-        - title: Plan your upgrade
-        - title: Prepare to upgrade
+        - page: docs-content://deploy-manage/upgrade/deployment-or-cluster.md
+          title: Upgrade your deployment or cluster
+        - page: docs-content://deploy-manage/upgrade/ingest-components.md
+          title: Upgrade your ingest components
+        - page: docs-content://deploy-manage/upgrade/orchestrator.md
+          title: Upgrade your orchestrator
+        - page: docs-content://deploy-manage/upgrade/plan-upgrade.md
+          title: Plan your upgrade
+        - page: docs-content://deploy-manage/upgrade/prepare-to-upgrade.md
+          title: Prepare to upgrade
       - group: Uninstall
+        page: docs-content://deploy-manage/uninstall.md
         children:
-        - title: Uninstall Elastic Cloud Enterprise
-        - title: Uninstall Elastic Cloud on Kubernetes
+        - page: docs-content://deploy-manage/uninstall/uninstall-elastic-cloud-enterprise.md
+          title: Uninstall Elastic Cloud Enterprise
+        - page: docs-content://deploy-manage/uninstall/uninstall-elastic-cloud-on-kubernetes.md
+          title: Uninstall Elastic Cloud on Kubernetes
     - group: Deployment and administration tools
       children:
       - title: Overview (roundup)
-      - title: ECCTL
-      - title: Skills
+      - toc: ecctl://reference
   - label: The Elasticsearch Platform
     children:
     - label: Ingest and manage data
