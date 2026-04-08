@@ -1136,7 +1136,12 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		// Assert
 		bundles.Should().HaveCount(1);
-		bundles[0].Data.Description.Should().Be(multilineDescription);
+
+		// Normalize line endings for cross-platform compatibility
+		var actualDescription = bundles[0].Data.Description?.Replace("\r\n", "\n").Replace("\r", "\n");
+		var expectedDescription = multilineDescription.Replace("\r\n", "\n").Replace("\r", "\n");
+		actualDescription.Should().Be(expectedDescription);
+
 		_warnings.Should().BeEmpty();
 	}
 
