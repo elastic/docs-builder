@@ -73,7 +73,7 @@ versioning_systems:
   # EDOTs
   edot-collector:
     base: 9.0
-    current: 9.3.2
+    current: 9.3.3
   edot-ios:
     base: 1.0
     current: 2.0.0
