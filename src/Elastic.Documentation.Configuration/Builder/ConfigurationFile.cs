@@ -174,8 +174,8 @@ public record ConfigurationFile
 				_substitutions[$"version.{alternativeName}.base"] = system.Base;
 			}
 
-			// Add product substitutions
-			foreach (var product in productsConfig.Products.Values)
+			// Add product substitutions (only for products with public-reference feature)
+			foreach (var product in productsConfig.PublicReferenceProducts.Values)
 			{
 				var alternativeProductId = product.Id.Replace('-', '_');
 				_substitutions[$"product.{product.Id}"] = product.DisplayName;
