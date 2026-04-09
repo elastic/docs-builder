@@ -13,12 +13,13 @@ on:
     branches:
       - main
       - master
-      - '\d+.\d+.\d+'
-      - '\d+.\d+'
-      - '\d+.x'
+      # Glob patterns (GitHub Actions uses fnmatch-style globs for branches/tags, not regex).
+      - '*.*.*'
+      - '*.*'
+      - '*.x'
     tags:
-      - 'v?\d+.\d+.\d+'
-      - 'v?\d+.\d+'
+      - '*.*.*'
+      - '*.*'
 
 permissions:
   contents: read
