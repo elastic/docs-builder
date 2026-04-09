@@ -32,7 +32,7 @@ public record ChangelogRenderContext
 	public string? BundleDescription { get; init; }
 	/// <summary>
 	/// Optional release date for this bundle. Purely informative for end-users.
-	/// Only set when there's a single bundle with a release date (MVP approach).
+	/// Only set when there's a single unique release date across all bundles (MVP approach).
 	/// </summary>
-	public string? BundleReleaseDate { get; init; }
+	public DateOnly? BundleReleaseDate { get; init; }
 }

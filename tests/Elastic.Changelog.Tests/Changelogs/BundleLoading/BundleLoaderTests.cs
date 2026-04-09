@@ -1197,7 +1197,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			[
 				new BundledProduct { ProductId = "apm-agent-dotnet", Target = "1.34.0" }
 			],
-			ReleaseDate = "2026-04-09",
+			ReleaseDate = new DateOnly(2026, 4, 9),
 			Entries =
 			[
 				new BundledEntry
@@ -1219,14 +1219,13 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		// Assert
 		bundles.Should().HaveCount(1);
-		bundles[0].Data.ReleaseDate.Should().Be("2026-04-09");
+		bundles[0].Data.ReleaseDate.Should().Be(new DateOnly(2026, 4, 9));
 		_warnings.Should().BeEmpty();
 	}
 
 	[Fact]
 	public void LoadBundles_ReleaseDateCanBeNull()
 	{
-		// Arrange - Test that null release-date is handled correctly
 		var bundlesFolder = "/docs/changelog/bundles";
 		_fileSystem.Directory.CreateDirectory(bundlesFolder);
 
@@ -1265,7 +1264,38 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	[Fact]
 	public void LoadBundles_ReleaseDateFromYaml_ParsedCorrectly()
 	{
-		// Arrange - Test loading release-date from raw YAML
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			release-date: "2026-04-09"
+			entries:
+			  - title: Test feature
+			    type: feature
+			    prs:
+			    - "100"
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/1.34.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.ReleaseDate.Should().Be(new DateOnly(2026, 4, 9));
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_ReleaseDateInvalidFormat_ParsedAsNull()
+	{
 		var bundlesFolder = "/docs/changelog/bundles";
 		_fileSystem.Directory.CreateDirectory(bundlesFolder);
 
@@ -1291,7 +1321,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		// Assert
 		bundles.Should().HaveCount(1);
-		bundles[0].Data.ReleaseDate.Should().Be("April 9, 2026");
+		bundles[0].Data.ReleaseDate.Should().BeNull();
 		_warnings.Should().BeEmpty();
 	}
 
@@ -1340,7 +1370,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		// Assert
 		merged.Should().HaveCount(1);
-		merged[0].Data.ReleaseDate.Should().Be("2026-04-09");
+		merged[0].Data.ReleaseDate.Should().Be(new DateOnly(2026, 4, 9));
 	}
 
 	[Fact]

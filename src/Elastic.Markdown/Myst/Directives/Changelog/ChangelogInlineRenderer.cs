@@ -154,7 +154,7 @@ public static class ChangelogInlineRenderer
 		ChangelogTypeFilter typeFilter,
 		PublishBlocker? publishBlocker,
 		string? description = null,
-		string? releaseDate = null)
+		DateOnly? releaseDate = null)
 	{
 		var sb = new StringBuilder();
 
@@ -179,10 +179,10 @@ public static class ChangelogInlineRenderer
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
 
 		// Add release date if present
-		if (!string.IsNullOrEmpty(releaseDate))
+		if (releaseDate is { } date)
 		{
 			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"_Released: {releaseDate}_");
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"_Released: {date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}_");
 		}
 
 		// Add description if present

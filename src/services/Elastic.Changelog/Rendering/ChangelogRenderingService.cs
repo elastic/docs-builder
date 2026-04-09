@@ -156,11 +156,12 @@ public class ChangelogRenderingService(
 			// Extract release dates from bundles for MVP support
 			var bundleReleaseDates = validationResult.Bundles
 				.Select(b => b.Data.ReleaseDate)
-				.Where(d => !string.IsNullOrEmpty(d))
+				.Where(d => d.HasValue)
+				.Select(d => d!.Value)
 				.Distinct()
 				.ToList();
 
-			string? renderReleaseDate = null;
+			DateOnly? renderReleaseDate = null;
 			if (bundleReleaseDates.Count > 1)
 			{
 				collector.EmitWarning(string.Empty,
@@ -287,7 +288,7 @@ public class ChangelogRenderingService(
 		HashSet<string> featureIdsToHide,
 		ChangelogConfiguration? config,
 		string? description = null,
-		string? releaseDate = null)
+		DateOnly? releaseDate = null)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries

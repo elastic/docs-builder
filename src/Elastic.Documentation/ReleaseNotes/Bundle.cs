@@ -23,8 +23,9 @@ public record Bundle
 	/// Optional release date for this bundle.
 	/// Purely informative for end-users; rendered after the release heading.
 	/// Useful for components released outside the usual stack lifecycle (e.g., APM/EDOT agents).
+	/// Parsed from YYYY-MM-DD format in YAML; serialized back as YYYY-MM-DD.
 	/// </summary>
-	public string? ReleaseDate { get; init; }
+	public DateOnly? ReleaseDate { get; init; }
 
 	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.

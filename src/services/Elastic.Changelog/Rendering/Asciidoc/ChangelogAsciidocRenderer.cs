@@ -33,9 +33,9 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		_ = sb.AppendLine();
 
 		// Add release date if present
-		if (!string.IsNullOrEmpty(context.BundleReleaseDate))
+		if (context.BundleReleaseDate is { } releaseDate)
 		{
-			_ = sb.AppendLine(InvariantCulture, $"_Released: {context.BundleReleaseDate}_");
+			_ = sb.AppendLine(InvariantCulture, $"_Released: {releaseDate.ToString("MMMM d, yyyy", InvariantCulture)}_");
 			_ = sb.AppendLine();
 		}
 

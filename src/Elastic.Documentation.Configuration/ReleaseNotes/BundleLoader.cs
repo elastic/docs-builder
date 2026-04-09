@@ -231,13 +231,14 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 		var releaseDates = bundlesList
 			.Select(b => b.Data?.ReleaseDate)
-			.Where(d => !string.IsNullOrEmpty(d))
+			.Where(d => d.HasValue)
+			.Select(d => d!.Value)
 			.Distinct()
 			.ToList();
 
 		var mergedReleaseDate = releaseDates.Count switch
 		{
-			0 => null,
+			0 => (DateOnly?)null,
 			_ => releaseDates[0]
 		};
 

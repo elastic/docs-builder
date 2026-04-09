@@ -627,7 +627,7 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 		products:
 		- product: apm-agent-dotnet
 		  target: 1.34.0
-		release-date: "April 9, 2026"
+		release-date: "2026-04-09"
 		entries:
 		- title: Add tracing improvements
 		  type: feature
@@ -709,7 +709,7 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 
 	[Fact]
 	public void RendersReleaseDate() =>
-		Html.Should().Contain("Released: 2026-04-09");
+		Html.Should().Contain("Released: April 9, 2026");
 
 	[Fact]
 	public void RendersDescription() =>
