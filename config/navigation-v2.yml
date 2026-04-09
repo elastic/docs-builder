@@ -42,11 +42,15 @@ nav:
       - page: docs-content://deploy-manage/distributed-architecture/shard-request-cache.md
         title: The shard request cache
     - group: Plan your install
+      page: docs-content://deploy-manage/deploy/index.md
       children:
+      - page: docs-content://deploy-manage/deploy/deployment-comparison.md
+        title: Deployment comparison
+        children: 
+         - page: docs-content://deploy-manage/deploy/elastic-cloud/differences-from-other-elasticsearch-offerings.md
+           title: Compare Elastic Cloud Hosted and Serverless
       - page: docs-content://get-started/versioning-availability.md
         title: Versioning and compatibility
-      - page: docs-content://deploy-manage/deploy/deployment-comparison.md
-        title: Detailed deployment comparison
       - group: Reference architectures
         page: docs-content://deploy-manage/reference-architectures.md
         children:
@@ -63,20 +67,52 @@ nav:
       page: docs-content://deploy-manage/deploy.md
       children:
       - title: Skills for installation and deployment
-      - page: docs-content://deploy-manage/deploy/elastic-cloud.md
-        title: Deploy in Elastic Cloud
+      - group: Deploy in Elastic Cloud
+        page: docs-content://deploy-manage/deploy/elastic-cloud.md
+        children:
+        - page: docs-content://deploy-manage/deploy/elastic-cloud/create-an-organization.md
+          title: Create an organization
+        - page: docs-content://deploy-manage/deploy/elastic-cloud/serverless.md
+          title: Elastic Cloud Serverless
+        - page: docs-content://deploy-manage/deploy/elastic-cloud/cloud-hosted.md
+          title: Elastic Cloud Hosted
+        page: docs-content://deploy
       - page: docs-content://deploy-manage/deploy/cloud-enterprise.md
         title: Elastic Cloud Enterprise
       - page: docs-content://deploy-manage/deploy/cloud-on-k8s.md
         title: Elastic Cloud on Kubernetes
       - group: Self-managed cluster
         page: docs-content://deploy-manage/deploy/self-managed.md
-        children:
-        - page: elasticsearch://reference/elasticsearch/command-line-tools/index.md
-          title: Command line tools
-    - group: Administer your deployment
+    - group: Administer your orchestrator, deployment, or project
+      page: docs-content://deploy-manage/index.md
       children:
-      - title: Skills for cluster and deployment administration
+      - title: Administration skills
+      - group: Elastic Cloud Hosted
+        children:
+          - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-deployments.md
+            title: Manage deployments
+      - group: Elastic Cloud Serverless
+        children:
+        - page: docs-content://deploy-manage/deploy/elastic-cloud/project-settings.md
+          title: Manage project settings
+      - group: Elastic Cloud Enterprise
+        children:
+        - page: docs-content://deploy-manage/deploy/cloud-enterprise/configure.md
+          title: Configure your orchestrator
+        - page: docs-content://deploy-manage/deploy/cloud-enterprise/working-with-deployments.md
+          title: Manage deployments
+      - group: Elastic Cloud on Kubernetes
+        children:
+        - page: docs-content://deploy-manage/deploy/cloud-on-k8s/configure.md
+          title: Configure your orchestrator
+        - page: docs-content://deploy-manage/deploy/cloud-on-k8s/manage-deployments.md
+          title: Manage deployments
+      - group: Self-managed clusters
+        children:
+        - page: docs-content://deploy-manage/deploy/self-managed/configure-elasticsearch.md
+          title: Configure Elasticsearch
+        - page: docs-content://deploy-manage/deploy/self-managed/configure-kibana.md
+          title: Configure Kibana
       - page: docs-content://deploy-manage/stack-settings.md
         title: Elastic Stack settings
       - group: Autoscaling
@@ -90,7 +126,7 @@ nav:
           title: Autoscaling in ECK
         - page: docs-content://deploy-manage/autoscaling/trained-model-autoscaling.md
           title: Trained model autoscaling
-      - group: Backup high availability and resilience tools
+      - group: Backup, high availability, and resilience tools
         page: docs-content://deploy-manage/tools.md
         children:
         - page: docs-content://deploy-manage/tools/cross-cluster-replication.md
@@ -102,70 +138,41 @@ nav:
       - group: Security and encryption
         page: docs-content://deploy-manage/security.md
         children:
-        - page: docs-content://deploy-manage/security/data-security.md
-          title: Encrypt your deployment data
-        - page: docs-content://deploy-manage/security/elastic-cloud-static-ips.md
-          title: Elastic Cloud Static IPs
-        - page: docs-content://deploy-manage/security/enabling-cipher-suites-for-stronger-encryption.md
-          title: Enabling cipher suites for stronger encryption
-        - page: docs-content://deploy-manage/security/encrypt-deployment-with-customer-managed-encryption-key.md
-          title: Use a customer-managed encryption key
-        - page: docs-content://deploy-manage/security/httprest-clients-security.md
-          title: Securing HTTP client applications
-        - page: docs-content://deploy-manage/security/ip-filtering-basic.md
-          title: Manage IP filtering in ECK and self-managed
-        - page: docs-content://deploy-manage/security/ip-filtering-cloud.md
-          title: Manage IP filters in ECH or Serverless
-        - page: docs-content://deploy-manage/security/k8s-https-settings.md
-          title: Manage HTTP certificates on ECK
-        - page: docs-content://deploy-manage/security/k8s-network-policies.md
-          title: Kubernetes network policies
-        - page: docs-content://deploy-manage/security/k8s-secure-settings.md
-          title: Secure settings on ECK
-        - page: docs-content://deploy-manage/security/k8s-transport-settings.md
-          title: Manage transport certificates on ECK
-        - page: docs-content://deploy-manage/security/kibana-es-mutual-tls.md
-          title: Mutual TLS between Kibana and Elasticsearch
-        - page: docs-content://deploy-manage/security/kibana-session-management.md
-          title: Kibana session management
-        - page: docs-content://deploy-manage/security/limitations.md
-          title: Security limitations
-        - page: docs-content://deploy-manage/security/logging-configuration/security-event-audit-logging.md
-          title: Security logging
-        - page: docs-content://deploy-manage/security/network-security.md
-          title: Network security
-        - page: docs-content://deploy-manage/security/private-connectivity.md
-          title: Private connectivity
+        - group: Secure your orchestrator
+          page: docs-content://deploy-manage/security/secure-hosting-environment.md
+          children:
+            - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation.md
+              title: Elastic Cloud Enterprise
+            - page: docs-content://deploy-manage/security/secure-your-eck-installation.md
+              title: Elastic Cloud on Kubernetes
+        - group: Secure your cluster, deployment, or project
+          page: /deploy-manage/security/secure-your-cluster-deployment.md
         - page: docs-content://deploy-manage/security/secure-clients-integrations.md
           title: Secure other Elastic Stack components
-        - page: docs-content://deploy-manage/security/secure-cluster-communications.md
-          title: TLS encryption for cluster communications
-        - page: docs-content://deploy-manage/security/secure-saved-objects.md
-          title: Secure Kibana saved objects
-        - page: docs-content://deploy-manage/security/secure-settings.md
-          title: Secure your settings
-        - page: docs-content://deploy-manage/security/secure-your-eck-installation.md
-          title: Secure your ECK orchestrator
-        - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation.md
-          title: Secure your ECE installation
-        - page: docs-content://deploy-manage/security/self-setup.md
-          title: Set up security in self-managed
+        - page: docs-content://deploy-manage/security/httprest-clients-security.md
+          title: Secure HTTP client applications
+        - page: docs-content://deploy-manage/security/limitations.md
+          title: Security limitations
+        - group: FIPS compliance
+          page: docs-content://deploy-manage/security/fips.md
       - group: Authentication and authorization
         page: docs-content://deploy-manage/users-roles.md
         children:
-        - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator.md
-          title: Elastic Cloud Enterprise orchestrator users
         - page: docs-content://deploy-manage/users-roles/cloud-organization.md
-          title: Cloud organization users
-        - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth.md
-          title: Cluster or deployment users
+          title: Cloud organization
+        - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator.md
+          title: ECE orchestrator
         - page: docs-content://deploy-manage/users-roles/serverless-custom-roles.md
           title: Serverless project custom roles
         - page: docs-content://deploy-manage/manage-spaces.md
-          title: Spaces
+        - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth.md
+          title: Cluster or deployment
+      - group: Spaces
+        page: docs-content://deploy-manage/manage-spaces.md
+        children:
         - page: docs-content://deploy-manage/manage-spaces-fleet.md
           title: Using Spaces with Fleet
-      - group: Elastic API keys
+      - group: API keys
         page: docs-content://deploy-manage/api-keys.md
         children:
         - page: docs-content://deploy-manage/api-keys/elastic-cloud-api-keys.md
@@ -272,8 +279,10 @@ nav:
           title: Uninstall Elastic Cloud on Kubernetes
     - group: Deployment and administration tools
       children:
-      - title: Overview (roundup)
+      - title: Overview
       - toc: ecctl://reference
+      - page: elasticsearch://reference/elasticsearch/command-line-tools/index.md
+        title: Command line tools
   - label: The Elasticsearch Platform
     children:
     - label: Ingest and manage data
