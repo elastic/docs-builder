@@ -214,7 +214,7 @@ bundle:
   # Whether to resolve (copy contents) by default
   resolve: true
   # Optional: default description text for bundles. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
-  # Use YAML literal block scalar (|) for multiline descriptions.
+  # Use YAML literal block scalar (|) for multiline descriptions. See docs/contribute/changelog.md for examples.
   # description: |
   #   This release includes new features and bug fixes.
   #   
