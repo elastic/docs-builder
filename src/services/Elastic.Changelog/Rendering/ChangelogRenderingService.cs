@@ -137,6 +137,7 @@ public class ChangelogRenderingService(
 			var bundleDescriptions = validationResult.Bundles
 				.Select(b => b.Data.Description)
 				.Where(d => !string.IsNullOrEmpty(d))
+				.Distinct()
 				.ToList();
 
 			// MVP: Check for multiple descriptions and warn
@@ -156,6 +157,7 @@ public class ChangelogRenderingService(
 			var bundleReleaseDates = validationResult.Bundles
 				.Select(b => b.Data.ReleaseDate)
 				.Where(d => !string.IsNullOrEmpty(d))
+				.Distinct()
 				.ToList();
 
 			string? renderReleaseDate = null;
