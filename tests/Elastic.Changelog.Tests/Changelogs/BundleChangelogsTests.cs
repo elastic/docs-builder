@@ -3971,7 +3971,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Prs = [prsFile],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "bundle.yaml")
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -4012,7 +4012,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			Issues = [issuesFile],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "bundle.yaml")
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
@@ -5966,11 +5966,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 	{
 		// Arrange
 		CreateSampleChangelogs();
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			Output = "bundle.yaml",
+			Output = outputPath,
 			Description = "Release includes {version} with {lifecycle} features from {owner}/{repo}" // Has placeholders but no --output-products
 		};
 
@@ -5994,11 +5995,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 			new() { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }
 		};
 
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			Output = "bundle.yaml",
+			Output = outputPath,
 			OutputProducts = outputProducts,
 			Description = "Release includes {version} with {lifecycle} features from {owner}/{repo}",
 			Owner = "elastic",
@@ -6012,7 +6014,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue("bundling should succeed when placeholders have --output-products");
 		Collector.Errors.Should().Be(0, "no errors expected when validation passes");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync("bundle.yaml", TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("Release includes 9.2.0 with ga features from elastic/elasticsearch",
 			"placeholders should be substituted correctly");
 	}
@@ -6022,11 +6024,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 	{
 		// Arrange - test validation with description that could come from config (simulated via CLI)
 		CreateSampleChangelogs();
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			Output = "bundle.yaml",
+			Output = outputPath,
 			Description = "Version {version} includes {lifecycle} updates from {owner}/{repo}" // Simulate config-provided description
 																							   // No OutputProducts - should fail validation
 		};
