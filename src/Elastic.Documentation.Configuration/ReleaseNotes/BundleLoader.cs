@@ -229,7 +229,19 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			_ => string.Join("\n\n", descriptions)
 		};
 
-		var mergedData = first.Data with { Description = mergedDescription };
+		var releaseDates = bundlesList
+			.Select(b => b.Data?.ReleaseDate)
+			.Where(d => !string.IsNullOrEmpty(d))
+			.Distinct()
+			.ToList();
+
+		var mergedReleaseDate = releaseDates.Count switch
+		{
+			0 => null,
+			_ => releaseDates[0]
+		};
+
+		var mergedData = first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate };
 
 		return new LoadedBundle(
 			first.Version,

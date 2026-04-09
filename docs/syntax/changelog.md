@@ -142,10 +142,11 @@ For full syntax, refer to the [rules for filtered bundles](/cli/changelog/bundle
 When bundles contain a `hide-features` field, entries with matching `feature-id` values are automatically filtered out from the rendered output. This allows you to hide unreleased or experimental features without modifying the bundle at render time.
 
 ```yaml
-# Example bundle with description and hide-features
+# Example bundle with release-date, description, and hide-features
 products:
   - product: elasticsearch
     target: 9.3.0
+release-date: "2026-04-09"
 description: |
   This release includes new features and bug fixes.
   
@@ -227,10 +228,12 @@ The version is extracted from the first product's `target` field in each bundle 
 
 ## Rendered output
 
-Each bundle renders as a `## {version}` section with optional description and subsections beneath:
+Each bundle renders as a `## {version}` section with optional release date, description, and subsections beneath:
 
 ```markdown
 ## 0.100.0
+
+_Released: 2026-04-09_
 
 This release includes new features and bug fixes.
 
@@ -246,7 +249,9 @@ Download the release binaries: https://github.com/elastic/elasticsearch/releases
 ...
 ```
 
-Bundle descriptions are rendered when present in the bundle YAML file. The description appears immediately after the version heading but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
+When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: 2026-04-09_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
+
+Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
 ### Section types
 

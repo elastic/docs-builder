@@ -20,6 +20,13 @@ public record Bundle
 	public string? Description { get; init; }
 
 	/// <summary>
+	/// Optional release date for this bundle.
+	/// Purely informative for end-users; rendered after the release heading.
+	/// Useful for components released outside the usual stack lifecycle (e.g., APM/EDOT agents).
+	/// </summary>
+	public string? ReleaseDate { get; init; }
+
+	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>
