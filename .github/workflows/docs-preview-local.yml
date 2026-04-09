@@ -64,13 +64,13 @@ jobs:
 
       - name: Match for PR events
         id: pr-check
-        if: contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name)
+        if: contains(fromJSON('["pull_request"]'), github.event_name)
         uses: elastic/docs-builder/actions/assembler-match@main
         with:
           ref_name: ${{ github.base_ref }}
           repository: ${{ github.repository }}
       - name: Match for PR events debug
-        if: contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name)
+        if: contains(fromJSON('["pull_request"]'), github.event_name)
         run: |
           echo "ref=${{ github.base_ref }}"
           echo "repo=${{ github.repository }}"
@@ -120,7 +120,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Get changed files
-        if: contains(fromJSON('["push", "merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        if: contains(fromJSON('["push", "merge_group", "pull_request"]'), github.event_name)
         id: check-files
         uses: tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32 # v46.0.1
         with:
@@ -130,7 +130,7 @@ jobs:
             README.md
 
       - name: Get modified file detail
-        if: contains(fromJSON('["merge_group", "pull_request", "pull_request_target"]'), github.event_name)
+        if: contains(fromJSON('["merge_group", "pull_request"]'), github.event_name)
         id: check-modified-file-detail
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         env:
@@ -277,7 +277,7 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           case "${GITHUB_EVENT_NAME}" in
-            "merge_group" | "pull_request" | "pull_request_target")
+            "merge_group" | "pull_request")
               path_prefix="/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
               ;;
             "push" | "workflow_dispatch")
