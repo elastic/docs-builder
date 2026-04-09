@@ -31,10 +31,40 @@ internal static class BundleDescriptionSubstitution
 	/// <summary>
 	/// Substitutes placeholders in a description string with provided values
 	/// </summary>
-	public static string SubstitutePlaceholders(string description, string? version, string? lifecycle, string? owner, string? repo)
+	public static string SubstitutePlaceholders(string description, string? version, string? lifecycle, string? owner, string? repo) =>
+		SubstitutePlaceholders(description, version, lifecycle, owner, repo, validateResolvable: false);
+
+	/// <summary>
+	/// Substitutes placeholders in a description string with provided values
+	/// </summary>
+	/// <param name="description">The description string containing placeholders</param>
+	/// <param name="version">Version value for {version} placeholder</param>
+	/// <param name="lifecycle">Lifecycle value for {lifecycle} placeholder</param>
+	/// <param name="owner">Owner value for {owner} placeholder</param>
+	/// <param name="repo">Repository value for {repo} placeholder</param>
+	/// <param name="validateResolvable">If true, validates that all used placeholders can be resolved</param>
+	/// <returns>Description with placeholders substituted</returns>
+	/// <exception cref="InvalidOperationException">When validateResolvable is true and placeholders cannot be resolved</exception>
+	public static string SubstitutePlaceholders(string description, string? version, string? lifecycle, string? owner, string? repo, bool validateResolvable)
 	{
 		if (string.IsNullOrEmpty(description))
 			return description;
+
+		if (validateResolvable)
+		{
+			var missingValues = new List<string>();
+			if (description.Contains("{version}") && string.IsNullOrEmpty(version))
+				missingValues.Add("version");
+			if (description.Contains("{lifecycle}") && string.IsNullOrEmpty(lifecycle))
+				missingValues.Add("lifecycle");
+			if (description.Contains("{owner}") && string.IsNullOrEmpty(owner))
+				missingValues.Add("owner");
+			if (description.Contains("{repo}") && string.IsNullOrEmpty(repo))
+				missingValues.Add("repo");
+
+			if (missingValues.Count > 0)
+				throw new InvalidOperationException($"Cannot resolve placeholders: {string.Join(", ", missingValues)}");
+		}
 
 		return description
 			.Replace("{version}", version ?? string.Empty)
@@ -203,6 +233,9 @@ public partial class ChangelogBundlingService(
 
 			// Validate input
 			if (!ValidateInput(collector, input))
+				return false;
+
+			if (!ValidatePlaceholderUsage(collector, input))
 				return false;
 
 			if (!ValidateLinkAllowlist(collector, input))
@@ -455,13 +488,24 @@ public partial class ChangelogBundlingService(
 			{
 				// Validate placeholder usage in profile mode
 				var hasVersionPlaceholder = descriptionTemplate.Contains("{version}") || descriptionTemplate.Contains("{lifecycle}");
+				var hasOwnerRepoPlaceholder = descriptionTemplate.Contains("{owner}") || descriptionTemplate.Contains("{repo}");
+
 				if (hasVersionPlaceholder &&
 					filterResult.Version == "unknown" &&
 					string.IsNullOrEmpty(profile.OutputProducts))
 				{
 					collector.EmitError(string.Empty,
-						$"Profile '{input.Profile}' uses placeholders in description but no version is available for substitution. " +
+						$"Profile '{input.Profile}' uses {{version}} or {{lifecycle}} placeholders in description but no version is available for substitution. " +
 						"Either provide a version argument, or add 'output_products' pattern to the profile configuration.");
+					return null;
+				}
+
+				if (hasOwnerRepoPlaceholder &&
+					(string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo)))
+				{
+					collector.EmitError(string.Empty,
+						$"Profile '{input.Profile}' uses {{owner}} or {{repo}} placeholders in description but values are not resolvable. " +
+						"Ensure repository metadata is available in the configuration.");
 					return null;
 				}
 
@@ -622,6 +666,31 @@ public partial class ChangelogBundlingService(
 		{
 			collector.EmitError(string.Empty,
 				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, or --issues");
+			return false;
+		}
+
+		return true;
+	}
+
+	private static bool ValidatePlaceholderUsage(IDiagnosticsCollector collector, BundleChangelogsArguments input)
+	{
+		// Only validate in option-based mode (profile mode has separate validation)
+		if (!string.IsNullOrEmpty(input.Profile))
+			return true;
+
+		if (string.IsNullOrEmpty(input.Description))
+			return true;
+
+		var hasPlaceholders = input.Description.Contains("{version}") ||
+							 input.Description.Contains("{lifecycle}") ||
+							 input.Description.Contains("{owner}") ||
+							 input.Description.Contains("{repo}");
+
+		if (hasPlaceholders && (input.OutputProducts == null || input.OutputProducts.Count == 0))
+		{
+			collector.EmitError(string.Empty,
+				"When using placeholders in bundle description in option-based mode, " +
+				"--output-products must be explicitly specified to ensure predictable substitution values.");
 			return false;
 		}
 

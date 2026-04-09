@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -5958,5 +5959,104 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("1755268204-partial-rule.yaml", "entry should be included - per-product rule ignores global type exclusions");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_OptionModeWithPlaceholdersButNoOutputProducts_ReturnsError()
+	{
+		// Arrange
+		CreateSampleChangelogs();
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = "bundle.yaml",
+			Description = "Release includes {version} with {lifecycle} features from {owner}/{repo}" // Has placeholders but no --output-products
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse("bundling should fail when placeholders are used without --output-products");
+		Collector.Errors.Should().Be(1, "should have exactly one validation error");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains(
+			"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."));
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_OptionModeWithPlaceholdersAndOutputProducts_Succeeds()
+	{
+		// Arrange
+		CreateSampleChangelogs();
+		var outputProducts = new List<ProductArgument>
+		{
+			new() { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }
+		};
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = "bundle.yaml",
+			OutputProducts = outputProducts,
+			Description = "Release includes {version} with {lifecycle} features from {owner}/{repo}",
+			Owner = "elastic",
+			Repo = "elasticsearch"
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue("bundling should succeed when placeholders have --output-products");
+		Collector.Errors.Should().Be(0, "no errors expected when validation passes");
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync("bundle.yaml", TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("Release includes 9.2.0 with ga features from elastic/elasticsearch",
+			"placeholders should be substituted correctly");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_OptionModeWithConfigDescriptionAndPlaceholders_ReturnsError()
+	{
+		// Arrange - test validation with description that could come from config (simulated via CLI)
+		CreateSampleChangelogs();
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = "bundle.yaml",
+			Description = "Version {version} includes {lifecycle} updates from {owner}/{repo}" // Simulate config-provided description
+																							   // No OutputProducts - should fail validation
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse("bundling should fail when description has placeholders without --output-products");
+		Collector.Errors.Should().Be(1, "should have exactly one validation error");
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains(
+			"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."));
+	}
+
+
+	private void CreateSampleChangelogs()
+	{
+		// language=yaml
+		var changelog1 =
+			"""
+			title: First changelog
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		FileSystem.File.WriteAllText(FileSystem.Path.Join(_changelogDir, "changelog1.yaml"), changelog1);
 	}
 }

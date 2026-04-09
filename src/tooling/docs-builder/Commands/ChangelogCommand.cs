@@ -809,16 +809,6 @@ internal sealed partial class ChangelogCommand(
 			Description = description
 		};
 
-		// Validate placeholder usage in option-based mode
-		if (!isProfileMode && description != null &&
-			(description.Contains("{version}") || description.Contains("{lifecycle}") || description.Contains("{owner}") || description.Contains("{repo}")) &&
-			outputProducts == null)
-		{
-			collector.EmitError(string.Empty,
-				"When using placeholders in --description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values.");
-			return 1;
-		}
-
 		serviceInvoker.AddCommand(service, input,
 			async static (s, collector, state, ctx) => await s.BundleChangelogs(collector, state, ctx)
 		);
