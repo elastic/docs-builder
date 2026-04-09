@@ -278,7 +278,6 @@ nav:
           title: Delete an orchestrated deployment
     - group: Deployment and administration tools
       children:
-      - title: Overview
       - toc: ecctl://reference
       - page: elasticsearch://reference/elasticsearch/command-line-tools/index.md
         title: Command-line tools
