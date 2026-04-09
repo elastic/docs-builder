@@ -135,6 +135,7 @@ public static partial class ReleaseNotesSerialization
 	private static Bundle ToBundle(BundleDto dto) => new()
 	{
 		Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
+		Description = dto.Description,
 		HideFeatures = dto.HideFeatures ?? [],
 		Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? []
 	};
@@ -239,6 +240,7 @@ public static partial class ReleaseNotesSerialization
 	private static BundleDto ToDto(Bundle bundle) => new()
 	{
 		Products = bundle.Products.Select(ToDto).ToList(),
+		Description = bundle.Description,
 		HideFeatures = bundle.HideFeatures.Count > 0 ? bundle.HideFeatures.ToList() : null,
 		Entries = bundle.Entries.Select(ToDto).ToList()
 	};

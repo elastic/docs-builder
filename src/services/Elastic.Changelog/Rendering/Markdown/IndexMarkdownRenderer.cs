@@ -52,6 +52,13 @@ public class IndexMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRender
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-release-notes-{context.TitleSlug}]");
 
+		// Add description if present
+		if (!string.IsNullOrEmpty(context.BundleDescription))
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(context.BundleDescription);
+		}
+
 		if (otherLinks.Count > 0)
 		{
 			var linksText = string.Join(" and ", otherLinks);

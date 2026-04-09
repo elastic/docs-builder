@@ -746,11 +746,23 @@ bundle:
   owner: elastic # The default repository owner for PR and issue links.
   directory: docs/changelog # The directory that contains changelog files.
   output_directory: docs/releases # The directory that contains changelog bundles.
+  # Optional: Default bundle description with placeholder support
+  description: |
+    This release includes new features and bug fixes.
+    
+    For more information, see the [release notes](https://www.elastic.co/docs/release-notes/elasticsearch#elasticsearch-{version}).
   profiles:
     elasticsearch-release:
       products: "elasticsearch {version} {lifecycle}"
       output: "elasticsearch/{version}.yaml"
       output_products: "elasticsearch {version}"
+      # Profile-specific description overrides bundle.description
+      description: |
+        Elasticsearch {version} includes:
+        - Performance improvements
+        - Bug fixes and stability enhancements
+        
+        Download the release binaries: https://github.com/{owner}/{repo}/releases/tag/v{version}
       hide_features:
         - feature:experimental-api
     serverless-release:
@@ -799,6 +811,63 @@ The `{version}` placeholder is substituted with the clean base version extracted
 | `v1.2.3-preview.1` | `1.2.3` | `preview` |
 
 This differs from standard profiles, where `{lifecycle}` is inferred from the version string you type at the command line.
+
+#### Bundle descriptions
+
+You can add introductory text to bundles using the `description` field. This text appears at the top of rendered changelogs, after the release heading but before the entry sections.
+
+**Configuration locations:**
+
+- `bundle.description`: Default description for all profiles
+- `bundle.profiles.<name>.description`: Profile-specific description (overrides the default)
+
+**Placeholder support:**
+
+Bundle descriptions support these placeholders:
+
+- `{version}`: The resolved version string
+- `{lifecycle}`: The resolved lifecycle (ga, beta, preview, etc.)
+- `{owner}`: The GitHub repository owner
+- `{repo}`: The GitHub repository name
+
+**Important**: When using `{version}` or `{lifecycle}` placeholders, you must ensure predictable substitution values:
+
+- **Option-based mode**: Requires `--output-products` when using placeholders
+- **Profile-based mode**: Requires either a version argument (e.g., `bundle profile 9.2.0`) OR an `output_products` pattern in the profile configuration when using placeholders. If you invoke a profile with only a promotion report (e.g., `bundle profile ./report.html`), placeholders will fail unless `output_products` is configured.
+
+**Multiline descriptions in YAML:**
+
+For complex descriptions with multiple paragraphs, lists, and links, use YAML literal block scalars with the `|` (pipe) syntax:
+
+```yaml
+bundle:
+  description: |
+    This release includes significant improvements:
+    
+    - Enhanced performance
+    - Bug fixes and stability improvements
+    - New features for better user experience
+    
+    For security updates, go to [security announcements](https://example.com/docs).
+    
+    Download the release binaries: https://github.com/{owner}/{repo}/releases/tag/v{version}
+```
+
+The `|` (pipe) preserves line breaks and is ideal for Markdown-formatted text. Avoid using `>` (greater than) for descriptions as it folds line breaks into spaces, making lists and paragraphs difficult to format correctly.
+
+**Command line usage:**
+
+For simple descriptions, use the `--description` option with regular quotes:
+
+```sh
+docs-builder changelog bundle --all --description "This release includes new features."
+```
+
+For multiline descriptions on the command line, use ANSI-C quoting (`$'...'`) with `\n` for line breaks:
+
+```sh
+docs-builder changelog bundle --all --description $'Enhanced release:\n\n- Performance improvements\n- Bug fixes'
+```
 
 `output_products` is optional. When omitted, the bundle products array is derived from the matched changelog files' own `products` fields — the same fallback used by all other profile types. Set `output_products` when you want a single clean product entry that reflects the release identity rather than the diverse metadata across individual changelog files, or to hardcode a lifecycle that cannot be inferred from the tag format:
 
