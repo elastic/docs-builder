@@ -497,6 +497,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="all">Include all changelogs in the directory.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
+	/// <param name="description">Optional: Bundle description text with placeholder support. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders. Overrides bundle.description from config. In option-based mode, placeholders require --output-products to be explicitly specified.</param>
 	/// <param name="hideFeatures">Optional: Filter by feature IDs (comma-separated) or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or {changelog} directive).</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all).</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
@@ -519,6 +520,7 @@ internal sealed partial class ChangelogCommand(
 		bool all = false,
 		string? config = null,
 		string? directory = null,
+		string? description = null,
 		string[]? hideFeatures = null,
 		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
@@ -624,6 +626,8 @@ internal sealed partial class ChangelogCommand(
 				forbidden.Add("--config");
 			if (!string.IsNullOrWhiteSpace(directory))
 				forbidden.Add("--directory");
+			if (!string.IsNullOrWhiteSpace(description))
+				forbidden.Add("--description");
 
 			if (forbidden.Count > 0)
 			{
@@ -774,7 +778,8 @@ internal sealed partial class ChangelogCommand(
 				Output = processedOutput,
 				Profile = profile,
 				ProfileArgument = profileArg,
-				Config = config
+				Config = config,
+				Description = description
 			};
 			var planResult = await service.PlanBundleAsync(collector, planInput, releaseVersion != null, ctx);
 			if (planResult == null)
@@ -809,7 +814,8 @@ internal sealed partial class ChangelogCommand(
 			ProfileReport = isProfileMode ? profileReport : null,
 			Report = !isProfileMode ? report : null,
 			Config = config,
-			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
+			Description = description
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1120,6 +1126,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="repo">Required: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch" which defaults to elastic/elasticsearch)</param>
 	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
+	/// <param name="description">Optional: Bundle description text with placeholder support. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders. Overrides bundle.description from config.</param>
 	/// <param name="output">Optional: Output directory for changelog files. Falls back to bundle.directory in changelog.yml when not specified. Defaults to './changelogs'</param>
 	/// <param name="stripTitlePrefix">Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., "[Inference API] Title" becomes "Title")</param>
 	/// <param name="warnOnTypeMismatch">Optional: Warn when the type inferred from release notes section headers doesn't match the type derived from PR labels. Defaults to true</param>
@@ -1129,6 +1136,7 @@ internal sealed partial class ChangelogCommand(
 		[Argument] string repo,
 		[Argument] string version = "latest",
 		string? config = null,
+		string? description = null,
 		string? output = null,
 		bool stripTitlePrefix = false,
 		bool warnOnTypeMismatch = true,
@@ -1156,7 +1164,8 @@ internal sealed partial class ChangelogCommand(
 			Config = config,
 			Output = resolvedOutput,
 			StripTitlePrefix = stripTitlePrefixResolved,
-			WarnOnTypeMismatch = warnOnTypeMismatch
+			WarnOnTypeMismatch = warnOnTypeMismatch,
+			Description = description
 		};
 
 		serviceInvoker.AddCommand(service, input,
