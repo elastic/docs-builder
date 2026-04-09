@@ -308,7 +308,7 @@ public class ChangelogRenderingService(
 			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config,
-			Description = description
+			BundleDescription = description
 		};
 	}
 

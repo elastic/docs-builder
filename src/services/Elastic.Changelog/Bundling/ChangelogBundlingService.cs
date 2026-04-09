@@ -24,57 +24,6 @@ using Nullean.ScopedFileSystem;
 namespace Elastic.Changelog.Bundling;
 
 /// <summary>
-/// Helper for performing placeholder substitution in bundle descriptions
-/// </summary>
-internal static class BundleDescriptionSubstitution
-{
-	/// <summary>
-	/// Substitutes placeholders in a description string with provided values
-	/// </summary>
-	public static string SubstitutePlaceholders(string description, string? version, string? lifecycle, string? owner, string? repo) =>
-		SubstitutePlaceholders(description, version, lifecycle, owner, repo, validateResolvable: false);
-
-	/// <summary>
-	/// Substitutes placeholders in a description string with provided values
-	/// </summary>
-	/// <param name="description">The description string containing placeholders</param>
-	/// <param name="version">Version value for {version} placeholder</param>
-	/// <param name="lifecycle">Lifecycle value for {lifecycle} placeholder</param>
-	/// <param name="owner">Owner value for {owner} placeholder</param>
-	/// <param name="repo">Repository value for {repo} placeholder</param>
-	/// <param name="validateResolvable">If true, validates that all used placeholders can be resolved</param>
-	/// <returns>Description with placeholders substituted</returns>
-	/// <exception cref="InvalidOperationException">When validateResolvable is true and placeholders cannot be resolved</exception>
-	public static string SubstitutePlaceholders(string description, string? version, string? lifecycle, string? owner, string? repo, bool validateResolvable)
-	{
-		if (string.IsNullOrEmpty(description))
-			return description;
-
-		if (validateResolvable)
-		{
-			var missingValues = new List<string>();
-			if (description.Contains("{version}") && string.IsNullOrEmpty(version))
-				missingValues.Add("version");
-			if (description.Contains("{lifecycle}") && string.IsNullOrEmpty(lifecycle))
-				missingValues.Add("lifecycle");
-			if (description.Contains("{owner}") && string.IsNullOrEmpty(owner))
-				missingValues.Add("owner");
-			if (description.Contains("{repo}") && string.IsNullOrEmpty(repo))
-				missingValues.Add("repo");
-
-			if (missingValues.Count > 0)
-				throw new InvalidOperationException($"Cannot resolve placeholders: {string.Join(", ", missingValues)}");
-		}
-
-		return description
-			.Replace("{version}", version ?? string.Empty)
-			.Replace("{lifecycle}", lifecycle ?? string.Empty)
-			.Replace("{owner}", owner ?? string.Empty)
-			.Replace("{repo}", repo ?? string.Empty);
-	}
-}
-
-/// <summary>
 /// Arguments for the BundleChangelogs method
 /// </summary>
 public record BundleChangelogsArguments
@@ -385,7 +334,6 @@ public partial class ChangelogBundlingService(
 			// Apply description with placeholder substitution
 			if (!string.IsNullOrEmpty(input.Description))
 			{
-				// Get version/lifecycle from the first output product or first product in the bundle
 				var version = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Target : null)
 							  ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Target : null);
 				var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
@@ -393,10 +341,17 @@ public partial class ChangelogBundlingService(
 				var owner = input.Owner ?? "elastic";
 				var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
 
-				var substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
-					input.Description, version, lifecycle, owner, repo);
-
-				bundleData = bundleData with { Description = substitutedDescription };
+				try
+				{
+					var substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+						input.Description, version, lifecycle, owner, repo, validateResolvable: true);
+					bundleData = bundleData with { Description = substitutedDescription };
+				}
+				catch (InvalidOperationException ex)
+				{
+					collector.EmitError(string.Empty, $"Description placeholder substitution failed: {ex.Message}");
+					return false;
+				}
 			}
 
 			// Write bundle file
@@ -674,7 +629,6 @@ public partial class ChangelogBundlingService(
 
 	private static bool ValidatePlaceholderUsage(IDiagnosticsCollector collector, BundleChangelogsArguments input)
 	{
-		// Only validate in option-based mode (profile mode has separate validation)
 		if (!string.IsNullOrEmpty(input.Profile))
 			return true;
 

@@ -27,7 +27,7 @@ public record ChangelogRenderContext
 	public required Dictionary<ChangelogEntry, bool> EntryToHideLinks { get; init; }
 	public ChangelogConfiguration? Configuration { get; init; }
 	/// <summary>
-	/// Optional description for the changelog. Only set when there's a single bundle with a description (MVP approach).
+	/// Optional bundle-level introductory description. Only set when there's a single bundle with a description (MVP approach).
 	/// </summary>
-	public string? Description { get; init; }
+	public string? BundleDescription { get; init; }
 }

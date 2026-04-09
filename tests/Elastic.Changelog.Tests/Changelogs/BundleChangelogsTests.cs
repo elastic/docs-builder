@@ -5972,7 +5972,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Output = outputPath,
-			Description = "Release includes {version} with {lifecycle} features from {owner}/{repo}" // Has placeholders but no --output-products
+			Description = "Release includes {version} with {lifecycle} features from {owner}/{repo}"
 		};
 
 		// Act
@@ -6022,7 +6022,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	[Fact]
 	public async Task BundleChangelogs_OptionModeWithConfigDescriptionAndPlaceholders_ReturnsError()
 	{
-		// Arrange - test validation with description that could come from config (simulated via CLI)
+		// Arrange - config-provided description with placeholders but no --output-products
 		CreateSampleChangelogs();
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
@@ -6030,8 +6030,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Output = outputPath,
-			Description = "Version {version} includes {lifecycle} updates from {owner}/{repo}" // Simulate config-provided description
-																							   // No OutputProducts - should fail validation
+			Description = "Version {version} includes {lifecycle} updates from {owner}/{repo}"
 		};
 
 		// Act

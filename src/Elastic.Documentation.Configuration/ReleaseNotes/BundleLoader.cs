@@ -217,20 +217,11 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		// Use the first bundle's metadata as the base
 		var first = bundlesList[0];
 
-		// Merge descriptions from all bundles
-		var descriptions = bundlesList
+		// Use first description only; multi-bundle description merging is not yet supported
+		var mergedDescription = bundlesList
 			.Select(b => b.Data?.Description)
-			.Where(d => !string.IsNullOrEmpty(d))
-			.ToList();
+			.FirstOrDefault(d => !string.IsNullOrEmpty(d));
 
-		var mergedDescription = descriptions.Count switch
-		{
-			0 => null,
-			1 => descriptions[0],
-			_ => string.Join("\n\n", descriptions)
-		};
-
-		// Create merged bundle data with combined description
 		var mergedData = first.Data with { Description = mergedDescription };
 
 		return new LoadedBundle(

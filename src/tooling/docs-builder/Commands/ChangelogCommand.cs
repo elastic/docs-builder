@@ -626,6 +626,8 @@ internal sealed partial class ChangelogCommand(
 				forbidden.Add("--config");
 			if (!string.IsNullOrWhiteSpace(directory))
 				forbidden.Add("--directory");
+			if (!string.IsNullOrWhiteSpace(description))
+				forbidden.Add("--description");
 
 			if (forbidden.Count > 0)
 			{
