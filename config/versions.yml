@@ -47,7 +47,7 @@ versioning_systems:
     current: 2.7.6
   apm-agent-java:
     base: 1.0
-    current: 1.55.4
+    current: 1.55.5
   apm-agent-node:
     base: 4.0
     current: 4.15.0
@@ -152,7 +152,7 @@ versioning_systems:
     current: 9.3.1
   elasticsearch-client-java:
     base: 9.0
-    current: 9.3.3
+    current: 9.3.4
   elasticsearch-client-javascript:
     base: 9.0
     current: 9.3.4
