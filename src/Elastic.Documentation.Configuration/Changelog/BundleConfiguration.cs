@@ -52,6 +52,13 @@ public record BundleConfiguration
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
+	/// Whether to show release dates in rendered changelog output.
+	/// When true, bundles with release-date fields will display "Released: date" text.
+	/// Defaults to false.
+	/// </summary>
+	public bool ShowReleaseDates { get; init; }
+
+	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
@@ -110,6 +117,13 @@ public record BundleProfile
 	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
 	/// </summary>
 	public IReadOnlyList<string>? HideFeatures { get; init; }
+
+	/// <summary>
+	/// Whether to show release dates in rendered changelog output for this profile.
+	/// When provided, overrides the bundle.show_release_dates default.
+	/// When true, bundles with release-date fields will display "Released: date" text.
+	/// </summary>
+	public bool? ShowReleaseDates { get; init; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches

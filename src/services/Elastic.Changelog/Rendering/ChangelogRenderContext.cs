@@ -35,4 +35,10 @@ public record ChangelogRenderContext
 	/// Only set when there's a single unique release date across all bundles (MVP approach).
 	/// </summary>
 	public DateOnly? BundleReleaseDate { get; init; }
+
+	/// <summary>
+	/// Whether to show release dates in the rendered output.
+	/// Controls whether the BundleReleaseDate (if present) is displayed.
+	/// </summary>
+	public bool ShowReleaseDates { get; init; }
 }

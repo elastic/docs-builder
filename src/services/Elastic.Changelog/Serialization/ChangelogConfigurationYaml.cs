@@ -301,6 +301,11 @@ internal record BundleConfigurationYaml
 	public YamlLenientList? LinkAllowRepos { get; set; }
 
 	/// <summary>
+	/// Whether to show release dates in rendered changelog output by default.
+	/// </summary>
+	public bool? ShowReleaseDates { get; set; }
+
+	/// <summary>
 	/// Named bundle profiles.
 	/// </summary>
 	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }
@@ -349,6 +354,12 @@ internal record BundleProfileYaml
 	/// Feature IDs to mark as hidden in the bundle output (string or list).
 	/// </summary>
 	public YamlLenientList? HideFeatures { get; set; }
+
+	/// <summary>
+	/// Whether to show release dates in rendered changelog output for this profile.
+	/// Overrides bundle.show_release_dates when provided.
+	/// </summary>
+	public bool? ShowReleaseDates { get; set; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches

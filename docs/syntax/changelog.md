@@ -251,6 +251,8 @@ Download the release binaries: https://github.com/elastic/elasticsearch/releases
 
 When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: 2026-04-09_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
 
+The `show_release_dates` setting in `changelog.yml` (boolean, defaults to `false`) controls whether release dates appear in the rendered output. When set to `false`, the `release-date` field is ignored during rendering.
+
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
 ### Section types

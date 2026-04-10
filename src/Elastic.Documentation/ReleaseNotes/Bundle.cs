@@ -28,6 +28,12 @@ public record Bundle
 	public DateOnly? ReleaseDate { get; init; }
 
 	/// <summary>
+	/// Whether to show release dates in rendered changelog output for this bundle.
+	/// When true, the ReleaseDate field (if present) will be displayed as "Released: date" text.
+	/// </summary>
+	public bool ShowReleaseDates { get; init; }
+
+	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>

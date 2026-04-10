@@ -79,7 +79,7 @@ public static class ChangelogInlineRenderer
 		};
 
 		var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
-		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker, bundle.Data?.Description, bundle.Data?.ReleaseDate);
+		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker, bundle.Data?.Description, bundle.Data?.ReleaseDate, bundle.Data?.ShowReleaseDates ?? false);
 	}
 
 	/// <summary>
@@ -154,7 +154,8 @@ public static class ChangelogInlineRenderer
 		ChangelogTypeFilter typeFilter,
 		PublishBlocker? publishBlocker,
 		string? description = null,
-		DateOnly? releaseDate = null)
+		DateOnly? releaseDate = null,
+		bool showReleaseDates = false)
 	{
 		var sb = new StringBuilder();
 
@@ -178,8 +179,8 @@ public static class ChangelogInlineRenderer
 
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
 
-		// Add release date if present
-		if (releaseDate is { } date)
+		// Add release date if present and ShowReleaseDates is enabled
+		if (showReleaseDates && releaseDate is { } date)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"_Released: {date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}_");

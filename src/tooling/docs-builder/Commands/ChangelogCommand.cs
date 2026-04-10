@@ -499,6 +499,8 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
 	/// <param name="description">Optional: Bundle description text with placeholder support. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders. Overrides bundle.description from config. In option-based mode, placeholders require --output-products to be explicitly specified.</param>
 	/// <param name="hideFeatures">Optional: Filter by feature IDs (comma-separated) or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or {changelog} directive).</param>
+	/// <param name="noReleaseDate">Optional: Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. Not available in profile mode.</param>
+	/// <param name="releaseDate">Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behavior. Mutually exclusive with --no-release-date. Not available in profile mode.</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all).</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
@@ -522,6 +524,8 @@ internal sealed partial class ChangelogCommand(
 		string? directory = null,
 		string? description = null,
 		string[]? hideFeatures = null,
+		bool noReleaseDate = false,
+		string? releaseDate = null,
 		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
 		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
@@ -792,6 +796,35 @@ internal sealed partial class ChangelogCommand(
 			return 0;
 		}
 
+		// Validate release date flags
+		if (noReleaseDate && !string.IsNullOrWhiteSpace(releaseDate))
+		{
+			collector.EmitError(string.Empty, "--no-release-date and --release-date are mutually exclusive.");
+			return 1;
+		}
+
+		// Profile mode doesn't support release date CLI flags (use YAML configuration instead)
+		if (isProfileMode && (noReleaseDate || !string.IsNullOrWhiteSpace(releaseDate)))
+		{
+			var forbidden = new List<string>();
+			if (noReleaseDate)
+				forbidden.Add("--no-release-date");
+			if (!string.IsNullOrWhiteSpace(releaseDate))
+				forbidden.Add("--release-date");
+
+			collector.EmitError(string.Empty,
+				$"Profile mode does not support {string.Join(" and ", forbidden)}. " +
+				"Use bundle.show_release_dates configuration in changelog.yml instead.");
+			return 1;
+		}
+
+		// Validate release date format if provided
+		if (!string.IsNullOrWhiteSpace(releaseDate) && !DateOnly.TryParseExact(releaseDate, "yyyy-MM-dd", out _))
+		{
+			collector.EmitError(string.Empty, $"Invalid --release-date format '{releaseDate}'. Expected YYYY-MM-DD format.");
+			return 1;
+		}
+
 		// Determine resolve: CLI --no-resolve and --resolve override config. null = use config default.
 		var shouldResolve = noResolve ? false : resolve;
 
@@ -815,7 +848,8 @@ internal sealed partial class ChangelogCommand(
 			Report = !isProfileMode ? report : null,
 			Config = config,
 			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
-			Description = description
+			Description = description,
+			ReleaseDate = noReleaseDate ? null : releaseDate
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1128,6 +1162,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="description">Optional: Bundle description text with placeholder support. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders. Overrides bundle.description from config.</param>
 	/// <param name="output">Optional: Output directory for changelog files. Falls back to bundle.directory in changelog.yml when not specified. Defaults to './changelogs'</param>
+	/// <param name="releaseDate">Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides GitHub release published date.</param>
 	/// <param name="stripTitlePrefix">Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., "[Inference API] Title" becomes "Title")</param>
 	/// <param name="warnOnTypeMismatch">Optional: Warn when the type inferred from release notes section headers doesn't match the type derived from PR labels. Defaults to true</param>
 	/// <param name="ctx"></param>
@@ -1138,6 +1173,7 @@ internal sealed partial class ChangelogCommand(
 		string? config = null,
 		string? description = null,
 		string? output = null,
+		string? releaseDate = null,
 		bool stripTitlePrefix = false,
 		bool warnOnTypeMismatch = true,
 		Cancel ctx = default
@@ -1154,6 +1190,13 @@ internal sealed partial class ChangelogCommand(
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
 
+		// Validate release date format if provided
+		if (!string.IsNullOrWhiteSpace(releaseDate) && !DateOnly.TryParseExact(releaseDate, "yyyy-MM-dd", out _))
+		{
+			collector.EmitError(string.Empty, $"Invalid --release-date format '{releaseDate}'. Expected YYYY-MM-DD format.");
+			return 1;
+		}
+
 		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
 		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
 
@@ -1165,7 +1208,8 @@ internal sealed partial class ChangelogCommand(
 			Output = resolvedOutput,
 			StripTitlePrefix = stripTitlePrefixResolved,
 			WarnOnTypeMismatch = warnOnTypeMismatch,
-			Description = description
+			Description = description,
+			ReleaseDate = releaseDate
 		};
 
 		serviceInvoker.AddCommand(service, input,

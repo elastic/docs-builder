@@ -173,8 +173,16 @@ public class ChangelogRenderingService(
 				renderReleaseDate = bundleReleaseDates[0];
 			}
 
+			// Determine ShowReleaseDates setting from bundles (all must agree, default to false)
+			var bundleShowReleaseDates = validationResult.Bundles
+				.Select(b => b.Data?.ShowReleaseDates ?? false)
+				.Distinct()
+				.ToList();
+
+			var renderShowReleaseDates = bundleShowReleaseDates.Count == 1 && bundleShowReleaseDates[0];
+
 			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription, renderReleaseDate);
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription, renderReleaseDate, renderShowReleaseDates);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -288,7 +296,8 @@ public class ChangelogRenderingService(
 		HashSet<string> featureIdsToHide,
 		ChangelogConfiguration? config,
 		string? description = null,
-		DateOnly? releaseDate = null)
+		DateOnly? releaseDate = null,
+		bool showReleaseDates = false)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries
@@ -331,7 +340,8 @@ public class ChangelogRenderingService(
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config,
 			BundleDescription = description,
-			BundleReleaseDate = releaseDate
+			BundleReleaseDate = releaseDate,
+			ShowReleaseDates = showReleaseDates
 		};
 	}
 
