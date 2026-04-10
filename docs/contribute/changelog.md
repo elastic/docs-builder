@@ -821,6 +821,28 @@ You can add introductory text to bundles using the `description` field. This tex
 - `bundle.description`: Default description for all profiles
 - `bundle.profiles.<name>.description`: Profile-specific description (overrides the default)
 
+#### Release date control
+
+You can control whether release dates appear in rendered changelog output using the `show_release_dates` field.
+
+**Configuration locations:**
+
+- `bundle.show_release_dates`: Default setting for all profiles (defaults to `false`)  
+- `bundle.profiles.<name>.show_release_dates`: Profile-specific setting (overrides the default)
+
+**Behavior:**
+
+- `false` (default): Release date fields are ignored during rendering, even if present in bundles
+- `true`: Release dates are displayed when present (e.g., `_Released: April 9, 2026_`)
+
+**Auto-population:**
+
+Release dates are automatically added to bundles when using `changelog bundle` or `changelog gh-release`:
+
+- **Default**: Uses today's date (UTC) when bundling  
+- **GitHub releases**: Uses the GitHub release's published date when available
+- **Override**: Use `--release-date YYYY-MM-DD` or `--no-release-date` in option mode
+
 **Placeholder support:**
 
 Bundle descriptions support these placeholders:

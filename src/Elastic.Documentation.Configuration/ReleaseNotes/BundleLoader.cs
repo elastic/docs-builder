@@ -242,7 +242,17 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			_ => releaseDates[0]
 		};
 
-		var mergedData = first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate };
+		var showReleaseDatesValues = bundlesList
+			.Select(b => b.Data?.ShowReleaseDates ?? false)
+			.Distinct()
+			.ToList();
+
+		// If all bundles agree on ShowReleaseDates, use that value; otherwise default to first bundle's value
+		var mergedShowReleaseDates = showReleaseDatesValues.Count == 1 ? showReleaseDatesValues[0] : first.Data?.ShowReleaseDates ?? false;
+
+		var mergedData = first.Data != null
+			? first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate, ShowReleaseDates = mergedShowReleaseDates }
+			: new Bundle { Description = mergedDescription, ReleaseDate = mergedReleaseDate, ShowReleaseDates = mergedShowReleaseDates };
 
 		return new LoadedBundle(
 			first.Version,

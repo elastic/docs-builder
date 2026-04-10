@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Changelog.Bundling;
@@ -59,6 +60,12 @@ public record CreateChangelogsFromReleaseArguments
 	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
 	/// </summary>
 	public string? Description { get; init; }
+
+	/// <summary>
+	/// Optional explicit release date for the bundle in YYYY-MM-DD format.
+	/// When provided, overrides the GitHub release published_at date.
+	/// </summary>
+	public string? ReleaseDate { get; init; }
 
 	/// <summary>
 	/// Whether to create a bundle file after creating individual changelog files. Defaults to true.
@@ -187,7 +194,7 @@ public class GitHubReleaseChangelogService(
 			// 8. Optionally create bundle file if changelogs were created
 			if (input.CreateBundle && createdFiles.Count > 0)
 			{
-				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, ctx);
+				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, release, ctx);
 				if (bundlePath != null)
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
 			}
@@ -313,6 +320,7 @@ public class GitHubReleaseChangelogService(
 		string owner,
 		string repo,
 		CreateChangelogsFromReleaseArguments input,
+		GitHubReleaseInfo release,
 		Cancel ctx)
 	{
 		// Build the bundles subfolder path (mirrors the previous CreateBundleFile convention)
@@ -333,6 +341,13 @@ public class GitHubReleaseChangelogService(
 			})
 			.ToArray();
 
+		// Use explicit release date if provided, otherwise GitHub release published date, otherwise fall back to auto-population
+		var releaseDate = input.ReleaseDate;
+		if (string.IsNullOrEmpty(releaseDate) && release.PublishedAt.HasValue)
+		{
+			releaseDate = DateOnly.FromDateTime(release.PublishedAt.Value.DateTime).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+		}
+
 		var bundleArgs = new BundleChangelogsArguments
 		{
 			Directory = outputDir,
@@ -342,7 +357,8 @@ public class GitHubReleaseChangelogService(
 			Repo = repo,
 			Config = input.Config,
 			OutputProducts = [productInfo],
-			Description = input.Description
+			Description = input.Description,
+			ReleaseDate = releaseDate
 		};
 
 		var success = await _bundlingService.BundleChangelogs(collector, bundleArgs, ctx);

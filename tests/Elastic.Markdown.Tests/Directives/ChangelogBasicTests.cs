@@ -628,6 +628,7 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 		- product: apm-agent-dotnet
 		  target: 1.34.0
 		release-date: "2026-04-09"
+		show-release-dates: true
 		entries:
 		- title: Add tracing improvements
 		  type: feature
@@ -695,6 +696,7 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 		- product: apm-agent-dotnet
 		  target: 1.34.0
 		release-date: "2026-04-09"
+		show-release-dates: true
 		description: |
 		  This release includes tracing improvements and bug fixes.
 		entries:

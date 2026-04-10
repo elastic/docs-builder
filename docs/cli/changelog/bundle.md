@@ -124,6 +124,18 @@ The `--input-products` option determines which changelog files are gathered for 
 :   This value replaces information that would otherwise be derived from changelogs.
 :   When `rules.bundle.products` per-product overrides are configured, `--output-products` also supplies the product IDs used to choose the **rule context product** (first alphabetically) for Mode 3. To use a different product's rules, run a separate bundle with only that product in `--output-products`. For details, refer to [Single-product rule resolution algorithm](/contribute/changelog.md#changelog-bundle-rule-resolution).
 
+`--no-release-date`
+:   Optional: Skip auto-population of release date in the bundle.
+:   By default, bundles are created with a `release-date` field set to today's date (UTC) or the GitHub release published date when using `--release-version`.
+:   Mutually exclusive with `--release-date`.
+:   **Not available in profile mode** — use bundle configuration instead.
+
+`--release-date <string?>`
+:   Optional: Explicit release date for the bundle in YYYY-MM-DD format.
+:   Overrides the default auto-population behavior (today's date or GitHub release published date).
+:   Mutually exclusive with `--no-release-date`.
+:   **Not available in profile mode** — use bundle configuration instead.
+
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
 :   Precedence: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
