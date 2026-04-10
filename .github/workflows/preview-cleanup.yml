@@ -1,5 +1,7 @@
 name: preview-cleanup
 
+# TODO: Migrate to elastic/docs-actions/.github/workflows/docs-preview-cleanup.yml (docs-eng-team#474).
+
 on:
   workflow_call: ~
   pull_request_target:

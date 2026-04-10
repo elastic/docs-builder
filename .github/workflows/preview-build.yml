@@ -1,22 +1,8 @@
 name: preview-build
 
+# Reusable workflow for repositories that still call this workflow. elastic/docs-builder runs
+# docs-preview-local.yml on pull_request/push instead (dotnet run from source).
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-  push:
-    branches:
-      - main
-      - master
-      # TODO remove these need to be added to individual repositories
-      - '\d+.\d+.\d+'
-      - '\d+.\d+'
-      - '\d+.x'
-    tags:
-      - 'v?\d+.\d+.\d+'
-      - 'v?\d+.\d+'
   workflow_call:
     inputs:
       strict:
@@ -341,46 +327,15 @@ jobs:
           echo "PATH_PREFIX=${path_prefix}" >> $GITHUB_ENV
           echo "result=${path_prefix}" >> $GITHUB_OUTPUT
 
-      - name: Bootstrap Action Workspace
-        if: >
-          env.MATCH == 'true'
-          && github.repository == 'elastic/docs-builder'
-          && needs.check.outputs.any_modified != 'false'
-          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: elastic/docs-builder/.github/actions/bootstrap@main
-
       - name: 'Validate redirect rules'
         if: >
           env.MATCH == 'true'
-          && github.repository == 'elastic/docs-builder'
-          && needs.check.outputs.any_modified != 'false'
-          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        run: |
-          dotnet run --project src/tooling/docs-builder -- diff validate
-
-      - name: 'Validate redirect rules'
-        if: >
-          env.MATCH == 'true'
-          && github.repository != 'elastic/docs-builder'
           && needs.check.outputs.any_modified != 'false'
         uses: elastic/docs-builder/actions/diff-validate@main
 
-      # we run our artifact directly, please use the prebuild
-      # elastic/docs-builder@main GitHub Action for all other repositories!
-      - name: Build documentation
-        id: internal-docs-build
-        if: >
-          env.MATCH == 'true'
-          && github.repository == 'elastic/docs-builder'
-          && needs.check.outputs.any_modified != 'false'
-          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        run: |
-          dotnet run --project src/tooling/docs-builder -- --strict
-
       - name: Build documentation
         if: >
           env.MATCH == 'true'
-          && github.repository != 'elastic/docs-builder'
           && needs.check.outputs.any_modified != 'false'
         uses: elastic/docs-builder@main
         id: docs-build
@@ -393,51 +348,25 @@ jobs:
         if: >
           env.MATCH == 'true'
           && !cancelled()
-          && github.repository != 'elastic/docs-builder'
           && steps.docs-build.outputs.skip != 'true'
           && needs.check.outputs.any_modified != 'false'
         uses: elastic/docs-builder/actions/validate-inbound-local@main
-        
-      - name: 'Validate inbound links'
-        if: >
-          env.MATCH == 'true'
-          && !cancelled()
-          && github.repository == 'elastic/docs-builder'
-          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-          && steps.internal-docs-build.outputs.skip != 'true'
-          && needs.check.outputs.any_modified != 'false'
-        run: |
-          dotnet run --project src/tooling/docs-builder -- inbound-links validate-link-reference
 
       - name: 'Validate local path prefixes against those claimed by global navigation.yml'
         id: validate-path-prefixes
         if: >
           env.MATCH == 'true'
           && !cancelled()
-          && github.repository != 'elastic/docs-builder'
           && steps.docs-build.outputs.skip != 'true'
           && steps.docs-build.outcome != 'skipped'
           && needs.check.outputs.any_modified != 'false'
         uses: elastic/docs-builder/actions/validate-path-prefixes-local@main
-        
-      - name: 'Validate local path prefixes against those claimed by global navigation.yml'
-        id: internal-validate-path-prefixes
-        if: >
-          env.MATCH == 'true'
-          && !cancelled()
-          && github.repository == 'elastic/docs-builder'
-          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-          && steps.internal-docs-build.outputs.skip != 'true'
-          && steps.internal-docs-build.outcome != 'skipped'
-          && needs.check.outputs.any_modified != 'false'
-        run: |
-          dotnet run --project src/tooling/docs-builder -- assembler navigation validate-link-reference
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: >
-          !cancelled() 
+          !cancelled()
           && needs.check.outputs.any_modified != 'false'
-          && (steps.validate-path-prefixes.outcome == 'success' || steps.internal-validate-path-prefixes.outcome == 'success')
+          && steps.validate-path-prefixes.outcome == 'success'
       - name: Upload to S3
         id: s3-upload
         # disabled: preview uploads are not enabled on this branch
@@ -445,9 +374,9 @@ jobs:
           false
           && env.MATCH == 'true'
           && !cancelled() 
-          && (steps.docs-build.outputs.skip != 'true' || steps.internal-docs-build.outputs.skip != 'true')
+          && steps.docs-build.outputs.skip != 'true'
           && steps.deployment.outputs.result
-          && (steps.docs-build.outcome == 'success' || steps.internal-docs-build.outcome == 'success')
+          && steps.docs-build.outcome == 'success'
         env:
           # https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-retries.html#cli-usage-retries-configure
           AWS_RETRY_MODE: standard
@@ -464,7 +393,7 @@ jobs:
           && needs.check.outputs.any_modified != 'false'
           && (
             contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) 
-            && (steps.validate-path-prefixes.outcome == 'success' || steps.internal-validate-path-prefixes.outcome == 'success')
+            && steps.validate-path-prefixes.outcome == 'success'
           )
         uses: elastic/docs-builder/actions/update-link-index@main
 
