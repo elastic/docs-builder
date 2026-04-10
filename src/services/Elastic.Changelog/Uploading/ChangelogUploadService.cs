@@ -58,30 +58,28 @@ public partial class ChangelogUploadService(
 			return true;
 		}
 
-		if (args.ArtifactType == ArtifactType.Bundle)
-		{
-			_logger.LogWarning("Bundle artifact upload is not yet implemented; skipping");
-			return true;
-		}
-
-		var changelogDir = await ResolveChangelogDirectory(collector, args, ctx);
-		if (changelogDir == null)
+		var directory = args.ArtifactType == ArtifactType.Bundle
+			? await ResolveBundleDirectory(collector, args, ctx)
+			: await ResolveChangelogDirectory(collector, args, ctx);
+		if (directory == null)
 			return false;
 
-		if (!_fileSystem.Directory.Exists(changelogDir))
+		if (!_fileSystem.Directory.Exists(directory))
 		{
-			_logger.LogInformation("Changelog directory {Directory} does not exist; nothing to upload", changelogDir);
+			_logger.LogInformation("{ArtifactType} directory {Directory} does not exist; nothing to upload", args.ArtifactType, directory);
 			return true;
 		}
 
-		var targets = DiscoverUploadTargets(collector, changelogDir);
+		var targets = args.ArtifactType == ArtifactType.Bundle
+			? DiscoverBundleUploadTargets(collector, directory)
+			: DiscoverUploadTargets(collector, directory);
 		if (targets.Count == 0)
 		{
-			_logger.LogInformation("No changelog files found to upload in {Directory}", changelogDir);
+			_logger.LogInformation("No {ArtifactType} files found to upload in {Directory}", args.ArtifactType, directory);
 			return true;
 		}
 
-		_logger.LogInformation("Found {Count} upload target(s) from {Directory}", targets.Count, changelogDir);
+		_logger.LogInformation("Found {Count} upload target(s) from {Directory}", targets.Count, directory);
 
 		using var defaultClient = s3Client == null ? new AmazonS3Client() : null;
 		var client = s3Client ?? defaultClient!;
@@ -141,6 +139,72 @@ public partial class ChangelogUploadService(
 		return targets;
 	}
 
+	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
+	{
+		var rootDir = _fileSystem.DirectoryInfo.New(bundleDir);
+
+		var yamlFiles = _fileSystem.Directory.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
+			.Concat(_fileSystem.Directory.GetFiles(bundleDir, "*.yml", SearchOption.TopDirectoryOnly))
+			.ToList();
+
+		var targets = new List<UploadTarget>();
+
+		foreach (var filePath in yamlFiles)
+		{
+			var fileInfo = _fileSystem.FileInfo.New(filePath);
+			if (SymlinkValidator.ValidateFileAccess(fileInfo, rootDir) is { } accessError)
+			{
+				collector.EmitWarning(filePath, $"Skipping: {accessError}");
+				continue;
+			}
+
+			var products = ReadProductsFromBundle(filePath);
+			if (products.Count == 0)
+			{
+				_logger.LogDebug("No products found in bundle {File}, skipping", filePath);
+				continue;
+			}
+
+			var fileName = _fileSystem.Path.GetFileName(filePath);
+
+			foreach (var product in products)
+			{
+				if (!ProductNameRegex().IsMatch(product))
+				{
+					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
+					continue;
+				}
+
+				var s3Key = $"{product}/bundles/{fileName}";
+				targets.Add(new UploadTarget(filePath, s3Key));
+			}
+		}
+
+		return targets;
+	}
+
+	private List<string> ReadProductsFromBundle(string filePath)
+	{
+		try
+		{
+			var content = _fileSystem.File.ReadAllText(filePath);
+			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+			if (bundle?.Products == null)
+				return [];
+
+			return bundle.Products
+				.Select(p => p.ProductId)
+				.Where(p => !string.IsNullOrWhiteSpace(p))
+				.Distinct()
+				.ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogWarning(ex, "Could not read products from bundle {File}", filePath);
+			return [];
+		}
+	}
+
 	private List<string> ReadProductsFromFragment(string filePath)
 	{
 		try
@@ -174,5 +238,17 @@ public partial class ChangelogUploadService(
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
 		return config?.Bundle?.Directory ?? "docs/changelog";
+	}
+
+	private async Task<string?> ResolveBundleDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
+	{
+		if (!string.IsNullOrWhiteSpace(args.Directory))
+			return args.Directory;
+
+		if (_configLoader == null)
+			return "docs/releases";
+
+		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
+		return config?.Bundle?.OutputDirectory ?? config?.Bundle?.Directory ?? "docs/releases";
 	}
 }

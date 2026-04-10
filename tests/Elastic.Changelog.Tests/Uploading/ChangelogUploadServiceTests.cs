@@ -332,16 +332,25 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_BundleArtifactType_SkipsWithoutS3Calls()
+	public async Task Upload_BundleArtifactType_UploadsToS3()
 	{
-		AddChangelog("bundle.yaml", """
-			title: Ignored bundle
-			type: feature
+		AddChangelog("v9.2.0.yaml", """
 			products:
 			  - product: elasticsearch
-			prs:
-			  - "900"
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1234-feature.yaml
+			      checksum: abc123
+			    type: enhancement
+			    title: New feature
 			""");
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
+			.Returns(new PutObjectResponse());
 
 		var args = new ChangelogUploadArguments
 		{
@@ -354,8 +363,47 @@ public class ChangelogUploadServiceTests
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
 
-		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundles/v9.2.0.yaml" && r.BucketName == "test-bucket"),
+			A<CancellationToken>._
+		)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_MultipleProducts_CreatesTargetPerProduct()
+	{
+		AddChangelog("v9.2.0.yaml", """
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  - product: kibana
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1234-feature.yaml
+			""");
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, _changelogDir);
+
+		targets.Should().HaveCount(2);
+		targets.Should().Contain(t => t.S3Key == "elasticsearch/bundles/v9.2.0.yaml");
+		targets.Should().Contain(t => t.S3Key == "kibana/bundles/v9.2.0.yaml");
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_InvalidProduct_SkipsWithWarning()
+	{
+		AddChangelog("bad-bundle.yaml", """
+			products:
+			  - product: "../traversal"
+			entries: []
+			""");
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, _changelogDir);
+
+		targets.Should().BeEmpty();
+		_collector.Warnings.Should().BeGreaterThan(0);
 	}
 }
