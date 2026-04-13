@@ -644,35 +644,211 @@ nav:
           title: Calculate ingest lag metadata
     - label: Search, visualize and analyze
       children:
+      # =======================================================================
+      # SEARCH AND QUERY
+      # Narrative arc: get started → approaches → ingest → querying → cross-cluster → integrate
+      # Pages pulled from solutions/search/ and explore-analyze/ at current paths.
+      # [from E&A] = page currently lives in explore-analyze/
+      # [TODO] = placeholder, page not yet written
+      # =======================================================================
       - group: Search and query
+        page: docs-content://solutions/search.md
         children:
+
+        # -----------------------------------------------------------------------
+        # 1. GET STARTED
+        # -----------------------------------------------------------------------
         - group: Get started with search
+          page: docs-content://solutions/search/get-started.md
           children:
-          - title: APIs and tools for search
-        - group: Search strategies
+          - group: Quickstarts
+            page: docs-content://solutions/search/get-started/quickstarts.md
+            children:
+            - page: docs-content://solutions/search/get-started/index-basics.md
+              title: Index basics
+            - page: docs-content://solutions/search/get-started/keyword-search-python.md
+              title: Keyword search with Python
+            - page: docs-content://solutions/search/get-started/semantic-search.md
+              title: Semantic search
+
+        # -----------------------------------------------------------------------
+        # 2. SEARCH APPROACHES
+        # What kind of search do I need?
+        # FTS is the foundation — everything else layers on top.
+        # -----------------------------------------------------------------------
+        - group: Search approaches
+          page: docs-content://solutions/search/search-approaches.md
           children:
-          - title: Full-text search
-          - title: AI-powered search
-          - title: Hybrid search
-          - title: Ranking and reranking
-        - group: Build search queries with APIs and query languages and search templates
+          # Full-text is core to every deployment, not just one option
+          - group: Full-text search
+            page: docs-content://solutions/search/full-text.md
+            children:
+            - page: docs-content://solutions/search/full-text/how-full-text-works.md
+              title: How full-text search works
+            - page: docs-content://solutions/search/full-text/text-analysis-during-search.md
+              title: Text analysis during search
+            - group: Search relevance
+              page: docs-content://solutions/search/full-text/search-relevance.md
+              children:
+              - page: docs-content://solutions/search/full-text/search-relevance/mixing-exact-search-with-stemming.md
+                title: Mix exact search with stemming
+              - page: docs-content://solutions/search/full-text/search-relevance/consistent-scoring.md
+                title: Consistent scoring
+              - page: docs-content://solutions/search/full-text/search-relevance/static-scoring-signals.md
+                title: Static scoring signals
+            - group: Synonyms
+              page: docs-content://solutions/search/full-text/search-with-synonyms.md
+              children:
+              - page: docs-content://solutions/search/full-text/create-update-synonyms-api-example.md
+                title: Create and update synonyms via API
+          # Vector search — formerly "AI search"
+          - group: Vector search
+            page: docs-content://solutions/search/ai-search/ai-search.md
+            children:
+            - group: Dense vector search
+              page: docs-content://solutions/search/vector/dense-vector.md
+              children:
+              - page: docs-content://solutions/search/vector/knn.md
+                title: k-nearest neighbor (kNN)
+              - page: docs-content://solutions/search/vector/bring-own-vectors.md
+                title: Bring your own vectors
+            - page: docs-content://solutions/search/vector/sparse-vector.md
+              title: Sparse vector search
+            - page: docs-content://solutions/search/vector/dense-versus-sparse-ingest-pipelines.md
+              title: Dense vs sparse ingest pipelines
+            - group: Semantic search
+              page: docs-content://solutions/search/semantic-search.md
+              children:
+              - page: docs-content://solutions/search/semantic-search/semantic-search-semantic-text.md
+                title: Semantic search with semantic_text
+              - page: docs-content://solutions/search/semantic-search/semantic-search-inference.md
+                title: Semantic search with the inference API
+              - page: docs-content://solutions/search/semantic-search/semantic-search-elser-ingest-pipelines.md
+                title: Semantic search with ELSER
+              - page: docs-content://solutions/search/semantic-search/cohere-es.md
+                title: Semantic search with Cohere
+            - page: docs-content://solutions/search/using-openai-compatible-models.md
+              title: Using OpenAI-compatible models
+          - group: Hybrid search
+            page: docs-content://solutions/search/hybrid-search.md
+            children:
+            - page: docs-content://solutions/search/hybrid-semantic-text.md
+              title: Hybrid search with semantic_text
+          # Ranking — semantic reranking is a lightweight upgrade on top of FTS
+          - group: Ranking and reranking
+            page: docs-content://solutions/search/ranking.md
+            children:
+            - page: docs-content://solutions/search/ranking/semantic-reranking.md
+              title: Semantic reranking
+            - group: Learning to rank
+              page: docs-content://solutions/search/ranking/learning-to-rank-ltr.md
+              children:
+              - page: docs-content://solutions/search/ranking/learning-to-rank-model-training.md
+                title: Train an LTR model
+              - page: docs-content://solutions/search/ranking/learning-to-rank-search-usage.md
+                title: Use LTR in search
+
+        # -----------------------------------------------------------------------
+        # 3. INGEST FOR SEARCH
+        # After approaches — the approach decision shapes what your pipeline needs.
+        # -----------------------------------------------------------------------
+        - group: Ingest for search
+          page: docs-content://solutions/search/ingest-for-search.md
           children:
-          - title: ES|QL
-          - title: Query DSL
-          - title: "..."
+          - page: docs-content://solutions/search/search-pipelines.md
+            title: Search pipelines
+
+        # -----------------------------------------------------------------------
+        # 4. QUERYING
+        # How do I express and execute my search?
+        # Two dimensions: what language? what interface?
+        # -----------------------------------------------------------------------
+        - group: Build search queries
+          page: docs-content://solutions/search/querying-for-search.md
+          children:
+          - group: The search API
+            page: docs-content://solutions/search/the-search-api.md
+            children:
+            - page: docs-content://solutions/search/search-templates.md
+              title: Search templates
+            - group: Aggregations
+              page: docs-content://explore-analyze/query-filter/aggregations.md # [from E&A]
+              children:
+              - page: docs-content://explore-analyze/query-filter/aggregations/tutorial-analyze-ecommerce-data-with-aggregations-using-query-dsl.md
+                title: Tutorial — analyze e-commerce data
+          - page: docs-content://solutions/search/retrievers-overview.md
+            title: Retrievers
+          - page: docs-content://solutions/search/esql-for-search.md
+            title: ES|QL for search
+          - page: docs-content://solutions/search/async-search-api.md
+            title: Async search
+          # Language narrative pages — "understand and decide" layer
+          # These sit above the bulk reference toc further down.
+          - group: Query languages
+            children:
+            - page: docs-content://explore-analyze/query-filter/languages/querydsl.md # [from E&A]
+              title: Query DSL
+            - page: docs-content://explore-analyze/query-filter/languages/kql.md # [from E&A]
+              title: KQL
+            - group: EQL
+              page: docs-content://explore-analyze/query-filter/languages/eql.md # [from E&A]
+              children:
+              - page: docs-content://explore-analyze/query-filter/languages/example-detect-threats-with-eql.md
+                title: Detect threats with EQL
+            - page: docs-content://explore-analyze/query-filter/languages/sql.md # [from E&A]
+              title: SQL
+            - page: docs-content://explore-analyze/query-filter/languages/lucene-query-syntax.md # [from E&A]
+              title: Lucene query syntax
+            # Bulk query-language reference toc (Query DSL ref, ES|QL ref, EQL ref, SQL ref, KQL ref, Lucene ref)
+            # [TODO] Uncomment once confirmed wired in assembler
+            # - toc: elasticsearch://reference/query-languages
+          # Developer tools — for running and testing queries
+          - group: Developer tools
+            page: docs-content://explore-analyze/query-filter/tools.md # [from E&A]
+            children:
+            - page: docs-content://explore-analyze/query-filter/tools/console.md
+              title: Console
+            - page: docs-content://explore-analyze/query-filter/tools/search-profiler.md
+              title: Search Profiler
+            - page: docs-content://explore-analyze/query-filter/tools/saved-queries.md
+              title: Saved queries
+
+        # -----------------------------------------------------------------------
+        # 5. SEARCH ACROSS CLUSTERS AND PROJECTS
+        # End-of-journey scaling topic: "my data spans multiple clusters"
+        # -----------------------------------------------------------------------
+        - group: Cross-cluster search
+          page: docs-content://explore-analyze/cross-cluster-search.md # [from E&A]
+          children:
+          - page: docs-content://explore-analyze/cross-cluster-search/using-resolve-cluster-endpoint-before-cross-cluster-search.md
+            title: Using the resolve cluster endpoint
+        # Cross-project search — serverless only, pages are hidden in toc
         - group: Cross-project search
+          page: docs-content://explore-analyze/cross-project-search.md # [from E&A]
           children:
-          - title: Link projects for cross-project search
-          - title: Using project routing to limit search scope
-          - title: How search works in CPS
-          - title: Using tags to control search
-        - title: Cross-cluster search
-        - title: Add search to your site or app
-        - group: Querying and filtering in Kibana
+          - page: docs-content://explore-analyze/cross-project-search/cross-project-search-link-projects.md
+            title: Link projects
+          - page: docs-content://explore-analyze/cross-project-search/cross-project-search-search.md
+            title: Search across projects
+          - page: docs-content://explore-analyze/cross-project-search/cross-project-search-tags.md
+            title: Using tags to control search
+          - page: docs-content://explore-analyze/cross-project-search/cross-project-search-project-routing.md
+            title: Project routing
+
+        # -----------------------------------------------------------------------
+        # 6. INTEGRATE WITH YOUR APP
+        # Wire search into your application code.
+        # [TODO] site-or-app.md → integrate.md rename deferred to docs-content work
+        # -----------------------------------------------------------------------
+        - group: Integrate with your app
+          page: docs-content://solutions/search/site-or-app.md
           children:
-          - title: Filtering in Kibana
-          - title: Query languages
-          - title: Query tools
+          - page: docs-content://solutions/search/site-or-app/clients.md
+            title: Client libraries
+          - page: docs-content://solutions/search/site-or-app/search-ui.md
+            title: Search UI
+          - page: docs-content://solutions/search/apis-and-tools.md
+            title: APIs and tools
       - group: Explore and visualize
         page: docs-content://explore-analyze/explore-and-visualize.md
         children:
