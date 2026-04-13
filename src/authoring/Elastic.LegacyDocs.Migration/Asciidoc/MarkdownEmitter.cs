@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using System.Text.RegularExpressions;
 using Elastic.LegacyDocs.Migration.Asciidoc.Ast;
 
 namespace Elastic.LegacyDocs.Migration.Asciidoc;
@@ -13,6 +14,32 @@ public record MarkdownEmitterOptions
 	public string? BookPrefix { get; init; }
 	public string? Version { get; init; }
 	public Dictionary<string, string> AnchorToSlugMap { get; init; } = [];
+}
+
+public static partial class GuideUrlRewriter
+{
+	private const string GuidePrefix = "https://www.elastic.co/guide/";
+
+	[GeneratedRegex(@"^https://www\.elastic\.co/guide/(.+?)(?:\.html)?(?:#(.+))?$")]
+	private static partial Regex GuideUrlRegex();
+
+	public static string? TryRewriteToInternal(string url)
+	{
+		if (!url.StartsWith(GuidePrefix, StringComparison.OrdinalIgnoreCase))
+			return null;
+
+		var match = GuideUrlRegex().Match(url);
+		if (!match.Success)
+			return null;
+
+		var path = match.Groups[1].Value.TrimEnd('/');
+		var fragment = match.Groups[2].Success ? $"#{match.Groups[2].Value}" : "";
+
+		if (path.EndsWith("/index", StringComparison.Ordinal))
+			return $"/{path}.md{fragment}";
+
+		return $"/{path}.md{fragment}";
+	}
 }
 
 public class MarkdownEmitter(MarkdownEmitterOptions options)
@@ -421,7 +448,7 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 				Write($"`{mono.Text}`");
 				break;
 			case AttributeRefInline attrRef:
-				Write($"{{{attrRef.Name}}}");
+				Write($"{{{{{attrRef.Name}}}}}");
 				break;
 			case InlineLinkNode link:
 				EmitLink(link);
@@ -469,10 +496,13 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 
 	private void EmitLink(InlineLinkNode link)
 	{
+		var rewritten = GuideUrlRewriter.TryRewriteToInternal(link.Url);
+		var url = rewritten ?? link.Url;
+
 		if (link.Text is not null)
-			Write($"[{link.Text}]({link.Url})");
+			Write($"[{link.Text}]({url})");
 		else
-			Write($"<{link.Url}>");
+			Write($"<{url}>");
 	}
 
 	private void EmitCrossRef(InlineCrossRefNode xref)
@@ -493,8 +523,9 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 
 		var prefix = options.BookPrefix ?? "";
 		var version = options.Version ?? "current";
-		var url = $"/guide/{prefix}/{version}/{xref.Target}.html";
-		Write($"[{text}]({url})");
+		var guideUrl = $"https://www.elastic.co/guide/{prefix}/{version}/{xref.Target}.html";
+		var rewritten = GuideUrlRewriter.TryRewriteToInternal(guideUrl);
+		Write($"[{text}]({rewritten ?? guideUrl})");
 	}
 
 	private void EmitFootnote(FootnoteInline footnote)
