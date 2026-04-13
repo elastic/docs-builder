@@ -230,6 +230,11 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		_ = sb.AppendLine("project: elastic-guide-archive");
 		_ = sb.AppendLine("features:");
 		_ = sb.AppendLine("  guide-nav: true");
+
+		_ = sb.AppendLine("subs:");
+		foreach (var (key, value) in SharedAttributes.ProductNames.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
+			_ = sb.Append("  ").Append(key).Append(": \"").Append(value.Replace("\"", "\\\"")).AppendLine("\"");
+
 		_ = sb.AppendLine("toc:");
 		_ = sb.AppendLine("  - file: index.md");
 
