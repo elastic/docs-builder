@@ -79,3 +79,4 @@ The following directives are available:
 - [Tabs](tabs.md) - Tabbed content organization
 - [Tables](tables.md) - Data tables
 - [Version blocks](version-variables.md) - API version information
+- [Vector sizing calculator](vector-sizing-calculator.md) - Interactive dense_vector sizing estimates

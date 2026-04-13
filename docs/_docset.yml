@@ -109,6 +109,7 @@ toc:
       - file: images.md
       - file: kbd.md
       - file: math.md
+      - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
       - file: line_breaks.md
