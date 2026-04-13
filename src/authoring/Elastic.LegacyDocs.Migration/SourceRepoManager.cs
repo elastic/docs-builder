@@ -154,11 +154,11 @@ public class SourceRepoManager(SourceRepoOptions options, ILogger logger)
 
 		var barePath = BareClonePath(repoName);
 
-		var resolvedBranch = await FetchBranchAsync(barePath, gitBranch, ct);
+		var resolvedBranch = await ResolveBranchAsync(barePath, gitBranch, ct);
 
 		logger.LogInformation("Creating worktree {Repo}@{Branch}...", repoName, resolvedBranch);
 		_ = Directory.CreateDirectory(Path.GetDirectoryName(worktreePath)!);
-		await ExecGitInAsync(barePath, allowFailure: false, ct, "worktree", "add", worktreePath, resolvedBranch, "--no-checkout");
+		await ExecGitInAsync(barePath, allowFailure: false, ct, "worktree", "add", "--detach", worktreePath, resolvedBranch, "--no-checkout");
 
 		await ApplySparseCheckoutAsync(repoName, worktreePath, ct);
 
@@ -180,14 +180,22 @@ public class SourceRepoManager(SourceRepoOptions options, ILogger logger)
 		await ExecGitInAsync(worktreePath, allowFailure: false, ct, ["sparse-checkout", "set", .. paths]);
 	}
 
-	private async Task<string> FetchBranchAsync(string barePath, string gitBranch, CancellationToken ct)
+	private async Task<string> ResolveBranchAsync(string barePath, string gitBranch, CancellationToken ct)
 	{
 		string[] candidates = [gitBranch, "master", "main"];
+
+		foreach (var branch in candidates)
+		{
+			var existsLocally = await TryExecGitInAsync(barePath, ct, "rev-parse", "--verify", branch);
+			if (existsLocally)
+				return branch;
+		}
+
 		foreach (var branch in candidates)
 		{
 			logger.LogInformation("Fetching {Branch}...", branch);
-			var ok = await TryExecGitInAsync(barePath, ct, "fetch", "origin", $"{branch}:{branch}", "--depth", "1");
-			if (ok)
+			var fetched = await TryExecGitInAsync(barePath, ct, "fetch", "origin", $"+{branch}:refs/heads/{branch}", "--depth", "1");
+			if (fetched)
 				return branch;
 		}
 

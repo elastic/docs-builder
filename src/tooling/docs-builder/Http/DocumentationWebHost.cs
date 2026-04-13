@@ -47,7 +47,8 @@ public class DocumentationWebHost
 		ScopedFileSystem readFs,
 		ScopedFileSystem writeFs,
 		IConfigurationContext configurationContext,
-		bool isWatchBuild
+		bool isWatchBuild,
+		bool noHud = false
 	)
 	{
 		_writeFileSystem = writeFs;
@@ -76,10 +77,8 @@ public class DocumentationWebHost
 			CanonicalBaseUrl = new Uri(hostUrl),
 		};
 
-		// Enable diagnostics panel in serve mode
-		Context.Configuration.Features.DiagnosticsPanelEnabled = true;
+		Context.Configuration.Features.DiagnosticsPanelEnabled = !noHud;
 
-		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
 		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context, isWatchBuild);
@@ -94,7 +93,7 @@ public class DocumentationWebHost
 			.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(3))
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
 			.AddSingleton(_ => InMemoryBuildState)
-			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, logFactory.CreateLogger<ReloadGeneratorService>()));
+			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, noHud, logFactory.CreateLogger<ReloadGeneratorService>()));
 
 		if (IsDotNetWatchBuild())
 			_ = builder.Services.AddHostedService<ParcelWatchService>();

@@ -23,7 +23,7 @@ internal sealed class ServeCommand
 			return 1;
 		}
 
-		string[] args = ["run", "--project", "src/tooling/docs-builder", "--", "serve", "--path", outputDir, "--port", $"{port}"];
+		string[] args = ["run", "--project", "src/tooling/docs-builder", "--", "serve", "--path", outputDir, "--port", $"{port}", "--no-hud"];
 		Console.WriteLine($"dotnet {string.Join(' ', args)}");
 
 		var arguments = new ExecArguments("dotnet", args);
