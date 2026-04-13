@@ -9,3 +9,5 @@ public interface IAsciidocNode;
 public interface IInlineNode;
 
 public interface IBlockNode : IAsciidocNode;
+
+public record AnchoredBlock(string Id, IAsciidocNode Inner) : IBlockNode;
