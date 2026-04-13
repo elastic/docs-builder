@@ -166,6 +166,10 @@ public class MarkdownEmitter(MarkdownEmitterOptions options)
 				WriteLine(passthrough.Content);
 				WriteLine();
 				break;
+			case AnchoredBlock anchored:
+				WriteLine($"$$${anchored.Id}$$$");
+				EmitNode(anchored.Inner);
+				break;
 			case ThematicBreakNode:
 			case PageBreakNode:
 				WriteLine("---");

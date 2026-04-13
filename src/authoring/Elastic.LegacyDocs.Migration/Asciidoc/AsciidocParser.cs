@@ -214,13 +214,12 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 	private IAsciidocNode? ParseBlock(string? id, string? title, TokenMetadata? blockAttr)
 	{
-		_ = id;
 		if (_pos >= _tokens.Count)
 			return null;
 
 		var token = Current;
 
-		return token.Type switch
+		var block = token.Type switch
 		{
 			TokenType.BlockDelimiter => ParseDelimitedBlock(blockAttr),
 			TokenType.ListItemUnordered => ParseUnorderedList(),
@@ -235,6 +234,8 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			TokenType.ConditionalStart or TokenType.ConditionalEnd => SkipConditional(),
 			_ => SkipToken()
 		};
+
+		return id is not null && block is not null ? new AnchoredBlock(id, block) : block;
 	}
 
 	private IAsciidocNode? ParseDelimitedBlock(TokenMetadata? blockAttr)
