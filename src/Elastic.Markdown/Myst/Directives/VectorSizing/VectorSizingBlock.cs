@@ -17,13 +17,12 @@ namespace Elastic.Markdown.Myst.Directives.VectorSizing;
 /// hydrated client-side by the bundled React+EUI web component.
 /// </summary>
 public class VectorSizingBlock(DirectiveBlockParser parser, ParserContext context)
-    : DirectiveBlock(parser, context)
+	: DirectiveBlock(parser, context)
 {
-    public override string Directive => "vector-sizing-calculator";
+	public override string Directive => "vector-sizing-calculator";
 
-    public override void FinalizeAndValidate(ParserContext context)
-    {
-        // No properties or arguments to validate.
-        // The web component handles all configuration client-side.
-    }
+	public override void FinalizeAndValidate(ParserContext context)
+	{
+		_ = context;
+	}
 }

@@ -20,6 +20,7 @@ using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Roles;
@@ -108,6 +109,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case ButtonBlock buttonBlock:
 				WriteButton(renderer, buttonBlock);
+				return;
+			case VectorSizingBlock vectorSizingBlock:
+				WriteVectorSizing(renderer, vectorSizingBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -553,6 +557,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		_ = renderer.Write(html);
+	}
+
+	private static void WriteVectorSizing(HtmlRenderer renderer, VectorSizingBlock block)
+	{
+		var slice = VectorSizingView.Create(new VectorSizingViewModel
+		{
+			DirectiveBlock = block
+		});
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)
