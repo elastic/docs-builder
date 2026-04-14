@@ -1,7 +1,0 @@
-{
-  "setup": [
-    "dotnet tool restore && dotnet husky install"
-  ],
-  "teardown": [],
-  "run": []
-}
