@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Assembler.Building;
 
 public record SitemapEntry(string Url, DateTimeOffset LastUpdated);
 
-/// <summary>Reads all url + content_last_updated pairs from the ES lexical index using search_after with PIT.</summary>
+/// <summary>Reads all url + content_last_updated pairs from the ES semantic index using search_after with PIT.</summary>
 public class EsSitemapReader(DistributedTransport transport, ILogger logger, string indexName)
 {
 	private const int PageSize = 1000;

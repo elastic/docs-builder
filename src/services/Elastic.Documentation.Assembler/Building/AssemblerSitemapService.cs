@@ -76,7 +76,7 @@ public class AssemblerSitemapService(
 
 		var transport = ElasticsearchTransportFactory.Create(cfg);
 
-		var indexName = DocumentationMappingContext.DocumentationDocument
+		var indexName = DocumentationMappingContext.DocumentationDocumentSemantic
 			.CreateContext(type: "assembler", env: environment)
 			.ResolveReadTarget();
 
