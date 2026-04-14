@@ -106,7 +106,7 @@ versioning_systems:
     current: 0.7.1
   edot-cf-gcp:
     base: 0.1
-    current: 0.1.2
+    current: 0.1.3
   terraform-google-edot-cf:
     base: 0.1
     current: 0.1.2
