@@ -151,7 +151,7 @@ pivot:
 #   - Comma-separated string: "value1, value2, value3"
 #   - YAML list: [value1, value2, value3]
 #
-# For details and examples, refer to the [rules documentation](https://github.com/elastic/docs-builder/blob/main/docs/contribute/changelog.md#rules-for-creation-and-bundling).
+# For details and examples, refer to the [rules documentation](https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md#rules).
 rules:
   # match: any
 
@@ -170,7 +170,7 @@ rules:
   #       exclude: "ILM"
 
   # Bundle — filtering applied during 'changelog bundle' and 'changelog gh-release'.
-  # See docs/contribute/changelog.md → "Bundle rule modes" for Mode 1 / 2 / 3 behavior.
+  # See https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md#bundle-rule-modes for Mode 1 / 2 / 3 behavior.
   #
   # Mode 2 (global content): use global lists only — no `products` key, or `products: {}`.
   # Example — include changelogs that list elasticsearch OR kibana (evaluated per changelog):
@@ -214,7 +214,7 @@ bundle:
   # Whether to resolve (copy contents) by default
   resolve: true
   # Optional: default description text for bundles. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
-  # Use YAML literal block scalar (|) for multiline descriptions. See docs/contribute/changelog.md for examples.
+  # Use YAML literal block scalar (|) for multiline descriptions.
   # description: |
   #   This release includes new features and bug fixes.
   #   
