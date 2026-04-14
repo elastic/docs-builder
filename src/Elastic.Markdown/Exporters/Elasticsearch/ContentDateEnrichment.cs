@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Nodes;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -25,7 +27,8 @@ public class ContentDateEnrichment(
 
 	public string PipelineName => $"{_lookupAlias}-pipeline";
 
-	private string PolicyName => $"{_lookupAlias}-policy";
+	private string PolicyBaseName => $"{_lookupAlias}-policy";
+	private string PolicyName => $"{PolicyBaseName}-{ComputePolicyHash()}";
 
 	/// <summary>
 	/// Creates the lookup index (if needed), enrich policy, executes it, and creates the ingest pipeline.
@@ -37,6 +40,7 @@ public class ContentDateEnrichment(
 		await PutEnrichPolicyAsync(ct);
 		await ExecutePolicyAsync(ct);
 		await PutPipelineAsync(ct);
+		await CleanupOldPoliciesAsync(ct);
 	}
 
 	/// <summary>
@@ -180,27 +184,87 @@ public class ContentDateEnrichment(
 
 	private async Task PutEnrichPolicyAsync(Cancel ct)
 	{
-		var policy = new JsonObject
-		{
-			["match"] = new JsonObject
-			{
-				["indices"] = _lookupAlias,
-				["match_field"] = "url",
-				["enrich_fields"] = new JsonArray("content_hash", "content_last_updated")
-			}
-		};
-
 		var response = await operations.WithRetryAsync(
-			() => transport.PutAsync<StringResponse>($"/_enrich/policy/{PolicyName}", PostData.String(policy.ToJsonString()), ct),
+			() => transport.PutAsync<StringResponse>(
+				$"/_enrich/policy/{PolicyName}",
+				PostData.String(BuildPolicyBody().ToJsonString()),
+				ct
+			),
 			$"PUT _enrich/policy/{PolicyName}",
 			ct
 		);
 
-		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			throw new InvalidOperationException(
-				$"Failed to create enrich policy {PolicyName}: {response.ApiCallDetails.DebugInformation}");
+		if (response.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			logger.LogInformation("Created enrich policy {Policy}", PolicyName);
+			return;
+		}
 
-		logger.LogInformation("Created enrich policy {Policy}", PolicyName);
+		// Same-hash policy already exists — the definition is identical, safe to reuse
+		var errorType = response.Body != null
+			? JsonNode.Parse(response.Body)?["error"]?["type"]?.GetValue<string>()
+			: null;
+		if (errorType == "resource_already_exists_exception")
+		{
+			logger.LogInformation("Enrich policy {Policy} already exists, continuing", PolicyName);
+			return;
+		}
+
+		throw new InvalidOperationException(
+			$"Failed to create enrich policy {PolicyName}: {response.ApiCallDetails.DebugInformation}");
+	}
+
+	private string ComputePolicyHash()
+	{
+		var json = BuildPolicyBody().ToJsonString();
+		var hash = SHA256.HashData(Encoding.UTF8.GetBytes(json));
+		return Convert.ToHexString(hash)[..8].ToLowerInvariant();
+	}
+
+	private JsonObject BuildPolicyBody() => new()
+	{
+		["match"] = new JsonObject
+		{
+			["indices"] = _lookupAlias,
+			["match_field"] = "url",
+			["enrich_fields"] = new JsonArray("content_hash", "content_last_updated")
+		}
+	};
+
+	private async Task CleanupOldPoliciesAsync(Cancel ct)
+	{
+		var response = await operations.WithRetryAsync(
+			() => transport.GetAsync<StringResponse>("/_enrich/policy", ct),
+			"GET /_enrich/policy",
+			ct
+		);
+
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+		{
+			logger.LogWarning("Failed to list enrich policies for cleanup: {Info}", response.ApiCallDetails.DebugInformation);
+			return;
+		}
+
+		var json = JsonNode.Parse(response.Body);
+		var policies = json?["policies"]?.AsArray() ?? [];
+
+		foreach (var policy in policies)
+		{
+			var name = policy?["config"]?["match"]?["name"]?.GetValue<string>();
+			if (name == null || name == PolicyName || !name.StartsWith(PolicyBaseName, StringComparison.Ordinal))
+				continue;
+
+			var deleteResponse = await operations.WithRetryAsync(
+				() => transport.DeleteAsync<StringResponse>($"/_enrich/policy/{name}", new DefaultRequestParameters(), PostData.Empty, ct),
+				$"DELETE _enrich/policy/{name}",
+				ct
+			);
+
+			if (deleteResponse.ApiCallDetails.HasSuccessfulStatusCode)
+				logger.LogInformation("Deleted old enrich policy {Policy}", name);
+			else
+				logger.LogWarning("Failed to delete old enrich policy {Policy}: {Info}", name, deleteResponse.ApiCallDetails.DebugInformation);
+		}
 	}
 
 	private async Task ExecutePolicyAsync(Cancel ct)
