@@ -63,10 +63,17 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 		.Headings(f => f
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
-		// AI field with custom analyzers not on the attribute
+		// AI fields with custom analyzers not on the attribute
 		.AddField("ai_rag_optimized_summary", f => f.Text()
 			.Analyzer("synonyms_fixed_analyzer")
 			.SearchAnalyzer("synonyms_analyzer"))
+		.AddField("ai_questions", f => f.Text()
+			.Analyzer("synonyms_fixed_analyzer")
+			.SearchAnalyzer("synonyms_analyzer")
+			.MultiField("completion", mf => mf.SearchAsYouType()
+				.Analyzer("synonyms_fixed_analyzer")
+				.SearchAnalyzer("synonyms_analyzer")
+				.IndexOptions("offsets")))
 		// Keyword fields with multi-fields
 		.Url(f => f
 			.MultiField("match", mf => mf.Text())
