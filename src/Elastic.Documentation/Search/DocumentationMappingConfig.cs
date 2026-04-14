@@ -73,7 +73,8 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 			.MultiField("completion", mf => mf.SearchAsYouType()
 				.Analyzer("synonyms_fixed_analyzer")
 				.SearchAnalyzer("synonyms_analyzer")
-				.IndexOptions("offsets")))
+				.IndexOptions("offsets"))
+			.MultiField("suggest", mf => mf.Completion()))
 		// Keyword fields with multi-fields
 		.Url(f => f
 			.MultiField("match", mf => mf.Text())
