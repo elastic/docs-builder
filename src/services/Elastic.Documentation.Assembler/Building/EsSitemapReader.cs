@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Assembler.Building;
 
 public record SitemapEntry(string Url, DateTimeOffset LastUpdated);
 
-/// <summary>Reads all url + last_updated pairs from the ES lexical index using search_after with PIT.</summary>
+/// <summary>Reads all url + content_last_updated pairs from the ES semantic index using search_after with PIT.</summary>
 public class EsSitemapReader(DistributedTransport transport, ILogger logger, string indexName)
 {
 	private const int PageSize = 1000;
@@ -61,14 +61,14 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 							continue;
 
 						var url = source["url"]?.GetValue<string>();
-						var lastUpdatedStr = source["last_updated"]?.GetValue<string>();
+						var lastUpdatedStr = source["content_last_updated"]?.GetValue<string>();
 
 						if (url is null || lastUpdatedStr is null)
 							continue;
 
 						if (!DateTimeOffset.TryParse(lastUpdatedStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var lastUpdated))
 						{
-							logger.LogWarning("Sitemap: skipping {Url}, unparseable last_updated: {Value}", url, lastUpdatedStr);
+							logger.LogWarning("Sitemap: skipping {Url}, unparseable content_last_updated: {Value}", url, lastUpdatedStr);
 							continue;
 						}
 
@@ -131,7 +131,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		var body = new JsonObject
 		{
 			["size"] = PageSize,
-			["_source"] = new JsonArray("url", "last_updated"),
+			["_source"] = new JsonArray("url", "content_last_updated"),
 			["query"] = new JsonObject
 			{
 				["bool"] = new JsonObject
