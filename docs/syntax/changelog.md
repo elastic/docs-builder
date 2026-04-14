@@ -162,7 +162,7 @@ entries:
 When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
 
 To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`.
-For more details, go to [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
+For more details, go to [Hide features in bundles](../contribute/bundle-changelogs.md#changelog-bundle-hide-features).
 
 ## Hiding private links [hide-links]
 
@@ -285,7 +285,7 @@ To fix this, either:
 
 :::{tip}
 In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
-For more command syntax details, go to [Remove changelog files](../contribute/changelog.md#changelog-remove).
+For more command syntax details, go to [Remove changelog files](../contribute/bundle-changelogs.md#changelog-remove).
 :::
 
 ## Example
@@ -314,7 +314,7 @@ The `{changelog}` directive is ideal for release notes pages that should always 
 
 ## Related
 
-- [Create and bundle changelogs](/contribute/changelog.md) — Learn how to create changelog entries and bundles
+- [Create and bundle changelogs](/contribute/changelog.md) — Overview, workflow, and links to detailed guides
 - [`changelog add`](/cli/changelog/add.md) — CLI command to create changelog entries
 - [`changelog bundle`](/cli/changelog/bundle.md) — CLI command to bundle changelog entries
 - [`changelog remove`](/cli/changelog/remove.md) — CLI command to remove changelog files
