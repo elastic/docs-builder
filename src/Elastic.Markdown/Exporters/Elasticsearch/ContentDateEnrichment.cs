@@ -71,7 +71,6 @@ public class ContentDateEnrichment(
 
 		var mapping = new JsonObject
 		{
-			["settings"] = new JsonObject { ["number_of_shards"] = 1, ["number_of_replicas"] = 0 },
 			["mappings"] = new JsonObject
 			{
 				["properties"] = new JsonObject
