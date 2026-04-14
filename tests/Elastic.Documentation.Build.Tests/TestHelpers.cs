@@ -63,7 +63,7 @@ public static class TestHelpers
 			};
 		}
 
-		var search = new SearchConfiguration { Synonyms = new Dictionary<string, string[]>(), Rules = [], DiminishTerms = [] };
+		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints

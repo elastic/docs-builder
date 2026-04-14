@@ -445,7 +445,7 @@ type Setup =
                 PublicReferenceProducts = productDict.ToFrozenDictionary(),
                 ProductDisplayNames = (productDict |> Seq.map (fun p -> KeyValuePair(p.Key, p.Value.DisplayName)) |> fun s -> Dictionary(s)).ToFrozenDictionary()),
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
-            SearchConfiguration = SearchConfiguration(Synonyms = Dictionary<string, string[]>(), Rules = [], DiminishTerms = [])
+            SearchConfiguration = SearchConfiguration(Synonyms = Array.empty<string[]>, Rules = [], DiminishTerms = [])
         )
         let context = BuildContext(
             collector,
