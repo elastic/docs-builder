@@ -795,10 +795,16 @@ nav:
               children:
               - page: docs-content://explore-analyze/query-filter/languages/example-detect-threats-with-eql.md
                 title: Detect threats with EQL
+            # [THIN] sql.md is a hollow intro + link list that duplicates the reference toc below.
+            # Candidate for removal — redirect to elasticsearch://reference/query-languages/sql.md
             - page: docs-content://explore-analyze/query-filter/languages/sql.md # [from E&A]
               title: SQL
+            # [THIN] lucene-query-syntax.md is a single paragraph pointing users to the Kibana UI toggle.
+            # Candidate for removal — redirect to elasticsearch://reference/query-languages/query-dsl/query-dsl-query-string-query.md
             - page: docs-content://explore-analyze/query-filter/languages/lucene-query-syntax.md # [from E&A]
               title: Lucene query syntax
+          # Query language reference — bulk toc, cannot interleave with narrative pages above
+          - toc: elasticsearch://reference/query-languages
           # Developer tools — for running and testing queries
           - group: Developer tools
             page: docs-content://explore-analyze/query-filter/tools.md # [from E&A]
@@ -809,9 +815,6 @@ nav:
               title: Search Profiler
             - page: docs-content://explore-analyze/query-filter/tools/saved-queries.md
               title: Saved queries
-
-        # Query language reference — bulk toc, cannot interleave with narrative pages above
-        - toc: elasticsearch://reference/query-languages
 
         # -----------------------------------------------------------------------
         # 5. SEARCH ACROSS CLUSTERS AND PROJECTS
