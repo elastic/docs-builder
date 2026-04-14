@@ -31,6 +31,10 @@ docs-builder changelog gh-release <repo> [version] [options...] [-h|--help]
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file. Defaults to `docs/changelog.yml`.
 
+`--description <string?>`
+:   Optional: Bundle description text with placeholder support.
+:   Supports `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` placeholders. Overrides `bundle.description` from config.
+
 `--output <string?>`
 :   Optional: Output directory for the generated changelog files. Falls back to `bundle.directory` in `changelog.yml` when not specified. Defaults to `./changelogs`.
 
@@ -84,6 +88,13 @@ docs-builder changelog gh-release elasticsearch v9.2.0
 docs-builder changelog gh-release elasticsearch v9.2.0 \
   --output ./docs/changelog \
   --config ./docs/changelog.yml
+```
+
+### Add description with placeholders
+
+```sh
+docs-builder changelog gh-release elasticsearch v9.2.0 \
+  --description "Elasticsearch {version} includes new features and fixes. Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
 ```
 
 ### Strip component prefixes from titles
