@@ -66,7 +66,7 @@ public class ContentDateEnrichment(
 	}
 
 	private string GenerateStagingName() =>
-		$"{_lookupAlias}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+		$"{_lookupAlias}-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8]}";
 
 	private async Task<string?> ResolveBackingIndexAsync(Cancel ct)
 	{
@@ -76,11 +76,23 @@ public class ContentDateEnrichment(
 			ct
 		);
 
-		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+		if (response.ApiCallDetails.HttpStatusCode == 404)
 			return null;
 
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			throw new InvalidOperationException(
+				$"Failed to resolve alias {_lookupAlias}: {response.ApiCallDetails.DebugInformation}");
+
 		var json = JsonNode.Parse(response.Body);
-		return json?.AsObject().Select(kv => kv.Key).FirstOrDefault();
+		var indices = json?.AsObject().Select(kv => kv.Key).ToList() ?? [];
+
+		return indices.Count switch
+		{
+			0 => null,
+			1 => indices[0],
+			_ => throw new InvalidOperationException(
+				$"Alias {_lookupAlias} points to multiple indices ({string.Join(", ", indices)}); expected exactly one")
+		};
 	}
 
 	private async Task EnsureLookupIndexAsync(Cancel ct)
@@ -271,9 +283,10 @@ public class ContentDateEnrichment(
 		);
 
 		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-			logger.LogWarning("Failed to refresh index {Index}: {Info}", indexName, response.ApiCallDetails.DebugInformation);
-		else
-			logger.LogInformation("Refreshed index {Index}", indexName);
+			throw new InvalidOperationException(
+				$"Failed to refresh index {indexName}: {response.ApiCallDetails.DebugInformation}");
+
+		logger.LogInformation("Refreshed index {Index}", indexName);
 	}
 
 	private async Task ReindexToLookupAsync(string sourceAlias, string destIndex, Cancel ct)
