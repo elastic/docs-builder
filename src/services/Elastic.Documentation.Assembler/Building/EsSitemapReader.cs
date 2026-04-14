@@ -61,7 +61,8 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 							continue;
 
 						var url = source["url"]?.GetValue<string>();
-						var lastUpdatedStr = source["content_last_updated"]?.GetValue<string>();
+						var lastUpdatedStr = source["content_last_updated"]?.GetValue<string>()
+							?? source["last_updated"]?.GetValue<string>();
 
 						if (url is null || lastUpdatedStr is null)
 							continue;
@@ -131,7 +132,7 @@ public class EsSitemapReader(DistributedTransport transport, ILogger logger, str
 		var body = new JsonObject
 		{
 			["size"] = PageSize,
-			["_source"] = new JsonArray("url", "content_last_updated"),
+			["_source"] = new JsonArray("url", "content_last_updated", "last_updated"),
 			["query"] = new JsonObject
 			{
 				["bool"] = new JsonObject
