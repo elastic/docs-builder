@@ -785,6 +785,7 @@ nav:
           # Language narrative pages — "understand and decide" layer
           # These sit above the bulk reference toc further down.
           - group: Query languages
+            page: docs-content://explore-analyze/query-filter/languages.md # [from E&A] comparison table landing
             children:
             - page: docs-content://explore-analyze/query-filter/languages/querydsl.md # [from E&A]
               title: Query DSL
