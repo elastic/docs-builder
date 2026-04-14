@@ -224,6 +224,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	public async ValueTask StopAsync(Cancel ctx = default)
 	{
 		_ = await _orchestrator.CompleteAsync(null, ctx);
+		await _contentDateEnrichment.SyncLookupIndexAsync(_lexicalTypeContext.IndexStrategy!.WriteTarget!, ctx);
+	}
 
 		// Resolve content_last_updated for documents where the ingest pipeline didn't fire.
 		// HashedBulkUpdate uses bulk update actions, which skip ingest pipelines.
