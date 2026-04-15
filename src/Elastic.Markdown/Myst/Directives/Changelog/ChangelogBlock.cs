@@ -337,14 +337,15 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	{
 		if (!string.IsNullOrWhiteSpace(ConfigPath))
 		{
-			var trimmedPath = ConfigPath.TrimStart('/');
+			// A leading '/' or '\' is treated as relative to docset root
+			var trimmedPath = ConfigPath.TrimStart('/', '\\');
 			if (Path.IsPathRooted(trimmedPath))
 			{
 				this.EmitError("Changelog config path must not be an absolute path.");
 				return null;
 			}
 
-			var explicitPath = Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath));
+			var explicitPath = Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(trimmedPath));
 			return ValidateConfigCandidate(explicitPath, emitDiagnostics: true);
 		}
 
