@@ -258,12 +258,6 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			ContentBodyHash = "contenthash123"
 		};
 		var serializedDoc = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
-		output.WriteLine($"Serialized document JSON:\n{serializedDoc}");
-
-		// Check what the serializer outputs for content_last_updated
-		var parsedDoc = JsonNode.Parse(serializedDoc)!;
-		var serializedDateValue = parsedDoc["content_last_updated"]?.ToString();
-		output.WriteLine($"Serialized content_last_updated value: '{serializedDateValue}'");
 
 		// Index via scripted upsert (same as HashedBulkUpdate)
 		await IndexFullDocumentViaScriptedUpsert(index, doc.Url, serializedDoc);
@@ -279,12 +273,11 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var source = JsonNode.Parse(response.Body)?["_source"];
 		source.Should().NotBeNull();
 
-		var esDateValue = source!["content_last_updated"]?.ToString();
-		output.WriteLine($"ES stored content_last_updated value: '{esDateValue}'");
+		var esDateValue = source["content_last_updated"]?.ToString();
 
 		// The default DateTimeOffset (0001-01-01) should be stored — verify it's pre-epoch
 		esDateValue.Should().NotBeNull("content_last_updated should be present in ES document");
-		var esDate = DateTimeOffset.Parse(esDateValue!, CultureInfo.InvariantCulture);
+		var esDate = DateTimeOffset.Parse(esDateValue, CultureInfo.InvariantCulture);
 		esDate.Year.Should().Be(1, "default DateTimeOffset.MinValue should serialize as year 0001");
 		esDate.Should().BeBefore(DateTimeOffset.UnixEpoch,
 			"the default value should be well before 1970, making it safe to filter with 'must_not range gt 1970'");
@@ -304,7 +297,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		await enrichment.InitializeAsync(CancellationToken.None);
 		await CreateTestIndex(index, enrichment.PipelineName);
 
-		// doc1: no content_last_updated (simulates scripted upsert that omits the field)
+		// doc1: content_last_updated at default (0001-01-01) via scripted upsert
 		await IndexDocumentsDirectly(index, ("url1", "hash_a", "Doc 1"));
 
 		// doc2: content_last_updated at default DateTimeOffset.MinValue (simulates production)
@@ -550,8 +543,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	/// </summary>
 	private async Task IndexFullDocumentViaScriptedUpsert(string index, string id, string serializedDoc)
 	{
+		const string hashField = "hash";
 		var docNode = JsonNode.Parse(serializedDoc)!;
-		var hashField = "hash";
 		var hashValue = docNode[hashField]?.ToString() ?? "";
 
 		var actionLine = new JsonObject
@@ -574,7 +567,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 				["params"] = new JsonObject
 				{
 					["hash"] = hashValue,
-					["doc"] = JsonNode.Parse(serializedDoc)!
+					["doc"] = docNode
 				}
 			}
 		};

@@ -77,35 +77,35 @@ public class ContentDateEnrichment(
 	/// the pipeline compares each document's content_hash against the lookup from
 	/// the previous run and either preserves the old date or stamps a new one.
 	/// </summary>
+	// Only process documents that don't already have a valid content_last_updated.
+	// After HashedBulkUpdate: unchanged docs (noop) retain their resolved date from the
+	// previous run; new/changed docs have the field missing or at DateTimeOffset.MinValue
+	// (0001-01-01). This filter avoids re-indexing the entire index, which on the semantic
+	// index would trigger expensive semantic_text inference for every document.
+	private static readonly string UnresolvedContentDatesQuery = new JsonObject
+	{
+		["query"] = new JsonObject
+		{
+			["bool"] = new JsonObject
+			{
+				["must_not"] = new JsonArray(
+					new JsonObject
+					{
+						["range"] = new JsonObject
+						{
+							["content_last_updated"] = new JsonObject { ["gt"] = "1970-01-01T00:00:00Z" }
+						}
+					}
+				)
+			}
+		}
+	}.ToJsonString();
+
 	public async Task ResolveContentDatesAsync(string indexAlias, Cancel ct)
 	{
 		logger.LogInformation("Resolving content dates in {Index} via pipeline {Pipeline}", indexAlias, PipelineName);
 
-		// Only process documents that don't already have a valid content_last_updated.
-		// After HashedBulkUpdate: unchanged docs (noop) retain their resolved date from the
-		// previous run; new/changed docs have the field missing or at DateTimeOffset.MinValue
-		// (0001-01-01T00:00:00+00:00). This filter avoids re-indexing the entire index, which
-		// on the semantic index would trigger expensive semantic_text inference for every document.
-		var query = new JsonObject
-		{
-			["query"] = new JsonObject
-			{
-				["bool"] = new JsonObject
-				{
-					["must_not"] = new JsonArray(
-						new JsonObject
-						{
-							["range"] = new JsonObject
-							{
-								["content_last_updated"] = new JsonObject { ["gt"] = "1970-01-01T00:00:00Z" }
-							}
-						}
-					)
-				}
-			}
-		};
-
-		await operations.UpdateByQueryAsync(indexAlias, PostData.String(query.ToJsonString()), PipelineName, ct);
+		await operations.UpdateByQueryAsync(indexAlias, PostData.String(UnresolvedContentDatesQuery), PipelineName, ct);
 
 		logger.LogInformation("Content date resolution complete for {Index}", indexAlias);
 	}
