@@ -128,5 +128,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
     <PackageVersion Include="xunit.v3" Version="2.0.2" />
+    <PackageVersion Include="Testcontainers.Elasticsearch" Version="4.6.0" />
   </ItemGroup>
 </Project>
