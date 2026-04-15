@@ -234,15 +234,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		await _contentDateEnrichment.SyncLookupIndexAsync(_lexicalReadAlias, ctx);
 	}
 
-		// Resolve content_last_updated for documents where the ingest pipeline didn't fire.
-		// HashedBulkUpdate uses bulk update actions, which skip ingest pipelines.
-		// Use the read alias (-latest) rather than WriteTarget, which is removed after CompleteAsync.
-		await _contentDateEnrichment.ResolveContentDatesAsync(_lexicalReadAlias, ctx);
-		await _contentDateEnrichment.ResolveContentDatesAsync(_semanticReadAlias, ctx);
-
-		await _contentDateEnrichment.SyncLookupIndexAsync(_lexicalReadAlias, ctx);
-	}
-
 	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
 	{
 		if (_aiEnrichment is null)
