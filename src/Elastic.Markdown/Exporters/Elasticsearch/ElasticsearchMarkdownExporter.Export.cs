@@ -39,6 +39,10 @@ public partial class ElasticsearchMarkdownExporter
 		doc.Hash = hash;
 	}
 
+	/// <summary>Computes and assigns the whitespace-normalized content hash for change detection.</summary>
+	private static void AssignContentHash(DocumentationDocument doc) =>
+		doc.ContentBodyHash = ContentHash.CreateNormalized(doc.StrippedBody ?? string.Empty);
+
 	private static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
 	{
 		doc.SearchTitle = CreateSearchTitle();
@@ -154,6 +158,7 @@ public partial class ElasticsearchMarkdownExporter
 			: null;
 
 		CommonEnrichments(doc, currentNavigation);
+		AssignContentHash(doc);
 		AssignDocumentMetadata(doc);
 
 		return await WriteDocumentAsync(doc, ctx);
@@ -191,6 +196,7 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Abstract = @abstract;
 			doc.Headings = headings;
 			CommonEnrichments(doc, null);
+			AssignContentHash(doc);
 			AssignDocumentMetadata(doc);
 
 			if (!await WriteDocumentAsync(doc, ctx))
