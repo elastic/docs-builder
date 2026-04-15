@@ -13,16 +13,6 @@ on:
   push:
     branches:
       - main
-      - master
-      # fnmatch-style globs (not regex). [0-9] matches one digit; * matches within a label.
-      - '[0-9]*.[0-9]*.[0-9]*'
-      - '[0-9]*.[0-9]*'
-      - '[0-9]*.x'
-    tags:
-      - 'v[0-9]*.[0-9]*.[0-9]*'
-      - 'v[0-9]*.[0-9]*'
-      - '[0-9]*.[0-9]*.[0-9]*'
-      - '[0-9]*.[0-9]*'
 
 permissions:
   contents: read
