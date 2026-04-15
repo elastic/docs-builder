@@ -6,9 +6,6 @@
   <Folder Name="/actions/diff-validate/">
     <File Path="actions/diff-validate/action.yml" />
   </Folder>
-  <Folder Name="/actions/publish-vercel/">
-    <File Path="actions/publish-vercel/action.yml" />
-  </Folder>
   <Folder Name="/actions/publish/">
     <File Path="actions/publish/action.yml" />
     <File Path="actions/publish/github-pages.png" />
