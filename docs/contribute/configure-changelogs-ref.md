@@ -3,11 +3,142 @@ navigation_title: Configuration reference
 ---
 # Changelog configuration reference
 
-The changelog configuration file contains settings to make the creation of changelog files and bundles more consistent and repeatable.
+The changelog configuration file contains settings to make the creation of changelog files and bundles more consistent and repeatable. This file should be placed at `docs/changelog.yml` in your repository and defines all aspects of the changelog workflow from file naming to bundle creation.
 
-For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
+For the most up-to-date changelog configuration options and examples, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
+
+## At a glance [at-a-glance]
+
+These are the main configuration sections available in your `changelog.yml` file:
+
+:::{table}
+:widths: description
+
+| Section | Purpose |
+| --- | --- |
+| `filename` | Controls how `changelog add` names generated files |
+| `products` | Defines available products and defaults when `--products` is not specified |
+| `extract` | Configures automatic extraction of release notes and issues from PR descriptions |
+| `lifecycles` | Specifies allowed lifecycle values (preview, beta, ga) |
+| `pivot` | Maps GitHub labels to changelog types, areas, and products |
+| `rules` | Filters which PRs create changelogs and which changelogs appear in bundles |
+| `bundle` | Sets directory paths, GitHub defaults, and named profiles for bundling |
+:::
+
+## Filename [filename]
+
+Controls how the `changelog add` command names generated changelog files.
+
+:::{table}
+:widths: description
+
+| Strategy | Description |
+| --- | --- |
+| `timestamp` (default) | Use Unix timestamp with title slug (e.g., `1735689600-fix-search.yaml`) |
+| `pr` | Use the PR number (e.g., `12345.yaml`) |
+| `issue` | Use the issue number (e.g., `67890.yaml`) |
+:::
+
+You can override this setting per invocation with the `--use-pr-number` or `--use-issue-number` CLI flags.
+
+## Products [products]
+
+Defines which products are available for use and sets defaults when the `--products` option is not specified.
+
+:::{table}
+:widths: description
+
+| Setting | Description |
+| --- | --- |
+| `products.available` | List of allowed product IDs. Empty list or omitted means all products from `products.yml` are allowed |
+| `products.default` | List of default products when `--products` is not specified. Each entry contains `product` (required) and `lifecycle` (defaults to `ga`) |
+:::
+
+Example:
+```yaml
+products:
+  available: ["elasticsearch", "kibana", "cloud-serverless"]
+  default:
+    - product: elasticsearch
+      lifecycle: ga
+```
+
+## Extract [extract]
+
+Configures automatic extraction of information from PR descriptions and titles.
+
+:::{table}
+:widths: description
+
+| Setting | Description |
+| --- | --- |
+| `extract.release_notes` | Auto-extract release notes from PR descriptions (default: `true`). Override with `--no-extract-release-notes` |
+| `extract.issues` | Auto-extract linked issues/PRs from descriptions (default: `true`). Override with `--no-extract-issues` |
+| `extract.strip_title_prefix` | Remove square-bracket prefixes from PR titles (default: `false`). Override with `--strip-title-prefix` |
+:::
+
+When `extract.issues` is enabled, the system looks for patterns like "Fixes #123" in PR bodies when using `--prs`, or "Fixed by #123" in issue bodies when using `--issues`.
+
+## Lifecycles [lifecycles]
+
+Specifies the allowed lifecycle values for changelog entries. These values are strongly typed and validated.
+
+:::{table}
+:widths: description
+
+| Value | Description |
+| --- | --- |
+| `preview` | Technical preview or early access |
+| `beta` | Beta release |
+| `ga` | General availability |
+:::
+
+You can specify lifecycles as a comma-separated string (`"preview, beta, ga"`) or as a YAML list.
+
+## Pivot [pivot]
+
+Configures the mapping between GitHub labels and changelog fields. This is the core configuration that determines how PR labels translate into structured changelog data.
+
+### Types [pivot-types]
+
+Defines changelog types and their associated GitHub labels. At minimum, you must configure `feature`, `bug-fix`, and `breaking-change`.
+
+:::{table}
+:widths: description
+
+| Configuration | Description |
+| --- | --- |
+| Simple string | Comma-separated labels (e.g., `bug-fix: ">bug, >fix"`) |
+| YAML list | List of labels (e.g., `[">bug", ">fix"]`) |
+| Empty/null | No labels for this type (manual assignment only) |
+| Object (breaking-change only) | Contains `labels` and `subtypes` for categorizing breaking changes |
+:::
+
+The `breaking-change` type can include subtypes like `api`, `behavioral`, `configuration`, `dependency`, `subscription`, `plugin`, `security`, and `other`.
+
+### Other pivot settings [pivot-other]
+
+:::{table}
+:widths: description
+
+| Setting | Description |
+| --- | --- |
+| `pivot.highlight` | Labels that set the highlight flag on changelog entries |
+| `pivot.areas` | Maps area display names to GitHub labels (e.g., `"Search": ":Search/Search"`) |
+| `pivot.products` | Maps product spec strings to labels. Product specs can include version and lifecycle (e.g., `"elasticsearch 9.2.0 ga"`) |
+:::
+
+Product precedence: CLI `--products` option > pivot label mapping > `products.default` > repository inference.
 
 ## Rules
+
+Rules control which pull requests create changelogs (`rules.create`) and which changelogs are included in bundles (`rules.bundle`). Understanding these rules is essential for managing large-scale changelog workflows with multiple products and release patterns.
+
+:::{tip}
+For complex bundling scenarios involving multiple products or deployment types, refer to the [bundle rule modes](#bundle-rule-modes) section for detailed mode explanations.
+:::
+
+The `rules` section controls two key aspects of the changelog workflow: `rules.create` determines which pull requests or issues generate changelog entries when you run `changelog add`, while `rules.bundle` filters which existing changelogs are included when creating release bundles. Both support global defaults and per-product overrides, with sophisticated matching behavior for multi-product scenarios.
 
 ### `rules.match` [rules-match]
 
@@ -197,3 +328,61 @@ rules:
     exclude_areas:
       - Internal
 ```
+
+## Bundle settings [bundle-settings]
+
+Configures directory paths, GitHub repository defaults, and named profiles for bundle operations. These settings are separate from `rules.bundle` filtering.
+
+### Basic settings [bundle-basic]
+
+:::{table}
+:widths: description
+
+| Setting | Description |
+| --- | --- |
+| `bundle.directory` | Input directory containing changelog YAML files (default: `docs/changelog`) |
+| `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`) |
+| `bundle.resolve` | Whether to copy changelog contents into bundle entries array (default: `true`) |
+| `bundle.description` | Default description template supporting `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` placeholders |
+| `bundle.repo` | Default GitHub repository name applied to profiles that don't specify their own |
+| `bundle.owner` | Default GitHub repository owner (e.g., `elastic`) |
+:::
+
+### Link filtering [bundle-links]
+
+:::{table}
+:widths: description
+
+| Setting | Description |
+| --- | --- |
+| `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. Requires `bundle.resolve: true` |
+:::
+
+When omitted entirely, no link filtering is applied. To allow links only from your own repository, include your `owner/repo` in the list.
+
+### Bundle profiles [bundle-profiles]
+
+Named profiles simplify bundle creation for different release scenarios. Profiles work with both `changelog bundle` and `changelog remove` commands.
+
+:::{table}
+:widths: description
+
+| Profile setting | Description |
+| --- | --- |
+| `products` | Product filter pattern (e.g., `"elasticsearch {version} {lifecycle}"`) where placeholders are substituted at runtime |
+| `output` | Output filename pattern (e.g., `"elasticsearch-{version}.yaml"`) |
+| `output_products` | Override the products array in bundle output, supports placeholders |
+| `description` | Profile-specific description template (overrides `bundle.description`) |
+| `repo` | Profile-specific GitHub repository name |
+| `owner` | Profile-specific GitHub owner |
+| `hide_features` | List of feature IDs to mark as hidden (commented out) in bundle output |
+| `source` | When set to `"github_release"`, fetches PR list from GitHub release instead of filtering changelogs. Mutually exclusive with `products` |
+:::
+
+Example profile usage:
+```bash
+docs-builder changelog bundle elasticsearch-release 9.2.0
+docs-builder changelog remove elasticsearch-release 9.2.0
+```
+
+When used with `changelog remove`, only the `products` field is applied—other fields like `output` and `hide_features` are ignored.
