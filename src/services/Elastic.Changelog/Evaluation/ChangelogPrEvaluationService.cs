@@ -14,6 +14,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -23,19 +24,19 @@ public class ChangelogPrEvaluationService(
 	IConfigurationContext configurationContext,
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
-	IFileSystem? fileSystem = null
+	ScopedFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrEvaluationService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
 
 	public async Task<bool> EvaluatePr(IDiagnosticsCollector collector, EvaluatePrArguments input, Cancel ctx)
 	{
-		// Body-only edit check
-		if (input.EventAction == "edited" && !input.TitleChanged)
+		// Body-only edit check: skip when neither title nor body changed
+		if (input is { EventAction: "edited", TitleChanged: false, BodyChanged: false })
 		{
-			_logger.LogInformation("Skipping: body-only edit (title unchanged)");
+			_logger.LogInformation("Skipping: edit with no title or body change");
 			return await SetOutputs(PrEvaluationResult.Skipped);
 		}
 
@@ -74,16 +75,30 @@ public class ChangelogPrEvaluationService(
 		}
 
 		// Label-based skip check
+		var skipLabels = CollectExcludeLabels(config.Rules?.Create);
 		if (PrInfoProcessor.AreAllProductsBlocked(input.PrLabels, config.Rules?.Create))
 		{
 			_logger.LogInformation("Skipping: all products blocked by label rules");
-			return await SetOutputs(PrEvaluationResult.Skipped);
+			return await SetOutputs(PrEvaluationResult.Skipped, skipLabels: skipLabels);
 		}
 
-		// Resolve title
-		var title = input.PrTitle;
+		// Resolve title from PR title only (release note text is never used as title)
+		var prTitle = input.PrTitle;
 		if (input.StripTitlePrefix)
-			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
+			prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
+
+		string? description = null;
+		if (config.Extract.ReleaseNotes && !string.IsNullOrWhiteSpace(input.PrBody))
+		{
+			var releaseNote = ReleaseNotesExtractor.FindReleaseNote(input.PrBody);
+			if (releaseNote != null)
+			{
+				description = releaseNote;
+				_logger.LogInformation("Using extracted release note as description (length: {Length} characters)", description.Length);
+			}
+		}
+
+		var title = prTitle;
 
 		if (string.IsNullOrWhiteSpace(title))
 		{
@@ -96,14 +111,42 @@ public class ChangelogPrEvaluationService(
 		if (config.LabelToType is { Count: > 0 })
 			resolvedType = PrInfoProcessor.MapLabelsToType(input.PrLabels, config.LabelToType);
 
+		// Resolve products from labels
+		string? resolvedProducts = null;
+		string? productLabelTable = null;
+		if (config.LabelToProducts is { Count: > 0 })
+		{
+			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, config.LabelToProducts);
+			if (products.Count > 0)
+			{
+				resolvedProducts = ProductArgument.FormatProductSpecs(products);
+				_logger.LogInformation("Mapped PR labels to products: {Products}", resolvedProducts);
+			}
+			else
+				productLabelTable = BuildProductLabelTable(config.LabelToProducts);
+		}
+
 		if (resolvedType == null)
 		{
 			_logger.LogInformation("No type label found on PR");
-			return await SetOutputs(PrEvaluationResult.NoLabel, title, labelTable: BuildLabelTable(config.LabelToType));
+			return await SetOutputs(
+				PrEvaluationResult.NoLabel, title,
+				resolvedDescription: description,
+				labelTable: BuildLabelTable(config.LabelToType),
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels
+			);
 		}
 
-		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, existingFile={File}", title, resolvedType, existingFilename);
-		return await SetOutputs(PrEvaluationResult.Success, title, resolvedType, existingFilename: existingFilename);
+		_logger.LogInformation("PR evaluation complete: title={Title}, type={Type}, products={Products}, existingFile={File}", title, resolvedType, resolvedProducts, existingFilename);
+		return await SetOutputs(
+			PrEvaluationResult.Success, title, resolvedType,
+			resolvedDescription: description,
+			resolvedProducts: resolvedProducts,
+			productLabelTable: productLabelTable,
+			changelogDir: changelogDir,
+			existingFilename: existingFilename
+		);
 	}
 
 	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
@@ -113,31 +156,75 @@ public class ChangelogPrEvaluationService(
 		PrEvaluationResult status,
 		string? resolvedTitle = null,
 		string? resolvedType = null,
+		string? resolvedDescription = null,
+		string? resolvedProducts = null,
 		string? labelTable = null,
-		string? existingFilename = null)
+		string? productLabelTable = null,
+		string? changelogDir = null,
+		string? existingFilename = null,
+		string? skipLabels = null)
 	{
-		// evaluate-pr outputs "proceed" (not "success") to signal the generate step should run
 		var statusString = status == PrEvaluationResult.Success
 			? ProceedStatus
 			: status.ToStringFast(true);
 
 		var shouldGenerate = status == PrEvaluationResult.Success;
-		var shouldUpload = status is PrEvaluationResult.Success or PrEvaluationResult.NoLabel or PrEvaluationResult.NoTitle;
 
 		await coreService.SetOutputAsync("status", statusString);
 		await coreService.SetOutputAsync("should-generate", shouldGenerate ? "true" : "false");
-		await coreService.SetOutputAsync("should-upload", shouldUpload ? "true" : "false");
 
 		if (resolvedTitle != null)
 			await coreService.SetOutputAsync("title", resolvedTitle);
+		if (resolvedDescription != null)
+			await coreService.SetOutputAsync("description", resolvedDescription);
 		if (resolvedType != null)
 			await coreService.SetOutputAsync("type", resolvedType);
+		if (resolvedProducts != null)
+			await coreService.SetOutputAsync("products", resolvedProducts);
 		if (labelTable != null)
 			await coreService.SetOutputAsync("label-table", labelTable);
+		if (productLabelTable != null)
+			await coreService.SetOutputAsync("product-label-table", productLabelTable);
+		if (changelogDir != null)
+			await coreService.SetOutputAsync("changelog-dir", changelogDir);
 		if (existingFilename != null)
 			await coreService.SetOutputAsync("existing-changelog-filename", existingFilename);
+		if (skipLabels != null)
+			await coreService.SetOutputAsync("skip-labels", skipLabels);
 
 		return true;
+	}
+
+	/// <summary>
+	/// Collects all exclude-mode labels from global and per-product create rules.
+	/// Returns a comma-separated string of unique labels, or null when none are configured.
+	/// </summary>
+	internal static string? CollectExcludeLabels(CreateRules? createRules)
+	{
+		if (createRules == null)
+			return null;
+
+		var labels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		if (createRules is { Mode: FieldMode.Exclude, Labels.Count: > 0 })
+		{
+			foreach (var label in createRules.Labels)
+				_ = labels.Add(label);
+		}
+
+		if (createRules.ByProduct is { Count: > 0 })
+		{
+			foreach (var (_, productRules) in createRules.ByProduct)
+			{
+				if (productRules is { Mode: FieldMode.Exclude, Labels.Count: > 0 })
+				{
+					foreach (var label in productRules.Labels)
+						_ = labels.Add(label);
+				}
+			}
+		}
+
+		return labels.Count > 0 ? string.Join(",", labels) : null;
 	}
 
 	/// <summary>
@@ -150,7 +237,7 @@ public class ChangelogPrEvaluationService(
 			return null;
 
 		var prFilename = $"{prNumber}.yaml";
-		if (_fileSystem.File.Exists(_fileSystem.Path.Combine(changelogDir, prFilename)))
+		if (_fileSystem.File.Exists(_fileSystem.Path.Join(changelogDir, prFilename)))
 			return prFilename;
 
 		var prString = prNumber.ToString(CultureInfo.InvariantCulture);
@@ -169,14 +256,20 @@ public class ChangelogPrEvaluationService(
 		content.Contains($"- \"{prNumber}\"", StringComparison.Ordinal) ||
 		content.Contains($"- '{prNumber}'", StringComparison.Ordinal);
 
-	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType)
+	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType) =>
+		BuildMappingTable(labelToType, "Label", "Type");
+
+	internal static string BuildProductLabelTable(IReadOnlyDictionary<string, string>? labelToProducts) =>
+		BuildMappingTable(labelToProducts, "Label", "Product");
+
+	internal static string BuildMappingTable(IReadOnlyDictionary<string, string>? mapping, string keyHeader, string valueHeader)
 	{
-		if (labelToType is not { Count: > 0 })
+		if (mapping is not { Count: > 0 })
 			return "";
 
-		var lines = new List<string> { "| Label | Type |", "| --- | --- |" };
-		foreach (var (label, type) in labelToType)
-			lines.Add($"| `{label}` | {type} |");
+		var lines = new List<string> { $"| {keyHeader} | {valueHeader} |", "| --- | --- |" };
+		foreach (var (key, value) in mapping)
+			lines.Add($"| `{key}` | {value} |");
 
 		return string.Join("\n", lines);
 	}

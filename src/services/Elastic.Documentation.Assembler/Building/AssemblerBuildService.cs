@@ -15,6 +15,7 @@ using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.Building;
 
@@ -36,7 +37,8 @@ public class AssemblerBuildService(
 		bool? showHints,
 		IReadOnlySet<Exporter>? exporters,
 		bool? assumeBuild,
-		FileSystem fs,
+		ScopedFileSystem readFs,
+		ScopedFileSystem writeFs,
 		Cancel ctx
 	)
 	{
@@ -56,7 +58,7 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Creating assemble context");
 
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, readFs, writeFs, null, null);
 
 		// --assume-build is not allowed on CI: it could serve stale content from a previous/cached build
 		// CI builds must always produce fresh, reproducible output
@@ -66,8 +68,8 @@ public class AssemblerBuildService(
 		// Early return if --assume-build is specified and output already exists
 		if (assumeBuild.GetValueOrDefault(false))
 		{
-			var indexHtmlPath = Path.Combine(assembleContext.OutputDirectory.FullName, "docs", "index.html");
-			if (assembleContext.OutputDirectory.Exists && fs.File.Exists(indexHtmlPath))
+			var indexHtmlPath = Path.Join(assembleContext.OutputDirectory.FullName, "docs", "index.html");
+			if (assembleContext.OutputDirectory.Exists && readFs.File.Exists(indexHtmlPath))
 			{
 				_logger.LogInformation("Assuming build already exists (--assume-build). Found index.html at {Path}. Skipping build.", indexHtmlPath);
 				return true;
@@ -100,7 +102,7 @@ public class AssemblerBuildService(
 		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(await fs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
+		var siteNavigationFile = SiteNavigationFile.Deserialize(await readFs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
 
@@ -121,14 +123,22 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.LinkMetadata))
 			await cloner.WriteLinkRegistrySnapshot(checkoutResult.LinkRegistrySnapshot, ctx);
 
-		var redirectsPath = Path.Combine(assembleContext.OutputDirectory.FullName, "redirects.json");
-		if (File.Exists(redirectsPath))
+		var redirectsPath = Path.Join(assembleContext.OutputDirectory.FullName, "redirects.json");
+		if (writeFs.File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
 		if (exporters.Contains(Exporter.Html))
 		{
-			var sitemapBuilder = new SitemapBuilder(navigation.NavigationItems, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
-			sitemapBuilder.Generate();
+			// Build-time sitemap uses current date as placeholder for backwards compatibility.
+			// Production sitemap with correct content_last_updated dates is generated via
+			// `assembler sitemap` after ES indexing, which overwrites this file.
+			var urls = navigation.NavigationItems
+				.SelectMany(SitemapNavigationHelper.Flatten)
+				.Select(n => n.Url)
+				.Distinct();
+			var now = DateTimeOffset.UtcNow;
+			var entries = urls.ToDictionary(u => u, _ => now);
+			SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
 		}
 
 		if (exporters.Contains(Exporter.LLMText))
@@ -148,7 +158,7 @@ public class AssemblerBuildService(
 	private static async Task EnhanceLlmsTxtFile(AssembleContext context, SiteNavigation navigation, LlmsNavigationEnhancer enhancer, Cancel ctx)
 	{
 		var pathPrefixedOutputFolder = context.OutputWithPathPrefixDirectory;
-		var llmsTxtPath = context.ReadFileSystem.Path.Combine(pathPrefixedOutputFolder.FullName, "llms.txt");
+		var llmsTxtPath = context.ReadFileSystem.Path.Join(pathPrefixedOutputFolder.FullName, "llms.txt");
 
 		if (!context.ReadFileSystem.File.Exists(llmsTxtPath))
 			return; // No llms.txt file to enhance

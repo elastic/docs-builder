@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Nullean.ScopedFileSystem;
 using YamlDotNet.Serialization;
 using static Elastic.Documentation.Configuration.SymlinkValidator;
 
@@ -96,9 +97,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
+	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, IFileInfo docsetPath, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= docsetPath.FileSystem;
+		fileSystem ??= FileSystemFactory.ScopeSourceDirectory(docsetPath.FileSystem, docsetPath.Directory!.FullName);
 		// Validate that the docset.yml is not a symlink (security: prevents path traversal attacks)
 		EnsureNotSymlink(docsetPath);
 		var yaml = fileSystem.File.ReadAllText(docsetPath.FullName);
@@ -107,17 +108,26 @@ public class DocumentationSetFile : TableOfContentsFile
 	}
 
 	/// <summary>
+	/// File paths excluded from navigation via folder-level <c>exclude</c> in toc.yml.
+	/// These files exist on disk but should not be processed by the builder.
+	/// </summary>
+	[YamlIgnore]
+	public HashSet<string> FolderExcludedFiles { get; private set; } = [];
+
+	/// <summary>
 	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
 	/// </summary>
-	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, IFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
+	public static DocumentationSetFile LoadAndResolve(IDiagnosticsCollector collector, string yaml, IDirectoryInfo sourceDirectory, ScopedFileSystem? fileSystem = null, HashSet<HintType>? noSuppress = null)
 	{
-		fileSystem ??= sourceDirectory.FileSystem;
+		fileSystem ??= FileSystemFactory.ScopeSourceDirectory(sourceDirectory.FileSystem, sourceDirectory.FullName);
 		var docSet = Deserialize(yaml);
-		var docsetPath = fileSystem.Path.Combine(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
+		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(collector, docSet.TableOfContents, sourceDirectory, fileSystem, parentPath: "", containerPath: "", context: docsetPath, docSet.SuppressDiagnostics);
+		// Collect excluded paths so they can be skipped during file processing (not just navigation)
+		docSet.FolderExcludedFiles = CollectFolderExcludedFiles(docSet.TableOfContents);
 		return docSet;
 	}
 
@@ -198,8 +208,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			fullTocPath = string.IsNullOrEmpty(parentPath) ? tocRef.PathRelativeToDocumentationSet : $"{parentPath}/{tocRef.PathRelativeToDocumentationSet}";
 		}
 
-		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Combine(baseDirectory.FullName, fullTocPath));
-		var tocFilePath = fileSystem.Path.Combine(tocDirectory.FullName, "toc.yml");
+		var tocDirectory = fileSystem.DirectoryInfo.New(fileSystem.Path.Join(baseDirectory.FullName, fullTocPath));
+		var tocFilePath = fileSystem.Path.Join(tocDirectory.FullName, "toc.yml");
 		var tocYmlExists = fileSystem.File.Exists(tocFilePath);
 
 		// Validate: TOC should not have children defined in parent YAML
@@ -478,23 +488,34 @@ public class DocumentationSetFile : TableOfContentsFile
 			? fullPath
 			: fullPath.Substring(containerPath.Length + 1);
 
+		// Parse and validate sort order
+		if (!SortOrderExtensions.TryParse(folderRef.Sort, out var sortOrder) && folderRef.Sort is not null)
+			collector.EmitError(
+				context,
+				$"Unknown sort order '{folderRef.Sort}' for folder '{folderRef.PathRelativeToDocumentationSet}'."
+				+ " Valid values are: asc, ascending, desc, descending."
+			);
+
 		// If children are explicitly defined, resolve them
 		if (folderRef.Children.Count > 0)
 		{
 			// For children of folders, the container remains the same as the folder's container
 			var resolvedChildren = ResolveTableOfContents(collector, folderRef.Children, baseDirectory, fileSystem, fullPath, containerPath, context, suppressDiagnostics);
-			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context);
+			// Exclude is intentionally not passed through — it only applies to auto-discovery
+			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.Sort);
 		}
 
 		// No children defined - auto-discover .md files in the folder
-		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context);
-		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context);
+		// null preserves the default alphabetical sorting; non-null enables natural sort for version numbers
+		var explicitSortOrder = folderRef.Sort is not null ? sortOrder : (SortOrder?)null;
+		var autoDiscoveredChildren = AutoDiscoverFolderFiles(collector, fullPath, containerPath, baseDirectory, fileSystem, context, explicitSortOrder, folderRef.Exclude);
+		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort, folderRef.Exclude);
 	}
 
 	/// <summary>
 	/// Auto-discovers .md files in a folder directory and creates FileRef items for them.
-	/// If index.md exists, it's placed first. Otherwise, files are sorted alphabetically.
-	/// Files starting with '_' or '.' are excluded.
+	/// If index.md exists, it's placed first. Other files are sorted according to the specified sort order.
+	/// Files starting with '_' or '.' are excluded, as well as any files listed in <paramref name="exclude"/>.
 	/// </summary>
 	private static TableOfContents AutoDiscoverFolderFiles(
 		IDiagnosticsCollector collector,
@@ -502,20 +523,25 @@ public class DocumentationSetFile : TableOfContentsFile
 		string containerPath,
 		IDirectoryInfo baseDirectory,
 		IFileSystem fileSystem,
-		string context)
+		string context,
+		SortOrder? sortOrder,
+		IReadOnlyCollection<string>? exclude)
 	{
-		var directoryPath = fileSystem.Path.Combine(baseDirectory.FullName, folderPath);
+		var directoryPath = fileSystem.Path.Join(baseDirectory.FullName, folderPath);
 		var directory = fileSystem.DirectoryInfo.New(directoryPath);
 
 		if (!directory.Exists)
 			return [];
 
 		// Find all .md files in the directory (not recursive)
+		var excludeSet = exclude is { Count: > 0 }
+			? new HashSet<string>(exclude, StringComparer.OrdinalIgnoreCase)
+			: null;
 		var mdFiles = fileSystem.Directory
 			.GetFiles(directoryPath, "*.md")
 			.Select(f => fileSystem.FileInfo.New(f))
 			.Where(f => !f.Name.StartsWith('_') && !f.Name.StartsWith('.'))
-			.OrderBy(f => f.Name)
+			.Where(f => excludeSet is null || !excludeSet.Contains(f.Name))
 			.ToList();
 
 		if (mdFiles.Count == 0)
@@ -523,21 +549,25 @@ public class DocumentationSetFile : TableOfContentsFile
 
 		// Separate index.md from other files
 		var indexFile = mdFiles.FirstOrDefault(f => f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
-		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)).ToList();
+		var otherFiles = mdFiles.Where(f => !f.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
+
+		// When sort is explicitly set (non-null), use natural sort order (handles version numbers correctly: 3_2 < 3_10)
+		// When null, preserve the original alphabetical sorting behavior
+		var sortedFiles = sortOrder switch
+		{
+			SortOrder.Descending => otherFiles.OrderByDescending(f => f.Name, NaturalStringComparer.Instance).ToList(),
+			SortOrder.Ascending => otherFiles.OrderBy(f => f.Name, NaturalStringComparer.Instance).ToList(),
+			_ => otherFiles.OrderBy(f => f.Name).ToList()
+		};
 
 		var children = new TableOfContents();
 
 		// Add index.md first if it exists
 		if (indexFile != null)
-		{
-			var indexRef = indexFile.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase)
-				? new IndexFileRef(indexFile.Name, indexFile.Name, false, [], context)
-				: new FileRef(indexFile.Name, indexFile.Name, false, [], context);
-			children.Add(indexRef);
-		}
+			children.Add(new IndexFileRef(indexFile.Name, indexFile.Name, false, [], context));
 
-		// Add other files sorted alphabetically
-		foreach (var file in otherFiles)
+		// Add other files sorted according to the specified order
+		foreach (var file in sortedFiles)
 		{
 			var fileRef = new FileRef(file.Name, file.Name, false, [], context);
 			children.Add(fileRef);
@@ -546,6 +576,39 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Resolve the children with the folder path as parent to get correct full paths
 		// Auto-discovered items are in the same container as the folder
 		return ResolveTableOfContents(collector, children, baseDirectory, fileSystem, folderPath, containerPath, context);
+	}
+
+	/// <summary>
+	/// Traverses the resolved TOC and collects relative paths of files excluded via folder-level <c>exclude</c>.
+	/// </summary>
+	private static HashSet<string> CollectFolderExcludedFiles(IReadOnlyCollection<ITableOfContentsItem> items)
+	{
+		var excluded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		CollectExcluded(items, excluded);
+		return excluded;
+
+		static void CollectExcluded(IReadOnlyCollection<ITableOfContentsItem> items, HashSet<string> result)
+		{
+			foreach (var item in items)
+			{
+				if (item is FolderRef { Exclude: { Count: > 0 } exclude } folder)
+				{
+					foreach (var fileName in exclude)
+						_ = result.Add($"{folder.PathRelativeToDocumentationSet}/{fileName}");
+				}
+
+				// Recurse into children
+				var children = item switch
+				{
+					FolderRef f => f.Children,
+					FileRef f => f.Children,
+					IsolatedTableOfContentsRef t => t.Children,
+					_ => null
+				};
+				if (children is { Count: > 0 })
+					CollectExcluded(children, result);
+			}
+		}
 	}
 
 	/// <summary>

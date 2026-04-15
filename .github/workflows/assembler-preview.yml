@@ -29,7 +29,7 @@ jobs:
       - name: Get PR details
         if: github.event_name == 'workflow_dispatch'
         id: pr-details
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ inputs.pr_number }}
         with:
@@ -62,7 +62,7 @@ jobs:
           persist-credentials: false
 
       - name: Create Deployment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: deployment
         env:
           PR_SHA: ${{ steps.pr-details.outputs.result || github.event.pull_request.head.sha }}
@@ -115,7 +115,7 @@ jobs:
 
       - name: Update Deployment Status
         if: always() && steps.deployment.outputs.result
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({

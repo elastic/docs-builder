@@ -2,13 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -19,10 +20,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config without pivot - should use defaults
 		// language=yaml
 		var configContent =
@@ -59,10 +60,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with pivot.types - should derive available types from keys
 		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
@@ -109,10 +110,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config without lifecycles - should use defaults
 		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
@@ -153,10 +154,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with pivot.areas
 		// Must include required types: feature, bug-fix, breaking-change
 		// language=yaml
@@ -191,9 +192,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			// Should have inverted label mappings
 			config.LabelToAreas.Should().NotBeNull();
 			config.LabelToAreas.Should().ContainKey(":Search/Search");
-			config.LabelToAreas[":Search/Search"].Should().Be("Search");
+			config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 			config.LabelToAreas.Should().ContainKey(":Security/Security");
-			config.LabelToAreas[":Security/Security"].Should().Be("Security");
+			config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 		}
 		finally
 		{
@@ -206,10 +207,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with pivot.types having labels
 		// language=yaml
 		var configContent =
@@ -255,10 +256,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with invalid type in pivot.types
 		// language=yaml
 		var configContent =
@@ -299,10 +300,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config missing required type 'breaking-change'
 		// language=yaml
 		var configContent =
@@ -340,10 +341,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with subtypes on a non-breaking-change type (feature)
 		// language=yaml
 		var configContent =
@@ -386,10 +387,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with subtypes on breaking-change type (valid)
 		// language=yaml
 		var configContent =
@@ -430,10 +431,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// Config with invalid subtype value
 		// language=yaml
 		var configContent =
@@ -525,9 +526,9 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsString_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_types as comma-separated string
+		// Arrange - rules.publish is deprecated and no longer used; verify warning is emitted and Publish is null
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -542,18 +543,18 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Assert
 		config.Should().NotBeNull();
-		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Message.Contains("rules.publish is deprecated") &&
+			d.Message.Contains("no longer used by the changelog render command"));
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeTypes_AsList_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_types as YAML list
+		// Arrange - rules.publish as YAML list is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -572,16 +573,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.TypesMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsString_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_areas as comma-separated string
+		// Arrange - rules.publish with areas is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -598,16 +597,14 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
-		config.Rules.Publish.Blocker.AreasMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
-	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_ParsesCorrectly()
+	public async Task LoadChangelogConfiguration_PublishExcludeAreas_AsList_IgnoredAndWarningEmitted()
 	{
-		// Arrange - rules.publish.exclude_areas as YAML list
+		// Arrange - rules.publish as YAML list is deprecated
 		var config = await LoadConfig(
 			"""
 			pivot:
@@ -626,10 +623,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Rules.Should().NotBeNull();
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal", "Experimental"]);
-		config.Rules.Publish.Blocker.AreasMode.Should().Be(FieldMode.Exclude);
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
+		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
 	[Fact]
@@ -701,12 +696,12 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		// Both labels from the list should map to "Search"
 		config.LabelToAreas.Should().NotBeNull();
 		config.LabelToAreas.Should().ContainKey(":Search/Search");
-		config.LabelToAreas[":Search/Search"].Should().Be("Search");
+		config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 		config.LabelToAreas.Should().ContainKey(":Search/Ranking");
-		config.LabelToAreas[":Search/Ranking"].Should().Be("Search");
+		config.LabelToAreas[":Search/Ranking"].Should().ContainSingle().Which.Should().Be("Search");
 		// String form should still work
 		config.LabelToAreas.Should().ContainKey(":Security/Security");
-		config.LabelToAreas[":Security/Security"].Should().Be("Security");
+		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 	}
 
 	[Fact]
@@ -852,11 +847,8 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Rules.Create.Labels.Should().BeEquivalentTo([">non-issue", ">test"]);
 		config.Rules.Create.Mode.Should().Be(FieldMode.Exclude);
 
-		// publish.exclude_types as string, publish.exclude_areas as list
-		config.Rules.Publish.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Should().NotBeNull();
-		config.Rules.Publish.Blocker.Types.Should().BeEquivalentTo(["deprecation", "known-issue"]);
-		config.Rules.Publish.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
+		// publish.exclude_types as string, publish.exclude_areas as list are deprecated
+		config.Rules.Publish.Should().BeNull();  // rules.publish is retired
 
 		// highlight as list
 		config.HighlightLabels.Should().BeEquivalentTo([">highlight"]);
@@ -869,11 +861,11 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 
 		// Areas: string for Search, list for Security
 		config.LabelToAreas.Should().ContainKey(":Search/Search");
-		config.LabelToAreas[":Search/Search"].Should().Be("Search");
+		config.LabelToAreas[":Search/Search"].Should().ContainSingle().Which.Should().Be("Search");
 		config.LabelToAreas.Should().ContainKey(":Security/Security");
-		config.LabelToAreas[":Security/Security"].Should().Be("Security");
+		config.LabelToAreas[":Security/Security"].Should().ContainSingle().Which.Should().Be("Security");
 		config.LabelToAreas.Should().ContainKey(":Security/Auth");
-		config.LabelToAreas[":Security/Auth"].Should().Be("Security");
+		config.LabelToAreas[":Security/Auth"].Should().ContainSingle().Which.Should().Be("Security");
 	}
 
 	/// <summary>
@@ -883,10 +875,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	private async Task<ChangelogConfiguration?> LoadConfig(string yamlContent)
 	{
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		await FileSystem.File.WriteAllTextAsync(configPath, yamlContent, TestContext.Current.CancellationToken);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
@@ -911,10 +903,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		await FileSystem.File.WriteAllTextAsync(configPath,
 			"""
@@ -952,10 +944,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		await FileSystem.File.WriteAllTextAsync(configPath,
 			"""
@@ -988,7 +980,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange – no changelog.yml on disk; simulates running from a directory without a config
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(configDir);
 
 		var originalDir = FileSystem.Directory.GetCurrentDirectory();
@@ -1014,10 +1006,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -1062,10 +1054,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -1108,10 +1100,10 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Combine(configDir, "docs");
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
 		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Combine(docsDir, "changelog.yml");
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
 		var configContent =
 			"""
@@ -1149,7 +1141,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1178,11 +1170,35 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
+	public async Task LoadChangelogConfiguration_WithRulesBundle_MatchProductsConjunction_LoadsCorrectly()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    exclude_products:
+			      - elasticsearch
+			      - kibana
+			    match_products: conjunction
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config!.Rules!.Bundle!.MatchProducts.Should().Be(MatchMode.Conjunction);
+	}
+
+	[Fact]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_BothExcludeAndInclude_ReturnsError()
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1253,7 +1269,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1278,7 +1294,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1303,7 +1319,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	{
 		// Arrange
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configPath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "changelog.yml");
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		// language=yaml
 		var configContent =
@@ -1337,7 +1353,260 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		bundle.Blocker.Areas.Should().BeEquivalentTo(["Internal"]);
 		bundle.Blocker.MatchAreas.Should().Be(MatchMode.Any);
 		bundle.ByProduct.Should().ContainKey("cloud-serverless");
-		bundle.ByProduct!["cloud-serverless"].Areas.Should().BeEquivalentTo(["Search", "Monitoring"]);
-		bundle.ByProduct["cloud-serverless"].AreasMode.Should().Be(FieldMode.Include);
+		bundle.ByProduct!["cloud-serverless"].Blocker.Should().NotBeNull();
+		bundle.ByProduct["cloud-serverless"].Blocker!.Areas.Should().BeEquivalentTo(["Search", "Monitoring"]);
+		bundle.ByProduct["cloud-serverless"].Blocker!.AreasMode.Should().Be(FieldMode.Include);
+	}
+
+	// -----------------------------------------------------------------------
+	// extract section: strip_title_prefix
+	// -----------------------------------------------------------------------
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_True_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  strip_title_prefix: true
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_False_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  strip_title_prefix: false
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_Missing_DefaultsFalse()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			lifecycles:
+			  - ga
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.StripTitlePrefix.Should().BeFalse("default is false");
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_ExtractStripTitlePrefix_WithOtherExtractSettings_LoadsCorrectly()
+	{
+		// Arrange
+		var config = await LoadConfig(
+			"""
+			extract:
+			  release_notes: false
+			  issues: true
+			  strip_title_prefix: true
+			""");
+
+		// Act & Assert
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Extract.Should().NotBeNull();
+		config.Extract.ReleaseNotes.Should().BeFalse();
+		config.Extract.Issues.Should().BeTrue();
+		config.Extract.StripTitlePrefix.Should().BeTrue();
+	}
+
+	// -----------------------------------------------------------------------
+	// Per-product product filtering tests
+	// -----------------------------------------------------------------------
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_LoadsCorrectly()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products: elasticsearch
+			    products:
+			      security:
+			        include_products:
+			          - security
+			          - kibana
+			        match_products: any
+			      cloud-hosted:
+			        exclude_products:
+			          - kibana
+			        match_products: all
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		var bundle = config!.Rules!.Bundle;
+		bundle.Should().NotBeNull();
+		bundle!.IncludeProducts.Should().BeEquivalentTo(["elasticsearch"]);
+
+		bundle.ByProduct.Should().ContainKey("security");
+		var securityRule = bundle.ByProduct!["security"];
+		securityRule.IncludeProducts.Should().BeEquivalentTo(["security", "kibana"]);
+		securityRule.MatchProducts.Should().Be(MatchMode.Any);
+		securityRule.ExcludeProducts.Should().BeNull();
+
+		bundle.ByProduct.Should().ContainKey("cloud-hosted");
+		var cloudHostedRule = bundle.ByProduct["cloud-hosted"];
+		cloudHostedRule.ExcludeProducts.Should().BeEquivalentTo(["kibana"]);
+		cloudHostedRule.MatchProducts.Should().Be(MatchMode.All);
+		cloudHostedRule.IncludeProducts.Should().BeNull();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_MutualExclusivity_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products:
+			      security:
+			        include_products:
+			          - security
+			        exclude_products:
+			          - kibana
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cannot have both 'exclude_products' and 'include_products'"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_Mode3_DoesNotEmitGlobalSubsetWarningAsync()
+	{
+		// Arrange — Mode 3 ignores global rules.bundle product lists; per-product lists need not align with globals.
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    include_products:
+			      - elasticsearch
+			      - kibana
+			    products:
+			      security:
+			        include_products:
+			          - security
+			          - elasticsearch
+			          - kibana
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		config!.Rules!.Bundle!.ByProduct.Should().ContainKey("security");
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("not in global include_products", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_ProductOnlyBlock_LoadsCorrectly()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products:
+			      security:
+			        include_products:
+			          - security
+			          - kibana
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().NotBeNull();
+		var bundle = config!.Rules!.Bundle;
+		bundle.Should().NotBeNull();
+		bundle!.ByProduct.Should().ContainKey("security");
+		var securityRule = bundle.ByProduct!["security"];
+		securityRule.IncludeProducts.Should().BeEquivalentTo(["security", "kibana"]);
+		securityRule.Blocker.Should().BeNull(); // No type/area rules
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_WithPerProductProductFiltering_InvalidProductId_ReturnsError()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		var configContent =
+			"""
+			rules:
+			  bundle:
+			    products:
+			      security:
+			        include_products:
+			          - invalid-product
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// Act
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		// Assert
+		config.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'invalid-product' is not in the list of available products"));
 	}
 }

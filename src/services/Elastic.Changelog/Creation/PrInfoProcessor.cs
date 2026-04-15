@@ -102,28 +102,19 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	{
 		var derived = new DerivedPrFields();
 
-		// Extract release notes from PR body if requested
+		// Extract release note text from PR body for description if requested
 		if (input.ExtractReleaseNotes ?? false)
 		{
-			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(prInfo.Body);
-
-			// Use short release note as title if title was not explicitly provided
-			if (releaseNoteTitle != null && string.IsNullOrWhiteSpace(input.Title))
+			var releaseNote = ReleaseNotesExtractor.FindReleaseNote(prInfo.Body);
+			if (releaseNote != null && string.IsNullOrWhiteSpace(input.Description))
 			{
-				derived.Title = releaseNoteTitle;
-				logger.LogInformation("Using extracted release note as title: {Title}", derived.Title);
-			}
-
-			// Use long release note as description if description was not explicitly provided
-			if (releaseNoteDescription != null && string.IsNullOrWhiteSpace(input.Description))
-			{
-				derived.Description = releaseNoteDescription;
-				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNoteDescription.Length);
+				derived.Description = releaseNote;
+				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNote.Length);
 			}
 		}
 
-		// Use PR title if title was not explicitly provided and not already derived
-		if (string.IsNullOrWhiteSpace(input.Title) && derived.Title == null)
+		// Use PR title if title was not explicitly provided
+		if (string.IsNullOrWhiteSpace(input.Title))
 		{
 			if (string.IsNullOrWhiteSpace(prInfo.Title))
 			{
@@ -133,7 +124,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			var prTitle = prInfo.Title;
 			// Strip prefix if requested
-			if (input.StripTitlePrefix)
+			if (input.StripTitlePrefix == true)
 				prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
 			derived.Title = prTitle;
 			logger.LogInformation("Using PR title: {Title}", derived.Title);
@@ -269,11 +260,14 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 		if (mode == FieldMode.Exclude)
 		{
-			// Exclude mode: skip if any/all labels match
+			// Exclude mode: skip if any/all/conjunction labels match
 			var matchingLabel = match switch
 			{
 				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
 					? string.Join(", ", prLabels)
+					: null,
+				MatchMode.Conjunction => rules.Labels.All(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
+					? string.Join(", ", rules.Labels)
 					: null,
 				_ => rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
 			};
@@ -290,6 +284,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			var hasMatch = match switch
 			{
 				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
+				MatchMode.Conjunction => rules.Labels.All(l => prLabels.Contains(l, StringComparer.OrdinalIgnoreCase)),
 				_ => prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
 			};
 
@@ -375,9 +370,12 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		if (rules.Labels is not { Count: > 0 })
 			return false;
 
-		var labelsMatch = rules.Match == MatchMode.All
-			? prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
-			: prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
+		var labelsMatch = rules.Match switch
+		{
+			MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)),
+			MatchMode.Conjunction => rules.Labels.All(l => prLabels.Contains(l, StringComparer.OrdinalIgnoreCase)),
+			_ => prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+		};
 
 		return rules.Mode == FieldMode.Exclude ? labelsMatch : !labelsMatch;
 	}
@@ -386,15 +384,17 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
 		.FirstOrDefault(mappedType => mappedType != null);
 
-	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
+	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
-		var areaList = labels
-			.Where(label => labelToAreasMapping.ContainsKey(label))
-			.SelectMany(label => labelToAreasMapping[label]
-				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-		foreach (var area in areaList)
-			_ = areas.Add(area);
+		foreach (var label in labels)
+		{
+			if (!labelToAreasMapping.TryGetValue(label, out var mappedAreas))
+				continue;
+
+			foreach (var area in mappedAreas)
+				_ = areas.Add(area);
+		}
 		return areas.ToList();
 	}
 

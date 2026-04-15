@@ -51,7 +51,7 @@ internal sealed class CodexCommands(
 		Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 
 		// Load codex configuration
 		var configPath = fs.Path.GetFullPath(config);
@@ -67,7 +67,7 @@ internal sealed class CodexCommands(
 
 		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
 		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
 			return 1;
 		}
 
@@ -125,7 +125,7 @@ internal sealed class CodexCommands(
 		Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);
@@ -140,7 +140,7 @@ internal sealed class CodexCommands(
 
 		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
 		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
 			return 1;
 		}
 
@@ -173,7 +173,7 @@ internal sealed class CodexCommands(
 		Cancel ctx = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);
@@ -188,7 +188,7 @@ internal sealed class CodexCommands(
 
 		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
 		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
 			return 1;
 		}
 
@@ -226,8 +226,8 @@ internal sealed class CodexCommands(
 		string? path = null,
 		Cancel ctx = default)
 	{
-		var fs = new FileSystem();
-		var servePath = path ?? fs.Path.Combine(
+		var fs = FileSystemFactory.RealRead;
+		var servePath = path ?? fs.Path.Join(
 			Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
 		var host = new StaticWebHost(port, servePath);

@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -21,15 +22,15 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public static string Version { get; } = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>()
 		.FirstOrDefault()?.InformationalVersion ?? "0.0.0";
 
-	public IFileSystem ReadFileSystem { get; }
-	public IFileSystem WriteFileSystem { get; }
+	public ScopedFileSystem ReadFileSystem { get; }
+	public ScopedFileSystem WriteFileSystem { get; }
 	public IReadOnlySet<Exporter> AvailableExporters { get; }
 
 	public IDirectoryInfo? DocumentationCheckoutDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 
-	public ConfigurationFile Configuration { get; }
+	public ConfigurationFile Configuration { get; private set; }
 
 	public DocumentationSetFile ConfigurationYaml { get; set; }
 
@@ -72,7 +73,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		IConfigurationContext configurationContext
 	)
 		: this(collector, fileSystem, fileSystem, configurationContext, ExportOptions.Default, null, null)
@@ -81,8 +82,8 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 	public BuildContext(
 		IDiagnosticsCollector collector,
-		IFileSystem readFileSystem,
-		IFileSystem writeFileSystem,
+		ScopedFileSystem readFileSystem,
+		ScopedFileSystem writeFileSystem,
 		IConfigurationContext configurationContext,
 		IReadOnlySet<Exporter> availableExporters,
 		string? source = null,
@@ -103,15 +104,15 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		var rootFolder = !string.IsNullOrWhiteSpace(source)
 			? ReadFileSystem.DirectoryInfo.New(source)
-			: ReadFileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName));
+			: ReadFileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName));
 
 		(DocumentationSourceDirectory, ConfigurationPath) = Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
 
-		DocumentationCheckoutDirectory = Paths.DetermineSourceDirectoryRoot(DocumentationSourceDirectory);
+		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory, ceiling: rootFolder);
 
 		OutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
-			: WriteFileSystem.DirectoryInfo.New(Path.Combine(rootFolder.FullName, Path.Combine(".artifacts", "docs", "html")));
+			: WriteFileSystem.DirectoryInfo.New(Path.Join(rootFolder.FullName, Path.Join(".artifacts", "docs", "html")));
 
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
@@ -134,4 +135,14 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		};
 	}
 
+	/// <summary>Re-reads docset.yml from disk and rebuilds the configuration. Used by the serve command on file changes.</summary>
+	public void ReloadConfiguration()
+	{
+		var previousFeatures = Configuration.Features;
+		ConfigurationYaml = ConfigurationPath.Exists
+			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem)
+			: new DocumentationSetFile();
+		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
+		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
+	}
 }

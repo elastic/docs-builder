@@ -4,11 +4,11 @@
 
 using System.Collections.Frozen;
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -37,6 +37,7 @@ public class VersionInferenceTests
 		{ nameof(ProductApplicability.EdotDotnet), "edot-dotnet" },
 		{ nameof(ProductApplicability.EdotJava), "edot-java" },
 		{ nameof(ProductApplicability.EdotNode), "edot-node" },
+		{ nameof(ProductApplicability.EdotBrowser), "edot-browser" },
 		{ nameof(ProductApplicability.EdotPhp), "edot-php" },
 		{ nameof(ProductApplicability.EdotPython), "edot-python" },
 		{ nameof(ProductApplicability.EdotCfAws), "edot-cf-aws" },
@@ -88,6 +89,7 @@ public class VersionInferenceTests
 			{ "edot-dotnet", VersioningSystemId.EdotDotnet },
 			{ "edot-java", VersioningSystemId.EdotJava },
 			{ "edot-node", VersioningSystemId.EdotNode },
+			{ "edot-browser", VersioningSystemId.EdotBrowser },
 			{ "edot-php", VersioningSystemId.EdotPhp },
 			{ "edot-python", VersioningSystemId.EdotPython },
 			{ "edot-cf-aws", VersioningSystemId.EdotCfAws },
@@ -109,6 +111,7 @@ public class VersionInferenceTests
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 	}
@@ -170,6 +173,9 @@ public class VersionInferenceTests
 				break;
 			case nameof(ProductApplicability.EdotNode):
 				applicability.EdotNode = value;
+				break;
+			case nameof(ProductApplicability.EdotBrowser):
+				applicability.EdotBrowser = value;
 				break;
 			case nameof(ProductApplicability.EdotPhp):
 				applicability.EdotPhp = value;
@@ -462,13 +468,11 @@ public class VersionInferenceTests
 	}
 
 	[Fact(DisplayName = "VersionlessSentinel constant matches versions.yml value")]
-	public void VersionlessSentinelMatchesConfigValue()
-	{
+	public void VersionlessSentinelMatchesConfigValue() =>
 		// This test ensures the sentinel value matches what's used in config/versions.yml
 		// If this test fails, update VersioningSystem.VersionlessSentinel to match versions.yml
 		VersioningSystem.VersionlessSentinel.Should().Be(99999,
 			"VersionlessSentinel should match the value used in config/versions.yml for 'all' versioning system");
-	}
 
 	/// <summary>
 	/// These are the versioning system IDs that use the 'all' alias in versions.yml,
@@ -490,7 +494,7 @@ public class VersionInferenceTests
 	{
 		// Load the actual versions.yml configuration
 		var fileSystem = new FileSystem();
-		var versionsPath = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
+		var versionsPath = fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);
@@ -522,7 +526,7 @@ public class VersionInferenceTests
 	{
 		// Load the actual versions.yml configuration
 		var fileSystem = new FileSystem();
-		var versionsPath = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
+		var versionsPath = fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "versions.yml");
 		File.Exists(versionsPath).Should().BeTrue($"Expected versions file to exist at {versionsPath}");
 
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), fileSystem);

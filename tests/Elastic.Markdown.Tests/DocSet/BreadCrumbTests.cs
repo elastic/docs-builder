@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -20,7 +20,7 @@ public class BreadCrumbTests(ITestOutputHelper output) : NavigationTestsBase(out
 		allKeys.Should().Contain("docs-builder://testing/nested/index.md");
 		allKeys.Should().Contain("docs-builder://testing/nest-under-index/index.md");
 
-		var lookup = Path.Combine("testing", "nested", "index.md");
+		var lookup = Path.Join("testing", "nested", "index.md");
 		var doc = Generator.DocumentationSet.MarkdownFiles
 			.FirstOrDefault(f => f.SourceFile.FullName.EndsWith(lookup, StringComparison.OrdinalIgnoreCase));
 

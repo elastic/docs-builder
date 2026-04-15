@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
@@ -27,17 +28,6 @@ public static partial class ReleaseNotesSerialization
 	private static readonly IDeserializer YamlDeserializer =
 		new StaticDeserializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.Build();
-
-	/// <summary>
-	/// Used for loading minimal changelog configuration (publish blocker).
-	/// Includes LenientStringListConverter so List&lt;string&gt; fields accept both comma-separated strings and YAML lists.
-	/// </summary>
-	private static readonly IDeserializer IgnoreUnmatchedDeserializer =
-		new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.WithTypeConverter(new LenientStringListConverter())
-			.IgnoreUnmatchedProperties()
 			.Build();
 
 	private static readonly ISerializer YamlSerializer =
@@ -146,6 +136,8 @@ public static partial class ReleaseNotesSerialization
 	private static Bundle ToBundle(BundleDto dto) => new()
 	{
 		Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
+		Description = dto.Description,
+		ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
 		HideFeatures = dto.HideFeatures ?? [],
 		Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? []
 	};
@@ -222,6 +214,11 @@ public static partial class ReleaseNotesSerialization
 			: null;
 	}
 
+	private static DateOnly? ParseReleaseDate(string? value) =>
+		DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+			? date
+			: null;
+
 	// Reverse mappings (Domain → DTO) for serialization
 
 	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
@@ -250,6 +247,8 @@ public static partial class ReleaseNotesSerialization
 	private static BundleDto ToDto(Bundle bundle) => new()
 	{
 		Products = bundle.Products.Select(ToDto).ToList(),
+		Description = bundle.Description,
+		ReleaseDate = bundle.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
 		HideFeatures = bundle.HideFeatures.Count > 0 ? bundle.HideFeatures.ToList() : null,
 		Entries = bundle.Entries.Select(ToDto).ToList()
 	};
@@ -327,52 +326,6 @@ public static partial class ReleaseNotesSerialization
 	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
 	/// <param name="productId">Optional product ID to load product-specific blocker.</param>
 	/// <returns>The publish blocker configuration, or null if not found or not configured.</returns>
-	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath, string? productId = null)
-	{
-		if (!fileSystem.File.Exists(configPath))
-			return null;
-
-		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		if (string.IsNullOrWhiteSpace(yamlContent))
-			return null;
-
-		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimalDto>(yamlContent);
-		if (yamlConfig.Rules is null)
-			return null;
-
-		var publish = yamlConfig.Rules.Publish;
-		if (publish is null)
-			return null;
-
-		// Parse global match mode
-		var globalMatch = ParseMatchMode(yamlConfig.Rules.Match);
-		var publishMatchAreas = ParseMatchMode(publish.MatchAreas) ?? globalMatch ?? MatchMode.Any;
-
-		// Check product-specific blocker first if productId is specified
-		if (!string.IsNullOrWhiteSpace(productId) && publish.Products is { Count: > 0 })
-		{
-			// Try exact match first, then fall back to case-insensitive match
-			if (!publish.Products.TryGetValue(productId, out var productPublish))
-			{
-				var found = publish.Products.FirstOrDefault(kvp =>
-					kvp.Key.Equals(productId, StringComparison.OrdinalIgnoreCase));
-				productPublish = found.Value;
-			}
-
-			if (productPublish != null)
-			{
-				var productMatchAreas = ParseMatchMode(productPublish.MatchAreas) ?? publishMatchAreas;
-				return ParsePublishBlocker(productPublish, productMatchAreas);
-			}
-		}
-
-		// Fall back to global publish blocker
-		return ParsePublishBlocker(publish, publishMatchAreas);
-	}
-
-	/// <summary>
-	/// Parses a PublishRulesMinimalDto into a PublishBlocker domain type.
-	/// </summary>
 	private static PublishBlocker? ParsePublishBlocker(PublishRulesMinimalDto? dto, MatchMode matchAreas)
 	{
 		if (dto == null)
@@ -404,6 +357,7 @@ public static partial class ReleaseNotesSerialization
 		{
 			"any" => MatchMode.Any,
 			"all" => MatchMode.All,
+			"conjunction" => MatchMode.Conjunction,
 			_ => null
 		};
 }

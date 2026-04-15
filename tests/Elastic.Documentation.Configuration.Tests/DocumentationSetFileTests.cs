@@ -4,10 +4,11 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
-using FluentAssertions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -633,7 +634,7 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, fileSystem);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		// Verify TOC references have been preserved (not flattened)
 		// We have 3 top-level items: index.md, development TOC, and guides folder
@@ -704,7 +705,7 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, fileSystem);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		result.TableOfContents.Should().HaveCount(2);
 
@@ -760,7 +761,7 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, fileSystem);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		var docset = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "C:/docs/docset.yml" : "/docs/docset.yml";
 		var toc = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "C:/docs/development/toc.yml" : "/docs/development/toc.yml";
@@ -824,7 +825,7 @@ public class DocumentationSetFileTests
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var collector = new DiagnosticsCollector([]);
-		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, fileSystem);
+		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
 		// Items in docset.yml: PathRelativeToContainer should equal PathRelativeToDocumentationSet
 		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>()

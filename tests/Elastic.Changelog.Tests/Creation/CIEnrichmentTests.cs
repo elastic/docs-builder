@@ -2,11 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Creation;
 
@@ -18,17 +18,21 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 	private static IEnvironmentVariables FakeCIEnv(
 		string? prNumber = null,
 		string? title = null,
+		string? description = null,
 		string? type = null,
 		string? owner = null,
-		string? repo = null)
+		string? repo = null,
+		string? products = null)
 	{
 		var env = A.Fake<IEnvironmentVariables>();
 		A.CallTo(() => env.IsRunningOnCI).Returns(true);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER")).Returns(prNumber);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TITLE")).Returns(title);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION")).Returns(description);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TYPE")).Returns(type);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_OWNER")).Returns(owner);
 		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_REPO")).Returns(repo);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PRODUCTS")).Returns(products);
 		return env;
 	}
 
@@ -168,5 +172,137 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		var result = service.EnrichFromCI(input);
 
 		result.Should().BeSameAs(input);
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_Products_FillsProducts()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix", products: "cloud-hosted, cloud-serverless");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput();
+
+		var result = service.EnrichFromCI(input);
+
+		result.Products.Should().HaveCount(2);
+		result.Products[0].Product.Should().Be("cloud-hosted");
+		result.Products[1].Product.Should().Be("cloud-serverless");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ProductsWithTargetAndLifecycle_ParsesCorrectly()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix", products: "elasticsearch 9.2.0 ga, cloud-serverless 2025-06");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput();
+
+		var result = service.EnrichFromCI(input);
+
+		result.Products.Should().HaveCount(2);
+		result.Products[0].Product.Should().Be("elasticsearch");
+		result.Products[0].Target.Should().Be("9.2.0");
+		result.Products[0].Lifecycle.Should().Be("ga");
+		result.Products[1].Product.Should().Be("cloud-serverless");
+		result.Products[1].Target.Should().Be("2025-06");
+		result.Products[1].Lifecycle.Should().BeNull();
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExplicitProducts_CLIWins()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix", products: "cloud-hosted, cloud-serverless");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with
+		{
+			Products = [new ProductArgument { Product = "elasticsearch" }]
+		};
+
+		var result = service.EnrichFromCI(input);
+
+		result.Products.Should().HaveCount(1);
+		result.Products[0].Product.Should().Be("elasticsearch");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_NoProducts_RemainsEmpty()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput();
+
+		var result = service.EnrichFromCI(input);
+
+		result.Products.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_Description_FillsMissingDescription()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput();
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("Extracted release note");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExplicitDescription_CLIWins()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "CI description");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { Description = "My explicit description" };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("My explicit description");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExtractionDisabled_SkipsCIDescription()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { ExtractReleaseNotes = false };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().BeNull();
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExtractionDisabled_ExplicitDescription_CLIWins()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "CI description");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { ExtractReleaseNotes = false, Description = "My explicit description" };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("My explicit description");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExtractionNull_UsesCIDescription()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { ExtractReleaseNotes = null };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("Extracted release note");
+	}
+
+	[Fact]
+	public void EnrichFromCI_InCI_ExtractionEnabled_UsesCIDescription()
+	{
+		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
+		var service = CreateServiceWithEnv(env);
+		var input = DefaultInput() with { ExtractReleaseNotes = true };
+
+		var result = service.EnrichFromCI(input);
+
+		result.Description.Should().Be("Extracted release note");
 	}
 }

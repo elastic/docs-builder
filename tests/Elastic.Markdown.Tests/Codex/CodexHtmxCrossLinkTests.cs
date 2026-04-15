@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
-using FluentAssertions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Codex;
 
@@ -19,7 +20,7 @@ public class CodexHtmxCrossLinkTests(ITestOutputHelper output) : LinkTestBase(ou
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, fileSystem, configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/r/codex-environments",
 			BuildType = BuildType.Codex
@@ -62,7 +63,7 @@ public class IsolatedCodexCrossLinkTests(ITestOutputHelper output) : LinkTestBas
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, fileSystem, configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs",
 			BuildType = BuildType.Isolated

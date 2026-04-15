@@ -20,6 +20,7 @@ using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 using static System.StringComparison;
 
 namespace Elastic.Documentation.Isolated;
@@ -43,7 +44,7 @@ public class IsolatedBuildService(
 
 	public async Task<bool> Build(
 		IDiagnosticsCollector collector,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		string? path = null,
 		string? output = null,
 		string? pathPrefix = null,
@@ -53,7 +54,7 @@ public class IsolatedBuildService(
 		bool? metadataOnly = null,
 		IReadOnlySet<Exporter>? exporters = null,
 		string? canonicalBaseUrl = null,
-		IFileSystem? writeFileSystem = null,
+		ScopedFileSystem? writeFileSystem = null,
 		bool skipOpenApi = false,
 		bool skipCrossLinks = false,
 		Cancel ctx = default
@@ -99,11 +100,15 @@ public class IsolatedBuildService(
 		// At some point in the future we can remove this try catch
 		catch (Exception e) when (runningOnCi && e.Message.StartsWith("Can not locate docset.yml file in", OrdinalIgnoreCase))
 		{
+			// Derive the default output from `path` so it stays within the write FS scope.
+			// Using Paths.WorkingDirectoryRoot would be wrong when --path points to a different repo.
+			var rootFolder = !string.IsNullOrWhiteSpace(path) ? path : Paths.WorkingDirectoryRoot.FullName;
+			var writeFs = writeFileSystem ?? fileSystem;
 			var outputDirectory = !string.IsNullOrWhiteSpace(output)
-				? fileSystem.DirectoryInfo.New(output)
-				: fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts/docs/html"));
+				? writeFs.DirectoryInfo.New(output)
+				: writeFs.DirectoryInfo.New(Path.Join(rootFolder, ".artifacts/docs/html"));
 			// we temporarily do not error when pointed to a non-documentation folder.
-			_ = fileSystem.Directory.CreateDirectory(outputDirectory.FullName);
+			_ = writeFs.Directory.CreateDirectory(outputDirectory.FullName);
 
 			_logger.LogInformation("Skipping build as we are running on a merge commit and the docs folder is out of date and has no docset.yml. {Message}",
 				e.Message);
@@ -124,7 +129,7 @@ public class IsolatedBuildService(
 		else
 		{
 			using var codexReader = context.Configuration.Registry != DocSetRegistry.Public
-				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), fileSystem)
+				? new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
 				: null;
 
 			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(

@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Assembler.IntegrationTests;
 
@@ -22,13 +23,14 @@ public class PublicOnlyAssemblerConfigurationTests
 	{
 		FileSystem = new FileSystem();
 		CheckoutDirectory = FileSystem.DirectoryInfo.New(
-			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
 		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem, skipPrivateRepositories: true);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]
@@ -59,12 +61,13 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		_output = output;
 		FileSystem = new FileSystem();
 		CheckoutDirectory = FileSystem.DirectoryInfo.New(
-			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
 	}
 
 	[Fact]

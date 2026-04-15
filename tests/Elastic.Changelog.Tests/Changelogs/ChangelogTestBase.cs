@@ -13,12 +13,13 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
 public abstract class ChangelogTestBase : IDisposable
 {
-	protected MockFileSystem FileSystem { get; }
+	protected ScopedFileSystem FileSystem { get; }
 	protected IConfigurationContext ConfigurationContext { get; }
 	protected TestDiagnosticsCollector Collector { get; }
 	protected ILoggerFactory LoggerFactory { get; }
@@ -27,7 +28,8 @@ public abstract class ChangelogTestBase : IDisposable
 	protected ChangelogTestBase(ITestOutputHelper output)
 	{
 		Output = output;
-		FileSystem = new MockFileSystem();
+		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
+		FileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockFileSystem);
 		Collector = new TestDiagnosticsCollector(output);
 		LoggerFactory = new TestLoggerFactory(output);
 
@@ -91,6 +93,7 @@ public abstract class ChangelogTestBase : IDisposable
 		var productsConfiguration = new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 
@@ -103,7 +106,7 @@ public abstract class ChangelogTestBase : IDisposable
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
-			SearchConfiguration = new SearchConfiguration { Synonyms = new Dictionary<string, string[]>(), Rules = [], DiminishTerms = [] },
+			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}

@@ -44,7 +44,7 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 
 		// Generate filename
 		var filename = GenerateFilename(collector, input);
-		var filePath = fileSystem.Path.Combine(outputDir, filename);
+		var filePath = fileSystem.Path.Join(outputDir, filename);
 
 		// Write file with explicit UTF-8 encoding to ensure proper character handling
 		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);

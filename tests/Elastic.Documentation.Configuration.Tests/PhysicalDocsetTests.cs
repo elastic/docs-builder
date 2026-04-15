@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -12,7 +12,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
@@ -36,9 +36,10 @@ public class PhysicalDocsetTests
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
 		// Assert API configuration
-		docSet.Api.Should().HaveCount(2);
+		docSet.Api.Should().HaveCount(3);
 		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.Should().Be("elasticsearch-openapi.json");
 		docSet.Api.Should().ContainKey("kibana").WhoseValue.Should().Be("kibana-openapi.json");
+		docSet.Api.Should().ContainKey("dashboard").WhoseValue.Should().Be("dashboard-openapi.json");
 
 		// Assert TOC structure
 		docSet.TableOfContents.Should().NotBeEmpty();
@@ -73,7 +74,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetContainsExpectedFolders()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
@@ -93,7 +94,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetHasValidNestedStructure()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
@@ -118,7 +119,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetContainsFileReferencesWithChildren()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);

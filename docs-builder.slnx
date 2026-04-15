@@ -61,7 +61,6 @@
   <Folder Name="/src/api/">
     <Project Path="src/api/Elastic.Documentation.Api.Core/Elastic.Documentation.Api.Core.csproj" />
     <Project Path="src/api/Elastic.Documentation.Api.Infrastructure/Elastic.Documentation.Api.Infrastructure.csproj" />
-    <Project Path="src/api/Elastic.Documentation.Api.Lambda/Elastic.Documentation.Api.Lambda.csproj" />
 	<Project Path="src/api/Elastic.Documentation.Api.App/Elastic.Documentation.Api.App.csproj" />
 	<Project Path="src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" />
   </Folder>
@@ -75,6 +74,7 @@
     <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
     <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
+    <Project Path="src/services/Elastic.Documentation.Integrations/Elastic.Documentation.Integrations.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
 	<Project Path="src/services/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
   </Folder>
@@ -88,6 +88,7 @@
 	<Project Path="tests-integration/Elastic.Documentation.Api.IntegrationTests/Elastic.Documentation.Api.IntegrationTests.csproj" />
     <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
 	  <Project Path="tests-integration/Mcp.Remote.IntegrationTests/Mcp.Remote.IntegrationTests.csproj" />
+	  <Project Path="tests-integration/Elastic.ContentDateEnrichment.IntegrationTests/Elastic.ContentDateEnrichment.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />
@@ -100,6 +101,7 @@
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
     <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Integrations.Tests/Elastic.Documentation.Integrations.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />

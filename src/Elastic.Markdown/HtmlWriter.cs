@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -80,13 +81,15 @@ public class HtmlWriter(
 		if (DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
 		{
 			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
-			var path = Path.Combine(relativeSourcePath, markdown.RelativePath);
+			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
 			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
 		}
 
 		Uri? reportLinkParameter = null;
 		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
-			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
+		{
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
+		}
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
@@ -114,7 +117,9 @@ public class HtmlWriter(
 			?? throw new InvalidOperationException($"No versioning system available for page '{markdown.RelativePath}'. " +
 				"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined.");
 
-		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
+		var currentBaseVersion = pageVersioning.IsVersionless
+			? null
+			: $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
 		//TODO should we even distinctby
 		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
@@ -190,7 +195,7 @@ public class HtmlWriter(
 		{
 			Position = position++,
 			Name = parent.NavigationTitle,
-			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), Path.Combine(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
+			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
 		}));
 		// Add current page
 		breadcrumbItems.Add(new BreadcrumbListItem
@@ -218,14 +223,14 @@ public class HtmlWriter(
 		{
 			var dir = outputFile.Directory is null
 				? null
-				: Path.Combine(outputFile.Directory.FullName, Path.GetFileNameWithoutExtension(outputFile.Name));
+				: Path.Join(outputFile.Directory.FullName, Path.GetFileNameWithoutExtension(outputFile.Name));
 
 			if (dir is not null && !writeFileSystem.Directory.Exists(dir))
 				_ = writeFileSystem.Directory.CreateDirectory(dir);
 
 			path = dir is null
 				? Path.GetFileNameWithoutExtension(outputFile.Name) + ".html"
-				: Path.Combine(dir, "index.html");
+				: Path.Join(dir, "index.html");
 		}
 
 		var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);

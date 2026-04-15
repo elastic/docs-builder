@@ -25,6 +25,7 @@ using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex.Building;
 
@@ -46,7 +47,7 @@ public class CodexBuildService(
 	public async Task<CodexBuildResult> BuildAll(
 		CodexContext context,
 		CodexCloneResult cloneResult,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		Cancel ctx,
 		IReadOnlySet<Exporter>? exporters = null)
 	{
@@ -66,7 +67,7 @@ public class CodexBuildService(
 		var buildContexts = new List<CodexDocumentationSetBuildContext>();
 
 		var environment = context.Configuration.Environment ?? "internal";
-		using var codexLinkIndexReader = new GitLinkIndexReader(environment, context.ReadFileSystem, skipFetch: true);
+		using var codexLinkIndexReader = new GitLinkIndexReader(environment, FileSystemFactory.AppData, skipFetch: true);
 
 		// Phase 1: Load and parse all documentation sets
 		foreach (var checkout in cloneResult.Checkouts)
@@ -136,7 +137,7 @@ public class CodexBuildService(
 	private async Task<CodexDocumentationSetBuildContext?> LoadDocumentationSet(
 		CodexContext context,
 		CodexCheckout checkout,
-		IFileSystem fileSystem,
+		ScopedFileSystem fileSystem,
 		ILinkIndexReader codexLinkIndexReader,
 		Cancel ctx)
 	{
@@ -150,8 +151,8 @@ public class CodexBuildService(
 
 			// Build output path: {outputDir}/{sitePrefix}/r/{repoName} or {outputDir}/r/{repoName} if no prefix
 			var outputPath = string.IsNullOrEmpty(sitePrefix)
-				? fileSystem.Path.Combine(context.OutputDirectory.FullName, "r", repoName)
-				: fileSystem.Path.Combine(context.OutputDirectory.FullName, sitePrefix, "r", repoName);
+				? fileSystem.Path.Join(context.OutputDirectory.FullName, "r", repoName)
+				: fileSystem.Path.Join(context.OutputDirectory.FullName, sitePrefix, "r", repoName);
 
 			// Build URL path prefix: /r/{repoName} or /{sitePrefix}/r/{repoName}
 			var pathPrefix = string.IsNullOrEmpty(sitePrefix)
@@ -311,7 +312,7 @@ public class CodexBuildService(
 		var uniqueRedirects = redirects
 			.Where(x => !x.Key.TrimEnd('/').Equals(x.Value.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
 			.ToDictionary();
-		var redirectsFile = context.WriteFileSystem.FileInfo.New(context.WriteFileSystem.Path.Combine(context.OutputDirectory.FullName, "redirects.json"));
+		var redirectsFile = context.WriteFileSystem.FileInfo.New(context.WriteFileSystem.Path.Join(context.OutputDirectory.FullName, "redirects.json"));
 		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", uniqueRedirects.Count, redirectsFile.FullName);
 
 		var redirectsJson = JsonSerializer.Serialize(uniqueRedirects, SourceGenerationContext.Default.DictionaryStringString);
@@ -401,10 +402,10 @@ internal sealed class CodexDocumentationContext(CodexContext codexContext) : ICo
 	public IDiagnosticsCollector Collector => codexContext.Collector;
 
 	/// <inheritdoc />
-	public IFileSystem ReadFileSystem => codexContext.ReadFileSystem;
+	public ScopedFileSystem ReadFileSystem => codexContext.ReadFileSystem;
 
 	/// <inheritdoc />
-	public IFileSystem WriteFileSystem => codexContext.WriteFileSystem;
+	public ScopedFileSystem WriteFileSystem => codexContext.WriteFileSystem;
 
 	/// <inheritdoc />
 	public IDirectoryInfo OutputDirectory => codexContext.OutputDirectory;

@@ -10,6 +10,7 @@ export interface DocsConfig {
     telemetryEnabled: boolean
     rootPath: string // '/docs' for assembler, '' for codex and isolated
     apiBasePath: string // '/docs/_api' for assembler, '/api' for codex
+    airGapped: boolean
 }
 
 declare global {
@@ -24,6 +25,7 @@ const DEFAULT_CONFIG: DocsConfig = {
     telemetryEnabled: false,
     rootPath: '',
     apiBasePath: '/docs/_api',
+    airGapped: false,
 }
 
 export const config: DocsConfig = window.__DOCS_CONFIG__ ?? DEFAULT_CONFIG

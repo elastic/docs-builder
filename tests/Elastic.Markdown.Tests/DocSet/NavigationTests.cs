@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -15,6 +15,8 @@ public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(out
 	[Fact]
 	public void ParsesRedirects()
 	{
+		Configuration.Should().NotBeNull();
+
 		Configuration.Redirects.Should()
 			.NotBeNullOrEmpty()
 			.And.ContainKey("testing/redirects/first-page-old.md")

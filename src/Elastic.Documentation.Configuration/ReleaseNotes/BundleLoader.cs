@@ -81,7 +81,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			else if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
 				// Load from file reference - look in changelog directory (parent of bundles)
-				var filePath = fileSystem.Path.Combine(changelogDirectory, entry.File.Name);
+				var filePath = fileSystem.Path.Join(changelogDirectory, entry.File.Name);
 
 				if (!fileSystem.File.Exists(filePath))
 				{
@@ -217,11 +217,38 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		// Use the first bundle's metadata as the base
 		var first = bundlesList[0];
 
+		var descriptions = bundlesList
+			.Select(b => b.Data?.Description)
+			.Where(d => !string.IsNullOrEmpty(d))
+			.ToList();
+
+		var mergedDescription = descriptions.Count switch
+		{
+			0 => null,
+			1 => descriptions[0],
+			_ => string.Join("\n\n", descriptions)
+		};
+
+		var releaseDates = bundlesList
+			.Select(b => b.Data?.ReleaseDate)
+			.Where(d => d.HasValue)
+			.Select(d => d!.Value)
+			.Distinct()
+			.ToList();
+
+		var mergedReleaseDate = releaseDates.Count switch
+		{
+			0 => (DateOnly?)null,
+			_ => releaseDates[0]
+		};
+
+		var mergedData = first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate };
+
 		return new LoadedBundle(
 			first.Version,
 			combinedRepo,
 			first.Owner,
-			first.Data,
+			mergedData,
 			first.FilePath,
 			mergedEntries
 		);
@@ -318,7 +345,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		// Remove the .amend-N part from the filename
 		var parentFileName = AmendFileRegex().Replace(fileName, extension);
 
-		return fileSystem.Path.Combine(directory, parentFileName);
+		return fileSystem.Path.Join(directory, parentFileName);
 	}
 
 	[GeneratedRegex(@"\.amend-\d+\.ya?ml$", RegexOptions.IgnoreCase)]

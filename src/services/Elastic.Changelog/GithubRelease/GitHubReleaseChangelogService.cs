@@ -15,6 +15,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.GithubRelease;
 
@@ -46,12 +47,18 @@ public record CreateChangelogsFromReleaseArguments
 	/// <summary>
 	/// Whether to strip [prefix] from PR titles
 	/// </summary>
-	public bool StripTitlePrefix { get; init; }
+	public bool? StripTitlePrefix { get; init; }
 
 	/// <summary>
 	/// Whether to warn when Release Drafter type doesn't match label-derived type (defaults to true)
 	/// </summary>
 	public bool WarnOnTypeMismatch { get; init; } = true;
+
+	/// <summary>
+	/// Optional bundle description text with placeholder support.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
 
 	/// <summary>
 	/// Whether to create a bundle file after creating individual changelog files. Defaults to true.
@@ -68,13 +75,13 @@ public class GitHubReleaseChangelogService(
 	IConfigurationContext configurationContext,
 	IGitHubReleaseService? releaseService = null,
 	IGitHubPrService? prService = null,
-	IFileSystem? fileSystem = null,
+	ScopedFileSystem? fileSystem = null,
 	ChangelogBundlingService? bundlingService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly ChangelogBundlingService _bundlingService = bundlingService ?? new ChangelogBundlingService(logFactory, configurationContext, fileSystem);
@@ -118,6 +125,9 @@ public class GitHubReleaseChangelogService(
 				return false;
 			}
 
+			// Resolve StripTitlePrefix from input or config default
+			var stripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix;
+
 			// 4. Fetch GitHub release
 			var release = await _releaseService.FetchReleaseAsync(owner, repo, input.Version, ctx);
 			if (release == null)
@@ -156,7 +166,7 @@ public class GitHubReleaseChangelogService(
 			};
 
 			// 7. Process each PR and create changelog files
-			var outputDir = input.Output ?? _fileSystem.Path.Combine(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
+			var outputDir = input.Output ?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
 			if (!_fileSystem.Directory.Exists(outputDir))
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
@@ -167,7 +177,7 @@ public class GitHubReleaseChangelogService(
 			{
 				var success = await ProcessPrReference(
 					collector, config, owner, repo, prRef,
-					productInfo, input, parsedNotes.Format, outputDir, createdFiles, ctx);
+					productInfo, stripTitlePrefix, parsedNotes.Format, outputDir, createdFiles, input.WarnOnTypeMismatch, ctx);
 				if (success)
 					successCount++;
 			}
@@ -177,7 +187,7 @@ public class GitHubReleaseChangelogService(
 			// 8. Optionally create bundle file if changelogs were created
 			if (input.CreateBundle && createdFiles.Count > 0)
 			{
-				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input.Config, ctx);
+				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, ctx);
 				if (bundlePath != null)
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
 			}
@@ -203,10 +213,11 @@ public class GitHubReleaseChangelogService(
 		string repo,
 		ExtractedPrReference prRef,
 		ProductArgument productInfo,
-		CreateChangelogsFromReleaseArguments input,
+		bool stripTitlePrefix,
 		ReleaseNoteFormat format,
 		string outputDir,
 		List<string> createdFiles,
+		bool warnOnTypeMismatch,
 		Cancel ctx)
 	{
 		var prUrl = $"https://github.com/{owner}/{repo}/pull/{prRef.PrNumber}";
@@ -243,7 +254,7 @@ public class GitHubReleaseChangelogService(
 
 		// Warn on type mismatch if Release Drafter format and warning enabled
 		if (format == ReleaseNoteFormat.ReleaseDrafter &&
-			input.WarnOnTypeMismatch &&
+			warnOnTypeMismatch &&
 			labelDerivedType != null &&
 			prRef.InferredType != null &&
 			!string.Equals(labelDerivedType, prRef.InferredType, StringComparison.OrdinalIgnoreCase))
@@ -256,7 +267,7 @@ public class GitHubReleaseChangelogService(
 
 		// Build title
 		var title = prRef.Title ?? prInfo?.Title ?? $"PR #{prRef.PrNumber}";
-		if (input.StripTitlePrefix)
+		if (stripTitlePrefix)
 			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
 
 		// Create changelog data
@@ -282,7 +293,7 @@ public class GitHubReleaseChangelogService(
 		// Write file with prettier name: <pr_number>-<type>-<slug>.yaml
 		var slug = ChangelogTextUtilities.GenerateSlug(title);
 		var filename = $"{prRef.PrNumber}-{finalType.ToStringFast(true)}-{slug}.yaml";
-		var filePath = _fileSystem.Path.Combine(outputDir, filename);
+		var filePath = _fileSystem.Path.Join(outputDir, filename);
 		await _fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
 
 		createdFiles.Add(filename);
@@ -301,17 +312,17 @@ public class GitHubReleaseChangelogService(
 		ProductArgument productInfo,
 		string owner,
 		string repo,
-		string? configPath,
+		CreateChangelogsFromReleaseArguments input,
 		Cancel ctx)
 	{
 		// Build the bundles subfolder path (mirrors the previous CreateBundleFile convention)
-		var bundlesDir = _fileSystem.Path.Combine(outputDir, "bundles");
+		var bundlesDir = _fileSystem.Path.Join(outputDir, "bundles");
 		if (!_fileSystem.Directory.Exists(bundlesDir))
 			_ = _fileSystem.Directory.CreateDirectory(bundlesDir);
 
 		// Name format: <version>-<product>-bundle.yml
 		var bundleFilename = $"{productInfo.Target}-{productInfo.Product}-bundle.yml";
-		var bundlePath = _fileSystem.Path.Combine(bundlesDir, bundleFilename);
+		var bundlePath = _fileSystem.Path.Join(bundlesDir, bundleFilename);
 
 		// Build PR URL list from created file names — gh-release names files as <pr_number>-<type>-<slug>.yaml
 		var prUrls = createdFileNames
@@ -329,8 +340,9 @@ public class GitHubReleaseChangelogService(
 			Prs = prUrls,
 			Owner = owner,
 			Repo = repo,
-			Config = configPath,
-			OutputProducts = [productInfo]
+			Config = input.Config,
+			OutputProducts = [productInfo],
+			Description = input.Description
 		};
 
 		var success = await _bundlingService.BundleChangelogs(collector, bundleArgs, ctx);
@@ -342,15 +354,17 @@ public class GitHubReleaseChangelogService(
 			.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
 			.FirstOrDefault(mappedType => mappedType != null);
 
-	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, string> labelToAreasMapping)
+	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
 		var areas = new HashSet<string>();
-		var areaList = labels
-			.Where(label => labelToAreasMapping.ContainsKey(label))
-			.SelectMany(label => labelToAreasMapping[label]
-				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-		foreach (var area in areaList)
-			_ = areas.Add(area);
+		foreach (var label in labels)
+		{
+			if (!labelToAreasMapping.TryGetValue(label, out var mappedAreas))
+				continue;
+
+			foreach (var area in mappedAreas)
+				_ = areas.Add(area);
+		}
 		return areas.ToList();
 	}
 

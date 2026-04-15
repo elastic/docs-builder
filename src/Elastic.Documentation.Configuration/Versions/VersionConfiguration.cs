@@ -105,6 +105,8 @@ public enum VersioningSystemId
 	EdotJava,
 	[Display(Name = "edot-node")]
 	EdotNode,
+	[Display(Name = "edot-browser")]
+	EdotBrowser,
 	[Display(Name = "edot-php")]
 	EdotPhp,
 	[Display(Name = "edot-python")]
@@ -139,6 +141,9 @@ public enum VersioningSystemId
 	ElasticsearchClientRuby,
 	[Display(Name = "elasticsearch-client-rust")]
 	ElasticsearchClientRust,
+
+	[Display(Name = "none")]
+	None = -1,
 }
 
 [YamlSerializable]
@@ -149,6 +154,17 @@ public record VersioningSystem
 	/// Products with this version should not display a version dropdown.
 	/// </summary>
 	public const int VersionlessSentinel = 99999;
+
+	/// <summary>
+	/// A versionless sentinel for products that have no versioning system at all
+	/// (e.g. release-notes-only products without public documentation).
+	/// </summary>
+	public static VersioningSystem None { get; } = new()
+	{
+		Id = VersioningSystemId.None,
+		Base = new SemVersion(VersionlessSentinel, 0, 0),
+		Current = new SemVersion(VersionlessSentinel, 0, 0)
+	};
 
 	public required VersioningSystemId Id { get; init; }
 

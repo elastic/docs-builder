@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Creation;
 
@@ -37,11 +38,14 @@ public record CreateChangelogArguments
 	public string? Config { get; init; }
 	public bool UsePrNumber { get; init; }
 	public bool UseIssueNumber { get; init; }
-	public bool StripTitlePrefix { get; init; }
+	public bool? StripTitlePrefix { get; init; }
 	/// <summary>
-	/// Whether to extract release notes from PR/issue descriptions. null = use config default.
+	/// Whether to extract release note text from PR/issue descriptions for the entry description. null = use config default.
 	/// </summary>
 	public bool? ExtractReleaseNotes { get; init; }
+
+	/// <summary>null and true both mean enabled; only explicit false disables extraction.</summary>
+	public bool ExtractionDisabled => ExtractReleaseNotes == false;
 
 	/// <summary>
 	/// Whether to extract linked issues/PRs from PR/issue body. null = use config default.
@@ -61,16 +65,16 @@ public class ChangelogCreationService(
 ILoggerFactory logFactory,
 IConfigurationContext configurationContext,
 IGitHubPrService? githubPrService = null,
-IFileSystem? fileSystem = null,
+ScopedFileSystem? fileSystem = null,
 IEnvironmentVariables? env = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
-	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? new FileSystem(), logFactory.CreateLogger<ChangelogFileWriter>());
+	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? FileSystemFactory.RealWrite, logFactory.CreateLogger<ChangelogFileWriter>());
 	private readonly ProductInferService _productInferService = new(
 		configurationContext.ProductsConfiguration);
 
@@ -78,6 +82,7 @@ IEnvironmentVariables? env = null
 	{
 		try
 		{
+			var cliDescription = input.Description;
 			input = EnrichFromCI(input);
 
 			// Load changelog configuration
@@ -90,6 +95,16 @@ IEnvironmentVariables? env = null
 
 			// Apply config defaults to input (for extract_release_notes, extract_issues)
 			input = ApplyConfigDefaults(input, config);
+
+			// When extraction is disabled (by CLI or config), discard any CI-injected description
+			// that originated from evaluate-pr's release-note extraction.
+			if (input.ExtractionDisabled
+				&& string.IsNullOrWhiteSpace(cliDescription)
+				&& !string.IsNullOrWhiteSpace(input.Description))
+			{
+				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
+				input = input with { Description = null };
+			}
 
 			// Multiple PRs: one changelog per PR (--use-pr-number uses PR number as each filename)
 			if (input.Prs != null && input.Prs.Length > 1)
@@ -140,6 +155,7 @@ IEnvironmentVariables? env = null
 		{
 			ExtractReleaseNotes = input.ExtractReleaseNotes ?? config.Extract.ReleaseNotes,
 			ExtractIssues = input.ExtractIssues ?? config.Extract.Issues,
+			StripTitlePrefix = input.StripTitlePrefix ?? config.Extract.StripTitlePrefix,
 			UsePrNumber = usePrNumber,
 			UseIssueNumber = useIssueNumber
 		};
@@ -233,9 +249,11 @@ IEnvironmentVariables? env = null
 		if (!_validator.ValidatePrFormat(collector, prUrl, input.Owner, input.Repo))
 			return false;
 
-		// Fetch PR info to derive missing fields unless title and type are already known
-		var hasRequiredFields = !string.IsNullOrWhiteSpace(input.Title) && !string.IsNullOrWhiteSpace(input.Type);
-		if (!string.IsNullOrWhiteSpace(prUrl) && !hasRequiredFields)
+		// Fetch PR info when any derivable field is still missing (title, type, or products)
+		var needsDerivation = string.IsNullOrWhiteSpace(input.Title)
+			|| string.IsNullOrWhiteSpace(input.Type)
+			|| input.Products.Count == 0;
+		if (!string.IsNullOrWhiteSpace(prUrl) && needsDerivation)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
 
@@ -250,7 +268,7 @@ IEnvironmentVariables? env = null
 				return false;
 		}
 		else if (!string.IsNullOrWhiteSpace(prUrl))
-			_logger.LogInformation("Title and type already provided, skipping PR API fetch for {PrUrl}", prUrl);
+			_logger.LogInformation("All required fields already provided, skipping PR API fetch for {PrUrl}", prUrl);
 
 		// If still no products, fall back to products.default or repo name inference
 		if (input.Products.Count == 0)
@@ -388,9 +406,11 @@ IEnvironmentVariables? env = null
 
 		var prNumber = env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER");
 		var ciTitle = env.GetEnvironmentVariable("CHANGELOG_TITLE");
+		var ciDescription = env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION");
 		var ciType = env.GetEnvironmentVariable("CHANGELOG_TYPE");
 		var ciOwner = env.GetEnvironmentVariable("CHANGELOG_OWNER");
 		var ciRepo = env.GetEnvironmentVariable("CHANGELOG_REPO");
+		var ciProducts = env.GetEnvironmentVariable("CHANGELOG_PRODUCTS");
 
 		var hasCiData = !string.IsNullOrEmpty(prNumber) || !string.IsNullOrEmpty(ciTitle);
 		if (!hasCiData)
@@ -402,13 +422,23 @@ IEnvironmentVariables? env = null
 			? input.Prs
 			: !string.IsNullOrEmpty(prNumber) ? [prNumber] : input.Prs;
 
+		var enrichedProducts = input.Products.Count > 0
+			? input.Products
+			: ProductArgument.ParseProductSpecs(ciProducts);
+
+		var enrichedDescription = !string.IsNullOrWhiteSpace(input.Description)
+			? input.Description
+			: input.ExtractionDisabled ? null : ciDescription;
+
 		return input with
 		{
 			Prs = enrichedPrs,
 			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
+			Description = enrichedDescription,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
-			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo
+			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,
+			Products = enrichedProducts
 		};
 	}
 }

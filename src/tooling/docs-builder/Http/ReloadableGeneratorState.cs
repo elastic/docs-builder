@@ -42,10 +42,10 @@ public class ReloadableGeneratorState : IDisposable
 		_isWatchBuild = isWatchBuild;
 		SourcePath = sourcePath;
 		OutputPath = outputPath;
-		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Combine(outputPath.FullName, "api"));
+		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Join(outputPath.FullName, "api"));
 
 		if (context.Configuration.Registry != DocSetRegistry.Public)
-			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), context.ReadFileSystem);
+			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData);
 
 		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.
@@ -56,11 +56,15 @@ public class ReloadableGeneratorState : IDisposable
 
 	// Track OpenAPI spec file modification times to detect changes
 	private readonly Dictionary<string, DateTimeOffset> _openApiSpecLastModified = [];
+	private volatile bool _apiReferencesStale = true;
+	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
 
-	public async Task ReloadAsync(Cancel ctx)
+	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
 		SourcePath.Refresh();
 		OutputPath.Refresh();
+		if (reloadConfiguration)
+			_context.ReloadConfiguration();
 		var crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
 		IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
@@ -76,12 +80,32 @@ public class ReloadableGeneratorState : IDisposable
 		var generator = new DocumentationGenerator(docSet, _logFactory, markdownExporters: markdownExporters.ToArray());
 		await generator.ResolveDirectoryTree(ctx);
 		_ = Interlocked.Exchange(ref _generator, generator);
+		_apiReferencesStale = true;
+	}
 
-		// Only regenerate OpenAPI if spec files have changed
-		if (HaveOpenApiSpecsChanged(docSet.Configuration))
+	/// <summary>Lazily generates OpenAPI references on the first /api/ request, and regenerates when spec files change.</summary>
+	public async Task EnsureApiReferencesAsync(Cancel ctx)
+	{
+		if (!_apiReferencesStale)
+			return;
+
+		await _apiSemaphore.WaitAsync(ctx);
+		try
 		{
-			await ReloadApiReferences(generator.MarkdownStringRenderer, ctx);
-			UpdateOpenApiSpecTimestamps(docSet.Configuration);
+			if (!_apiReferencesStale)
+				return;
+
+			var config = _generator.DocumentationSet.Configuration;
+			if (HaveOpenApiSpecsChanged(config))
+			{
+				await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);
+				UpdateOpenApiSpecTimestamps(config);
+			}
+			_apiReferencesStale = false;
+		}
+		finally
+		{
+			_ = _apiSemaphore.Release();
 		}
 	}
 
@@ -137,6 +161,7 @@ public class ReloadableGeneratorState : IDisposable
 
 	public void Dispose()
 	{
+		_apiSemaphore.Dispose();
 		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);
 	}

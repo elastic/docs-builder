@@ -45,7 +45,11 @@ public partial class ConfigurationFileProvider
 		_fileSystem = fileSystem;
 		_assemblyName = typeof(ConfigurationFileProvider).Assembly.GetName().Name!;
 		SkipPrivateRepositories = skipPrivateRepositories;
-		TemporaryDirectory = fileSystem.Directory.CreateTempSubdirectory("docs-builder-config");
+		// Use a unique subdirectory per instance to avoid file-locking collisions when
+		// multiple processes or parallel tests share the same ApplicationData path.
+		var configRuntimeDir = Path.Join(Paths.ApplicationData.FullName, "config-runtime", Guid.NewGuid().ToString("N"));
+		TemporaryDirectory = fileSystem.DirectoryInfo.New(configRuntimeDir);
+		TemporaryDirectory.Create();
 
 		// TODO: This doesn't work as expected if a github actions consumer repo has a `config` directory.
 		// ConfigurationSource = configurationSource ?? (
@@ -59,7 +63,7 @@ public partial class ConfigurationFileProvider
 			string[] spotChecks = ["navigation.yml", "versions.yml", "products.yml", "assembler.yml", "search.yml"];
 			var defaultSource =
 				fileSystem.Directory.Exists(LocalConfigurationDirectory)
-					&& spotChecks.All(f => fileSystem.File.Exists(Path.Combine(LocalConfigurationDirectory, f)))
+					&& spotChecks.All(f => fileSystem.File.Exists(Path.Join(LocalConfigurationDirectory, f)))
 				? ConfigurationSource.Local
 				: ConfigurationSource.Embedded;
 			ConfigurationSource = defaultSource;
@@ -126,7 +130,7 @@ public partial class ConfigurationFileProvider
 
 		var targets = string.Join("|", privateRepositories.Keys);
 
-		var tempFile = Path.Combine(TemporaryDirectory.FullName, "navigation.filtered.yml");
+		var tempFile = Path.Join(TemporaryDirectory.FullName, "navigation.filtered.yml");
 		if (_fileSystem.File.Exists(tempFile))
 			return NavigationFile;
 
@@ -197,7 +201,7 @@ public partial class ConfigurationFileProvider
 	{
 		using var stream = GetLocalOrEmbedded(fileName, fallback);
 		var context = stream.ReadToEnd();
-		var fi = _fileSystem.FileInfo.New(Path.Combine(TemporaryDirectory.FullName, fileName));
+		var fi = _fileSystem.FileInfo.New(Path.Join(TemporaryDirectory.FullName, fileName));
 		_fileSystem.File.WriteAllText(fi.FullName, context);
 		return fi;
 	}
@@ -248,11 +252,11 @@ public partial class ConfigurationFileProvider
 		return reader;
 	}
 
-	public static string AppDataConfigurationDirectory { get; } = Path.Combine(Paths.ApplicationData.FullName, "config-clone", "config");
-	public static string LocalConfigurationDirectory { get; } = Path.Combine(Directory.GetCurrentDirectory(), "config");
+	public static string AppDataConfigurationDirectory { get; } = Path.Join(Paths.ApplicationData.FullName, "config-clone", "config");
+	public static string LocalConfigurationDirectory { get; } = Path.Join(Directory.GetCurrentDirectory(), "config");
 
-	private static string GetLocalPath(string file) => Path.Combine(LocalConfigurationDirectory, file);
-	private static string GetAppDataPath(string file) => Path.Combine(AppDataConfigurationDirectory, file);
+	private static string GetLocalPath(string file) => Path.Join(LocalConfigurationDirectory, file);
+	private static string GetAppDataPath(string file) => Path.Join(AppDataConfigurationDirectory, file);
 
 	[GeneratedRegex(@"^\s+-?\s?toc:\s?")]
 	private static partial Regex TocPrefixRegex();
@@ -267,7 +271,7 @@ public static class ConfigurationFileProviderServiceCollectionExtensions
 	{
 		using var sp = services.BuildServiceProvider();
 		var logFactory = sp.GetRequiredService<ILoggerFactory>();
-		var provider = new ConfigurationFileProvider(logFactory, new FileSystem(), skipPrivateRepositories, configurationSource);
+		var provider = new ConfigurationFileProvider(logFactory, FileSystemFactory.RealRead, skipPrivateRepositories, configurationSource);
 		_ = services.AddSingleton(provider);
 		configure(services, provider);
 		return services;

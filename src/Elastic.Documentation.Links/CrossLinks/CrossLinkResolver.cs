@@ -128,7 +128,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (!string.IsNullOrEmpty(lookupFragment))
 		{
 			var anchor = lookupFragment.TrimStart('#');
-			if (linkMetadata.Anchors is null || !linkMetadata.Anchors.Contains(anchor))
+			if (linkMetadata.Anchors is null || !linkMetadata.Anchors.Contains(anchor, StringComparer.OrdinalIgnoreCase))
 			{
 				errorEmitter($"'{lookupPath}' has no anchor named: '{lookupFragment}'.");
 				return false;

@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
 

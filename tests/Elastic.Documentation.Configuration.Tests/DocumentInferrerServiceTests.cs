@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -81,6 +81,7 @@ public class DocumentInferrerServiceTests
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 	}
@@ -396,6 +397,7 @@ public class DocumentInferrerServiceTests
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 		var legacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] };

@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -319,7 +319,7 @@ public class FileInfoValidationTests(ITestOutputHelper output) : DocumentationSe
 		var fileRefs = docSet.TableOfContents.SelectMany(DocumentationSetFile.GetFileRefs).ToList();
 		foreach (var fileRef in fileRefs)
 		{
-			var path = fileSystem.FileInfo.New(Path.Combine(context.DocumentationSourceDirectory.FullName, fileRef.PathRelativeToDocumentationSet));
+			var path = fileSystem.FileInfo.New(Path.Join(context.DocumentationSourceDirectory.FullName, fileRef.PathRelativeToDocumentationSet));
 			path.Exists.Should().BeTrue($"Expected file {path.FullName} to exist");
 		}
 

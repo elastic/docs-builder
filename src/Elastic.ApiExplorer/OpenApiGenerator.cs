@@ -82,63 +82,16 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			})
 			.ToArray();
 
-		var nestedGrouping =
-			(
-				from op in ops
-				group op by op.Classification
-				into classificationGroup
-				from tagGroup in
-				from op in classificationGroup
-				group op by op.Tag
-				into apiGroups
-				from apiGroup in
-				from op in apiGroups
-				group op by op.Api
-				group apiGroup by apiGroups.Key
-				group tagGroup by classificationGroup.Key
-			).ToArray();
-
-
-		/*
-		var grouped = openApiDocument.Paths
-			.Select(p =>
-			{
-				var op = p.Value.Operations.First();
-				var extensions = op.Value.Extensions;
-				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is OpenApiAny anyNs
-					? anyNs.Node.GetValue<string>()
-					: null;
-				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is OpenApiAny anyApi
-					? anyApi.Node.GetValue<string>()
-					: null;
-				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
-				var classification = openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
-					? ClassifyElasticsearchTag(tag ?? "unknown")
-					: "unknown";
-
-				var apiString = ns is null ? api ?? Guid.NewGuid().ToString("N") : $"{ns}.{api}";
-				return new
-				{
-					Classification = classification,
-					Api = apiString,
-					Tag = tag,
-					Path = p
-				};
-			})
-			.GroupBy(g => g.Classification)
-			.ToArray();
-		*/
-
 		// intermediate grouping of models to create the navigation tree
 		// this is two-phased because we need to know if an endpoint has one or more operations
 		var classifications = new List<ApiClassification>();
-		foreach (var classificationGroup in nestedGrouping)
+		foreach (var classGroup in ops.GroupBy(o => o.Classification))
 		{
 			var tags = new List<ApiTag>();
-			foreach (var tagGroup in classificationGroup)
+			foreach (var tagGroup in classGroup.GroupBy(o => o.Tag))
 			{
 				var apis = new List<ApiEndpoint>();
-				foreach (var apiGroup in tagGroup)
+				foreach (var apiGroup in tagGroup.GroupBy(o => o.Api))
 				{
 					var operations = new List<ApiOperation>();
 					foreach (var api in apiGroup)
@@ -153,7 +106,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				var tag = new ApiTag(tagGroup.Key ?? "unknown", "", apis);
 				tags.Add(tag);
 			}
-			var classification = new ApiClassification(classificationGroup.Key, "", tags);
+			var classification = new ApiClassification(classGroup.Key, "", tags);
 			classifications.Add(classification);
 		}
 
@@ -178,7 +131,13 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		// Add schema type pages for shared types
 		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
-		rootNavigation.NavigationItems = topLevelNavigationItems;
+		// Multi-tag / multi-classification builds into topLevelNavigationItems; single-tag writes endpoints
+		// directly onto root. Assigning topLevel here must not wipe root when that list is still empty.
+		if (topLevelNavigationItems.Count > 0 && rootNavigation.NavigationItems.Count == 0)
+			rootNavigation.NavigationItems = topLevelNavigationItems;
+		else if (topLevelNavigationItems.Count > 0 && rootNavigation.NavigationItems.Count > 0)
+			rootNavigation.NavigationItems = [.. rootNavigation.NavigationItems, .. topLevelNavigationItems];
+
 		return rootNavigation;
 	}
 
@@ -316,7 +275,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		{
 			const string indexHtml = "index.html";
 			var fileName = Regex.Replace(currentNavigation.Url + "/" + indexHtml, $"^{context.UrlPathPrefix}", string.Empty);
-			var fileInfo = _writeFileSystem.FileInfo.New(Path.Combine(context.OutputDirectory.FullName, fileName.Trim('/')));
+			var fileInfo = _writeFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, fileName.Trim('/')));
 			return fileInfo;
 		}
 	}

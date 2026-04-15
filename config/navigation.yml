@@ -145,6 +145,10 @@ toc:
           # https://github.com/elastic/elastic-otel-php/blob/main/docs/release-notes/toc.yml
           - toc: elastic-otel-php://release-notes
             path_prefix: release-notes/edot/sdks/php
+          # EDOT Browser (RUM)
+          # https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/release-notes/toc.yml
+          - toc: elastic-otel-rum-js://release-notes
+            path_prefix: release-notes/edot/sdks/rum
           # APM
           # https://github.com/elastic/docs-content/blob/main/release-notes/elastic-apm/toc.yml
           - toc: apm-server://release-notes
@@ -271,6 +275,11 @@ toc:
               - toc: elasticsearch-js://reference
                 path_prefix: reference/elasticsearch/clients/javascript
                 # Children include the entire AsciiDoc book
+
+              # JavaScript/TypeScript DSL
+              # https://github.com/elastic/elasticsearch-dsl-js/blob/main/docs/reference/toc.yml
+              - toc: elasticsearch-dsl-js://reference
+                path_prefix: reference/elasticsearch/clients/javascript-dsl
 
               # .NET
               # https://github.com/elastic/elasticsearch-net/blob/main/docs/reference/toc.yml
@@ -457,6 +466,8 @@ toc:
           - toc: opentelemetry://reference
             path_prefix: reference/opentelemetry
             children:
+              - toc: opentelemetry://reference/motlp
+                path_prefix: reference/opentelemetry/motlp
               - toc: opentelemetry://reference/edot-cloud-forwarder
                 path_prefix: reference/opentelemetry/edot-cloud-forwarder
                 children:
@@ -482,6 +493,10 @@ toc:
                 path_prefix: reference/opentelemetry/edot-sdks/php
               - toc: elastic-otel-python://reference/edot-python
                 path_prefix: reference/opentelemetry/edot-sdks/python
+              # EDOT Browser (RUM)
+              # https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/reference/edot-browser/toc.yml
+              - toc: elastic-otel-rum-js://reference/edot-browser
+                path_prefix: reference/opentelemetry/edot-sdks/browser
 
           # Elastic Integrations
           # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml

@@ -139,7 +139,7 @@ public partial class DocumentationGenerator
 
 		await ResolveDirectoryTree(ctx);
 
-		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, ctx);
+		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, mode, ctx);
 
 		if (mode == CompilationMode.Full)
 			HintUnusedSubstitutionKeys();
@@ -166,7 +166,7 @@ public partial class DocumentationGenerator
 		};
 	}
 
-	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, Cancel ctx)
+	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, CompilationMode mode, Cancel ctx)
 	{
 		var processedFileCount = 0;
 		var exceptionCount = 0;
@@ -177,7 +177,7 @@ public partial class DocumentationGenerator
 			var (fp, doc) = file;
 			try
 			{
-				await ProcessFile(offendingFiles, doc, outputSeenChanges, token);
+				await ProcessFile(offendingFiles, doc, outputSeenChanges, mode, token);
 			}
 			catch (Exception e)
 			{
@@ -281,13 +281,15 @@ public partial class DocumentationGenerator
 			_ => FilePathRegex().IsMatch(strToCheck) && FileNameRegex().IsMatch(Path.GetFileName(strToCheck))
 		};
 
-	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel ctx)
+	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, CompilationMode mode, Cancel ctx)
 	{
+		// Full builds run HintUnusedSubstitutionKeys(), which needs substitution usage from every file.
+		// CI forces Full mode while still supplying outputSeenChanges from state; skipping unchanged files would miss keys and produce false hints.
 		if (!Context.Force)
 		{
 			if (offendingFiles.Contains(file.SourceFile.FullName))
 				_logger.LogInformation("Re-evaluating {FileName}", file.SourceFile.FullName);
-			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
+			else if (mode == CompilationMode.Incremental && file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
 				return;
 		}
 
@@ -337,7 +339,7 @@ public partial class DocumentationGenerator
 
 	private IFileInfo? OutputFile(string relativePath)
 	{
-		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputDirectory.FullName, relativePath));
+		var outputFile = _writeFileSystem.FileInfo.New(Path.Join(DocumentationSet.OutputDirectory.FullName, relativePath));
 		if (relativePath.StartsWith("_static"))
 			return outputFile;
 

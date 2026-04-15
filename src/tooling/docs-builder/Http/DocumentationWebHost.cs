@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Net;
+using Nullean.ScopedFileSystem;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -34,15 +35,15 @@ public class DocumentationWebHost
 	private readonly WebApplication _webApplication;
 
 	private readonly IHostedService _hostedService;
-	private readonly IFileSystem _writeFileSystem;
+	private readonly ScopedFileSystem _writeFileSystem;
 
 	public InMemoryBuildState InMemoryBuildState { get; }
 
 	public DocumentationWebHost(ILoggerFactory logFactory,
 		string? path,
 		int port,
-		IFileSystem readFs,
-		IFileSystem writeFs,
+		ScopedFileSystem readFs,
+		ScopedFileSystem writeFs,
 		IConfigurationContext configurationContext,
 		bool isWatchBuild
 	)
@@ -211,7 +212,12 @@ public class DocumentationWebHost
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
-		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
+		await holder.EnsureApiReferencesAsync(ctx);
+
+		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
+		var path = Path.GetFullPath(Path.Join(apiRoot, slug.Trim('/'), "index.html"));
+		if (!path.StartsWith(apiRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+			return Results.NotFound();
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)
 		{
@@ -241,7 +247,7 @@ public class DocumentationWebHost
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		slug = slug.TrimEnd('/');
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
+		var s = Path.GetExtension(slug) == string.Empty ? Path.Join(slug, "index.md") : slug;
 		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
 		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))

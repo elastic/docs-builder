@@ -2,9 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -23,7 +24,7 @@ public class BundleAmendTests : ChangelogTestBase
 
 	private string CreateChangelogDir()
 	{
-		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 		return changelogDir;
 	}
@@ -45,10 +46,10 @@ public class BundleAmendTests : ChangelogTestBase
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-existing.yaml");
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, ct);
 
-		var bundlePath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundlePath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
@@ -84,10 +85,10 @@ public class BundleAmendTests : ChangelogTestBase
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Combine(_changelogDir, "1755268130-existing.yaml");
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, ct);
 
-		var bundlePath = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundlePath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
@@ -112,7 +113,7 @@ public class BundleAmendTests : ChangelogTestBase
 	/// </summary>
 	private async Task<string> CreateNewChangelogFile(CancellationToken ct)
 	{
-		var newDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var newDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(newDir);
 
 		// language=yaml
@@ -128,7 +129,7 @@ public class BundleAmendTests : ChangelogTestBase
 			description: A new enhancement added via amend
 			""";
 
-		var newFile = FileSystem.Path.Combine(newDir, "1755268200-new-feature.yaml");
+		var newFile = FileSystem.Path.Join(newDir, "1755268200-new-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(newFile, newChangelog, ct);
 		return newFile;
 	}

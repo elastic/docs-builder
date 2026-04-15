@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Sourcing;
@@ -13,8 +14,8 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Markdown.IO;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Assembler.IntegrationTests;
 
@@ -35,7 +36,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		_output = output;
 		FileSystem = new FileSystem();
 		var checkoutDirectory = FileSystem.DirectoryInfo.New(
-			FileSystem.Path.Combine(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
+			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		CheckoutDirectory = checkoutDirectory.Exists
 			? checkoutDirectory.GetDirectories().FirstOrDefault(d => d.Name is "next" or "current") ?? checkoutDirectory
@@ -43,7 +44,8 @@ public class SiteNavigationTests : IAsyncLifetime
 		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, FileSystem, FileSystem, CheckoutDirectory.FullName, null);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
 	}
 
 	private Checkout CreateCheckout(IFileSystem fs, Repository repository)
@@ -51,7 +53,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		var name = repository.Name;
 		var path = repository.Path is { } p
 			? fs.DirectoryInfo.New(p)
-			: fs.DirectoryInfo.New(fs.Path.Combine(Path.Combine(CheckoutDirectory.FullName, name)));
+			: fs.DirectoryInfo.New(fs.Path.Join(CheckoutDirectory.FullName, name));
 		return new Checkout
 		{
 			Repository = new Repository
@@ -96,7 +98,8 @@ public class SiteNavigationTests : IAsyncLifetime
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
+		var scopedFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFileSystem, scopedFileSystem, null, null);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
 		var siteNavigationFile = SiteNavigationFile.Deserialize(await FileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, TestContext.Current.CancellationToken));
@@ -188,7 +191,8 @@ public class SiteNavigationTests : IAsyncLifetime
 		var fs = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, fs, fs, null, null);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
+		var assembleContext = new AssembleContext(config, configurationContext, "prod", collector, scopedFs, scopedFs, null, null);
 		var repos = assembleContext.Configuration.AvailableRepositories
 			.Where(kv => !kv.Value.Skip)
 			.Select(kv => kv.Value)
@@ -223,7 +227,7 @@ public class SiteNavigationTests : IAsyncLifetime
 		GC.SuppressFinalize(this);
 		if (TestContext.Current.TestState?.Result is TestResult.Passed)
 			return default;
-		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs)
+		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs.ToList())
 			_output.WriteLine(resource.Message);
 		return default;
 	}

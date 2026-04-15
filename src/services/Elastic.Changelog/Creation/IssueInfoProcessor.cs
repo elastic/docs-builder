@@ -102,22 +102,15 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 
 		if (input.ExtractReleaseNotes ?? false)
 		{
-			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(issueInfo.Body);
-
-			if (releaseNoteTitle != null && string.IsNullOrWhiteSpace(input.Title))
+			var releaseNote = ReleaseNotesExtractor.FindReleaseNote(issueInfo.Body);
+			if (releaseNote != null && string.IsNullOrWhiteSpace(input.Description))
 			{
-				derived.Title = releaseNoteTitle;
-				logger.LogInformation("Using extracted release note as title: {Title}", derived.Title);
-			}
-
-			if (releaseNoteDescription != null && string.IsNullOrWhiteSpace(input.Description))
-			{
-				derived.Description = releaseNoteDescription;
-				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNoteDescription.Length);
+				derived.Description = releaseNote;
+				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNote.Length);
 			}
 		}
 
-		if (string.IsNullOrWhiteSpace(input.Title) && derived.Title == null)
+		if (string.IsNullOrWhiteSpace(input.Title))
 		{
 			if (string.IsNullOrWhiteSpace(issueInfo.Title))
 			{
@@ -126,7 +119,7 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 			}
 
 			var issueTitle = issueInfo.Title;
-			if (input.StripTitlePrefix)
+			if (input.StripTitlePrefix == true)
 				issueTitle = ChangelogTextUtilities.StripSquareBracketPrefix(issueTitle);
 			derived.Title = issueTitle;
 			logger.LogInformation("Using issue title: {Title}", derived.Title);

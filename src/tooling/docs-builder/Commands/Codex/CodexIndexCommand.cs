@@ -94,7 +94,7 @@ internal sealed class CodexIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealRead;
 
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);
@@ -109,7 +109,7 @@ internal sealed class CodexIndexCommand(
 
 		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
 		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'engineering', 'security').");
+			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
 			return 1;
 		}
 
