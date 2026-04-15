@@ -3,10 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Elastic.Documentation.Search;
+using Elastic.Documentation.Serialization;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -210,12 +213,15 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			"_index action should trigger the default_pipeline, setting content_last_updated");
 		afterIndex.ContentLastUpdated.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
 
-		// Step 2: Verify that bulk update (scripted upsert) does NOT trigger the pipeline
-		await IndexViaScriptedUpsert(index, "url2", "hash_b", "Doc 2");
+		// Step 2: Verify that scripted upsert (HashedBulkUpdate) does NOT trigger the pipeline.
+		// The full DocumentationDocument includes content_last_updated at default (0001-01-01).
+		await IndexDocumentsDirectly(index, ("url2", "hash_b", "Doc 2"));
 		await RefreshIndex(index);
 		var afterUpdate = await GetDocument(index, "url2");
-		afterUpdate.ContentLastUpdated.Should().BeNull(
-			"bulk update action should skip the default_pipeline — this is the bug");
+		afterUpdate.ContentLastUpdated.Should().NotBeNull(
+			"scripted upsert writes content_last_updated from the serialized document");
+		afterUpdate.ContentLastUpdated.Value.Should().BeBefore(DateTimeOffset.UnixEpoch,
+			"scripted upsert skips the pipeline — content_last_updated is the unresolved default (0001-01-01)");
 
 		// Step 3: Verify that ResolveContentDatesAsync fixes documents missed by the pipeline
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
@@ -224,6 +230,185 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		afterResolve.ContentLastUpdated.Should().NotBeNull(
 			"ResolveContentDatesAsync should apply the pipeline via _update_by_query");
 		afterResolve.ContentLastUpdated.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
+	}
+
+	/// <summary>
+	/// Discovery test: indexes a full DocumentationDocument via a scripted upsert
+	/// (the same mechanism HashedBulkUpdate uses) and reads back what ES actually
+	/// stores for content_last_updated when the field is never explicitly set.
+	/// This tells us the exact value to filter on in ResolveContentDatesAsync.
+	/// </summary>
+	[Fact]
+	public async Task ScriptedUpsert_WithFullDocument_ContentLastUpdatedValue()
+	{
+		var index = "test-discovery";
+
+		// Create index with the content_last_updated mapping
+		await CreateTestIndex(index, "_none");
+
+		// Serialize a DocumentationDocument with default ContentLastUpdated (never set)
+		// using the same serializer context that HashedBulkUpdate uses in production
+		var doc = new DocumentationDocument
+		{
+			Url = "test-discovery-url",
+			Title = "Discovery Test",
+			SearchTitle = "Discovery Test",
+			Type = "doc",
+			Hash = "testhash123",
+			ContentBodyHash = "contenthash123"
+		};
+		var serializedDoc = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
+		output.WriteLine($"Serialized document JSON:\n{serializedDoc}");
+
+		// Check what the serializer outputs for content_last_updated
+		var parsedDoc = JsonNode.Parse(serializedDoc)!;
+		var serializedDateValue = parsedDoc["content_last_updated"]?.ToString();
+		output.WriteLine($"Serialized content_last_updated value: '{serializedDateValue}'");
+
+		// Index via scripted upsert (same as HashedBulkUpdate)
+		await IndexFullDocumentViaScriptedUpsert(index, doc.Url, serializedDoc);
+		await RefreshIndex(index);
+
+		// Read back from ES
+		var response = await _transport.GetAsync<StringResponse>(
+			$"{index}/_doc/{doc.Url}", CancellationToken.None
+		);
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
+			$"Failed to get document: {response.ApiCallDetails.DebugInformation}");
+
+		var source = JsonNode.Parse(response.Body)?["_source"];
+		source.Should().NotBeNull();
+
+		var esDateValue = source!["content_last_updated"]?.ToString();
+		output.WriteLine($"ES stored content_last_updated value: '{esDateValue}'");
+
+		// The default DateTimeOffset (0001-01-01) should be stored — verify it's pre-epoch
+		esDateValue.Should().NotBeNull("content_last_updated should be present in ES document");
+		var esDate = DateTimeOffset.Parse(esDateValue!, CultureInfo.InvariantCulture);
+		esDate.Year.Should().Be(1, "default DateTimeOffset.MinValue should serialize as year 0001");
+		esDate.Should().BeBefore(DateTimeOffset.UnixEpoch,
+			"the default value should be well before 1970, making it safe to filter with 'must_not range gt 1970'");
+	}
+
+	/// <summary>
+	/// Verifies the filter approach: after a scripted upsert writes a full DocumentationDocument
+	/// with default content_last_updated, the must_not range filter correctly matches it.
+	/// Also verifies a document with a real date is NOT matched.
+	/// </summary>
+	[Fact]
+	public async Task FilteredResolve_SkipsDocumentsWithExistingDates()
+	{
+		var enrichment = CreateEnrichment("filtered");
+		var index = "test-filtered";
+
+		await enrichment.InitializeAsync(CancellationToken.None);
+		await CreateTestIndex(index, enrichment.PipelineName);
+
+		// doc1: no content_last_updated (simulates scripted upsert that omits the field)
+		await IndexDocumentsDirectly(index, ("url1", "hash_a", "Doc 1"));
+
+		// doc2: content_last_updated at default DateTimeOffset.MinValue (simulates production)
+		var doc2 = new DocumentationDocument
+		{
+			Url = "url2",
+			Title = "Doc 2",
+			SearchTitle = "Doc 2",
+			Type = "doc",
+			ContentBodyHash = "hash_b"
+		};
+		var serialized2 = JsonSerializer.Serialize(doc2, SourceGenerationContext.Default.DocumentationDocument);
+		await IndexFullDocumentViaScriptedUpsert(index, "url2", serialized2);
+
+		// doc3: content_last_updated set to a real date (simulates unchanged doc from previous run)
+		var doc3Json = new JsonObject
+		{
+			["url"] = "url3",
+			["content_hash"] = "hash_c",
+			["title"] = "Doc 3",
+			["content_last_updated"] = "2026-01-15T12:00:00Z"
+		};
+		var putResponse = await _transport.PutAsync<StringResponse>(
+			$"{index}/_doc/url3?pipeline=_none",
+			PostData.String(doc3Json.ToJsonString()),
+			CancellationToken.None
+		);
+		putResponse.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+
+		await RefreshIndex(index);
+
+		// Act: resolve content dates (with filter — after we apply the fix)
+		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
+		await RefreshIndex(index);
+
+		// Assert
+		var docs = await GetAllDocuments(index);
+
+		var result1 = docs.Single(d => d.Url == "url1");
+		result1.ContentLastUpdated.Should().NotBeNull("doc1 had no date and should have been resolved");
+		result1.ContentLastUpdated!.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
+
+		var result2 = docs.Single(d => d.Url == "url2");
+		result2.ContentLastUpdated.Should().NotBeNull("doc2 had default date and should have been resolved");
+		result2.ContentLastUpdated!.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
+
+		var result3 = docs.Single(d => d.Url == "url3");
+		result3.ContentLastUpdated!.Value.Should().Be(
+			DateTimeOffset.Parse("2026-01-15T12:00:00Z", CultureInfo.InvariantCulture),
+			"doc3 already had a valid date and should NOT have been touched by the filter");
+	}
+
+	/// <summary>
+	/// End-to-end test: first run resolves all docs. Second run only re-indexes
+	/// the changed doc (unchanged docs are left alone, simulating HashedBulkUpdate noop).
+	/// The filter should only process the changed doc.
+	/// </summary>
+	[Fact]
+	public async Task SecondRun_WithFilter_OnlyChangedDocGetsNewDate()
+	{
+		var enrichment = CreateEnrichment("filter-e2e");
+		var index = "test-filter-e2e";
+
+		// === First run ===
+		await enrichment.InitializeAsync(CancellationToken.None);
+		await CreateTestIndex(index, enrichment.PipelineName);
+		await IndexDocumentsDirectly(index,
+			("url1", "hash_a", "Doc 1"),
+			("url2", "hash_b", "Doc 2"),
+			("url3", "hash_c", "Doc 3")
+		);
+		await RefreshIndex(index);
+		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
+		await RefreshIndex(index);
+		await enrichment.SyncLookupIndexAsync(index, CancellationToken.None);
+
+		var firstRunDocs = await GetAllDocuments(index);
+		var firstRunDates = firstRunDocs.ToDictionary(d => d.Url, d => d.ContentLastUpdated);
+
+		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+		await enrichment.InitializeAsync(CancellationToken.None);
+
+		// === Second run: only url1 changed, url2 and url3 are noops ===
+		// Re-index ONLY url1 (simulating HashedBulkUpdate replacing a changed doc).
+		// url2 and url3 are left untouched (simulating noop — content_last_updated preserved).
+		await IndexDocumentsDirectly(index, ("url1", "hash_CHANGED", "Doc 1 updated"));
+		await RefreshIndex(index);
+		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
+		await RefreshIndex(index);
+
+		// Assert
+		var secondRunDocs = await GetAllDocuments(index);
+
+		var changed = secondRunDocs.Single(d => d.Url == "url1");
+		changed.ContentLastUpdated.Should().BeAfter(firstRunDates["url1"]!.Value,
+			"url1 content changed — date should advance");
+
+		var unchanged2 = secondRunDocs.Single(d => d.Url == "url2");
+		unchanged2.ContentLastUpdated.Should().Be(firstRunDates["url2"]!.Value,
+			"url2 was a noop — filter should have skipped it, preserving its date");
+
+		var unchanged3 = secondRunDocs.Single(d => d.Url == "url3");
+		unchanged3.ContentLastUpdated.Should().Be(firstRunDates["url3"]!.Value,
+			"url3 was a noop — filter should have skipped it, preserving its date");
 	}
 
 	// --- Helpers ---
@@ -261,27 +446,26 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	}
 
 	/// <summary>
-	/// Indexes documents with pipeline=_none to simulate HashedBulkUpdate's bulk update actions
-	/// which bypass ingest pipelines.
+	/// Indexes documents via scripted upsert with full DocumentationDocument serialization,
+	/// matching how HashedBulkUpdate works in production. If the hash matches an existing
+	/// document, the script noops (preserving existing fields like content_last_updated).
+	/// If the hash differs (or is new), the script replaces the entire document.
 	/// </summary>
 	private async Task IndexDocumentsDirectly(string index, params (string url, string contentHash, string title)[] docs)
 	{
 		foreach (var (url, contentHash, title) in docs)
 		{
-			var doc = new JsonObject
+			var doc = new DocumentationDocument
 			{
-				["url"] = url,
-				["content_hash"] = contentHash,
-				["title"] = title
+				Url = url,
+				Title = title,
+				SearchTitle = title,
+				Type = "doc",
+				Hash = contentHash,
+				ContentBodyHash = contentHash
 			};
-
-			var response = await _transport.PutAsync<StringResponse>(
-				$"{index}/_doc/{url}?pipeline=_none",
-				PostData.String(doc.ToJsonString()),
-				CancellationToken.None
-			);
-			response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
-				$"Failed to index document {url}: {response.ApiCallDetails.DebugInformation}");
+			var serialized = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
+			await IndexFullDocumentViaScriptedUpsert(index, url, serialized);
 		}
 	}
 
@@ -302,52 +486,6 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		);
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
 			$"Failed to index document {url}: {response.ApiCallDetails.DebugInformation}");
-	}
-
-	/// <summary>
-	/// Uses the bulk API with a scripted upsert update action — exactly what HashedBulkUpdate does.
-	/// This does NOT trigger the default_pipeline or final_pipeline.
-	/// </summary>
-	private async Task IndexViaScriptedUpsert(string index, string url, string contentHash, string title)
-	{
-		var doc = new JsonObject
-		{
-			["url"] = url,
-			["content_hash"] = contentHash,
-			["title"] = title
-		};
-
-		// This is the exact bulk format that HashedBulkUpdate uses
-		var actionLine = new JsonObject
-		{
-			["update"] = new JsonObject
-			{
-				["_index"] = index,
-				["_id"] = url
-			}
-		};
-		var bodyLine = new JsonObject
-		{
-			["scripted_upsert"] = true,
-			["upsert"] = new JsonObject(),
-			["script"] = new JsonObject
-			{
-				["source"] = "ctx._source = params.doc",
-				["params"] = new JsonObject
-				{
-					["doc"] = doc
-				}
-			}
-		};
-
-		var bulkBody = $"{actionLine.ToJsonString()}\n{bodyLine.ToJsonString()}\n";
-		var response = await _transport.PostAsync<StringResponse>(
-			"/_bulk",
-			PostData.String(bulkBody),
-			CancellationToken.None
-		);
-		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
-			$"Bulk update failed: {response.ApiCallDetails.DebugInformation}");
 	}
 
 	private async Task<TestDocument> GetDocument(string index, string id)
@@ -404,6 +542,51 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 				);
 			})
 			.ToList();
+	}
+
+	/// <summary>
+	/// Indexes a pre-serialized DocumentationDocument via scripted upsert,
+	/// matching the exact pattern HashedBulkUpdate uses in production.
+	/// </summary>
+	private async Task IndexFullDocumentViaScriptedUpsert(string index, string id, string serializedDoc)
+	{
+		var docNode = JsonNode.Parse(serializedDoc)!;
+		var hashField = "hash";
+		var hashValue = docNode[hashField]?.ToString() ?? "";
+
+		var actionLine = new JsonObject
+		{
+			["update"] = new JsonObject
+			{
+				["_index"] = index,
+				["_id"] = id
+			}
+		};
+
+		// Matches HashedBulkUpdate's script: if hash matches → noop, else replace source
+		var bodyLine = new JsonObject
+		{
+			["scripted_upsert"] = true,
+			["upsert"] = new JsonObject(),
+			["script"] = new JsonObject
+			{
+				["source"] = $"if (ctx._source.{hashField} == params.hash) {{ ctx.op = 'noop' }} else {{ ctx._source = params.doc; ctx._source.{hashField} = params.hash }}",
+				["params"] = new JsonObject
+				{
+					["hash"] = hashValue,
+					["doc"] = JsonNode.Parse(serializedDoc)!
+				}
+			}
+		};
+
+		var bulkBody = $"{actionLine.ToJsonString()}\n{bodyLine.ToJsonString()}\n";
+		var response = await _transport.PostAsync<StringResponse>(
+			"/_bulk",
+			PostData.String(bulkBody),
+			CancellationToken.None
+		);
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
+			$"Bulk update failed: {response.ApiCallDetails.DebugInformation}");
 	}
 
 	private sealed record TestDocument(string Url, string ContentHash, DateTimeOffset? ContentLastUpdated);
