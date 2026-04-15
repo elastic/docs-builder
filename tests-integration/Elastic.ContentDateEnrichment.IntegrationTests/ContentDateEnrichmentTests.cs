@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using DotNet.Testcontainers.Builders;
@@ -39,11 +40,15 @@ public class ElasticsearchFixture : IAsyncLifetime
 		Transport = new DistributedTransport(settings);
 	}
 
-	public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+	public async ValueTask DisposeAsync()
+	{
+		await _container.DisposeAsync();
+		GC.SuppressFinalize(this);
+	}
 }
 
 [CollectionDefinition("Elasticsearch")]
-public class ElasticsearchCollection : ICollectionFixture<ElasticsearchFixture>;
+public class ElasticsearchTestCluster : ICollectionFixture<ElasticsearchFixture>;
 
 /// <summary>
 /// Integration tests verifying that content_last_updated is correctly resolved
@@ -91,7 +96,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		foreach (var doc in docs)
 		{
 			doc.ContentLastUpdated.Should().NotBeNull($"document {doc.Url} should have content_last_updated");
-			doc.ContentLastUpdated!.Value.Year.Should().BeGreaterThanOrEqualTo(2026,
+			doc.ContentLastUpdated.Value.Year.Should().BeGreaterThanOrEqualTo(2026,
 				$"document {doc.Url} should have a recent content_last_updated");
 		}
 	}
@@ -118,7 +123,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var firstRunDates = firstRunDocs.ToDictionary(d => d.Url, d => d.ContentLastUpdated);
 
 		// Wait to ensure timestamp separation
-		await Task.Delay(TimeSpan.FromSeconds(1.5));
+		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
 
 		// Re-initialize for second run (re-executes enrich policy with updated lookup data)
 		await enrichment.InitializeAsync(CancellationToken.None);
@@ -163,7 +168,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var firstRunDocs = await GetAllDocuments(index);
 		var firstRunDates = firstRunDocs.ToDictionary(d => d.Url, d => d.ContentLastUpdated);
 
-		await Task.Delay(TimeSpan.FromSeconds(1.5));
+		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
 
 		await enrichment.InitializeAsync(CancellationToken.None);
 
@@ -203,7 +208,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var afterIndex = await GetDocument(index, "url1");
 		afterIndex.ContentLastUpdated.Should().NotBeNull(
 			"_index action should trigger the default_pipeline, setting content_last_updated");
-		afterIndex.ContentLastUpdated!.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
+		afterIndex.ContentLastUpdated.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
 
 		// Step 2: Verify that bulk update (scripted upsert) does NOT trigger the pipeline
 		await IndexViaScriptedUpsert(index, "url2", "hash_b", "Doc 2");
@@ -218,7 +223,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var afterResolve = await GetDocument(index, "url2");
 		afterResolve.ContentLastUpdated.Should().NotBeNull(
 			"ResolveContentDatesAsync should apply the pipeline via _update_by_query");
-		afterResolve.ContentLastUpdated!.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
+		afterResolve.ContentLastUpdated.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
 	}
 
 	// --- Helpers ---
@@ -354,8 +359,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var source = JsonNode.Parse(response.Body)?["_source"];
 		source.Should().NotBeNull();
 
-		var dateStr = source!["content_last_updated"]?.GetValue<string>();
-		DateTimeOffset? date = dateStr is not null ? DateTimeOffset.Parse(dateStr) : null;
+		var dateStr = source["content_last_updated"]?.GetValue<string>();
+		DateTimeOffset? date = dateStr is not null ? DateTimeOffset.Parse(dateStr, CultureInfo.InvariantCulture) : null;
 
 		return new TestDocument(
 			source["url"]?.GetValue<string>() ?? "",
@@ -395,11 +400,11 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 				return new TestDocument(
 					source["url"]?.GetValue<string>() ?? "",
 					source["content_hash"]?.GetValue<string>() ?? "",
-					dateStr is not null ? DateTimeOffset.Parse(dateStr) : null
+					dateStr is not null ? DateTimeOffset.Parse(dateStr, CultureInfo.InvariantCulture) : null
 				);
 			})
 			.ToList();
 	}
 
-	private record TestDocument(string Url, string ContentHash, DateTimeOffset? ContentLastUpdated);
+	private sealed record TestDocument(string Url, string ContentHash, DateTimeOffset? ContentLastUpdated);
 }
