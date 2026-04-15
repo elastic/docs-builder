@@ -316,9 +316,10 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			if (config.Bundle?.ShowReleaseDates is true)
 				ShowReleaseDates = true;
 		}
-		catch (Exception)
+		catch
 		{
-			this.EmitWarning("Failed to parse changelog configuration; show_release_dates will use the default (false).");
+			// Best-effort: if the config is malformed the CLI pipeline will report
+			// proper errors; the directive just falls back to ShowReleaseDates = false.
 		}
 	}
 
