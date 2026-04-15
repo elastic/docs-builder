@@ -582,8 +582,10 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			$"Bulk update failed: {response.ApiCallDetails.DebugInformation}");
 
 		var bulkResult = JsonNode.Parse(response.Body);
-		var hasErrors = bulkResult?["errors"]?.GetValue<bool>() ?? false;
-		hasErrors.Should().BeFalse($"Bulk response contained item errors: {response.Body}");
+		bulkResult.Should().NotBeNull("bulk response body should be valid JSON");
+		bulkResult!["errors"].Should().NotBeNull("bulk response should contain an 'errors' field");
+		bulkResult["errors"]!.GetValue<bool>().Should().BeFalse(
+			$"Bulk response contained item errors: {response.Body}");
 	}
 
 	private sealed record TestDocument(string Url, string ContentHash, DateTimeOffset? ContentLastUpdated);
