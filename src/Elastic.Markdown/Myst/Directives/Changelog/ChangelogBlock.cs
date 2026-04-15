@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -323,6 +324,15 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		}
 	}
 
+	/// <summary>
+	/// The trust boundary for changelog config file resolution: checkout (git) root
+	/// when available, otherwise the documentation source directory.
+	/// Both explicit <c>:config:</c> paths and auto-discovered candidates are validated
+	/// against this same root.
+	/// </summary>
+	private IDirectoryInfo ConfigTrustRoot =>
+		Build.DocumentationCheckoutDirectory ?? Build.DocumentationSourceDirectory;
+
 	private string? ResolveConfigPath()
 	{
 		if (!string.IsNullOrWhiteSpace(ConfigPath))
@@ -335,47 +345,60 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			}
 
 			var explicitPath = Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath));
-			var file = Build.ReadFileSystem.FileInfo.New(explicitPath);
-			if (!file.IsSubPathOf(Build.DocumentationSourceDirectory))
-			{
-				this.EmitError("Changelog config path must resolve within the documentation source directory.");
-				return null;
-			}
-
-			if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
-			{
-				this.EmitError(accessError);
-				return null;
-			}
-
-			if (!Build.ReadFileSystem.File.Exists(explicitPath))
-			{
-				this.EmitWarning($"Specified changelog config path '{ConfigPath}' not found.");
-				return null;
-			}
-
-			return explicitPath;
+			return ValidateConfigCandidate(explicitPath, emitDiagnostics: true);
 		}
 
-		// Auto-discover changelog.yml relative to doc source directory
-		var candidates = new[]
-		{
-			Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom("changelog.yml")),
-			Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom("../changelog.yml")),
-			Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom("../docs/changelog.yml"))
-		};
+		// Auto-discover: try .yml and .yaml in each candidate location.
+		string[] relativePaths =
+		[
+			"changelog.yml", "changelog.yaml",
+			"../changelog.yml", "../changelog.yaml"
+		];
 
-		return candidates.FirstOrDefault(c =>
+		return relativePaths
+			.Select(rel => Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(rel)))
+			.Select(abs => ValidateConfigCandidate(abs, emitDiagnostics: false))
+			.FirstOrDefault(p => p != null);
+	}
+
+	/// <summary>
+	/// Validates a config file candidate against the shared trust rules:
+	/// must be within <see cref="ConfigTrustRoot"/>, must not be/traverse symlinks,
+	/// and must exist on the (scoped) filesystem.
+	/// </summary>
+	private string? ValidateConfigCandidate(string fullPath, bool emitDiagnostics)
+	{
+		try
 		{
-			try
+			var file = Build.ReadFileSystem.FileInfo.New(fullPath);
+
+			if (!file.IsSubPathOf(ConfigTrustRoot))
 			{
-				return Build.ReadFileSystem.File.Exists(c);
+				if (emitDiagnostics)
+					this.EmitError("Changelog config path must resolve within the documentation directory.");
+				return null;
 			}
-			catch
+
+			if (SymlinkValidator.ValidateFileAccess(file, ConfigTrustRoot) is { } accessError)
 			{
-				return false;
+				if (emitDiagnostics)
+					this.EmitError(accessError);
+				return null;
 			}
-		});
+
+			if (!Build.ReadFileSystem.File.Exists(fullPath))
+			{
+				if (emitDiagnostics)
+					this.EmitWarning($"Specified changelog config path '{ConfigPath}' not found.");
+				return null;
+			}
+
+			return fullPath;
+		}
+		catch
+		{
+			return null;
+		}
 	}
 
 	/// <summary>
