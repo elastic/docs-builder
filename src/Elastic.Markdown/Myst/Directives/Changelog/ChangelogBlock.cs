@@ -365,7 +365,17 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom("../docs/changelog.yml"))
 		};
 
-		return candidates.FirstOrDefault(Build.ReadFileSystem.File.Exists);
+		return candidates.FirstOrDefault(c =>
+		{
+			try
+			{
+				return Build.ReadFileSystem.File.Exists(c);
+			}
+			catch
+			{
+				return false;
+			}
+		});
 	}
 
 	/// <summary>
