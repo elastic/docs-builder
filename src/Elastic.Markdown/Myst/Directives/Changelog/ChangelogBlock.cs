@@ -11,8 +11,6 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
@@ -158,11 +156,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public HashSet<string> HideFeatures { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
-	/// Whether to show release dates in rendered output. Loaded from changelog.yml config.
-	/// </summary>
-	public bool ShowReleaseDates { get; private set; }
-
-	/// <summary>
 	/// How to handle PR/issue links relative to private bundle repos (see :link-visibility: option).
 	/// </summary>
 	public ChangelogLinkVisibility LinkVisibility { get; private set; }
@@ -294,35 +287,15 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		Found = true;
 	}
 
-	private static readonly IDeserializer ConfigDeserializer =
-		new StaticDeserializerBuilder(new DocsBuilderYamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.IgnoreUnmatchedProperties()
-			.Build();
-
 	/// <summary>
-	/// Loads changelog configuration settings (e.g. show_release_dates) from the config file.
+	/// Loads changelog configuration settings from the config file.
 	/// Uses the explicit :config: path if specified, otherwise auto-discovers changelog.yml.
+	/// Reserved for future directive-relevant settings.
 	/// </summary>
-	private void LoadConfiguration()
-	{
-		var configFilePath = ResolveConfigPath();
-		if (configFilePath == null)
-			return;
-
-		try
-		{
-			var yaml = Build.ReadFileSystem.File.ReadAllText(configFilePath);
-			var config = ConfigDeserializer.Deserialize<ChangelogDirectiveConfigYaml>(yaml);
-			if (config.Bundle?.ShowReleaseDates is true)
-				ShowReleaseDates = true;
-		}
-		catch
-		{
-			// Best-effort: if the config is malformed the CLI pipeline will report
-			// proper errors; the directive just falls back to ShowReleaseDates = false.
-		}
-	}
+	private void LoadConfiguration() =>
+		// Config file resolution is kept so the path validation infrastructure
+		// stays exercised; settings are currently handled at bundle time.
+		_ = ResolveConfigPath();
 
 	/// <summary>
 	/// The trust boundary for changelog config file resolution: checkout (git) root

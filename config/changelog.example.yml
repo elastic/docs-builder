@@ -219,9 +219,6 @@ bundle:
   #   This release includes new features and bug fixes.
   #   
   #   For more information, see the [release notes](https://www.elastic.co/docs/release-notes/product#product-{version}).
-  # Whether to show release dates in rendered changelog output (default: false)
-  # When true, release-date fields are displayed as "Released: date" text
-  # show_release_dates: false
   # changelog-init-bundle-seed
   # PR/issue link allowlist: when set (including []), only links to these owner/repo pairs are kept
   # in bundle output; others are rewritten to '# PRIVATE:' sentinels (requires resolve: true).
@@ -262,8 +259,9 @@ bundle:
     #   #   - Bug fixes and stability enhancements
     #   #   
     #   #   Download the release binaries: https://github.com/{owner}/{repo}/releases/tag/v{version}
-    #   # Optional: profile-specific release date display setting (overrides bundle.show_release_dates)
-    #   # show_release_dates: false
+    #   # Optional: suppress auto-population of release-date for this profile.
+    #   # Equivalent to --no-release-date but configured per-profile.
+    #   # no_release_dates: false
     # Example: GitHub release profile (fetches PR list directly from a GitHub release)
     # Use when you want to bundle or remove changelogs based on a published GitHub release.
     # elasticsearch-gh-release:

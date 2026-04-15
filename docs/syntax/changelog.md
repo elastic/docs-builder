@@ -129,8 +129,6 @@ Explicit path to a `changelog.yml` or `changelog.yaml` configuration file, relat
 
 Both explicit and auto-discovered paths must resolve within the repository checkout directory and must not traverse symlinks.
 
-The directive currently reads the `bundle.show_release_dates` setting from this file to control whether release dates are displayed in the rendered output.
-
 ## Filtering entries with bundle rules
 
 You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
@@ -252,9 +250,7 @@ Download the release binaries: https://github.com/elastic/elasticsearch/releases
 ...
 ```
 
-When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: 2026-04-09_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
-
-The `bundle.show_release_dates` setting in `changelog.yml` (boolean, defaults to `false`) controls whether release dates appear in the rendered output. When set to `false`, the `release-date` field is preserved in the bundle YAML but ignored during rendering. The `{changelog}` directive auto-discovers this setting from `changelog.yml` (see [`:config:`](#config) for the discovery order). Per-profile overrides (`bundle.profiles.<name>.show_release_dates`) are supported by the CLI but not by the directive, which reads only the bundle-level default.
+When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: April 9, 2026_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents. If the `release-date` field is present in a bundle, it is always displayed. To suppress release dates for a specific profile, set `no_release_dates: true` in the profile configuration (see [profile configuration](/cli/changelog/bundle.md)); this prevents the date from being written to the bundle during bundling.
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 

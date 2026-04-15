@@ -37,8 +37,7 @@ public static class ChangelogInlineRenderer
 				block.PrivateRepositories,
 				block.HideFeatures,
 				typeFilter,
-				block.LinkVisibility,
-				block.ShowReleaseDates);
+				block.LinkVisibility);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -54,8 +53,7 @@ public static class ChangelogInlineRenderer
 		HashSet<string> privateRepositories,
 		HashSet<string> hideFeatures,
 		ChangelogTypeFilter typeFilter,
-		ChangelogLinkVisibility linkVisibility,
-		bool showReleaseDates)
+		ChangelogLinkVisibility linkVisibility)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -81,7 +79,7 @@ public static class ChangelogInlineRenderer
 		};
 
 		var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
-		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker, bundle.Data?.Description, bundle.Data?.ReleaseDate, showReleaseDates);
+		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker, bundle.Data?.Description, bundle.Data?.ReleaseDate);
 	}
 
 	/// <summary>
@@ -156,8 +154,7 @@ public static class ChangelogInlineRenderer
 		ChangelogTypeFilter typeFilter,
 		PublishBlocker? publishBlocker,
 		string? description = null,
-		DateOnly? releaseDate = null,
-		bool showReleaseDates = false)
+		DateOnly? releaseDate = null)
 	{
 		var sb = new StringBuilder();
 
@@ -181,8 +178,7 @@ public static class ChangelogInlineRenderer
 
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
 
-		// Add release date if present and ShowReleaseDates is enabled
-		if (showReleaseDates && releaseDate is { } date)
+		if (releaseDate is { } date)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"_Released: {date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}_");

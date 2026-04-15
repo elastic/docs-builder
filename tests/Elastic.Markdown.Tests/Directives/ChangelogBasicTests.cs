@@ -621,15 +621,7 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 		"""
 		:::{changelog}
 		:::
-		""")
-	{
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
-			bundle:
-			  show_release_dates: true
-			"""));
-		FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
+		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
 			// language=yaml
 			"""
 			products:
@@ -645,7 +637,6 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 			  prs:
 			  - "500"
 			"""));
-	}
 
 	[Fact]
 	public void RendersReleaseDate() =>
@@ -697,15 +688,7 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 		"""
 		:::{changelog}
 		:::
-		""")
-	{
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
-			bundle:
-			  show_release_dates: true
-			"""));
-		FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
+		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
 			// language=yaml
 			"""
 			products:
@@ -723,7 +706,6 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 			  prs:
 			  - "500"
 			"""));
-	}
 
 	[Fact]
 	public void RendersReleaseDate() =>

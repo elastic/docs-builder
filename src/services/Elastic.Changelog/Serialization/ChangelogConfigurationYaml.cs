@@ -301,11 +301,6 @@ internal record BundleConfigurationYaml
 	public YamlLenientList? LinkAllowRepos { get; set; }
 
 	/// <summary>
-	/// Whether to show release dates in rendered changelog output by default.
-	/// </summary>
-	public bool? ShowReleaseDates { get; set; }
-
-	/// <summary>
 	/// Named bundle profiles.
 	/// </summary>
 	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }
@@ -356,10 +351,10 @@ internal record BundleProfileYaml
 	public YamlLenientList? HideFeatures { get; set; }
 
 	/// <summary>
-	/// Whether to show release dates in rendered changelog output for this profile.
-	/// Overrides bundle.show_release_dates when provided.
+	/// When true, suppresses auto-population of release-date during bundling for this profile.
+	/// Equivalent to the <c>--no-release-date</c> CLI flag but configured per-profile.
 	/// </summary>
-	public bool? ShowReleaseDates { get; set; }
+	public bool? NoReleaseDates { get; set; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches

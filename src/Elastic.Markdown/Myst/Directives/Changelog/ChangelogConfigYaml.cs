@@ -18,9 +18,7 @@ internal sealed record ChangelogDirectiveConfigYaml
 
 /// <summary>
 /// Minimal bundle section from changelog.yml, containing only directive-relevant settings.
+/// Reserved for future directive-relevant settings.
 /// </summary>
 [YamlSerializable]
-internal sealed record ChangelogDirectiveBundleConfigYaml
-{
-	public bool? ShowReleaseDates { get; set; }
-}
+internal sealed record ChangelogDirectiveBundleConfigYaml;

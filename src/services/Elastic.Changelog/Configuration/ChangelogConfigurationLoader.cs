@@ -521,7 +521,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						Repo = kvp.Value.Repo,
 						Owner = kvp.Value.Owner,
 						HideFeatures = kvp.Value.HideFeatures?.Values,
-						ShowReleaseDates = kvp.Value.ShowReleaseDates,
+						NoReleaseDates = kvp.Value.NoReleaseDates,
 						Source = kvp.Value.Source
 					});
 		}
@@ -535,7 +535,6 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Repo = yaml.Repo,
 			Owner = yaml.Owner,
 			LinkAllowRepos = linkAllowRepos,
-			ShowReleaseDates = yaml.ShowReleaseDates ?? false,
 			Profiles = profiles
 		};
 	}

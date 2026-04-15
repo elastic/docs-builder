@@ -32,10 +32,6 @@ public record RenderChangelogsArguments
 	public string? Config { get; init; }
 	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
 
-	/// <summary>
-	/// Optional override for showing release dates. When null, falls back to config's bundle.show_release_dates.
-	/// </summary>
-	public bool? ShowReleaseDates { get; init; }
 }
 
 /// <summary>
@@ -178,10 +174,8 @@ public class ChangelogRenderingService(
 				renderReleaseDate = bundleReleaseDates[0];
 			}
 
-			var renderShowReleaseDates = input.ShowReleaseDates ?? config.Bundle?.ShowReleaseDates ?? false;
-
 			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription, renderReleaseDate, renderShowReleaseDates);
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription, renderReleaseDate);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -295,8 +289,7 @@ public class ChangelogRenderingService(
 		HashSet<string> featureIdsToHide,
 		ChangelogConfiguration? config,
 		string? description = null,
-		DateOnly? releaseDate = null,
-		bool showReleaseDates = false)
+		DateOnly? releaseDate = null)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries
@@ -339,8 +332,7 @@ public class ChangelogRenderingService(
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config,
 			BundleDescription = description,
-			BundleReleaseDate = releaseDate,
-			ShowReleaseDates = showReleaseDates
+			BundleReleaseDate = releaseDate
 		};
 	}
 

@@ -104,13 +104,6 @@ public record BundleChangelogsArguments
 	public bool SuppressReleaseDate { get; init; }
 
 	/// <summary>
-	/// Whether to show release dates in rendered output.
-	/// Resolved from profile (if applicable) > config > default (false).
-	/// Not written to bundle YAML; purely an in-memory rendering concern.
-	/// </summary>
-	public bool? ShowReleaseDates { get; init; }
-
-	/// <summary>
 	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
 	/// </summary>
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
@@ -437,7 +430,7 @@ public partial class ChangelogBundlingService(
 		string? owner = null;
 		string[]? mergedHideFeatures = null;
 		string? profileDescription = null;
-		bool? profileShowReleaseDates = null;
+		var profileSuppressReleaseDate = false;
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
@@ -479,9 +472,7 @@ public partial class ChangelogBundlingService(
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
-
-			// Profile-level ShowReleaseDates takes precedence over bundle-level default
-			profileShowReleaseDates = profile.ShowReleaseDates ?? config.Bundle.ShowReleaseDates;
+			profileSuppressReleaseDate = profile.NoReleaseDates is true;
 
 			// Handle profile-specific description with placeholder substitution
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
@@ -527,7 +518,7 @@ public partial class ChangelogBundlingService(
 			Owner = owner,
 			HideFeatures = mergedHideFeatures,
 			Description = profileDescription,
-			ShowReleaseDates = profileShowReleaseDates ?? config?.Bundle?.ShowReleaseDates
+			SuppressReleaseDate = profileSuppressReleaseDate
 		};
 	}
 
@@ -554,9 +545,6 @@ public partial class ChangelogBundlingService(
 		// Apply description: CLI takes precedence; fall back to bundle-level config default
 		var description = input.Description ?? config.Bundle.Description;
 
-		// Apply ShowReleaseDates: CLI takes precedence; fall back to bundle-level config default
-		var showReleaseDates = input.ShowReleaseDates ?? config.Bundle.ShowReleaseDates;
-
 		return input with
 		{
 			Directory = directory,
@@ -565,7 +553,6 @@ public partial class ChangelogBundlingService(
 			Repo = repo,
 			Owner = owner,
 			Description = description,
-			ShowReleaseDates = showReleaseDates,
 			LinkAllowRepos = config.Bundle.LinkAllowRepos
 		};
 	}

@@ -814,7 +814,7 @@ internal sealed partial class ChangelogCommand(
 
 			collector.EmitError(string.Empty,
 				$"Profile mode does not support {string.Join(" and ", forbidden)}. " +
-				"Use bundle.show_release_dates configuration in changelog.yml instead.");
+				"Use bundle.profiles.<name>.no_release_dates in changelog.yml instead.");
 			return 1;
 		}
 
