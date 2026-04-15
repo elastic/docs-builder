@@ -7,8 +7,10 @@ using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Schemas;
+using Elastic.ApiExplorer.Templates;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -24,19 +26,25 @@ public interface IApiGroupingModel : IApiModel;
 public record ApiClassification(string Name, string Description, IReadOnlyCollection<ApiTag> Tags) : IApiGroupingModel
 {
 	/// <inheritdoc />
+#pragma warning disable IDE0060 // Remove unused parameter - interface implementation requirement
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
+#pragma warning restore IDE0060
 }
 
 public record ApiTag(string Name, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
 {
 	/// <inheritdoc />
+#pragma warning disable IDE0060 // Remove unused parameter - interface implementation requirement
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
+#pragma warning restore IDE0060
 }
 
 public record ApiEndpoint(List<ApiOperation> Operations, string? Name) : IApiGroupingModel
 {
 	/// <inheritdoc />
+#pragma warning disable IDE0060 // Remove unused parameter - interface implementation requirement
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
+#pragma warning restore IDE0060
 }
 
 public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, IMarkdownStringRenderer markdownStringRenderer)
@@ -182,6 +190,133 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		return rootNavigation;
 	}
 
+	/// <summary>
+	/// Creates navigation with template support for landing pages.
+	/// </summary>
+	private Task<LandingNavigationItem> CreateNavigationWithTemplate(
+		string productKey,
+		ResolvedApiConfiguration apiConfig,
+		OpenApiDocument openApiDocument)
+	{
+		var url = $"{context.UrlPathPrefix}/api/" + productKey;
+
+		if (apiConfig.HasCustomTemplate)
+		{
+			var templateProcessor = TemplateProcessorFactory.Create(markdownStringRenderer);
+			var templateLanding = new TemplateLandingModel(apiConfig, templateProcessor, context.UrlPathPrefix ?? "");
+			var templateNavigation = new TemplateLandingNavigationItem(url, templateLanding);
+			var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
+			CreateOperationNavigationItems(productKey, openApiDocument, templateNavigation, topLevelNavigationItems);
+			CreateSchemaNavigationItems(productKey, openApiDocument, templateNavigation, topLevelNavigationItems);
+			templateNavigation.NavigationItems = topLevelNavigationItems;
+			return Task.FromResult<LandingNavigationItem>(templateNavigation);
+		}
+
+		return Task.FromResult(CreateNavigation(productKey, openApiDocument));
+	}
+
+	/// <summary>
+	/// Helper method to create operation navigation items (extracted from CreateNavigation).
+	/// </summary>
+	private void CreateOperationNavigationItems(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		LandingNavigationItem rootNavigation,
+		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> topLevelNavigationItems)
+	{
+		// This is essentially the same logic as in CreateNavigation, but extracted for reuse
+		var ops = openApiDocument.Paths
+			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
+			.Select(pair =>
+			{
+				var op = pair.Operation;
+				var extensions = op.Value.Extensions;
+				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is JsonNodeExtension anyNs
+					? anyNs.Node.GetValue<string>()
+					: null;
+				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is JsonNodeExtension anyApi
+					? anyApi.Node.GetValue<string>()
+					: null;
+				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
+				var tagClassification = (extensions?.TryGetValue("x-tag-group", out var g) ?? false) && g is JsonNodeExtension anyTagGroup
+					? anyTagGroup.Node.GetValue<string>()
+					: openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
+						? ClassifyElasticsearchTag(tag ?? "unknown")
+						: "unknown";
+
+				var apiString = ns is null
+					? api ?? op.Value.Summary ?? Guid.NewGuid().ToString("N") : $"{ns}.{api}";
+				return new
+				{
+					Classification = tagClassification,
+					Api = apiString,
+					Tag = tag,
+					pair.Path,
+					pair.Operation
+				};
+			})
+			.ToArray();
+
+		var nestedGrouping =
+			(
+				from op in ops
+				group op by op.Classification
+				into classificationGroup
+				from tagGroup in
+				from op in classificationGroup
+				group op by op.Tag
+				into apiGroups
+				from apiGroup in
+				from op in apiGroups
+				group op by op.Api
+				group apiGroup by apiGroups.Key
+				group tagGroup by classificationGroup.Key
+			).ToArray();
+
+		var classifications = new List<ApiClassification>();
+		foreach (var classificationGroup in nestedGrouping)
+		{
+			var tags = new List<ApiTag>();
+			foreach (var tagGroup in classificationGroup)
+			{
+				var apis = new List<ApiEndpoint>();
+				foreach (var apiGroup in tagGroup)
+				{
+					var operations = new List<ApiOperation>();
+					foreach (var api in apiGroup)
+					{
+						var operation = api.Operation;
+						var apiOperation = new ApiOperation(operation.Key, operation.Value, api.Path.Key, api.Path.Value, apiGroup.Key);
+						operations.Add(apiOperation);
+					}
+					var apiEndpoint = new ApiEndpoint(operations, apiGroup.Key);
+					apis.Add(apiEndpoint);
+				}
+				var tag = new ApiTag(tagGroup.Key ?? "unknown", "", apis);
+				tags.Add(tag);
+			}
+			var classification = new ApiClassification(classificationGroup.Key, "", tags);
+			classifications.Add(classification);
+		}
+
+		var hasClassifications = classifications.Count > 1;
+		foreach (var classification in classifications)
+		{
+			if (hasClassifications && classification.Name != "common")
+			{
+				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
+				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
+
+				CreateTagNavigationItems(apiUrlSuffix, classification, classificationNavigationItem, classificationNavigationItem, tagNavigationItems);
+				topLevelNavigationItems.Add(classificationNavigationItem);
+				if (classificationNavigationItem.NavigationItems.Count == 0)
+					classificationNavigationItem.NavigationItems = tagNavigationItems;
+			}
+			else
+				CreateTagNavigationItems(apiUrlSuffix, classification, rootNavigation, rootNavigation, topLevelNavigationItems);
+		}
+	}
+
 	private void CreateTagNavigationItems(
 		string apiUrlSuffix,
 		ApiClassification classification,
@@ -249,10 +384,55 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		if (context.Configuration.OpenApiSpecifications is null)
-			return;
+		// Use new API configurations if available, otherwise fall back to legacy OpenApiSpecifications
+		if (context.Configuration.ApiConfigurations != null)
+		{
+			await GenerateWithTemplateSupport(ctx);
+		}
+		else if (context.Configuration.OpenApiSpecifications != null)
+		{
+			await GenerateLegacy(ctx);
+		}
+	}
 
-		foreach (var (prefix, path) in context.Configuration.OpenApiSpecifications)
+	private async Task GenerateWithTemplateSupport(Cancel ctx)
+	{
+		foreach (var (productKey, apiConfig) in context.Configuration.ApiConfigurations!)
+		{
+			// For now, use the primary spec file for backward compatibility
+			// TODO: Implement multi-spec support in a future iteration
+			var openApiDocument = await OpenApiReader.Create(apiConfig.PrimarySpecFile);
+			if (openApiDocument is null)
+			{
+				_logger.LogWarning("Failed to load OpenAPI specification for product {ProductKey}", productKey);
+				continue;
+			}
+
+			_logger.LogInformation("Generating OpenApiDocument {Title} for product {ProductKey}",
+				openApiDocument.Info.Title, productKey);
+
+			// Create navigation with template support
+			var navigation = await CreateNavigationWithTemplate(productKey, apiConfig, openApiDocument);
+			var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+
+			var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
+			{
+				NavigationHtml = string.Empty,
+				CurrentNavigation = navigation,
+				MarkdownRenderer = markdownStringRenderer
+			};
+
+			IApiGroupingModel model = navigation is TemplateLandingNavigationItem templateNav
+				? templateNav.TemplateLandingModel
+				: navigation.Index.Model;
+			_ = await Render(productKey, navigation, model, renderContext, navigationRenderer, ctx);
+			await RenderNavigationItems(productKey, renderContext, navigationRenderer, navigation, ctx);
+		}
+	}
+
+	private async Task GenerateLegacy(Cancel ctx)
+	{
+		foreach (var (prefix, path) in context.Configuration.OpenApiSpecifications!)
 		{
 			var openApiDocument = await OpenApiReader.Create(path);
 			if (openApiDocument is null)
@@ -271,7 +451,6 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			};
 			_ = await Render(prefix, navigation, navigation.Index.Model, renderContext, navigationRenderer, ctx);
 			await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, ctx);
-
 		}
 	}
 

@@ -96,17 +96,9 @@ exclude:
 
 ### `api`
 
-Maps product names to OpenAPI specification files to enable the [API Explorer](api-explorer.md). Paths are relative to the folder containing `docset.yml`. Only valid in `docset.yml`, not in `toc.yml` files.
+Maps product names to OpenAPI specification files to enable the API Explorer. Supports both simple configuration (backward compatible) and advanced configuration with custom landing page templates. Paths are relative to the folder containing `docset.yml`. Only valid in `docset.yml`, not in `toc.yml` files.
 
-```yaml
-api:
-  elasticsearch: elasticsearch-openapi.json
-  kibana: kibana-openapi.json
-```
-
-Each key becomes a sub-path of the generated API docs: `elasticsearch` → `/api/elasticsearch/`, `kibana` → `/api/kibana/`.
-
-See [API Explorer](api-explorer.md) for full configuration details.
+Refer to [API Explorer](api-explorer.md) for configuration details.
 
 ### `toc`
 

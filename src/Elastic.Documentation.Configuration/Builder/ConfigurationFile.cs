@@ -59,6 +59,11 @@ public record ConfigurationFile
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
 	/// <summary>
+	/// Resolved API configurations with template and specification file information.
+	/// </summary>
+	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
+
+	/// <summary>
 	/// Set of diagnostic hint types to suppress for this documentation set.
 	/// </summary>
 	public HashSet<HintType> SuppressDiagnostics { get; } = [];
@@ -138,13 +143,77 @@ public record ConfigurationFile
 			if (docSetFile.Api.Count > 0)
 			{
 				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
-				foreach (var (k, v) in docSetFile.Api)
+				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
+
+				foreach (var (productKey, apiConfig) in docSetFile.Api)
 				{
-					var path = Path.Join(context.DocumentationSourceDirectory.FullName, v);
-					var fi = context.ReadFileSystem.FileInfo.New(path);
-					specs[k] = fi;
+					if (!apiConfig.IsValid)
+					{
+						context.EmitError(
+							context.ConfigurationPath,
+							$"API configuration for '{productKey}' is invalid. Must have at least one spec and cannot specify both 'spec' and 'specs'."
+						);
+						continue;
+					}
+
+					// Resolve template file if specified
+					IFileInfo? templateFile = null;
+					if (!string.IsNullOrEmpty(apiConfig.Template))
+					{
+						var templatePath = Path.Join(context.DocumentationSourceDirectory.FullName, apiConfig.Template);
+						templateFile = context.ReadFileSystem.FileInfo.New(templatePath);
+						if (!templateFile.Exists)
+						{
+							context.EmitWarning(
+								context.ConfigurationPath,
+								$"Template file '{apiConfig.Template}' for API '{productKey}' does not exist."
+							);
+							templateFile = null;
+						}
+					}
+
+					// Resolve specification files
+					var specFiles = new List<IFileInfo>();
+					foreach (var specPath in apiConfig.GetSpecPaths())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, specPath);
+						var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!specFile.Exists)
+						{
+							context.EmitError(
+								context.ConfigurationPath,
+								$"API specification file '{specPath}' for product '{productKey}' does not exist."
+							);
+							continue;
+						}
+						specFiles.Add(specFile);
+					}
+
+					if (specFiles.Count == 0)
+					{
+						context.EmitError(
+							context.ConfigurationPath,
+							$"No valid specification files found for API product '{productKey}'."
+						);
+						continue;
+					}
+
+					// Create resolved configuration
+					var resolvedConfig = new ResolvedApiConfiguration
+					{
+						ProductKey = productKey,
+						TemplateFile = templateFile,
+						SpecFiles = specFiles.AsReadOnly()
+					};
+
+					apiConfigs[productKey] = resolvedConfig;
+
+					// Maintain backward compatibility with OpenApiSpecifications (use primary spec)
+					specs[productKey] = resolvedConfig.PrimarySpecFile;
 				}
-				OpenApiSpecifications = specs;
+
+				OpenApiSpecifications = specs.Count > 0 ? specs : null;
+				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
 			}
 
 			// Process products from docset - resolve ProductLinks to Product objects

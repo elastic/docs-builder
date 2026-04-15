@@ -84,7 +84,7 @@ public class DocumentationSetFileTests
 	}
 
 	[Fact]
-	public void DeserializesApiConfiguration()
+	public void DeserializesApiConfiguration_LegacyStringFormat()
 	{
 		// language=yaml
 		var yaml = """
@@ -96,9 +96,69 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.Api.Should().HaveCount(2)
-			.And.ContainKey("elasticsearch").WhoseValue.Should().Be("elasticsearch-openapi.json");
-		result.Api.Should().ContainKey("kibana").WhoseValue.Should().Be("kibana-openapi.json");
+		result.Api.Should().HaveCount(2);
+		result.Api["elasticsearch"].Spec.Should().Be("elasticsearch-openapi.json");
+		result.Api["elasticsearch"].Template.Should().BeNull();
+		result.Api["elasticsearch"].Specs.Should().BeEmpty();
+		result.Api["kibana"].Spec.Should().Be("kibana-openapi.json");
+		result.Api["kibana"].Template.Should().BeNull();
+		result.Api["kibana"].Specs.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void DeserializesApiConfiguration_NewObjectFormat()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           api:
+		             elasticsearch:
+		               spec: elasticsearch-openapi.json
+		               template: elasticsearch-overview.md
+		             kibana:
+		               specs:
+		                 - kibana-core-api.json
+		                 - kibana-alerting-api.json
+		               template: kibana-overview.md
+		           """;
+
+		var result = Deserialize(yaml);
+
+		result.Api.Should().HaveCount(2);
+
+		// Elasticsearch configuration
+		var esConfig = result.Api["elasticsearch"];
+		esConfig.Spec.Should().Be("elasticsearch-openapi.json");
+		esConfig.Template.Should().Be("elasticsearch-overview.md");
+		esConfig.Specs.Should().BeEmpty();
+		esConfig.GetSpecPaths().Should().ContainSingle().Which.Should().Be("elasticsearch-openapi.json");
+
+		// Kibana configuration
+		var kibanaConfig = result.Api["kibana"];
+		kibanaConfig.Spec.Should().BeNull();
+		kibanaConfig.Template.Should().Be("kibana-overview.md");
+		kibanaConfig.Specs.Should().HaveCount(2)
+			.And.Contain("kibana-core-api.json")
+			.And.Contain("kibana-alerting-api.json");
+		kibanaConfig.GetSpecPaths().Should().HaveCount(2)
+			.And.Contain("kibana-core-api.json")
+			.And.Contain("kibana-alerting-api.json");
+	}
+
+	[Fact]
+	public void ApiConfiguration_ValidatesCorrectly()
+	{
+		var validConfig = new ApiConfiguration { Spec = "test.json" };
+		validConfig.IsValid.Should().BeTrue();
+
+		var validMultiSpecConfig = new ApiConfiguration { Specs = ["test1.json", "test2.json"] };
+		validMultiSpecConfig.IsValid.Should().BeTrue();
+
+		var invalidNoSpecConfig = new ApiConfiguration();
+		invalidNoSpecConfig.IsValid.Should().BeFalse();
+
+		var invalidBothSpecConfig = new ApiConfiguration { Spec = "test.json", Specs = ["test2.json"] };
+		invalidBothSpecConfig.IsValid.Should().BeFalse();
 	}
 
 	[Fact]

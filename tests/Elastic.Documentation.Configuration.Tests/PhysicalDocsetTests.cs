@@ -37,8 +37,14 @@ public class PhysicalDocsetTests
 
 		// Assert API configuration
 		docSet.Api.Should().HaveCount(2);
-		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.Should().Be("elasticsearch-openapi.json");
-		docSet.Api.Should().ContainKey("kibana").WhoseValue.Should().Be("kibana-openapi.json");
+		docSet.Api.Should().ContainKey("elasticsearch");
+		docSet.Api["elasticsearch"].Spec.Should().Be("elasticsearch-openapi.json");
+		docSet.Api["elasticsearch"].Template.Should().Be("elasticsearch-api-overview.md");
+		docSet.Api["elasticsearch"].Specs.Should().BeEmpty();
+		docSet.Api.Should().ContainKey("kibana");
+		docSet.Api["kibana"].Spec.Should().Be("kibana-openapi.json");
+		docSet.Api["kibana"].Template.Should().BeNull();
+		docSet.Api["kibana"].Specs.Should().BeEmpty();
 
 		// Assert TOC structure
 		docSet.TableOfContents.Should().NotBeEmpty();
