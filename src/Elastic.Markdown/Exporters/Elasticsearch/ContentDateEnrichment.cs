@@ -69,6 +69,23 @@ public class ContentDateEnrichment(
 		logger.LogInformation("Content date lookup sync complete");
 	}
 
+	/// <summary>
+	/// Runs _update_by_query with the enrichment pipeline on all documents.
+	/// HashedBulkUpdate uses bulk update actions which skip ingest pipelines,
+	/// so the pipeline never fires during normal indexing. This post-indexing step
+	/// applies the pipeline to resolve content_last_updated for every document:
+	/// the pipeline compares each document's content_hash against the lookup from
+	/// the previous run and either preserves the old date or stamps a new one.
+	/// </summary>
+	public async Task ResolveContentDatesAsync(string indexAlias, Cancel ct)
+	{
+		logger.LogInformation("Resolving content dates in {Index} via pipeline {Pipeline}", indexAlias, PipelineName);
+
+		await operations.UpdateByQueryAsync(indexAlias, PostData.Empty, PipelineName, ct);
+
+		logger.LogInformation("Content date resolution complete for {Index}", indexAlias);
+	}
+
 	private string GenerateStagingName() =>
 		$"{_lookupAlias}-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8]}";
 

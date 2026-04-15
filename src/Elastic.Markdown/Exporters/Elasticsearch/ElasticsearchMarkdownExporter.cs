@@ -48,6 +48,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	// Content date tracking - enrich policy + pipeline for content_last_updated
 	private readonly ContentDateEnrichment _contentDateEnrichment;
 
+	// Read aliases resolved during StartAsync, used for post-indexing operations
+	private string _lexicalReadAlias = string.Empty;
+	private string _semanticReadAlias = string.Empty;
+
 	// Per-channel running totals for progress logging
 	private int _primaryIndexed;
 	private int _secondaryIndexed;
@@ -208,6 +212,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
 		var orchestratorContext = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+		_lexicalReadAlias = orchestratorContext.PrimaryReadAlias;
+		_semanticReadAlias = orchestratorContext.SecondaryReadAlias;
 
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
@@ -218,7 +224,14 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	public async ValueTask StopAsync(Cancel ctx = default)
 	{
 		_ = await _orchestrator.CompleteAsync(null, ctx);
-		await _contentDateEnrichment.SyncLookupIndexAsync(_lexicalTypeContext.IndexStrategy!.WriteTarget!, ctx);
+
+		// Resolve content_last_updated for documents where the ingest pipeline didn't fire.
+		// HashedBulkUpdate uses bulk update actions, which skip ingest pipelines.
+		// Use the read alias (-latest) rather than WriteTarget, which is removed after CompleteAsync.
+		await _contentDateEnrichment.ResolveContentDatesAsync(_lexicalReadAlias, ctx);
+		await _contentDateEnrichment.ResolveContentDatesAsync(_semanticReadAlias, ctx);
+
+		await _contentDateEnrichment.SyncLookupIndexAsync(_lexicalReadAlias, ctx);
 	}
 
 	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
