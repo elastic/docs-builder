@@ -28,6 +28,12 @@ public record BundleConfiguration
 	public bool Resolve { get; init; } = true;
 
 	/// <summary>
+	/// Default bundle description used when no profile-specific description is provided.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
+
+	/// <summary>
 	/// Default GitHub repository name applied to all profiles that do not specify their own.
 	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
 	/// </summary>
@@ -37,6 +43,13 @@ public record BundleConfiguration
 	/// Default GitHub repository owner applied to all profiles that do not specify their own.
 	/// </summary>
 	public string? Owner { get; init; }
+
+	/// <summary>
+	/// When set (including an empty list), PR/issue references whose resolved <c>owner/repo</c> is not listed
+	/// are rewritten to <c># PRIVATE:</c> sentinels at bundle time. When absent, no link filtering is applied.
+	/// Requires <see cref="Resolve"/>.
+	/// </summary>
+	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.
@@ -73,6 +86,12 @@ public record BundleProfile
 	/// Supports {version} and {lifecycle} placeholders.
 	/// </summary>
 	public string? OutputProducts { get; init; }
+
+	/// <summary>
+	/// Profile-specific bundle description. When provided, overrides the bundle.description default.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
 
 	/// <summary>
 	/// GitHub repository name stored on each product in the bundle output.

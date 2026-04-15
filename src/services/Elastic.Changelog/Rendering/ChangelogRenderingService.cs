@@ -14,6 +14,7 @@ using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
+using Nullean.ScopedFileSystem;
 using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Rendering;
@@ -65,11 +66,11 @@ public enum ChangelogFileType
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null
+	ScopedFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealWrite;
 
 	public async Task<bool> RenderChangelogs(
 		IDiagnosticsCollector collector,
@@ -132,8 +133,48 @@ public class ChangelogRenderingService(
 			// Emit warnings for hidden entries
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
+			// Extract descriptions from bundles for MVP support
+			var bundleDescriptions = validationResult.Bundles
+				.Select(b => b.Data.Description)
+				.Where(d => !string.IsNullOrEmpty(d))
+				.Distinct()
+				.ToList();
+
+			// MVP: Check for multiple descriptions and warn
+			string? renderDescription = null;
+			if (bundleDescriptions.Count > 1)
+			{
+				collector.EmitWarning(string.Empty,
+					$"Multiple bundles contain descriptions ({bundleDescriptions.Count} found). " +
+					"Multi-bundle description support is not yet implemented. Descriptions will be skipped.");
+			}
+			else if (bundleDescriptions.Count == 1)
+			{
+				renderDescription = bundleDescriptions[0];
+			}
+
+			// Extract release dates from bundles for MVP support
+			var bundleReleaseDates = validationResult.Bundles
+				.Select(b => b.Data.ReleaseDate)
+				.Where(d => d.HasValue)
+				.Select(d => d!.Value)
+				.Distinct()
+				.ToList();
+
+			DateOnly? renderReleaseDate = null;
+			if (bundleReleaseDates.Count > 1)
+			{
+				collector.EmitWarning(string.Empty,
+					$"Multiple bundles contain release dates ({bundleReleaseDates.Count} found). " +
+					"Multi-bundle release date support is not yet implemented. Release dates will be skipped.");
+			}
+			else if (bundleReleaseDates.Count == 1)
+			{
+				renderReleaseDate = bundleReleaseDates[0];
+			}
+
 			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config);
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription, renderReleaseDate);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -245,7 +286,9 @@ public class ChangelogRenderingService(
 		OutputSetup outputSetup,
 		ResolvedEntriesResult resolved,
 		HashSet<string> featureIdsToHide,
-		ChangelogConfiguration? config)
+		ChangelogConfiguration? config,
+		string? description = null,
+		DateOnly? releaseDate = null)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries
@@ -286,7 +329,9 @@ public class ChangelogRenderingService(
 			EntryToRepo = entryToRepo,
 			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
-			Configuration = config
+			Configuration = config,
+			BundleDescription = description,
+			BundleReleaseDate = releaseDate
 		};
 	}
 

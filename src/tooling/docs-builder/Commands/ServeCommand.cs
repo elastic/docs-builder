@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
 using ConsoleAppFramework;
 using Documentation.Builder.Http;
 using Elastic.Documentation.Configuration;
@@ -28,7 +27,7 @@ internal sealed class ServeCommand(ILoggerFactory logFactory, IConfigurationCont
 	[Command("")]
 	public async Task Serve(string? path = null, int port = 3000, bool watch = false, Cancel ctx = default)
 	{
-		var host = new DocumentationWebHost(logFactory, path, port, new FileSystem(), new MockFileSystem(), configurationContext, watch);
+		var host = new DocumentationWebHost(logFactory, path, port, FileSystemFactory.RealGitRootForPath(path), FileSystemFactory.InMemory(), configurationContext, watch);
 		await host.RunAsync(ctx);
 		_logger.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')

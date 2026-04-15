@@ -15,6 +15,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.GithubRelease;
 
@@ -54,6 +55,12 @@ public record CreateChangelogsFromReleaseArguments
 	public bool WarnOnTypeMismatch { get; init; } = true;
 
 	/// <summary>
+	/// Optional bundle description text with placeholder support.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
+
+	/// <summary>
 	/// Whether to create a bundle file after creating individual changelog files. Defaults to true.
 	/// Set to false when called from 'changelog add --release-version' to skip bundle creation.
 	/// </summary>
@@ -68,13 +75,13 @@ public class GitHubReleaseChangelogService(
 	IConfigurationContext configurationContext,
 	IGitHubReleaseService? releaseService = null,
 	IGitHubPrService? prService = null,
-	IFileSystem? fileSystem = null,
+	ScopedFileSystem? fileSystem = null,
 	ChangelogBundlingService? bundlingService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly ChangelogBundlingService _bundlingService = bundlingService ?? new ChangelogBundlingService(logFactory, configurationContext, fileSystem);
@@ -180,7 +187,7 @@ public class GitHubReleaseChangelogService(
 			// 8. Optionally create bundle file if changelogs were created
 			if (input.CreateBundle && createdFiles.Count > 0)
 			{
-				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input.Config, ctx);
+				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, ctx);
 				if (bundlePath != null)
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
 			}
@@ -305,7 +312,7 @@ public class GitHubReleaseChangelogService(
 		ProductArgument productInfo,
 		string owner,
 		string repo,
-		string? configPath,
+		CreateChangelogsFromReleaseArguments input,
 		Cancel ctx)
 	{
 		// Build the bundles subfolder path (mirrors the previous CreateBundleFile convention)
@@ -333,8 +340,9 @@ public class GitHubReleaseChangelogService(
 			Prs = prUrls,
 			Owner = owner,
 			Repo = repo,
-			Config = configPath,
-			OutputProducts = [productInfo]
+			Config = input.Config,
+			OutputProducts = [productInfo],
+			Description = input.Description
 		};
 
 		var success = await _bundlingService.BundleChangelogs(collector, bundleArgs, ctx);

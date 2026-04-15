@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation.Assembler.Indexing;
@@ -52,7 +53,8 @@ public class AssemblerIndexService(
 	/// <param name="ctx"></param>
 	/// <returns></returns>
 	public async Task<bool> Index(IDiagnosticsCollector collector,
-		FileSystem fileSystem,
+		ScopedFileSystem readFs,
+		ScopedFileSystem writeFs,
 		string? endpoint = null,
 		string? environment = null,
 		string? apiKey = null,
@@ -105,10 +107,10 @@ public class AssemblerIndexService(
 			CertificatePath = certificatePath,
 			CertificateNotRoot = certificateNotRoot
 		};
-		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, options, collector, fileSystem, ctx);
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, options, collector, readFs, ctx);
 
 		var exporters = new HashSet<Exporter> { Elasticsearch };
 
-		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, assumeBuild: false, fileSystem, ctx);
+		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, assumeBuild: false, readFs, writeFs, ctx);
 	}
 }

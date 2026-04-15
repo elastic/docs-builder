@@ -5,25 +5,45 @@
 using System.IO.Abstractions;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
 /// <summary>
 /// Parser for promotion report HTML files to extract PR lists
 /// </summary>
-public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSystem? fileSystem = null)
+public partial class PromotionReportParser(ILoggerFactory logFactory, ScopedFileSystem? fileSystem = null)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<PromotionReportParser>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
-	private static readonly HttpClient HttpClient = new();
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 
-	static PromotionReportParser()
+	private static readonly string[] AllowedHosts = ["github.com", "buildkite.com"];
+
+	private static readonly HttpClient HttpClient = CreateHttpClient();
+
+	private static HttpClient CreateHttpClient()
 	{
-		HttpClient.DefaultRequestHeaders.Add("User-Agent", "docs-builder");
-		HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
+		var handler = new SocketsHttpHandler
+		{
+			AllowAutoRedirect = false,
+			ConnectTimeout = TimeSpan.FromSeconds(10),
+			UseProxy = false
+		};
+		var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+		client.DefaultRequestHeaders.Add("User-Agent", "docs-builder");
+		client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
+		return client;
 	}
+
+	private static bool IsAllowedUrl(string url) =>
+		Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+		uri.Scheme == Uri.UriSchemeHttps &&
+		AllowedHosts.Any(domain =>
+			uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
+			uri.Host.EndsWith($".{domain}", StringComparison.OrdinalIgnoreCase));
 
 	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex GitHubPrUrlRegex();
@@ -72,24 +92,15 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSyste
 			string htmlContent;
 
 			if (source.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-			source.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+				source.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 			{
-				// Fetch URL content
-				_logger.LogInformation("Fetching promotion report from URL: {Url}", source);
-				var response = await HttpClient.GetAsync(source, ctx);
-				if (!response.IsSuccessStatusCode)
-				{
-					return new PromotionReportResult
-					{
-						IsValid = false,
-						ErrorMessage = $"Failed to fetch promotion report from URL: {response.StatusCode}"
-					};
-				}
-				htmlContent = await response.Content.ReadAsStringAsync(ctx);
+				var (content, error) = await FetchReportUrlAsync(source, ctx);
+				if (error != null)
+					return new PromotionReportResult { IsValid = false, ErrorMessage = error };
+				htmlContent = content!;
 			}
 			else if (_fileSystem.File.Exists(source))
 			{
-				// Read local file
 				_logger.LogInformation("Reading promotion report from file: {FilePath}", source);
 				htmlContent = await _fileSystem.File.ReadAllTextAsync(source, ctx);
 			}
@@ -102,7 +113,6 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSyste
 				};
 			}
 
-			// Extract PR URLs from HTML content
 			var prUrls = ExtractPrUrlsFromHtml(htmlContent);
 
 			if (prUrls.Count == 0)
@@ -116,11 +126,7 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSyste
 
 			_logger.LogInformation("Extracted {Count} PR URLs from promotion report", prUrls.Count);
 
-			return new PromotionReportResult
-			{
-				IsValid = true,
-				PrUrls = prUrls
-			};
+			return new PromotionReportResult { IsValid = true, PrUrls = prUrls };
 		}
 		catch (HttpRequestException ex)
 		{
@@ -140,6 +146,35 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IFileSyste
 				ErrorMessage = $"IO error reading promotion report: {ex.Message}"
 			};
 		}
+	}
+
+	/// <summary>Returns (content, null) on success or (null, errorMessage) on failure.</summary>
+	private async Task<(string? Content, string? Error)> FetchReportUrlAsync(string url, Cancel ctx)
+	{
+		if (!IsAllowedUrl(url))
+			return (null, $"Report URL must use HTTPS and target an allowed domain ({string.Join(", ", AllowedHosts)}): {url}");
+
+		_logger.LogInformation("Fetching promotion report from URL: {Url}", url);
+		var response = await HttpClient.GetAsync(url, ctx);
+
+		if ((int)response.StatusCode is >= 300 and < 400 && response.Headers.Location != null)
+		{
+			var redirectTarget = response.Headers.Location.IsAbsoluteUri
+				? response.Headers.Location.ToString()
+				: new Uri(new Uri(url), response.Headers.Location).ToString();
+
+			if (!IsAllowedUrl(redirectTarget))
+				return (null, $"Report URL redirected to a disallowed domain: {redirectTarget}");
+
+			_logger.LogInformation("Following redirect to: {Url}", redirectTarget);
+			response = await HttpClient.GetAsync(redirectTarget, ctx);
+		}
+
+		if (!response.IsSuccessStatusCode)
+			return (null, $"Failed to fetch promotion report from URL: {response.StatusCode}");
+
+		var content = await response.Content.ReadAsStringAsync(ctx);
+		return (content, null);
 	}
 
 	private List<string> ExtractPrUrlsFromHtml(string html)

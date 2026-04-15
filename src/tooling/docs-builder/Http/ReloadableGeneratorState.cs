@@ -45,7 +45,7 @@ public class ReloadableGeneratorState : IDisposable
 		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Join(outputPath.FullName, "api"));
 
 		if (context.Configuration.Registry != DocSetRegistry.Public)
-			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), context.ReadFileSystem);
+			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData);
 
 		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.

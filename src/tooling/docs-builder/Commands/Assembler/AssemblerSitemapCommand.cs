@@ -23,7 +23,7 @@ internal sealed class AssemblerSitemapCommand(
 )
 {
 	/// <summary>
-	/// Generate sitemap.xml from the Elasticsearch index with correct last_updated dates
+	/// Generate sitemap.xml from the Elasticsearch index with correct content_last_updated dates
 	/// </summary>
 	/// <param name="endpoint">-es, Elasticsearch endpoint, alternatively set env DOCUMENTATION_ELASTIC_URL</param>
 	/// <param name="environment">The --environment used to resolve the ES index name</param>
@@ -59,7 +59,7 @@ internal sealed class AssemblerSitemapCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = new FileSystem();
+		var fs = FileSystemFactory.RealWrite;
 		var service = new AssemblerSitemapService(logFactory, configuration, configurationContext, githubActionsService);
 		var state = (fs,
 			endpoint, environment, apiKey, username, password,

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
@@ -33,8 +34,9 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		    cloud-serverless: "@Product:ESS"
 		""";
 
-	private async Task WriteConfig(string content, string path = "/tmp/config/changelog.yml")
+	private async Task WriteConfig(string content, string? path = null)
 	{
+		path ??= Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		var dir = FileSystem.Path.GetDirectoryName(path)!;
 		FileSystem.Directory.CreateDirectory(dir);
 		await FileSystem.File.WriteAllTextAsync(path, content);
@@ -67,7 +69,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	public async Task CreateChangelog_CIWithProducts_SkipsPrFetchAndSucceeds()
 	{
 		await WriteConfig(ConfigWithProductLabels);
-		FileSystem.Directory.CreateDirectory("/tmp/output");
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
 		var env = FakeCIEnv(
 			prNumber: "153344",
@@ -82,8 +84,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
-			Config = "/tmp/config/changelog.yml",
-			Output = "/tmp/output",
+			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"),
 			Concise = true
 		};
 
@@ -104,7 +106,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	public async Task CreateChangelog_CIWithoutProducts_FallsBackToPrFetchForProducts()
 	{
 		await WriteConfig(ConfigWithProductLabels);
-		FileSystem.Directory.CreateDirectory("/tmp/output");
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
 		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
 			.Returns(new GitHubPrInfo
@@ -125,8 +127,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
-			Config = "/tmp/config/changelog.yml",
-			Output = "/tmp/output",
+			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"),
 			Concise = true
 		};
 
@@ -147,7 +149,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	public async Task CreateChangelog_CIWithoutProducts_NoPrProductLabels_FailsWithProductRequired()
 	{
 		await WriteConfig(ConfigWithProductLabels);
-		FileSystem.Directory.CreateDirectory("/tmp/output");
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
 		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
 			.Returns(new GitHubPrInfo
@@ -168,8 +170,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
-			Config = "/tmp/config/changelog.yml",
-			Output = "/tmp/output",
+			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			Output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"),
 			Concise = true
 		};
 
@@ -181,5 +183,51 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		result.Should().BeFalse();
 		Collector.Errors.Should().Be(1);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("At least one product is required"));
+	}
+
+	/// <summary>
+	/// When --output points to a temp directory (e.g. /tmp/changelog-staging in CI),
+	/// the service must use a write-scoped filesystem that allows temp paths.
+	/// Regression test for ScopedFileSystemException on temp output.
+	/// </summary>
+	[Fact]
+	public async Task CreateChangelog_TempOutputDirectory_Succeeds()
+	{
+		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
+		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(mockFs);
+
+		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
+		writeFs.Directory.CreateDirectory(writeFs.Path.GetDirectoryName(configPath)!);
+		await writeFs.File.WriteAllTextAsync(configPath, ConfigWithProductLabels, TestContext.Current.CancellationToken);
+
+		// Use the real system temp path so AllowedSpecialFolder.Temp matches cross-platform.
+		// MockFileSystem's GetTempPath() returns a hardcoded "C:\temp" that diverges from the
+		// real temp on Windows CI (D:\Temp), causing scope validation to fail.
+		var tempOutput = Path.Join(Path.GetTempPath(), "changelog-staging");
+
+		var env = FakeCIEnv(
+			prNumber: "1044",
+			title: "move upstream update script to .ci",
+			type: "bug-fix",
+			owner: "elastic",
+			repo: "elastic-otel-java",
+			products: "elasticsearch"
+		);
+
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, writeFs, env);
+		var input = new CreateChangelogArguments
+		{
+			Products = [],
+			Config = configPath,
+			Output = tempOutput,
+			Concise = true
+		};
+
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		writeFs.Directory.Exists(tempOutput).Should().BeTrue();
+		writeFs.Directory.GetFiles(tempOutput, "*.yaml").Should().NotBeEmpty();
 	}
 }

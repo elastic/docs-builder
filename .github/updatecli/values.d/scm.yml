@@ -6,5 +6,4 @@ scm:
     edot-cloud-forwarder-aws
     edot-cloud-forwarder-azure
     edot-cloud-forwarder-gcp
-    elastic-otel-rum-js
   branch: main

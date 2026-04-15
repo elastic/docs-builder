@@ -57,7 +57,7 @@ environments:
 shared_configuration:
   stack: &stack
     current:  9.3
-    next: main
+    next: 9.4
     edge: main
 
   master: &master
@@ -153,8 +153,41 @@ references:
   # @elastic/admin-docs and @elastic/experience-docs
   kibana:
 
+  # Private Kibana team repo (changelog link filtering; does not publish docs here)
+  kibana-team:
+    private: true
+    skip: true
+  obs-ai-team:
+    private: true
+    skip: true
+  obs-ai-assistant-team:
+    private: true
+    skip: true
+  observability-error-backlog:
+    private: true
+    skip: true
+  response-ops-team:
+    private: true
+    skip: true
+  roadmap:
+    private: false
+    skip: true
+  search-team:
+    private: true
+    skip: true
+  security-team:
+    private: true
+    skip: true
+  sdh-synthetics:
+    private: true
+    skip: true
+  streams-program:
+    private: true
+    skip: true
+
   # @elastic/developer-docs
   eland:
+  elasticsearch-dsl-js:
   elasticsearch-hadoop:
   elasticsearch-java:
   elasticsearch-js:

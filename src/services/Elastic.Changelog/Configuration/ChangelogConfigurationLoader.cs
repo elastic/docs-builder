@@ -286,7 +286,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		// Process bundle configuration
 		BundleConfiguration? bundleConfig = null;
 		if (yamlConfig.Bundle != null)
-			bundleConfig = ParseBundleConfiguration(yamlConfig.Bundle);
+		{
+			bundleConfig = ParseBundleConfiguration(collector, configPath, yamlConfig.Bundle);
+			if (bundleConfig == null)
+				return null;
+		}
 
 		// Process extract configuration
 		var extract = new ExtractConfiguration
@@ -441,8 +445,66 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 	}
 
-	private static BundleConfiguration ParseBundleConfiguration(BundleConfigurationYaml yaml)
+	private static BundleConfiguration? ParseBundleConfiguration(IDiagnosticsCollector collector, string configPath, BundleConfigurationYaml yaml)
 	{
+		if (!string.IsNullOrWhiteSpace(yaml.Repo) && yaml.Repo.Contains('+', StringComparison.Ordinal))
+		{
+			collector.EmitError(
+				configPath,
+				"bundle.repo must name a single GitHub repository. Remove '+' merged-repo syntax from bundle.repo.");
+			return null;
+		}
+
+		if (yaml.Profiles is { Count: > 0 })
+		{
+			foreach (var kvp in yaml.Profiles)
+			{
+				var profileRepo = kvp.Value?.Repo;
+				if (!string.IsNullOrWhiteSpace(profileRepo) && profileRepo.Contains('+', StringComparison.Ordinal))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.profiles.{kvp.Key}.repo must name a single GitHub repository. Remove '+' merged-repo syntax.");
+					return null;
+				}
+			}
+		}
+
+		IReadOnlyList<string>? linkAllowRepos = null;
+		if (yaml.LinkAllowRepos != null)
+		{
+			var raw = yaml.LinkAllowRepos.Values ?? [];
+			var list = new List<string>();
+			foreach (var v in raw)
+			{
+				if (string.IsNullOrWhiteSpace(v))
+					continue;
+
+				var trimmed = v.Trim();
+				if (trimmed.IndexOf('/') < 0 ||
+					trimmed.IndexOf('/') != trimmed.LastIndexOf('/'))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: '{v}'.");
+					return null;
+				}
+
+				var slash = trimmed.IndexOf('/');
+				if (slash <= 0 || slash >= trimmed.Length - 1)
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: '{v}'.");
+					return null;
+				}
+
+				list.Add(trimmed);
+			}
+
+			linkAllowRepos = list;
+		}
+
 		Dictionary<string, BundleProfile>? profiles = null;
 		if (yaml.Profiles is { Count: > 0 })
 		{
@@ -455,6 +517,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						Products = kvp.Value.Products,
 						Output = kvp.Value.Output,
 						OutputProducts = kvp.Value.OutputProducts,
+						Description = kvp.Value.Description,
 						Repo = kvp.Value.Repo,
 						Owner = kvp.Value.Owner,
 						HideFeatures = kvp.Value.HideFeatures?.Values,
@@ -467,8 +530,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Directory = yaml.Directory,
 			OutputDirectory = yaml.OutputDirectory,
 			Resolve = yaml.Resolve ?? true,
+			Description = yaml.Description,
 			Repo = yaml.Repo,
 			Owner = yaml.Owner,
+			LinkAllowRepos = linkAllowRepos,
 			Profiles = profiles
 		};
 	}
@@ -737,7 +802,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						collector.EmitWarning(configPath,
 							$"Configuration pattern 'match_products: any' with 'include_products' in per-product rule '{normalizedProductId}' provides no selective filtering. " +
 							"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
-							"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+							"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md");
 					}
 
 					// Detect disjoint products in per-product include_products
@@ -752,7 +817,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 								$"Per-product rule '{normalizedProductId}' includes disjoint products [{string.Join(", ", disjointProducts)}] " +
 								"which cannot be included due to single-product rule resolution. " +
 								"Use separate bundles (each with a single product in output_products or profile output_products), or multi-product changelogs instead. " +
-								"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+								"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md");
 						}
 					}
 
@@ -803,7 +868,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			{
 				collector.EmitHint(configPath,
 					"rules.bundle: When 'products' is present, global include_products, exclude_products, and type/area rules are not applied for filtering; configure filters under each product key or use global-only rules.bundle (no 'products' section). " +
-					"See: https://elastic.github.io/docs-builder/contribute/changelog/#bundle-rule-modes");
+					"See: https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md#bundle-rule-modes");
 			}
 		}
 

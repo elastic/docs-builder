@@ -6,11 +6,17 @@ using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Configuration;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -39,10 +45,16 @@ public record AmendBundleArguments
 /// <summary>
 /// Service for amending changelog bundles with additional entries
 /// </summary>
-public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFileSystem? fileSystem = null) : IService
+public partial class ChangelogBundleAmendService(
+	ILoggerFactory logFactory,
+	ScopedFileSystem? fileSystem = null,
+	IConfigurationContext? configurationContext = null) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundleAmendService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
+		: null;
 
 	[GeneratedRegex(@"\.amend-(\d+)\.ya?ml$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();
@@ -90,14 +102,99 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 				addFilePaths.Add(addFile);
 			}
 
-			// Determine resolve: explicit CLI value takes precedence, otherwise infer from original bundle
-			var shouldResolve = InferResolve(input);
+			// Resolve flag: explicit CLI wins; otherwise infer from parent bundle (single read + deserialize).
+			Bundle? parentBundleFromInfer = null;
+			bool shouldResolve;
+			if (input.Resolve.HasValue)
+				shouldResolve = input.Resolve.Value;
+			else
+			{
+				var (ok, inferredBundle) = await TryDeserializeParentBundleAsync(
+					input.BundlePath,
+					collector,
+					emitParseErrorToCollector: false,
+					ctx);
+				if (!ok)
+					shouldResolve = false;
+				else
+				{
+					parentBundleFromInfer = inferredBundle;
+					shouldResolve = inferredBundle!.IsResolved;
+					_logger.LogInformation("Inferred resolve={Resolve} from original bundle", shouldResolve);
+				}
+			}
 
 			// Determine the next amend file number
 			var nextAmendNumber = GetNextAmendNumber(input.BundlePath);
 			var amendFilePath = GenerateAmendFilePath(input.BundlePath, nextAmendNumber);
 
 			_logger.LogInformation("Creating amend file: {AmendFilePath} (resolve={Resolve})", amendFilePath, shouldResolve);
+
+			ChangelogConfiguration? changelogConfig = null;
+			if (_configLoader != null)
+				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
+
+			var linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
+			var linkAllowlistActive = linkAllowRepos != null;
+			Bundle? parentBundleForAllowlist = null;
+
+			if (linkAllowlistActive)
+			{
+				if (parentBundleFromInfer != null)
+					parentBundleForAllowlist = parentBundleFromInfer;
+				else
+				{
+					var (ok, loaded) = await TryDeserializeParentBundleAsync(
+						input.BundlePath,
+						collector,
+						emitParseErrorToCollector: true,
+						ctx);
+					if (!ok)
+						return false;
+					ArgumentNullException.ThrowIfNull(loaded);
+					parentBundleForAllowlist = loaded;
+				}
+
+				ArgumentNullException.ThrowIfNull(parentBundleForAllowlist);
+				if (!parentBundleForAllowlist.IsResolved)
+				{
+					collector.EmitError(
+						string.Empty,
+						"bundle.link_allow_repos requires the parent bundle to be resolved (inline entry content). " +
+						"Re-create the bundle with resolve enabled, or remove bundle.link_allow_repos.");
+					return false;
+				}
+
+				var owner = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Repo : null;
+				if (!LinkAllowlistSanitizer.TryApplyBundle(
+					collector,
+					parentBundleForAllowlist,
+					linkAllowRepos!,
+					owner,
+					repo,
+					out _,
+					out var parentHadAllowlistChanges))
+					return false;
+
+				if (parentHadAllowlistChanges)
+				{
+					collector.EmitError(
+						string.Empty,
+						"bundle.link_allow_repos requires the parent bundle to already reflect filtered PR/issue references. " +
+						"Re-create the parent bundle with the same bundle.link_allow_repos and resolve enabled, " +
+						"or remove bundle.link_allow_repos for amend.");
+					return false;
+				}
+			}
+
+			if (linkAllowlistActive && !shouldResolve)
+			{
+				collector.EmitError(
+					string.Empty,
+					"bundle.link_allow_repos requires resolved amend content. Use --resolve or ensure the original bundle is resolved, or remove bundle.link_allow_repos.");
+				return false;
+			}
 
 			// Load and process the files to add
 			var entries = new List<BundledEntry>();
@@ -116,8 +213,43 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 				Entries = entries
 			};
 
+			var bundleForWrite = amendBundle;
+			if (linkAllowlistActive && shouldResolve)
+			{
+				ArgumentNullException.ThrowIfNull(parentBundleForAllowlist);
+				var owner = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Repo : null;
+
+				if (!LinkAllowlistSanitizer.TryApplyBundle(
+					collector,
+					amendBundle,
+					linkAllowRepos!,
+					owner,
+					repo,
+					out var sanitized,
+					out _))
+					return false;
+				bundleForWrite = sanitized;
+
+				if (configurationContext != null && linkAllowRepos!.Count > 0)
+				{
+					try
+					{
+						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, linkAllowRepos!, assembly);
+					}
+					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+					{
+						collector.EmitWarning(
+							string.Empty,
+							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
+					}
+				}
+			}
+
 			// Serialize and write the amend file
-			var yaml = ReleaseNotesSerialization.SerializeBundle(amendBundle);
+			var yaml = ReleaseNotesSerialization.SerializeBundle(bundleForWrite);
 
 			// Ensure output directory exists
 			var outputDir = _fileSystem.Path.GetDirectoryName(amendFilePath);
@@ -141,23 +273,31 @@ public partial class ChangelogBundleAmendService(ILoggerFactory logFactory, IFil
 		}
 	}
 
-	private bool InferResolve(AmendBundleArguments input)
+	private async Task<(bool Ok, Bundle? Bundle)> TryDeserializeParentBundleAsync(
+		string bundlePath,
+		IDiagnosticsCollector collector,
+		bool emitParseErrorToCollector,
+		Cancel ctx)
 	{
-		if (input.Resolve.HasValue)
-			return input.Resolve.Value;
-
 		try
 		{
-			var bundleContent = _fileSystem.File.ReadAllText(input.BundlePath);
-			var originalBundle = ReleaseNotesSerialization.DeserializeBundle(bundleContent);
-			var inferred = originalBundle.IsResolved;
-			_logger.LogInformation("Inferred resolve={Resolve} from original bundle", inferred);
-			return inferred;
+			var text = await _fileSystem.File.ReadAllTextAsync(bundlePath, ctx);
+			var bundle = ReleaseNotesSerialization.DeserializeBundle(text);
+			return (true, bundle);
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
 		{
-			_logger.LogWarning(ex, "Could not read original bundle to infer resolve; defaulting to false");
-			return false;
+			if (emitParseErrorToCollector)
+			{
+				collector.EmitError(
+					bundlePath,
+					$"Failed to parse parent bundle YAML: {ex.Message}",
+					ex);
+			}
+			else
+				_logger.LogWarning(ex, "Could not read original bundle to infer resolve; defaulting to false");
+
+			return (false, null);
 		}
 	}
 

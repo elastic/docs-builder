@@ -36,7 +36,8 @@ public static class ChangelogInlineRenderer
 				block.PublishBlocker,
 				block.PrivateRepositories,
 				block.HideFeatures,
-				typeFilter);
+				typeFilter,
+				block.LinkVisibility);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -51,7 +52,8 @@ public static class ChangelogInlineRenderer
 		PublishBlocker? publishBlocker,
 		HashSet<string> privateRepositories,
 		HashSet<string> hideFeatures,
-		ChangelogTypeFilter typeFilter)
+		ChangelogTypeFilter typeFilter,
+		ChangelogLinkVisibility linkVisibility)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -69,12 +71,15 @@ public static class ChangelogInlineRenderer
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => g.ToList());
 
-		// Check if the bundle's repo (which may be merged like "elasticsearch+kibana")
-		// contains any private repositories - if so, hide links for this bundle
-		var hideLinks = ShouldHideLinksForRepo(bundle.Repo, privateRepositories);
+		var hideLinks = linkVisibility switch
+		{
+			ChangelogLinkVisibility.KeepLinks => false,
+			ChangelogLinkVisibility.HideLinks => true,
+			_ => ShouldHideLinksForRepo(bundle.Repo, privateRepositories)
+		};
 
 		var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
-		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker);
+		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker, bundle.Data?.Description, bundle.Data?.ReleaseDate);
 	}
 
 	/// <summary>
@@ -147,7 +152,9 @@ public static class ChangelogInlineRenderer
 		bool subsections,
 		bool hideLinks,
 		ChangelogTypeFilter typeFilter,
-		PublishBlocker? publishBlocker)
+		PublishBlocker? publishBlocker,
+		string? description = null,
+		DateOnly? releaseDate = null)
 	{
 		var sb = new StringBuilder();
 
@@ -170,6 +177,20 @@ public static class ChangelogInlineRenderer
 			.ToList();
 
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
+
+		// Add release date if present
+		if (releaseDate is { } date)
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"_Released: {date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}_");
+		}
+
+		// Add description if present
+		if (!string.IsNullOrEmpty(description))
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(description);
+		}
 
 		// Check if we have any content at all
 		var hasAnyContent = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 ||
