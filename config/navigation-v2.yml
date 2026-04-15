@@ -382,6 +382,23 @@ nav:
         page: docs-content://reference/ingestion-tools/index.md
         children:
         - toc: opentelemetry://reference
+          children:
+          - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/index.md
+            title: Quickstarts
+          - page: opentelemetry://reference/architecture/index.md
+            title: Reference Architecture
+          - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/index.md
+            title: Use cases
+          - page: opentelemetry://reference/compatibility/index.md
+            title: Compatibility and support
+          - page: opentelemetry://reference/data-streams.md
+            title: Data streams
+          - page: opentelemetry://reference/central-configuration.md
+            title: Central configuration
+        - toc: opentelemetry://reference/motlp
+        - toc: opentelemetry://reference/edot-cloud-forwarder
+        - toc: elastic-agent://reference/edot-collector
+        - toc: opentelemetry://reference/edot-sdks
         - toc: docs-content://reference/fleet
         - toc: integration-docs://reference
         - toc: elasticsearch://reference/search-connectors
