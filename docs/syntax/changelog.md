@@ -25,7 +25,7 @@ The directive supports the following options:
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
 | `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
-| `:config: path` | Path to `changelog.yml` configuration (reserved for future use) | auto-discover |
+| `:config: path` | Path to `changelog.yml` configuration | auto-discover |
 
 ### Example with options
 
@@ -122,11 +122,14 @@ If a changelog has multiple area values, only the first one is used.
 
 #### `:config:`
 
-Explicit path to a `changelog.yml` configuration file. If not specified, the directive auto-discovers from:
-1. `changelog.yml` in the docset root
-2. `docs/changelog.yml` relative to docset root
+Explicit path to a `changelog.yml` or `changelog.yaml` configuration file, relative to the documentation source directory. If not specified, the directive auto-discovers from these locations (first match wins):
 
-Reserved for future configuration use. The directive does not currently load or apply configuration from this file.
+1. `changelog.yml` or `changelog.yaml` in the documentation source directory
+2. `changelog.yml` or `changelog.yaml` in the parent directory (typically the repository root)
+
+Both explicit and auto-discovered paths must resolve within the repository checkout directory and must not traverse symlinks.
+
+The directive currently reads the `bundle.show_release_dates` setting from this file to control whether release dates are displayed in the rendered output.
 
 ## Filtering entries with bundle rules
 
@@ -251,7 +254,7 @@ Download the release binaries: https://github.com/elastic/elasticsearch/releases
 
 When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: 2026-04-09_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
 
-The `show_release_dates` setting in `changelog.yml` (boolean, defaults to `false`) controls whether release dates appear in the rendered output. When set to `false`, the `release-date` field is ignored during rendering.
+The `bundle.show_release_dates` setting in `changelog.yml` (boolean, defaults to `false`) controls whether release dates appear in the rendered output. When set to `false`, the `release-date` field is preserved in the bundle YAML but ignored during rendering. The `{changelog}` directive auto-discovers this setting from `changelog.yml` (see [`:config:`](#config) for the discovery order). Per-profile overrides (`bundle.profiles.<name>.show_release_dates`) are supported by the CLI but not by the directive, which reads only the bundle-level default.
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 

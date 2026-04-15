@@ -259,11 +259,11 @@ bundle:
     #   # description: |
     #   #   Elasticsearch {version} includes:
     #   #   - Performance improvements
-    #   # Optional: profile-specific release date display setting (overrides bundle.show_release_dates)  
-    #   # show_release_dates: false
     #   #   - Bug fixes and stability enhancements
     #   #   
     #   #   Download the release binaries: https://github.com/{owner}/{repo}/releases/tag/v{version}
+    #   # Optional: profile-specific release date display setting (overrides bundle.show_release_dates)
+    #   # show_release_dates: false
     # Example: GitHub release profile (fetches PR list directly from a GitHub release)
     # Use when you want to bundle or remove changelogs based on a published GitHub release.
     # elasticsearch-gh-release:
