@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -11,6 +10,8 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
@@ -71,7 +72,7 @@ public enum ChangelogTypeFilter
 ///
 /// Default bundles folder is <c>changelog/bundles/</c> relative to the docset root.
 /// </remarks>
-public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
+public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	/// <summary>
 	/// Default folder for changelog bundles, relative to the documentation source directory.
@@ -292,8 +293,11 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 		Found = true;
 	}
 
-	[GeneratedRegex(@"^\s*show_release_dates\s*:\s*(?<value>true|false)\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
-	private static partial Regex ShowReleaseDatesPattern();
+	private static readonly IDeserializer ConfigDeserializer =
+		new StaticDeserializerBuilder(new DocsBuilderYamlStaticContext())
+			.WithNamingConvention(UnderscoredNamingConvention.Instance)
+			.IgnoreUnmatchedProperties()
+			.Build();
 
 	/// <summary>
 	/// Loads changelog configuration settings (e.g. show_release_dates) from the config file.
@@ -308,13 +312,13 @@ public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext c
 		try
 		{
 			var yaml = Build.ReadFileSystem.File.ReadAllText(configFilePath);
-			var match = ShowReleaseDatesPattern().Match(yaml);
-			if (match.Success)
-				ShowReleaseDates = string.Equals(match.Groups["value"].Value, "true", StringComparison.OrdinalIgnoreCase);
+			var config = ConfigDeserializer.Deserialize<ChangelogDirectiveConfigYaml>(yaml);
+			if (config.Bundle?.ShowReleaseDates is true)
+				ShowReleaseDates = true;
 		}
-		catch
+		catch (Exception)
 		{
-			// Config parsing failure is non-fatal for the directive
+			this.EmitWarning("Failed to parse changelog configuration; show_release_dates will use the default (false).");
 		}
 	}
 

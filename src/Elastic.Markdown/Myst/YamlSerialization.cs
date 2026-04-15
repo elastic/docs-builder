@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.FrontMatter;
@@ -39,4 +40,6 @@ public static class YamlSerialization
 [YamlSerializable(typeof(SettingMutability))]
 [YamlSerializable(typeof(ApplicableTo))]
 [YamlSerializable(typeof(ContributorEntry))]
+[YamlSerializable(typeof(ChangelogDirectiveConfigYaml))]
+[YamlSerializable(typeof(ChangelogDirectiveBundleConfigYaml))]
 public partial class DocsBuilderYamlStaticContext;
