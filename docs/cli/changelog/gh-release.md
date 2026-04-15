@@ -58,9 +58,9 @@ The product, target version, and lifecycle are inferred automatically from the r
 ## Configuration
 
 The `rules.bundle` section of your `changelog.yml` applies to bundles created by this command (after changelog files are gathered from the release).
-Which fields take effect depends on [bundle rule modes](/contribute/configure-changelogs.md#bundle-rule-modes).
+Which fields take effect depends on [bundle rule modes](/contribute/configure-changelogs-ref.md#bundle-rule-modes).
 For details, refer to [Rules for filtered bundles](/cli/changelog/bundle.md#changelog-bundle-rules).
-If you use per-product rule overrides, refer to [Product-specific bundle rules](/contribute/configure-changelogs.md#rules-bundle-products).
+If you use per-product rule overrides, refer to [Product-specific bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle-products).
 
 ## Examples
 

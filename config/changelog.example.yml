@@ -169,7 +169,7 @@ rules:
   #       exclude: "ILM"
 
   # Bundle — filtering applied during 'changelog bundle' and 'changelog gh-release'.
-  # See https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md#bundle-rule-modes for Mode 1 / 2 / 3 behavior.
+  # See https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md#bundle-rule-modes for Mode 1 / 2 / 3 behavior.
   #
   # Mode 2 (global content): use global lists only — no `products` key, or `products: {}`.
   # Example — include changelogs that list elasticsearch OR kibana (evaluated per changelog):

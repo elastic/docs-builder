@@ -27,7 +27,7 @@ You can specify only one of the following filter options:
 - `--release-version`: Bundle changelogs for the pull requests in GitHub release notes. Refer to [Bundle by GitHub release](#changelog-bundle-release-version).
 - `--report`: Include changelogs whose pull requests appear in a promotion report. Accepts a URL or a local file path to an HTML report.
 
-`rules.bundle` in `changelog.yml` is **not** mutually exclusive with these options: it runs as a **second stage** after the primary filter matches entries (for example, `--input-products` gathers changelogs, then global or per-product bundle rules may exclude some). The only mutually exclusive pairing is **profile-based** versus **option-based** invocation. See [bundle rule modes](/contribute/configure-changelogs.md#bundle-rule-modes).
+`rules.bundle` in `changelog.yml` is **not** mutually exclusive with these options: it runs as a **second stage** after the primary filter matches entries (for example, `--input-products` gathers changelogs, then global or per-product bundle rules may exclude some). The only mutually exclusive pairing is **profile-based** versus **option-based** invocation. See [bundle rule modes](/contribute/configure-changelogs-ref.md#bundle-rule-modes).
 
 By default, the output file contains only the changelog file names and checksums.
 To change this behavior, set `bundle.resolve` to `true` in the changelog configuration file or use the `--resolve` command option.

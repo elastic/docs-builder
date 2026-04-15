@@ -71,6 +71,8 @@ toc:
       - file: changelog.md
         children:
           - file: configure-changelogs.md
+            children:
+              - file: configure-changelogs-ref.md
           - file: create-changelogs.md
           - file: bundle-changelogs.md
           - file: publish-changelogs.md
