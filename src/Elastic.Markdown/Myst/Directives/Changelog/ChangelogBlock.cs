@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -70,7 +71,7 @@ public enum ChangelogTypeFilter
 ///
 /// Default bundles folder is <c>changelog/bundles/</c> relative to the docset root.
 /// </remarks>
-public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
+public partial class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	/// <summary>
 	/// Default folder for changelog bundles, relative to the documentation source directory.
@@ -153,6 +154,11 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// Entries with matching feature-id values will be excluded from the output.
 	/// </summary>
 	public HashSet<string> HideFeatures { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// Whether to show release dates in rendered output. Loaded from changelog.yml config.
+	/// </summary>
+	public bool ShowReleaseDates { get; private set; }
 
 	/// <summary>
 	/// How to handle PR/issue links relative to private bundle repos (see :link-visibility: option).
@@ -286,38 +292,75 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		Found = true;
 	}
 
+	[GeneratedRegex(@"^\s*show_release_dates\s*:\s*(?<value>true|false)\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
+	private static partial Regex ShowReleaseDatesPattern();
+
 	/// <summary>
-	/// Reserved for future config loading (e.g., bundle.directory). The directive no longer applies rules.publish.
-	/// Emits a warning when an explicit :config: path is specified but the file is not found.
+	/// Loads changelog configuration settings (e.g. show_release_dates) from the config file.
+	/// Uses the explicit :config: path if specified, otherwise auto-discovers changelog.yml.
 	/// </summary>
 	private void LoadConfiguration()
 	{
-		if (string.IsNullOrWhiteSpace(ConfigPath))
+		var configFilePath = ResolveConfigPath();
+		if (configFilePath == null)
 			return;
 
-		var trimmedPath = ConfigPath.TrimStart('/');
-		if (Path.IsPathRooted(trimmedPath))
+		try
 		{
-			this.EmitError("Changelog config path must not be an absolute path.");
-			return;
+			var yaml = Build.ReadFileSystem.File.ReadAllText(configFilePath);
+			var match = ShowReleaseDatesPattern().Match(yaml);
+			if (match.Success)
+				ShowReleaseDates = string.Equals(match.Groups["value"].Value, "true", StringComparison.OrdinalIgnoreCase);
+		}
+		catch
+		{
+			// Config parsing failure is non-fatal for the directive
+		}
+	}
+
+	private string? ResolveConfigPath()
+	{
+		if (!string.IsNullOrWhiteSpace(ConfigPath))
+		{
+			var trimmedPath = ConfigPath.TrimStart('/');
+			if (Path.IsPathRooted(trimmedPath))
+			{
+				this.EmitError("Changelog config path must not be an absolute path.");
+				return null;
+			}
+
+			var explicitPath = Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath));
+			var file = Build.ReadFileSystem.FileInfo.New(explicitPath);
+			if (!file.IsSubPathOf(Build.DocumentationSourceDirectory))
+			{
+				this.EmitError("Changelog config path must resolve within the documentation source directory.");
+				return null;
+			}
+
+			if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
+			{
+				this.EmitError(accessError);
+				return null;
+			}
+
+			if (!Build.ReadFileSystem.File.Exists(explicitPath))
+			{
+				this.EmitWarning($"Specified changelog config path '{ConfigPath}' not found.");
+				return null;
+			}
+
+			return explicitPath;
 		}
 
-		var explicitPath = Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom(ConfigPath));
-		var file = Build.ReadFileSystem.FileInfo.New(explicitPath);
-		if (!file.IsSubPathOf(Build.DocumentationSourceDirectory))
+		// Auto-discover changelog.yml relative to doc source directory
+		var candidates = new[]
 		{
-			this.EmitError("Changelog config path must resolve within the documentation source directory.");
-			return;
-		}
+			Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom("changelog.yml")),
+			Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom("../changelog.yml")),
+			Path.GetFullPath(Build.DocumentationSourceDirectory.ResolvePathFrom("../docs/changelog.yml"))
+		};
 
-		if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
-		{
-			this.EmitError(accessError);
-			return;
-		}
-
-		if (!Build.ReadFileSystem.File.Exists(explicitPath))
-			this.EmitWarning($"Specified changelog config path '{ConfigPath}' not found.");
+		return candidates.FirstOrDefault(Build.ReadFileSystem.File.Exists);
 	}
 
 	/// <summary>

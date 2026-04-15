@@ -31,6 +31,11 @@ public record RenderChangelogsArguments
 	public string[]? HideFeatures { get; init; }
 	public string? Config { get; init; }
 	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
+
+	/// <summary>
+	/// Optional override for showing release dates. When null, falls back to config's bundle.show_release_dates.
+	/// </summary>
+	public bool? ShowReleaseDates { get; init; }
 }
 
 /// <summary>
@@ -173,13 +178,7 @@ public class ChangelogRenderingService(
 				renderReleaseDate = bundleReleaseDates[0];
 			}
 
-			// Determine ShowReleaseDates setting from bundles (all must agree, default to false)
-			var bundleShowReleaseDates = validationResult.Bundles
-				.Select(b => b.Data?.ShowReleaseDates ?? false)
-				.Distinct()
-				.ToList();
-
-			var renderShowReleaseDates = bundleShowReleaseDates.Count == 1 && bundleShowReleaseDates[0];
+			var renderShowReleaseDates = input.ShowReleaseDates ?? config.Bundle?.ShowReleaseDates ?? false;
 
 			// Build render context
 			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription, renderReleaseDate, renderShowReleaseDates);

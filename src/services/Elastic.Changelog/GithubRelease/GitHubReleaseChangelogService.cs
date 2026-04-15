@@ -345,7 +345,7 @@ public class GitHubReleaseChangelogService(
 		var releaseDate = input.ReleaseDate;
 		if (string.IsNullOrEmpty(releaseDate) && release.PublishedAt.HasValue)
 		{
-			releaseDate = DateOnly.FromDateTime(release.PublishedAt.Value.DateTime).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+			releaseDate = DateOnly.FromDateTime(release.PublishedAt.Value.UtcDateTime).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 		}
 
 		var bundleArgs = new BundleChangelogsArguments

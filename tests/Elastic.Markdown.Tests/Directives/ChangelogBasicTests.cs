@@ -621,23 +621,31 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 		"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
-		// language=yaml
-		"""
-		products:
-		- product: apm-agent-dotnet
-		  target: 1.34.0
-		release-date: "2026-04-09"
-		show-release-dates: true
-		entries:
-		- title: Add tracing improvements
-		  type: feature
-		  products:
-		  - product: apm-agent-dotnet
-		    target: 1.34.0
-		  prs:
-		  - "500"
-		"""));
+		""")
+	{
+		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
+			// language=yaml
+			"""
+			bundle:
+			  show_release_dates: true
+			"""));
+		FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: apm-agent-dotnet
+			  target: 1.34.0
+			release-date: "2026-04-09"
+			entries:
+			- title: Add tracing improvements
+			  type: feature
+			  products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			  prs:
+			  - "500"
+			"""));
+	}
 
 	[Fact]
 	public void RendersReleaseDate() =>
@@ -689,25 +697,33 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 		"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
-		// language=yaml
-		"""
-		products:
-		- product: apm-agent-dotnet
-		  target: 1.34.0
-		release-date: "2026-04-09"
-		show-release-dates: true
-		description: |
-		  This release includes tracing improvements and bug fixes.
-		entries:
-		- title: Add tracing improvements
-		  type: feature
-		  products:
-		  - product: apm-agent-dotnet
-		    target: 1.34.0
-		  prs:
-		  - "500"
-		"""));
+		""")
+	{
+		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
+			// language=yaml
+			"""
+			bundle:
+			  show_release_dates: true
+			"""));
+		FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: apm-agent-dotnet
+			  target: 1.34.0
+			release-date: "2026-04-09"
+			description: |
+			  This release includes tracing improvements and bug fixes.
+			entries:
+			- title: Add tracing improvements
+			  type: feature
+			  products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			  prs:
+			  - "500"
+			"""));
+	}
 
 	[Fact]
 	public void RendersReleaseDate() =>

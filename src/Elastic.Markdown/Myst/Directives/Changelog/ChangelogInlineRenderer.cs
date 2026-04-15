@@ -37,7 +37,8 @@ public static class ChangelogInlineRenderer
 				block.PrivateRepositories,
 				block.HideFeatures,
 				typeFilter,
-				block.LinkVisibility);
+				block.LinkVisibility,
+				block.ShowReleaseDates);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -53,7 +54,8 @@ public static class ChangelogInlineRenderer
 		HashSet<string> privateRepositories,
 		HashSet<string> hideFeatures,
 		ChangelogTypeFilter typeFilter,
-		ChangelogLinkVisibility linkVisibility)
+		ChangelogLinkVisibility linkVisibility,
+		bool showReleaseDates)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -79,7 +81,7 @@ public static class ChangelogInlineRenderer
 		};
 
 		var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
-		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker, bundle.Data?.Description, bundle.Data?.ReleaseDate, bundle.Data?.ShowReleaseDates ?? false);
+		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker, bundle.Data?.Description, bundle.Data?.ReleaseDate, showReleaseDates);
 	}
 
 	/// <summary>

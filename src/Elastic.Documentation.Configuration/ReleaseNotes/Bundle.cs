@@ -24,12 +24,6 @@ public sealed record BundleDto
 	[YamlMember(Alias = "release-date", ApplyNamingConventions = false)]
 	public string? ReleaseDate { get; set; }
 	/// <summary>
-	/// Whether to show release dates in rendered changelog output for this bundle.
-	/// When true, the ReleaseDate field (if present) will be displayed as "Released: date" text.
-	/// </summary>
-	[YamlMember(Alias = "show-release-dates", ApplyNamingConventions = false)]
-	public bool? ShowReleaseDates { get; set; }
-	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>

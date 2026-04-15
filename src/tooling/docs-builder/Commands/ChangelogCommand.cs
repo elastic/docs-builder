@@ -849,7 +849,8 @@ internal sealed partial class ChangelogCommand(
 			Config = config,
 			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
 			Description = description,
-			ReleaseDate = noReleaseDate ? null : releaseDate
+			ReleaseDate = releaseDate,
+			SuppressReleaseDate = noReleaseDate
 		};
 
 		serviceInvoker.AddCommand(service, input,

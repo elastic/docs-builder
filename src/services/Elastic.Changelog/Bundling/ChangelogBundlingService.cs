@@ -98,7 +98,15 @@ public record BundleChangelogsArguments
 	public string? ReleaseDate { get; init; }
 
 	/// <summary>
-	/// Whether to show release dates in rendered output. When null, inherits from config/profile.
+	/// When true, skips auto-population of release date (respects --no-release-date).
+	/// Existing dates in bundle YAML files are still preserved.
+	/// </summary>
+	public bool SuppressReleaseDate { get; init; }
+
+	/// <summary>
+	/// Whether to show release dates in rendered output.
+	/// Resolved from profile (if applicable) > config > default (false).
+	/// Not written to bundle YAML; purely an in-memory rendering concern.
 	/// </summary>
 	public bool? ShowReleaseDates { get; init; }
 
@@ -365,7 +373,7 @@ public partial class ChangelogBundlingService(
 				}
 			}
 
-			// Apply release date auto-population and ShowReleaseDates setting
+			// Apply release date: CLI override → existing bundle date → auto-populate (unless suppressed)
 			var finalReleaseDate = bundleData.ReleaseDate; // Preserve existing date if present
 			if (!string.IsNullOrEmpty(input.ReleaseDate))
 			{
@@ -380,20 +388,13 @@ public partial class ChangelogBundlingService(
 					return false;
 				}
 			}
-			else if (finalReleaseDate == null)
+			else if (finalReleaseDate == null && !input.SuppressReleaseDate)
 			{
 				// Auto-populate with today's date (UTC) if no existing date
 				finalReleaseDate = DateOnly.FromDateTime(DateTime.UtcNow);
 			}
 
-			// Apply ShowReleaseDates setting (input takes precedence over config)
-			var showReleaseDates = input.ShowReleaseDates ?? config?.Bundle?.ShowReleaseDates ?? false;
-
-			bundleData = bundleData with
-			{
-				ReleaseDate = finalReleaseDate,
-				ShowReleaseDates = showReleaseDates
-			};
+			bundleData = bundleData with { ReleaseDate = finalReleaseDate };
 
 			// Write bundle file
 			await WriteBundleFileAsync(bundleData, outputPath, ctx);
@@ -479,7 +480,7 @@ public partial class ChangelogBundlingService(
 			owner = profile.Owner ?? config.Bundle.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 
-			// Profile-level ShowReleaseDates takes precedence; fall back to bundle-level default
+			// Profile-level ShowReleaseDates takes precedence over bundle-level default
 			profileShowReleaseDates = profile.ShowReleaseDates ?? config.Bundle.ShowReleaseDates;
 
 			// Handle profile-specific description with placeholder substitution
