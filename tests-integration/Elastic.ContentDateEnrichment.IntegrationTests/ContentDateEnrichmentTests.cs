@@ -580,6 +580,10 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		);
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
 			$"Bulk update failed: {response.ApiCallDetails.DebugInformation}");
+
+		var bulkResult = JsonNode.Parse(response.Body);
+		var hasErrors = bulkResult?["errors"]?.GetValue<bool>() ?? false;
+		hasErrors.Should().BeFalse($"Bulk response contained item errors: {response.Body}");
 	}
 
 	private sealed record TestDocument(string Url, string ContentHash, DateTimeOffset? ContentLastUpdated);
