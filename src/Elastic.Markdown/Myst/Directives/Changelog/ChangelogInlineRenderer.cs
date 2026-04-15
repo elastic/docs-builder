@@ -79,7 +79,7 @@ public static class ChangelogInlineRenderer
 		};
 
 		var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
-		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker);
+		return GenerateMarkdown(displayVersion, titleSlug, bundle.Repo, bundle.Owner, entriesByType, subsections, hideLinks, typeFilter, publishBlocker, bundle.Data?.Description);
 	}
 
 	/// <summary>
@@ -152,7 +152,8 @@ public static class ChangelogInlineRenderer
 		bool subsections,
 		bool hideLinks,
 		ChangelogTypeFilter typeFilter,
-		PublishBlocker? publishBlocker)
+		PublishBlocker? publishBlocker,
+		string? description = null)
 	{
 		var sb = new StringBuilder();
 
@@ -175,6 +176,13 @@ public static class ChangelogInlineRenderer
 			.ToList();
 
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
+
+		// Add description if present
+		if (!string.IsNullOrEmpty(description))
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(description);
+		}
 
 		// Check if we have any content at all
 		var hasAnyContent = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 ||

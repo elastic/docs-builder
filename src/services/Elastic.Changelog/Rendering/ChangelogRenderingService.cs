@@ -133,8 +133,27 @@ public class ChangelogRenderingService(
 			// Emit warnings for hidden entries
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
+			// Extract descriptions from bundles for MVP support
+			var bundleDescriptions = validationResult.Bundles
+				.Select(b => b.Data.Description)
+				.Where(d => !string.IsNullOrEmpty(d))
+				.ToList();
+
+			// MVP: Check for multiple descriptions and warn
+			string? renderDescription = null;
+			if (bundleDescriptions.Count > 1)
+			{
+				collector.EmitWarning(string.Empty,
+					$"Multiple bundles contain descriptions ({bundleDescriptions.Count} found). " +
+					"Multi-bundle description support is not yet implemented. Descriptions will be skipped.");
+			}
+			else if (bundleDescriptions.Count == 1)
+			{
+				renderDescription = bundleDescriptions[0];
+			}
+
 			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config);
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -246,7 +265,8 @@ public class ChangelogRenderingService(
 		OutputSetup outputSetup,
 		ResolvedEntriesResult resolved,
 		HashSet<string> featureIdsToHide,
-		ChangelogConfiguration? config)
+		ChangelogConfiguration? config,
+		string? description = null)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries
@@ -287,7 +307,8 @@ public class ChangelogRenderingService(
 			EntryToRepo = entryToRepo,
 			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
-			Configuration = config
+			Configuration = config,
+			BundleDescription = description
 		};
 	}
 

@@ -59,7 +59,7 @@ environments:
 shared_configuration:
   stack: &stack
     current:  9.3
-    next: main
+    next: 9.4
     edge: main
 
   master: &master
@@ -171,6 +171,9 @@ references:
   response-ops-team:
     private: true
     skip: true
+  roadmap:
+    private: false
+    skip: true
   search-team:
     private: true
     skip: true
@@ -186,6 +189,7 @@ references:
 
   # @elastic/developer-docs
   eland:
+  elasticsearch-dsl-js:
   elasticsearch-hadoop:
   elasticsearch-java:
   elasticsearch-js:

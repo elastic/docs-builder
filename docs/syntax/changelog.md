@@ -142,10 +142,14 @@ For full syntax, refer to the [rules for filtered bundles](/cli/changelog/bundle
 When bundles contain a `hide-features` field, entries with matching `feature-id` values are automatically filtered out from the rendered output. This allows you to hide unreleased or experimental features without modifying the bundle at render time.
 
 ```yaml
-# Example bundle with hide-features
+# Example bundle with description and hide-features
 products:
   - product: elasticsearch
     target: 9.3.0
+description: |
+  This release includes new features and bug fixes.
+  
+  For more information, see the [release notes](https://example.com/docs).
 hide-features:
   - feature:hidden-api
   - feature:experimental
@@ -158,7 +162,7 @@ entries:
 When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
 
 To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`.
-For more details, go to [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
+For more details, go to [Hide features in bundles](../contribute/bundle-changelogs.md#changelog-bundle-hide-features).
 
 ## Hiding private links [hide-links]
 
@@ -223,10 +227,15 @@ The version is extracted from the first product's `target` field in each bundle 
 
 ## Rendered output
 
-Each bundle renders as a `## {version}` section with subsections beneath:
+Each bundle renders as a `## {version}` section with optional description and subsections beneath:
 
 ```markdown
 ## 0.100.0
+
+This release includes new features and bug fixes.
+
+Download the release binaries: https://github.com/elastic/elasticsearch/releases/tag/v0.100.0
+
 ### Features and enhancements
 ...
 ### Fixes
@@ -236,6 +245,8 @@ Each bundle renders as a `## {version}` section with subsections beneath:
 ### Features and enhancements
 ...
 ```
+
+Bundle descriptions are rendered when present in the bundle YAML file. The description appears immediately after the version heading but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
 ### Section types
 
@@ -274,7 +285,7 @@ To fix this, either:
 
 :::{tip}
 In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
-For more command syntax details, go to [Remove changelog files](../contribute/changelog.md#changelog-remove).
+For more command syntax details, go to [Remove changelog files](../contribute/bundle-changelogs.md#changelog-remove).
 :::
 
 ## Example
@@ -303,7 +314,7 @@ The `{changelog}` directive is ideal for release notes pages that should always 
 
 ## Related
 
-- [Create and bundle changelogs](/contribute/changelog.md) — Learn how to create changelog entries and bundles
+- [Create and bundle changelogs](/contribute/changelog.md) — Overview, workflow, and links to detailed guides
 - [`changelog add`](/cli/changelog/add.md) — CLI command to create changelog entries
 - [`changelog bundle`](/cli/changelog/bundle.md) — CLI command to bundle changelog entries
 - [`changelog remove`](/cli/changelog/remove.md) — CLI command to remove changelog files
