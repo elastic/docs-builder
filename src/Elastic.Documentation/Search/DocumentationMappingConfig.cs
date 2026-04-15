@@ -74,6 +74,13 @@ public class LexicalConfig : IConfigureElasticsearch<DocumentationDocument>
 				.Analyzer("synonyms_fixed_analyzer")
 				.SearchAnalyzer("synonyms_analyzer")
 				.IndexOptions("offsets")))
+		.AddField("ai_autocomplete_questions", f => f.Text()
+			.Analyzer("synonyms_fixed_analyzer")
+			.SearchAnalyzer("synonyms_analyzer")
+			.MultiField("completion", mf => mf.SearchAsYouType()
+				.Analyzer("synonyms_fixed_analyzer")
+				.SearchAnalyzer("synonyms_analyzer")
+				.IndexOptions("offsets")))
 		// Keyword fields with multi-fields
 		.Url(f => f
 			.MultiField("match", mf => mf.Text())
@@ -113,6 +120,7 @@ public class SemanticConfig : IConfigureElasticsearch<DocumentationDocument>
 			.AddField("abstract.semantic_text", f => f.SemanticText())
 			.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText())
 			.AddField("ai_questions.semantic_text", f => f.SemanticText())
+			.AddField("ai_autocomplete_questions.semantic_text", f => f.SemanticText())
 			.AddField("ai_use_cases.semantic_text", f => f.SemanticText());
 }
 
