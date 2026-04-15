@@ -442,6 +442,7 @@ type Setup =
             Endpoints=DocumentationEndpoints(Elasticsearch = ElasticsearchEndpoint.Default),
             ProductsConfiguration = ProductsConfiguration(
                 Products = productDict.ToFrozenDictionary(),
+                PublicReferenceProducts = productDict.ToFrozenDictionary(),
                 ProductDisplayNames = (productDict |> Seq.map (fun p -> KeyValuePair(p.Key, p.Value.DisplayName)) |> fun s -> Dictionary(s)).ToFrozenDictionary()),
             LegacyUrlMappings = LegacyUrlMappingConfiguration(Mappings = []),
             SearchConfiguration = SearchConfiguration(Synonyms = Array.empty<string[]>, Rules = [], DiminishTerms = [])

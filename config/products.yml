@@ -59,6 +59,11 @@ products:
     versioning: 'terraform-google-edot-cf'
   curator:
     display: 'Elasticsearch Curator'
+  docs-builder:
+    display: 'Elastic Docs Builder'
+    repository: 'docs-builder'
+    features:
+      public-reference: false
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:
