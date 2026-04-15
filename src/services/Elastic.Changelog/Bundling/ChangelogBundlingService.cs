@@ -985,7 +985,7 @@ public partial class ChangelogBundlingService(
 						collector.EmitHint(string.Empty,
 							$"Note: Per-product rule '{ruleContextProduct}' uses 'match_products: any' with 'include_products' which acts as " +
 							$"{(wouldIncludeAll ? "include-all" : "exclude-all")} for this context. " +
-							$"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+							$"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md");
 						ruleStats["ineffective_pattern_warned"] = 1;
 					}
 
