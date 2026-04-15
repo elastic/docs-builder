@@ -17,11 +17,12 @@ public class FindGitRootTests
 		fs.AddFile("/repo/docset.yml", new("toc: []"));
 
 		var start = fs.DirectoryInfo.New("/repo");
+		var expected = start.FullName;
 
 		var result = Paths.FindGitRoot(start, ceiling: start);
 
 		result.Should().NotBeNull();
-		result!.FullName.Should().Be("/repo");
+		result.FullName.Should().Be(expected);
 	}
 
 	[Fact]
@@ -37,7 +38,7 @@ public class FindGitRootTests
 		var result = Paths.FindGitRoot(start, ceiling: ceiling);
 
 		result.Should().NotBeNull();
-		result!.FullName.Should().Be("/repo");
+		result.FullName.Should().Be(ceiling.FullName);
 	}
 
 	[Fact]
@@ -53,7 +54,7 @@ public class FindGitRootTests
 		var result = Paths.FindGitRoot(start, ceiling: ceiling);
 
 		result.Should().NotBeNull();
-		result!.FullName.Should().Be("/repo");
+		result.FullName.Should().Be(ceiling.FullName);
 	}
 
 	[Fact]
@@ -116,7 +117,7 @@ public class FindGitRootTests
 		var result = Paths.FindGitRoot(start, ceiling: ceiling);
 
 		result.Should().NotBeNull();
-		result!.FullName.Should().Be("/workspace");
+		result.FullName.Should().Be(ceiling.FullName);
 	}
 
 	[Fact]
@@ -147,6 +148,6 @@ public class FindGitRootTests
 		var result = Paths.FindGitRoot(start, ceiling: ceiling);
 
 		result.Should().NotBeNull();
-		result!.FullName.Should().Be("/repo");
+		result.FullName.Should().Be(ceiling.FullName);
 	}
 }
