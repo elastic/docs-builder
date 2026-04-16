@@ -111,7 +111,7 @@ public class ElasticsearchOperations(
 					"Task {TaskId} for {Operation} on '{SourceIndex}' exceeded max duration {MaxDuration} (elapsed: {Elapsed}). Attempting to cancel",
 					taskId, operation, sourceIndex, maxDuration.Value, sw.Elapsed);
 
-				await CancelTaskBestEffortAsync(taskId, operation);
+				await CancelTaskBestEffortAsync(taskId, operation, ct);
 
 				throw new TimeoutException(
 					$"Elasticsearch task {taskId} for {operation} on '{sourceIndex}' did not complete within {maxDuration.Value}");
@@ -123,15 +123,16 @@ public class ElasticsearchOperations(
 		} while (!completed);
 	}
 
-	/// <summary>Attempts to cancel an ES task. Logs on failure but does not throw.</summary>
-	private async Task CancelTaskBestEffortAsync(string taskId, string operation)
+	/// <summary>Attempts to cancel an ES task with a short timeout. Logs on failure but does not throw.</summary>
+	private async Task CancelTaskBestEffortAsync(string taskId, string operation, CancellationToken ct)
 	{
+		using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+		cts.CancelAfter(TimeSpan.FromSeconds(5));
+
 		try
 		{
-			var response = await WithRetryAsync(
-				() => _transport.PostAsync<DynamicResponse>($"/_tasks/{taskId}/_cancel", PostData.Empty, CancellationToken.None),
-				$"POST _tasks/{taskId}/_cancel",
-				CancellationToken.None);
+			var response = await _transport.PostAsync<DynamicResponse>(
+				$"/_tasks/{taskId}/_cancel", PostData.Empty, cts.Token);
 
 			if (response.ApiCallDetails.HasSuccessfulStatusCode)
 				_logger.LogInformation("Successfully requested cancellation of task {TaskId} ({Operation})", taskId, operation);
