@@ -73,12 +73,14 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		Cancel ctx
 	)
 	{
+		// Islands take priority: if the page belongs to an island, render the island sidebar
+		var island = navV2.GetIslandForUrl(currentNavigationItem.Url);
+		if (island is not null)
+			return await RenderIslandNavigation(island, navV2, ctx);
+
 		var section = navV2.GetSectionForUrl(currentNavigationItem.Url);
 		if (section is null)
-		{
-			// Fallback: render full V2 tree if no sections are defined
 			return await RenderFullV2Navigation(navV2, ctx);
-		}
 
 		var cacheKey = $"nav-v2-section-{section.Id}";
 		if (_renderedNavigationCache.TryGetValue(cacheKey, out var cachedHtml))
@@ -118,6 +120,64 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			_ = _semaphore.Release();
 		}
 	}
+
+	private async Task<NavigationRenderResult> RenderIslandNavigation(
+		NavigationIsland island,
+		SiteNavigationV2 navV2,
+		Cancel ctx
+	)
+	{
+		var cacheKey = $"nav-v2-island-{island.Id}";
+		if (_renderedNavigationCache.TryGetValue(cacheKey, out var cachedHtml))
+			return CreateIslandResult(cachedHtml, island, navV2);
+
+		await _semaphore.WaitAsync(ctx);
+		try
+		{
+			if (_renderedNavigationCache.TryGetValue(cacheKey, out cachedHtml))
+				return CreateIslandResult(cachedHtml, island, navV2);
+
+			_logger.LogInformation("Rendering V2 island navigation: {IslandLabel} ({IslandId})", island.Label, island.Id);
+
+			var wrapper = new SectionNavigationV2Wrapper(
+				new NavigationSection(island.Id, island.Label, "", false, island.NavigationItems),
+				navV2
+			);
+			var model = new NavigationViewModel
+			{
+				Title = island.Label,
+				TitleUrl = "",
+				Tree = wrapper,
+				IsPrimaryNavEnabled = true,
+				IsUsingNavigationDropdown = false,
+				IsGlobalAssemblyBuild = true,
+				TopLevelItems = [],
+				Htmx = new DefaultHtmxAttributeProvider("/"),
+				BuildType = BuildType.Assembler,
+				IsNavV2 = true,
+				IsIsolatedSection = true,
+				SectionUrl = null,
+				BackArrowUrl = CombineWithSitePrefix(navV2, island.ParentSection.Url)
+			};
+
+			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
+			_renderedNavigationCache[cacheKey] = html;
+			return CreateIslandResult(html, island, navV2);
+		}
+		finally
+		{
+			_ = _semaphore.Release();
+		}
+	}
+
+	private static NavigationRenderResult CreateIslandResult(string html, NavigationIsland island, SiteNavigationV2 navV2) =>
+		new()
+		{
+			Html = html,
+			Id = $"nav-v2-island-{island.Id}",
+			Sections = navV2.Sections,
+			ActiveSectionId = island.ParentSection.Id
+		};
 
 	private static string CombineWithSitePrefix(SiteNavigation nav, string sectionUrl)
 	{

@@ -40,6 +40,16 @@ public record SectionNavV2Item(
 ) : INavV2Item;
 
 /// <summary>
+/// A nav island nested inside a section. When a user navigates into pages belonging to
+/// this island's toc, the sidebar shows only the island's tree with a back arrow to the
+/// parent section. The island does not appear in the secondary nav bar.
+/// </summary>
+public record IslandNavV2Item(
+	string Label,
+	Uri Source
+) : INavV2Item;
+
+/// <summary>
 /// A folder node — has a title and children, with an optional <c>page:</c> URI.
 /// When <see cref="Page"/> is set, the header is a real clickable link; otherwise it renders
 /// as a disabled placeholder (cursor-not-allowed).
@@ -133,6 +143,17 @@ public class NavV2FileYamlConverter : IYamlTypeConverter
 				? sChildList
 				: [];
 			return new SectionNavV2Item(sectionStr, sectionUrl, isolated, sectionChildren);
+		}
+
+		if (dict.TryGetValue("island", out var islandVal) && islandVal is string islandStr)
+		{
+			if (dict.TryGetValue("toc", out var itVal) && itVal is string itStr)
+			{
+				var itUriString = itStr.Contains("://") ? itStr : $"docs-content://{itStr}";
+				if (Uri.TryCreate(itUriString, UriKind.Absolute, out var itSource))
+					return new IslandNavV2Item(islandStr, itSource);
+			}
+			return null;
 		}
 
 		if (dict.TryGetValue("label", out var labelVal) && labelVal is string labelStr)

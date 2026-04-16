@@ -2864,6 +2864,10 @@ nav:
     url: /reference/
     children:
     - toc: docs-content://reference
+    - island: Logstash plugins
+      toc: logstash-docs-md://lsr
+    - island: Logstash versioned plugins
+      toc: logstash-docs-md://vpr
 
   - section: Extension points
     url: /extend/

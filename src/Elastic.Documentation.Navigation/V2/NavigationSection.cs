@@ -15,3 +15,14 @@ public record NavigationSection(
 	bool Isolated,
 	IReadOnlyList<INavigationItem> NavigationItems
 );
+
+/// <summary>
+/// A nav island nested within a parent section. When a page belongs to an island,
+/// the sidebar shows only the island's tree with a back arrow to the parent section.
+/// </summary>
+public record NavigationIsland(
+	string Id,
+	string Label,
+	NavigationSection ParentSection,
+	IReadOnlyList<INavigationItem> NavigationItems
+);

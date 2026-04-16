@@ -32,4 +32,7 @@ public class NavigationViewModel
 
 	/// <summary>The section's own URL, used by JS to skip current-page highlighting on the section root.</summary>
 	public string? SectionUrl { get; init; }
+
+	/// <summary>Back arrow URL for islands — points to the parent section's landing page.</summary>
+	public string? BackArrowUrl { get; init; }
 }
