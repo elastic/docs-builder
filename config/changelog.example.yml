@@ -235,6 +235,9 @@ bundle:
   # repo: elasticsearch
   # Optional: default GitHub owner applied to all profiles that do not specify their own.
   # owner: elastic
+  # Optional: control auto-population of release-date for all profiles by default.
+  # When true (default), auto-populate release dates. Profiles can override this setting.
+  # release_dates: true
 
   # Named bundle profiles for different release scenarios.
   # Profiles can be used with both 'changelog bundle' and 'changelog remove':
@@ -259,9 +262,9 @@ bundle:
     #   #   - Bug fixes and stability enhancements
     #   #   
     #   #   Download the release binaries: https://github.com/{owner}/{repo}/releases/tag/v{version}
-    #   # Optional: suppress auto-population of release-date for this profile.
-    #   # Equivalent to --no-release-date but configured per-profile.
-    #   # no_release_dates: false
+    #   # Optional: control auto-population of release-date for this profile.
+    #   # When true (default), auto-populate release dates. When false, equivalent to --no-release-date.
+    #   # release_dates: true
     # Example: GitHub release profile (fetches PR list directly from a GitHub release)
     # Use when you want to bundle or remove changelogs based on a published GitHub release.
     # elasticsearch-gh-release:

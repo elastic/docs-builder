@@ -472,7 +472,7 @@ public partial class ChangelogBundlingService(
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
-			profileSuppressReleaseDate = profile.NoReleaseDates is true;
+			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
 			// Handle profile-specific description with placeholder substitution
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
@@ -545,6 +545,9 @@ public partial class ChangelogBundlingService(
 		// Apply description: CLI takes precedence; fall back to bundle-level config default
 		var description = input.Description ?? config.Bundle.Description;
 
+		// Apply release date suppression: CLI takes precedence; config can enable suppression when CLI didn't
+		var suppressReleaseDate = input.SuppressReleaseDate || !(config.Bundle.ReleaseDates ?? true);
+
 		return input with
 		{
 			Directory = directory,
@@ -553,6 +556,7 @@ public partial class ChangelogBundlingService(
 			Repo = repo,
 			Owner = owner,
 			Description = description,
+			SuppressReleaseDate = suppressReleaseDate,
 			LinkAllowRepos = config.Bundle.LinkAllowRepos
 		};
 	}

@@ -52,6 +52,11 @@ public record BundleConfiguration
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; init; }
+
+	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
@@ -112,10 +117,9 @@ public record BundleProfile
 	public IReadOnlyList<string>? HideFeatures { get; init; }
 
 	/// <summary>
-	/// When true, suppresses auto-population of release-date during bundling for this profile.
-	/// Equivalent to the <c>--no-release-date</c> CLI flag but configured per-profile.
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
-	public bool? NoReleaseDates { get; init; }
+	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
