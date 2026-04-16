@@ -12,7 +12,10 @@ This feature is still under development and the functionality described on this 
 
 ## Configure the API Explorer
 
-Add the `api` key to your `docset.yml` file to enable the API Explorer. The key maps product names to OpenAPI JSON specification files. Paths are relative to the folder that contains `docset.yml`.
+Add the `api` key to your `docset.yml` file to enable the API Explorer. The key maps product names to OpenAPI JSON specification files.
+Paths are relative to the folder that contains `docset.yml`.
+
+### Basic Configuration
 
 ```yaml
 api:
@@ -23,6 +26,46 @@ api:
 Each product key produces its own section of API documentation. For example, `elasticsearch` generates pages under `/api/elasticsearch/` and `kibana` generates pages under `/api/kibana/`.
 
 The `api` key is only valid in `docset.yml`. You can't use it in `toc.yml` files.
+
+### Advanced configuration with templates
+
+When you specify a `template` file, `docs-builder` uses your custom Markdown file as the API landing page instead of generating an automatic overview:
+
+```yaml
+api:
+  kibana:
+    spec: kibana-openapi.json
+    template: kibana-api-overview.md
+```
+
+Template files:
+
+- Must be Markdown files with `.md` extension
+- Can use all standard substitutions and directives, including the `:::{api-summary}` directive to show API operations
+
+:::{note}
+They must be explicitly excluded if they are not used in your table of contents.
+Otherwise `docs-builder` treats them like normal pages and navigation can fail at build or serve time.
+Add a glob (or explicit paths) under `exclude:` in `docset.yml` that matches your template filenames.
+For example, exclude `*-api-overview.md`.
+:::
+
+#### Template example
+
+Here's a sample template file (`kibana-api-overview.md`):
+
+```markdown
+# Kibana APIs
+
+Welcome to the Kibana API documentation.
+
+## Available Operations
+
+:::{api-summary}
+:product: kibana
+:type: operations
+:::
+```
 
 ## Place your spec files
 

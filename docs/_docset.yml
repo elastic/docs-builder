@@ -8,6 +8,8 @@ cross_links:
 exclude:
   - '_*.md'
   - '!_search.md'
+  # API landing templates (see api.*.template): not standalone TOC pages; including them causes "Could not find … in navigation" during serve/build.
+  - '*-api-overview.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
   serverless-short: Serverless

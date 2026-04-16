@@ -7,8 +7,10 @@ using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Schemas;
+using Elastic.ApiExplorer.Templates;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -44,11 +46,14 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
+	private readonly TemplateProcessor _templateProcessor = TemplateProcessorFactory.Create(markdownStringRenderer);
 
-	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument)
+	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null)
 	{
 		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
-		var rootNavigation = new LandingNavigationItem(url);
+		var rootNavigation = apiConfig?.HasCustomTemplate == true
+			? new TemplateLandingNavigationItem(url, apiConfig)
+			: new LandingNavigationItem(url);
 
 		var ops = openApiDocument.Paths
 			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
@@ -208,30 +213,59 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 	public async Task Generate(Cancel ctx = default)
 	{
-		if (context.Configuration.OpenApiSpecifications is null)
-			return;
-
-		foreach (var (prefix, path) in context.Configuration.OpenApiSpecifications)
+		// Use the new API configurations if available, otherwise fall back to legacy OpenApiSpecifications
+		if (context.Configuration.ApiConfigurations is not null)
 		{
-			var openApiDocument = await OpenApiReader.Create(path);
-			if (openApiDocument is null)
-				return;
-
-			var navigation = CreateNavigation(prefix, openApiDocument);
-			_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
-
-			var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
-
-			var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
+			foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 			{
-				NavigationHtml = string.Empty,
-				CurrentNavigation = navigation,
-				MarkdownRenderer = markdownStringRenderer
-			};
-			_ = await Render(prefix, navigation, navigation.Index.Model, renderContext, navigationRenderer, ctx);
-			await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, ctx);
+				var openApiDocument = await OpenApiReader.Create(apiConfig.PrimarySpecFile);
+				if (openApiDocument is null)
+					continue;
 
+				await GenerateApiProduct(prefix, openApiDocument, apiConfig, ctx);
+			}
 		}
+		else if (context.Configuration.OpenApiSpecifications is not null)
+		{
+			// Legacy fallback
+			foreach (var (prefix, path) in context.Configuration.OpenApiSpecifications)
+			{
+				var openApiDocument = await OpenApiReader.Create(path);
+				if (openApiDocument is null)
+					continue;
+
+				await GenerateApiProduct(prefix, openApiDocument, null, ctx);
+			}
+		}
+	}
+
+	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
+	{
+		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
+		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
+
+		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+
+		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
+		{
+			NavigationHtml = string.Empty,
+			CurrentNavigation = navigation,
+			MarkdownRenderer = markdownStringRenderer
+		};
+
+		// Process template for landing page if available
+		if (apiConfig?.HasCustomTemplate == true)
+		{
+			var templateContent = await _templateProcessor.ProcessTemplateAsync(apiConfig, ctx);
+			var templateLanding = new TemplateLanding(templateContent);
+			_ = await Render(prefix, navigation, templateLanding, renderContext, navigationRenderer, ctx);
+		}
+		else
+		{
+			_ = await Render(prefix, navigation, navigation.Index.Model, renderContext, navigationRenderer, ctx);
+		}
+
+		await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, ctx);
 	}
 
 	private async Task RenderNavigationItems(string prefix, ApiRenderContext renderContext, IsolatedBuildNavigationHtmlWriter navigationRenderer, INavigationItem currentNavigation, Cancel ctx)
