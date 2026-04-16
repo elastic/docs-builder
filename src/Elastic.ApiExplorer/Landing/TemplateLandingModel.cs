@@ -8,6 +8,8 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.Navigation;
+using Microsoft.AspNetCore.Html;
+using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
 
@@ -27,23 +29,21 @@ public class TemplateLandingModel(
 
 	public bool HasCustomTemplate => _apiConfig.HasCustomTemplate;
 
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		string content;
-
 		if (_apiConfig.HasCustomTemplate)
 		{
-			// Use template-based content
-			content = await _templateProcessor.ProcessTemplateAsync(_apiConfig, _urlPathPrefix, ctx);
-		}
-		else
-		{
-			// Use fallback (auto-generated) content
-			content = _fallbackContent;
+			var bodyHtml = await _templateProcessor.ProcessTemplateAsync(_apiConfig, _urlPathPrefix, ctx);
+			var viewModel = new TemplateLandingViewModel(context)
+			{
+				BodyHtml = new HtmlString(bodyHtml)
+			};
+			var slice = TemplateLandingView.Create(viewModel);
+			await slice.RenderAsync(stream, cancellationToken: ctx);
+			return;
 		}
 
-		// Write the content to the stream
-		await stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(content), ctx);
+		await stream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(_fallbackContent), ctx);
 	}
 }
 

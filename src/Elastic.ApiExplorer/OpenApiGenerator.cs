@@ -458,7 +458,12 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
+			// Template landing pages are rendered in GenerateWithTemplateSupport with TemplateLandingModel.
+			// The base LandingNavigationItem still has Index.Model = ApiLanding; rendering it here would
+			// overwrite the same index.html with the auto-generated landing.
+			if (currentNavigation is not TemplateLandingNavigationItem)
+				_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
+
 			foreach (var child in node.NavigationItems)
 				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, ctx);
 		}

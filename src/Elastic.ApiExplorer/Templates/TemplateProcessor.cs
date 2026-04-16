@@ -53,50 +53,38 @@ public class TemplateProcessor(IMarkdownStringRenderer markdownRenderer)
 			}
 		}
 
-		// Process directives
-		var processedContent = await ProcessDirectivesAsync(
-			templateContent,
-			openApiDocuments,
-			urlPathPrefix,
-			apiConfig.ProductKey,
-			cancellationToken);
-
-		// Render markdown to HTML
-		var html = _markdownRenderer.Render(processedContent, apiConfig.TemplateFile);
-
-		return html;
-	}
-
-	/// <summary>
-	/// Processes all directives in the template content and replaces them with generated HTML.
-	/// </summary>
-#pragma warning disable IDE0060 // Remove unused parameter - reserved for future async operations
-	private async Task<string> ProcessDirectivesAsync(
-		string templateContent,
-		Dictionary<string, OpenApiDocument> openApiDocuments,
-		string urlPathPrefix,
-		string productKey,
-		CancellationToken cancellationToken = default)
-#pragma warning restore IDE0060
-	{
-		// Parse all directives
+		// The markdown pipeline uses DisableHtml(); raw HTML from directives must not be passed through
+		// Markdig, or it is escaped as visible text. Render markdown segments and directive HTML separately,
+		// then concatenate.
 		var directives = TemplateDirectiveParser.ParseDirectives(templateContent);
 		if (directives.Count == 0)
-			return templateContent;
+			return _markdownRenderer.Render(templateContent, apiConfig.TemplateFile);
 
-		// Create directive renderer
-		var renderer = new DirectiveRenderer(openApiDocuments, urlPathPrefix, productKey);
-
-		// Replace directives from end to beginning to preserve indices
-		var result = new StringBuilder(templateContent);
-		foreach (var directive in directives.OrderByDescending(d => d.StartIndex))
+		var directiveRenderer = new DirectiveRenderer(openApiDocuments, urlPathPrefix, apiConfig.ProductKey);
+		var sorted = directives.OrderBy(d => d.StartIndex).ToList();
+		var html = new StringBuilder();
+		var lastEnd = 0;
+		foreach (var directive in sorted)
 		{
-			var renderedContent = renderer.RenderDirective(directive);
-			_ = result.Remove(directive.StartIndex, directive.Length);
-			_ = result.Insert(directive.StartIndex, renderedContent);
+			if (directive.StartIndex > lastEnd)
+			{
+				var mdSegment = templateContent.Substring(lastEnd, directive.StartIndex - lastEnd);
+				if (mdSegment.Length > 0)
+					_ = html.Append(_markdownRenderer.Render(mdSegment, apiConfig.TemplateFile));
+			}
+
+			_ = html.Append(directiveRenderer.RenderDirective(directive));
+			lastEnd = directive.StartIndex + directive.Length;
 		}
 
-		return result.ToString();
+		if (lastEnd < templateContent.Length)
+		{
+			var tail = templateContent.Substring(lastEnd);
+			if (tail.Length > 0)
+				_ = html.Append(_markdownRenderer.Render(tail, apiConfig.TemplateFile));
+		}
+
+		return html.ToString();
 	}
 }
 

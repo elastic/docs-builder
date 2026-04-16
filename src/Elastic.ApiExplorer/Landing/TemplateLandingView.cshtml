@@ -1,0 +1,11 @@
+@using Elastic.ApiExplorer.Landing
+@using Elastic.Documentation.Navigation
+@using Elastic.Documentation.Site.Navigation
+@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.TemplateLandingViewModel>
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
+@functions {
+	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+}
+<section id="elastic-docs-v3">
+	@Model.BodyHtml
+</section>
