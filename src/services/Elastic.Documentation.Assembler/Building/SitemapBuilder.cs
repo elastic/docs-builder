@@ -23,6 +23,10 @@ public static class SitemapBuilder
 		IDirectoryInfo outputFolder
 	)
 	{
+		// TODO: Remove this exclusion when API docs are ready for sitemap inclusion
+		var filtered = entries
+			.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal));
+
 		var doc = new XDocument
 		{
 			Declaration = new XDeclaration("1.0", "utf-8", "yes")
@@ -33,7 +37,7 @@ public static class SitemapBuilder
 		var root = new XElement(
 			ns + "urlset",
 			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-			entries
+			filtered
 				.OrderBy(e => e.Key, StringComparer.Ordinal)
 				.Select(e => new XElement(ns + "url", [
 					new XElement(ns + "loc", new Uri(BaseUri, e.Key)),
