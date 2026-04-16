@@ -28,6 +28,18 @@ public record TocNavV2Item(
 public record PageNavV2Item(Uri? Page, string? Title) : INavV2Item;
 
 /// <summary>
+/// A top-level section that owns an independent sidebar tree and (optionally) a tab in the
+/// secondary nav bar. When <see cref="Isolated"/> is <c>true</c> the section does not appear
+/// in the top bar and renders with a back-arrow instead.
+/// </summary>
+public record SectionNavV2Item(
+	string Label,
+	string Url,
+	bool Isolated,
+	IReadOnlyList<INavV2Item> Children
+) : INavV2Item;
+
+/// <summary>
 /// A folder node — has a title and children, with an optional <c>page:</c> URI.
 /// When <see cref="Page"/> is set, the header is a real clickable link; otherwise it renders
 /// as a disabled placeholder (cursor-not-allowed).
@@ -108,6 +120,19 @@ public class NavV2FileYamlConverter : IYamlTypeConverter
 			}
 			else
 				parser.SkipThisAndNestedEvents();
+		}
+
+		if (dict.TryGetValue("section", out var sectionVal) && sectionVal is string sectionStr)
+		{
+			var sectionUrl = dict.TryGetValue("url", out var suVal) && suVal is string suStr ? suStr : "/";
+			var isolated = dict.TryGetValue("isolated", out var isoVal)
+				&& isoVal is string isoStr
+				&& bool.TryParse(isoStr, out var isoBool)
+				&& isoBool;
+			var sectionChildren = dict.TryGetValue("children", out var sch) && sch is IReadOnlyList<INavV2Item> sChildList
+				? sChildList
+				: [];
+			return new SectionNavV2Item(sectionStr, sectionUrl, isolated, sectionChildren);
 		}
 
 		if (dict.TryGetValue("label", out var labelVal) && labelVal is string labelStr)

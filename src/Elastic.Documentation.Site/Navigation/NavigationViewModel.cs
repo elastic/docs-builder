@@ -26,4 +26,7 @@ public class NavigationViewModel
 
 	/// <summary>When true, the sidebar renders using the V2 nav partial with accordion behaviour.</summary>
 	public bool IsNavV2 { get; init; }
+
+	/// <summary>When true, the sidebar renders a back arrow instead of appearing in the top bar.</summary>
+	public bool IsIsolatedSection { get; init; }
 }

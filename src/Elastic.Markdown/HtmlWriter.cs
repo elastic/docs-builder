@@ -151,6 +151,8 @@ public class HtmlWriter(
 			NextDocument = next,
 			Breadcrumbs = breadcrumbs,
 			NavigationHtml = navigationHtmlRenderResult.Html,
+			NavV2Sections = navigationHtmlRenderResult.Sections,
+			ActiveSectionId = navigationHtmlRenderResult.ActiveSectionId,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			SiteRootPath = DocumentationSet.Context.SiteRootPath,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,

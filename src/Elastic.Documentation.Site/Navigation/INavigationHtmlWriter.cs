@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.V2;
 using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
@@ -26,9 +27,15 @@ public record NavigationRenderResult
 	public static NavigationRenderResult Empty { get; } = new()
 	{
 		Html = string.Empty,
-		Id = "empty-navigation" // random id
+		Id = "empty-navigation"
 	};
 
 	public required string Html { get; init; }
 	public required string Id { get; init; }
+
+	/// <summary>V2 section metadata for the secondary nav bar. Null for V1 builds.</summary>
+	public IReadOnlyList<NavigationSection>? Sections { get; init; }
+
+	/// <summary>The active section ID for highlighting the current tab.</summary>
+	public string? ActiveSectionId { get; init; }
 }

@@ -1,3 +1,4 @@
+@using System.Linq
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 <div class="md:sticky md:top-0 md:z-30 bg-grey-10">
 	<ask-ai></ask-ai>
@@ -11,38 +12,61 @@
 				<a href="@Model.Link("/")"
 				   class="text-lg leading-[1em] hover:text-blue-elastic active:text-blue-elastic-100">Docs</a>
 			</div>
-			<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
-				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
-					<a
-						href="@Model.Link("/release-notes/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
-					>
-						Release notes
-					</a>
-				</li>
-				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
-					<a
-						href="@Model.Link("/troubleshoot/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
-					>
-						Troubleshoot
-					</a>
-				</li>
-				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
-					<a
-						href="@Model.Link("/reference/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
-					>
-						Reference
-					</a>
-				</li>
-			</ul>
+			@if (Model.NavV2Sections is { Count: > 0 } navTabs)
+			{
+				<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
+				@foreach (var navTab in navTabs.Where(s => !s.Isolated))
+				{
+					var isActive = navTab.Id == Model.ActiveSectionId;
+					<li class="text-nowrap @(isActive ? "text-blue-elastic" : "hover:text-blue-elastic active:text-blue-elastic-100")"
+						data-section-id="@navTab.Id">
+						<a
+							href="@Model.Link(navTab.Url)"
+							@Model.Htmx.GetHxAttributes(
+								hxSwapOob: "#main-container,#secondary-nav"
+							)
+						>
+							@navTab.Label
+						</a>
+					</li>
+				}
+				</ul>
+			}
+			else
+			{
+				<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
+					<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+						<a
+							href="@Model.Link("/release-notes/")"
+							@Model.Htmx.GetHxAttributes(
+								hxSwapOob: "#main-container,#secondary-nav"
+							)
+						>
+							Release notes
+						</a>
+					</li>
+					<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+						<a
+							href="@Model.Link("/troubleshoot/")"
+							@Model.Htmx.GetHxAttributes(
+								hxSwapOob: "#main-container,#secondary-nav"
+							)
+						>
+							Troubleshoot
+						</a>
+					</li>
+					<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
+						<a
+							href="@Model.Link("/reference/")"
+							@Model.Htmx.GetHxAttributes(
+								hxSwapOob: "#main-container,#secondary-nav"
+							)
+						>
+							Reference
+						</a>
+					</li>
+				</ul>
+			}
 		</div>
 	</nav>
 </div>
