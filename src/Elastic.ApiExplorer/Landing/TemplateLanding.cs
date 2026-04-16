@@ -24,6 +24,9 @@ public class TemplateLanding(string templateContent) : IApiGroupingModel
 	/// </summary>
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
+		if (context?.Model == null)
+			throw new ArgumentNullException(nameof(context), "Context or context.Model cannot be null");
+
 		var viewModel = new TemplateLandingViewModel(context)
 		{
 			Landing = this,

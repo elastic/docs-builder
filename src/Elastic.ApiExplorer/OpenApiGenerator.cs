@@ -46,7 +46,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
-	private readonly TemplateProcessor _templateProcessor = TemplateProcessorFactory.Create(markdownStringRenderer, context.WriteFileSystem);
+	private readonly TemplateProcessor _templateProcessor = TemplateProcessorFactory.Create(markdownStringRenderer, context.ReadFileSystem);
 
 	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument)
 	{
