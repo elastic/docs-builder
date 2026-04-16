@@ -29,4 +29,7 @@ public class NavigationViewModel
 
 	/// <summary>When true, the sidebar renders a back arrow instead of appearing in the top bar.</summary>
 	public bool IsIsolatedSection { get; init; }
+
+	/// <summary>The section's own URL, used by JS to skip current-page highlighting on the section root.</summary>
+	public string? SectionUrl { get; init; }
 }

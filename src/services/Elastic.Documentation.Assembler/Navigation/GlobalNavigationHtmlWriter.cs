@@ -105,7 +105,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 				Htmx = new DefaultHtmxAttributeProvider("/"),
 				BuildType = BuildType.Assembler,
 				IsNavV2 = true,
-				IsIsolatedSection = section.Isolated
+				IsIsolatedSection = section.Isolated,
+				SectionUrl = CombineWithSitePrefix(navV2, section.Url)
 			};
 
 			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
@@ -116,6 +117,13 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		{
 			_ = _semaphore.Release();
 		}
+	}
+
+	private static string CombineWithSitePrefix(SiteNavigation nav, string sectionUrl)
+	{
+		var prefix = nav.Url.TrimEnd('/');
+		var path = sectionUrl.TrimStart('/');
+		return string.IsNullOrEmpty(path) ? $"{prefix}/" : $"{prefix}/{path}";
 	}
 
 	private static NavigationRenderResult CreateSectionResult(string html, NavigationSection activeSection, SiteNavigationV2 navV2) =>

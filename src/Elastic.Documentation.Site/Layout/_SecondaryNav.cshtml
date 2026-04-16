@@ -4,10 +4,10 @@
 	<ask-ai></ask-ai>
 	<nav id="secondary-nav" hx-select-oob="#main-container" hx-swap="none"
 	     class="bg-grey-10 border-b border-grey-20">
-		<div class="w-full max-w-(--max-layout-width) mx-auto px-4 py-2">
+		<div class="w-full max-w-(--max-layout-width) mx-auto px-4 h-[55px] flex items-center">
 			@if (Model.NavV2Sections is { Count: > 0 } navTabs)
 			{
-				<ul class="flex gap-5 font-sans font-semibold text-sm text-ink-light">
+				<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
 				@foreach (var navTab in navTabs.Where(s => !s.Isolated))
 				{
 					var isActive = navTab.Id == Model.ActiveSectionId;
@@ -27,7 +27,7 @@
 			}
 			else
 			{
-				<ul class="flex gap-5 font-sans font-semibold text-sm text-ink-light">
+				<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
 					<li class="text-nowrap text-blue-elastic">
 						<a href="@Model.Link("/")">Docs</a>
 					</li>

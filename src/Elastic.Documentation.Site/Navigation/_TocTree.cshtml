@@ -83,7 +83,7 @@
 			</a>
 		}
 		@* Root for V2-only CSS; JS still uses [data-nav-v2]. Scope overrides: .docs-sidebar-nav-v2 … *@
-		<nav class="docs-sidebar-nav-v2" data-nav-v2>
+		<nav class="docs-sidebar-nav-v2" data-nav-v2 @if (Model.SectionUrl is not null) { <text>data-section-url="@Model.SectionUrl"</text> }>
 			<ul class="docs-sidebar-nav-v2__tree block" id="nav-tree">
 				@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
 				{
