@@ -248,7 +248,8 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		if (apiConfig?.HasCustomTemplate == true)
 		{
 			var templateContent = await _templateProcessor.ProcessTemplateAsync(apiConfig, ctx);
-			templateLanding = new TemplateLanding(templateContent);
+			if (!string.IsNullOrWhiteSpace(templateContent))
+				templateLanding = new TemplateLanding(templateContent);
 		}
 
 		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)

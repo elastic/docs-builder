@@ -63,7 +63,7 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 		var rootPath = BuildContext.SiteRootPath ?? GetDefaultRootPath(BuildContext.UrlPathPrefix);
 		return new()
 		{
-			DocsBuilderVersion = ShortId.Create("1.0.0"),
+			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
 			Description = "",
 			CurrentNavigationItem = CurrentNavigationItem,

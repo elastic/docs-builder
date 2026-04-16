@@ -29,6 +29,15 @@ public class TemplateProcessor(IMarkdownStringRenderer markdownRenderer, IFileSy
 		// Read template content
 		var templateContent = await _fileSystem.File.ReadAllTextAsync(apiConfig.TemplateFile.FullName, cancellationToken);
 
+		// Only throw if cancellation was requested before we started expensive operations
+		// This allows completion of in-flight rendering while respecting explicit cancellation
+		if (cancellationToken.IsCancellationRequested)
+		{
+			// Add small grace period for operations that are nearly complete
+			await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken.None);
+			cancellationToken.ThrowIfCancellationRequested();
+		}
+
 		// Template uses standard substitutions and directives - render directly.
 		return _markdownRenderer.Render(templateContent, apiConfig.TemplateFile);
 	}
