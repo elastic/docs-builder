@@ -71,17 +71,6 @@
 	<div class="pages-nav-menu min-h-0 min-w-0 flex-1 overflow-y-auto">
 	@if (Model.IsNavV2)
 	{
-		@if (Model.IsIsolatedSection)
-		{
-			<a href="/"
-			   @Model.Htmx.GetNavHxAttributes(true, null)
-			   class="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-ink-light hover:text-blue-elastic border-b border-grey-20">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4" aria-hidden="true">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
-				</svg>
-				Back to Docs
-			</a>
-		}
 		@* Root for V2-only CSS; JS still uses [data-nav-v2]. Scope overrides: .docs-sidebar-nav-v2 … *@
 		<nav class="docs-sidebar-nav-v2" data-nav-v2 @if (Model.SectionUrl is not null) { <text>data-section-url="@Model.SectionUrl"</text> }>
 			<ul class="docs-sidebar-nav-v2__tree block" id="nav-tree">
