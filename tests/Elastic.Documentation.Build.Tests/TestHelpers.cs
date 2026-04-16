@@ -58,6 +58,7 @@ public static class TestHelpers
 			productsConfiguration = new ProductsConfiguration
 			{
 				Products = products.ToFrozenDictionary(),
+				PublicReferenceProducts = products.ToFrozenDictionary(),
 				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 			};
 		}

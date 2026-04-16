@@ -49,6 +49,7 @@ suppress:
 api:
    elasticsearch: elasticsearch-openapi.json
    kibana: kibana-openapi.json
+   dashboard: dashboard-openapi.json
 
 toc:
   - file: index.md

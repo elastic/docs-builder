@@ -388,6 +388,25 @@ docs-builder changelog bundle \
   --description "Elasticsearch {version} includes performance improvements. Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
 ```
 
+### Bundle with release date
+
+You can add a `release-date` field directly to a bundle YAML file. This field is optional and purely informative for end-users. It is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
+
+```yaml
+products:
+  - product: apm-agent-dotnet
+    target: 1.34.0
+release-date: "April 9, 2026"
+description: |
+  This release includes tracing improvements and bug fixes.
+entries:
+  - file:
+      name: tracing-improvement.yaml
+      checksum: abc123
+```
+
+When the bundle is rendered (by the `changelog render` command or `{changelog}` directive), the release date appears immediately after the version heading as italicized text: `_Released: April 9, 2026_`.
+
 ## Profile-based examples
 
 When the changelog configuration file defines `bundle.profiles`, you can use those profiles with the `changelog bundle` command.

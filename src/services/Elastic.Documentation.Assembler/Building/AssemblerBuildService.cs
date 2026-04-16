@@ -167,7 +167,20 @@ public class AssemblerBuildService(
 				.Distinct();
 			var now = DateTimeOffset.UtcNow;
 			var entries = urls.ToDictionary(u => u, _ => now);
-			SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+
+			if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
+				collector.EmitGlobalWarning(
+					$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
+					"Consider implementing sitemap index files."
+				);
+
+			var sitemapResult = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+
+			if (sitemapResult.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
+				collector.EmitGlobalWarning(
+					$"Sitemap file size is {sitemapResult.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
+					"Consider implementing sitemap index files."
+				);
 		}
 
 		if (exporters.Contains(Exporter.LLMText))

@@ -19,7 +19,8 @@
 filename: timestamp
 
 # Products configuration (optional)
-# If not specified, all products from products.yml are allowed
+# If not specified, all products from products.yml are allowed (including those
+# that have 'public-reference' disabled).
 products:
   # List of available product IDs (empty = all from products.yml)
   # Accepts string or list: "elasticsearch, kibana" or [elasticsearch, kibana]

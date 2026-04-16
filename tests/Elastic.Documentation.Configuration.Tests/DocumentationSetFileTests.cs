@@ -97,8 +97,8 @@ public class DocumentationSetFileTests
 		var result = Deserialize(yaml);
 
 		result.Api.Should().HaveCount(2)
-			.And.ContainKey("elasticsearch").WhoseValue.Should().Be("elasticsearch-openapi.json");
-		result.Api.Should().ContainKey("kibana").WhoseValue.Should().Be("kibana-openapi.json");
+			.And.ContainKey("elasticsearch").WhoseValue.Spec.Should().Be("elasticsearch-openapi.json");
+		result.Api.Should().ContainKey("kibana").WhoseValue.Spec.Should().Be("kibana-openapi.json");
 	}
 
 	[Fact]

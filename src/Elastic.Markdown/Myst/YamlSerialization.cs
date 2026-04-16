@@ -23,7 +23,7 @@ public static class YamlSerialization
 			.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
 			.WithTypeConverter(new SemVersionConverter())
 			.WithTypeConverter(new ProductConverter(products))
-			.WithTypeConverter(new ApplicableToYamlConverter(products.Products.Keys))
+			.WithTypeConverter(new ApplicableToYamlConverter(products.PublicReferenceProducts.Keys))
 			.Build();
 
 		var frontMatter = deserializer.Deserialize<T>(input);

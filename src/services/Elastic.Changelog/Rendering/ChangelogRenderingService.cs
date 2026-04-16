@@ -137,6 +137,7 @@ public class ChangelogRenderingService(
 			var bundleDescriptions = validationResult.Bundles
 				.Select(b => b.Data.Description)
 				.Where(d => !string.IsNullOrEmpty(d))
+				.Distinct()
 				.ToList();
 
 			// MVP: Check for multiple descriptions and warn
@@ -152,8 +153,28 @@ public class ChangelogRenderingService(
 				renderDescription = bundleDescriptions[0];
 			}
 
+			// Extract release dates from bundles for MVP support
+			var bundleReleaseDates = validationResult.Bundles
+				.Select(b => b.Data.ReleaseDate)
+				.Where(d => d.HasValue)
+				.Select(d => d!.Value)
+				.Distinct()
+				.ToList();
+
+			DateOnly? renderReleaseDate = null;
+			if (bundleReleaseDates.Count > 1)
+			{
+				collector.EmitWarning(string.Empty,
+					$"Multiple bundles contain release dates ({bundleReleaseDates.Count} found). " +
+					"Multi-bundle release date support is not yet implemented. Release dates will be skipped.");
+			}
+			else if (bundleReleaseDates.Count == 1)
+			{
+				renderReleaseDate = bundleReleaseDates[0];
+			}
+
 			// Build render context
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription);
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription, renderReleaseDate);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -266,7 +287,8 @@ public class ChangelogRenderingService(
 		ResolvedEntriesResult resolved,
 		HashSet<string> featureIdsToHide,
 		ChangelogConfiguration? config,
-		string? description = null)
+		string? description = null,
+		DateOnly? releaseDate = null)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries
@@ -308,7 +330,8 @@ public class ChangelogRenderingService(
 			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
 			Configuration = config,
-			BundleDescription = description
+			BundleDescription = description,
+			BundleReleaseDate = releaseDate
 		};
 	}
 

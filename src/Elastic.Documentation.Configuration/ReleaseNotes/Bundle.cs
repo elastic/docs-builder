@@ -18,6 +18,12 @@ public sealed record BundleDto
 	/// </summary>
 	public string? Description { get; set; }
 	/// <summary>
+	/// Optional release date for this bundle.
+	/// Purely informative; rendered after the release heading.
+	/// </summary>
+	[YamlMember(Alias = "release-date", ApplyNamingConventions = false)]
+	public string? ReleaseDate { get; set; }
+	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>
