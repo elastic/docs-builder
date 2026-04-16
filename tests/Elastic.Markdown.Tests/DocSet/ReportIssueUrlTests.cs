@@ -58,7 +58,6 @@ public class ReportIssueUrlTests : IAsyncLifetime
 	{
 		return ValueTask.CompletedTask;
 	}
-	}
 
 	[Fact]
 	public void NavigationItemUrls_WithUrlPathPrefix_AlreadyIncludeThePrefix()
