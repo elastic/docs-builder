@@ -32,6 +32,20 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		_ = sb.AppendLine(InvariantCulture, $"== {context.Title}");
 		_ = sb.AppendLine();
 
+		// Add release date if present
+		if (context.BundleReleaseDate is { } releaseDate)
+		{
+			_ = sb.AppendLine(InvariantCulture, $"_Released: {releaseDate.ToString("MMMM d, yyyy", InvariantCulture)}_");
+			_ = sb.AppendLine();
+		}
+
+		// Add description if present
+		if (!string.IsNullOrEmpty(context.BundleDescription))
+		{
+			_ = sb.AppendLine(context.BundleDescription);
+			_ = sb.AppendLine();
+		}
+
 		// Group entries by type
 		var entriesByType = context.EntriesByType;
 		var security = entriesByType.GetValueOrDefault(Security, []);

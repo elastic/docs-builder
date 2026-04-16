@@ -82,33 +82,23 @@ public class ChangelogPrEvaluationService(
 			return await SetOutputs(PrEvaluationResult.Skipped, skipLabels: skipLabels);
 		}
 
-		// Resolve title: prefer release notes from PR body, fall back to PR title
+		// Resolve title from PR title only (release note text is never used as title)
 		var prTitle = input.PrTitle;
 		if (input.StripTitlePrefix)
 			prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
 
-		string? title = null;
 		string? description = null;
-
 		if (config.Extract.ReleaseNotes && !string.IsNullOrWhiteSpace(input.PrBody))
 		{
-			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(input.PrBody);
-
-			if (releaseNoteTitle != null)
+			var releaseNote = ReleaseNotesExtractor.FindReleaseNote(input.PrBody);
+			if (releaseNote != null)
 			{
-				title = releaseNoteTitle;
-				_logger.LogInformation("Using extracted release note as title: {Title}", title);
-			}
-
-			if (releaseNoteDescription != null)
-			{
-				description = releaseNoteDescription;
+				description = releaseNote;
 				_logger.LogInformation("Using extracted release note as description (length: {Length} characters)", description.Length);
 			}
 		}
 
-		// Fall back to PR title when no short release note was found
-		title ??= prTitle;
+		var title = prTitle;
 
 		if (string.IsNullOrWhiteSpace(title))
 		{

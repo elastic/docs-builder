@@ -108,7 +108,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 
 		(DocumentationSourceDirectory, ConfigurationPath) = Paths.FindDocsFolderFromRoot(ReadFileSystem, rootFolder);
 
-		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory);
+		DocumentationCheckoutDirectory = Paths.FindGitRoot(DocumentationSourceDirectory, ceiling: rootFolder);
 
 		OutputDirectory = !string.IsNullOrWhiteSpace(output)
 			? WriteFileSystem.DirectoryInfo.New(output)
