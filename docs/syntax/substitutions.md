@@ -238,9 +238,10 @@ id:
 
 A shorthand format is also available. Using `{{.id}}` is equivalent to `{{product.id}}`.
 
-## APIs
+## API info
 
-API substitutions extract metadata from OpenAPI specifications configured in your docset. These are automatically populated from the `info` section of each API spec.
+API substitutions extract metadata from OpenAPI specifications configured in your docset.
+These are automatically populated from the `info` section of each API spec.
 
 | Substitution | Description | Example |
 |--------------|-------------|---------|
