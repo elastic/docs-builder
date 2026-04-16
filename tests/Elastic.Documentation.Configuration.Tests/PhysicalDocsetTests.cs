@@ -29,7 +29,7 @@ public class PhysicalDocsetTests
 		docSet.CrossLinks.Should().ContainSingle().Which.Should().Be("docs-content");
 
 		// Assert exclude patterns
-		docSet.Exclude.Should().HaveCount(2).And.Subject.First().Should().Be("_*.md");
+		docSet.Exclude.Should().HaveCount(3).And.Subject.First().Should().Be("_*.md");
 
 		// Assert substitutions
 		docSet.Subs.Should().NotBeEmpty();
@@ -39,6 +39,7 @@ public class PhysicalDocsetTests
 		docSet.Api.Should().HaveCount(3);
 		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.Spec.Should().Be("elasticsearch-openapi.json");
 		docSet.Api.Should().ContainKey("kibana").WhoseValue.Spec.Should().Be("kibana-openapi.json");
+		docSet.Api["kibana"].Template.Should().Be("kibana-api-overview.md");
 		docSet.Api.Should().ContainKey("dashboard").WhoseValue.Spec.Should().Be("dashboard-openapi.json");
 
 		// Assert TOC structure

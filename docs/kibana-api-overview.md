@@ -18,12 +18,3 @@ curl -X GET "http://${KIBANA_URL}/s/marketing/api/data_views" \
 If you use the Kibana console to send API requests, it automatically adds the appropriate space identifier.
 
 To learn more, check out [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces).
-
-## Available operations
-
-The following operations are available:
-
-:::{api-summary}
-:product: kibana
-:type: operations
-:::

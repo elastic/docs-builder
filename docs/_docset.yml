@@ -50,7 +50,9 @@ suppress:
 
 api:
    elasticsearch: elasticsearch-openapi.json
-   kibana: kibana-openapi.json
+   kibana:
+     spec: kibana-openapi.json
+     template: kibana-api-overview.md
    dashboard: dashboard-openapi.json
 
 toc:

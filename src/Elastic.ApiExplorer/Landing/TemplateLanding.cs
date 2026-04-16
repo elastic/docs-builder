@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Extensions;
+using Microsoft.OpenApi;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -27,7 +28,7 @@ public class TemplateLanding(string templateContent) : IApiGroupingModel
 		{
 			Landing = this,
 			TemplateContent = TemplateContent,
-			ApiInfo = context.Model.Info
+			ApiInfo = context.Model.Info ?? new() { Title = "API Documentation", Version = "1.0" }
 		};
 		var slice = TemplateLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

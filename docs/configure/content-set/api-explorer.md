@@ -41,7 +41,7 @@ api:
 Template files:
 
 - Must be Markdown files with `.md` extension
-- Can use all standard substitutions and directives, including the `:::{api-summary}` directive to show API operations
+- Can use standard Markdown, substitutions
 
 :::{note}
 They must be explicitly excluded if they are not used in your table of contents.
@@ -58,13 +58,6 @@ Here's a sample template file (`kibana-api-overview.md`):
 # Kibana APIs
 
 Welcome to the Kibana API documentation.
-
-## Available Operations
-
-:::{api-summary}
-:product: kibana
-:type: operations
-:::
 ```
 
 ## Place your spec files

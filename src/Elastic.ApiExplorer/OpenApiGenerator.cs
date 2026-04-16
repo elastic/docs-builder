@@ -48,12 +48,10 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
 	private readonly TemplateProcessor _templateProcessor = TemplateProcessorFactory.Create(markdownStringRenderer);
 
-	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null)
+	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument)
 	{
 		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
-		var rootNavigation = apiConfig?.HasCustomTemplate == true
-			? new TemplateLandingNavigationItem(url, apiConfig)
-			: new LandingNavigationItem(url);
+		var rootNavigation = new LandingNavigationItem(url);
 
 		var ops = openApiDocument.Paths
 			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
@@ -241,42 +239,46 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
 	{
-		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
+		var navigation = CreateNavigation(prefix, openApiDocument);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
 
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
+
+		TemplateLanding? templateLanding = null;
+		if (apiConfig?.HasCustomTemplate == true)
+		{
+			var templateContent = await _templateProcessor.ProcessTemplateAsync(apiConfig, ctx);
+			templateLanding = new TemplateLanding(templateContent);
+		}
 
 		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
-			MarkdownRenderer = markdownStringRenderer
+			MarkdownRenderer = markdownStringRenderer,
+			TemplateLandingPage = templateLanding
 		};
 
-		// Process template for landing page if available
-		if (apiConfig?.HasCustomTemplate == true)
-		{
-			var templateContent = await _templateProcessor.ProcessTemplateAsync(apiConfig, ctx);
-			var templateLanding = new TemplateLanding(templateContent);
-			_ = await Render(prefix, navigation, templateLanding, renderContext, navigationRenderer, ctx);
-		}
-		else
-		{
-			_ = await Render(prefix, navigation, navigation.Index.Model, renderContext, navigationRenderer, ctx);
-		}
-
-		await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, ctx);
+		await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, navigation, ctx);
 	}
 
-	private async Task RenderNavigationItems(string prefix, ApiRenderContext renderContext, IsolatedBuildNavigationHtmlWriter navigationRenderer, INavigationItem currentNavigation, Cancel ctx)
+	private async Task RenderNavigationItems(
+		string prefix,
+		ApiRenderContext renderContext,
+		IsolatedBuildNavigationHtmlWriter navigationRenderer,
+		INavigationItem currentNavigation,
+		INavigationItem rootNavigation,
+		Cancel ctx)
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
-			foreach (var child in node.NavigationItems)
-				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, ctx);
-		}
+			_ = renderContext.TemplateLandingPage is { } templateLanding && ReferenceEquals(currentNavigation, rootNavigation)
+				? await Render(prefix, node, templateLanding, renderContext, navigationRenderer, ctx)
+				: await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
 
+			foreach (var child in node.NavigationItems)
+				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, rootNavigation, ctx);
+		}
 		else
 		{
 			_ = currentNavigation is ILeafNavigationItem<IApiModel> leaf
