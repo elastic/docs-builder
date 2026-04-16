@@ -21,8 +21,8 @@ public class TemplateProcessorTests
 	public TemplateProcessorTests()
 	{
 		_mockRenderer = A.Fake<IMarkdownStringRenderer>();
-		_processor = new TemplateProcessor(_mockRenderer);
 		_fileSystem = new MockFileSystem();
+		_processor = new TemplateProcessor(_mockRenderer, _fileSystem);
 	}
 
 	[Fact]
@@ -99,9 +99,10 @@ public class TemplateProcessorTests
 	{
 		// Arrange
 		var mockRenderer = A.Fake<IMarkdownStringRenderer>();
+		var mockFileSystem = new MockFileSystem();
 
 		// Act
-		var processor = TemplateProcessorFactory.Create(mockRenderer);
+		var processor = TemplateProcessorFactory.Create(mockRenderer, mockFileSystem);
 
 		// Assert
 		processor.Should().NotBeNull();
