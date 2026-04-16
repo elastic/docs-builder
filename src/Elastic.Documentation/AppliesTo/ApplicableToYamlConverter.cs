@@ -150,13 +150,15 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			applicableTo.Deployment = DeploymentApplicability.All;
 		else if (deploymentType is string deploymentTypeString)
 		{
-			var av = AppliesCollection.TryParse(deploymentTypeString, diagnostics, out var a) ? a : null;
+			var applies = AppliesCollection.TryParse(deploymentTypeString, diagnostics, out var a) ? a : null;
+			if (applies is not null)
+				ValidateApplicabilityCollection("ess", applies, diagnostics);
 			applicableTo.Deployment = new DeploymentApplicability
 			{
-				Ece = av,
-				Eck = av,
-				Ess = av,
-				Self = av
+				Ece = applies,
+				Eck = applies,
+				Ess = applies,
+				Self = applies
 			};
 		}
 		else if (deploymentType is Dictionary<object, object?> deploymentDictionary)
@@ -193,12 +195,14 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			applicableTo.Serverless = ServerlessProjectApplicability.All;
 		else if (serverless is string serverlessString)
 		{
-			var av = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
+			var applies = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
+			if (applies is not null)
+				ValidateApplicabilityCollection("serverless", applies, diagnostics);
 			applicableTo.Serverless = new ServerlessProjectApplicability
 			{
-				Elasticsearch = av,
-				Observability = av,
-				Security = av
+				Elasticsearch = applies,
+				Observability = applies,
+				Security = applies
 			};
 		}
 		else if (serverless is Dictionary<object, object?> serverlessDictionary)
@@ -322,6 +326,9 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		return true;
 	}
 
+	private static readonly HashSet<string> VersionlessKeys =
+		["ess", "ech", "serverless", "elasticsearch", "observability", "security"];
+
 	private static bool TryGetApplicabilityOverTime(Dictionary<object, object?> dictionary, string key, List<(Severity, string)> diagnostics,
 		out AppliesCollection? availability)
 	{
@@ -344,6 +351,15 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private static void ValidateApplicabilityCollection(string key, AppliesCollection collection, List<(Severity, string)> diagnostics)
 	{
 		var items = collection.ToList();
+
+		// Rule: Versionless products cannot have version specifications
+		if (VersionlessKeys.Contains(key))
+		{
+			if (items.Any(a => a.Version is not null && a.Version != AllVersionsSpec.Instance))
+				diagnostics.Add((Severity.Error,
+					$"Can't specify a version for '{key}' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."));
+			return;
+		}
 
 		// Rule: Only one version declaration per lifecycle
 		var lifecycleGroups = items.GroupBy(a => a.Lifecycle).ToList();
