@@ -546,7 +546,10 @@ public partial class ChangelogBundlingService(
 		var description = input.Description ?? config.Bundle.Description;
 
 		// Apply release date suppression: CLI takes precedence; config can enable suppression when CLI didn't
-		var suppressReleaseDate = input.SuppressReleaseDate || !(config.Bundle.ReleaseDates ?? true);
+		// In profile mode, profile has already resolved inheritance, so skip bundle logic
+		var suppressReleaseDate = !string.IsNullOrWhiteSpace(input.Profile)
+			? input.SuppressReleaseDate
+			: input.SuppressReleaseDate || !(config.Bundle.ReleaseDates ?? true);
 
 		return input with
 		{
