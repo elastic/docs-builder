@@ -10,17 +10,25 @@
 				<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
 				@foreach (var navTab in navTabs.Where(s => !s.Isolated))
 				{
-					var isActive = navTab.Id == Model.ActiveSectionId;
+					var isAbsolute = navTab.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+					var isActive = !isAbsolute && navTab.Id == Model.ActiveSectionId;
 					<li class="text-nowrap @(isActive ? "text-blue-elastic" : "hover:text-blue-elastic active:text-blue-elastic-100")"
 						data-section-id="@navTab.Id">
-						<a
-							href="@Model.Link(navTab.Url)"
-							@Model.Htmx.GetHxAttributes(
-								hxSwapOob: "#main-container,#secondary-nav"
-							)
-						>
-							@navTab.Label
-						</a>
+						@if (isAbsolute)
+						{
+							<a href="@navTab.Url">@navTab.Label</a>
+						}
+						else
+						{
+							<a
+								href="@Model.Link(navTab.Url)"
+								@Model.Htmx.GetHxAttributes(
+									hxSwapOob: "#main-container,#secondary-nav"
+								)
+							>
+								@navTab.Label
+							</a>
+						}
 					</li>
 				}
 				</ul>

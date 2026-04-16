@@ -2857,6 +2857,9 @@ nav:
     children:
     - toc: docs-content://troubleshoot
 
+  - section: API reference
+    url: https://www.elastic.co/docs/api
+
   - section: Reference
     url: /reference/
     children:
