@@ -486,6 +486,8 @@
 		var successResponse = operation.Responses?.FirstOrDefault(r => r.Key.StartsWith("2")).Value;
 		var responseContent = successResponse?.Content?.FirstOrDefault().Value;
 		var responseExamples = responseContent?.Examples;
+
+		var codeSamples = Model.CodeSamples;
 	}
 	@if (requestExamples is { Count: > 0 })
 	{
@@ -497,6 +499,7 @@
 				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
 			</span>
 		</h3>
+		var exampleIndex = 0;
 		@foreach (var example in requestExamples)
 		{
 			<div class="example-block">
@@ -505,15 +508,38 @@
 				{
 					<div class="example-description">@Model.RenderMarkdown(example.Value.Description)</div>
 				}
-				@if (example.Value?.Value is not null)
+				@if (exampleIndex == 0 && codeSamples.Count > 1)
 				{
-					<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
+					<div class="tabs">
+						@for (var i = 0; i < codeSamples.Count; i++)
+						{
+							var sample = codeSamples[i];
+							var tabId = $"code-sample-{i}";
+							<input class="tabs-input" checked="@(i == 0 ? "checked" : "")" id="@tabId" name="code-samples" type="radio" tabindex="0">
+							<label class="tabs-label" data-sync-id="@sample.Language" data-sync-group="api-language" for="@tabId">@sample.Language</label>
+							<div class="tabs-content" tabindex="0">
+								<pre><code class="@sample.HighlightClass">@sample.Source</code></pre>
+							</div>
+						}
+					</div>
+				}
+				else if (exampleIndex == 0 && codeSamples.Count == 1)
+				{
+					<pre><code class="@codeSamples[0].HighlightClass">@codeSamples[0].Source</code></pre>
+				}
+				else
+				{
+					@if (example.Value?.Value is not null)
+					{
+						<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
+					}
 				}
 				@if (!string.IsNullOrEmpty(example.Value?.ExternalValue))
 				{
 					<p class="external-example">External example: <a href="@example.Value.ExternalValue">@example.Value.ExternalValue</a></p>
 				}
 			</div>
+			exampleIndex++;
 		}
 	}
 	@if (responseExamples is { Count: > 0 })

@@ -76,3 +76,21 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 - **Landing page**: An overview of the API grouped by tag
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
 - **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
+
+## Multi-language code examples
+
+When an OpenAPI operation includes the `x-codeSamples` extension, the API Explorer renders the code samples with a language selector tab. This lets users switch between available languages such as Console, cURL, Python, JavaScript, Ruby, PHP, and Java.
+
+The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and `source` field:
+
+```json
+"x-codeSamples": [
+  { "lang": "Console", "source": "GET /_search" },
+  { "lang": "curl", "source": "curl -X GET ..." },
+  { "lang": "Python", "source": "resp = client.search()" }
+]
+```
+
+When multiple languages are available, they appear as tabs inside the Request Examples section, replacing the JSON code block of the first request example. The example's description text is preserved above the tabs. The selected language persists across operations and page navigations. When only one language is available, the example renders without a tab selector.
+
+Console is treated as the default language and appears first in the tab order when present. If an operation has no `x-codeSamples`, request examples render as JSON code blocks as before.
