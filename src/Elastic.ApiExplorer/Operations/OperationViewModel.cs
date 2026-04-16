@@ -71,7 +71,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		return tocItems;
 	}
 
-	internal static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation)
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation)
 	{
 		if (operation.Extensions?.TryGetValue("x-codeSamples", out var ext) != true
 			|| ext is not JsonNodeExtension jsonExt
