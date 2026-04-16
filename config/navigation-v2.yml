@@ -1,5 +1,6 @@
 nav:
-  - label: Elasticsearch fundamentals
+  - section: Elasticsearch fundamentals
+    url: /get-started/
     children:
     - group: Get started in seconds
       page: docs-content://get-started/index.md
@@ -24,7 +25,8 @@ nav:
           title: Add search to your site or app
         - page: docs-content://solutions/search/rag.md
           title: RAG
-  - label: Install, deploy, and administer
+  - section: Install, deploy, and administer
+    url: /deploy-manage/deploy/
     children:
     - group: Distributed architecture
       page: docs-content://deploy-manage/distributed-architecture.md
@@ -274,7 +276,8 @@ nav:
       children:
       - title: Overview (roundup)
       - toc: ecctl://reference
-  - label: The Elasticsearch Platform
+  - section: The Elasticsearch Platform
+    url: /manage-data/ingest/
     children:
     - label: Ingest and manage data
       children:
@@ -1402,7 +1405,8 @@ nav:
           title: Manage access to AI features
       - page: docs-content://explore-analyze/ai-features/agent-skills.md
         title: AI agent skills for Elastic
-  - label: Solutions and project types
+  - section: Solutions and project types
+    url: /solutions/
     children:
     - page: docs-content://solutions/index.md
       title: Solutions overview
