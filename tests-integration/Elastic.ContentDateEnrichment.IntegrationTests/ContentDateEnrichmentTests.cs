@@ -90,9 +90,10 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var synonymSetName = $"docs-{testName}-test";
 
 		// Register an empty synonym set — the analyzer references it by name
+		var synonymBody = new JsonObject { ["synonyms_set"] = new JsonArray() };
 		await _transport.PutAsync<StringResponse>(
 			$"_synonyms/{synonymSetName}",
-			PostData.String("""{"synonyms_set":[]}"""),
+			PostData.String(synonymBody.ToJsonString()),
 			CancellationToken.None
 		);
 
