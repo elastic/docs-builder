@@ -30,9 +30,14 @@ public static class SitemapBuilder
 		IDirectoryInfo outputFolder
 	)
 	{
-		if (entries.Count > MaxEntries)
+		// TODO: Remove this exclusion when API docs are ready for sitemap inclusion
+		var filtered = entries
+			.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal))
+			.ToList();
+
+		if (filtered.Count > MaxEntries)
 			throw new InvalidOperationException(
-				$"Sitemap contains {entries.Count:N0} URLs, which exceeds the sitemap protocol limit of {MaxEntries:N0}. " +
+				$"Sitemap contains {filtered.Count:N0} URLs, which exceeds the sitemap protocol limit of {MaxEntries:N0}. " +
 				"Consider implementing sitemap index files to split entries across multiple sitemaps."
 			);
 
@@ -46,7 +51,7 @@ public static class SitemapBuilder
 		var root = new XElement(
 			ns + "urlset",
 			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-			entries
+			filtered
 				.OrderBy(e => e.Key, StringComparer.Ordinal)
 				.Select(e => new XElement(ns + "url", [
 					new XElement(ns + "loc", new Uri(BaseUri, e.Key)),
@@ -74,7 +79,7 @@ public static class SitemapBuilder
 		buffer.Position = 0;
 		buffer.CopyTo(fileStream);
 
-		return new SitemapResult(entries.Count, fileSize);
+		return new SitemapResult(filtered.Count, fileSize);
 	}
 }
 
