@@ -30,7 +30,8 @@ public class TemplateProcessor(IMarkdownStringRenderer markdownRenderer, IFileSy
 		var templateContent = await _fileSystem.File.ReadAllTextAsync(apiConfig.TemplateFile.FullName, cancellationToken);
 
 		// Template uses standard substitutions and directives - render directly.
-		return _markdownRenderer.Render(templateContent, apiConfig.TemplateFile);
+		// Preserve the first H1: BodyHtml is embedded without the normal page layout title.
+		return _markdownRenderer.Render(templateContent, apiConfig.TemplateFile, removeFirstHeading: false);
 	}
 }
 
