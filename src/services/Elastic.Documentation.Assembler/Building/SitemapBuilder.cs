@@ -56,20 +56,23 @@ public static class SitemapBuilder
 
 		doc.Add(root);
 
-		if (!outputFolder.Exists)
-			_ = fileSystem.Directory.CreateDirectory(outputFolder.FullName);
+		using var buffer = new MemoryStream();
+		doc.Save(buffer);
 
-		var sitemapPath = fileSystem.Path.Join(outputFolder.FullName, "sitemap.xml");
-		using var fileStream = fileSystem.File.Create(sitemapPath);
-		doc.Save(fileStream);
-		fileStream.Flush();
-
-		var fileSize = fileStream.Length;
+		var fileSize = buffer.Length;
 		if (fileSize > MaxFileSizeBytes)
 			throw new InvalidOperationException(
 				$"Sitemap file size is {fileSize / (1024.0 * 1024.0):F1} MB, which exceeds the sitemap protocol limit of 50 MB. " +
 				"Consider implementing sitemap index files to split entries across multiple sitemaps."
 			);
+
+		if (!outputFolder.Exists)
+			_ = fileSystem.Directory.CreateDirectory(outputFolder.FullName);
+
+		var sitemapPath = fileSystem.Path.Join(outputFolder.FullName, "sitemap.xml");
+		using var fileStream = fileSystem.File.Create(sitemapPath);
+		buffer.Position = 0;
+		buffer.CopyTo(fileStream);
 
 		return new SitemapResult(entries.Count, fileSize);
 	}
