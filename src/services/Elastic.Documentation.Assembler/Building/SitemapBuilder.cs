@@ -12,17 +12,30 @@ using Elastic.Markdown.Extensions.DetectionRules;
 
 namespace Elastic.Documentation.Assembler.Building;
 
+public record SitemapResult(int EntryCount, long FileSizeBytes);
+
 public static class SitemapBuilder
 {
+	public const int MaxEntries = 50_000;
+	public const int WarningEntryThreshold = 40_000;
+	public const long MaxFileSizeBytes = 50L * 1024 * 1024;
+	public const long WarningFileSizeBytes = 40L * 1024 * 1024;
+
 	private static readonly Uri BaseUri = new("https://www.elastic.co");
 
 	/// <summary>Generates sitemap.xml with per-URL last_updated dates.</summary>
-	public static void Generate(
+	public static SitemapResult Generate(
 		IReadOnlyDictionary<string, DateTimeOffset> entries,
 		IFileSystem fileSystem,
 		IDirectoryInfo outputFolder
 	)
 	{
+		if (entries.Count > MaxEntries)
+			throw new InvalidOperationException(
+				$"Sitemap contains {entries.Count:N0} URLs, which exceeds the sitemap protocol limit of {MaxEntries:N0}. " +
+				"Consider implementing sitemap index files to split entries across multiple sitemaps."
+			);
+
 		var doc = new XDocument
 		{
 			Declaration = new XDeclaration("1.0", "utf-8", "yes")
@@ -46,8 +59,19 @@ public static class SitemapBuilder
 		if (!outputFolder.Exists)
 			_ = fileSystem.Directory.CreateDirectory(outputFolder.FullName);
 
-		using var fileStream = fileSystem.File.Create(fileSystem.Path.Join(outputFolder.FullName, "sitemap.xml"));
+		var sitemapPath = fileSystem.Path.Join(outputFolder.FullName, "sitemap.xml");
+		using var fileStream = fileSystem.File.Create(sitemapPath);
 		doc.Save(fileStream);
+		fileStream.Flush();
+
+		var fileSize = fileStream.Length;
+		if (fileSize > MaxFileSizeBytes)
+			throw new InvalidOperationException(
+				$"Sitemap file size is {fileSize / (1024.0 * 1024.0):F1} MB, which exceeds the sitemap protocol limit of 50 MB. " +
+				"Consider implementing sitemap index files to split entries across multiple sitemaps."
+			);
+
+		return new SitemapResult(entries.Count, fileSize);
 	}
 }
 

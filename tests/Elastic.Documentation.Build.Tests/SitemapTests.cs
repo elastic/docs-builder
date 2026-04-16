@@ -95,6 +95,62 @@ public class SitemapTests
 	}
 
 	[Fact]
+	public void Generate_ReturnsEntryCountAndFileSize()
+	{
+		// Arrange
+		var fs = new MockFileSystem();
+		var outputDir = fs.DirectoryInfo.New("/output");
+		var now = DateTimeOffset.UtcNow;
+		var entries = new Dictionary<string, DateTimeOffset>
+		{
+			["/docs/page-1"] = now,
+			["/docs/page-2"] = now,
+		};
+
+		// Act
+		var result = SitemapBuilder.Generate(entries, fs, outputDir);
+
+		// Assert
+		result.EntryCount.Should().Be(2);
+		result.FileSizeBytes.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public void Generate_ThrowsWhenEntryCountExceedsLimit()
+	{
+		// Arrange
+		var fs = new MockFileSystem();
+		var outputDir = fs.DirectoryInfo.New("/output");
+		var now = DateTimeOffset.UtcNow;
+		var entries = Enumerable.Range(0, SitemapBuilder.MaxEntries + 1)
+			.ToDictionary(i => $"/docs/page-{i}", _ => now);
+
+		// Act
+		var act = () => SitemapBuilder.Generate(entries, fs, outputDir);
+
+		// Assert
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*exceeds the sitemap protocol limit*");
+	}
+
+	[Fact]
+	public void Generate_DoesNotThrowAtExactLimit()
+	{
+		// Arrange
+		var fs = new MockFileSystem();
+		var outputDir = fs.DirectoryInfo.New("/output");
+		var now = DateTimeOffset.UtcNow;
+		var entries = Enumerable.Range(0, SitemapBuilder.MaxEntries)
+			.ToDictionary(i => $"/docs/page-{i}", _ => now);
+
+		// Act
+		var act = () => SitemapBuilder.Generate(entries, fs, outputDir);
+
+		// Assert
+		act.Should().NotThrow();
+	}
+
+	[Fact]
 	public void BuildSearchBody_FirstPage_HasPitButNoSearchAfter()
 	{
 		// Act
