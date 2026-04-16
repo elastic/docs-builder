@@ -5,6 +5,7 @@ Admonitions allow you to highlight important information with varying levels of 
 ## Basic admonitions
 
 Admonitions can span multiple lines and support inline formatting.
+Use a blank line inside the admonition to start a new paragraph or block content.
 Available admonition types include:
 
 - [Note](#note)
@@ -23,8 +24,9 @@ A relevant piece of information with no serious repercussions if ignored.
 ::::{tab-item} Output
 
 :::{note}
-This is a note.
-It can span multiple lines and supports inline formatting.
+This is a note with *inline formatting*.
+
+This second paragraph renders because there is a blank line above it.
 :::
 
 ::::
@@ -33,8 +35,9 @@ It can span multiple lines and supports inline formatting.
 
 ```markdown
 :::{note}
-This is a note.
-It can span multiple lines and supports inline formatting.
+This is a note with *inline formatting*.
+
+This second paragraph renders because there is a blank line above it.
 :::
 ```
 

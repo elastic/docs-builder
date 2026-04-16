@@ -400,3 +400,29 @@ A regular paragraph.
 		html.Should().Contain("applies-to-popover");
 	}
 }
+
+public class AdmonitionMultilineFormattingTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{note}
+This is a note with *inline formatting*.
+
+This second paragraph renders because there is a blank line above it.
+:::
+"""
+)
+{
+	[Fact]
+	public void RendersInlineFormatting()
+	{
+		var html = Html;
+		html.Should().Contain("<em>inline formatting</em>");
+	}
+
+	[Fact]
+	public void RendersMultipleParagraphs()
+	{
+		var html = Html;
+		html.Should().Contain("<p>This is a note with <em>inline formatting</em>.</p>");
+		html.Should().Contain("<p>This second paragraph renders because there is a blank line above it.</p>");
+	}
+}
