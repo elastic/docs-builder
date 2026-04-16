@@ -13,7 +13,8 @@ public static class MockFileSystemExtensions
 		this MockFileSystem fileSystem,
 		IDirectoryInfo root,
 		Dictionary<string, string>? globalVariables = null,
-		IReadOnlyList<string>? products = null)
+		IReadOnlyList<string>? products = null,
+		IReadOnlyDictionary<string, string>? apiSpecs = null)
 	{
 		// language=yaml
 		var yaml = new StringWriter();
@@ -40,6 +41,16 @@ public static class MockFileSystemExtensions
 			yaml.WriteLine($" - file: {relative}");
 		}
 
+		if (apiSpecs is { Count: > 0 })
+		{
+			yaml.WriteLine("api:");
+			foreach (var (productKey, specPath) in apiSpecs)
+			{
+				yaml.WriteLine($"  {productKey}:");
+				yaml.WriteLine($"    spec: {specPath}");
+			}
+		}
+
 		if (globalVariables is not null)
 		{
 			yaml.WriteLine($"subs:");
@@ -47,6 +58,6 @@ public static class MockFileSystemExtensions
 				yaml.WriteLine($"  {key}: {value}");
 		}
 
-		fileSystem.AddFile(Path.Join(root.FullName, "docset.yml"), new MockFileData(yaml.ToString()));
+		fileSystem.AddFile(Path.Join(root.FullName, "_docset.yml"), new MockFileData(yaml.ToString()));
 	}
 }

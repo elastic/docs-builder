@@ -8,7 +8,7 @@ namespace Elastic.Documentation;
 
 public interface IMarkdownStringRenderer
 {
-	string Render(string markdown, IFileInfo? source);
+	string Render(string markdown, IFileInfo? source, bool removeFirstHeading = true);
 }
 public class NoopMarkdownStringRenderer : IMarkdownStringRenderer
 {
@@ -17,5 +17,5 @@ public class NoopMarkdownStringRenderer : IMarkdownStringRenderer
 	public static NoopMarkdownStringRenderer Instance { get; } = new();
 
 	/// <inheritdoc />
-	public string Render(string markdown, IFileInfo? source) => string.Empty;
+	public string Render(string markdown, IFileInfo? source, bool removeFirstHeading = true) => string.Empty;
 }

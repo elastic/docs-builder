@@ -47,11 +47,11 @@ public class HtmlWriter(
 	private IPageViewFactory PageViewFactory { get; } = pageViewFactory ?? new DefaultPageViewFactory();
 
 	/// <inheritdoc />
-	public string Render(string markdown, IFileInfo? source)
+	public string Render(string markdown, IFileInfo? source, bool removeFirstHeading = true)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
-		return MarkdownFile.CreateHtml(parsed);
+		return MarkdownFile.CreateHtml(parsed, removeFirstHeading);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx = default)

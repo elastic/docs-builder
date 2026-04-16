@@ -66,6 +66,7 @@ const x = 1;
 The following directives are available:
 
 - [Admonitions](admonitions.md) - Callouts and warnings
+- [API directives](api-directives.md) - Dynamic content from OpenAPI specifications
 - [Code blocks](code.md) - Syntax-highlighted code
 - [Contributors](contributors.md) - Team roster grids with avatars
 - [CSV include](csv-include.md) - Render CSV files as tables

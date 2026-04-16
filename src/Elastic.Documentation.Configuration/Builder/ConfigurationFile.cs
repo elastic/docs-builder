@@ -11,6 +11,8 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -208,6 +210,9 @@ public record ConfigurationFile
 
 					apiConfigs[productKey] = resolvedConfig;
 
+					// Add API metadata as substitutions for templates
+					AddApiSubstitutions(productKey, resolvedConfig);
+
 					// For backward compatibility, populate OpenApiSpecifications with primary spec
 					specs[productKey] = resolvedConfig.PrimarySpecFile;
 				}
@@ -294,5 +299,50 @@ public record ConfigurationFile
 		}
 
 		return new CrossLinkEntry(repository, entryRegistry);
+	}
+
+	private void AddApiSubstitutions(string productKey, ResolvedApiConfiguration apiConfig)
+	{
+		try
+		{
+			using var stream = apiConfig.PrimarySpecFile.OpenRead();
+			var readerSettings = new OpenApiReaderSettings
+			{
+				LeaveStreamOpen = false
+			};
+			var loadResult = OpenApiDocument.LoadAsync(stream, settings: readerSettings).GetAwaiter().GetResult();
+			var openApiDoc = loadResult.Document;
+
+			if (openApiDoc?.Info != null)
+			{
+				// Add basic API info substitutions (OpenAPI info.description uses :::{api-summary} :type: description in Markdown)
+				_substitutions[$"api.{productKey}.title"] = openApiDoc.Info.Title ?? "";
+				_substitutions[$"api.{productKey}.version"] = openApiDoc.Info.Version ?? "";
+
+				// Add license info if available
+				if (openApiDoc.Info.License != null)
+				{
+					_substitutions[$"api.{productKey}.license.name"] = openApiDoc.Info.License.Name ?? "";
+					_substitutions[$"api.{productKey}.license.url"] = openApiDoc.Info.License.Url?.ToString() ?? "";
+				}
+
+				// Add contact info if available
+				if (openApiDoc.Info.Contact != null)
+				{
+					_substitutions[$"api.{productKey}.contact.name"] = openApiDoc.Info.Contact.Name ?? "";
+					_substitutions[$"api.{productKey}.contact.email"] = openApiDoc.Info.Contact.Email ?? "";
+					_substitutions[$"api.{productKey}.contact.url"] = openApiDoc.Info.Contact.Url?.ToString() ?? "";
+				}
+
+			}
+		}
+		catch (Exception ex)
+		{
+			// Emit warning but don't fail the build - let substitutions be empty for this API
+			_context.EmitWarning(
+				_context.ConfigurationPath,
+				$"Failed to load API substitutions for '{productKey}': {ex.Message}"
+			);
+		}
 	}
 }

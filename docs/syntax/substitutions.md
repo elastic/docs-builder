@@ -43,6 +43,7 @@ Here are some variable substitutions:
 | {{a-global-variable}} | `docset.yml`   |
 | {{product.kibana}}    | `products.yml` |
 | {{.kibana}}           | `products.yml` |
+| {{api.kibana.title}}  | OpenAPI spec   |
 
 ## Mutations
 
@@ -236,3 +237,29 @@ id:
 ```
 
 A shorthand format is also available. Using `{{.id}}` is equivalent to `{{product.id}}`.
+
+## APIs
+
+API substitutions extract metadata from OpenAPI specifications configured in your docset. These are automatically populated from the `info` section of each API spec.
+
+| Substitution | Description | Example |
+|--------------|-------------|---------|
+| `{{api.{product}.title}}` | API title from OpenAPI info | `{{api.kibana.title}}` |
+| `{{api.{product}.version}}` | API version from OpenAPI info | `{{api.kibana.version}}` |
+| `{{api.{product}.license.name}}` | License name (if present) | `{{api.kibana.license.name}}` |
+| `{{api.{product}.license.url}}` | License URL (if present) | `{{api.kibana.license.url}}` |
+| `{{api.{product}.contact.name}}` | Contact name (if present) | `{{api.kibana.contact.name}}` |
+| `{{api.{product}.contact.email}}` | Contact email (if present) | `{{api.kibana.contact.email}}` |
+| `{{api.{product}.contact.url}}` | Contact URL (if present) | `{{api.kibana.contact.url}}` |
+
+Example docset configuration:
+
+```yaml
+api:
+  kibana:
+    spec: "kibana-openapi.json"
+  elasticsearch:
+    spec: "elasticsearch-openapi.json"
+```
+
+This makes substitutions like `{{api.kibana.title}}` and `{{api.elasticsearch.version}}` available throughout your documentation.

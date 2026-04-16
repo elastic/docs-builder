@@ -4,12 +4,16 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
+using Elastic.Markdown.Myst.Directives.ApiSummary;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
@@ -120,6 +124,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
+				return;
+			case ApiSummaryBlock apiSummaryBlock:
+				WriteApiSummary(renderer, apiSummaryBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -639,4 +646,145 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		}
 		_ = renderer.EnsureLine();
 	}
+
+	private static void WriteApiSummary(HtmlRenderer renderer, ApiSummaryBlock block)
+	{
+		var apiConfigs = block.Build.Configuration.ApiConfigurations;
+		if (apiConfigs == null || apiConfigs.Count == 0)
+		{
+			_ = renderer.Write("<!-- No API configurations found -->");
+			_ = renderer.EnsureLine();
+			return;
+		}
+
+		var productKey = block.Product ?? block.CurrentFile?.Name?.Replace("-api-overview.md", "") ?? "elasticsearch";
+		if (!apiConfigs.TryGetValue(productKey, out var apiConfig))
+		{
+			_ = renderer.Write($"<!-- API configuration for '{productKey}' not found -->");
+			_ = renderer.EnsureLine();
+			return;
+		}
+
+		if (!block.IsDescriptionKind && !block.IsOperationsKind)
+		{
+			_ = renderer.Write(
+				$"<!-- api-summary: unknown :type: '{block.Type}' (use 'operations' or 'description') -->");
+			_ = renderer.EnsureLine();
+			return;
+		}
+
+		try
+		{
+			if (block.IsDescriptionKind)
+			{
+				var openApiDoc = OpenApiReader.Create(apiConfig.PrimarySpecFile).GetAwaiter().GetResult();
+				var description = openApiDoc?.Info?.Description;
+				if (string.IsNullOrWhiteSpace(description))
+				{
+					_ = renderer.EnsureLine();
+					return;
+				}
+
+				var html = global::Markdig.Markdown.ToHtml(description, MarkdownParser.ApiDescriptionMarkdownPipeline);
+				_ = renderer.Write(html);
+			}
+			else
+			{
+				var html = RenderApiOperationsForDirective(apiConfig, block.Tag, block.Build.UrlPathPrefix ?? "");
+				_ = renderer.Write(html);
+			}
+		}
+		catch (Exception ex)
+		{
+			_ = renderer.Write($"<!-- Error rendering api-summary: {ex.Message} -->");
+		}
+
+		_ = renderer.EnsureLine();
+	}
+
+	private static string RenderApiOperationsForDirective(ResolvedApiConfiguration apiConfig, string? tagFilter, string urlPathPrefix)
+	{
+		try
+		{
+			var openApiDoc = OpenApiReader.Create(apiConfig.PrimarySpecFile).GetAwaiter().GetResult();
+			if (openApiDoc?.Paths == null)
+				return "<!-- No API paths found in specification -->";
+
+			var productKey = apiConfig.ProductKey;
+			var rows = new List<(string TagName, ApiOperation ApiOperation)>();
+
+			foreach (var pathEntry in openApiDoc.Paths)
+			{
+				foreach (var operationEntry in pathEntry.Value.Operations ?? [])
+				{
+					var tagName = operationEntry.Value.Tags?.FirstOrDefault()?.Reference?.Id ?? "Untagged";
+					if (!string.IsNullOrEmpty(tagFilter) &&
+						!tagName.Equals(tagFilter, StringComparison.OrdinalIgnoreCase))
+						continue;
+
+					var apiOperation = new ApiOperation(
+						operationEntry.Key,
+						operationEntry.Value,
+						pathEntry.Key,
+						pathEntry.Value,
+						tagName);
+					rows.Add((tagName, apiOperation));
+				}
+			}
+
+			if (rows.Count == 0)
+				return "<!-- No matching API operations found -->";
+
+			var operationsByTag = rows
+				.GroupBy(r => r.TagName)
+				.OrderBy(g => g.Key);
+
+			var html = new List<string>
+			{
+				"<div class=\"api-overview\">",
+				"<table>"
+			};
+
+			foreach (var tagGroup in operationsByTag)
+			{
+				html.Add("<tr>");
+				html.Add($"<td colspan=\"2\"><h3>{EscapeHtml(tagGroup.Key)}</h3></td>");
+				html.Add("</tr>");
+
+				html.Add("<tr>");
+				html.Add("<td class=\"api-name\">Operations</td>");
+				html.Add("<td>");
+				html.Add("<ul class=\"api-url-listing\">");
+
+				foreach (var (_, apiOperation) in tagGroup.OrderBy(r => r.ApiOperation.Route))
+				{
+					var moniker = apiOperation.Operation.OperationId ?? apiOperation.Route.Replace("}", "").Replace("{", "").Replace('/', '-');
+					var operationUrl = $"{urlPathPrefix.TrimEnd('/')}/api/{productKey}/{moniker}";
+					var httpMethod = apiOperation.OperationType.ToString().ToLowerInvariant();
+
+					html.Add("<li class=\"api-url-list-item\">");
+					html.Add($"<a href=\"{EscapeHtml(operationUrl)}\" class=\"current api-url-list-item-landing\" hx-disable=\"true\">");
+					html.Add($"<span class=\"api-method api-method-{httpMethod}\">{apiOperation.OperationType.ToString().ToUpperInvariant()}</span>");
+					html.Add($"<span class=\"api-url\">{EscapeHtml(apiOperation.Route)}</span>");
+					html.Add("</a>");
+					html.Add("</li>");
+				}
+
+				html.Add("</ul>");
+				html.Add("</td>");
+				html.Add("</tr>");
+			}
+
+			html.Add("</table>");
+			html.Add("</div>");
+			return string.Join(Environment.NewLine, html);
+		}
+		catch
+		{
+			return "<!-- Error loading API specification -->";
+		}
+	}
+
+	private static string EscapeHtml(string text) =>
+		text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;");
 }

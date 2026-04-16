@@ -196,6 +196,32 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		}
 	}
 
+	/// <summary>
+	/// Markdown pipeline for OpenAPI <c>info.description</c> values expanded via <c>{{api.*.description}}</c> substitutions.
+	/// Intentionally omits substitution and directive extensions so description text cannot recurse or pull docset context.
+	/// </summary>
+	[field: AllowNull, MaybeNull]
+	public static MarkdownPipeline ApiDescriptionMarkdownPipeline
+	{
+		get
+		{
+			if (field is not null)
+				return field;
+
+			var builder = new MarkdownPipelineBuilder()
+				.UseAutoLinks()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UsePipeTables()
+				.UseHeadingsWithSlugs()
+				.UseDefinitionLists()
+				.DisableHtml()
+				.UseHardBreaks();
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			field = builder.Build();
+			return field;
+		}
+	}
+
 	[System.Text.RegularExpressions.GeneratedRegex(@"\[([^\]]+)\]\(([^\)]+)\)", System.Text.RegularExpressions.RegexOptions.Multiline)]
 	private static partial System.Text.RegularExpressions.Regex LinkPattern();
 

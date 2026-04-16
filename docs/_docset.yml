@@ -123,6 +123,7 @@ toc:
       - file: directives.md
       - file: headings.md
       - file: admonitions.md
+      - file: api-directives.md
       - file: agent-skill.md
       - file: applies.md
       - file: applies-switch.md

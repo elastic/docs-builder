@@ -435,12 +435,16 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}
 	}
 
-	public static string CreateHtml(MarkdownDocument document)
+	public static string CreateHtml(MarkdownDocument document, bool removeFirstHeading = true)
 	{
-		//we manually render title and optionally append an applies block embedded in yaml front matter.
-		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
-		if (h1 is not null)
-			_ = document.Remove(h1);
+		// We manually render title and optionally append an applies block embedded in yaml front matter.
+		// Embedded fragments (for example API Explorer landing templates) pass removeFirstHeading: false so the H1 stays in BodyHtml.
+		if (removeFirstHeading)
+		{
+			var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+			if (h1 is not null)
+				_ = document.Remove(h1);
+		}
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		return InsertFootnotesHeading(html);

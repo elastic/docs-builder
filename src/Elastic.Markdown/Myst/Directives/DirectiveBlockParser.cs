@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
+using Elastic.Markdown.Myst.Directives.ApiSummary;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
@@ -135,6 +136,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
+
+		if (info.IndexOf("{api-summary}") > 0)
+			return new ApiSummaryBlock(this, context);
 
 		foreach (var admonition in Admonitions)
 		{

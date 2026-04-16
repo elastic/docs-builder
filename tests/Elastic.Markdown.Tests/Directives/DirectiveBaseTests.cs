@@ -67,7 +67,7 @@ $"""
 
 		var root = FileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/"));
 		// ReSharper disable once VirtualMemberCallInConstructor
-		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts());
+		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts(), apiSpecs: GetApiSpecs());
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
@@ -86,6 +86,11 @@ $"""
 	/// Returns null by default (no products configured).
 	/// </summary>
 	protected virtual IReadOnlyList<string>? GetDocsetProducts() => null;
+
+	/// <summary>
+	/// Override to register API Explorer OpenAPI specs (product key → spec path relative to the docset root).
+	/// </summary>
+	protected virtual IReadOnlyDictionary<string, string>? GetApiSpecs() => null;
 
 	public virtual async ValueTask InitializeAsync()
 	{

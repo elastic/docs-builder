@@ -19,7 +19,7 @@ public static class OpenApiReader
 		{
 			LeaveStreamOpen = false
 		};
-		await using var fs = File.Open(openApiSpecification.FullName, FileMode.Open);
+		await using var fs = openApiSpecification.OpenRead();
 		var openApiDocument = await OpenApiDocument.LoadAsync(fs, settings: settings);
 		return openApiDocument.Document;
 	}
