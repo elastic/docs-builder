@@ -28,17 +28,6 @@ public class ApiConfigurationTests
 		config.GetSpecPaths().Should().BeEquivalentTo(["elasticsearch-openapi.json"]);
 	}
 
-	[Fact]
-	public void ApiConfiguration_ValidatesMultipleSpecs()
-	{
-		var config = new ApiConfiguration
-		{
-			Specs = ["elasticsearch-core.json", "elasticsearch-xpack.json"]
-		};
-
-		config.IsValid.Should().BeTrue();
-		config.GetSpecPaths().Should().BeEquivalentTo(["elasticsearch-core.json", "elasticsearch-xpack.json"]);
-	}
 
 	[Fact]
 	public void ApiConfiguration_InvalidWhenNoSpecs()
@@ -48,17 +37,6 @@ public class ApiConfigurationTests
 		config.IsValid.Should().BeFalse();
 	}
 
-	[Fact]
-	public void ApiConfiguration_InvalidWhenBothSpecAndSpecs()
-	{
-		var config = new ApiConfiguration
-		{
-			Spec = "elasticsearch-openapi.json",
-			Specs = ["elasticsearch-core.json"]
-		};
-
-		config.IsValid.Should().BeFalse();
-	}
 
 	[Fact]
 	public void ApiConfiguration_WithTemplate()
@@ -72,6 +50,23 @@ public class ApiConfigurationTests
 		config.IsValid.Should().BeTrue();
 		config.Template.Should().Be("elasticsearch-api-overview.md");
 	}
+
+	[Fact]
+	public void ApiConfiguration_InvalidWhenSpecIsEmpty()
+	{
+		var config = new ApiConfiguration { Spec = "" };
+
+		config.IsValid.Should().BeFalse();
+	}
+
+	[Fact]
+	public void ApiConfiguration_InvalidWhenSpecIsWhitespace()
+	{
+		var config = new ApiConfiguration { Spec = "   " };
+
+		config.IsValid.Should().BeFalse();
+	}
+
 }
 
 public class ApiConfigurationConverterTests
@@ -111,10 +106,67 @@ public class ApiConfigurationConverterTests
 		config.Specs.Should().BeNull();
 	}
 
+
 	[Fact]
-	public void Converter_HandlesMultiSpecFormat()
+	public void Converter_SkipsUnknownPropertiesWithNestedContent()
 	{
 		const string yaml = """
+			spec: elasticsearch-openapi.json
+			unknown_nested:
+			  foo: bar
+			  nested:
+			    deep: value
+			template: elasticsearch-api-overview.md
+			""";
+
+		var config = _deserializer.Deserialize<ApiConfiguration>(yaml);
+
+		config.Should().NotBeNull();
+		config.Spec.Should().Be("elasticsearch-openapi.json");
+		config.Template.Should().Be("elasticsearch-api-overview.md");
+		config.Specs.Should().BeNull();
+	}
+
+	[Fact]
+	public void Converter_HandlesWrongTokenTypeForSpec()
+	{
+		const string yaml = """
+			spec:
+			  nested: value
+			template: elasticsearch-api-overview.md
+			""";
+
+		var config = _deserializer.Deserialize<ApiConfiguration>(yaml);
+
+		config.Should().NotBeNull();
+		config.Spec.Should().BeNull(); // Should be null when wrong token type
+		config.Template.Should().Be("elasticsearch-api-overview.md");
+		config.Specs.Should().BeNull();
+	}
+
+	[Fact]
+	public void Converter_HandlesWrongTokenTypeForTemplate()
+	{
+		const string yaml = """
+			spec: elasticsearch-openapi.json
+			template:
+			  - item1
+			  - item2
+			""";
+
+		var config = _deserializer.Deserialize<ApiConfiguration>(yaml);
+
+		config.Should().NotBeNull();
+		config.Spec.Should().Be("elasticsearch-openapi.json");
+		config.Template.Should().BeNull(); // Should be null when wrong token type
+		config.Specs.Should().BeNull();
+	}
+
+	[Fact]
+	public void Converter_IgnoresSpecsPropertyForNow()
+	{
+		const string yaml = """
+			spec: elasticsearch-openapi.json
 			specs:
 			  - elasticsearch-core.json
 			  - elasticsearch-xpack.json
@@ -124,9 +176,35 @@ public class ApiConfigurationConverterTests
 		var config = _deserializer.Deserialize<ApiConfiguration>(yaml);
 
 		config.Should().NotBeNull();
-		config.Spec.Should().BeNull();
-		config.Specs.Should().BeEquivalentTo(["elasticsearch-core.json", "elasticsearch-xpack.json"]);
+		config.Spec.Should().Be("elasticsearch-openapi.json");
 		config.Template.Should().Be("elasticsearch-api-overview.md");
+		// Specs should remain null since multi-spec support is deferred
+		config.Specs.Should().BeNull();
+	}
+
+	[Fact]
+	public void Converter_HandlesComplexUnknownStructures()
+	{
+		const string yaml = """
+			spec: elasticsearch-openapi.json
+			complex_unknown:
+			  level1:
+			    level2:
+			      - item1
+			      - item2
+			      - nested:
+			          deep: value
+			another_unknown:
+			  - array_item
+			template: elasticsearch-api-overview.md
+			""";
+
+		var config = _deserializer.Deserialize<ApiConfiguration>(yaml);
+
+		config.Should().NotBeNull();
+		config.Spec.Should().Be("elasticsearch-openapi.json");
+		config.Template.Should().Be("elasticsearch-api-overview.md");
+		config.Specs.Should().BeNull();
 	}
 }
 

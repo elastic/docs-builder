@@ -5,6 +5,7 @@
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
+using static YamlDotNet.Core.ParserExtensions;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
@@ -45,6 +46,11 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 							config.Spec = specValue.Value;
 							_ = parser.MoveNext();
 						}
+						else
+						{
+							// Wrong token type - skip safely
+							parser.SkipThisAndNestedEvents();
+						}
 						break;
 					case "template":
 						if (parser.Current is Scalar templateValue)
@@ -52,27 +58,15 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 							config.Template = templateValue.Value;
 							_ = parser.MoveNext();
 						}
-						break;
-					case "specs":
-						if (parser.Current is SequenceStart)
+						else
 						{
-							_ = parser.MoveNext();
-							var specs = new List<string>();
-							while (parser.Current is not SequenceEnd)
-							{
-								if (parser.Current is Scalar specItem)
-								{
-									specs.Add(specItem.Value ?? "");
-									_ = parser.MoveNext();
-								}
-							}
-							config.Specs = specs;
-							_ = parser.MoveNext(); // consume SequenceEnd
+							// Wrong token type - skip safely
+							parser.SkipThisAndNestedEvents();
 						}
 						break;
 					default:
-						// Skip unknown properties
-						_ = parser.MoveNext();
+						// Safely consume unknown values (including nested mappings/sequences)
+						parser.SkipThisAndNestedEvents();
 						break;
 				}
 			}

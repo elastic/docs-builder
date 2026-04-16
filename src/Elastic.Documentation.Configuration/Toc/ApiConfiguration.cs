@@ -36,11 +36,10 @@ public class ApiConfiguration
 
 	/// <summary>
 	/// Validates that the configuration is valid.
-	/// Must have at least one spec and cannot specify both spec and specs.
+	/// Must have a non-empty spec path. Multi-spec support is deferred to future implementation.
 	/// </summary>
 	public bool IsValid =>
-		(Spec != null || (Specs?.Count > 0)) &&
-		!(Spec != null && Specs?.Count > 0);
+		!string.IsNullOrWhiteSpace(Spec);
 
 	/// <summary>
 	/// Gets all specification file paths, handling both single spec and multi-spec configurations.
