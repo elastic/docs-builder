@@ -329,4 +329,274 @@ public class TagMetadataTests
 		// Access the ApiTag model through the Index property
 		return tagItem.Index.Model is ApiTag tag && tag.Name == expectedTagName;
 	}
+
+	[Fact]
+	public async Task Tags_WithMixedDisplayNames_SortedAlphabeticallyByDisplayName()
+	{
+		// Arrange - spec with mixed x-displayName and canonical names
+		var openApiJson = /*lang=json*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": {
+		    "title": "Test API",
+		    "version": "1.0.0"
+		  },
+		  "paths": {
+		    "/zebra": {
+		      "get": {
+		        "operationId": "zebra-op",
+		        "tags": ["zebra"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/apple": {
+		      "get": {
+		        "operationId": "apple-op",
+		        "tags": ["apple"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/charlie": {
+		      "get": {
+		        "operationId": "charlie-op",
+		        "tags": ["charlie"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    }
+		  },
+		  "tags": [
+		    {
+		      "name": "zebra",
+		      "x-displayName": "Animal Zoo"
+		    },
+		    {
+		      "name": "apple",
+		      "x-displayName": "Fruit Store"  
+		    },
+		    {
+		      "name": "charlie"
+		    }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+
+		// Act
+		var navigation = generator.CreateNavigation("test", openApiDocument);
+
+		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "charlie", "Fruit Store"
+		navigation.NavigationItems.Should().HaveCount(3);
+
+		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		tagItems.Should().HaveCount(3);
+
+		// Verify sorted order
+		tagItems[0].NavigationTitle.Should().Be("Animal Zoo", "First tag should be 'Animal Zoo' (zebra with x-displayName)");
+		tagItems[1].NavigationTitle.Should().Be("charlie", "Second tag should be 'charlie' (canonical name, no x-displayName)");
+		tagItems[2].NavigationTitle.Should().Be("Fruit Store", "Third tag should be 'Fruit Store' (apple with x-displayName)");
+	}
+
+	[Fact]
+	public async Task Tags_CaseInsensitiveSorting_WorksCorrectly()
+	{
+		// Arrange - spec with case variations
+		var openApiJson = /*lang=json*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": {
+		    "title": "Test API",
+		    "version": "1.0.0"
+		  },
+		  "paths": {
+		    "/bravo": {
+		      "get": {
+		        "operationId": "bravo-op",
+		        "tags": ["bravo"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/alpha": {
+		      "get": {
+		        "operationId": "alpha-op",
+		        "tags": ["alpha"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    }
+		  },
+		  "tags": [
+		    {
+		      "name": "bravo",
+		      "x-displayName": "beta Service"
+		    },
+		    {
+		      "name": "alpha", 
+		      "x-displayName": "Alpha Service"
+		    }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+
+		// Act
+		var navigation = generator.CreateNavigation("test", openApiDocument);
+
+		// Assert - should be sorted case-insensitively: "Alpha Service", "beta Service"
+		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		tagItems.Should().HaveCount(2);
+
+		tagItems[0].NavigationTitle.Should().Be("Alpha Service", "Should sort case-insensitively");
+		tagItems[1].NavigationTitle.Should().Be("beta Service", "Should sort case-insensitively");
+	}
+
+	[Fact]
+	public async Task Tags_OnlyCanonicalNames_SortedAlphabetically()
+	{
+		// Arrange - spec with no x-displayName values
+		var openApiJson = /*lang=json*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": {
+		    "title": "Test API",
+		    "version": "1.0.0"
+		  },
+		  "paths": {
+		    "/zebra": {
+		      "get": {
+		        "operationId": "zebra-op",
+		        "tags": ["zebra"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/alpha": {
+		      "get": {
+		        "operationId": "alpha-op",
+		        "tags": ["alpha"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/mike": {
+		      "get": {
+		        "operationId": "mike-op",
+		        "tags": ["mike"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    }
+		  },
+		  "tags": [
+		    {
+		      "name": "zebra",
+		      "description": "Zebra operations"
+		    },
+		    {
+		      "name": "alpha",
+		      "description": "Alpha operations"
+		    },
+		    {
+		      "name": "mike",
+		      "description": "Mike operations" 
+		    }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+
+		// Act
+		var navigation = generator.CreateNavigation("test", openApiDocument);
+
+		// Assert - should be sorted alphabetically by canonical name: "alpha", "mike", "zebra"
+		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		tagItems.Should().HaveCount(3);
+
+		tagItems[0].NavigationTitle.Should().Be("alpha", "Should sort by canonical name");
+		tagItems[1].NavigationTitle.Should().Be("mike", "Should sort by canonical name");
+		tagItems[2].NavigationTitle.Should().Be("zebra", "Should sort by canonical name");
+	}
+
+	[Fact]
+	public async Task Tags_WithinClassification_SortedCorrectly()
+	{
+		// Arrange - Elasticsearch spec that creates MULTIPLE classifications so we get classification groups
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": {
+		    "title": "Elasticsearch Request & Response Specification",
+		    "version": "1.0.0"
+		  },
+		  "paths": {
+		    "/search": {
+		      "get": {
+		        "operationId": "search-op",
+		        "tags": ["search"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/indices": {
+		      "get": {
+		        "operationId": "indices-op",
+		        "tags": ["indices"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/watcher": {
+		      "get": {
+		        "operationId": "watcher-op",
+		        "tags": ["watcher"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/tasks": {
+		      "get": {
+		        "operationId": "tasks-op",
+		        "tags": ["tasks"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    }
+		  },
+		  "tags": [
+		    {
+		      "name": "search",
+		      "x-displayName": "Search API"
+		    },
+		    {
+		      "name": "indices",
+		      "x-displayName": "Indices Management"
+		    },
+		    {
+		      "name": "watcher",
+		      "x-displayName": "Watcher API"
+		    },
+		    {
+		      "name": "tasks",
+		      "x-displayName": "Task management"
+		    }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+
+		// Act
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+
+		// Assert - these should create multiple classifications:
+		// "search" -> "common", "indices" -> "management", "watcher"/"tasks" -> "info" 
+		// We should get classification groups since there are multiple classifications
+		var classificationItems = navigation.NavigationItems.OfType<ClassificationNavigationItem>().ToList();
+		classificationItems.Should().HaveCountGreaterThan(1, "Should have multiple classification groups");
+
+		// Find the "info" classification which should contain watcher and tasks
+		var infoClassification = classificationItems.FirstOrDefault(c => c.NavigationTitle == "info");
+		infoClassification.Should().NotBeNull("Should have 'info' classification for watcher and tasks");
+
+		var tagItems = infoClassification.NavigationItems.OfType<TagNavigationItem>().ToList();
+		tagItems.Should().HaveCount(2, "Info classification should have watcher and tasks");
+
+		// Expected sort order within info classification: "Task management", "Watcher API" 
+		tagItems[0].NavigationTitle.Should().Be("Task management", "Should sort by displayName");
+		tagItems[1].NavigationTitle.Should().Be("Watcher API", "Should sort by displayName");
+	}
 }
