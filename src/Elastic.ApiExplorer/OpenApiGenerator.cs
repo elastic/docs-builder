@@ -216,6 +216,10 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		{
 			foreach (var (prefix, apiConfig) in context.Configuration.ApiConfigurations)
 			{
+				// Validate assumption of single spec per product
+				if (apiConfig.SpecFiles.Count > 1)
+					throw new InvalidOperationException($"API product '{prefix}' has {apiConfig.SpecFiles.Count} spec files, but only one spec file per product is currently supported.");
+
 				var openApiDocument = await OpenApiReader.Create(apiConfig.PrimarySpecFile);
 				if (openApiDocument is null)
 					continue;
@@ -240,7 +244,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
 	{
 		var navigation = CreateNavigation(prefix, openApiDocument);
-		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info.Title);
+		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
 
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
 
