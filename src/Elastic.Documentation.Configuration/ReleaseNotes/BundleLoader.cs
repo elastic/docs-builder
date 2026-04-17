@@ -242,7 +242,9 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			_ => releaseDates[0]
 		};
 
-		var mergedData = first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate };
+		var mergedData = first.Data != null
+			? first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate }
+			: new Bundle { Description = mergedDescription, ReleaseDate = mergedReleaseDate };
 
 		return new LoadedBundle(
 			first.Version,
