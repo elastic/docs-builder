@@ -290,9 +290,10 @@ public class TagMetadataTests
 		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false };
 		var result = await OpenApiDocument.LoadAsync(stream, settings: settings);
 
-		if (result.Diagnostic.Errors.Any())
+		var parseErrors = result.Diagnostic?.Errors;
+		if (parseErrors is not null && parseErrors.Any())
 		{
-			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", result.Diagnostic.Errors.Select(e => e.Message))}");
+			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", parseErrors.Select(e => e.Message))}");
 		}
 
 		return (generator, result.Document!);
