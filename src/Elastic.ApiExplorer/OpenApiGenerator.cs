@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Landing;
@@ -114,6 +115,10 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				var tag = new ApiTag(tagName, displayName, "", apis);
 				tags.Add(tag);
 			}
+
+			// Sort tags alphabetically by display name, fallback to canonical name
+			tags = tags.OrderBy(t => t.DisplayName ?? t.Name, StringComparer.OrdinalIgnoreCase).ToList();
+
 			var classification = new ApiClassification(classGroup.Key, "", tags);
 			classifications.Add(classification);
 		}
