@@ -92,6 +92,18 @@ public record BundleChangelogsArguments
 	public string? Description { get; init; }
 
 	/// <summary>
+	/// Optional explicit release date for the bundle in YYYY-MM-DD format.
+	/// When provided, overrides auto-population behavior.
+	/// </summary>
+	public string? ReleaseDate { get; init; }
+
+	/// <summary>
+	/// When true, skips auto-population of release date (respects --no-release-date).
+	/// Existing dates in bundle YAML files are still preserved.
+	/// </summary>
+	public bool SuppressReleaseDate { get; init; }
+
+	/// <summary>
 	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
 	/// </summary>
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
@@ -354,6 +366,29 @@ public partial class ChangelogBundlingService(
 				}
 			}
 
+			// Apply release date: CLI override → existing bundle date → auto-populate (unless suppressed)
+			var finalReleaseDate = bundleData.ReleaseDate; // Preserve existing date if present
+			if (!string.IsNullOrEmpty(input.ReleaseDate))
+			{
+				// Explicit CLI override
+				if (DateOnly.TryParseExact(input.ReleaseDate, "yyyy-MM-dd", out var parsedDate))
+				{
+					finalReleaseDate = parsedDate;
+				}
+				else
+				{
+					collector.EmitError(string.Empty, $"Invalid release date format '{input.ReleaseDate}'. Expected YYYY-MM-DD format.");
+					return false;
+				}
+			}
+			else if (finalReleaseDate == null && !input.SuppressReleaseDate)
+			{
+				// Auto-populate with today's date (UTC) if no existing date
+				finalReleaseDate = DateOnly.FromDateTime(DateTime.UtcNow);
+			}
+
+			bundleData = bundleData with { ReleaseDate = finalReleaseDate };
+
 			// Write bundle file
 			await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
@@ -395,6 +430,7 @@ public partial class ChangelogBundlingService(
 		string? owner = null;
 		string[]? mergedHideFeatures = null;
 		string? profileDescription = null;
+		var profileSuppressReleaseDate = false;
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
@@ -436,6 +472,7 @@ public partial class ChangelogBundlingService(
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
+			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
 			// Handle profile-specific description with placeholder substitution
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
@@ -480,7 +517,8 @@ public partial class ChangelogBundlingService(
 			Repo = repo,
 			Owner = owner,
 			HideFeatures = mergedHideFeatures,
-			Description = profileDescription
+			Description = profileDescription,
+			SuppressReleaseDate = profileSuppressReleaseDate
 		};
 	}
 
@@ -507,6 +545,12 @@ public partial class ChangelogBundlingService(
 		// Apply description: CLI takes precedence; fall back to bundle-level config default
 		var description = input.Description ?? config.Bundle.Description;
 
+		// Apply release date suppression: CLI takes precedence; config can enable suppression when CLI didn't
+		// In profile mode, profile has already resolved inheritance, so skip bundle logic
+		var suppressReleaseDate = !string.IsNullOrWhiteSpace(input.Profile)
+			? input.SuppressReleaseDate
+			: input.SuppressReleaseDate || !(config.Bundle.ReleaseDates ?? true);
+
 		return input with
 		{
 			Directory = directory,
@@ -515,6 +559,7 @@ public partial class ChangelogBundlingService(
 			Repo = repo,
 			Owner = owner,
 			Description = description,
+			SuppressReleaseDate = suppressReleaseDate,
 			LinkAllowRepos = config.Bundle.LinkAllowRepos
 		};
 	}

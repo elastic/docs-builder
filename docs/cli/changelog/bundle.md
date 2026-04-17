@@ -124,6 +124,18 @@ The `--input-products` option determines which changelog files are gathered for 
 :   This value replaces information that would otherwise be derived from changelogs.
 :   When `rules.bundle.products` per-product overrides are configured, `--output-products` also supplies the product IDs used to choose the **rule context product** (first alphabetically) for Mode 3. To use a different product's rules, run a separate bundle with only that product in `--output-products`. For details, refer to [Product-specific bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle-products).
 
+`--no-release-date`
+:   Optional: Skip auto-population of release date in the bundle.
+:   By default, bundles are created with a `release-date` field set to today's date (UTC) or the GitHub release published date when using `--release-version`.
+:   Mutually exclusive with `--release-date`.
+:   **Not available in profile mode** — use bundle configuration instead.
+
+`--release-date <string?>`
+:   Optional: Explicit release date for the bundle in YYYY-MM-DD format.
+:   Overrides the default auto-population behavior (today's date or GitHub release published date).
+:   Mutually exclusive with `--no-release-date`.
+:   **Not available in profile mode** — use bundle configuration instead.
+
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
 :   Precedence: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
@@ -387,6 +399,25 @@ docs-builder changelog bundle \
   --output-products "elasticsearch 9.1.0 ga" \
   --description "Elasticsearch {version} includes performance improvements. Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
 ```
+
+### Bundle with release date
+
+You can add a `release-date` field directly to a bundle YAML file. This field is optional and purely informative for end-users. It is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
+
+```yaml
+products:
+  - product: apm-agent-dotnet
+    target: 1.34.0
+release-date: "April 9, 2026"
+description: |
+  This release includes tracing improvements and bug fixes.
+entries:
+  - file:
+      name: tracing-improvement.yaml
+      checksum: abc123
+```
+
+When the bundle is rendered (by the `changelog render` command or `{changelog}` directive), the release date appears immediately after the version heading as italicized text: `_Released: April 9, 2026_`.
 
 ## Profile-based examples
 

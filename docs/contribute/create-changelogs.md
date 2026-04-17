@@ -10,7 +10,7 @@ The changelogs associated with the `docs-builder changelog` commands use the fol
 :::{important}
 Some of the fields in the schema accept only a specific set of values:
 
-- Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Invalid products will cause the `docs-builder changelog add` command to fail.
+- Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). All products in the catalog are valid for changelogs, including those that have `public-reference` disabled. Invalid products will cause the `docs-builder changelog add` command to fail.
 - Type, subtype, and lifecycle values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs), [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs), and [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) respectively. Invalid values will cause the `docs-builder changelog add` command to fail.
 :::
 

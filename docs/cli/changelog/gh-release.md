@@ -38,6 +38,11 @@ docs-builder changelog gh-release <repo> [version] [options...] [-h|--help]
 `--output <string?>`
 :   Optional: Output directory for the generated changelog files. Falls back to `bundle.directory` in `changelog.yml` when not specified. Defaults to `./changelogs`.
 
+`--release-date <string?>`
+:   Optional: Explicit release date for the bundle in YYYY-MM-DD format.
+:   By default, the bundle uses the GitHub release's published date. This option overrides that behavior.
+:   If the GitHub release has no published date, falls back to today's date (UTC).
+
 `--strip-title-prefix`
 :   Optional: Remove square brackets and the text within them from the beginning of pull request titles, and also remove a colon if it follows the closing bracket.
 :   For example, `"[Inference API] New embedding model support"` becomes `"New embedding model support"`.

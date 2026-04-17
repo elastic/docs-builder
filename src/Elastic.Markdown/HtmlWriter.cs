@@ -88,7 +88,7 @@ public class HtmlWriter(
 		Uri? reportLinkParameter = null;
 		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
 		{
-			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, current.Url);
 		}
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
@@ -195,7 +195,7 @@ public class HtmlWriter(
 		{
 			Position = position++,
 			Name = parent.NavigationTitle,
-			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
+			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
 		}));
 		// Add current page
 		breadcrumbItems.Add(new BreadcrumbListItem

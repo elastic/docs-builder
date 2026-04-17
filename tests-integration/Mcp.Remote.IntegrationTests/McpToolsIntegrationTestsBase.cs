@@ -121,6 +121,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
 		};
 	}
