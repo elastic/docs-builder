@@ -1,8 +1,7 @@
-# Kibana APIs
-
-Welcome to the Kibana API documentation. This page provides an overview of the available Kibana APIs.
-
-## Kibana spaces
+---
+navigation_title: Spaces
+---
+# Kibana spaces
 
 Spaces enable you to organize your dashboards and other saved objects into meaningful categories.
 You can use the default space or create your own spaces.

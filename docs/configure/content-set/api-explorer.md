@@ -27,37 +27,60 @@ Each product key produces its own section of API documentation. For example, `el
 
 The `api` key is only valid in `docset.yml`. You can't use it in `toc.yml` files.
 
-### Advanced configuration with templates
+### Advanced configuration with intro and outro pages
 
-When you specify a `template` file, `docs-builder` uses your custom Markdown file as the API landing page instead of generating an automatic overview:
+You can add custom Markdown content before and after the auto-generated API documentation using a sequence format:
 
 ```yaml
 api:
   kibana:
-    spec: kibana-openapi.json
-    template: kibana-api-overview.md
+    - file: kibana-intro.md
+    - spec: kibana-openapi.json
+    - file: kibana-additional-notes.md
 ```
 
-Template files:
+This configuration creates a navigation structure where:
 
-- Must be Markdown files with `.md` extension
-- Can use standard Markdown, substitutions
+1. **Intro pages** (before the first `spec`) appear at the top of the sidebar
+2. **Generated API content** (operations, tags, types) appears in the middle
+3. **Outro pages** (after the spec) appear at the bottom
 
-:::{note}
-They must be explicitly excluded if they are not used in your table of contents.
-Otherwise `docs-builder` treats them like normal pages and navigation can fail at build or serve time.
-Add a glob (or explicit paths) under `exclude:` in `docset.yml` that matches your template filenames.
-For example, exclude `*-api-overview.md`.
-:::
+#### Intro and outro page features:
 
-#### Template example
+- **Full Myst support**: Intro/outro pages support the full range of Myst Markdown features including cross-links, substitutions, and directives
+- **Automatic exclusion**: No need to add intro/outro files to the `exclude:` list - they're automatically excluded from normal HTML generation
+- **URL collision detection**: Build fails if intro/outro page names conflict with reserved API Explorer segments (`types/`, `tags/`) or operation names
 
-Here's a sample template file (`kibana-api-overview.md`):
+#### Multiple intro/outro pages
+
+You can include multiple intro and outro pages:
+
+```yaml
+api:
+  kibana:
+    - file: introduction.md
+    - file: getting-started.md
+    - spec: kibana-openapi.json
+    - file: examples.md
+    - file: troubleshooting.md
+```
+
+#### Sample intro page
+
+Here's a sample intro page (`kibana-intro.md`):
 
 ```markdown
 # Kibana APIs
 
-Welcome to the Kibana API documentation.
+Welcome to the Kibana API documentation. These APIs allow you to manage Kibana programmatically.
+
+## Before you begin
+
+Make sure you have:
+
+- A running Kibana instance
+- Valid authentication credentials
+- Understanding of [RESTful API principles]({# TODO: link #})
 ```
 
 ## Place your spec files
