@@ -346,7 +346,10 @@ Configures directory paths, GitHub repository defaults, and named profiles for b
 | `bundle.description` | Default description template supporting `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` placeholders |
 | `bundle.repo` | Default GitHub repository name applied to profiles that don't specify their own |
 | `bundle.owner` | Default GitHub repository owner (e.g., `elastic`) |
+| `bundle.release_dates` | When `true` (default when omitted), bundling writes a `release-date` field into bundle output. When `false`, that field is omitted—equivalent to `--no-release-date` in option-based mode (see [`changelog bundle`](/cli/changelog/bundle.md)). Profile-based bundling cannot use `--no-release-date`; set `bundle.release_dates` or per-profile `release_dates` instead |
 :::
+
+When both `bundle.release_dates` and a profile’s `release_dates` are omitted, release dates are auto-populated. See [Bundle profiles](#bundle-profiles) for profile-level overrides.
 
 ### Link filtering [bundle-links]
 
@@ -376,6 +379,7 @@ Named profiles simplify bundle creation for different release scenarios. Profile
 | `repo` | Profile-specific GitHub repository name |
 | `owner` | Profile-specific GitHub owner |
 | `hide_features` | List of feature IDs to mark as hidden (commented out) in bundle output |
+| `release_dates` | Overrides `bundle.release_dates` for this profile when set. When omitted, inherits from `bundle.release_dates`, then defaults to auto-populating release dates (same resolution as `bundle.release_dates`) |
 | `source` | When set to `"github_release"`, fetches PR list from GitHub release instead of filtering changelogs. Mutually exclusive with `products` |
 :::
 
