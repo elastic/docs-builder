@@ -30,6 +30,7 @@ public class SimpleMarkdownNavigationItem(
 	public int NavigationIndex { get; set; }
 	public string Id { get; } = $"markdown-{Path.GetFileNameWithoutExtension(fileInfo.Name)}";
 	public Uri Identifier { get; } = new("about:blank");
+	public string Slug { get; } = CreateSlugFromFile(fileInfo);
 
 	/// <inheritdoc />
 	public IApiModel Model => this;

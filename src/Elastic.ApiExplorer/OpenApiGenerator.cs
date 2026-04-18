@@ -141,20 +141,21 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				// Use same moniker logic as OperationNavigationItem
 				var moniker = !string.IsNullOrWhiteSpace(operation.Value.OperationId)
 					? operation.Value.OperationId
-					: path.Key.Replace("{", "").Replace("}", "").Replace("/", "-").Trim('-').ToLowerInvariant();
+					: path.Key.Replace("}", "").Replace("{", "").Replace('/', '-');
 				_ = operationMonikers.Add(moniker);
 			}
 		}
 
 		// Add intro and outro markdown pages if available
 		var finalNavigationItems = new List<INavigationItem>();
+		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 		// Add intro pages first
 		if (apiConfig?.IntroMarkdownFiles.Count > 0)
 		{
 			foreach (var introFile in apiConfig.IntroMarkdownFiles)
 			{
-				var introNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, introFile, rootNavigation, rootNavigation, operationMonikers);
+				var introNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, introFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
 				finalNavigationItems.Add(introNavItem);
 			}
 		}
@@ -170,7 +171,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		{
 			foreach (var outroFile in apiConfig.OutroMarkdownFiles)
 			{
-				var outroNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, outroFile, rootNavigation, rootNavigation, operationMonikers);
+				var outroNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, outroFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
 				finalNavigationItems.Add(outroNavItem);
 			}
 		}
@@ -187,9 +188,18 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		IFileInfo markdownFile,
 		LandingNavigationItem rootNavigation,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent,
-		HashSet<string> operationMonikers)
+		HashSet<string> operationMonikers,
+		HashSet<string> markdownSlugs)
 	{
 		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(markdownFile);
+
+		// Check for duplicate markdown slugs
+		if (!markdownSlugs.Add(slug))
+		{
+			throw new InvalidOperationException(
+				$"Duplicate markdown slug '{slug}' found in API product '{apiUrlSuffix}'. " +
+				$"File: {markdownFile.FullName}");
+		}
 
 		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName, operationMonikers);
 
@@ -205,12 +215,12 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		return navItem;
 	}
 
-	private static string GetNavigationTitleFromFile(IFileInfo markdownFile)
+	private string GetNavigationTitleFromFile(IFileInfo markdownFile)
 	{
 		try
 		{
 			// Read file content to parse frontmatter
-			var content = File.ReadAllText(markdownFile.FullName);
+			var content = context.ReadFileSystem.File.ReadAllText(markdownFile.FullName);
 
 			// Simple frontmatter parsing - look for navigation_title
 			if (content.StartsWith("---"))

@@ -103,6 +103,22 @@ public class ApiProductSequenceTests
 	}
 
 	[Fact]
+	public void ApiProductSequence_InvalidWhenMultipleSpecs()
+	{
+		var sequence = new ApiProductSequence
+		{
+			Entries = [
+				new ApiProductEntry { File = "intro.md" },
+				new ApiProductEntry { Spec = "api1.json" },
+				new ApiProductEntry { Spec = "api2.json" },
+				new ApiProductEntry { File = "outro.md" }
+			]
+		};
+
+		sequence.IsValid.Should().BeFalse(); // Invalid due to multiple specs
+	}
+
+	[Fact]
 	public void ApiProductSequence_SeparatesIntroAndOutroFiles()
 	{
 		var sequence = new ApiProductSequence
@@ -117,7 +133,7 @@ public class ApiProductSequenceTests
 			]
 		};
 
-		sequence.IsValid.Should().BeTrue();
+		sequence.IsValid.Should().BeFalse(); // Invalid due to multiple specs
 		sequence.GetIntroMarkdownFiles().Should().BeEquivalentTo(["intro1.md", "intro2.md"]);
 		sequence.GetSpecPaths().Should().BeEquivalentTo(["api1.json", "api2.json"]);
 		sequence.GetOutroMarkdownFiles().Should().BeEquivalentTo(["outro1.md", "outro2.md"]);

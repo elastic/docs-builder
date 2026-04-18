@@ -463,6 +463,8 @@ public partial class DocumentationGenerator
 	/// </summary>
 	private bool IsApiMarkdownFile(string relativePath)
 	{
+		var normalized = relativePath.Replace(Path.DirectorySeparatorChar, '/');
+
 		if (Context.Configuration.ApiConfigurations == null)
 			return false;
 
@@ -473,7 +475,7 @@ public partial class DocumentationGenerator
 			{
 				var introRelativePath = Path.GetRelativePath(Context.DocumentationSourceDirectory.FullName, introFile.FullName)
 					.Replace(Path.DirectorySeparatorChar, '/');
-				if (string.Equals(relativePath, introRelativePath, StringComparison.OrdinalIgnoreCase))
+				if (string.Equals(normalized, introRelativePath, StringComparison.OrdinalIgnoreCase))
 					return true;
 			}
 
@@ -482,7 +484,7 @@ public partial class DocumentationGenerator
 			{
 				var outroRelativePath = Path.GetRelativePath(Context.DocumentationSourceDirectory.FullName, outroFile.FullName)
 					.Replace(Path.DirectorySeparatorChar, '/');
-				if (string.Equals(relativePath, outroRelativePath, StringComparison.OrdinalIgnoreCase))
+				if (string.Equals(normalized, outroRelativePath, StringComparison.OrdinalIgnoreCase))
 					return true;
 			}
 		}

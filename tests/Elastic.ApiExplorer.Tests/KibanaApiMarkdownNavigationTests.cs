@@ -65,6 +65,7 @@ public class KibanaApiMarkdownNavigationTests
 
 		introNav.Should().BeAssignableTo<ILeafNavigationItem<IApiModel>>();
 		introNav.NavigationTitle.Should().Be("Spaces");
+		introNav.Slug.Should().Be("kibana-api-overview");
 	}
 
 	[Fact]

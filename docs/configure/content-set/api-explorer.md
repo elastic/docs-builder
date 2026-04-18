@@ -80,7 +80,7 @@ Make sure you have:
 
 - A running Kibana instance
 - Valid authentication credentials
-- Understanding of [RESTful API principles]({# TODO: link #})
+- Understanding of RESTful API principles
 ```
 
 ## Place your spec files

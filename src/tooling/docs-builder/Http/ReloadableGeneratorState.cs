@@ -130,7 +130,7 @@ public class ReloadableGeneratorState : IDisposable
 			return false;
 
 		// First run - no timestamps yet
-		if (_openApiSpecLastModified.Count == 0 || _apiMarkdownFilesLastModified.Count == 0)
+		if (_openApiSpecLastModified.Count == 0 && _apiMarkdownFilesLastModified.Count == 0)
 			return true;
 
 		// Check legacy OpenAPI specification files

@@ -107,9 +107,9 @@ public class ApiProductSequence
 			.Select(e => e.Spec!);
 
 	/// <summary>
-	/// Validates that the sequence has at least one spec and all entries are valid.
+	/// Validates that the sequence has exactly one spec and all entries are valid.
 	/// </summary>
-	public bool IsValid => Entries.All(e => e.IsValid) && Entries.Any(e => e.IsOpenApiSpec);
+	public bool IsValid => Entries.All(e => e.IsValid) && Entries.Count(e => e.IsOpenApiSpec) == 1;
 }
 
 /// <summary>
@@ -192,11 +192,11 @@ public class ResolvedApiConfiguration
 	/// <summary>
 	/// Gets all Markdown file paths that should be excluded from normal HTML generation.
 	/// </summary>
-	public IEnumerable<string> GetMarkdownPathsToExclude()
+	public IEnumerable<string> GetMarkdownPathsToExclude(string documentationSourceDirectoryFullName)
 	{
 		foreach (var file in IntroMarkdownFiles)
-			yield return Path.GetRelativePath(Environment.CurrentDirectory, file.FullName);
+			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
 		foreach (var file in OutroMarkdownFiles)
-			yield return Path.GetRelativePath(Environment.CurrentDirectory, file.FullName);
+			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
 	}
 }
