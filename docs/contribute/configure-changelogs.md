@@ -25,9 +25,6 @@ You must maintain the file if your repo labels change over time.
 :::
 
 You can use the [docs-builder changelog init](/cli/changelog/init.md) command to create the changelog configuration file and folder structure automatically.
-The command uses an existing docs folder or creates `{path}/docs` when it does not exist.
-It creates a `changelog.yml` file in the `docs` folder and creates sub-folders for the changelog and bundle files.
-Alternatively, you can create the file and folders manually.
 
 For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
