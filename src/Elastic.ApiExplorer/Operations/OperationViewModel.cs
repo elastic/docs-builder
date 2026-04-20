@@ -60,9 +60,9 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (CodeSamples.Count > 0)
 			tocItems.Add(new ApiTocItem("Code Examples", "code-examples"));
 
-		// Request body examples
+		// Request body examples (skip when single example duplicates code samples)
 		var reqContent = operation.RequestBody?.Content?.FirstOrDefault().Value;
-		if (reqContent?.Examples is { Count: > 0 })
+		if (reqContent?.Examples is { Count: > 0 } && !(reqContent.Examples.Count == 1 && CodeSamples.Count > 0))
 			tocItems.Add(new ApiTocItem("Request Examples", "request-examples"));
 
 		// Response examples

@@ -528,7 +528,7 @@
 		var responseContent = successResponse?.Content?.FirstOrDefault().Value;
 		var responseExamples = responseContent?.Examples;
 	}
-	@if (requestExamples is { Count: > 0 })
+	@if (requestExamples is { Count: > 0 } && !(requestExamples.Count == 1 && codeSamples.Count > 0))
 	{
 		<h3 class="section-header" id="request-examples" data-section="request-examples">
 			<span>Request Examples</span>
