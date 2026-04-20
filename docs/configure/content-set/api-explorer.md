@@ -91,6 +91,6 @@ The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and
 ]
 ```
 
-When multiple languages are available, they appear as tabs inside the Request Examples section, replacing the JSON code block of the first request example. The example's description text is preserved above the tabs. The selected language persists across operations and page navigations. When only one language is available, the example renders without a tab selector.
+The code samples appear in a standalone "Code Examples" section on every operation page that has the extension, regardless of HTTP method. This means GET, DELETE, and other operations without a request body also display language tabs when `x-codeSamples` are present. When multiple languages are available, they appear as tabs. The selected language persists across operations and page navigations. When only one language is available, the example renders without a tab selector.
 
-Console is treated as the default language and appears first in the tab order when present. If an operation has no `x-codeSamples`, request examples render as JSON code blocks as before.
+Console is treated as the default language and appears first in the tab order when present.

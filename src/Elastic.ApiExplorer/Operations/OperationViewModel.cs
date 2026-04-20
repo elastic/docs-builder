@@ -57,6 +57,9 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (operation.Responses is { Count: > 0 })
 			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
 
+		if (CodeSamples.Count > 0)
+			tocItems.Add(new ApiTocItem("Code Examples", "code-examples"));
+
 		// Request body examples
 		var reqContent = operation.RequestBody?.Content?.FirstOrDefault().Value;
 		if (reqContent?.Examples is { Count: > 0 })

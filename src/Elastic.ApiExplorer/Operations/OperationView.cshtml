@@ -478,6 +478,47 @@
 		}
 	}
 	@{
+		var codeSamples = Model.CodeSamples;
+	}
+	@if (codeSamples.Count == 1)
+	{
+		<h3 class="section-header" id="code-examples" data-section="code-examples">
+			<span>Code Examples</span>
+			<span class="section-nav">
+				<span class="section-path">@Model.Operation.Route</span>
+				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+			</span>
+		</h3>
+		<div class="example-block">
+			<h4>@codeSamples[0].Language</h4>
+			<pre><code class="@codeSamples[0].HighlightClass">@codeSamples[0].Source</code></pre>
+		</div>
+	}
+	else if (codeSamples.Count > 1)
+	{
+		<h3 class="section-header" id="code-examples" data-section="code-examples">
+			<span>Code Examples</span>
+			<span class="section-nav">
+				<span class="section-path">@Model.Operation.Route</span>
+				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+			</span>
+		</h3>
+		<div class="tabs">
+			@for (var i = 0; i < codeSamples.Count; i++)
+			{
+				var sample = codeSamples[i];
+				var tabId = $"code-sample-{i}";
+				<input class="tabs-input" checked="@(i == 0 ? "checked" : "")" id="@tabId" name="code-samples" type="radio" tabindex="0">
+				<label class="tabs-label" data-sync-id="@sample.Language" data-sync-group="api-language" for="@tabId">@sample.Language</label>
+				<div class="tabs-content" tabindex="0">
+					<pre><code class="@sample.HighlightClass">@sample.Source</code></pre>
+				</div>
+			}
+		</div>
+	}
+	@{
 		// Check for examples in request body
 		var requestBodyContent = operation.RequestBody?.Content?.FirstOrDefault().Value;
 		var requestExamples = requestBodyContent?.Examples;
@@ -486,8 +527,6 @@
 		var successResponse = operation.Responses?.FirstOrDefault(r => r.Key.StartsWith("2")).Value;
 		var responseContent = successResponse?.Content?.FirstOrDefault().Value;
 		var responseExamples = responseContent?.Examples;
-
-		var codeSamples = Model.CodeSamples;
 	}
 	@if (requestExamples is { Count: > 0 })
 	{
@@ -499,7 +538,6 @@
 				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
 			</span>
 		</h3>
-		var exampleIndex = 0;
 		@foreach (var example in requestExamples)
 		{
 			<div class="example-block">
@@ -508,38 +546,15 @@
 				{
 					<div class="example-description">@Model.RenderMarkdown(example.Value.Description)</div>
 				}
-				@if (exampleIndex == 0 && codeSamples.Count > 1)
+				@if (example.Value?.Value is not null)
 				{
-					<div class="tabs">
-						@for (var i = 0; i < codeSamples.Count; i++)
-						{
-							var sample = codeSamples[i];
-							var tabId = $"code-sample-{i}";
-							<input class="tabs-input" checked="@(i == 0 ? "checked" : "")" id="@tabId" name="code-samples" type="radio" tabindex="0">
-							<label class="tabs-label" data-sync-id="@sample.Language" data-sync-group="api-language" for="@tabId">@sample.Language</label>
-							<div class="tabs-content" tabindex="0">
-								<pre><code class="@sample.HighlightClass">@sample.Source</code></pre>
-							</div>
-						}
-					</div>
-				}
-				else if (exampleIndex == 0 && codeSamples.Count == 1)
-				{
-					<pre><code class="@codeSamples[0].HighlightClass">@codeSamples[0].Source</code></pre>
-				}
-				else
-				{
-					@if (example.Value?.Value is not null)
-					{
-						<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
-					}
+					<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
 				}
 				@if (!string.IsNullOrEmpty(example.Value?.ExternalValue))
 				{
 					<p class="external-example">External example: <a href="@example.Value.ExternalValue">@example.Value.ExternalValue</a></p>
 				}
 			</div>
-			exampleIndex++;
 		}
 	}
 	@if (responseExamples is { Count: > 0 })
@@ -572,8 +587,10 @@
 		}
 	}
 	@{
-		var hasExamples = requestExamples is { Count: > 0 } || responseExamples is { Count: > 0 };
-		var examplesAnchor = requestExamples is { Count: > 0 } ? "request-examples" : "response-examples";
+		var hasExamples = codeSamples.Count > 0 || requestExamples is { Count: > 0 } || responseExamples is { Count: > 0 };
+		var examplesAnchor = codeSamples.Count > 0 ? "code-examples"
+			: requestExamples is { Count: > 0 } ? "request-examples"
+			: "response-examples";
 	}
 	@if (hasExamples)
 	{
