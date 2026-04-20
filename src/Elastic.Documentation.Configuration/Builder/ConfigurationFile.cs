@@ -241,6 +241,10 @@ public record ConfigurationFile
 			if (docSetFile.Features.DisableGithubEditLink.HasValue)
 				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
 
+			// primary-nav requires the Elastic global navigation which is not available for white-label builds
+			if (Branding is not null && docSetFile.Features.PrimaryNav is true)
+				context.EmitError(context.ConfigurationPath, "'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation.");
+
 			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
 			{
