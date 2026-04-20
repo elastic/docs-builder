@@ -332,30 +332,101 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_BundleArtifactType_SkipsWithoutS3Calls()
+	public async Task Upload_BundleArtifactType_UploadsToS3()
 	{
-		AddChangelog("bundle.yaml", """
-			title: Ignored bundle
-			type: feature
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		var path = _mockFileSystem.Path.Join(bundleDir, "elasticsearch-9.2.0.yaml");
+		// language=yaml
+		_mockFileSystem.AddFile(path, new MockFileData("""
 			products:
 			  - product: elasticsearch
-			prs:
-			  - "900"
-			""");
+			    target: 9.2.0
+			    lifecycle: ga
+			entries:
+			  - title: New feature
+			    type: feature
+			"""));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
+			.Returns(new PutObjectResponse());
 
 		var args = new ChangelogUploadArguments
 		{
 			ArtifactType = ArtifactType.Bundle,
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
-			Directory = _changelogDir
+			Directory = bundleDir
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
 
-		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundles/elasticsearch-9.2.0.yaml" && r.BucketName == "test-bucket"),
+			A<CancellationToken>._
+		)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_MapsToCorrectS3Key()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "elasticsearch-9.2.0.yaml"), new MockFileData("""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - title: Feature
+			    type: feature
+			"""));
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().HaveCount(1);
+		targets[0].S3Key.Should().Be("elasticsearch/bundles/elasticsearch-9.2.0.yaml");
+		_collector.Errors.Should().Be(0);
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_MultipleProducts_CreatesTargetPerProduct()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "stack-9.2.0.yaml"), new MockFileData("""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  - product: kibana
+			    target: 9.2.0
+			entries:
+			  - title: Stack feature
+			    type: feature
+			"""));
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().HaveCount(2);
+		targets.Should().Contain(t => t.S3Key == "elasticsearch/bundles/stack-9.2.0.yaml");
+		targets.Should().Contain(t => t.S3Key == "kibana/bundles/stack-9.2.0.yaml");
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_EmptyDirectory_ReturnsEmpty()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().BeEmpty();
 	}
 }

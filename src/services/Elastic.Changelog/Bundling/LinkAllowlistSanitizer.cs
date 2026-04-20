@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -10,10 +11,16 @@ namespace Elastic.Changelog.Bundling;
 
 /// <summary>
 /// Rewrites PR/issue references that are not in <c>bundle.link_allow_repos</c> to <c># PRIVATE:</c> sentinels for bundle YAML output.
+/// Also provides scrubbing for individual changelog entries and free-text fields.
 /// </summary>
-public static class LinkAllowlistSanitizer
+public static partial class LinkAllowlistSanitizer
 {
 	private const string SentinelPrefix = "# PRIVATE:";
+	[GeneratedRegex(@"https?://github\.com/(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)/(?:pull|issues)/\d+", RegexOptions.None)]
+	private static partial Regex GitHubUrlRegex();
+
+	[GeneratedRegex(@"(?<![/\w])(?<owner>[A-Za-z0-9_.-]+)/(?<repo>[A-Za-z0-9_.-]+)#\d+", RegexOptions.None)]
+	private static partial Regex ShortFormRefRegex();
 
 	/// <summary>
 	/// Applies the allowlist to PR/issue strings. References whose resolved <c>owner/repo</c> is not in
@@ -104,6 +111,137 @@ public static class LinkAllowlistSanitizer
 					$"bundle.link_allow_repos entry '{entry}' is marked private in assembler.yml; verify that published links are intended.");
 			}
 		}
+	}
+
+	/// <summary>
+	/// Builds a list of allowed <c>owner/repo</c> strings from an <see cref="AssemblyConfiguration"/>
+	/// by collecting every reference repository that is not marked <c>private: true</c> or <c>skip: true</c>.
+	/// Bare keys (without a slash) are assumed to be under the <c>elastic</c> organization.
+	/// </summary>
+	public static IReadOnlyList<string> BuildAllowReposFromAssembler(AssemblyConfiguration assembly)
+	{
+		var result = new List<string>();
+		foreach (var kvp in assembly.ReferenceRepositories)
+		{
+			if (kvp.Value.Private || kvp.Value.Skip)
+				continue;
+
+			var key = kvp.Key;
+			if (!key.Contains('/'))
+				key = $"elastic/{key}";
+
+			result.Add(key);
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Applies the allowlist to a single changelog entry.
+	/// Scrubs <c>Prs</c>, <c>Issues</c>, <c>Description</c>, <c>Impact</c>, and <c>Action</c> fields.
+	/// </summary>
+	public static bool TryApplyChangelogEntry(
+		IDiagnosticsCollector collector,
+		BundledEntry entry,
+		IReadOnlyList<string> allowRepos,
+		string defaultOwner,
+		string? defaultRepo,
+		out BundledEntry sanitized,
+		out bool changesApplied)
+	{
+		sanitized = entry;
+		changesApplied = false;
+
+		var allow = BuildAllowSet(allowRepos);
+		var ownerDefault = string.IsNullOrWhiteSpace(defaultOwner) ? "elastic" : defaultOwner;
+		var anyRewritten = false;
+
+		var prs = ApplyToReferenceList(
+			collector,
+			entry.Prs,
+			ownerDefault,
+			defaultRepo,
+			allow,
+			"PR",
+			ref anyRewritten);
+		if (prs == null && entry.Prs is not null)
+			return false;
+
+		var issues = ApplyToReferenceList(
+			collector,
+			entry.Issues,
+			ownerDefault,
+			defaultRepo,
+			allow,
+			"issue",
+			ref anyRewritten);
+		if (issues == null && entry.Issues is not null)
+			return false;
+
+		var description = ScrubText(entry.Description, allow, ref anyRewritten);
+		var impact = ScrubText(entry.Impact, allow, ref anyRewritten);
+		var action = ScrubText(entry.Action, allow, ref anyRewritten);
+
+		sanitized = entry with
+		{
+			Prs = prs,
+			Issues = issues,
+			Description = description,
+			Impact = impact,
+			Action = action
+		};
+		changesApplied = anyRewritten;
+		return true;
+	}
+
+	/// <summary>
+	/// Replaces GitHub references in free text that point to repositories not in
+	/// <paramref name="allow"/>. Handles full URLs and <c>owner/repo#N</c> short forms.
+	/// </summary>
+	internal static string? ScrubText(string? input, HashSet<string> allow, ref bool changed)
+	{
+		if (string.IsNullOrWhiteSpace(input))
+			return input;
+
+		var anyReplaced = false;
+
+		var result = GitHubUrlRegex().Replace(input, match =>
+		{
+			var owner = match.Groups["owner"].Value;
+			var repo = match.Groups["repo"].Value;
+			var fullName = $"{owner}/{repo}";
+			if (allow.Contains(fullName))
+				return match.Value;
+
+			anyReplaced = true;
+			return string.Empty;
+		});
+
+		result = ShortFormRefRegex().Replace(result, match =>
+		{
+			var owner = match.Groups["owner"].Value;
+			var repo = match.Groups["repo"].Value;
+			var fullName = $"{owner}/{repo}";
+			if (allow.Contains(fullName))
+				return match.Value;
+
+			anyReplaced = true;
+			return string.Empty;
+		});
+
+		if (anyReplaced)
+			changed = true;
+
+		return result;
+	}
+
+	/// <summary>
+	/// Overload that accepts a list of allowed repos (converts to the internal <see cref="HashSet{T}"/>).
+	/// </summary>
+	internal static string? ScrubText(string? input, IReadOnlyList<string> allowRepos, ref bool changed)
+	{
+		var allow = BuildAllowSet(allowRepos);
+		return ScrubText(input, allow, ref changed);
 	}
 
 	private static HashSet<string> BuildAllowSet(IReadOnlyList<string> allowRepos)

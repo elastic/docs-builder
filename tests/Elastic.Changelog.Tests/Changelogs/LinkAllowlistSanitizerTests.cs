@@ -365,4 +365,321 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var s = ChangelogTextUtilities.FormatIssueLinkAsciidoc("# PRIVATE: https://github.com/elastic/x/issues/1", "x", hidePrivateLinks: false);
 		s.Should().BeEmpty();
 	}
+
+	// --- BuildAllowReposFromAssembler ---
+
+	[Fact]
+	public void BuildAllowReposFromAssembler_SkipsPrivateAndSkipped()
+	{
+		var yaml =
+			"""
+			references:
+			  elastic/elasticsearch:
+			    private: false
+			  elastic/kibana:
+			    private: false
+			  elastic/secret-team:
+			    private: true
+			  elastic/old-repo:
+			    skip: true
+			""";
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
+
+		allow.Should().Contain("elastic/elasticsearch");
+		allow.Should().Contain("elastic/kibana");
+		allow.Should().NotContain("elastic/secret-team");
+		allow.Should().NotContain("elastic/old-repo");
+	}
+
+	[Fact]
+	public void BuildAllowReposFromAssembler_DefaultsOwnerToElastic()
+	{
+		var yaml =
+			"""
+			references:
+			  beats: {}
+			""";
+		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
+
+		allow.Should().Contain("elastic/beats");
+	}
+
+	[Fact]
+	public void BuildAllowReposFromAssembler_EmptyReferences_ReturnsEmpty()
+	{
+		var asm = AssemblyConfiguration.Deserialize("references: {}", skipPrivateRepositories: false);
+		var allow = LinkAllowlistSanitizer.BuildAllowReposFromAssembler(asm);
+
+		allow.Should().BeEmpty();
+	}
+
+	// --- TryApplyChangelogEntry ---
+
+	[Fact]
+	public void TryApplyChangelogEntry_ScrubsPrsAndIssues()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Fix something",
+			Prs = ["https://github.com/elastic/secret-repo/pull/1"],
+			Issues = ["https://github.com/elastic/elasticsearch/issues/200"]
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeTrue();
+		sanitized.Prs![0].Should().StartWith("# PRIVATE:");
+		sanitized.Issues![0].Should().Be("https://github.com/elastic/elasticsearch/issues/200");
+	}
+
+	[Fact]
+	public void TryApplyChangelogEntry_ScrubsDescriptionText()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Fix something",
+			Description = "Fixes elastic/secret-repo#42 which caused issues in https://github.com/elastic/elasticsearch/pull/100"
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeTrue();
+		sanitized.Description.Should().NotContain("secret-repo");
+		sanitized.Description.Should().Contain("https://github.com/elastic/elasticsearch/pull/100");
+	}
+
+	[Fact]
+	public void TryApplyChangelogEntry_ScrubsImpactAndAction()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Breaking change",
+			Impact = "See elastic/private-infra#10 for details",
+			Action = "Migrate using https://github.com/elastic/private-infra/pull/11"
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeTrue();
+		sanitized.Impact.Should().NotContain("private-infra");
+		sanitized.Action.Should().NotContain("private-infra");
+	}
+
+	[Fact]
+	public void TryApplyChangelogEntry_AllAllowed_NoChanges()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Good entry",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/1"],
+			Issues = ["elastic/kibana#2"],
+			Description = "Relates to elastic/kibana#2"
+		};
+
+		var allow = new[] { "elastic/elasticsearch", "elastic/kibana" };
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+		sanitized.Prs![0].Should().Be("https://github.com/elastic/elasticsearch/pull/1");
+		sanitized.Issues![0].Should().Be("elastic/kibana#2");
+		sanitized.Description.Should().Be("Relates to elastic/kibana#2");
+	}
+
+	[Fact]
+	public void TryApplyChangelogEntry_NullFields_PreservesNulls()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Simple entry",
+			Prs = null,
+			Issues = null,
+			Description = null,
+			Impact = null,
+			Action = null
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+		sanitized.Prs.Should().BeNull();
+		sanitized.Issues.Should().BeNull();
+		sanitized.Description.Should().BeNull();
+	}
+
+	// --- ScrubText ---
+
+	[Fact]
+	public void ScrubText_ReplacesPrivateGitHubUrl()
+	{
+		var changed = false;
+		var result = LinkAllowlistSanitizer.ScrubText(
+			"See https://github.com/elastic/secret-repo/pull/42 for details",
+			new[] { "elastic/elasticsearch" },
+			ref changed);
+
+		changed.Should().BeTrue();
+		result.Should().NotContain("secret-repo");
+		result.Should().Contain("for details");
+	}
+
+	[Fact]
+	public void ScrubText_ReplacesPrivateShortForm()
+	{
+		var changed = false;
+		var result = LinkAllowlistSanitizer.ScrubText(
+			"Related to elastic/private-team#99",
+			new[] { "elastic/elasticsearch" },
+			ref changed);
+
+		changed.Should().BeTrue();
+		result.Should().NotContain("private-team");
+	}
+
+	[Fact]
+	public void ScrubText_PreservesAllowedReferences()
+	{
+		var changed = false;
+		var result = LinkAllowlistSanitizer.ScrubText(
+			"Fixed in https://github.com/elastic/elasticsearch/pull/100 and elastic/kibana#50",
+			new[] { "elastic/elasticsearch", "elastic/kibana" },
+			ref changed);
+
+		changed.Should().BeFalse();
+		result.Should().Contain("https://github.com/elastic/elasticsearch/pull/100");
+		result.Should().Contain("elastic/kibana#50");
+	}
+
+	[Fact]
+	public void ScrubText_NullInput_ReturnsNull()
+	{
+		var changed = false;
+		var result = LinkAllowlistSanitizer.ScrubText(
+			null,
+			new[] { "elastic/elasticsearch" },
+			ref changed);
+
+		changed.Should().BeFalse();
+		result.Should().BeNull();
+	}
+
+	[Fact]
+	public void ScrubText_EmptyInput_ReturnsEmpty()
+	{
+		var changed = false;
+		var result = LinkAllowlistSanitizer.ScrubText(
+			"",
+			new[] { "elastic/elasticsearch" },
+			ref changed);
+
+		changed.Should().BeFalse();
+		result.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void ScrubText_NoReferences_ReturnsUnchanged()
+	{
+		var changed = false;
+		var result = LinkAllowlistSanitizer.ScrubText(
+			"This is plain text with no GitHub references.",
+			new[] { "elastic/elasticsearch" },
+			ref changed);
+
+		changed.Should().BeFalse();
+		result.Should().Be("This is plain text with no GitHub references.");
+	}
+
+	[Fact]
+	public void ScrubText_MixedReferences_ScrubsOnlyPrivate()
+	{
+		var changed = false;
+		var result = LinkAllowlistSanitizer.ScrubText(
+			"Public elastic/elasticsearch#1 and private elastic/secret#2",
+			new[] { "elastic/elasticsearch" },
+			ref changed);
+
+		changed.Should().BeTrue();
+		result.Should().Contain("elastic/elasticsearch#1");
+		result.Should().NotContain("elastic/secret#2");
+	}
+
+	// --- Idempotency ---
+
+	[Fact]
+	public void TryApplyChangelogEntry_Idempotent_SecondPassNoChanges()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Fix something",
+			Prs = ["https://github.com/elastic/secret-repo/pull/1"],
+			Description = "See elastic/secret-repo#42"
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+
+		LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", "elasticsearch",
+			out var firstPass, out _);
+
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, firstPass, allow, "elastic", "elasticsearch",
+			out var secondPass, out var secondChanged);
+
+		ok.Should().BeTrue();
+		secondChanged.Should().BeFalse();
+		secondPass.Prs![0].Should().Be(firstPass.Prs![0]);
+		secondPass.Description.Should().Be(firstPass.Description);
+	}
+
+	[Fact]
+	public void ScrubText_Idempotent_SecondPassUnchanged()
+	{
+		var changed1 = false;
+		var result1 = LinkAllowlistSanitizer.ScrubText(
+			"See elastic/secret#1 for details",
+			new[] { "elastic/elasticsearch" },
+			ref changed1);
+
+		var changed2 = false;
+		var result2 = LinkAllowlistSanitizer.ScrubText(
+			result1,
+			new[] { "elastic/elasticsearch" },
+			ref changed2);
+
+		changed2.Should().BeFalse();
+		result2.Should().Be(result1);
+	}
+
+	[Fact]
+	public void ScrubText_IssueUrl_ReplacesPrivate()
+	{
+		var changed = false;
+		var result = LinkAllowlistSanitizer.ScrubText(
+			"Relates to https://github.com/elastic/secret-repo/issues/99",
+			new[] { "elastic/elasticsearch" },
+			ref changed);
+
+		changed.Should().BeTrue();
+		result.Should().NotContain("secret-repo");
+	}
 }
