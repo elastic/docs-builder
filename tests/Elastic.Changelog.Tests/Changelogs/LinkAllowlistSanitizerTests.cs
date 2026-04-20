@@ -11,6 +11,9 @@ namespace Elastic.Changelog.Tests.Changelogs;
 
 public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
+	private static readonly string[] AllowElasticsearch = ["elastic/elasticsearch"];
+	private static readonly string[] AllowElasticsearchAndKibana = ["elastic/elasticsearch", "elastic/kibana"];
+
 	[Fact]
 	public void TryGetGitHubRepo_FullUrl_ParsesOwnerRepo()
 	{
@@ -535,7 +538,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed = false;
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"See https://github.com/elastic/secret-repo/pull/42 for details",
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed);
 
 		changed.Should().BeTrue();
@@ -549,7 +552,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed = false;
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"Related to elastic/private-team#99",
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed);
 
 		changed.Should().BeTrue();
@@ -562,7 +565,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed = false;
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"Fixed in https://github.com/elastic/elasticsearch/pull/100 and elastic/kibana#50",
-			new[] { "elastic/elasticsearch", "elastic/kibana" },
+			AllowElasticsearchAndKibana,
 			ref changed);
 
 		changed.Should().BeFalse();
@@ -576,7 +579,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed = false;
 		var result = LinkAllowlistSanitizer.ScrubText(
 			null,
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed);
 
 		changed.Should().BeFalse();
@@ -589,7 +592,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed = false;
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"",
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed);
 
 		changed.Should().BeFalse();
@@ -602,7 +605,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed = false;
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"This is plain text with no GitHub references.",
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed);
 
 		changed.Should().BeFalse();
@@ -615,7 +618,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed = false;
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"Public elastic/elasticsearch#1 and private elastic/secret#2",
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed);
 
 		changed.Should().BeTrue();
@@ -657,13 +660,13 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed1 = false;
 		var result1 = LinkAllowlistSanitizer.ScrubText(
 			"See elastic/secret#1 for details",
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed1);
 
 		var changed2 = false;
 		var result2 = LinkAllowlistSanitizer.ScrubText(
 			result1,
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed2);
 
 		changed2.Should().BeFalse();
@@ -676,7 +679,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		var changed = false;
 		var result = LinkAllowlistSanitizer.ScrubText(
 			"Relates to https://github.com/elastic/secret-repo/issues/99",
-			new[] { "elastic/elasticsearch" },
+			AllowElasticsearch,
 			ref changed);
 
 		changed.Should().BeTrue();
