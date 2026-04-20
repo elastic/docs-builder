@@ -40,6 +40,31 @@ public partial record GitCheckoutInformation
 	[JsonPropertyName("github_ref")]
 	public string? GitHubRef { get; init; }
 
+	/// <summary>
+	/// The GitHub repository in <c>org/repo</c> format, derived from the git remote URL.
+	/// Falls back to <c>elastic/docs-builder</c> when either <see cref="Remote"/> or <see cref="RepositoryName"/> is unavailable,
+	/// to avoid silently linking to an arbitrary <c>elastic/*</c> repository.
+	/// </summary>
+	[JsonIgnore]
+	public string GitHubRepository
+	{
+		get
+		{
+			if (string.IsNullOrEmpty(Remote) || Remote == "unavailable"
+				|| string.IsNullOrEmpty(RepositoryName) || RepositoryName == "unavailable")
+				return "elastic/docs-builder";
+			// Normalise SSH → HTTPS so the string manipulation below is uniform
+			var s = Remote.Replace("git@github.com:", "https://github.com/");
+			if (s.Contains("github.com/", StringComparison.OrdinalIgnoreCase))
+			{
+				var idx = s.IndexOf("github.com/", StringComparison.OrdinalIgnoreCase);
+				return s[(idx + "github.com/".Length)..].TrimEnd('/');
+			}
+			// Already in org/repo format (e.g. value of GITHUB_REPOSITORY env var)
+			return Remote.Contains('/') ? Remote : "elastic/docs-builder";
+		}
+	}
+
 	// manual read because libgit2sharp is not yet AOT ready
 	public static GitCheckoutInformation Create(IDirectoryInfo? source, IFileSystem fileSystem, ILogger? logger = null)
 	{
