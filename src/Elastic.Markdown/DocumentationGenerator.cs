@@ -209,6 +209,8 @@ public partial class DocumentationGenerator
 		var sourceDir = DocumentationSet.Context.DocumentationSourceDirectory.FullName;
 		var outputStaticDir = Path.Join(DocumentationSet.OutputDirectory.FullName, "_static");
 
+		// Track destination basenames to catch collisions between icon and og-image
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var imagePath in new[] { branding.Icon, branding.OgImage })
 		{
 			if (string.IsNullOrEmpty(imagePath))
@@ -218,6 +220,13 @@ public partial class DocumentationGenerator
 			if (!source.Exists)
 			{
 				Context.Collector.EmitError(Context.ConfigurationPath.FullName, $"Branding image '{imagePath}' does not exist.");
+				continue;
+			}
+
+			if (!seen.Add(source.Name))
+			{
+				Context.Collector.EmitError(Context.ConfigurationPath.FullName,
+					$"Branding image '{imagePath}' has the same filename as another branding image — use unique filenames to avoid overwriting.");
 				continue;
 			}
 

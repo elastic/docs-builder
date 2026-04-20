@@ -258,7 +258,9 @@ function getDeploymentLinks(
     githubRef?: string
 ): { ref?: string; branch: string; commit: string; repository: string } {
     // Backend passes full org/repo; fallback only fires for bare names (shouldn't occur)
-    const repo = githubRepository.includes('/') ? githubRepository : `elastic/${githubRepository}`
+    const repo = githubRepository.includes('/')
+        ? githubRepository
+        : `elastic/${githubRepository}`
     const base = `${GITHUB_BASE}/${repo}`
     const pull = githubRef != null ? parseGitHubRef(githubRef) : undefined
     const pullUrl =

@@ -134,8 +134,14 @@ public class HtmlWriter(
 		var gitBranch = DocumentationSet.Context.Git.Branch;
 		var gitRef = DocumentationSet.Context.Git.Ref;
 		string? gitHubDocsUrl = null;
-		if (gitHubRepo != "elastic/docs-builder" && !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
-			gitHubDocsUrl = $"https://github.com/{gitHubRepo}/tree/{gitBranch}/docs";
+		if (gitHubRepo != "elastic/docs-builder"
+			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable"
+			&& DocumentationSet.Context.DocumentationCheckoutDirectory is { } docsCheckoutDir)
+		{
+			var relativeDocsPath = Path.GetRelativePath(docsCheckoutDir.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName)
+				.Replace(Path.DirectorySeparatorChar, '/');
+			gitHubDocsUrl = $"https://github.com/{gitHubRepo}/tree/{gitBranch}/{relativeDocsPath}";
+		}
 
 		var slice = PageViewFactory.Create(new IndexViewModel
 		{

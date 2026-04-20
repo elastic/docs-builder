@@ -37,7 +37,7 @@
 					View as Markdown
 				</a>
 			</li>
-			@if (Model.BuildType != BuildType.Codex)
+			@if (Model.BuildType != BuildType.Codex && Model.Branding is null)
 			{
 				<li class="report-an-issue lg:not-first:mt-1">
 					<a href="@Model.ReportIssueUrl" class="link text-sm" target="_blank">

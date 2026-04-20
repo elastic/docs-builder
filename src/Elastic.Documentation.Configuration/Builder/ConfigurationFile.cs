@@ -274,44 +274,49 @@ public record ConfigurationFile
 
 	private static BrandingConfiguration ValidateBranding(BrandingConfiguration branding, IDocumentationSetContext context)
 	{
-		ValidateBrandingImage(branding.Icon, "branding.icon", context);
-		ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
+		branding.Icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
+		branding.OgImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
 		return branding;
 	}
 
-	private static void ValidateBrandingImage(string? imagePath, string fieldName, IDocumentationSetContext context)
+	private static string? ValidateBrandingImage(string? imagePath, string fieldName, IDocumentationSetContext context)
 	{
 		if (string.IsNullOrEmpty(imagePath))
-			return;
+			return null;
 
 		var ext = Path.GetExtension(imagePath).ToLowerInvariant();
 		if (!AllowedImageExtensions.Contains(ext))
 		{
 			context.EmitError(context.ConfigurationPath,
 				$"'{fieldName}' has unsupported extension '{ext}'. Allowed: {string.Join(", ", AllowedImageExtensions)}");
-			return;
+			return null;
 		}
 
-		var sourceDir = context.DocumentationSourceDirectory.FullName;
-		var resolved = Path.GetFullPath(Path.Join(sourceDir, imagePath));
+		var resolved = context.ReadFileSystem.FileInfo.New(
+			Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, imagePath))
+		);
 
-		if (!resolved.StartsWith(sourceDir, StringComparison.OrdinalIgnoreCase))
+		if (!resolved.IsSubPathOf(context.DocumentationSourceDirectory))
 		{
 			context.EmitError(context.ConfigurationPath,
 				$"'{fieldName}' path '{imagePath}' escapes the documentation source directory.");
-			return;
+			return null;
 		}
 
-		var file = context.ReadFileSystem.FileInfo.New(resolved);
-		if (file.LinkTarget is not null)
+		if (resolved.LinkTarget is not null)
 		{
 			context.EmitError(context.ConfigurationPath,
 				$"'{fieldName}' path '{imagePath}' is a symbolic link, which is not allowed for branding images.");
-			return;
+			return null;
 		}
 
-		if (!file.Exists)
+		if (!resolved.Exists)
+		{
 			context.EmitError(context.ConfigurationPath, $"'{fieldName}' file '{imagePath}' does not exist.");
+			return null;
+		}
+
+		return imagePath;
 	}
 
 	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
