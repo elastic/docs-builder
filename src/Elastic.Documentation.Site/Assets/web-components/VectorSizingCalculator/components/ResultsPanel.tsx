@@ -46,9 +46,6 @@ export function ResultsPanel({
         (Boolean(validation.note) ||
             Boolean(quantizationInsightText) ||
             quantization !== 'none');
-    const ctaClassName = showBody
-        ? 'vectorSizingCalc__ctaGroup'
-        : 'vectorSizingCalc__ctaGroup vectorSizingCalc__ctaGroup--centered';
 
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--right">
@@ -114,23 +111,6 @@ export function ResultsPanel({
                     </>
                 )}
 
-            </div>
-            <div className={ctaClassName}>
-                <a
-                    href="https://cloud.elastic.co/registration?page=docs&placement=docs-siderail"
-                    className="vectorSizingCalc__ctaPrimary w-full min-h-[30px] cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center flex items-center justify-center leading-[30px]"
-                >
-                    Get started free
-                </a>
-                <EuiSpacer size="s" className="vectorSizingCalc__spacerCtaToContact" />
-                <div className="vectorSizingCalc__contactWrap">
-                    <a
-                        className="vectorSizingCalc__contactLink"
-                        href="https://www.elastic.co/contact"
-                    >
-                        Contact us
-                    </a>
-                </div>
             </div>
         </div>
     );

@@ -64,7 +64,6 @@ vector-sizing-calculator:not(:defined) {
 
 .vectorSizingCalc__summary {
     flex: 1;
-    margin-bottom: 24px;
 }
 
 .vectorSizingCalc__summaryLabel {
@@ -77,9 +76,8 @@ vector-sizing-calculator:not(:defined) {
     font-weight: 500 !important;
 }
 
-/* EuiSpacer: forzar 16px entre “RAM required” y el hero, y entre CTA y Contact us. */
-.vectorSizingCalc .vectorSizingCalc__spacerHeroGap.euiSpacer,
-.vectorSizingCalc .vectorSizingCalc__spacerCtaToContact.euiSpacer {
+/* EuiSpacer: forzar 16px entre “RAM required” y el hero. */
+.vectorSizingCalc .vectorSizingCalc__spacerHeroGap.euiSpacer {
     block-size: 16px !important;
     min-block-size: 16px;
     height: 16px !important;
@@ -250,46 +248,6 @@ vector-sizing-calculator:not(:defined) {
 .vectorSizingCalc .euiCallOut .euiText {
     font-size: 0.95rem;
     line-height: 1.45;
-}
-
-.vectorSizingCalc__ctaGroup {
-    margin-top: auto;
-    padding-top: 26px;
-}
-
-.vectorSizingCalc__ctaGroup--centered {
-    margin-top: 8px;
-}
-
-.vectorSizingCalc__ctaGroup .euiButton {
-    min-height: 44px;
-    border-radius: 6px;
-}
-
-.vectorSizingCalc__ctaPrimary {
-    color: #fff !important;
-    text-decoration: none !important;
-    border-radius: var(--radius-sm);
-    transition: all 0.1s ease-in 0s;
-}
-
-.vectorSizingCalc__contactWrap {
-    width: 100%;
-    text-align: center;
-}
-
-/* Enlace nativo (sin EuiLink): sin subrayado en ningún estado. */
-.vectorSizingCalc .vectorSizingCalc__contactWrap a.vectorSizingCalc__contactLink,
-.vectorSizingCalc .vectorSizingCalc__contactWrap a.vectorSizingCalc__contactLink:link,
-.vectorSizingCalc .vectorSizingCalc__contactWrap a.vectorSizingCalc__contactLink:visited,
-.vectorSizingCalc .vectorSizingCalc__contactWrap a.vectorSizingCalc__contactLink:hover,
-.vectorSizingCalc .vectorSizingCalc__contactWrap a.vectorSizingCalc__contactLink:focus,
-.vectorSizingCalc .vectorSizingCalc__contactWrap a.vectorSizingCalc__contactLink:focus-visible,
-.vectorSizingCalc .vectorSizingCalc__contactWrap a.vectorSizingCalc__contactLink:active {
-    font-weight: 600;
-    color: #1750ba;
-    text-decoration: none !important;
-    text-decoration-thickness: unset !important;
 }
 
 .vectorSizingCalc__sectionDivider {
