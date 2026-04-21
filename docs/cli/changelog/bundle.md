@@ -103,7 +103,7 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 - `"* * *"` - match all changelogs (equivalent to `--all`)
 
 :::{note}
-The `--input-products` option determines which changelog files are gathered for consideration. **`rules.bundle` is not disabled** when you use `--input-products` — global `include_products` / `exclude_products`, type/area rules, and (when configured) per-product rules still run **after** matching, unless your configuration is in [no-filtering mode](/contribute/configure-changelogs-ref.md#bundle-rule-modes). The only “mutually exclusive” pairing on this command is **profile-based** bundling versus **option-based** flags (see [Usage](#usage)), not `--input-products` versus `rules.bundle`.
+The `--input-products` option determines which changelog files are gathered for consideration. **`rules.bundle` is not disabled** when you use `--input-products` — global `include_products` / `exclude_products`, type/area rules, and (when configured) per-product rules still run **after** matching, unless your configuration is in no-filtering mode per [Bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle). The only “mutually exclusive” pairing on this command is **profile-based** bundling versus **option-based** flags (see [Usage](#usage)), not `--input-products` versus `rules.bundle`.
 :::
 
 `--issues <string[]?>`
@@ -255,7 +255,7 @@ This may result in broken links if the product ID doesn't match the GitHub repos
 
 The `rules.bundle` section in the changelog configuration file lets you filter entries during bundling. It applies to both `changelog bundle` and `changelog gh-release`, after entries are matched by the primary filter (`--prs`, `--issues`, `--all`, **`--input-products`**, and so on) and before the bundle is written.
 
-Which `rules.bundle` fields take effect depends on the [bundle rule modes](/contribute/configure-changelogs-ref.md#bundle-rule-modes) (no filtering, global rules against each changelog’s content, or per-product rule context). Input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate.
+Which `rules.bundle` fields take effect depends on the bundle rule modes (no filtering, global rules against each changelog’s content, or per-product rule context). Input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate. For more information, refer to [bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
 
 The following fields are supported:
 
@@ -284,7 +284,9 @@ The following fields are supported:
 :   Match mode for the area filter (`any`, `all`, or `conjunction`). Inherits from `rules.match` when not specified.
 
 `products`
-:   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists). When this map is **non-empty**, the bundler uses **per-product rule context** mode: global `rules.bundle` product/type/area fields are **not** used for filtering (repeat constraints under each product key if you still need them). For details, refer to [Bundle rule modes](/contribute/configure-changelogs-ref.md#bundle-rule-modes) and [Product-specific bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle-products).
+:   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists).
+:   When this map is **non-empty**, the bundler uses **per-product rule context** mode: global `rules.bundle` product/type/area fields are **not** used for filtering (repeat constraints under each product key if you still need them).
+:   For details, refer to [Bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
 
 ```yaml
 rules:

@@ -44,7 +44,7 @@ Or you might want to omit all autoscaling-related changelogs from the Cloud Serv
 
 You can define rules at the global level (applies to all products) or for specific products.
 Product-specific rules **override** the global rules entirely—they do not merge.
-For more information about the global versus per-product behavior of `rules.bundle`, refer to [bundle rule modes](/contribute/configure-changelogs-ref.md#bundle-rule-modes).
+For more information about the global versus per-product behavior of `rules.bundle`, refer to [Bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
 
 ### Product matching behavior
 
@@ -106,7 +106,7 @@ Some `rules.bundle` combinations are valid YAML but do not filter the way you mi
 - **`match_products: any` with `include_products` in a per-product rule** provides no selective filtering in the common case. Consider `match_products: all` for strict filtering or `exclude_products` for exclusion-based filtering.
 - **Disjoint products in `include_products`** in a per-product rule: If you list more than one product ID and some are disjoint from the rule context product, those changelogs cannot be included. Use separate bundles (each with a single product in `--output-products` or profile `output_products`), or multi-product changelogs instead.
 
-For how global `rules.bundle` fields interact with `products` keys, see [Bundle rule modes](/contribute/configure-changelogs-ref.md#bundle-rule-modes).
+For how global `rules.bundle` fields interact with `products` keys, see [Bundle rule modes](/contribute/configure-changelogs-ref.md#rules-bundle).
 
 ## Use a changelog configuration file
 

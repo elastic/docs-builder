@@ -870,7 +870,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			{
 				collector.EmitHint(configPath,
 					"rules.bundle: When 'products' is present, global include_products, exclude_products, and type/area rules are not applied for filtering; configure filters under each product key or use global-only rules.bundle (no 'products' section). " +
-					"See: https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md#bundle-rule-modes");
+					"See: https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md#rules-bundle");
 			}
 		}
 
