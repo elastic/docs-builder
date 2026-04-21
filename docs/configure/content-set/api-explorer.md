@@ -194,3 +194,21 @@ Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.c
 - When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
 - When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
 - Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
+
+### Multi-language code examples
+
+When an OpenAPI operation includes the `x-codeSamples` extension, the API Explorer renders the code samples with a language selector tab. This lets users switch between available languages such as Console, cURL, Python, JavaScript, Ruby, PHP, and Java.
+
+The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and `source` field:
+
+```json
+"x-codeSamples": [
+  { "lang": "Console", "source": "GET /_search" },
+  { "lang": "curl", "source": "curl -X GET ..." },
+  { "lang": "Python", "source": "resp = client.search()" }
+]
+```
+
+The code samples appear in a standalone "Code Examples" section on every operation page that has the extension, regardless of HTTP method. This means GET, DELETE, and other operations without a request body also display language tabs when `x-codeSamples` are present. When multiple languages are available, they appear as tabs. The selected language persists across operations and page navigations. When only one language is available, the example renders without a tab selector.
+
+Console is treated as the default language and appears first in the tab order when present.
