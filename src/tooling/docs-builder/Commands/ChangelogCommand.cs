@@ -55,15 +55,20 @@ internal sealed partial class ChangelogCommand(
 	/// <summary>
 	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template in the docs folder (discovered via docset.yml when present, or at {path}/docs which is created if needed), and creates changelog and releases subdirectories if they do not exist.
 	/// When changelog.yml already exists and --changelog-dir or --bundles-dir is specified, updates the bundle.directory and/or bundle.output_directory fields accordingly.
+	/// When creating a new changelog.yml, seeds bundle.owner, bundle.repo, and bundle.link_allow_repos from git remote origin (github.com only) and/or --owner / --repo.
 	/// </summary>
 	/// <param name="path">Optional: Repository root path. Defaults to the output of pwd (current directory). Docs folder is {path}/docs, created if it does not exist.</param>
 	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to {docsFolder}/changelog.</param>
 	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to {docsFolder}/releases.</param>
+	/// <param name="owner">Optional: GitHub owner for bundle defaults and link_allow_repos seeding. Overrides the owner inferred from git remote origin.</param>
+	/// <param name="repo">Optional: GitHub repository name for bundle defaults and link_allow_repos seeding. Overrides the repo inferred from git remote origin.</param>
 	[Command("init")]
 	public Task<int> Init(
 		string? path = null,
 		string? changelogDir = null,
-		string? bundlesDir = null
+		string? bundlesDir = null,
+		string? owner = null,
+		string? repo = null
 	)
 	{
 		var rootPath = NormalizePath(path ?? ".");
@@ -138,6 +143,8 @@ internal sealed partial class ChangelogCommand(
 				var outputValue = GetPathForConfig(repoRoot, bundlesPath);
 				content = content.Replace("output_directory: docs/releases", $"output_directory: {outputValue}");
 			}
+
+			content = ApplyChangelogInitBundleRepoSeed(content, owner, repo, repoRoot);
 
 			try
 			{
@@ -490,7 +497,10 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="all">Include all changelogs in the directory.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
+	/// <param name="description">Optional: Bundle description text with placeholder support. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders. Overrides bundle.description from config. In option-based mode, placeholders require --output-products to be explicitly specified.</param>
 	/// <param name="hideFeatures">Optional: Filter by feature IDs (comma-separated) or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or {changelog} directive).</param>
+	/// <param name="noReleaseDate">Optional: Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. Not available in profile mode.</param>
+	/// <param name="releaseDate">Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behavior. Mutually exclusive with --no-release-date. Not available in profile mode.</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all).</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
@@ -512,7 +522,10 @@ internal sealed partial class ChangelogCommand(
 		bool all = false,
 		string? config = null,
 		string? directory = null,
+		string? description = null,
 		string[]? hideFeatures = null,
+		bool noReleaseDate = false,
+		string? releaseDate = null,
 		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
 		string? output = null,
 		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
@@ -617,6 +630,8 @@ internal sealed partial class ChangelogCommand(
 				forbidden.Add("--config");
 			if (!string.IsNullOrWhiteSpace(directory))
 				forbidden.Add("--directory");
+			if (!string.IsNullOrWhiteSpace(description))
+				forbidden.Add("--description");
 
 			if (forbidden.Count > 0)
 			{
@@ -767,7 +782,8 @@ internal sealed partial class ChangelogCommand(
 				Output = processedOutput,
 				Profile = profile,
 				ProfileArgument = profileArg,
-				Config = config
+				Config = config,
+				Description = description
 			};
 			var planResult = await service.PlanBundleAsync(collector, planInput, releaseVersion != null, ctx);
 			if (planResult == null)
@@ -778,6 +794,35 @@ internal sealed partial class ChangelogCommand(
 			if (planResult.OutputPath != null)
 				await githubActionsService.SetOutputAsync("output_path", planResult.OutputPath);
 			return 0;
+		}
+
+		// Validate release date flags
+		if (noReleaseDate && !string.IsNullOrWhiteSpace(releaseDate))
+		{
+			collector.EmitError(string.Empty, "--no-release-date and --release-date are mutually exclusive.");
+			return 1;
+		}
+
+		// Profile mode doesn't support release date CLI flags (use YAML configuration instead)
+		if (isProfileMode && (noReleaseDate || !string.IsNullOrWhiteSpace(releaseDate)))
+		{
+			var forbidden = new List<string>();
+			if (noReleaseDate)
+				forbidden.Add("--no-release-date");
+			if (!string.IsNullOrWhiteSpace(releaseDate))
+				forbidden.Add("--release-date");
+
+			collector.EmitError(string.Empty,
+				$"Profile mode does not support {string.Join(" and ", forbidden)}. " +
+				"Use bundle.release_dates or bundle.profiles.<name>.release_dates in changelog.yml instead.");
+			return 1;
+		}
+
+		// Validate release date format if provided
+		if (!string.IsNullOrWhiteSpace(releaseDate) && !DateOnly.TryParseExact(releaseDate, "yyyy-MM-dd", out _))
+		{
+			collector.EmitError(string.Empty, $"Invalid --release-date format '{releaseDate}'. Expected YYYY-MM-DD format.");
+			return 1;
 		}
 
 		// Determine resolve: CLI --no-resolve and --resolve override config. null = use config default.
@@ -802,7 +847,10 @@ internal sealed partial class ChangelogCommand(
 			ProfileReport = isProfileMode ? profileReport : null,
 			Report = !isProfileMode ? report : null,
 			Config = config,
-			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
+			Description = description,
+			ReleaseDate = releaseDate,
+			SuppressReleaseDate = noReleaseDate
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1113,7 +1161,9 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="repo">Required: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch" which defaults to elastic/elasticsearch)</param>
 	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
+	/// <param name="description">Optional: Bundle description text with placeholder support. Supports {version}, {lifecycle}, {owner}, and {repo} placeholders. Overrides bundle.description from config.</param>
 	/// <param name="output">Optional: Output directory for changelog files. Falls back to bundle.directory in changelog.yml when not specified. Defaults to './changelogs'</param>
+	/// <param name="releaseDate">Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides GitHub release published date.</param>
 	/// <param name="stripTitlePrefix">Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., "[Inference API] Title" becomes "Title")</param>
 	/// <param name="warnOnTypeMismatch">Optional: Warn when the type inferred from release notes section headers doesn't match the type derived from PR labels. Defaults to true</param>
 	/// <param name="ctx"></param>
@@ -1122,7 +1172,9 @@ internal sealed partial class ChangelogCommand(
 		[Argument] string repo,
 		[Argument] string version = "latest",
 		string? config = null,
+		string? description = null,
 		string? output = null,
+		string? releaseDate = null,
 		bool stripTitlePrefix = false,
 		bool warnOnTypeMismatch = true,
 		Cancel ctx = default
@@ -1139,6 +1191,13 @@ internal sealed partial class ChangelogCommand(
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
 
+		// Validate release date format if provided
+		if (!string.IsNullOrWhiteSpace(releaseDate) && !DateOnly.TryParseExact(releaseDate, "yyyy-MM-dd", out _))
+		{
+			collector.EmitError(string.Empty, $"Invalid --release-date format '{releaseDate}'. Expected YYYY-MM-DD format.");
+			return 1;
+		}
+
 		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
 		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
 
@@ -1149,7 +1208,9 @@ internal sealed partial class ChangelogCommand(
 			Config = config,
 			Output = resolvedOutput,
 			StripTitlePrefix = stripTitlePrefixResolved,
-			WarnOnTypeMismatch = warnOnTypeMismatch
+			WarnOnTypeMismatch = warnOnTypeMismatch,
+			Description = description,
+			ReleaseDate = releaseDate
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1321,6 +1382,16 @@ internal sealed partial class ChangelogCommand(
 			return $"\"{pathForConfig.Replace("\"", "\\\"")}\"";
 
 		return pathForConfig;
+	}
+
+	private string ApplyChangelogInitBundleRepoSeed(string content, string? ownerCli, string? repoCli, string repoRoot)
+	{
+		string? gitOwner = null;
+		string? gitRepo = null;
+		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
+			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
+
+		return ChangelogTemplateSeeder.ApplyBundleRepoSeed(content, ownerCli, repoCli, gitOwner, gitRepo);
 	}
 
 	/// <summary>

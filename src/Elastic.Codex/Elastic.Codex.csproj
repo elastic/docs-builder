@@ -13,6 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Navigation.Tests"/>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="RazorSlices"/>
   </ItemGroup>
 
