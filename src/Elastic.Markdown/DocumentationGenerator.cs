@@ -208,6 +208,7 @@ public partial class DocumentationGenerator
 
 		var sourceDir = DocumentationSet.Context.DocumentationSourceDirectory.FullName;
 		var outputStaticDir = Path.Join(DocumentationSet.OutputDirectory.FullName, "_static");
+		_ = _writeFileSystem.Directory.CreateDirectory(outputStaticDir);
 
 		// Track destination basenames to catch collisions between icon and og-image
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
