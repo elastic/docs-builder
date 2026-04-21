@@ -1,0 +1,20 @@
+name: Docs preview cleanup (local)
+
+# Pairs with docs-preview-local.yml. Delegates to elastic/docs-actions instead of maintaining
+# duplicate cleanup logic here (docs-eng-team#474). preview-cleanup.yml remains workflow_call-only
+# for out-of-repo callers.
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: none
+  deployments: write
+  id-token: write
+
+jobs:
+  destroy:
+    if: github.event.repository.fork == false
+    uses: elastic/docs-actions/.github/workflows/docs-preview-cleanup.yml@main
+    secrets: inherit

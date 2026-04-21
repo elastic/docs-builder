@@ -1,11 +1,11 @@
 name: preview-cleanup
 
-# TODO: Migrate to elastic/docs-actions/.github/workflows/docs-preview-cleanup.yml (docs-eng-team#474).
+# Reusable workflow for repositories that still call this workflow. elastic/docs-builder uses
+# docs-preview-cleanup-local.yml on pull_request_target: closed (delegates to docs-actions).
+# TODO: Remove this file once all callers migrate (docs-eng-team#474).
 
 on:
   workflow_call: ~
-  pull_request_target:
-    types: [closed]
 
 permissions:
   contents: none
