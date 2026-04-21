@@ -19,8 +19,9 @@ permissions:
   id-token: write
   pull-requests: read
 
+# PR number avoids grouping disparate PRs that share the same head.ref (e.g. forks).
 concurrency:
-  group: docs-preview-local-${{ github.event.pull_request.head.ref || github.ref }}
+  group: docs-preview-local-${{ github.event_name == 'pull_request' && format('pr{0}-{1}', github.event.pull_request.number, github.event.pull_request.head.ref) || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
