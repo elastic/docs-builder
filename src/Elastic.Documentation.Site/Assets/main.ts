@@ -16,6 +16,7 @@ import 'htmx-ext-preload'
 import * as katex from 'katex'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
+import './web-components/VectorSizingCalculator/VectorSizingCalculatorComponent'
 
 // Injected at build time from MinVer
 const DOCS_BUILDER_VERSION =
@@ -40,7 +41,6 @@ import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
-import('./web-components/VectorSizingCalculator/VectorSizingCalculatorComponent')
 
 if (config.buildType === 'isolated' || config.airGapped) {
     import('./isolated')

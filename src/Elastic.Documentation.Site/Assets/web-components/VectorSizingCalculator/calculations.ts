@@ -315,3 +315,38 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     formulas,
   };
 }
+
+/**
+ * Dynamic callout copy: same inputs with quantization set to `none` vs current.
+ * The "~N" value is cluster RAM saved when positive (RAM is what drops with
+ * quantization in this model). If cluster disk were lower with quantization,
+ * that delta would be used instead.
+ */
+export function getQuantizationInsightText(
+  inputs: CalculatorInputs,
+  current: SizingResult
+): string | null {
+  const { quantization, indexType, elementType } = inputs;
+  if (quantization === 'none') return null;
+  if (indexType === 'disk_bbq') return null;
+  if (elementType !== 'float' && elementType !== 'bfloat16') return null;
+
+  const baseline = calculate({ ...inputs, quantization: 'none' });
+  if (!baseline) return null;
+
+  const ramSave = baseline.clusterRam - current.clusterRam;
+  if (ramSave > 0) {
+    return `Quantization reduces memory usage, saving ~${formatBytesString(
+      ramSave
+    )} compared to full-precision vectors.`;
+  }
+
+  const diskSave = baseline.clusterDisk - current.clusterDisk;
+  if (diskSave > 0) {
+    return `Quantization reduces storage usage, saving ~${formatBytesString(
+      diskSave
+    )} compared to full-precision vectors.`;
+  }
+
+  return null;
+}
