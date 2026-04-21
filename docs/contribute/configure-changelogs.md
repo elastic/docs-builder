@@ -24,9 +24,39 @@ Only one configuration file is required for each repository.
 You must maintain the file if your repo labels change over time.
 :::
 
-You can use the [docs-builder changelog init](/cli/changelog/init.md) command to create the changelog configuration file and folder structure automatically.
+You can use the [changelog init](/cli/changelog/init.md) command to create the changelog configuration file and folder structure automatically.
+
+For example, run the following command in your GitHub repo's root directory:
+
+```sh
+docs-builder changelog init
+```
+
+By default, it creates `docs/changelog.yml` file that contains settings like this:
+
+```yml
+filename: timestamp
+products:
+  available: []
+extract:
+  release_notes: true
+  issues: true
+  strip_title_prefix: false
+lifecycles:
+  - preview
+  - beta
+  - ga
+pivot:
+  types:
+    breaking-change:
+      labels: ">breaking, >bc"
+    bug-fix: ">bug"
+    feature:
+```
 
 For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
+
+For descriptions of all the settings, refer to [Changelog configuration reference](/contribute/configure-changelogs-ref.md)
 
 ## Rules for creation and bundling [rules]
 
@@ -38,79 +68,15 @@ Likewise, if you want to exclude changelogs with certain products, areas, or typ
 For example, you might choose to omit `other` or `docs` changelogs.
 Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release bundles.
 
-:::{warning}
-`rules.publish` is deprecated and no longer used by the `changelog render` command. Move your type/area filtering to `rules.bundle` so it applies at bundle time. Using `rules.publish` emits a deprecation warning during configuration loading.
-:::
-
 You can define rules at the global level (applies to all products) or for specific products.
-Product-specific rules **override** the global rules entirely—they do not merge.
-For more information about the global versus per-product behavior of `rules.bundle`, refer to [Bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
-
-### Product matching behavior
-
-The following applies to **global** `rules.bundle` product lists (**Mode 2**). In **Mode 3**, product matching uses the per-product block for the rule context product instead.
-
-With `match_products`, the behavior differs depending on the mode. The keyword **`conjunction`** means *every product ID in the config list must appear on the changelog* (logical AND). It does not refer to the `include_products` / `exclude_products` field names — those choose **which** list and **include vs exclude**; `match_products` chooses **how** that list is interpreted.
-
-| Config | Changelog `products` | `match_products` | Result |
-|--------|----------------|----------------|--------|
-| `exclude_products: [cloud-enterprise]` | `[cloud-enterprise, kibana]` | `any` | **Excluded** ("cloud-enterprise" matches) |
-| `exclude_products: [cloud-enterprise]` | `[cloud-enterprise, kibana]` | `all` | **Included** (not all products are in the exclude list) |
-| `exclude_products: [kibana, observability]` | `[kibana]` | `conjunction` | **Included** (not every listed exclude ID is on the changelog) |
-| `exclude_products: [kibana, observability]` | `[kibana, observability]` | `conjunction` | **Excluded** (every listed exclude ID is on the changelog) |
-| `include_products: [elasticsearch]` | `[elasticsearch, kibana]` | `any` | **Included** ("elasticsearch" matches) |
-| `include_products: [elasticsearch]` | `[elasticsearch, kibana]` | `all` | **Excluded** ("kibana" is not in the include list) |
-| `include_products: [elasticsearch, security]` | `[elasticsearch, security, kibana]` | `conjunction` | **Included** (every listed include ID is on the changelog) |
-| `include_products: [elasticsearch, security]` | `[elasticsearch]` | `conjunction` | **Excluded** ("security" is missing from the changelog) |
-
-In practice, most changelogs have a single product, so `any` (the default) and `all` behave identically for them.
-The difference only matters for changelogs with multiple products.
-
-### Area matching behavior
-
-With `match_areas` (applies to both `rules.bundle` and `rules.publish`), the behavior differs depending on the mode. As with products, **`conjunction`** means every area in the config list must appear on the changelog.
-
-| Config | Changelog `areas` | `match_areas` | Result |
-|--------|------------|-------------|--------|
-| `exclude_areas: [Internal]` | `[Search, Internal]` | `any` | **Excluded** ("Internal" matches) |
-| `exclude_areas: [Internal]` | `[Search, Internal]` | `all` | **Included** (not all areas are in the exclude list) |
-| `exclude_areas: [Search, Internal]` | `[Search]` | `conjunction` | **Included** ("Internal" is not on the changelog) |
-| `exclude_areas: [Search, Internal]` | `[Search, Internal, Monitoring]` | `conjunction` | **Excluded** (every listed exclude area is on the changelog) |
-| `include_areas: [Search]` | `[Search, Internal]` | `any` | **Included** ("Search" matches) |
-| `include_areas: [Search]` | `[Search, Internal]` | `all` | **Excluded** ("Internal" is not in the include list) |
-| `include_areas: [Search, Internal]` | `[Search, Internal]` | `conjunction` | **Included** (every listed include area is on the changelog) |
-| `include_areas: [Search, Internal]` | `[Search]` | `conjunction` | **Excluded** ("Internal" is missing from the changelog) |
-
-### Validation
-
-The following configurations cause validation errors:
-
-| Condition | Error |
-|-----------|-------|
-| Old `block:` key found | `'block' is no longer supported. Rename to 'rules'. See changelog.example.yml.` |
-| Both `exclude` and `include` in create | `rules.create: cannot have both 'exclude' and 'include'. Use one or the other.` |
-| Both `exclude_types` and `include_types` in bundle | `rules.bundle: cannot have both 'exclude_types' and 'include_types'. Use one or the other.` |
-| Both `exclude_areas` and `include_areas` in bundle | `rules.bundle: cannot have both 'exclude_areas' and 'include_areas'. Use one or the other.` |
-| Both `exclude_products` and `include_products` in bundle | `rules.bundle: cannot have both 'exclude_products' and 'include_products'. Use one or the other.` |
-| Both `exclude_types` and `include_types` in publish | `rules.publish: cannot have both 'exclude_types' and 'include_types'. Use one or the other.` |
-| Both `exclude_areas` and `include_areas` in publish | `rules.publish: cannot have both 'exclude_areas' and 'include_areas'. Use one or the other.` |
-| `rules.publish` present | Deprecation warning: `rules.publish is deprecated. Move type/area filtering to rules.bundle.` |
-| Invalid match value | `rules.match: '{value}' is not valid. Use 'any', 'all', or 'conjunction'.` |
-| Unknown product ID in bundle | `rules.bundle.exclude_products: '{id}' is not in the list of available products.` |
-| Unknown product ID | `rules.create.products: '{id}' not in available products.` |
-
-### Ineffective configuration patterns [ineffective-configuration-patterns]
-
-Some `rules.bundle` combinations are valid YAML but do not filter the way you might expect:
-
-- **`match_products: any` with `include_products` in a per-product rule** provides no selective filtering in the common case. Consider `match_products: all` for strict filtering or `exclude_products` for exclusion-based filtering.
-- **Disjoint products in `include_products`** in a per-product rule: If you list more than one product ID and some are disjoint from the rule context product, those changelogs cannot be included. Use separate bundles (each with a single product in `--output-products` or profile `output_products`), or multi-product changelogs instead.
-
-For how global `rules.bundle` fields interact with `products` keys, see [Bundle rule modes](/contribute/configure-changelogs-ref.md#rules-bundle).
+Product-specific rules override the global rules entirely—they do not merge.
+For details, refer to [Rules](/contribute/configure-changelogs-ref.md#rules).
 
 ## Use a changelog configuration file
 
-By default, changelog commands check the following path: `docs/changelog.yml`.
-You can specify a different path with the `--config` command option.
+After you've created a config file, all subsequent changelog commands can use it.
+By default, they look for `docs/changelog.yml` but you can specify a different path with the `--config` command option.
 
 For specific details about the usage and impact of the configuration file, refer to the [changelog commands](/cli/changelog/index.md).
+
+The [changelog directive](/syntax/changelog.md) also uses the changelog configuration file and you can specify a non-default path if necessary.

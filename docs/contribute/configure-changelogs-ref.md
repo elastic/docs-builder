@@ -287,6 +287,8 @@ These settings are located in the `rules.bundle` section of the configuration fi
 You cannot specify both `exclude_products` and `include_products`, both `exclude_types` and `include_types`, or both `exclude_areas` and `include_areas`. You can mix exclude and include across different fields (for example, `exclude_types` with `include_areas`).
 :::
 
+For examples, go to [](#example-product-matching).
+
 The way bundle rules are applied can be broken down into three "modes":
 
 1 — No filtering
@@ -317,7 +319,53 @@ Refer to [](#rules-bundle-products).
 Changelog commands emit a hint when both global bundle fields and a non-empty `products` map are present because global keys are ignored in Mode 3.
 The `changelog bundle` and `changelog gh-release` commands also emit informational messages when rules cause changelogs to be omitted from the bundle.
 
-#### Product-specific bundle rules (`rules.bundle.products`) [rules-bundle-products]
+## Advanced rule examples
+
+The following sections provide details and examples for some of the more complicated bundle rule scenarios.
+
+### Area matching behavior
+
+The following table demonstates the impact of area-related bundle rules:
+
+| Config | Changelog `areas` | `match_areas` | Result |
+|--------|------------|-------------|--------|
+| `exclude_areas: [Internal]` | `[Search, Internal]` | `any` | **Excluded** ("Internal" matches) |
+| `exclude_areas: [Internal]` | `[Search, Internal]` | `all` | **Included** (not all areas are in the exclude list) |
+| `exclude_areas: [Search, Internal]` | `[Search]` | `conjunction` | **Included** ("Internal" is not in the changelog) |
+| `exclude_areas: [Search, Internal]` | `[Search, Internal, Monitoring]` | `conjunction` | **Excluded** (every listed exclude area is in the changelog) |
+| `include_areas: [Search]` | `[Search, Internal]` | `any` | **Included** ("Search" matches) |
+| `include_areas: [Search]` | `[Search, Internal]` | `all` | **Excluded** ("Internal" is not in the include list) |
+| `include_areas: [Search, Internal]` | `[Search, Internal]` | `conjunction` | **Included** (every listed include area is in the changelog) |
+| `include_areas: [Search, Internal]` | `[Search]` | `conjunction` | **Excluded** ("Internal" is missing from the changelog) |
+
+As described in [match settings](#rules-match), the `conjunction` value means every area in the config list must appear in the changelog.
+
+:::{tip}
+There is one difference between how these rules are applied in global rules ("mode 2") and product-specific rules ("mode 3"). In the latter case, there's an exceptional "pass-through" scenario that skips per-product "type" and "area" rules and does not fall back to global rules. Refer to [](#rules-bundle-products).
+:::
+
+### Product matching behavior [example-product-matching]
+
+The following table demonstates the impact of global ("Mode 2") bundle rule [match settings](#rules-match):
+
+| `rules.bundle` setting | Changelog `products` | `match_products` value | Result |
+|--------|----------------|----------------|--------|
+| `exclude_products: [cloud-enterprise]` | `[cloud-enterprise, kibana]` | `any` | **Excluded** ("cloud-enterprise" matches) |
+| `exclude_products: [cloud-enterprise]` | `[cloud-enterprise, kibana]` | `all` | **Included** (not all products are in the exclude list) |
+| `exclude_products: [kibana, observability]` | `[kibana]` | `conjunction` | **Included** (not every exclude list item is in the changelog) |
+| `exclude_products: [kibana, observability]` | `[kibana, observability]` | `conjunction` | **Excluded** (every exclude list item is in the changelog) |
+| `include_products: [elasticsearch]` | `[elasticsearch, kibana]` | `any` | **Included** ("elasticsearch" matches) |
+| `include_products: [elasticsearch]` | `[elasticsearch, kibana]` | `all` | **Excluded** ("kibana" is not in the include list) |
+| `include_products: [elasticsearch, security]` | `[elasticsearch, security, kibana]` | `conjunction` | **Included** (every listed include ID is on the changelog) |
+| `include_products: [elasticsearch, security]` | `[elasticsearch]` | `conjunction` | **Excluded** ("security" is missing from the changelog) |
+
+The impact of the `match_products` setting differs depending on the mode.
+For product-specific ("Mode 3") details, refer to [](#rules-bundle-products).
+
+In practice, most changelogs have a single product, so `any` (the default) and `all` behave identically for them.
+The difference only matters for changelogs with multiple products.
+
+### Product-specific bundle rules [rules-bundle-products]
 
 This section provides more detailed information about "mode 3" product-specific bundle rules.
 
