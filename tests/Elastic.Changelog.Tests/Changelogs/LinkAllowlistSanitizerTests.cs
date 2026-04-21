@@ -437,7 +437,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 		ok.Should().BeTrue();
 		changed.Should().BeTrue();
-		sanitized.Prs![0].Should().StartWith("# PRIVATE:");
+		sanitized.Prs.Should().BeEmpty();
 		sanitized.Issues![0].Should().Be("https://github.com/elastic/elasticsearch/issues/200");
 	}
 
@@ -650,7 +650,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 		ok.Should().BeTrue();
 		secondChanged.Should().BeFalse();
-		secondPass.Prs![0].Should().Be(firstPass.Prs![0]);
+		secondPass.Prs.Should().BeEmpty();
 		secondPass.Description.Should().Be(firstPass.Description);
 	}
 

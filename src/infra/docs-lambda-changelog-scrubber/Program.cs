@@ -108,9 +108,16 @@ async Task DeleteFromPublicBucket(IAmazonS3 s3Client, string key, ILambdaContext
 
 async Task ScrubAndCopyToPublicBucket(IAmazonS3 s3Client, string sourceBucket, string key, ILambdaContext context)
 {
-	if (key.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+	var fileName = Path.GetFileName(key);
+	if (string.Equals(fileName, "registry-index.json", StringComparison.OrdinalIgnoreCase))
 	{
 		await CopyPassThrough(s3Client, sourceBucket, key, context);
+		return;
+	}
+
+	if (key.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+	{
+		context.Logger.LogWarning("Skipping unapproved JSON key: {Key}", key);
 		return;
 	}
 
@@ -174,10 +181,7 @@ async Task<string> ScrubBundle(string content, ILambdaContext context)
 
 	await using var collector = new DiagnosticsCollector([]);
 	if (!LinkAllowlistSanitizer.TryApplyBundle(collector, bundle, allowRepos, owner, repo, out var sanitized, out var changed))
-	{
-		context.Logger.LogWarning("Failed to apply allowlist to bundle, writing original content");
-		return content;
-	}
+		throw new InvalidOperationException($"Failed to apply allowlist to bundle; errors: {collector.Errors}");
 
 	if (!changed)
 	{
@@ -211,10 +215,7 @@ async Task<string> ScrubChangelog(string content, ILambdaContext context)
 	if (!LinkAllowlistSanitizer.TryApplyChangelogEntry(
 		collector, bundledEntry, allowRepos, "elastic", null,
 		out var sanitized, out var changed))
-	{
-		context.Logger.LogWarning("Failed to apply allowlist to changelog entry, writing original content");
-		return content;
-	}
+		throw new InvalidOperationException($"Failed to apply allowlist to changelog entry; errors: {collector.Errors}");
 
 	if (!changed)
 	{

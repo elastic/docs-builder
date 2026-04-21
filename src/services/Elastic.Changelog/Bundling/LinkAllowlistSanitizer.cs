@@ -166,6 +166,7 @@ public static partial class LinkAllowlistSanitizer
 			ref anyRewritten);
 		if (prs == null && entry.Prs is not null)
 			return false;
+		prs = DropSentinels(prs, ref anyRewritten);
 
 		var issues = ApplyToReferenceList(
 			collector,
@@ -177,6 +178,7 @@ public static partial class LinkAllowlistSanitizer
 			ref anyRewritten);
 		if (issues == null && entry.Issues is not null)
 			return false;
+		issues = DropSentinels(issues, ref anyRewritten);
 
 		var description = ScrubText(entry.Description, allow, ref anyRewritten);
 		var impact = ScrubText(entry.Impact, allow, ref anyRewritten);
@@ -242,6 +244,21 @@ public static partial class LinkAllowlistSanitizer
 	{
 		var allow = BuildAllowSet(allowRepos);
 		return ScrubText(input, allow, ref changed);
+	}
+
+	private static IReadOnlyList<string>? DropSentinels(IReadOnlyList<string>? refs, ref bool changed)
+	{
+		if (refs is null)
+			return null;
+
+		var filtered = refs
+			.Where(r => !r.StartsWith(SentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			.ToList();
+
+		if (filtered.Count != refs.Count)
+			changed = true;
+
+		return filtered;
 	}
 
 	private static HashSet<string> BuildAllowSet(IReadOnlyList<string> allowRepos)
