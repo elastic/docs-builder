@@ -62,7 +62,7 @@
     "@babel/preset-typescript": "7.28.5",
     "@elastic/synthetics": "1.22.0",
     "@eslint/js": "10.0.1",
-    "@parcel/reporter-bundle-analyzer": "2.16.3",
+    "@parcel/reporter-bundle-analyzer": "2.16.4",
     "@parcel/transformer-svg-react": "2.16.1",
     "@tailwindcss/postcss": "4.2.2",
     "@testing-library/jest-dom": "6.9.1",
