@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api.Core.Changes;
 using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Api.Core.Telemetry;
 using Elastic.Documentation.Configuration.Products;
@@ -23,6 +24,7 @@ public static class MappingsExtension
 		MapAskAiEndpoint(group);
 		MapNavigationSearch(group);
 		MapFullSearch(group);
+		MapChanges(group);
 		if (mapOtlpEndpoints)
 			MapOtlpProxyEndpoint(group);
 	}
@@ -108,6 +110,26 @@ public static class MappingsExtension
 				return Results.Ok(response);
 			});
 	}
+
+	private static void MapChanges(IEndpointRouteBuilder group) =>
+		group.MapGet("/changes",
+			async (
+				[FromQuery(Name = "since")] DateTimeOffset since,
+				[FromQuery(Name = "cursor")] string? cursor,
+				[FromQuery(Name = "size")] int? pageSize,
+				ChangesUsecase changesUsecase,
+				Cancel ctx
+			) =>
+			{
+				var request = new ChangesApiRequest
+				{
+					Since = since,
+					PageSize = pageSize ?? ChangesDefaults.PageSize,
+					Cursor = cursor
+				};
+				var response = await changesUsecase.GetChangesAsync(request, ctx);
+				return Results.Ok(response);
+			});
 
 	private static void MapOtlpProxyEndpoint(IEndpointRouteBuilder group)
 	{

@@ -34,7 +34,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
     <PackageReference Include="Elastic.OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
   </ItemGroup>

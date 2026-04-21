@@ -38,7 +38,7 @@ public record AssemblerDocumentationSet
 
 		var path = checkout.Directory.FullName;
 		var output = env.PathPrefix != null
-			? Path.Combine(context.OutputDirectory.FullName, env.PathPrefix)
+			? Path.Join(context.OutputDirectory.FullName, env.PathPrefix)
 			: context.OutputDirectory.FullName;
 
 		var gitConfiguration = new GitCheckoutInformation

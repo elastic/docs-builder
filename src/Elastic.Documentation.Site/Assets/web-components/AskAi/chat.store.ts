@@ -4,6 +4,7 @@ import { cooldownStore } from '../shared/cooldown.store'
 import { ApiError, isApiError, isRateLimitError } from '../shared/errorHandling'
 import { AskAiEvent } from './AskAiEvent'
 import { MessageThrottler } from './MessageThrottler'
+import { askAiConfig } from './askAi.config'
 import {
     get as idbGet,
     set as idbSet,
@@ -126,7 +127,10 @@ async function loadConversationData(conversationId: ConversationId): Promise<{
                 totalMessageCount:
                     stored.state.totalMessageCount ?? messages.length,
                 messageFeedback: stored.state.messageFeedback ?? {},
-                aiProvider: stored.state.aiProvider ?? 'LlmGateway',
+                aiProvider: askAiConfig.forceAiProvider
+                    ? askAiConfig.defaultAiProvider
+                    : (stored.state.aiProvider ??
+                      askAiConfig.defaultAiProvider),
             }
         }
     } catch {
@@ -232,7 +236,7 @@ export const chatStore = createStore<ChatState>()(
             chatMessages: [],
             totalMessageCount: 0,
             // Other state
-            aiProvider: 'LlmGateway', // Default to LLM Gateway
+            aiProvider: askAiConfig.defaultAiProvider,
             messageFeedback: {},
             hasHydrated: false, // Will be set to true after IndexedDB hydration
             scrollPosition: 0,
@@ -633,7 +637,7 @@ if (typeof window !== 'undefined') {
 
             let conversations: Record<ConversationId, ConversationMeta> = {}
             let activeConversationId: ConversationId | null = null
-            let aiProvider: AiProvider = 'LlmGateway'
+            let aiProvider: AiProvider = askAiConfig.defaultAiProvider
             let scrollPosition = 0
             let inputValue = ''
 
@@ -647,8 +651,11 @@ if (typeof window !== 'undefined') {
                     persistedState.activeConversationId ?? null
                 scrollPosition = persistedState.scrollPosition ?? 0
                 inputValue = persistedState.inputValue ?? ''
-                // Use stored aiProvider as fallback (will be overridden by conversation data if available)
-                aiProvider = persistedState.aiProvider ?? 'LlmGateway'
+                // For Codex always use AgentBuilder; ignore persisted value from Assembler
+                aiProvider = askAiConfig.forceAiProvider
+                    ? askAiConfig.defaultAiProvider
+                    : (persistedState.aiProvider ??
+                      askAiConfig.defaultAiProvider)
             }
 
             // Phase 2: Load active conversation's data (if any)
@@ -662,6 +669,7 @@ if (typeof window !== 'undefined') {
                     chatMessages = loaded.chatMessages
                     totalMessageCount = loaded.totalMessageCount
                     messageFeedback = loaded.messageFeedback
+                    // loadConversationData already returns AgentBuilder for Codex
                     aiProvider = loaded.aiProvider
                 }
             }

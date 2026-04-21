@@ -4,7 +4,8 @@ type: feature
 description: |
   Added CLI commands for managing release notes: `changelog add`, `changelog bundle`, and `changelog render`.
   This enables automated generation and formatting of release notes from structured YAML files.
-pr: "1234"
+prs:
+  - "1234"
 products:
   - product: docs-builder
     target: 0.99.0

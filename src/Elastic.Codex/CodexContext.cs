@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Codex;
 
@@ -14,8 +15,8 @@ namespace Elastic.Codex;
 /// </summary>
 public class CodexContext
 {
-	public IFileSystem ReadFileSystem { get; }
-	public IFileSystem WriteFileSystem { get; }
+	public ScopedFileSystem ReadFileSystem { get; }
+	public ScopedFileSystem WriteFileSystem { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public CodexConfiguration Configuration { get; }
 	public IFileInfo ConfigurationPath { get; }
@@ -34,8 +35,8 @@ public class CodexContext
 		CodexConfiguration configuration,
 		IFileInfo configurationPath,
 		IDiagnosticsCollector collector,
-		IFileSystem readFileSystem,
-		IFileSystem writeFileSystem,
+		ScopedFileSystem readFileSystem,
+		ScopedFileSystem writeFileSystem,
 		string? checkoutDirectory,
 		string? outputDirectory)
 	{
@@ -45,10 +46,12 @@ public class CodexContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var defaultCheckoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "clone");
-		CheckoutDirectory = ReadFileSystem.DirectoryInfo.New(checkoutDirectory ?? defaultCheckoutDirectory);
+		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
+		CheckoutDirectory = checkoutDirectory is null
+			? FileSystemFactory.AppData.DirectoryInfo.New(defaultCheckoutDirectory)
+			: ReadFileSystem.DirectoryInfo.New(checkoutDirectory);
 
-		var defaultOutputDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
-		OutputDirectory = ReadFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);
+		var defaultOutputDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
+		OutputDirectory = WriteFileSystem.DirectoryInfo.New(outputDirectory ?? defaultOutputDirectory);
 	}
 }

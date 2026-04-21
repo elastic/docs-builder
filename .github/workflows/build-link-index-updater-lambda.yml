@@ -33,7 +33,7 @@ jobs:
           stat "${BINARY_PATH}"
       - name: Archive artifact
         id: upload-artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: link-index-updater-lambda-binary
           retention-days: 1

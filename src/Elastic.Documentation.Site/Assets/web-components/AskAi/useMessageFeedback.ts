@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import { logWarn } from '../../telemetry/logging'
 import { traceSpan } from '../../telemetry/tracing'
 import {
@@ -32,13 +33,16 @@ const submitFeedbackToApi = async (
         span.setAttribute('ask_ai.message.id', payload.messageId)
         span.setAttribute('ask_ai.feedback.reaction', payload.reaction)
 
-        const response = await fetch('/docs/_api/v1/ask-ai/message-feedback', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        })
+        const response = await fetch(
+            `${config.apiBasePath}/v1/ask-ai/message-feedback`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            }
+        )
 
         if (!response.ok) {
             logWarn('Failed to submit feedback', {

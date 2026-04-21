@@ -32,6 +32,13 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		_ = sb.AppendLine(InvariantCulture, $"== {context.Title}");
 		_ = sb.AppendLine();
 
+		// Add description if present
+		if (!string.IsNullOrEmpty(context.BundleDescription))
+		{
+			_ = sb.AppendLine(context.BundleDescription);
+			_ = sb.AppendLine();
+		}
+
 		// Group entries by type
 		var entriesByType = context.EntriesByType;
 		var security = entriesByType.GetValueOrDefault(Security, []);
@@ -131,7 +138,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		}
 
 		// Write the asciidoc file
-		var asciidocPath = fileSystem.Path.Combine(context.OutputDir, $"{context.TitleSlug}.asciidoc");
+		var asciidocPath = fileSystem.Path.Join(context.OutputDir, $"{context.TitleSlug}.asciidoc");
 		var asciidocDir = fileSystem.Path.GetDirectoryName(asciidocPath);
 		if (!string.IsNullOrWhiteSpace(asciidocDir) && !fileSystem.Directory.Exists(asciidocDir))
 			_ = fileSystem.Directory.CreateDirectory(asciidocDir);

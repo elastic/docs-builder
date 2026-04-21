@@ -41,7 +41,7 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
       ]
     },
     "solutions/observability/apps/apm-server-binary.md": {
-      "anchors": [ "apm-deb" ]
+      "anchors": [ "apm-deb", "elasticsearch-requestHeadersWhitelist" ]
     },
     "testing/redirects/first-page.md": {
       "anchors": [ "current-anchor", "another-anchor" ]
@@ -88,6 +88,9 @@ type TestCrossLinkResolver (config: ConfigurationFile) =
 
         member this.TryResolve(errorEmitter, crossLinkUri, [<Out>]resolvedUri : byref<Uri|null>) =
             CrossLinkResolver.TryResolve(errorEmitter, crossLinks, uriResolver, crossLinkUri, &resolvedUri)
+
+        member this.IsDeclaredCrossLinkScheme(scheme) =
+            declared.Contains(scheme)
 
 
 

@@ -24,8 +24,8 @@ The directive supports the following options:
 |--------|-------------|---------|
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
-| `:config: path` | Path to changelog.yml configuration | auto-discover |
-| `:product: id` | Product ID for product-specific publish rules | auto from docset |
+| `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
+| `:config: path` | Path to `changelog.yml` configuration (reserved for future use) | auto-discover |
 
 ### Example with options
 
@@ -33,7 +33,7 @@ The directive supports the following options:
 :::{changelog} /path/to/bundles
 :type: all
 :subsections:
-:product: kibana
+:link-visibility: keep-links
 :::
 ```
 
@@ -101,9 +101,24 @@ To show all entries on a single page (previous default behavior):
 :::
 ```
 
+#### `:link-visibility:`
+
+Controls how pull request and issue links are shown when the directive applies source-repo-based privacy.
+Bundles whose repo is listed as private in `assembler.yml` hide links by default.
+
+| Value | Behavior |
+|-------|----------|
+| `auto` | Hide all PR and issue links for bundles from private repos; show links for public repos. |
+| `keep-links` | Show PR and issue links even when the bundle source repo is private (does not undo bundle-time private-target sanitization)). |
+| `hide-links` | Hide all PR and issue links for this directive block. Refer to [Hiding links](#hide-links). |
+
+This aligns with the `changelog render` command's link visibility controls.
+
 #### `:subsections:`
 
-When enabled, entries are grouped by their area/component within each section. By default, entries are listed without area grouping (matching CLI behavior).
+When enabled, entries are grouped by "area" within each section.
+By default, entries are listed without area grouping.
+If a changelog has multiple area values, only the first one is used.
 
 #### `:config:`
 
@@ -111,249 +126,30 @@ Explicit path to a `changelog.yml` configuration file. If not specified, the dir
 1. `changelog.yml` in the docset root
 2. `docs/changelog.yml` relative to docset root
 
-The configuration can include publish rules to filter entries by type or area.
+Reserved for future configuration use. The directive does not currently load or apply configuration from this file.
 
-#### `:product:`
+## Filtering entries with bundle rules
 
-Product ID for loading product-specific publish rules from `changelog.yml`. The directive resolves the product ID in this order:
+You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
 
-1. **Explicit `:product:` option** - if specified, uses that product ID
-2. **Docset's single product** - if the docset has exactly one product configured in `docset.yml`, uses that product ID automatically
-3. **Global fallback** - uses the global `rules.publish` configuration
+The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/changelog/bundle.md#changelog-bundle-rules) for full syntax.
 
-This automatic fallback means most single-product docsets don't need to specify `:product:` explicitly - the directive will automatically use the docset's product for publish rule lookup.
+`rules.bundle` supports product, type, and area filtering, and per-product overrides.
+For full syntax, refer to the [rules for filtered bundles](/cli/changelog/bundle.md#changelog-bundle-rules).
 
-**Example docset with single product:**
-
-```yaml
-# docset.yml
-products:
-  - id: kibana
-toc:
-  - file: release-notes.md
-```
-
-```yaml
-# changelog.yml
-rules:
-  publish:
-    products:
-      kibana:
-        exclude_types:
-          - docs
-        exclude_areas:
-          - "Elastic Observability solution"
-          - "Elastic Security solution"
-```
-
-With this configuration, the directive will automatically use the `kibana` product rules:
-
-```markdown
-:::{changelog}
-:::
-```
-
-**Explicit override:**
-
-You can override the automatic product detection by specifying `:product:` explicitly:
-
-```markdown
-:::{changelog}
-:product: elasticsearch
-:::
-```
-
-This is useful when:
-- The docset has multiple products and you want a specific one
-- You want to use a different product's rules than the docset default
-
-The product ID matching is case-insensitive.
-
-## Filtering entries with publish rules
-
-You can filter changelog entries from the rendered output using the `rules.publish` configuration in your `changelog.yml` file. This is useful for hiding entries that shouldn't appear in public documentation, such as internal changes or documentation-only updates.
-
-Each field supports **exclude** (block if matches) or **include** (block if doesn't match) semantics. You cannot mix both for the same field (for example, you cannot specify both `exclude_types` and `include_types`).
-
-For areas, you can control the matching mode with `match_areas`:
-- `any` (default): block if ANY entry area matches the list
-- `all`: block only if ALL entry areas match the list
-
-The `match_areas` setting inherits from the global `rules.match` if not specified. Product-level `match_areas` inherits from the parent `publish.match_areas`:
-
-```
-rules.match → publish.match_areas → publish.products.{id}.match_areas
-```
-
-### Configuration syntax
-
-Create a `changelog.yml` file in your docset root (or `docs/changelog.yml`):
-
-```yaml
-rules:
-  # Global publish rules (applies to all products)
-  publish:
-    # match_areas: any
-    exclude_types:
-      - docs           # Hide documentation entries
-      - regression     # Hide regression entries
-    exclude_areas:
-      - Internal       # Hide entries with "Internal" area
-      - Experimental   # Hide entries with "Experimental" area
-
-    # Product-specific rules (override global rules)
-    products:
-      kibana:
-        exclude_types:
-          - docs
-        exclude_areas:
-          - "Elastic Observability solution"
-          - "Elastic Security solution"
-      cloud-serverless:
-        exclude_types:
-          - docs
-        exclude_areas:
-          - "Snapshot and restore"
-```
-
-Product-specific rules are applied automatically when your docset has a single product configured. For docsets with multiple products or to override the automatic detection, specify the `:product:` option:
-
-```markdown
-:::{changelog}
-:product: kibana
-:::
-```
-
-### Filtering by type
-
-The `exclude_types` or `include_types` list filters entries based on their changelog entry type. Matching is **case-insensitive**.
-
-| Type | Description |
-|------|-------------|
-| `feature` | New features |
-| `enhancement` | Improvements to existing features |
-| `security` | Security advisories and fixes |
-| `bug-fix` | Bug fixes |
-| `breaking-change` | Breaking changes |
-| `deprecation` | Deprecated functionality |
-| `known-issue` | Known issues |
-| `docs` | Documentation changes |
-| `regression` | Regressions |
-| `other` | Other changes |
-
-Example - hide documentation and regression entries:
-
-```yaml
-rules:
-  publish:
-    exclude_types:
-      - docs
-      - regression
-```
-
-Example - only show feature and bug-fix entries:
-
-```yaml
-rules:
-  publish:
-    include_types:
-      - feature
-      - bug-fix
-```
-
-### Filtering by area
-
-The `exclude_areas` or `include_areas` list filters entries based on their area/component tags. By default (`match_areas: any`), an entry is blocked if **any** of its areas match. With `match_areas: all`, an entry is blocked only if **all** of its areas match. Matching is **case-insensitive**.
-
-Example - hide internal and experimental entries:
-
-```yaml
-rules:
-  publish:
-    exclude_areas:
-      - Internal
-      - Experimental
-      - Testing
-```
-
-Example - only show entries with specific areas, requiring all areas to match:
-
-```yaml
-rules:
-  publish:
-    match_areas: all
-    include_areas:
-      - "Search"
-      - "Monitoring"
-```
-
-The `match_areas` setting controls how areas are compared. Here is a quick reference:
-
-| Config | Entry areas | match_areas | Result |
-|--------|------------|-------------|--------|
-| `exclude_areas: [Internal]` | `[Search, Internal]` | `any` | **Hidden** ("Internal" matches) |
-| `exclude_areas: [Internal]` | `[Search, Internal]` | `all` | **Shown** (not all areas are in the exclude list) |
-| `include_areas: [Search]` | `[Search, Internal]` | `any` | **Shown** ("Search" matches) |
-| `include_areas: [Search]` | `[Search, Internal]` | `all` | **Hidden** ("Internal" is not in the include list) |
-
-Product-specific rules can override `match_areas`:
-
-```yaml
-rules:
-  match: any
-  publish:
-    # inherits match_areas: any from rules.match
-    exclude_areas:
-      - Internal
-    products:
-      cloud-serverless:
-        match_areas: all
-        include_areas:
-          - "Search"
-          - "Monitoring"
-```
-
-### Combining type and area filters
-
-You can combine both type and area filters. An entry is blocked if it matches **either** a blocked type **or** a blocked area. You can mix exclude and include across fields (for example, `exclude_types` with `include_areas`).
-
-```yaml
-rules:
-  publish:
-    exclude_types:
-      - docs
-      - deprecation
-    exclude_areas:
-      - Internal
-```
-
-This configuration will hide:
-- All entries with type `docs` or `deprecation`
-- All entries with the `Internal` area tag (regardless of type)
-
-### Example: Cloud Serverless configuration
-
-For Cloud Serverless releases where you want to hide certain entry types:
-
-```yaml
-# changelog.yml
-rules:
-  publish:
-    exclude_types:
-      - docs           # Documentation changes handled separately
-      - deprecation    # Deprecations shown on dedicated page
-      - known-issue    # Known issues shown on dedicated page
-```
-
-## Feature hiding from bundles
+## Hiding features
 
 When bundles contain a `hide-features` field, entries with matching `feature-id` values are automatically filtered out from the rendered output. This allows you to hide unreleased or experimental features without modifying the bundle at render time.
 
 ```yaml
-# Example bundle with hide-features
+# Example bundle with description and hide-features
 products:
   - product: elasticsearch
     target: 9.3.0
+description: |
+  This release includes new features and bug fixes.
+  
+  For more information, see the [release notes](https://example.com/docs).
 hide-features:
   - feature:hidden-api
   - feature:experimental
@@ -365,15 +161,22 @@ entries:
 
 When the directive loads multiple bundles, `hide-features` from **all bundles are aggregated** and applied to all entries. This means if bundle A hides `feature:x` and bundle B hides `feature:y`, both features are hidden in the combined output.
 
-To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`. For more details, see [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
+To add `hide-features` to a bundle, use the `--hide-features` option when running `changelog bundle`.
+For more details, go to [Hide features in bundles](../contribute/changelog.md#changelog-bundle-hide-features).
 
-## Private repository link hiding
+## Hiding private links [hide-links]
 
-PR and issue links are automatically hidden (commented out) for bundles from private repositories. This is determined by checking the `assembler.yml` configuration:
+A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
+
+PR and issue links are automatically hidden (commented out) for bundles from private repositories.
+When links are hidden, **all** PR and issue links for an affected entry are hidden together.
+This is determined by checking the `assembler.yml` configuration:
 
 - Repositories marked with `private: true` in `assembler.yml` will have their links hidden
-- For merged bundles (e.g., `elasticsearch+kibana`), links are hidden if ANY component repository is private
+- For merged bundles (for example, `elasticsearch+kibana`), links are hidden if ANY component repository is private
 - In standalone builds without `assembler.yml`, all links are shown by default
+
+Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior.
 
 ## Bundle merging
 
@@ -410,6 +213,8 @@ docs/
 └── release-notes.md          # Page with :::{changelog}
 ```
 
+The `bundle.directory` and `bundle.output_directory` settings in `changelog.yml` apply to the `changelog bundle` and `changelog gh-release` CLI commands. The directive's bundles folder is controlled by its first argument or defaults to `changelog/bundles/` relative to the docset root.
+
 ## Version ordering
 
 Bundles are automatically sorted by **semantic version** (descending - newest first). This means:
@@ -422,10 +227,15 @@ The version is extracted from the first product's `target` field in each bundle 
 
 ## Rendered output
 
-Each bundle renders as a `## {version}` section with subsections beneath:
+Each bundle renders as a `## {version}` section with optional description and subsections beneath:
 
 ```markdown
 ## 0.100.0
+
+This release includes new features and bug fixes.
+
+Download the release binaries: https://github.com/elastic/elasticsearch/releases/tag/v0.100.0
+
 ### Features and enhancements
 ...
 ### Fixes
@@ -435,6 +245,8 @@ Each bundle renders as a `## {version}` section with subsections beneath:
 ### Features and enhancements
 ...
 ```
+
+Bundle descriptions are rendered when present in the bundle YAML file. The description appears immediately after the version heading but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
 ### Section types
 
@@ -458,6 +270,24 @@ Each bundle renders as a `## {version}` section with subsections beneath:
 
 Sections with no entries of that type are omitted from the output.
 
+## Error behavior for missing files [changelog-missing-files]
+
+Bundles created without the `--resolve` option store `file:` references (filenames and checksums) instead of embedding entry content inline.
+When the directive loads such a bundle, it looks up each referenced file to read its content.
+If a referenced file cannot be found on disk, the directive emits an error and the build fails.
+This prevents silent data loss where changelog entries would be quietly omitted from rendered release notes without any indication that something was missing.
+
+To fix this, either:
+
+- Restore the missing changelog files, or
+- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained), or
+- Remove the unresolvable entry from the bundle file.
+
+:::{tip}
+In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
+For more command syntax details, go to [Remove changelog files](../contribute/changelog.md#changelog-remove).
+:::
+
 ## Example
 
 The following renders all changelog bundles from the default `changelog/bundles/` folder:
@@ -480,11 +310,12 @@ The following renders all changelog bundles from the default `changelog/bundles/
 | Generating static markdown files for external use | `changelog render` command |
 | Selective rendering of specific versions | `changelog render` command |
 
-The `{changelog}` directive is ideal for release notes pages that should always show the complete changelog history. For more selective workflows or external publishing, use the [`changelog render`](../cli/release/changelog-render.md) command.
+The `{changelog}` directive is ideal for release notes pages that should always show the complete changelog history. For more selective workflows or external publishing, use the [`changelog render`](/cli/changelog/render.md) command.
 
 ## Related
 
-- [Create and bundle changelogs](../contribute/changelog.md) — Learn how to create changelog entries and bundles
-- [`changelog add`](../cli/release/changelog-add.md) — CLI command to create changelog entries
-- [`changelog bundle`](../cli/release/changelog-bundle.md) — CLI command to bundle changelog entries
-- [`changelog render`](../cli/release/changelog-render.md) — CLI command to render changelogs to markdown files
+- [Create and bundle changelogs](/contribute/changelog.md) — Learn how to create changelog entries and bundles
+- [`changelog add`](/cli/changelog/add.md) — CLI command to create changelog entries
+- [`changelog bundle`](/cli/changelog/bundle.md) — CLI command to bundle changelog entries
+- [`changelog remove`](/cli/changelog/remove.md) — CLI command to remove changelog files
+- [`changelog render`](/cli/changelog/render.md) — CLI command to render changelogs to markdown files

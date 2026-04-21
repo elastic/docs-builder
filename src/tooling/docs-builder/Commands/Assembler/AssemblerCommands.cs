@@ -23,7 +23,8 @@ internal sealed class AssembleCommands(
 	IDiagnosticsCollector collector,
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary> Do a full assembler clone and assembler build in one swoop</summary>
@@ -61,11 +62,12 @@ internal sealed class AssembleCommands(
 			static async (s, collector, state, ctx) => await s.CloneAll(collector, state.strict, state.environment, state.fetchLatest, state.assumeCloned, ctx)
 		);
 
-		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		var fs = new FileSystem();
-		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, showHints, exporters, assumeBuild, fs), strict ?? false,
+		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
+		var readFs = FileSystemFactory.RealRead;
+		var writeFs = FileSystemFactory.RealWrite;
+		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, showHints, exporters, assumeBuild, readFs, writeFs), strict ?? false,
 			static async (s, collector, state, ctx) =>
-				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.fs, ctx)
+				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.readFs, state.writeFs, ctx)
 		);
 		var result = await serviceInvoker.InvokeAsync(ctx);
 
@@ -86,7 +88,8 @@ internal sealed class AssemblerCommands(
 	IDiagnosticsCollector collector,
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
 	/// <summary> Clones all repositories </summary>
@@ -139,11 +142,12 @@ internal sealed class AssemblerCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = new FileSystem();
-		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(service, (strict, environment, assumeBuild, metadataOnly, showHints, exporters, fs), strict ?? false,
+		var readFs = FileSystemFactory.RealRead;
+		var writeFs = FileSystemFactory.RealWrite;
+		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
+		serviceInvoker.AddCommand(service, (strict, environment, assumeBuild, metadataOnly, showHints, exporters, readFs, writeFs), strict ?? false,
 			static async (s, collector, state, ctx) =>
-				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.fs, ctx)
+				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.readFs, state.writeFs, ctx)
 		);
 
 		return await serviceInvoker.InvokeAsync(ctx);

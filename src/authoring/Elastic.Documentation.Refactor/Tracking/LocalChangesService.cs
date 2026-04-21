@@ -9,6 +9,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Refactor.Tracking;
 
@@ -19,7 +20,7 @@ public class LocalChangeTrackingService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<LocalChangeTrackingService>();
 
-	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, FileSystem fs)
+	public Task<bool> ValidateRedirects(IDiagnosticsCollector collector, string? path, ScopedFileSystem fs)
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 
@@ -38,7 +39,7 @@ public class LocalChangeTrackingService(
 			return Task.FromResult(false);
 		}
 
-		var root = Paths.DetermineSourceDirectoryRoot(buildContext.DocumentationSourceDirectory);
+		var root = Paths.FindGitRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
 			collector.EmitError(redirectFile.Source, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");
@@ -65,8 +66,10 @@ public class LocalChangeTrackingService(
 		foreach (var change in deletedAndRenamed)
 		{
 			var lookupPath = change is RenamedGitChange renamed ? renamed.OldFilePath : change.FilePath;
-			var docSetRelativePath = Path.GetRelativePath(buildContext.DocumentationSourceDirectory.FullName, Path.Combine(root.FullName, lookupPath));
-			var rootRelativePath = Path.GetRelativePath(root.FullName, Path.Combine(root.FullName, lookupPath));
+			var docSetRelativePath = Path.GetRelativePath(buildContext.DocumentationSourceDirectory.FullName, Path.Join(root.FullName, lookupPath));
+			var rootRelativePath = Path.GetRelativePath(root.FullName, Path.Join(root.FullName, lookupPath));
+			if (buildContext.Configuration.IsExcluded(docSetRelativePath.OptionalWindowsReplace()))
+				continue;
 			if (redirects.ContainsKey(docSetRelativePath))
 				continue;
 			if (redirects.ContainsKey(rootRelativePath))

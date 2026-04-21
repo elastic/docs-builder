@@ -56,6 +56,7 @@ public class LlmGatewayAskAiGateway(HttpClient httpClient, IGcpIdTokenProvider t
 }
 
 public record LlmGatewayRequest(
+	AgentOptions AgentOptions,
 	UserContext UserContext,
 	PlatformContext PlatformContext,
 	ChatInput[] Input,
@@ -64,11 +65,11 @@ public record LlmGatewayRequest(
 {
 	public static LlmGatewayRequest CreateFromRequest(AskAiRequest request, Guid conversationId) =>
 		new(
+			AgentOptions: new AgentOptions(FirstGenerationTimeout: 60000),
 			UserContext: new UserContext("elastic-docs-v3@invalid"),
 			PlatformContext: new PlatformContext("docs_site", "docs_assistant", []),
 			Input:
 			[
-				// new ChatInput("user", AskAiRequest.SystemPrompt),
 				new ChatInput("user", request.Message)
 			],
 			ThreadId: conversationId.ToString()
@@ -76,6 +77,8 @@ public record LlmGatewayRequest(
 }
 
 public record UserContext(string UserEmail);
+
+public record AgentOptions(int FirstGenerationTimeout);
 
 public record PlatformContext(
 	string Origin,

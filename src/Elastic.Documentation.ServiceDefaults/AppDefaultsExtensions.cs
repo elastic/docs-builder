@@ -45,6 +45,9 @@ public static class AppDefaultsExtensions
 		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, noConsole: globalArgs.IsMcp);
 		_ = services.AddSingleton(globalArgs);
 
+		var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
+		_ = services.AddSingleton(endpoints);
+
 		return builder.AddServiceDefaults();
 	}
 

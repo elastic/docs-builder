@@ -16,8 +16,8 @@ public class HighlightsAsciidocRenderer(StringBuilder sb) : AsciidocRendererBase
 	public override void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
-			? entries.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+			? entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
+			: entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 
 		foreach (var areaGroup in groupedByArea)
 		{

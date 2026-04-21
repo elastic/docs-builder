@@ -38,6 +38,7 @@ public static class OpenTelemetryExtensions
 			.AddSource(TelemetryConstants.OtlpProxySourceName)
 			.AddSource(TelemetryConstants.CacheSourceName)
 			.AddSource(TelemetryConstants.AskAiFeedbackSourceName)
+			.AddSource(TelemetryConstants.McpToolSourceName)
 			.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
 			{
 				// Don't trace root API endpoint (health check)

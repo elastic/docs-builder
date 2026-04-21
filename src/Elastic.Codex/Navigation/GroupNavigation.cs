@@ -96,7 +96,14 @@ public class GroupNavigation : IRootNavigationItem<IDocumentationFile, INavigati
 /// <summary>
 /// Virtual index page for a group landing.
 /// </summary>
-public record GroupIndexPage(string NavigationTitle) : IDocumentationFile;
+public record GroupIndexPage(string NavigationTitle) : IDocumentationFile
+{
+	/// <inheritdoc />
+	public string Title => NavigationTitle;
+
+	/// <inheritdoc />
+	public string? Description => null;
+}
 
 /// <summary>
 /// Leaf navigation item for a group's index (landing) page.
@@ -133,7 +140,14 @@ public class GroupIndexLeaf(
 /// <summary>
 /// Model for a codex nav link to a group landing page.
 /// </summary>
-public record GroupLinkPage(string NavigationTitle, string Url) : IDocumentationFile;
+public record GroupLinkPage(string NavigationTitle, string Url) : IDocumentationFile
+{
+	/// <inheritdoc />
+	public string Title => NavigationTitle;
+
+	/// <inheritdoc />
+	public string? Description => null;
+}
 
 /// <summary>
 /// Leaf in the codex nav that links to a group landing page (/g/slug).

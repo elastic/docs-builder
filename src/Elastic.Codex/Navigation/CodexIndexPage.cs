@@ -9,7 +9,14 @@ namespace Elastic.Codex.Navigation;
 /// <summary>
 /// Represents the codex's index page that shows all documentation sets.
 /// </summary>
-public record CodexIndexPage(string NavigationTitle) : IDocumentationFile;
+public record CodexIndexPage(string NavigationTitle) : IDocumentationFile
+{
+	/// <inheritdoc />
+	public string Title => NavigationTitle;
+
+	/// <inheritdoc />
+	public string? Description => null;
+}
 
 /// <summary>
 /// Contains information about a documentation set for display on the codex index page.

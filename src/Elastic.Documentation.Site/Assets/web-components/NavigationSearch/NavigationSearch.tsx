@@ -146,6 +146,7 @@ export const NavigationSearch = ({
             isOpen={hasContent}
             closePopover={() => setIsPopoverOpen(false)}
             ownFocus={false}
+            anchorPosition="downLeft"
             disableFocusTrap={true}
             panelMinWidth={isMobile ? undefined : 640}
             panelPaddingSize="none"

@@ -5,9 +5,9 @@
 using System.IO.Pipelines;
 using System.Text;
 using System.Text.Json;
+using AwesomeAssertions;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Adapters.AskAi;
@@ -83,7 +83,7 @@ public class AgentBuilderStreamTransformerTests
 		// Assert
 		// Note: Due to async streaming, the final event might not be written before the input stream closes
 		// In production, real SSE streams stay open, so this isn't an issue
-		events.Should().HaveCountGreaterOrEqualTo(7);
+		events.Should().HaveCountGreaterThanOrEqualTo(7);
 
 		// Verify we got the key events (ConversationStart comes from stream for Agent Builder)
 		events.Should().ContainSingle(e => e is AskAiEvent.ConversationStart);
@@ -103,7 +103,7 @@ public class AgentBuilderStreamTransformerTests
 		// Tool call should be SearchToolCall type with extracted query
 		var searchToolCall = events.OfType<AskAiEvent.SearchToolCall>().FirstOrDefault();
 		searchToolCall.Should().NotBeNull();
-		searchToolCall!.ToolCallId.Should().Be("tooluse_abc123");
+		searchToolCall.ToolCallId.Should().Be("tooluse_abc123");
 		searchToolCall.SearchQuery.Should().Be("semantic search");
 
 		var toolResult = events.OfType<AskAiEvent.ToolResult>().First();
@@ -143,7 +143,7 @@ public class AgentBuilderStreamTransformerTests
 		var events = await StreamTransformerTestHelpers.ParseAskAiEventsAsync(outputStream);
 
 		// Assert - Should have at least 1 event (round_complete might not be written in time)
-		events.Should().HaveCountGreaterOrEqualTo(1);
+		events.Should().HaveCountGreaterThanOrEqualTo(1);
 		events[0].Should().BeOfType<AskAiEvent.MessageChunk>();
 	}
 
@@ -169,7 +169,7 @@ public class AgentBuilderStreamTransformerTests
 		// Assert - This test has malformed SSE data (missing proper blank line terminator)
 		// In a real scenario with proper SSE formatting, this would work
 		// For now, skip this test or mark as known limitation
-		events.Should().HaveCountGreaterOrEqualTo(0);
+		events.Should().HaveCountGreaterThanOrEqualTo(0);
 	}
 
 }
@@ -403,7 +403,7 @@ public class StreamTransformerCommonBehaviorTests
 		conversationStart.Should().NotBeNull(
 			$"{transformerName} should emit ConversationStart event");
 
-		conversationStart!.Timestamp.Should().BeGreaterThan(0,
+		conversationStart.Timestamp.Should().BeGreaterThan(0,
 			$"{transformerName} ConversationStart should have a valid timestamp");
 	}
 
@@ -434,7 +434,7 @@ public class StreamTransformerCommonBehaviorTests
 		conversationStart.Should().NotBeNull(
 			$"{transformerName} should emit ConversationStart event");
 
-		conversationStart!.Id.Should().NotBeNullOrEmpty(
+		conversationStart.Id.Should().NotBeNullOrEmpty(
 			$"{transformerName} ConversationStart should have a non-empty event ID");
 	}
 

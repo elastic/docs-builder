@@ -2,6 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.Include;
@@ -56,20 +59,38 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (includePath.StartsWith('/'))
 			includeFrom = Build.DocumentationSourceDirectory.FullName;
 
-		IncludePath = Path.Combine(includeFrom, includePath.TrimStart('/'));
+		var trimmedPath = includePath.TrimStart('/');
+		if (Path.IsPathRooted(trimmedPath))
+		{
+			this.EmitError("Include path must not be an absolute path.");
+			return;
+		}
+
+		IncludePath = Path.GetFullPath(Path.Join(includeFrom, trimmedPath));
 		IncludePathRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, IncludePath);
+
+		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
+		if (!file.IsSubPathOf(Build.DocumentationSourceDirectory))
+		{
+			this.EmitError("Include path must resolve within the documentation source directory.");
+			Found = false;
+			return;
+		}
+
+		if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
+		{
+			this.EmitError(accessError);
+			Found = false;
+			return;
+		}
 
 		if (Build.ReadFileSystem.File.Exists(IncludePath))
 			Found = true;
 		else
 			this.EmitError($"`{IncludePath}` does not exist.");
 
-		// literal includes may point to locations other than `_snippets` since they do not
-		// participate in emitting links
 		if (Literal)
 			return;
-
-		var file = Build.ReadFileSystem.FileInfo.New(IncludePath);
 
 		if (file.Directory != null && file.Directory.FullName.IndexOf("_snippets", StringComparison.Ordinal) < 0)
 		{
@@ -83,5 +104,4 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 			Found = false;
 		}
 	}
-
 }

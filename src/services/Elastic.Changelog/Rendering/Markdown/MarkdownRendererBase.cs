@@ -2,18 +2,20 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
 /// <summary>
 /// Abstract base class for changelog markdown renderers
 /// </summary>
-public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogMarkdownRenderer
+public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChangelogMarkdownRenderer
 {
-	protected IFileSystem FileSystem { get; } = fileSystem;
+	protected ScopedFileSystem FileSystem { get; } = fileSystem;
 
 	/// <inheritdoc />
 	public abstract string OutputFileName { get; }
@@ -26,7 +28,7 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 	/// </summary>
 	protected async Task WriteOutputFileAsync(string outputDir, string titleSlug, string content, Cancel ctx)
 	{
-		var outputPath = FileSystem.Path.Combine(outputDir, titleSlug, OutputFileName);
+		var outputPath = FileSystem.Path.Join(outputDir, titleSlug, OutputFileName);
 		var outputDirectory = FileSystem.Path.GetDirectoryName(outputPath);
 		if (!string.IsNullOrWhiteSpace(outputDirectory) && !FileSystem.Directory.Exists(outputDirectory))
 			_ = FileSystem.Directory.CreateDirectory(outputDirectory);
@@ -35,53 +37,56 @@ public abstract class MarkdownRendererBase(IFileSystem fileSystem) : IChangelogM
 	}
 
 	/// <summary>
-	/// Gets the entry context (bundleProducts, repo, hideLinks) for a specific entry
-	/// </summary>
-	protected static (HashSet<string> bundleProductIds, string entryRepo, bool hideLinks) GetEntryContext(
-		ChangelogEntry entry,
-		ChangelogRenderContext context)
-	{
-		var bundleProductIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
-		return (bundleProductIds, entryRepo, hideLinks);
-	}
-
-	/// <summary>
 	/// Renders PR and issue links for dropdown entries
 	/// </summary>
-	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, bool entryHideLinks)
+	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, string entryOwner, bool entryHideLinks)
 	{
-		var hasPr = !string.IsNullOrWhiteSpace(entry.Pr);
-		var hasIssues = entry.Issues is { Count: > 0 };
-		if (!hasPr && !hasIssues)
+		var prParts = new List<string>();
+		foreach (var pr in entry.Prs ?? [])
+		{
+			var s = ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner);
+			if (!string.IsNullOrEmpty(s))
+				prParts.Add(s);
+		}
+
+		var issueParts = new List<string>();
+		foreach (var issue in entry.Issues ?? [])
+		{
+			var s = ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner);
+			if (!string.IsNullOrEmpty(s))
+				issueParts.Add(s);
+		}
+
+		if (prParts.Count == 0 && issueParts.Count == 0)
 			return;
 
 		if (entryHideLinks)
 		{
-			// When hiding private links, put them on separate lines as comments
-			if (hasPr)
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(entry.Pr!, entryRepo, entryHideLinks));
-			if (hasIssues)
-			{
-				foreach (var issue in entry.Issues!)
-					_ = sb.AppendLine(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
-			}
+			foreach (var s in prParts)
+				_ = sb.AppendLine(s);
+			foreach (var s in issueParts)
+				_ = sb.AppendLine(s);
 
 			_ = sb.AppendLine("For more information, check the pull request or issue above.");
 		}
 		else
 		{
 			_ = sb.Append("For more information, check ");
-			if (hasPr)
-				_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr!, entryRepo, entryHideLinks));
-			if (hasIssues)
+			var first = true;
+			foreach (var s in prParts)
 			{
-				foreach (var issue in entry.Issues!)
-				{
+				if (!first)
 					_ = sb.Append(' ');
-					_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
-				}
+				_ = sb.Append(s);
+				first = false;
+			}
+
+			foreach (var s in issueParts)
+			{
+				if (!first)
+					_ = sb.Append(' ');
+				_ = sb.Append(s);
+				first = false;
 			}
 
 			_ = sb.AppendLine(".");

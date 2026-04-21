@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation.Assembler.Indexing;
@@ -17,8 +18,9 @@ public class AssemblerIndexService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration assemblyConfiguration,
 	IConfigurationContext configurationContext,
-	ICoreService githubActionsService
-) : AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService)
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
+) : AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables)
 {
 	private readonly IConfigurationContext _configurationContext = configurationContext;
 
@@ -32,13 +34,11 @@ public class AssemblerIndexService(
 	/// <param name="apiKey">Elasticsearch API key, alternatively set env DOCUMENTATION_ELASTIC_APIKEY</param>
 	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
 	/// <param name="password">Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD</param>
-	/// <param name="noSemantic">Index without semantic fields</param>
-	/// <param name="enableAiEnrichment">Enable AI enrichment of documents using LLM-generated metadata</param>
+	/// <param name="noAiEnrichment">Disable AI enrichment of documents using LLM-generated metadata (enabled by default)</param>
 	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
 	/// <param name="noEis">Do not use the Elastic Inference Service, bootstrap inference endpoint</param>
 	/// <param name="bootstrapTimeout">Timeout in minutes for the inference endpoint creation. Defaults: 4</param>
-	/// <param name="indexNamePrefix">The prefix for the computed index/alias names. Defaults: semantic-docs</param>
 	/// <param name="forceReindex">Force reindex strategy to semantic index</param>
 	/// <param name="bufferSize">The number of documents to send to ES as part of the bulk. Defaults: 100</param>
 	/// <param name="maxRetries">The number of times failed bulk items should be retried. Defaults: 3</param>
@@ -53,21 +53,20 @@ public class AssemblerIndexService(
 	/// <param name="ctx"></param>
 	/// <returns></returns>
 	public async Task<bool> Index(IDiagnosticsCollector collector,
-		FileSystem fileSystem,
+		ScopedFileSystem readFs,
+		ScopedFileSystem writeFs,
 		string? endpoint = null,
 		string? environment = null,
 		string? apiKey = null,
 		string? username = null,
 		string? password = null,
 		// inference options
-		bool? noSemantic = null,
-		bool? enableAiEnrichment = null,
+		bool? noAiEnrichment = null,
 		int? searchNumThreads = null,
 		int? indexNumThreads = null,
 		bool? noEis = null,
 		int? bootstrapTimeout = null,
 		// index options
-		string? indexNamePrefix = null,
 		bool? forceReindex = null,
 		// channel buffer options
 		int? bufferSize = null,
@@ -91,13 +90,11 @@ public class AssemblerIndexService(
 			ApiKey = apiKey,
 			Username = username,
 			Password = password,
-			NoSemantic = noSemantic,
-			EnableAiEnrichment = enableAiEnrichment,
+			NoAiEnrichment = noAiEnrichment,
 			SearchNumThreads = searchNumThreads,
 			IndexNumThreads = indexNumThreads,
 			NoEis = noEis,
 			BootstrapTimeout = bootstrapTimeout,
-			IndexNamePrefix = indexNamePrefix,
 			ForceReindex = forceReindex,
 			BufferSize = bufferSize,
 			MaxRetries = maxRetries,
@@ -110,10 +107,10 @@ public class AssemblerIndexService(
 			CertificatePath = certificatePath,
 			CertificateNotRoot = certificateNotRoot
 		};
-		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, options, collector, fileSystem, ctx);
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, options, collector, readFs, ctx);
 
 		var exporters = new HashSet<Exporter> { Elasticsearch };
 
-		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, assumeBuild: false, fileSystem, ctx);
+		return await BuildAll(collector, strict: false, environment, metadataOnly: true, showHints: false, exporters, assumeBuild: false, readFs, writeFs, ctx);
 	}
 }

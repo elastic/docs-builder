@@ -14,6 +14,10 @@ public sealed record BundleDto
 {
 	public List<BundledProductDto>? Products { get; set; }
 	/// <summary>
+	/// Optional introductory description text for this bundle.
+	/// </summary>
+	public string? Description { get; set; }
+	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>
@@ -35,6 +39,11 @@ public sealed record BundledProductDto
 	/// If not specified, falls back to Product ID.
 	/// </summary>
 	public string? Repo { get; set; }
+	/// <summary>
+	/// GitHub owner (organization or user) for generating PR/issue links.
+	/// If not specified, defaults to "elastic".
+	/// </summary>
+	public string? Owner { get; set; }
 }
 
 /// <summary>
@@ -55,6 +64,7 @@ public sealed record BundledEntryDto
 	public string? Subtype { get; set; }
 	public List<string>? Areas { get; set; }
 	public string? Pr { get; set; }
+	public List<string>? Prs { get; set; }
 	public List<string>? Issues { get; set; }
 }
 

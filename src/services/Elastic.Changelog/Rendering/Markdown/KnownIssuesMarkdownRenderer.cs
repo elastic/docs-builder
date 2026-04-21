@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ChangelogEntryType;
 
@@ -13,7 +14,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the known-issues.md changelog file
 /// </summary>
-public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class KnownIssuesMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "known-issues.md";
@@ -33,8 +34,8 @@ public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRende
 		if (knownIssues.Count > 0)
 		{
 			var groupedByArea = context.Subsections
-				? knownIssues.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()
-				: knownIssues.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+				? knownIssues.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
+				: knownIssues.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 			foreach (var areaGroup in groupedByArea)
 			{
 				// Check if all entries in this area group are hidden
@@ -54,8 +55,7 @@ public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRende
 
 				foreach (var entry in areaGroup)
 				{
-					var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-					var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+					var (entryRepo, entryOwner, entryHideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 
 					_ = sb.AppendLine();
 					if (shouldHide)
@@ -63,7 +63,7 @@ public class KnownIssuesMarkdownRenderer(IFileSystem fileSystem) : MarkdownRende
 					_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
 					_ = sb.AppendLine(entry.Description ?? "% Describe the known issue");
 					_ = sb.AppendLine();
-					RenderPrIssueLinks(sb, entry, entryRepo, entryHideLinks);
+					RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
 
 					_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
 						? "**Impact**<br>" + entry.Impact

@@ -17,11 +17,17 @@ public record ChangelogRenderContext
 	public required string Title { get; init; }
 	public required string TitleSlug { get; init; }
 	public required string Repo { get; init; }
+	public required string Owner { get; init; }
 	public required IReadOnlyDictionary<ChangelogEntryType, IReadOnlyCollection<ChangelogEntry>> EntriesByType { get; init; }
 	public required bool Subsections { get; init; }
 	public required HashSet<string> FeatureIdsToHide { get; init; }
 	public required Dictionary<ChangelogEntry, HashSet<string>> EntryToBundleProducts { get; init; }
 	public required Dictionary<ChangelogEntry, string> EntryToRepo { get; init; }
+	public required Dictionary<ChangelogEntry, string> EntryToOwner { get; init; }
 	public required Dictionary<ChangelogEntry, bool> EntryToHideLinks { get; init; }
 	public ChangelogConfiguration? Configuration { get; init; }
+	/// <summary>
+	/// Optional bundle-level introductory description. Only set when there's a single bundle with a description (MVP approach).
+	/// </summary>
+	public string? BundleDescription { get; init; }
 }

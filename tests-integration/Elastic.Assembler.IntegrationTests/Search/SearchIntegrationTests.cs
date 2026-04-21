@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net.Http.Json;
+using AwesomeAssertions;
 using Elastic.Documentation.Api.Core.Search;
-using FluentAssertions;
 
 namespace Elastic.Assembler.IntegrationTests.Search;
 
@@ -91,7 +91,7 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 		const string query = "elasticsearch";
 
 		// Act - Get first page
-		var page1Response = await searchFixture.HttpClient!.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1", TestContext.Current.CancellationToken);
+		var page1Response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1", TestContext.Current.CancellationToken);
 		page1Response.EnsureSuccessStatusCode();
 		var page1Data = await page1Response.Content.ReadFromJsonAsync<NavigationSearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
 

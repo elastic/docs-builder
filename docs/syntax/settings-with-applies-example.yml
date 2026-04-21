@@ -1,0 +1,97 @@
+product: "{{product.kibana}}"
+collection: Example settings collection
+id: example-settings
+page_description: |
+  This page demonstrates schema-compliant settings output, including applies_to badges,
+  nested settings, metadata lines, options, admonitions, and examples.
+
+groups:
+  - group: General settings
+    id: general-settings
+    description: |
+      These settings show top-level schema fields, metadata, and applies_to usage.
+    example: |
+      ```yaml
+      xpack.example.enabled: true
+      xpack.example.mode: strict
+      ```
+    settings:
+      - setting: xpack.example.enabled
+        id: xpack-example-enabled
+        description: |
+          Enables the example feature.
+        datatype: bool
+        default: "true"
+        applies_to:
+          stack: ga 9.2
+          ech: ga
+        options:
+          - option: "true"
+            description: Turns the feature on.
+          - option: "false"
+            description: Turns the feature off.
+        note: Disable this only for troubleshooting.
+        tip: Keep this enabled in production.
+
+      - setting: xpack.example.mode
+        id: xpack-example-mode
+        description: |
+          Controls runtime mode.
+        datatype: enum
+        default: strict
+        applies_to:
+          stack: ga 9.2
+        options:
+          - option: strict
+            description: Full validation.
+          - option: lenient
+            description: Reduced validation.
+        warning: Lenient mode may hide configuration mistakes.
+        important: Strict mode is recommended for production.
+        deprecation_details: The `lenient` option will be deprecated in a future release.
+        example: |
+          ```yaml
+          xpack.example.mode: strict
+          ```
+
+  - group: Advanced settings
+    id: advanced-settings
+    description: |
+      These settings demonstrate nested entries and applies_to inheritance.
+    settings:
+      - setting: xpack.example.hosts
+        id: xpack-example-hosts
+        description: |
+          List of custom host settings.
+        datatype: object
+        default: "[]"
+        applies_to:
+          stack: ga 9.2
+          self: ga
+        settings:
+          - setting: "[n].url"
+            id: xpack-example-hosts-url
+            description: |
+              Child setting inherits applies_to from the parent.
+            datatype: string
+            default: ""
+          - setting: "[n].mode"
+            id: xpack-example-hosts-mode
+            description: |
+              Child setting overrides applies_to.
+            datatype: enum
+            default: strict
+            tip: Keep all host modes aligned to simplify troubleshooting and reduce drift.
+            options:
+              - option: strict
+                description: Requires strict checks.
+              - option: lenient
+                description: Allows lenient checks.
+            applies_to:
+              stack: preview 9.3
+            example: |
+              ```yaml
+              xpack.example.hosts:
+                - url: https://example.org
+                  mode: strict
+              ```

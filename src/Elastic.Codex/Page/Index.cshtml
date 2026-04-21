@@ -84,8 +84,11 @@
 	{
 		if (name == GlobalSections.Head)
 		{
-			<meta class="elastic" name="product_version" content="@(new HtmlString(Model.CurrentVersion))"/>
-			<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
+			@if (Model.CurrentVersion is not null)
+			{
+				<meta class="elastic" name="product_version" content="@(new HtmlString(Model.CurrentVersion))"/>
+				<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
+			}
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
 			<script type="application/ld+json">
 	    	@(new HtmlString(Model.StructuredBreadcrumbsJson))

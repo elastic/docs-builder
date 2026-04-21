@@ -14,6 +14,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 public record ChangelogEntryDto
 {
 	public string? Pr { get; set; }
+	public List<string>? Prs { get; set; }
 	public List<string>? Issues { get; set; }
 	public string? Type { get; set; }
 	public string? Subtype { get; set; }

@@ -4,9 +4,9 @@
 
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 

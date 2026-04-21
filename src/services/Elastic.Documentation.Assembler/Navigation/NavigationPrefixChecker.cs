@@ -74,7 +74,7 @@ public class NavigationPrefixChecker
 		_logger.LogInformation("Checking '{Repository}' with local '{LocalLinksJson}'", repository, localLinksJson);
 
 		if (!Path.IsPathRooted(localLinksJson))
-			localLinksJson = Path.Combine(Paths.WorkingDirectoryRoot.FullName, localLinksJson);
+			localLinksJson = Path.Join(Paths.WorkingDirectoryRoot.FullName, localLinksJson);
 
 		if (!File.Exists(localLinksJson))
 		{

@@ -29,6 +29,7 @@ public sealed class ReloadGeneratorService(
 ) : IHostedService, IDisposable
 {
 	private FileSystemWatcher? _watcher;
+	private CancellationTokenSource? _serviceCts;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
 	private InMemoryBuildState InMemoryBuildState { get; } = inMemoryBuildState;
 	private ILogger Logger { get; } = logger;
@@ -38,6 +39,8 @@ public sealed class ReloadGeneratorService(
 
 	public async Task StartAsync(Cancel cancellationToken)
 	{
+		_serviceCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
 		// Run live reload and in-memory validation build in parallel
 		var sourcePath = ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
 		await Task.WhenAll(
@@ -73,12 +76,16 @@ public sealed class ReloadGeneratorService(
 #endif
 		watcher.Filters.Add("*.md");
 		watcher.Filters.Add("docset.yml");
+		watcher.Filters.Add("_docset.yml");
+		watcher.Filters.Add("toc.yml");
 		watcher.IncludeSubdirectories = true;
 		watcher.EnableRaisingEvents = true;
 		_watcher = watcher;
 	}
 
-	private void Reload() =>
+	private void Reload(bool reloadConfiguration = false)
+	{
+		var token = _serviceCts?.Token ?? Cancel.None;
 		_ = _debouncer.ExecuteAsync(async ctx =>
 		{
 			var sourcePath = ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
@@ -87,18 +94,24 @@ public sealed class ReloadGeneratorService(
 			var validationTask = InMemoryBuildState.StartBuildAsync(sourcePath, ctx);
 
 			// Wait for live reload to complete, then refresh the browser immediately
-			await ReloadableGenerator.ReloadAsync(ctx);
+			await ReloadableGenerator.ReloadAsync(ctx, reloadConfiguration);
 			Logger.LogInformation("Reload complete!");
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 
 			// Wait for validation build to complete
 			await validationTask;
-		}, Cancel.None);
+		}, token);
+	}
 
-	public Task StopAsync(Cancel cancellationToken)
+	public async Task StopAsync(Cancel cancellationToken)
 	{
+		if (_serviceCts is not null)
+		{
+			await _serviceCts.CancelAsync();
+			_serviceCts.Dispose();
+			_serviceCts = null;
+		}
 		_watcher?.Dispose();
-		return Task.CompletedTask;
 	}
 
 	// Check if a path should be ignored (output directories, hidden folders, etc.)
@@ -107,6 +120,9 @@ public sealed class ReloadGeneratorService(
 		path.Contains("/_site/") || path.Contains("\\_site\\") ||
 		path.Contains("/node_modules/") || path.Contains("\\node_modules\\") ||
 		path.Contains("/.git/") || path.Contains("\\.git\\");
+
+	private static bool IsConfigFile(string path) =>
+		path.EndsWith("docset.yml") || path.EndsWith("toc.yml");
 
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
@@ -118,15 +134,14 @@ public sealed class ReloadGeneratorService(
 
 		Logger.LogInformation("Changed: {FullPath}", e.FullPath);
 
-		if (e.FullPath.EndsWith("docset.yml"))
-			Reload();
-		if (e.FullPath.EndsWith(".md"))
+		if (IsConfigFile(e.FullPath))
+			Reload(reloadConfiguration: true);
+		else if (e.FullPath.EndsWith(".md"))
 			Reload();
 #if DEBUG
 		if (e.FullPath.EndsWith(".cshtml"))
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 #endif
-
 	}
 
 	private void OnCreated(object sender, FileSystemEventArgs e)
@@ -135,8 +150,8 @@ public sealed class ReloadGeneratorService(
 			return;
 
 		Logger.LogInformation("Created: {FullPath}", e.FullPath);
-		if (e.FullPath.EndsWith(".md"))
-			Reload();
+		if (e.FullPath.EndsWith(".md") || IsConfigFile(e.FullPath))
+			Reload(reloadConfiguration: true);
 	}
 
 	private void OnDeleted(object sender, FileSystemEventArgs e)
@@ -145,8 +160,8 @@ public sealed class ReloadGeneratorService(
 			return;
 
 		Logger.LogInformation("Deleted: {FullPath}", e.FullPath);
-		if (e.FullPath.EndsWith(".md"))
-			Reload();
+		if (e.FullPath.EndsWith(".md") || IsConfigFile(e.FullPath))
+			Reload(reloadConfiguration: true);
 	}
 
 	private void OnRenamed(object sender, RenamedEventArgs e)
@@ -157,8 +172,8 @@ public sealed class ReloadGeneratorService(
 		Logger.LogInformation("Renamed:");
 		Logger.LogInformation("    Old: {OldFullPath}", e.OldFullPath);
 		Logger.LogInformation("    New: {NewFullPath}", e.FullPath);
-		if (e.FullPath.EndsWith(".md"))
-			Reload();
+		if (e.FullPath.EndsWith(".md") || e.OldFullPath.EndsWith(".md") || IsConfigFile(e.FullPath) || IsConfigFile(e.OldFullPath))
+			Reload(reloadConfiguration: true);
 #if DEBUG
 		if (e.FullPath.EndsWith(".cshtml"))
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
@@ -180,6 +195,7 @@ public sealed class ReloadGeneratorService(
 
 	public void Dispose()
 	{
+		_serviceCts?.Dispose();
 		_watcher?.Dispose();
 		_debouncer.Dispose();
 	}

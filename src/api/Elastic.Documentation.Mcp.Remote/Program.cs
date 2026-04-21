@@ -5,12 +5,11 @@
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Mcp;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
-using Elastic.Documentation.Mcp.Remote.Gateways;
-using Elastic.Documentation.Mcp.Remote.Tools;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
@@ -36,15 +35,10 @@ try
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
 
-	_ = builder.Services.AddSearchServices();
+	var env = SystemEnvironmentVariables.Instance;
+	var profile = McpServerProfile.Resolve(env.McpServerProfile);
 
-	_ = builder.Services.AddScoped<IDocumentGateway, DocumentGateway>();
-
-	_ = builder.Services.AddSingleton<ILinkIndexReader>(_ => Aws3LinkIndexReader.CreateAnonymous());
-	_ = builder.Services.AddSingleton<LinksIndexCrossLinkFetcher>();
-	_ = builder.Services.AddSingleton<ILinkUtilService, LinkUtilService>();
-
-	_ = builder.Services.AddSingleton<ContentTypeProvider>();
+	profile.RegisterAllServices(builder.Services);
 
 	// CreateSlimBuilder disables reflection-based JSON serialization.
 	// The MCP SDK's legacy SSE handler uses Results.BadRequest(string) which needs
@@ -58,14 +52,12 @@ try
 	// Cursor bug where it opens the SSE stream without the session header and receives 400.
 	// Stateless mode is appropriate here because all tools are pure request/response (no
 	// server-initiated push) and the server runs behind a load balancer without session affinity.
-	_ = builder.Services
-		.AddMcpServer()
-		.WithHttpTransport(o => o.Stateless = true)
-		.WithTools<SearchTools>()
-		.WithTools<CoherenceTools>()
-		.WithTools<DocumentTools>()
-		.WithTools<LinkTools>()
-		.WithTools<ContentTypeTools>();
+	var mcpBuilder = builder.Services
+		.AddMcpServer(options => options.ServerInstructions = profile.ComposeServerInstructions())
+		.WithHttpTransport(o => o.Stateless = true);
+
+	var prefixedTools = McpToolRegistration.CreatePrefixedTools(profile);
+	mcpBuilder = mcpBuilder.WithTools(prefixedTools);
 
 	var app = builder.Build();
 
@@ -89,11 +81,15 @@ try
 			return Task.CompletedTask;
 		}));
 
+	_ = app.UseMiddleware<McpBearerAuthMiddleware>();
 	_ = app.UseMiddleware<SseKeepAliveMiddleware>();
 
-	const string mcpPrefix = "/docs/_mcp";
-
+	var mcpPrefix = SystemEnvironmentVariables.Instance.McpPrefix;
 	var mcp = app.MapGroup(mcpPrefix);
+
+	if (SystemEnvironmentVariables.Instance.McpOAuthIssuer is not null)
+		McpOAuthMetadata.MapEndpoints(mcp);
+
 	_ = mcp.MapHealthChecks("/health");
 	_ = mcp.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
 	_ = mcp.MapMcp("");
@@ -116,17 +112,17 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 {
 	try
 	{
-		var esOptions = app.Services.GetService<ElasticsearchOptions>();
-		if (esOptions != null)
+		var clientAccessor = app.Services.GetService<ElasticsearchClientAccessor>();
+		if (clientAccessor is not null)
 		{
 			logger.LogInformation(
-				"Elasticsearch configuration - Url: {Url}, Index: {Index}",
-				esOptions.Url,
-				esOptions.IndexName
+				"Elasticsearch configuration - Url: {Url}, SearchIndex: {SearchIndex}",
+				clientAccessor.Endpoint.Uri,
+				clientAccessor.SearchIndex
 			);
 		}
 		else
-			logger.LogWarning("ElasticsearchOptions could not be resolved from DI");
+			logger.LogWarning("ElasticsearchClientAccessor could not be resolved from DI");
 	}
 	catch (Exception ex)
 	{

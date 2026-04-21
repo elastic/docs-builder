@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Links;
 using YamlDotNet.RepresentationModel;
+using static Elastic.Documentation.Configuration.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -18,12 +19,15 @@ public record RedirectFile
 	{
 		var docsetConfigurationPath = context.ConfigurationPath;
 		var redirectFileName = docsetConfigurationPath.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
-		var redirectFileInfo = docsetConfigurationPath.FileSystem.FileInfo.New(Path.Combine(docsetConfigurationPath.Directory!.FullName, redirectFileName));
+		var redirectFileInfo = docsetConfigurationPath.FileSystem.FileInfo.New(Path.Join(docsetConfigurationPath.Directory!.FullName, redirectFileName));
 		Source = source ?? redirectFileInfo;
 		Context = context;
 
 		if (!Source.Exists)
 			return;
+
+		// Validate that the redirects.yml is not a symlink (security: prevents path traversal attacks)
+		EnsureNotSymlink(Source);
 
 		var reader = new YamlStreamReader(Source, Context.Collector);
 		try

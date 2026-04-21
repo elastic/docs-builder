@@ -13,6 +13,7 @@ using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
@@ -71,6 +72,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			TitleRaw = value;
 		}
 	}
+
+	public string? Description { get; private set; }
 
 	[field: AllowNull, MaybeNull]
 	public string NavigationTitle
@@ -157,6 +160,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		YamlFrontMatter = yamlFrontMatter;
 		if (yamlFrontMatter.NavigationTitle is not null)
 			NavigationTitle = yamlFrontMatter.NavigationTitle;
+		if (yamlFrontMatter.Description is not null)
+			Description = yamlFrontMatter.Description;
 
 		var subs = GetSubstitutions();
 
@@ -289,9 +294,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.SelectMany(changelog => changelog.GeneratedTableOfContent
 				.Select(tocItem => new { TocItem = tocItem, changelog.Line }));
 
+		// Collect settings group headings (h2) from {settings} directives
+		var settingsTocs = document
+			.Descendants<DirectiveBlock>()
+			.OfType<SettingsBlock>()
+			.Where(settings => !IsNestedInOtherDirective(settings))
+			.SelectMany(settings => settings.GeneratedTableOfContent
+				.Select(tocItem => new { TocItem = tocItem, settings.Line }));
+
 		var toc = headingTocs
 			.Concat(stepperTocs)
 			.Concat(changelogTocs)
+			.Concat(settingsTocs)
 			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)

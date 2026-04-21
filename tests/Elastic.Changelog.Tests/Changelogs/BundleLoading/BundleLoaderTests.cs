@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.BundleLoading;
 
@@ -41,7 +41,8 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			entries:
 			  - title: Test feature
 			    type: feature
-			    pr: https://github.com/elastic/elasticsearch/pull/100
+			    prs:
+			    - "100"
 			""";
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", bundleContent);
 
@@ -195,7 +196,8 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			"""
 			title: Feature from file
 			type: feature
-			pr: https://github.com/elastic/elasticsearch/pull/100
+			prs:
+			  - "100"
 			description: A feature loaded from a file
 			""";
 		_fileSystem.File.WriteAllText($"{changelogDir}/entries/feature.yaml", entryContent);
@@ -396,7 +398,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", new Bundle(), "/path/to/bundle.yaml",
+			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/bundle.yaml",
 				[new ChangelogEntry { Title = "Entry 1", Type = ChangelogEntryType.Feature }])
 		};
 
@@ -415,9 +417,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", new Bundle(), "/path/to/9.3.0.yaml",
+			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.3.0.yaml",
 				[new ChangelogEntry { Title = "Entry 9.3.0", Type = ChangelogEntryType.Feature }]),
-			new("9.2.0", "elasticsearch", new Bundle(), "/path/to/9.2.0.yaml",
+			new("9.2.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.2.0.yaml",
 				[new ChangelogEntry { Title = "Entry 9.2.0", Type = ChangelogEntryType.Feature }])
 		};
 
@@ -435,9 +437,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", new Bundle(), "/path/to/es.yaml",
+			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/es.yaml",
 				[new ChangelogEntry { Title = "ES Entry", Type = ChangelogEntryType.Feature }]),
-			new("9.3.0", "kibana", new Bundle(), "/path/to/kibana.yaml",
+			new("9.3.0", "kibana", "elastic", new Bundle(), "/path/to/kibana.yaml",
 				[new ChangelogEntry { Title = "Kibana Entry", Type = ChangelogEntryType.Feature }])
 		};
 
@@ -459,9 +461,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.2.0", "elasticsearch", new Bundle(), "/path/to/9.2.0.yaml", []),
-			new("9.3.0", "elasticsearch", new Bundle(), "/path/to/9.3.0.yaml", []),
-			new("9.1.0", "elasticsearch", new Bundle(), "/path/to/9.1.0.yaml", [])
+			new("9.2.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.2.0.yaml", []),
+			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.3.0.yaml", []),
+			new("9.1.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.1.0.yaml", [])
 		};
 
 		// Act
@@ -481,9 +483,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("2025-01-15", "cloud-serverless", new Bundle(), "/path/to/jan15.yaml", []),
-			new("2025-01-28", "cloud-serverless", new Bundle(), "/path/to/jan28.yaml", []),
-			new("2025-01-01", "cloud-serverless", new Bundle(), "/path/to/jan01.yaml", [])
+			new("2025-01-15", "cloud-serverless", "elastic", new Bundle(), "/path/to/jan15.yaml", []),
+			new("2025-01-28", "cloud-serverless", "elastic", new Bundle(), "/path/to/jan28.yaml", []),
+			new("2025-01-01", "cloud-serverless", "elastic", new Bundle(), "/path/to/jan01.yaml", [])
 		};
 
 		// Act
@@ -957,7 +959,8 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			entries:
 			  - title: Test feature
 			    type: feature
-			    pr: https://github.com/elastic/elasticsearch/pull/123
+			    prs:
+			    - "123"
 			""";
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/2025-02-01.yaml", bundleContent);
 
@@ -1088,6 +1091,100 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void LoadBundles_DescriptionSerializesAndDeserializesCorrectly()
+	{
+		// Arrange - Test round-trip serialization of description field
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var multilineDescription = """
+			This is a test description with multiple paragraphs.
+
+			It includes:
+			- A bullet list
+			- Multiple lines
+			- And a [link](https://example.com) for testing
+
+			This ensures proper YAML serialization and deserialization.
+			""";
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			Description = multilineDescription,
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+
+		// Normalize line endings for cross-platform compatibility
+		var actualDescription = bundles[0].Data.Description?.Replace("\r\n", "\n").Replace("\r", "\n");
+		var expectedDescription = multilineDescription.Replace("\r\n", "\n").Replace("\r", "\n");
+		actualDescription.Should().Be(expectedDescription);
+
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_DescriptionCanBeNull()
+	{
+		// Arrange - Test that null description is handled correctly
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			Description = null,
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().BeNull();
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
 	public void LoadedBundle_HideFeatures_ExposedFromBundleData()
 	{
 		// Arrange - Verify that LoadedBundle.HideFeatures properly exposes Data.HideFeatures
@@ -1098,7 +1195,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			Entries = []
 		};
 		var entries = new List<ChangelogEntry>();
-		var bundle = new LoadedBundle("9.3.0", "elasticsearch", bundleData, "/path/to/bundle.yaml", entries);
+		var bundle = new LoadedBundle("9.3.0", "elasticsearch", "elastic", bundleData, "/path/to/bundle.yaml", entries);
 
 		// Act
 		var hideFeatures = bundle.HideFeatures;
@@ -1125,7 +1222,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			new() { Title = "Bug fix", Type = ChangelogEntryType.BugFix },
 			new() { Title = "Breaking change", Type = ChangelogEntryType.BreakingChange }
 		};
-		var bundle = new LoadedBundle("9.3.0", "elasticsearch", new Bundle(), "/path/to/bundle.yaml", entries);
+		var bundle = new LoadedBundle("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/bundle.yaml", entries);
 
 		// Act
 		var byType = bundle.EntriesByType;

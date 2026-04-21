@@ -12,13 +12,19 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Deploying;
 
-public class DeployUpdateRedirectsService(ILoggerFactory logFactory, FileSystem fileSystem) : IService
+public class DeployUpdateRedirectsService(ILoggerFactory logFactory, IFileSystem fileSystem) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<DeployUpdateRedirectsService>();
 
-	public async Task<bool> UpdateRedirects(IDiagnosticsCollector collector, string environment, string? redirectsFile, Cancel ctx)
+	public async Task<bool> UpdateRedirects(
+		IDiagnosticsCollector collector,
+		string environment,
+		string? redirectsFile,
+		string kvsNamePrefix = "elastic-docs-v3",
+		string? defaultRedirectsFile = null,
+		Cancel ctx = default)
 	{
-		redirectsFile ??= ".artifacts/assembly/redirects.json";
+		redirectsFile ??= defaultRedirectsFile ?? ".artifacts/assembly/redirects.json";
 		if (!fileSystem.File.Exists(redirectsFile))
 		{
 			collector.EmitError(redirectsFile, "Redirects mapping does not exist.");
@@ -35,8 +41,8 @@ public class DeployUpdateRedirectsService(ILoggerFactory logFactory, FileSystem 
 			return false;
 		}
 
-		var kvsName = $"elastic-docs-v3-{environment}-redirects-kvs";
-		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, logFactory, fileSystem.DirectoryInfo.New(Directory.GetCurrentDirectory()));
+		var kvsName = $"{kvsNamePrefix}-{environment}-redirects-kvs";
+		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, logFactory, fileSystem.DirectoryInfo.New(fileSystem.Directory.GetCurrentDirectory()));
 
 		cloudFrontClient.UpdateRedirects(kvsName, sourcedRedirects);
 		return collector.Errors == 0;

@@ -6,10 +6,10 @@ using System.Globalization;
 using System.Text.Json;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using AwesomeAssertions;
 using Elastic.Documentation.Api.Infrastructure.Caching;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Caching;

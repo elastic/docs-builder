@@ -27,6 +27,7 @@ public record FullSearchRequest
 	public string[]? ProductFilter { get; init; }       // product.id (AND behavior)
 	public string? VersionFilter { get; init; }         // "9.0+" | "8.19" | "7.17"
 	public string SortBy { get; init; } = "relevance";  // relevance | recent | alpha
+	public bool IncludeHighlighting { get; init; } = true;
 }
 
 /// <summary>

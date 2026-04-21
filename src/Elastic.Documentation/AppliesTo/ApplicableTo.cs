@@ -64,7 +64,7 @@ public record ApplicableTo
 		Product = AppliesCollection.GenerallyAvailable
 	};
 
-	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v! : AllVersionsSpec.Instance;
+	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v : AllVersionsSpec.Instance;
 
 	public static ApplicableTo Default { get; } = new()
 	{

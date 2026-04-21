@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Markdown.Myst.Directives.Changelog;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -109,7 +109,8 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "123456"
+		  prs:
+		  - "123456"
 		  issues:
 		  - "78901"
 		  - "78902"
@@ -161,7 +162,8 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "123456"
+		  prs:
+		  - "123456"
 		  issues:
 		  - "78901"
 		  - "78902"
@@ -230,7 +232,8 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		  description: API has changed.
 		  impact: Users must update.
 		  action: Follow migration guide.
-		  pr: "999888"
+		  prs:
+		  - "999888"
 		  issues:
 		  - "777666"
 		- title: Deprecation with PR
@@ -241,7 +244,8 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		  description: Old API deprecated.
 		  impact: Will be removed.
 		  action: Use new API.
-		  pr: "555444"
+		  prs:
+		  - "555444"
 		"""));
 
 	public override async ValueTask InitializeAsync()
@@ -308,7 +312,8 @@ public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBloc
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		"""));
 
 	public override async ValueTask InitializeAsync()
@@ -356,7 +361,8 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: elasticsearch
 			    target: 2025-08-05
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
@@ -371,7 +377,8 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 			  products:
 			  - product: kibana
 			    target: 2025-08-05
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 	}
 
@@ -430,7 +437,8 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 			  products:
 			  - product: elasticsearch
 			    target: 2025-08-05
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
@@ -445,7 +453,8 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 			  products:
 			  - product: kibana
 			    target: 2025-08-05
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 	}
 
@@ -469,4 +478,201 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 		markdown.Should().Contain("[#222222]");
 		markdown.Should().Contain("github.com");
 	}
+}
+
+/// <summary>
+/// Tests that :link-visibility: keep-links shows links even when the source repo is private.
+/// </summary>
+public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityKeepLinksTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:link-visibility: keep-links
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	public override async ValueTask InitializeAsync()
+	{
+		await base.InitializeAsync();
+		Block!.PrivateRepositories.Add("elasticsearch");
+	}
+
+	[Fact]
+	public void LinkVisibilityIsParsedAsKeepLinks() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.KeepLinks);
+
+	[Fact]
+	public void ShowsLinksEvenWhenRepoIsPrivate()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		markdown.Should().Contain("[#123456]");
+		markdown.Should().Contain("github.com/elastic/elasticsearch/pull/123456");
+		markdown.Should().NotContain("%");
+	}
+}
+
+/// <summary>
+/// Tests that :link-visibility: hide-links hides links even when the source repo is public.
+/// </summary>
+public class ChangelogLinkVisibilityHideLinksTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityHideLinksTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:link-visibility: hide-links
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	[Fact]
+	public void LinkVisibilityIsParsedAsHideLinks() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.HideLinks);
+
+	[Fact]
+	public void HidesLinksEvenWhenRepoIsPublic()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		markdown.Should().Contain("123456");
+		markdown.Should().Contain("%");
+	}
+}
+
+/// <summary>
+/// Tests that :link-visibility: auto (and default/unset) uses the standard private-repo logic.
+/// </summary>
+public class ChangelogLinkVisibilityAutoTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityAutoTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:link-visibility: auto
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	[Fact]
+	public void LinkVisibilityIsParsedAsAuto() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
+
+	[Fact]
+	public void ShowsLinksWhenRepoIsPublic()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		markdown.Should().Contain("[#123456]");
+		markdown.Should().Contain("github.com");
+	}
+}
+
+/// <summary>
+/// Tests that omitting :link-visibility: defaults to Auto.
+/// </summary>
+public class ChangelogLinkVisibilityDefaultTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityDefaultTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	[Fact]
+	public void LinkVisibilityDefaultsToAuto() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
+}
+
+/// <summary>
+/// Tests that an invalid :link-visibility: value falls back to Auto with a warning.
+/// </summary>
+public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogLinkVisibilityInvalidTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:link-visibility: banana
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature with PR
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "123456"
+		"""));
+
+	[Fact]
+	public void LinkVisibilityFallsBackToAuto() =>
+		Block!.LinkVisibility.Should().Be(ChangelogLinkVisibility.Auto);
+
+	[Fact]
+	public void EmitsWarning() =>
+		Collector.Warnings.Should().BeGreaterThan(0);
 }

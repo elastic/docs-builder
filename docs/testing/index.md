@@ -2,6 +2,10 @@
 
 The files in this directory are used for testing purposes. Do not edit these files unless you are working on tests.
 
+## Kibana settings YAML fixtures
+
+For automated `{settings}` stress tests that include Kibana-exported YAML, see [Kibana settings YAML samples](./kibana-settings-yaml-samples.md).
+
 test
 
 ###### [#synthetics-config-file]

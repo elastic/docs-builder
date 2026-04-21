@@ -48,7 +48,7 @@ runs:
 
     - name: Setup Pages
       id: pages
-      uses: actions/configure-pages@v5.0.0
+      uses: actions/configure-pages@v6.0.0
     - name: List Documentation
       shell: bash
       run: 'ls .artifacts/docs/html'
@@ -58,4 +58,4 @@ runs:
         path: .artifacts/docs/html
     - name: Deploy artifact
       id: deployment
-      uses: actions/deploy-pages@v4.0.5
+      uses: actions/deploy-pages@v5.0.0

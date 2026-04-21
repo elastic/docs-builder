@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
 using static Elastic.Documentation.ChangelogEntryType;
 
@@ -13,7 +15,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Renderer for the index.md changelog file containing features, enhancements, fixes, docs, regressions, and other changes
 /// </summary>
-public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
+public class IndexMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRendererBase(fileSystem)
 {
 	/// <inheritdoc />
 	public override string OutputFileName => "index.md";
@@ -49,6 +51,13 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-release-notes-{context.TitleSlug}]");
+
+		// Add description if present
+		if (!string.IsNullOrEmpty(context.BundleDescription))
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(context.BundleDescription);
+		}
 
 		if (otherLinks.Count > 0)
 		{
@@ -134,8 +143,8 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 		ChangelogRenderContext context)
 	{
 		var groupedByArea = context.Subsections
-			? entries.GroupBy(ChangelogRenderUtilities.GetComponent).OrderBy(g => g.Key).ToList()
-			: entries.GroupBy(ChangelogRenderUtilities.GetComponent).ToList();
+			? entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
+			: entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).ToList();
 		foreach (var areaGroup in groupedByArea)
 		{
 			// Check if all entries in this area group are hidden
@@ -153,8 +162,7 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 
 			foreach (var entry in areaGroup)
 			{
-				var (bundleProductIds, entryRepo, entryHideLinks) = GetEntryContext(entry, context);
-				var shouldHide = ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+				var (entryRepo, entryOwner, entryHideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 
 				if (shouldHide)
 					_ = sb.Append("% ");
@@ -164,57 +172,72 @@ public class IndexMarkdownRenderer(IFileSystem fileSystem) : MarkdownRendererBas
 				var hasCommentedLinks = false;
 				if (entryHideLinks)
 				{
-					// When hiding private links, put them on separate lines as comments with proper indentation
-					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					foreach (var pr in entry.Prs ?? [])
 					{
+						var formatted = ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner);
+						if (string.IsNullOrEmpty(formatted))
+							continue;
+
 						_ = sb.AppendLine();
 						if (shouldHide)
 							_ = sb.Append("% ");
 						_ = sb.Append("  ");
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr, entryRepo, entryHideLinks));
+						_ = sb.Append(formatted);
 						hasCommentedLinks = true;
 					}
 
-					if (entry.Issues is { Count: > 0 })
+					foreach (var issue in entry.Issues ?? [])
 					{
-						foreach (var issue in entry.Issues)
-						{
-							_ = sb.AppendLine();
-							if (shouldHide)
-								_ = sb.Append("% ");
-							_ = sb.Append("  ");
-							_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
-							hasCommentedLinks = true;
-						}
+						var formatted = ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner);
+						if (string.IsNullOrEmpty(formatted))
+							continue;
+
+						_ = sb.AppendLine();
+						if (shouldHide)
+							_ = sb.Append("% ");
+						_ = sb.Append("  ");
+						_ = sb.Append(formatted);
+						hasCommentedLinks = true;
 					}
 
-					// Add a newline after the last link if there are commented links
 					if (hasCommentedLinks)
 						_ = sb.AppendLine();
 				}
 				else
 				{
-					_ = sb.Append(' ');
-					if (!string.IsNullOrWhiteSpace(entry.Pr))
+					var linkParts = new List<string>();
+					foreach (var pr in entry.Prs ?? [])
 					{
-						_ = sb.Append(ChangelogTextUtilities.FormatPrLink(entry.Pr, entryRepo, entryHideLinks));
-						_ = sb.Append(' ');
+						var s = ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner);
+						if (!string.IsNullOrEmpty(s))
+							linkParts.Add(s);
 					}
 
-					if (entry.Issues is { Count: > 0 })
+					foreach (var issue in entry.Issues ?? [])
 					{
-						foreach (var issue in entry.Issues)
+						var s = ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner);
+						if (!string.IsNullOrEmpty(s))
+							linkParts.Add(s);
+					}
+
+					if (linkParts.Count > 0)
+					{
+						_ = sb.Append(' ');
+						var first = true;
+						foreach (var s in linkParts)
 						{
-							_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks));
-							_ = sb.Append(' ');
+							if (!first)
+								_ = sb.Append(' ');
+							_ = sb.Append(s);
+							first = false;
 						}
 					}
 				}
 
 				if (!string.IsNullOrWhiteSpace(entry.Description))
 				{
-					// Add blank line before description
 					_ = sb.AppendLine(entryHideLinks && hasCommentedLinks ? "  " : "");
+					_ = sb.AppendLine();
 					var indented = ChangelogTextUtilities.Indent(entry.Description);
 					if (shouldHide)
 					{

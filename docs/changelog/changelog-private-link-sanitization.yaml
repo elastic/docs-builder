@@ -1,0 +1,16 @@
+type: feature
+title: Add bundle-time link allowlist for PR and issue references
+products:
+  - product: docs-builder
+    target: 0.100.0
+areas:
+  - CLI
+  - Changelog
+prs:
+  - https://github.com/elastic/docs-builder/pull/3002
+description: |
+  Replaces `bundle.sanitize_private_links` with explicit `bundle.link_allow_repos` (`owner/repo` list).
+  When set (including an empty list), PR/issue references not in the allowlist are rewritten to quoted
+  `# PRIVATE:` sentinels when the bundle is resolved. `bundle.repo` must be a single repository (no `+` syntax).
+  Optional assembler.yml warnings when an allowlisted repo is missing or marked private.
+  The `{changelog}` directive retains `:link-visibility:` (`auto`, `keep-links`, `hide-links`).

@@ -167,10 +167,132 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
+	/// Extracts issue number from issue URL or reference.
+	/// </summary>
+	public static int? ExtractIssueNumber(string issueUrl, string? defaultOwner = null, string? defaultRepo = null)
+	{
+		if (issueUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			issueUrl.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		{
+			var uri = new Uri(issueUrl);
+			var segments = uri.Segments;
+			if (segments.Length >= 5 &&
+				segments[3].Equals("issues/", StringComparison.OrdinalIgnoreCase) &&
+				int.TryParse(segments[4].TrimEnd('/'), out var issueNum))
+				return issueNum;
+		}
+
+		var hashIndex = issueUrl.LastIndexOf('#');
+		if (hashIndex > 0 && hashIndex < issueUrl.Length - 1)
+		{
+			var issuePart = issueUrl[(hashIndex + 1)..];
+			if (int.TryParse(issuePart, out var issueNum))
+				return issueNum;
+		}
+
+		if (int.TryParse(issueUrl, out var issueNumber) &&
+			!string.IsNullOrWhiteSpace(defaultOwner) && !string.IsNullOrWhiteSpace(defaultRepo))
+			return issueNumber;
+
+		return null;
+	}
+
+	private const string PrivateReferenceSentinelPrefix = "# PRIVATE:";
+
+	/// <summary>
+	/// Returns the first repository segment from a bundle <paramref name="repo"/> string
+	/// (e.g. <c>elasticsearch+kibana</c> → <c>elasticsearch</c>) for defaulting bare numeric PR/issue refs.
+	/// </summary>
+	public static string GetFirstRepoSegmentFromBundleRepo(string? repo)
+	{
+		if (string.IsNullOrWhiteSpace(repo))
+			return string.Empty;
+
+		var span = repo.AsSpan().Trim();
+		var plus = span.IndexOf('+');
+		var segment = plus >= 0 ? span[..plus] : span;
+		return segment.Trim().ToString();
+	}
+
+	/// <summary>
+	/// Resolves a PR or issue reference string to a GitHub <paramref name="owner"/> and <paramref name="repo"/>.
+	/// Supports full github.com URLs, <c>owner/repo#N</c>, and bare numbers (uses defaults).
+	/// </summary>
+	public static bool TryGetGitHubRepo(string reference, string defaultOwner, string defaultRepo, out string owner, out string repo)
+	{
+		owner = defaultOwner;
+		repo = GetFirstRepoSegmentFromBundleRepo(defaultRepo);
+
+		if (string.IsNullOrWhiteSpace(reference))
+			return false;
+
+		var trimmed = reference.Trim();
+		if (trimmed.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		if (trimmed.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase) ||
+			trimmed.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+		{
+			try
+			{
+				var uri = new Uri(trimmed);
+				var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+				if (segments.Length == 2)
+				{
+					owner = segments[0];
+					repo = segments[1];
+					return true;
+				}
+
+				if (segments.Length == 4 &&
+					(segments[2].Equals("pull", StringComparison.OrdinalIgnoreCase) ||
+					 segments[2].Equals("issues", StringComparison.OrdinalIgnoreCase)) &&
+					int.TryParse(segments[3], out _))
+				{
+					owner = segments[0];
+					repo = segments[1];
+					return true;
+				}
+			}
+			catch (UriFormatException)
+			{
+				return false;
+			}
+
+			return false;
+		}
+
+		var hashIndex = trimmed.LastIndexOf('#');
+		if (hashIndex > 0 && hashIndex < trimmed.Length - 1)
+		{
+			var beforeHash = trimmed[..hashIndex];
+			var fragment = trimmed[(hashIndex + 1)..];
+			if (!uint.TryParse(fragment, out _))
+				return false;
+
+			var pathParts = beforeHash.Split('/', StringSplitOptions.RemoveEmptyEntries);
+			if (pathParts.Length != 2)
+				return false;
+
+			owner = pathParts[0];
+			repo = pathParts[1];
+			return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo);
+		}
+
+		if (uint.TryParse(trimmed, out _))
+			return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo);
+
+		return false;
+	}
+
+	/// <summary>
 	/// Formats PR link as markdown.
 	/// </summary>
-	public static string FormatPrLink(string pr, string repo, bool hidePrivateLinks)
+	public static string FormatPrLink(string pr, string repo, bool hidePrivateLinks, string owner = "elastic")
 	{
+		if (pr.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			return string.Empty;
+
 		// Extract PR number
 		var match = TrailingNumberRegex().Match(pr);
 		var prNumber = match.Success ? match.Value : pr;
@@ -181,7 +303,7 @@ public static partial class ChangelogTextUtilities
 			link = $"[#{prNumber}]({pr})";
 		else
 		{
-			var url = $"https://github.com/elastic/{repo}/pull/{prNumber}";
+			var url = $"https://github.com/{owner}/{repo}/pull/{prNumber}";
 			link = $"[#{prNumber}]({url})";
 		}
 
@@ -195,8 +317,11 @@ public static partial class ChangelogTextUtilities
 	/// <summary>
 	/// Formats issue link as markdown.
 	/// </summary>
-	public static string FormatIssueLink(string issue, string repo, bool hidePrivateLinks)
+	public static string FormatIssueLink(string issue, string repo, bool hidePrivateLinks, string owner = "elastic")
 	{
+		if (issue.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			return string.Empty;
+
 		// Extract issue number
 		var match = TrailingNumberRegex().Match(issue);
 		var issueNumber = match.Success ? match.Value : issue;
@@ -207,7 +332,7 @@ public static partial class ChangelogTextUtilities
 			link = $"[#{issueNumber}]({issue})";
 		else
 		{
-			var url = $"https://github.com/elastic/{repo}/issues/{issueNumber}";
+			var url = $"https://github.com/{owner}/{repo}/issues/{issueNumber}";
 			link = $"[#{issueNumber}]({url})";
 		}
 
@@ -223,6 +348,9 @@ public static partial class ChangelogTextUtilities
 	/// </summary>
 	public static string FormatPrLinkAsciidoc(string pr, string repo, bool hidePrivateLinks)
 	{
+		if (pr.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			return string.Empty;
+
 		// Extract PR number
 		var match = TrailingNumberRegex().Match(pr);
 		var prNumber = match.Success ? match.Value : pr;
@@ -244,6 +372,9 @@ public static partial class ChangelogTextUtilities
 	/// </summary>
 	public static string FormatIssueLinkAsciidoc(string issue, string repo, bool hidePrivateLinks)
 	{
+		if (issue.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			return string.Empty;
+
 		// Extract issue number
 		var match = TrailingNumberRegex().Match(issue);
 		var issueNumber = match.Success ? match.Value : issue;

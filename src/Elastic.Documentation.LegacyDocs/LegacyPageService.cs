@@ -15,7 +15,7 @@ public class LegacyPageService(ILoggerFactory logFactory) : IService
 	private const string RootNamespace = "Elastic.Documentation.LegacyDocs";
 	private const string FileName = "legacy-pages.bloom.bin";
 	private const string ResourceName = $"{RootNamespace}.{FileName}";
-	private readonly string _bloomFilterBinaryPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", RootNamespace, FileName);
+	private readonly string _bloomFilterBinaryPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "src", RootNamespace, FileName);
 
 	public bool PathExists(string path, bool logResult = false)
 	{

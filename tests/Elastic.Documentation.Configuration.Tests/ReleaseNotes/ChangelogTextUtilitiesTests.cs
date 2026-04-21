@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Documentation.ReleaseNotes;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 
@@ -72,6 +72,24 @@ public class ChangelogTextUtilitiesTests
 	public void ExtractPrNumber_WithDefaultOwnerRepo_ExtractsNumber()
 	{
 		var result = ChangelogTextUtilities.ExtractPrNumber("123", "elastic", "elasticsearch");
+		result.Should().Be(123);
+	}
+
+	[Theory]
+	[InlineData("https://github.com/elastic/elasticsearch/issues/123", 123)]
+	[InlineData("https://github.com/owner/repo/issues/456", 456)]
+	[InlineData("elastic/elasticsearch#789", 789)]
+	[InlineData("123", null)]
+	public void ExtractIssueNumber_ExtractsNumber(string input, int? expected)
+	{
+		var result = ChangelogTextUtilities.ExtractIssueNumber(input);
+		result.Should().Be(expected);
+	}
+
+	[Fact]
+	public void ExtractIssueNumber_WithDefaultOwnerRepo_ExtractsNumber()
+	{
+		var result = ChangelogTextUtilities.ExtractIssueNumber("123", "elastic", "elasticsearch");
 		result.Should().Be(123);
 	}
 

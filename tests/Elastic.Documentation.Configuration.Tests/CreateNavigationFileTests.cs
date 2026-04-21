@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Configuration.Tests;

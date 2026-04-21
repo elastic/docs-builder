@@ -23,18 +23,33 @@ public static class LlmApplicabilityHelper
 	/// <param name="versionsConfig">The versions configuration for determining release status</param>
 	/// <param name="useInlineTag">Whether to wrap in &lt;applies-to&gt; tag (for inline use)</param>
 	/// <returns>A formatted string like "&lt;applies-to&gt;Elastic Stack: GA since 9.1&lt;/applies-to&gt;" or plain text</returns>
-	public static string RenderForLlm(ApplicableTo? appliesTo, VersionsConfiguration versionsConfig, bool useInlineTag = true)
+	public static string RenderForLlm(ApplicableTo? appliesTo, VersionsConfiguration versionsConfig, bool useInlineTag = true) =>
+		RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.Combined, useInlineTag);
+
+	/// <summary>Elastic Stack (and generic product) line for settings-style split layout.</summary>
+	public static string RenderStackRowForLlm(ApplicableTo? appliesTo, VersionsConfiguration versionsConfig, bool useInlineTag = true) =>
+		RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.StackRow, useInlineTag);
+
+	/// <summary>Deployment and serverless line for settings-style split layout.</summary>
+	public static string RenderSupportedOnRowForLlm(ApplicableTo? appliesTo, VersionsConfiguration versionsConfig, bool useInlineTag = true) =>
+		RenderPlacementForLlm(appliesTo, versionsConfig, ApplicabilityBadgePlacement.SupportedOnRow, useInlineTag);
+
+	private static string RenderPlacementForLlm(
+		ApplicableTo? appliesTo,
+		VersionsConfiguration versionsConfig,
+		ApplicabilityBadgePlacement placement,
+		bool useInlineTag)
 	{
 		if (appliesTo is null || appliesTo == ApplicableTo.All)
 			return string.Empty;
 
-		// Use the same view model that generates popover data
 		var viewModel = new ApplicableToViewModel
 		{
 			AppliesTo = appliesTo,
 			Inline = true,
-			ShowTooltip = true, // Need tooltip to get popover data
-			VersionsConfig = versionsConfig
+			ShowTooltip = true,
+			VersionsConfig = versionsConfig,
+			BadgePlacement = placement
 		};
 
 		var items = viewModel.GetApplicabilityItems();
@@ -44,17 +59,11 @@ public static class LlmApplicabilityHelper
 		var result = new StringBuilder();
 		foreach (var item in items)
 		{
-			// Use the display name from ApplicabilityDefinition, removing HTML entities
 			var displayName = GetPlainDisplayName(item.ApplicabilityDefinition.DisplayName);
-
-			// Get the availability text from the popover data
 			var availabilityText = GetAvailabilityText(item);
-
-			// If there are multiple availability items (multiple lifecycles), we need to format each one
 			var popoverData = item.RenderData.PopoverData;
 			if (popoverData?.AvailabilityItems is { Length: > 1 })
 			{
-				// Multiple lifecycles - format each one with product name
 				var availabilityParts = popoverData.AvailabilityItems.Select(a => a.Text);
 				foreach (var part in availabilityParts)
 				{
@@ -67,7 +76,6 @@ public static class LlmApplicabilityHelper
 			}
 			else
 			{
-				// Single lifecycle - format normally
 				if (result.Length > 0)
 					_ = result.Append(", ");
 				_ = result.Append(displayName);
@@ -76,7 +84,6 @@ public static class LlmApplicabilityHelper
 			}
 		}
 
-		// Wrap in <applies-to> tag for inline use
 		if (useInlineTag)
 			return $"<applies-to>{result}</applies-to>";
 

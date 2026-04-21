@@ -14,6 +14,7 @@ using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
+using Nullean.ScopedFileSystem;
 using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Rendering;
@@ -65,11 +66,11 @@ public enum ChangelogFileType
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
-	IFileSystem? fileSystem = null
+	ScopedFileSystem? fileSystem = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRenderingService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
+	private readonly ScopedFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealWrite;
 
 	public async Task<bool> RenderChangelogs(
 		IDiagnosticsCollector collector,
@@ -132,11 +133,27 @@ public class ChangelogRenderingService(
 			// Emit warnings for hidden entries
 			EmitHiddenEntryWarnings(collector, resolvedResult.Entries, combinedHideFeatures);
 
-			// Build render context (needed for block checking)
-			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config);
+			// Extract descriptions from bundles for MVP support
+			var bundleDescriptions = validationResult.Bundles
+				.Select(b => b.Data.Description)
+				.Where(d => !string.IsNullOrEmpty(d))
+				.ToList();
 
-			// Emit warnings for blocked entries
-			EmitBlockedEntryWarnings(collector, resolvedResult.Entries, context);
+			// MVP: Check for multiple descriptions and warn
+			string? renderDescription = null;
+			if (bundleDescriptions.Count > 1)
+			{
+				collector.EmitWarning(string.Empty,
+					$"Multiple bundles contain descriptions ({bundleDescriptions.Count} found). " +
+					"Multi-bundle description support is not yet implemented. Descriptions will be skipped.");
+			}
+			else if (bundleDescriptions.Count == 1)
+			{
+				renderDescription = bundleDescriptions[0];
+			}
+
+			// Build render context
+			var context = BuildRenderContext(input, outputSetup, resolvedResult, combinedHideFeatures, config, renderDescription);
 
 			// Validate entry types
 			if (!ValidateEntryTypes(collector, resolvedResult.Entries, config.Types))
@@ -207,105 +224,6 @@ public class ChangelogRenderingService(
 		}
 	}
 
-	private static void EmitBlockedEntryWarnings(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<ResolvedEntry> entries,
-		ChangelogRenderContext context)
-	{
-		if (context.Configuration?.Rules?.Publish == null)
-			return;
-
-		var visibleEntries = entries.Where(resolved =>
-			string.IsNullOrWhiteSpace(resolved.Entry.FeatureId) ||
-			!context.FeatureIdsToHide.Contains(resolved.Entry.FeatureId));
-
-		foreach (var resolved in visibleEntries)
-		{
-			// Get product IDs for this entry
-			var productIds = context.EntryToBundleProducts.GetValueOrDefault(resolved.Entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-			if (productIds.Count == 0)
-				continue;
-
-			// Check each product's publish configuration
-			foreach (var productId in productIds)
-			{
-				var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
-				if (blocker != null && blocker.ShouldBlock(resolved.Entry))
-				{
-					var reasons = GetBlockReasons(resolved.Entry, blocker);
-					var prefix = blocker.TypesMode == FieldMode.Include || blocker.AreasMode == FieldMode.Include ? "[+include]" : "[-exclude]";
-					var productInfo = productIds.Count > 1 ? $" for product '{productId}'" : "";
-					var entryIdentifier = GetEntryIdentifier(resolved.Entry, context);
-					collector.EmitWarning(string.Empty, $"{prefix} Changelog entry {entryIdentifier} will be commented out{productInfo} because it matches rules configuration: {reasons}");
-				}
-			}
-		}
-	}
-
-	private static string GetEntryIdentifier(ChangelogEntry entry, ChangelogRenderContext context)
-	{
-		// Try to extract PR number if available
-		if (!string.IsNullOrWhiteSpace(entry.Pr))
-		{
-			var repo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(entry.Pr, "elastic", repo);
-			if (prNumber.HasValue)
-				return $"for PR {prNumber.Value}";
-		}
-
-		// Fall back to title if no PR is available
-		return $"'{entry.Title}'";
-	}
-
-	private static string GetBlockReasons(ChangelogEntry entry, PublishBlocker blocker)
-	{
-		var reasons = new List<string>();
-
-		// Check if blocked by type
-		if (blocker.Types?.Count > 0)
-		{
-			var entryTypeName = entry.Type.ToStringFast(true);
-			if (blocker.MatchesType(entryTypeName))
-			{
-				var modeStr = blocker.TypesMode == FieldMode.Include ? "not in rules.publish.include_types" : "in rules.publish.exclude_types";
-				reasons.Add($"type '{entryTypeName}' {modeStr}");
-			}
-			else if (blocker.TypesMode == FieldMode.Include)
-				reasons.Add($"type '{entryTypeName}' not in rules.publish.include_types");
-		}
-
-		// Check if blocked by area
-		if (blocker.Areas?.Count > 0 && entry.Areas?.Count > 0)
-		{
-			var matchedAreas = entry.Areas
-				.Where(area => blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
-				.ToList();
-
-			if (blocker.AreasMode == FieldMode.Exclude && matchedAreas.Count > 0)
-				reasons.Add($"area{(matchedAreas.Count > 1 ? "s" : "")} '{string.Join("', '", matchedAreas)}' in rules.publish.exclude_areas (match_areas: {blocker.MatchAreas.ToString().ToLowerInvariant()})");
-			else if (blocker.AreasMode == FieldMode.Include)
-			{
-				var unmatchedAreas = entry.Areas
-					.Where(area => !blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
-					.ToList();
-				if (unmatchedAreas.Count > 0)
-					reasons.Add($"areas [{string.Join(", ", entry.Areas)}] not in rules.publish.include_areas (match_areas: {blocker.MatchAreas.ToString().ToLowerInvariant()})");
-			}
-		}
-
-		return string.Join(" and ", reasons);
-	}
-
-	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
-	{
-		// Check product-specific override first
-		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
-			return productBlocker;
-
-		// Fall back to global publish blocker
-		return publishRules.Blocker;
-	}
-
 	private static bool ValidateEntryTypes(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<ResolvedEntry> entries,
@@ -347,7 +265,8 @@ public class ChangelogRenderingService(
 		OutputSetup outputSetup,
 		ResolvedEntriesResult resolved,
 		HashSet<string> featureIdsToHide,
-		ChangelogConfiguration? config)
+		ChangelogConfiguration? config,
+		string? description = null)
 	{
 		// Group entries by type
 		var entriesByType = resolved.Entries
@@ -359,17 +278,20 @@ public class ChangelogRenderingService(
 		// Create mappings from entries to their metadata
 		var entryToBundleProducts = new Dictionary<ChangelogEntry, HashSet<string>>();
 		var entryToRepo = new Dictionary<ChangelogEntry, string>();
+		var entryToOwner = new Dictionary<ChangelogEntry, string>();
 		var entryToHideLinks = new Dictionary<ChangelogEntry, bool>();
 
 		foreach (var entry in resolved.Entries)
 		{
 			entryToBundleProducts[entry.Entry] = entry.BundleProductIds;
 			entryToRepo[entry.Entry] = entry.Repo;
+			entryToOwner[entry.Entry] = entry.Owner;
 			entryToHideLinks[entry.Entry] = entry.HideLinks;
 		}
 
-		// Use first repo found for section anchors, or default
+		// Use first repo/owner found for section anchors, or default
 		var repoForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Repo : "elastic";
+		var ownerForAnchors = resolved.Entries.Count > 0 ? resolved.Entries[0].Owner : "elastic";
 
 		return new ChangelogRenderContext
 		{
@@ -377,13 +299,16 @@ public class ChangelogRenderingService(
 			Title = outputSetup.Title,
 			TitleSlug = outputSetup.TitleSlug,
 			Repo = repoForAnchors,
+			Owner = ownerForAnchors,
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
+			EntryToOwner = entryToOwner,
 			EntryToHideLinks = entryToHideLinks,
-			Configuration = config
+			Configuration = config,
+			BundleDescription = description
 		};
 	}
 

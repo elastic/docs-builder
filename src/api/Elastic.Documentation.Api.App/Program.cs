@@ -4,8 +4,9 @@
 
 using Elastic.Documentation.Api.Infrastructure;
 using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -53,7 +54,7 @@ try
 			return Task.CompletedTask;
 		}));
 
-	var api = app.MapGroup("/docs/_api");
+	var api = app.MapGroup(SystemEnvironmentVariables.Instance.ApiPrefix);
 
 	_ = api.MapHealthChecks("/health");
 	_ = api.MapHealthChecks("/alive", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live") });
@@ -82,17 +83,17 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 {
 	try
 	{
-		var esOptions = app.Services.GetService<ElasticsearchOptions>();
-		if (esOptions != null)
+		var clientAccessor = app.Services.GetService<ElasticsearchClientAccessor>();
+		if (clientAccessor is not null)
 		{
 			logger.LogInformation(
-				"Elasticsearch configuration - Url: {Url}, Index: {Index}",
-				esOptions.Url,
-				esOptions.IndexName
+				"Elasticsearch configuration - Url: {Url}, SearchIndex: {SearchIndex}",
+				clientAccessor.Endpoint.Uri,
+				clientAccessor.SearchIndex
 			);
 		}
 		else
-			logger.LogWarning("ElasticsearchOptions could not be resolved from DI");
+			logger.LogWarning("ElasticsearchClientAccessor could not be resolved from DI");
 	}
 	catch (Exception ex)
 	{

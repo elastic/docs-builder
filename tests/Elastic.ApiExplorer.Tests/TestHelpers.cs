@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.IO.Abstractions;
+using System.Linq;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -51,7 +53,7 @@ public static class TestHelpers
 				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 			};
 		}
-		var search = new SearchConfiguration { Synonyms = new Dictionary<string, string[]>(), Rules = [], DiminishTerms = [] };
+		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints

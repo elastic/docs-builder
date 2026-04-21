@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
-using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -114,7 +116,7 @@ $"""
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var context = CreateBuildContext(Collector, FileSystem, configurationContext);
-		var linkResolver = new TestCrossLinkResolver();
+		var linkResolver = CreateCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
 		Html = default!; //assigned later
@@ -123,12 +125,15 @@ $"""
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
 
+	/// <summary>Override to provide a different cross-link resolver (e.g. codex-aware).</summary>
+	protected virtual ICrossLinkResolver CreateCrossLinkResolver() => new TestCrossLinkResolver();
+
 	/// <summary>Override to customize BuildContext (e.g. for codex tests).</summary>
 	protected virtual BuildContext CreateBuildContext(
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, fileSystem, configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs"
 		};

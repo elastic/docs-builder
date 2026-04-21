@@ -14,6 +14,12 @@ public record Bundle
 	public IReadOnlyList<BundledProduct> Products { get; init; } = [];
 
 	/// <summary>
+	/// Optional introductory description text for this bundle.
+	/// Rendered as introductory content after the release heading.
+	/// </summary>
+	public string? Description { get; init; }
+
+	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>

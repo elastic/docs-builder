@@ -38,8 +38,28 @@ public record VersionOrDate(SemVersion? SemVer, DateOnly? Date, string? Raw) : I
 		if (DateOnly.TryParseExact(version, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
 			return new VersionOrDate(null, date, null);
 
+		// Try year-month format (YYYY-MM)
+		if (DateOnly.TryParseExact(version, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var yearMonthDate))
+			return new VersionOrDate(null, yearMonthDate, null);
+
 		// Fallback - treat as raw string for lexicographic sorting
 		return new VersionOrDate(null, null, version);
+	}
+
+	/// <summary>
+	/// Formats a version string for display. Date-based versions are rendered with month names:
+	/// "2025-08" → "August 2025", "2025-08-05" → "August 5, 2025".
+	/// Semver and raw strings are returned unchanged.
+	/// </summary>
+	public static string FormatDisplayVersion(string version)
+	{
+		if (DateOnly.TryParseExact(version, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fullDate))
+			return fullDate.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture);
+
+		if (DateOnly.TryParseExact(version, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var yearMonthDate))
+			return yearMonthDate.ToString("MMMM yyyy", CultureInfo.InvariantCulture);
+
+		return version;
 	}
 
 	/// <inheritdoc />

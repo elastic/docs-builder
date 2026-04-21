@@ -42,7 +42,7 @@ async Task BuildAspireHost(bool startElasticsearch, bool assumeCloned, bool assu
 
 	var elasticsearchRemote = builder.AddExternalService(ElasticsearchRemote, elasticsearchUrl);
 
-	var api = builder.AddProject<Projects.Elastic_Documentation_Api_Lambda>(LambdaApi)
+	var api = builder.AddProject<Projects.Elastic_Documentation_Api_App>(Api)
 		.WithArgs(globalArguments)
 		.WithEnvironment("ENVIRONMENT", "dev")
 		.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)

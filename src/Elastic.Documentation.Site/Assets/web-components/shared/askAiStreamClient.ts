@@ -2,8 +2,10 @@
  * Shared streaming client for AskAI Lambda communication.
  * Handles AWS CloudFront + Lambda Function URL with OAC authentication.
  */
+import { config } from '../../config'
 import { logWarn } from '../../telemetry/logging'
 import { AskAiEvent, AskAiEventSchema } from '../AskAi/AskAiEvent'
+import { askAiConfig } from '../AskAi/askAi.config'
 import {
     ApiError,
     createApiErrorFromResponse,
@@ -17,7 +19,7 @@ import {
 
 export type AiProvider = 'AgentBuilder' | 'LlmGateway'
 
-const API_ENDPOINT = '/docs/_api/v1/ask-ai/stream'
+const defaultAiProvider: AiProvider = askAiConfig.defaultAiProvider
 
 /**
  * Compute SHA256 hash for CloudFront + Lambda Function URL with OAC
@@ -52,7 +54,7 @@ export async function startAskAiStream(options: StreamOptions): Promise<void> {
     const {
         message,
         conversationId,
-        aiProvider = 'LlmGateway',
+        aiProvider = defaultAiProvider,
         signal,
         callbacks,
     } = options
@@ -65,7 +67,7 @@ export async function startAskAiStream(options: StreamOptions): Promise<void> {
     const bodyString = JSON.stringify(payload)
     const contentHash = await computeSHA256(bodyString)
 
-    await fetchEventSource(API_ENDPOINT, {
+    await fetchEventSource(`${config.apiBasePath}/v1/ask-ai/stream`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

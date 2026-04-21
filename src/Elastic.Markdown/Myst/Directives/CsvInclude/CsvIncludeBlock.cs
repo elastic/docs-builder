@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.CsvInclude;
@@ -50,8 +52,28 @@ public class CsvIncludeBlock(DirectiveBlockParser parser, ParserContext context)
 		if (csvPath.StartsWith('/'))
 			csvFrom = Build.DocumentationSourceDirectory.FullName;
 
-		CsvFilePath = Path.Combine(csvFrom, csvPath.TrimStart('/'));
+		var trimmedPath = csvPath.TrimStart('/');
+		if (Path.IsPathRooted(trimmedPath))
+		{
+			this.EmitError("CSV path must not be an absolute path.");
+			return;
+		}
+
+		CsvFilePath = Path.GetFullPath(Path.Join(csvFrom, trimmedPath));
 		CsvFilePathRelativeToSource = Path.GetRelativePath(Build.DocumentationSourceDirectory.FullName, CsvFilePath);
+
+		var file = Build.ReadFileSystem.FileInfo.New(CsvFilePath);
+		if (!file.IsSubPathOf(Build.DocumentationSourceDirectory))
+		{
+			this.EmitError("CSV path must resolve within the documentation source directory.");
+			return;
+		}
+
+		if (SymlinkValidator.ValidateFileAccess(file, Build.DocumentationSourceDirectory) is { } accessError)
+		{
+			this.EmitError(accessError);
+			return;
+		}
 
 		if (Build.ReadFileSystem.File.Exists(CsvFilePath))
 		{

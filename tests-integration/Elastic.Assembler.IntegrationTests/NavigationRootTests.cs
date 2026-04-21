@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AngleSharp;
+using AwesomeAssertions;
 using Documentation.Builder;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
@@ -18,9 +19,9 @@ using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.Navigation;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Nullean.ScopedFileSystem;
 using RazorSlices;
 
 namespace Elastic.Assembler.IntegrationTests;
@@ -46,7 +47,7 @@ public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper
 		var assemblyConfiguration = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
 		var collector = new TestDiagnosticsCollector(TestContext.Current.TestOutputHelper);
 		var fs = new FileSystem();
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, fs, new MockFileSystem(), null, null);
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, "dev", collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fs), FileSystemFactory.ScopeCurrentWorkingDirectory(new MockFileSystem()), null, null);
 		var logFactory = new TestLoggerFactory(TestContext.Current.TestOutputHelper);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 		var checkoutResult = cloner.GetAll();

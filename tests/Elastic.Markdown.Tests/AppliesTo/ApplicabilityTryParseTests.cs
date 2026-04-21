@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 
@@ -26,7 +26,7 @@ public class ApplicabilityTryParseTests
 
 		result.Should().BeTrue();
 		applicability.Should().NotBeNull();
-		applicability!.Lifecycle.Should().Be(expectedLifecycle);
+		applicability.Lifecycle.Should().Be(expectedLifecycle);
 		diagnostics.Should().NotContain(d => d.Item1 == Severity.Error);
 	}
 
@@ -42,7 +42,7 @@ public class ApplicabilityTryParseTests
 
 		result.Should().BeTrue();
 		applicability.Should().NotBeNull();
-		applicability!.Lifecycle.Should().Be(expectedLifecycle);
+		applicability.Lifecycle.Should().Be(expectedLifecycle);
 		applicability.Version.Should().NotBeNull();
 		diagnostics.Should().NotContain(d => d.Item1 == Severity.Error);
 	}
@@ -128,7 +128,7 @@ public class AppliesCollectionTryParseTests
 		// Should return true because some items were successfully parsed
 		result.Should().BeTrue();
 		collection.Should().NotBeNull();
-		collection!.Count.Should().Be(2); // Only ga 8.0 and beta 7.0 should be parsed
+		collection.Count.Should().Be(2); // Only ga 8.0 and beta 7.0 should be parsed
 		diagnostics.Should().ContainSingle(d => d.Item1 == Severity.Error);
 	}
 

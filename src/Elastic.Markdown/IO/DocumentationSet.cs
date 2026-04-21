@@ -83,8 +83,8 @@ public class DocumentationSet : INavigationTraversable
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
 			: Context.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Context.DocumentationSourceDirectory.Name}";
-		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
-		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
+		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, ".doc.state"));
+		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, "links.json"));
 
 		Files = fileFactory.Files;
 		var files = Files.Values.ToArray();
@@ -97,6 +97,20 @@ public class DocumentationSet : INavigationTraversable
 		NavigationIndexedByOrder = Navigation.BuildNavigationLookups(NavigationDocumentationFileLookup);
 
 		ValidateRedirectsExists();
+		ValidateRootIndexExists();
+	}
+
+	private void ValidateRootIndexExists()
+	{
+		if (Context.BuildType != BuildType.Isolated || Configuration.Registry == DocSetRegistry.Public)
+			return;
+
+		var indexFile = Context.ReadFileSystem.FileInfo.New(
+			Path.Join(SourceDirectory.FullName, "index.md"));
+
+		if (!indexFile.Exists)
+			Context.EmitError(Configuration.SourceFile,
+				"Non-public documentation sets require a root index.md file");
 	}
 
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }

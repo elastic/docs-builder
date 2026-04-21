@@ -13,39 +13,111 @@ public static class Paths
 
 	public static readonly DirectoryInfo ApplicationData = GetApplicationFolder();
 
-	private static DirectoryInfo DetermineWorkingDirectoryRoot()
+	/// <summary>
+	/// Walks up from <paramref name="startPath"/> until a <c>.git</c> directory or file
+	/// (worktree pointer) is found and returns that ancestor. Returns <paramref name="startPath"/>
+	/// itself when no git root is found within the allowed depth.
+	/// </summary>
+	/// <remarks>
+	/// Depth protection: in release builds the <c>.git</c> anchor must be at most 1 directory
+	/// above <paramref name="startPath"/> — documentation is not expected to live deep inside
+	/// a repo. In debug builds a deeper <c>.git</c> is accepted when a <c>*.slnx</c> file is
+	/// adjacent (developer running the binary from an IDE output directory).
+	/// </remarks>
+	public static string FindGitRoot(string startPath)
 	{
-		var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
-		while (directory != null)
+		var resolved = Path.IsPathRooted(startPath) ? startPath : Path.GetFullPath(startPath);
+		var dir = Directory.Exists(resolved)
+			? new DirectoryInfo(resolved)
+			: new DirectoryInfo(Path.GetDirectoryName(resolved) ?? resolved);
+		var startDir = dir.FullName; // always a directory, used as fallback
+		var depth = 0;
+		while (dir != null)
 		{
-			if (directory.GetFiles("*.slnx").Length > 0)
-				break;
-			if (directory.GetDirectories(".git").Length > 0)
-				break;
-			// support for git worktrees
-			if (directory.GetFiles(".git").Length > 0)
-				break;
-			directory = directory.Parent;
+			var hasGit = dir.GetDirectories(".git").Length > 0 || dir.GetFiles(".git").Length > 0;
+			if (hasGit)
+			{
+#if DEBUG
+				if (depth <= 1 || dir.GetFiles("*.slnx").Length > 0)
+					return dir.FullName;
+#else
+				if (depth <= 1)
+					return dir.FullName;
+#endif
+				// .git found but too deep — stop searching
+				return startDir;
+			}
+			depth++;
+			dir = dir.Parent;
 		}
-		return directory ?? new DirectoryInfo(Directory.GetCurrentDirectory());
+		return startDir;
 	}
 
-	public static IDirectoryInfo? DetermineSourceDirectoryRoot(IDirectoryInfo sourceDirectory)
+	/// <summary>
+	/// Walks up from <paramref name="startDirectory"/> via <see cref="IFileSystem"/> until
+	/// a <c>.git</c> directory or file (worktree pointer) is found.
+	/// Returns <see langword="null"/> if no git root is found within the allowed depth.
+	/// </summary>
+	/// <remarks>Same depth protection as <see cref="FindGitRoot(string)"/>.</remarks>
+	public static IDirectoryInfo? FindGitRoot(IDirectoryInfo startDirectory)
 	{
-		IDirectoryInfo? sourceRoot = null;
-		var directory = sourceDirectory;
-		while (directory != null && directory.GetDirectories(".git").Length == 0)
+		var directory = startDirectory;
+		var depth = 0;
+		while (directory != null)
 		{
-			if (directory.GetDirectories(".git").Length > 0)
-				break;
-			// support for git worktrees
-			if (directory.GetFiles(".git").Length > 0)
-				break;
-
+			var hasGit = directory.GetDirectories(".git").Length > 0
+					  || directory.GetFiles(".git").Length > 0;
+			if (hasGit)
+			{
+#if DEBUG
+				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
+					return directory;
+#else
+				if (depth <= 1)
+					return directory;
+#endif
+				// .git found but too deep
+				return null;
+			}
+			depth++;
 			directory = directory.Parent;
 		}
-		sourceRoot ??= directory;
-		return sourceRoot;
+		return null;
+	}
+
+	private static DirectoryInfo DetermineWorkingDirectoryRoot()
+	{
+		var cwd = new DirectoryInfo(Directory.GetCurrentDirectory());
+		var directory = cwd;
+		var depth = 0;
+		while (directory != null)
+		{
+			// *.slnx is the primary anchor: always adopt it at any depth.
+			// This covers both the local developer case (running from the IDE output directory
+			// such as bin/Debug/net10.0/) and CI (Aspire starts the binary from the project
+			// directory, which is several levels below the solution root).
+			if (directory.GetFiles("*.slnx").Length > 0)
+				return directory;
+			var hasGit = directory.GetDirectories(".git").Length > 0
+					  || directory.GetFiles(".git").Length > 0;
+			if (hasGit)
+			{
+				// Only accept .git beyond 1 level up in debug when a *.slnx is adjacent
+				// (developer running from IDE output directory such as bin/Debug/net10.0/).
+#if DEBUG
+				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
+					return directory;
+#else
+				if (depth <= 1)
+					return directory;
+#endif
+				// .git found but too deep — stop without adopting it
+				return cwd;
+			}
+			depth++;
+			directory = directory.Parent;
+		}
+		return cwd;
 	}
 
 	/// Used in debug to locate static folder, so we can change js/css files while the server is running
@@ -63,20 +135,54 @@ public static class Paths
 	private static DirectoryInfo GetApplicationFolder()
 	{
 		var localPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-		var elasticPath = Path.Combine(localPath, "elastic", "docs-builder");
+		if (string.IsNullOrEmpty(localPath))
+		{
+			// Docker / CI containers often have no XDG_DATA_HOME or HOME configured,
+			// causing LocalApplicationData to return "". Path.Join("", ...) produces a
+			// relative path that resolves under CWD, becoming a subdirectory of
+			// WorkingDirectoryRoot and breaking the disjoint-scope-roots requirement.
+			localPath = Path.GetTempPath();
+		}
+		var elasticPath = Path.Join(localPath, "elastic", "docs-builder");
 		return new DirectoryInfo(elasticPath);
+	}
+
+	/// <summary>
+	/// Checks only the four known locations for docset.yml (root and docs/). No recursive search. Use when a fast, non-blocking check is needed (e.g. changelog init).
+	/// </summary>
+	public static bool TryFindDocsFolderFromKnownLocationsOnly(
+		IFileSystem readFileSystem,
+		IDirectoryInfo rootPath,
+		[NotNullWhen(true)] out IDirectoryInfo? docDirectory,
+		[NotNullWhen(true)] out IFileInfo? configurationPath
+	)
+	{
+		docDirectory = null;
+		configurationPath = null;
+		var knownConfigPath = GetDocsetPathFromKnownLocations(readFileSystem, rootPath);
+		if (knownConfigPath is null)
+			return false;
+
+		configurationPath = readFileSystem.FileInfo.New(knownConfigPath);
+		docDirectory = configurationPath.Directory!;
+		return true;
+	}
+
+	private static string? GetDocsetPathFromKnownLocations(IFileSystem readFileSystem, IDirectoryInfo rootPath)
+	{
+		string[] files = ["docset.yml", "_docset.yml"];
+		string[] knownFolders = [rootPath.FullName, Path.Join(rootPath.FullName, "docs")];
+		var mostLikelyTargets =
+			from file in files
+			from folder in knownFolders
+			select Path.Join(folder, file);
+
+		return mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
 	}
 
 	public static (IDirectoryInfo, IFileInfo) FindDocsFolderFromRoot(IFileSystem readFileSystem, IDirectoryInfo rootPath)
 	{
-		string[] files = ["docset.yml", "_docset.yml"];
-		string[] knownFolders = [rootPath.FullName, Path.Combine(rootPath.FullName, "docs")];
-		var mostLikelyTargets =
-			from file in files
-			from folder in knownFolders
-			select Path.Combine(folder, file);
-
-		var knownConfigPath = mostLikelyTargets.FirstOrDefault(readFileSystem.File.Exists);
+		var knownConfigPath = GetDocsetPathFromKnownLocations(readFileSystem, rootPath);
 		var configurationPath = knownConfigPath is null ? null : readFileSystem.FileInfo.New(knownConfigPath);
 		if (configurationPath is not null)
 			return (configurationPath.Directory!, configurationPath);
@@ -89,6 +195,14 @@ public static class Paths
 		var docsFolder = configurationPath.Directory ?? throw new Exception($"Can not locate docset.yml file in '{rootPath}'");
 
 		return (docsFolder, configurationPath);
+	}
+
+	/// <summary>Validates that <paramref name="value"/> is a single path segment with no separators or traversal components.
+	/// Throws <see cref="ArgumentException"/> when the value is blank, contains separators, or equals "." / "..".</summary>
+	public static void ValidateSinglePathSegment(string value, string paramName)
+	{
+		if (string.IsNullOrWhiteSpace(value) || Path.GetFileName(value) != value || value == "." || value == "..")
+			throw new ArgumentException($"'{paramName}' must be a single relative path segment.", paramName);
 	}
 
 	public static bool TryFindDocsFolderFromRoot(

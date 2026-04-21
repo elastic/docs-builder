@@ -135,6 +135,17 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (IsCrossLink(uri))
 		{
+			if (!context.CrossLinkResolver.IsDeclaredCrossLinkScheme(uri.Scheme))
+			{
+				// Only known custom protocol schemes should bypass cross-link validation.
+				// Undeclared schemes still surface errors to catch cross-link typos.
+				if (IsPassthroughCustomProtocolScheme(uri.Scheme))
+				{
+					link.SetData("isCrossLink", false);
+					return;
+				}
+			}
+
 			link.SetData("isCrossLink", true);
 			ProcessCrossLink(link, processor, context, uri);
 			return;
@@ -190,9 +201,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (context.CrossLinkResolver.TryResolve(
 				s => processor.EmitError(link, s),
-				uri, out var resolvedUri)
-			 )
+				uri, out var resolvedUri))
+		{
 			link.Url = resolvedUri.ToString();
+			if (resolvedUri.IsAbsoluteUri && context.Build.BuildType == BuildType.Isolated)
+				link.SetData("isCrossLink", false);
+		}
 
 		// Emit error for empty link text in crosslinks
 		if (link.FirstChild == null)
@@ -267,7 +281,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			return;
 
 
-		var pathOnDisk = Path.GetFullPath(Path.Combine(includeFrom, url.TrimStart('/')));
+		var pathOnDisk = Path.GetFullPath(Path.Join(includeFrom, url.TrimStart('/')));
 		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
 		{
 			if (context.Configuration.Redirects is not null && context.Configuration.Redirects.TryGetValue(url.TrimStart('/'), out var redirect))
@@ -286,7 +300,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			}
 			else
 			{
-				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}");
+				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}`");
 			}
 		}
 	}
@@ -321,8 +335,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		string.IsNullOrWhiteSpace(url)
 			? context.MarkdownSourcePath
 			: url.StartsWith('/')
-				? context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
-				: context.Build.ReadFileSystem.FileInfo.New(Path.Combine(context.MarkdownSourcePath.Directory!.FullName, url));
+				? context.Build.ReadFileSystem.FileInfo.New(Path.Join(context.Build.DocumentationSourceDirectory.FullName, url.TrimStart('/')))
+				: context.Build.ReadFileSystem.FileInfo.New(Path.Join(context.MarkdownSourcePath.Directory!.FullName, url));
 
 	private static void ValidateAnchor(InlineProcessor processor, MarkdownFile markdown, string anchor, LinkInline link)
 	{
@@ -354,12 +368,12 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		{
 			newUrl = newUrl.EndsWith($"{Path.DirectorySeparatorChar}index.md")
 				? newUrl.Remove(newUrl.LastIndexOf("index.md", StringComparison.Ordinal), "index.md".Length)
-				: newUrl.Remove(url.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
+				: newUrl.Remove(newUrl.LastIndexOf(".md", StringComparison.Ordinal), ".md".Length);
 		}
 
 		// TODO this is hardcoded should be part of extension system
 		if (newUrl.EndsWith(".toml"))
-			newUrl = url[..^5];
+			newUrl = newUrl[..^5];
 
 		link.Url = !string.IsNullOrEmpty(anchor)
 			? newUrl == context.CurrentUrlPath
@@ -381,7 +395,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		var newUrl = url;
 		if (!newUrl.StartsWith('/') && !string.IsNullOrEmpty(newUrl))
 		{
-			var path = Path.GetFullPath(fi.FileSystem.Path.Combine(fi.Directory!.FullName, newUrl));
+			var path = Path.GetFullPath(fi.FileSystem.Path.Join(fi.Directory!.FullName, newUrl));
 			var pathInfo = fi.FileSystem.FileInfo.New(path);
 			pathInfo = pathInfo.EnsureSubPathOf(context.Configuration.ScopeDirectory, newUrl);
 			var relativePath = fi.FileSystem.Path.GetRelativePath(context.Configuration.ScopeDirectory.FullName, pathInfo.FullName).OptionalWindowsReplace();
@@ -447,4 +461,8 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 	private static bool IsCrossLink([NotNullWhen(true)] Uri? uri) =>
 		CrossLinkValidator.IsCrossLink(uri);
+
+	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
+		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase)
+		|| scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
 }

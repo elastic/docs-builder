@@ -30,6 +30,7 @@
   * `edot_ios`: Applies to the [Elastic Distribution of OpenTelemetry iOS](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/ios/) (EDOT iOS).
   * `edot_java`: Applies to the [Elastic Distribution of OpenTelemetry Java](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/java/) (EDOT Java).
   * `edot_node`: Applies to the [Elastic Distribution of OpenTelemetry Node.js](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/nodejs/) (EDOT Node.js).
+  * `edot_browser`: Applies to the [Elastic Distribution of OpenTelemetry Browser (RUM)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/rum-js/) (EDOT Browser).
   * `edot_php`: Applies to the [Elastic Distribution of OpenTelemetry PHP](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/php/) (EDOT PHP).
   * `edot_python`: Applies to the [Elastic Distribution of OpenTelemetry Python](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/python/) (EDOT Python).
 

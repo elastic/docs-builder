@@ -24,8 +24,8 @@ public class StaticWebHost
 
 	public StaticWebHost(int port, string? path)
 	{
-		_contentRoot = path ?? Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var fs = new FileSystem();
+		_contentRoot = path ?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var fs = FileSystemFactory.RealGitRootForPath(_contentRoot);
 		var dir = fs.DirectoryInfo.New(_contentRoot);
 		if (!dir.Exists)
 			throw new Exception($"Can not serve empty directory: {_contentRoot}");
@@ -84,8 +84,8 @@ public class StaticWebHost
 		_ = WebApplication.MapGet("{**slug}", ServeDocumentationFile);
 
 
-		var apiV1 = WebApplication.MapGroup("/docs/_api/v1");
 #if DEBUG
+		var apiV1 = WebApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(WebApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 #endif
@@ -94,7 +94,7 @@ public class StaticWebHost
 
 	private Task<IResult> ServeRootIndex(Cancel _)
 	{
-		var indexPath = Path.Combine(_contentRoot, "index.html");
+		var indexPath = Path.Join(_contentRoot, "index.html");
 		var fileInfo = new FileInfo(indexPath);
 		if (fileInfo.Exists)
 			return Task.FromResult(Results.File(fileInfo.FullName, "text/html"));
@@ -111,11 +111,14 @@ public class StaticWebHost
 			return Results.NotFound();
 
 		await Task.CompletedTask;
-		var localPath = Path.Combine(_contentRoot, slug.Replace('/', Path.DirectorySeparatorChar));
+		var contentRoot = Path.GetFullPath(_contentRoot);
+		var localPath = Path.GetFullPath(Path.Join(contentRoot, slug.Replace('/', Path.DirectorySeparatorChar)));
+		if (!localPath.StartsWith(contentRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+			return Results.NotFound();
 		var fileInfo = new FileInfo(localPath);
 		var directoryInfo = new DirectoryInfo(localPath);
 		if (directoryInfo.Exists)
-			fileInfo = new FileInfo(Path.Combine(directoryInfo.FullName, "index.html"));
+			fileInfo = new FileInfo(Path.Join(directoryInfo.FullName, "index.html"));
 
 		if (fileInfo.Exists)
 		{

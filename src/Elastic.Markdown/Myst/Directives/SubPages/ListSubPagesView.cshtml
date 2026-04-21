@@ -1,0 +1,12 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.SubPages.ListSubPagesViewModel>
+<ul class="list-sub-pages">
+@foreach (var entry in Model.SubPages)
+{
+	<li>
+		<a href="@entry.Url">@entry.Title</a>@if (!string.IsNullOrEmpty(entry.Description))
+		{
+			<text> — @entry.Description</text>
+		}
+	</li>
+}
+</ul>

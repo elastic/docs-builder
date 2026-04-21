@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import { logInfo, logWarn } from '../../telemetry/logging'
 import {
     ATTR_NAVIGATION_SEARCH_QUERY,
@@ -128,7 +129,8 @@ export const useNavigationSearchQuery = () => {
                 }
 
                 const response = await fetch(
-                    '/docs/_api/v1/navigation-search?' + params.toString(),
+                    `${config.apiBasePath}/v1/navigation-search?` +
+                        params.toString(),
                     { signal }
                 )
                 if (!response.ok) {

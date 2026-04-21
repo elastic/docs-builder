@@ -4,11 +4,11 @@
 
 using System.Net;
 using System.Text;
+using AwesomeAssertions;
 using Elastic.Documentation.Api.Core.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
 using Elastic.Documentation.Api.Infrastructure.Gcp;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -187,8 +187,8 @@ data: {"type":"conversationEnd","id":"test"}
 		// Verify the HttpClient was called with correct headers
 		mockHandler.RequestSent.Should().BeTrue();
 		mockHandler.CapturedRequest.Should().NotBeNull();
-		mockHandler.CapturedRequest!.Headers.Authorization.Should().NotBeNull();
-		mockHandler.CapturedRequest.Headers.Authorization!.Scheme.Should().Be("Bearer");
+		mockHandler.CapturedRequest.Headers.Authorization.Should().NotBeNull();
+		mockHandler.CapturedRequest.Headers.Authorization.Scheme.Should().Be("Bearer");
 		mockHandler.CapturedRequest.Headers.Authorization.Parameter.Should().Be("mock-gcp-token");
 	}
 

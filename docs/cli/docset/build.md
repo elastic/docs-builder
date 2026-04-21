@@ -60,3 +60,6 @@ docs-builder [command] [options...] [-h|--help] [--version]
 
 `--canonical-base-url` `<string>`
 :   The base URL for the canonical url tag (optional)
+
+`--skip-api`
+:   Skip [API Explorer](../../configure/content-set/api-explorer.md) generation for faster builds. (optional)

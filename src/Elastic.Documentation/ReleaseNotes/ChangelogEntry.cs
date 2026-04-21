@@ -10,8 +10,8 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 public record ChangelogEntry
 {
-	/// <summary>Pull request URL or reference.</summary>
-	public string? Pr { get; init; }
+	/// <summary>Pull request URLs or references.</summary>
+	public IReadOnlyList<string>? Prs { get; init; }
 
 	/// <summary>Related issue URLs or references.</summary>
 	public IReadOnlyList<string>? Issues { get; init; }
@@ -63,7 +63,7 @@ public record ChangelogEntry
 		Highlight = Highlight,
 		Subtype = Subtype,
 		Areas = Areas,
-		Pr = Pr,
+		Prs = Prs,
 		Issues = Issues
 	};
 }

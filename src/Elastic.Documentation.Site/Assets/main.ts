@@ -42,6 +42,12 @@ import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
 import('./web-components/VectorSizingCalculator/VectorSizingCalculatorComponent')
 
+if (config.buildType === 'isolated' || config.airGapped) {
+    import('./isolated')
+} else if (config.buildType === 'codex') {
+    import('./codex')
+}
+
 const { getOS } = new UAParser()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

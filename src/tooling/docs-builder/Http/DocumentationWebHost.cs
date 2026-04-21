@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Net;
+using Nullean.ScopedFileSystem;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -34,17 +35,17 @@ public class DocumentationWebHost
 	private readonly WebApplication _webApplication;
 
 	private readonly IHostedService _hostedService;
-	private readonly IFileSystem _writeFileSystem;
+	private readonly ScopedFileSystem _writeFileSystem;
 
 	public InMemoryBuildState InMemoryBuildState { get; }
 
-	public DocumentationWebHost(
-		ILoggerFactory logFactory,
+	public DocumentationWebHost(ILoggerFactory logFactory,
 		string? path,
 		int port,
-		IFileSystem readFs,
-		IFileSystem writeFs,
-		IConfigurationContext configurationContext
+		ScopedFileSystem readFs,
+		ScopedFileSystem writeFs,
+		IConfigurationContext configurationContext,
+		bool isWatchBuild
 	)
 	{
 		_writeFileSystem = writeFs;
@@ -69,7 +70,7 @@ public class DocumentationWebHost
 		_hostedService = collector;
 		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
 		{
-			CanonicalBaseUrl = new Uri(hostUrl)
+			CanonicalBaseUrl = new Uri(hostUrl),
 		};
 
 		// Enable diagnostics panel in serve mode
@@ -78,7 +79,7 @@ public class DocumentationWebHost
 		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
-		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context);
+		GeneratorState = new ReloadableGeneratorState(logFactory, Context.DocumentationSourceDirectory, Context.OutputDirectory, Context, isWatchBuild);
 		_ = builder.Services
 			.AddAotLiveReload(s =>
 			{
@@ -154,8 +155,8 @@ public class DocumentationWebHost
 		_ = _webApplication.MapGet("/api/{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, slug, ctx));
 
-		var apiV1 = _webApplication.MapGroup("/docs/_api/v1");
 #if DEBUG
+		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
 		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(_webApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
 #endif
@@ -211,7 +212,12 @@ public class DocumentationWebHost
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
-		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
+		await holder.EnsureApiReferencesAsync(ctx);
+
+		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
+		var path = Path.GetFullPath(Path.Join(apiRoot, slug.Trim('/'), "index.html"));
+		if (!path.StartsWith(apiRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+			return Results.NotFound();
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)
 		{
@@ -241,7 +247,7 @@ public class DocumentationWebHost
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		slug = slug.TrimEnd('/');
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
+		var s = Path.GetExtension(slug) == string.Empty ? Path.Join(slug, "index.md") : slug;
 		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
 		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))

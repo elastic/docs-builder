@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests;
 
@@ -203,105 +203,32 @@ public class ReleaseNotesExtractorTests
 	}
 
 	[Fact]
-	public void ExtractReleaseNotes_WithShortReleaseNote_ReturnsAsTitle()
+	public void FindReleaseNote_WithExactly120Characters_ReturnsContent()
 	{
 		// Arrange
 		// language=markdown
-		var prBody = "Release Notes: Adds support for new aggregation types";
+		var expected = new string('a', 120);
+		var prBody = "Release Notes: " + expected;
 
 		// Act
-		var (title, description) = ReleaseNotesExtractor.ExtractReleaseNotes(prBody);
+		var result = ReleaseNotesExtractor.FindReleaseNote(prBody);
 
 		// Assert
-		title.Should().Be("Adds support for new aggregation types");
-		description.Should().BeNull();
+		result.Should().Be(expected);
 	}
 
 	[Fact]
-	public void ExtractReleaseNotes_WithLongReleaseNote_ReturnsAsDescription()
+	public void FindReleaseNote_With121Characters_ReturnsContent()
 	{
 		// Arrange
 		// language=markdown
-		var prBody = "Release Notes: Adds support for new aggregation types including date histogram, range aggregations, and nested aggregations with improved performance";
+		var expected = new string('a', 121);
+		var prBody = "Release Notes: " + expected;
 
 		// Act
-		var (title, description) = ReleaseNotesExtractor.ExtractReleaseNotes(prBody);
+		var result = ReleaseNotesExtractor.FindReleaseNote(prBody);
 
 		// Assert
-		title.Should().BeNull();
-		description.Should().Be("Adds support for new aggregation types including date histogram, range aggregations, and nested aggregations with improved performance");
-	}
-
-	[Fact]
-	public void ExtractReleaseNotes_WithMultiLineReleaseNote_ReturnsAsDescription()
-	{
-		// Arrange
-		// The regex stops at double newline, so we need a release note that spans multiple lines without double newline
-		// language=markdown
-		var prBody =
-			"""
-			Release Notes: Adds support for new aggregation types
-			This includes date histogram and range aggregations
-			with improved performance
-			""".ReplaceLineEndings("\n");
-
-		// Act
-		var (title, description) = ReleaseNotesExtractor.ExtractReleaseNotes(prBody);
-
-		// Assert
-		// Since there's a newline in the content, it should be treated as multi-line
-		title.Should().BeNull();
-		description.Should().Contain("Adds support for new aggregation types");
-		description.Should().Contain("\n");
-	}
-
-	[Fact]
-	public void ExtractReleaseNotes_WithExactly120Characters_ReturnsAsTitle()
-	{
-		// Arrange
-		// language=markdown
-		var prBody = "Release Notes: " + new string('a', 120);
-
-		// Act
-		var (title, description) = ReleaseNotesExtractor.ExtractReleaseNotes(prBody);
-
-		// Assert
-		title.Should().Be(new string('a', 120));
-		description.Should().BeNull();
-	}
-
-	[Fact]
-	public void ExtractReleaseNotes_With121Characters_ReturnsAsDescription()
-	{
-		// Arrange
-		// language=markdown
-		var prBody = "Release Notes: " + new string('a', 121);
-
-		// Act
-		var (title, description) = ReleaseNotesExtractor.ExtractReleaseNotes(prBody);
-
-		// Assert
-		title.Should().BeNull();
-		description.Should().Be(new string('a', 121));
-	}
-
-	[Fact]
-	public void ExtractReleaseNotes_WithNoReleaseNote_ReturnsNulls()
-	{
-		// Arrange
-		// language=markdown
-		var prBody =
-			"""
-			## Summary
-
-			This PR has no release notes.
-			""";
-
-		// Act
-		var (title, description) = ReleaseNotesExtractor.ExtractReleaseNotes(prBody);
-
-		// Assert
-		title.Should().BeNull();
-		description.Should().BeNull();
+		result.Should().Be(expected);
 	}
 }

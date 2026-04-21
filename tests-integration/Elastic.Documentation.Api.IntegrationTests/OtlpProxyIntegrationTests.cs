@@ -4,10 +4,10 @@
 
 using System.Net;
 using System.Text;
+using AwesomeAssertions;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

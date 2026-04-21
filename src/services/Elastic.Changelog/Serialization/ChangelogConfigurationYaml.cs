@@ -11,6 +11,11 @@ namespace Elastic.Changelog.Serialization;
 internal record ChangelogConfigurationYaml
 {
 	/// <summary>
+	/// Filename strategy for generated changelog files (pr, issue, timestamp).
+	/// </summary>
+	public string? Filename { get; set; }
+
+	/// <summary>
 	/// Pivot configuration for types, subtypes, and areas with label mappings.
 	/// </summary>
 	public PivotConfigurationYaml? Pivot { get; set; }
@@ -65,9 +70,65 @@ internal record RulesConfigurationYaml
 	public CreateRulesYaml? Create { get; set; }
 
 	/// <summary>
+	/// Bundle rules controlling which entries are included in a bundle file.
+	/// </summary>
+	public BundleRulesYaml? Bundle { get; set; }
+
+	/// <summary>
 	/// Publish rules controlling which entries appear in rendered output.
 	/// </summary>
 	public PublishRulesYaml? Publish { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for bundle rules in YAML.
+/// </summary>
+internal record BundleRulesYaml
+{
+	/// <summary>
+	/// Product IDs to exclude from the bundle (string or list). Cannot be combined with IncludeProducts.
+	/// </summary>
+	public YamlLenientList? ExcludeProducts { get; set; }
+
+	/// <summary>
+	/// Product IDs to include in the bundle (string or list). Cannot be combined with ExcludeProducts.
+	/// </summary>
+	public YamlLenientList? IncludeProducts { get; set; }
+
+	/// <summary>
+	/// Match mode for products ("any" or "all"). Inherits from rules.match if not set.
+	/// </summary>
+	public string? MatchProducts { get; set; }
+
+	/// <summary>
+	/// Match mode for areas ("any" or "all"). Inherits from rules.match if not set.
+	/// </summary>
+	public string? MatchAreas { get; set; }
+
+	/// <summary>
+	/// Entry types to exclude from the bundle (string or list).
+	/// </summary>
+	public YamlLenientList? ExcludeTypes { get; set; }
+
+	/// <summary>
+	/// Entry types to include in the bundle (string or list, only these types are kept).
+	/// </summary>
+	public YamlLenientList? IncludeTypes { get; set; }
+
+	/// <summary>
+	/// Entry areas to exclude from the bundle (string or list).
+	/// </summary>
+	public YamlLenientList? ExcludeAreas { get; set; }
+
+	/// <summary>
+	/// Entry areas to include in the bundle (string or list, only entries with these areas are kept).
+	/// </summary>
+	public YamlLenientList? IncludeAreas { get; set; }
+
+	/// <summary>
+	/// Per-product type/area blocker overrides. Keys can be comma-separated product IDs.
+	/// </summary>
+	public Dictionary<string, BundleRulesYaml?>? Products { get; set; }
 }
 
 /// <summary>
@@ -155,6 +216,13 @@ internal record PivotConfigurationYaml
 	public Dictionary<string, YamlLenientList?>? Areas { get; set; }
 
 	/// <summary>
+	/// Product definitions with labels (string or list per value).
+	/// Keys are product spec strings (e.g., "elasticsearch", "kibana 9.2.0").
+	/// Values are label strings that trigger adding the product.
+	/// </summary>
+	public Dictionary<string, YamlLenientList?>? Products { get; set; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
 	public YamlLenientList? Highlight { get; set; }
@@ -213,6 +281,26 @@ internal record BundleConfigurationYaml
 	public bool? Resolve { get; set; }
 
 	/// <summary>
+	/// Default bundle description used when no profile-specific description is provided.
+	/// </summary>
+	public string? Description { get; set; }
+
+	/// <summary>
+	/// Default GitHub repository name applied to all profiles that do not specify their own.
+	/// </summary>
+	public string? Repo { get; set; }
+
+	/// <summary>
+	/// Default GitHub repository owner applied to all profiles that do not specify their own.
+	/// </summary>
+	public string? Owner { get; set; }
+
+	/// <summary>
+	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels (requires resolve).
+	/// </summary>
+	public YamlLenientList? LinkAllowRepos { get; set; }
+
+	/// <summary>
 	/// Named bundle profiles.
 	/// </summary>
 	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }
@@ -236,9 +324,38 @@ internal record BundleProfileYaml
 	public string? Output { get; set; }
 
 	/// <summary>
+	/// Output products pattern. Overrides the products array derived from matched changelogs.
+	/// Supports {version} and {lifecycle} placeholders.
+	/// </summary>
+	public string? OutputProducts { get; set; }
+
+	/// <summary>
+	/// Profile-specific bundle description. Overrides bundle.description when provided.
+	/// </summary>
+	public string? Description { get; set; }
+
+	/// <summary>
+	/// GitHub repository name for generating PR/issue links in bundle output.
+	/// </summary>
+	public string? Repo { get; set; }
+
+	/// <summary>
+	/// GitHub repository owner for generating PR/issue links in bundle output.
+	/// Defaults to "elastic" when not specified.
+	/// </summary>
+	public string? Owner { get; set; }
+
+	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output (string or list).
 	/// </summary>
 	public YamlLenientList? HideFeatures { get; set; }
+
+	/// <summary>
+	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
+	/// PR references directly from a GitHub release and uses them as the bundle filter.
+	/// Mutually exclusive with <see cref="Products"/>.
+	/// </summary>
+	public string? Source { get; set; }
 }
 
 /// <summary>
@@ -247,7 +364,8 @@ internal record BundleProfileYaml
 internal record ExtractConfigurationYaml
 {
 	/// <summary>
-	/// Whether to extract release notes from PR descriptions by default.
+	/// Whether to extract release note text from PR or issue descriptions for the changelog entry description by default.
+	/// Does not affect the title (title comes from <c>--title</c> or the PR/issue title).
 	/// Defaults to true.
 	/// </summary>
 	public bool? ReleaseNotes { get; set; }
@@ -257,6 +375,12 @@ internal record ExtractConfigurationYaml
 	/// Defaults to true.
 	/// </summary>
 	public bool? Issues { get; set; }
+
+	/// <summary>
+	/// Whether to strip square-bracket prefixes from PR titles by default.
+	/// Defaults to false.
+	/// </summary>
+	public bool? StripTitlePrefix { get; set; }
 }
 
 /// <summary>

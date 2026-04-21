@@ -21,7 +21,7 @@
     <PackageReference Include="MartinCostello.Logging.XUnit.v3" />
     <PackageReference Include="xunit.v3.extensibility.core" />
 
-    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>

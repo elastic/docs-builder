@@ -4,11 +4,11 @@
 
 using System.Globalization;
 using System.Text.Json;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Search;
 
@@ -303,6 +303,8 @@ public class DocumentationDocumentSerializationTests
 			Hash = "abc123",
 			BatchIndexDate = DateTimeOffset.Parse("2024-01-15T10:00:00Z", CultureInfo.InvariantCulture),
 			LastUpdated = DateTimeOffset.Parse("2024-01-15T09:00:00Z", CultureInfo.InvariantCulture),
+			ContentLastUpdated = DateTimeOffset.Parse("2024-01-14T08:00:00Z", CultureInfo.InvariantCulture),
+			ContentBodyHash = "abc123def456abc1",
 			Applies = new ApplicableTo
 			{
 				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.5.0" }]),
@@ -325,9 +327,11 @@ public class DocumentationDocumentSerializationTests
 		deserialized.Url.Should().Be(original.Url);
 		deserialized.Title.Should().Be(original.Title);
 		deserialized.Applies.Should().NotBeNull();
-		deserialized.Applies!.Stack.Should().BeEquivalentTo(original.Applies!.Stack);
+		deserialized.Applies.Stack.Should().BeEquivalentTo(original.Applies.Stack);
 		deserialized.Applies.Deployment.Should().NotBeNull();
-		deserialized.Applies.Deployment!.Ess.Should().BeEquivalentTo(original.Applies.Deployment!.Ess);
+		deserialized.Applies.Deployment.Ess.Should().BeEquivalentTo(original.Applies.Deployment.Ess);
+		deserialized.ContentLastUpdated.Should().Be(original.ContentLastUpdated);
+		deserialized.ContentBodyHash.Should().Be(original.ContentBodyHash);
 	}
 
 	[Fact]

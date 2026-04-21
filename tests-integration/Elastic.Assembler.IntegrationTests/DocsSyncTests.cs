@@ -7,15 +7,17 @@ using System.IO.Abstractions.TestingHelpers;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
+using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Deploying.Synchronization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 
@@ -39,12 +41,14 @@ public class DocsSyncTests
 			{ "docs/update.md", new MockFileData("# Existing Document") },
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
 		});
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedWriteFs, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
 			.Returns(new ListObjectsV2Response
 			{
@@ -178,14 +182,16 @@ public class DocsSyncTests
 		var mockS3Client = A.Fake<IAmazonS3>();
 		var fileSystem = new MockFileSystem(new MockFileSystemOptions
 		{
-			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
 		});
 		foreach (var i in Enumerable.Range(0, localFiles))
 			fileSystem.AddFile($"docs/file-{i}.md", new MockFileData($"# Local Document {i}"));
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
+		var scopedFs2 = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var scopedWriteFs2 = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs2, scopedWriteFs2, null, Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"));
 
 		var s3Objects = new List<S3Object>();
 		foreach (var i in Enumerable.Range(0, remoteFiles))
@@ -230,12 +236,14 @@ public class DocsSyncTests
 			{ "docs/update.md", new MockFileData("# Existing Document") },
 		}, new MockFileSystemOptions
 		{
-			CurrentDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+			CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"),
 		});
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var checkoutDirectory = Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var context = new AssembleContext(config, configurationContext, "dev", collector, fileSystem, fileSystem, null, checkoutDirectory);
+		var checkoutDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
+		var scopedFs3 = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
+		var scopedWriteFs3 = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fileSystem);
+		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs3, scopedWriteFs3, null, checkoutDirectory);
 		var plan = new SyncPlan
 		{
 			RemoteListingCompleted = true,
