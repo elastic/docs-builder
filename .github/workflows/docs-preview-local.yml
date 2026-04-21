@@ -1,7 +1,7 @@
 name: Docs preview (local)
 
 # In-repo docs build using dotnet run (elastic/docs-builder only). Replaces the former
-# github.repository branches in preview-build.yml; consumers still use preview-build.yml (Docker).
+# Previously lived in preview-build.yml (removed); this repo builds docs from source here.
 # Triggers are only pull_request and push — conditions below match those events only.
 
 on:
