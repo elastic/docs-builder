@@ -277,6 +277,8 @@ nav:
         children:
         - title: Overview (roundup)
         - toc: ecctl://reference
+        - island: Account and preferences
+          toc: docs-content://cloud-account
     - label: The Elasticsearch Platform
       children:
       - label: Ingest and manage data
@@ -2881,8 +2883,3 @@ nav:
       - toc: elasticsearch://extend
       - toc: integrations://extend
 
-  - section: Account and preferences
-    url: /cloud-account/
-    isolated: true
-    children:
-    - toc: docs-content://cloud-account
