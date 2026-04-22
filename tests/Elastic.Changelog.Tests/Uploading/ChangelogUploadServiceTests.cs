@@ -343,9 +343,16 @@ public class ChangelogUploadServiceTests
 			  - product: elasticsearch
 			    target: 9.2.0
 			    lifecycle: ga
+			    repo: elasticsearch
+			    owner: elastic
 			entries:
-			  - title: New feature
-			    type: feature
+			  - file:
+			      name: 1234-feature.yaml
+			      checksum: abc123def456
+			    type: enhancement
+			    title: New feature
+			    prs:
+			      - https://github.com/elastic/elasticsearch/pull/1234
 			"""));
 
 		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._))
@@ -383,9 +390,16 @@ public class ChangelogUploadServiceTests
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
+			    repo: elasticsearch
+			    owner: elastic
 			entries:
-			  - title: Feature
-			    type: feature
+			  - file:
+			      name: 5678-bugfix.yaml
+			      checksum: def789abc012
+			    type: bug-fix
+			    title: Fixed crash on startup
+			    prs:
+			      - https://github.com/elastic/elasticsearch/pull/5678
 			"""));
 
 		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
@@ -405,11 +419,18 @@ public class ChangelogUploadServiceTests
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
+			    repo: elasticsearch
 			  - product: kibana
 			    target: 9.2.0
+			    repo: kibana
 			entries:
-			  - title: Stack feature
-			    type: feature
+			  - file:
+			      name: 9999-cross-product.yaml
+			      checksum: aaa111bbb222
+			    type: enhancement
+			    title: Cross-product improvement
+			    prs:
+			      - https://github.com/elastic/elasticsearch/pull/9999
 			"""));
 
 		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);

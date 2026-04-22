@@ -164,9 +164,6 @@ public partial class ChangelogUploadService(
 		}
 	}
 
-	private static readonly YamlDotNet.Serialization.IDeserializer BundleDeserializer =
-		ReleaseNotesSerialization.GetEntryDeserializer();
-
 	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
 	{
 		var rootDir = _fileSystem.DirectoryInfo.New(bundleDir);
@@ -216,14 +213,11 @@ public partial class ChangelogUploadService(
 		try
 		{
 			var content = _fileSystem.File.ReadAllText(filePath);
-			var bundle = BundleDeserializer.Deserialize<BundleDto>(content);
-			if (bundle?.Products == null)
-				return [];
+			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
 
 			return bundle.Products
-				.Select(p => p?.Product)
+				.Select(p => p.ProductId)
 				.Where(p => !string.IsNullOrWhiteSpace(p))
-				.Select(p => p!)
 				.Distinct()
 				.ToList();
 		}
@@ -255,6 +249,6 @@ public partial class ChangelogUploadService(
 			return "docs/releases";
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
-		return config?.Bundle?.OutputDirectory ?? "docs/releases";
+		return config?.Bundle?.OutputDirectory ?? config?.Bundle?.Directory ?? "docs/releases";
 	}
 }
