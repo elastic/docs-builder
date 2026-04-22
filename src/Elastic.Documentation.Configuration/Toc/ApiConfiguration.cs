@@ -8,7 +8,113 @@ using YamlDotNet.Serialization;
 namespace Elastic.Documentation.Configuration.Toc;
 
 /// <summary>
+/// Represents a single entry in an API product sequence (either a file or spec).
+/// </summary>
+[YamlSerializable]
+public class ApiProductEntry
+{
+	/// <summary>
+	/// Path to a Markdown file for intro/outro content.
+	/// </summary>
+	[YamlMember(Alias = "file")]
+	public string? File { get; set; }
+
+	/// <summary>
+	/// Path to an OpenAPI specification file.
+	/// </summary>
+	[YamlMember(Alias = "spec")]
+	public string? Spec { get; set; }
+
+	/// <summary>
+	/// Whether this entry represents a Markdown file.
+	/// </summary>
+	public bool IsMarkdownFile => !string.IsNullOrWhiteSpace(File);
+
+	/// <summary>
+	/// Whether this entry represents an OpenAPI specification.
+	/// </summary>
+	public bool IsOpenApiSpec => !string.IsNullOrWhiteSpace(Spec);
+
+	/// <summary>
+	/// Gets the path for this entry (either file or spec).
+	/// </summary>
+	public string? GetPath() => File ?? Spec;
+
+	/// <summary>
+	/// Validates that this entry has exactly one of file or spec set.
+	/// </summary>
+	public bool IsValid => (IsMarkdownFile && !IsOpenApiSpec) || (!IsMarkdownFile && IsOpenApiSpec);
+}
+
+/// <summary>
+/// Represents an API product configuration as a sequence of file/spec entries.
+/// </summary>
+[YamlSerializable]
+public class ApiProductSequence
+{
+	/// <summary>
+	/// Ordered list of file and spec entries.
+	/// </summary>
+	public List<ApiProductEntry> Entries { get; set; } = [];
+
+	/// <summary>
+	/// Gets all Markdown file entries that appear before the first spec.
+	/// </summary>
+	public IEnumerable<string> GetIntroMarkdownFiles()
+	{
+		foreach (var entry in Entries)
+		{
+			if (entry.IsOpenApiSpec)
+				break;
+			if (entry.IsMarkdownFile)
+				yield return entry.File!;
+		}
+	}
+
+	/// <summary>
+	/// Gets all Markdown file entries that appear after the last spec.
+	/// </summary>
+	public IEnumerable<string> GetOutroMarkdownFiles()
+	{
+		var lastSpecIndex = -1;
+
+		// Find the last spec entry
+		for (var i = Entries.Count - 1; i >= 0; i--)
+		{
+			if (Entries[i].IsOpenApiSpec)
+			{
+				lastSpecIndex = i;
+				break;
+			}
+		}
+
+		// Return markdown files after the last spec
+		if (lastSpecIndex >= 0)
+		{
+			for (var i = lastSpecIndex + 1; i < Entries.Count; i++)
+			{
+				if (Entries[i].IsMarkdownFile)
+					yield return Entries[i].File!;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Gets all OpenAPI specification file paths.
+	/// </summary>
+	public IEnumerable<string> GetSpecPaths() => Entries
+			.Where(e => e.IsOpenApiSpec)
+			.Select(e => e.Spec!);
+
+	/// <summary>
+	/// Validates that the sequence has exactly one spec and all entries are valid.
+	/// </summary>
+	public bool IsValid => Entries.All(e => e.IsValid) && Entries.Count(e => e.IsOpenApiSpec) == 1;
+}
+
+/// <summary>
 /// Configuration for API documentation generation from OpenAPI specifications.
+/// Legacy class maintained for backward compatibility.
 /// </summary>
 [YamlSerializable]
 public class ApiConfiguration
@@ -27,12 +133,6 @@ public class ApiConfiguration
 	[YamlMember(Alias = "specs")]
 	public List<string>? Specs { get; set; }
 
-	/// <summary>
-	/// Path to a Markdown template file to use as the API landing page.
-	/// If not specified, an auto-generated landing page will be used.
-	/// </summary>
-	[YamlMember(Alias = "template")]
-	public string? Template { get; set; }
 
 	/// <summary>
 	/// Validates that the configuration is valid.
@@ -63,16 +163,40 @@ public class ApiConfiguration
 public class ResolvedApiConfiguration
 {
 	public required string ProductKey { get; init; }
-	public IFileInfo? TemplateFile { get; init; }
+
+	/// <summary>
+	/// Ordered list of Markdown files that appear before the first spec (intro content).
+	/// </summary>
+	public List<IFileInfo> IntroMarkdownFiles { get; init; } = [];
+
+	/// <summary>
+	/// OpenAPI specification files.
+	/// </summary>
 	public required List<IFileInfo> SpecFiles { get; init; }
 
 	/// <summary>
-	/// Whether this configuration has a custom template file.
+	/// Ordered list of Markdown files that appear after the last spec (outro content).
 	/// </summary>
-	public bool HasCustomTemplate => TemplateFile != null;
+	public List<IFileInfo> OutroMarkdownFiles { get; init; } = [];
+
+	/// <summary>
+	/// Whether this configuration has intro or outro markdown files.
+	/// </summary>
+	public bool HasSupplementaryContent => IntroMarkdownFiles.Count > 0 || OutroMarkdownFiles.Count > 0;
 
 	/// <summary>
 	/// Primary specification file (first in the list, for backward compatibility).
 	/// </summary>
 	public IFileInfo PrimarySpecFile => SpecFiles.First();
+
+	/// <summary>
+	/// Gets all Markdown file paths that should be excluded from normal HTML generation.
+	/// </summary>
+	public IEnumerable<string> GetMarkdownPathsToExclude(string documentationSourceDirectoryFullName)
+	{
+		foreach (var file in IntroMarkdownFiles)
+			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
+		foreach (var file in OutroMarkdownFiles)
+			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
+	}
 }
