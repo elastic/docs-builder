@@ -249,7 +249,7 @@ These settings are located in the `rules.create` section of the configuration fi
 You cannot specify both `exclude` and `include`.
 :::
 
-Product keys in `rule.create.products` can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`).
+Product keys in `rules.create.products` can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`).
 Product-specific rules **override** the global create rules entirely.
 
 ```yaml
@@ -295,13 +295,13 @@ The way bundle rules are applied can be broken down into three "modes":
 :   No changelogs are filtered out of the bundle based on their product, type, or area.  
 
 2 — Global rules
-:   This mode applies when there's at least one global bundle rule set and the `bundle.rules.products` section is absent or empty (`products: {}`).
+:   This mode applies when there's at least one global bundle rule set and the `rules.bundle.products` section is absent or empty (`products: {}`).
 :   Global rules are evaluated against each changelog's own `products`, `type`, and `areas`.
 :   There is no single product used for the rule context and no disjoint exclusion.
 :   Changelogs with missing or empty `products` are included with a warning; global product "include" or "exclude" lists are skipped for those entries, global type and area rules still apply.
 
 3 — Product-specific rules
-:   This mode applies when the `bundle.rules.products` section is not absent or empty.
+:   This mode applies when the `rules.bundle.products` section is not absent or empty.
 :   The bundle uses a single product for its rule context.
 :   Disjoint changelogs are excluded and changelogs with missing or empty `products` are excluded with a warning.
 :   Global `rules.bundle` are not used for filtering.
@@ -368,7 +368,7 @@ The difference only matters for changelogs with multiple products.
 
 This section provides more detailed information about "mode 3" product-specific bundle rules.
 
-Product keys in `rule.bundle.products` can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`) if you want an identical set of rules for multiple products.
+Product keys in `rules.bundle.products` can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`) if you want an identical set of rules for multiple products.
 
 When you create a bundle, only a single product-specific bundle rule can apply (we cannot combine multiple products' rules).
 A single _rule-context product_ must therefore be determined for each bundle.
