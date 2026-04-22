@@ -111,6 +111,8 @@ Link to websites and resources outside the Elastic docs:
 [Elastic Documentation](https://www.elastic.co/guide)
 ```
 
+External links display an arrow indicator next to the link text. The indicator is omitted when the link wraps an image (for example, a screenshot or badge), since the image already conveys the target.
+
 ### Autolinks
 
 Bare `https://` URLs in text are automatically converted to clickable links.
