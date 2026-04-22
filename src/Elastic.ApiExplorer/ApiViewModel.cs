@@ -32,6 +32,9 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 	public BuildContext BuildContext { get; } = context?.BuildContext ?? throw new ArgumentNullException(nameof(context), "BuildContext cannot be null");
 	public OpenApiDocument Document { get; } = context?.Model ?? throw new ArgumentNullException(nameof(context), "OpenApiDocument cannot be null");
 
+	/// <summary>Current API render context (OpenAPI model, nav, optional logging).</summary>
+	protected ApiRenderContext RenderContext { get; } = context ?? throw new ArgumentNullException(nameof(context));
+
 
 	public HtmlString RenderMarkdown(string? markdown)
 	{
