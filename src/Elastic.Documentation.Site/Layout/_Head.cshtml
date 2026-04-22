@@ -44,6 +44,10 @@
 	@await RenderPartialAsync(_Favicon.Create())
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
 	<meta name="htmx-config" content='{"selfRequestsOnly": true}'>
+	@if (!string.IsNullOrEmpty(Model.NavigationActiveUrl))
+	{
+		<meta name="docs:nav-active" content="@Model.NavigationActiveUrl">
+	}
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
 	<meta property="og:description" content="@Model.Description"/>

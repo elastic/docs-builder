@@ -75,6 +75,10 @@ public class HtmlWriter(
 		var next = NavigationTraversable.GetNext(markdown);
 		var parents = NavigationTraversable.GetParentsOfMarkdownFile(markdown);
 
+		// For hidden nav items (e.g. individual detection rule pages) there is no rendered nav link,
+		// so JS can't mark anything as current. Point it at the nearest visible ancestor instead.
+		var navActiveUrl = current.Hidden ? parents.FirstOrDefault(p => !p.Hidden)?.Url : null;
+
 		var remote = DocumentationSet.Context.Git.RepositoryName;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
@@ -150,6 +154,7 @@ public class HtmlWriter(
 			PreviousDocument = previous,
 			NextDocument = next,
 			Breadcrumbs = breadcrumbs,
+			NavigationActiveUrl = navActiveUrl,
 			NavigationHtml = navigationHtmlRenderResult.Html,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			SiteRootPath = DocumentationSet.Context.SiteRootPath,

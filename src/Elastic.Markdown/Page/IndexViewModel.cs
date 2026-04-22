@@ -34,6 +34,12 @@ public class IndexViewModel
 	public required INavigationItem? NextDocument { get; init; }
 	public required INavigationItem[] Breadcrumbs { get; init; }
 
+	/// <summary>
+	/// When the current page is a hidden nav item, the URL of its nearest visible ancestor.
+	/// Emitted as a meta tag so JavaScript can highlight the correct nav entry.
+	/// </summary>
+	public string? NavigationActiveUrl { get; init; }
+
 	public required string NavigationHtml { get; init; }
 
 	public required string? CurrentVersion { get; init; }

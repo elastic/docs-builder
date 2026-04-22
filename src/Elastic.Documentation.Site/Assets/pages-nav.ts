@@ -134,8 +134,14 @@ export function initNav() {
 
     // Normalize pathname by removing trailing slash to handle both URL variants
     const pathname = window.location.pathname.replace(/\/$/, '')
+
+    // When the page is a hidden nav item (e.g. an individual detection rule), the server
+    // emits docs:nav-active pointing to the nearest visible ancestor so we can highlight it.
+    const navActiveMeta = document.querySelector<HTMLMetaElement>('meta[name="docs:nav-active"]')
+    const activePathname = navActiveMeta?.content ?? pathname
+
     const navItems = $$(
-        'a[href="' + pathname + '"], a[href="' + pathname + '/"]',
+        'a[href="' + activePathname + '"], a[href="' + activePathname + '/"]',
         pagesNav
     )
     navItems.forEach((el) => {
