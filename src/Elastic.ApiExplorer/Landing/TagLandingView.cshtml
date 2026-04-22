@@ -1,0 +1,97 @@
+@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.TagLandingViewModel>
+@using Elastic.ApiExplorer
+@using Elastic.ApiExplorer.Landing
+@using Elastic.ApiExplorer.Operations
+@using Elastic.Documentation.Navigation
+@using Elastic.Documentation.Site.Navigation
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
+@functions {
+	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	private IHtmlContent RenderOp(IReadOnlyCollection<OperationNavigationItem> endpointOperations)
+	{
+		<ul class="api-url-listing">
+		@foreach (var overload in endpointOperations)
+		{
+			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+			<li class="api-url-list-item">
+				<a href="@overload.Url" class="current api-url-list-item-landing" hx-disable="true">
+					<span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
+					<span class="api-url">@overload.Model.Route</span>
+				</a>
+			</li>
+		}
+		</ul>
+
+		return HtmlString.Empty;
+	}
+
+	private IHtmlContent RenderTagChild(INavigationItem item)
+	{
+		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+		{
+			foreach (var navigationItem in node.NavigationItems)
+			{
+				if (navigationItem is EndpointNavigationItem endpoint)
+				{
+					var endpointOperations =
+						endpoint is { NavigationItems.Count: > 0 } && endpoint.NavigationItems.All(n => n.Hidden)
+							? endpoint.NavigationItems
+							: [];
+					if (endpointOperations.Count > 0)
+					{
+						<tr>
+							<td class="api-name">@(endpoint.NavigationTitle)</td>
+							<td>@RenderOp(endpointOperations)</td>
+						</tr>
+					}
+					else
+					{
+						@RenderTagChild(endpoint)
+					}
+				}
+				else if (navigationItem is OperationNavigationItem operation)
+				{
+					<tr>
+						<td class="api-name">@(operation.NavigationTitle)</td>
+						<td>@RenderOp([operation])</td>
+					</tr>
+				}
+				else
+				{
+					throw new System.Exception($"Unexpected type on tag landing: {navigationItem.GetType().FullName}");
+				}
+			}
+		}
+
+		return HtmlString.Empty;
+	}
+}
+<section id="elastic-api-v3">
+	<h1>@Model.Tag.DisplayName</h1>
+	@if (!string.Equals(Model.Tag.Name, Model.Tag.DisplayName, StringComparison.Ordinal))
+	{
+		<p class="api-tag-canonical"><code>@Model.Tag.Name</code></p>
+	}
+	@if (!string.IsNullOrEmpty(Model.Tag.Description))
+	{
+		<div class="api-tag-description">@Model.RenderMarkdown(Model.Tag.Description)</div>
+	}
+	@{
+		var ed = Model.Tag.ExternalDocs;
+	}
+	@if (ed is not null)
+	{
+		var externalDocsUrl = ed.Url;
+		var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs", System.StringComparison.Ordinal) || externalDocsUrl.Contains("elastic.co/guide", System.StringComparison.Ordinal);
+		var linkText = string.IsNullOrWhiteSpace(ed.Description) ? "Documentation" : ed.Description;
+		<p class="api-tag-external-docs">
+			<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener noreferrer\"")>@linkText</a>
+		</p>
+	}
+	<div class="api-overview">
+		<table>
+			@RenderTagChild(Model.CurrentNavigationItem)
+		</table>
+	</div>
+</section>

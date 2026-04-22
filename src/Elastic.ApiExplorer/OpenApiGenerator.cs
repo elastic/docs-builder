@@ -17,6 +17,7 @@ using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
+using RazorSlices;
 
 namespace Elastic.ApiExplorer;
 
@@ -30,10 +31,24 @@ public record ApiClassification(string Name, string Description, IReadOnlyCollec
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
 }
 
-public record ApiTag(string Name, string DisplayName, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
+/// <summary>External documentation for an OpenAPI tag (tag-level <c>externalDocs</c>).</summary>
+public record ApiTagExternalDoc(string? Description, string Url);
+
+public record ApiTag(
+	string Name,
+	string DisplayName,
+	string Description,
+	ApiTagExternalDoc? ExternalDocs,
+	string TagUrlSegment,
+	IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
 {
 	/// <inheritdoc />
-	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	{
+		var viewModel = new TagLandingViewModel(context) { Tag = this };
+		var slice = TagLandingView.Create(viewModel);
+		await slice.RenderAsync(stream, cancellationToken: ctx);
+	}
 }
 
 public record ApiEndpoint(List<ApiOperation> Operations, string? Name) : IApiGroupingModel
@@ -56,8 +71,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
 		var rootNavigation = new LandingNavigationItem(url);
 
-		// Parse x-displayName from OpenAPI tags for user-friendly display names
-		var tagDisplayNames = ParseTagDisplayNames(openApiDocument);
+		var tagMetadataByName = ParseOpenApiTagMetadata(openApiDocument);
 		var xTagGroups = TryParseXTagGroups(openApiDocument);
 		var orphanTagsLogged = new HashSet<string>(StringComparer.Ordinal);
 
@@ -88,6 +102,12 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				};
 			})
 			.ToArray();
+
+		var distinctTagNames = ops
+			.Select(o => o.Tag ?? "unknown")
+			.Distinct()
+			.ToList();
+		var tagNameToUrlSegment = BuildTagMonikerMap(distinctTagNames);
 
 		// intermediate grouping of models to create the navigation tree
 		// this is two-phased because we need to know if an endpoint has one or more operations
@@ -120,8 +140,19 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 					apis.Add(apiEndpoint);
 				}
 				var tagName = tagGroup.Key ?? "unknown";
-				var displayName = tagDisplayNames.TryGetValue(tagName, out var foundDisplayName) ? foundDisplayName : tagName;
-				var tag = new ApiTag(tagName, displayName, "", apis);
+				if (!tagMetadataByName.TryGetValue(tagName, out var tagMeta))
+					tagMeta = new OpenApiTagMetadataEntry(tagName, string.Empty, null);
+				if (!tagNameToUrlSegment.TryGetValue(tagName, out var urlSegment))
+					throw new InvalidOperationException(
+						$"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
+
+				var tag = new ApiTag(
+					tagName,
+					tagMeta.DisplayName,
+					tagMeta.Description,
+					tagMeta.ExternalDocs,
+					urlSegment,
+					apis);
 				tags.Add(tag);
 			}
 
@@ -305,25 +336,13 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> parentNavigationItems
 	)
 	{
-		var hasTags = classification.Tags.Count > 1;
 		foreach (var tag in classification.Tags)
 		{
 			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
-			if (hasTags)
-			{
-				var tagNavigationItem = new TagNavigationItem(tag, rootNavigation, parent);
-				CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, endpointNavigationItems);
-				parentNavigationItems.Add(tagNavigationItem);
-				tagNavigationItem.NavigationItems = endpointNavigationItems;
-			}
-			else
-			{
-				CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, parent, endpointNavigationItems);
-				if (parent is ClassificationNavigationItem classificationNavigationItem)
-					classificationNavigationItem.NavigationItems = endpointNavigationItems;
-				else if (parent is LandingNavigationItem landingNavigationItem)
-					landingNavigationItem.NavigationItems = endpointNavigationItems;
-			}
+			var tagNavigationItem = new TagNavigationItem(tag, context.UrlPathPrefix, apiUrlSuffix, rootNavigation, parent);
+			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, endpointNavigationItems);
+			parentNavigationItems.Add(tagNavigationItem);
+			tagNavigationItem.NavigationItems = endpointNavigationItems;
 		}
 	}
 
@@ -422,7 +441,8 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
+			if (currentNavigation is not ClassificationNavigationItem)
+				_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
 
 			foreach (var child in node.NavigationItems)
 				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, rootNavigation, ctx);
@@ -629,15 +649,14 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	private sealed record XTagGroupsDocument(IReadOnlyList<string> OrderedGroupNames, IReadOnlyDictionary<string, string> TagToGroup);
 
 	/// <summary>
-	/// Parses x-displayName extensions from OpenAPI tag objects to build a mapping of tag names to display names.
-	/// Falls back to the canonical tag name when no x-displayName is present.
+	/// Parses global OpenAPI tag objects: description, <c>externalDocs</c>, and <c>x-displayName</c>.
 	/// </summary>
-	private static Dictionary<string, string> ParseTagDisplayNames(OpenApiDocument openApiDocument)
+	private static Dictionary<string, OpenApiTagMetadataEntry> ParseOpenApiTagMetadata(OpenApiDocument openApiDocument)
 	{
-		var displayNames = new Dictionary<string, string>();
+		var result = new Dictionary<string, OpenApiTagMetadataEntry>(StringComparer.Ordinal);
 
 		if (openApiDocument.Tags is null)
-			return displayNames;
+			return result;
 
 		foreach (var tag in openApiDocument.Tags)
 		{
@@ -645,22 +664,69 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			if (string.IsNullOrEmpty(tagName))
 				continue;
 
-			var displayName = tagName; // Default fallback
-
-			// Look for x-displayName extension
-			if (tag.Extensions?.TryGetValue("x-displayName", out var extension) == true &&
-				extension is JsonNodeExtension jsonExtension)
+			var displayName = tagName;
+			if (tag.Extensions?.TryGetValue("x-displayName", out var ext) == true &&
+				ext is JsonNodeExtension jsonExt)
 			{
-				var displayNameValue = jsonExtension.Node.GetValue<string>();
-				if (!string.IsNullOrWhiteSpace(displayNameValue))
-				{
-					displayName = displayNameValue;
-				}
+				var v = jsonExt.Node.GetValue<string>();
+				if (!string.IsNullOrWhiteSpace(v))
+					displayName = v;
 			}
 
-			displayNames[tagName] = displayName;
+			var description = tag.Description ?? string.Empty;
+			ApiTagExternalDoc? extDoc = null;
+			if (tag.ExternalDocs?.Url is not null)
+			{
+				var url = tag.ExternalDocs.Url.ToString();
+				if (!string.IsNullOrEmpty(url))
+					extDoc = new ApiTagExternalDoc(tag.ExternalDocs.Description, url);
+			}
+
+			result[tagName] = new OpenApiTagMetadataEntry(displayName, description, extDoc);
 		}
 
-		return displayNames;
+		return result;
 	}
+
+	/// <summary>Deterministic single URL segment for <c>.../tags/{segment}/</c> from the canonical tag name.</summary>
+	public static string GenerateTagMoniker(string? tagName)
+	{
+		if (string.IsNullOrWhiteSpace(tagName))
+			return "unknown";
+
+		var s = tagName.Trim();
+		s = string.Join(" ", s.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+		s = s.Replace("{", string.Empty, StringComparison.Ordinal);
+		s = s.Replace("}", string.Empty, StringComparison.Ordinal);
+		s = s.Replace("/", "-", StringComparison.Ordinal);
+		s = s.Replace(" ", "-", StringComparison.Ordinal);
+		if (string.IsNullOrEmpty(s))
+			return "unknown";
+
+		return s;
+	}
+
+	private static IReadOnlyDictionary<string, string> BuildTagMonikerMap(IReadOnlyList<string> distinctTagNames)
+	{
+		var toSegment = new Dictionary<string, string>(StringComparer.Ordinal);
+		var segmentToTagName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var name in distinctTagNames)
+		{
+			var segment = GenerateTagMoniker(name);
+			if (segmentToTagName.TryGetValue(segment, out var existing) && !string.Equals(existing, name, StringComparison.Ordinal))
+			{
+				throw new InvalidOperationException(
+					$"OpenAPI tag URL segment conflict: tags '{existing}' and '{name}' both normalize to the same path segment '{segment}'. " +
+					"Rename one of the tag names in the spec.");
+			}
+
+			segmentToTagName[segment] = name;
+			toSegment[name] = segment;
+		}
+
+		return toSegment;
+	}
+
+	private sealed record OpenApiTagMetadataEntry(string DisplayName, string Description, ApiTagExternalDoc? ExternalDocs);
 }

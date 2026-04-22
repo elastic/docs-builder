@@ -133,6 +133,7 @@ toc:
 The API Explorer generates the following types of pages from your OpenAPI spec:
 
 - **Landing page**: An overview of the API grouped by tag
+- **Tag landing pages**: One page per tag that lists operations in that tag, with the tag’s display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
 - **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
 
@@ -142,6 +143,7 @@ The API Explorer supports some OpenAPI specification extensions to enhance navig
 
 - [x-codeSamples](#x-codesamples)
 - [x-displayName](#x-displayname)
+- [Tag landing URLs](#tag-landing-urls) (path segment for tag pages, derived from the canonical tag `name`)
 - [x-req-auth](#x-req-auth)
 - [x-tagGroups](#x-taggroups)
 
@@ -214,9 +216,48 @@ Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legac
 
 **Behavior:**
 
-- When `x-displayName` is present, it's used for navigation titles and section headings in the API Explorer
+- When `x-displayName` is present, it's used for navigation titles, tag landing page titles, and section headings on the main API overview
 - When `x-displayName` is absent, the canonical tag `name` is used as a fallback
-- Navigation URLs and internal references always use the canonical tag `name` for stability
+- Tag landing page URLs and tag URL segments are derived from the canonical tag `name` (see [Tag landing URLs](#tag-landing-urls))
+
+### Tag landing pages (description and `externalDocs`)
+
+In addition to `x-displayName`, standard OpenAPI tag fields on each global tag object are surfaced on the **tag landing page** for that tag:
+
+- `description` — rendered as HTML using the same CommonMark path as the rest of the API Explorer. Mustache-style `{{...}}` in the spec text is escaped the same way as on other API pages to avoid clashing with docs-builder substitution syntax.
+- `externalDocs` — optional. When `externalDocs.url` is set, a documentation link is shown. Links to `www.elastic.co/docs` and `elastic.co/guide` open in the same tab; other URLs open in a new tab with `rel="noopener noreferrer"`.
+
+The main API overview and sidebar link each tag to its tag landing page so users can read this context before opening individual operations.
+
+```json
+{
+  "tags": [
+    {
+      "name": "connector",
+      "description": "The connector and sync jobs APIs provide a way to create and manage Elastic connectors and sync jobs.",
+      "externalDocs": {
+        "description": "Learn more.",
+        "url": "https://www.elastic.co/docs/reference/search-connectors/api-tutorial"
+      },
+      "x-displayName": "Connector"
+    }
+  ]
+}
+```
+
+If two different canonical tag names normalize to the same URL segment, the build fails with an error that names both tags and the colliding segment so the spec can be fixed.
+
+### Tag landing URLs
+
+Each tag’s landing page is published under a path of the form:
+
+`.../api/<product>/tags/<tag-segment>/`
+
+The `<tag-segment>` is produced only from the canonical tag `name` (not from `x-displayName`). The segment is a stable, single path segment: leading and trailing space is trimmed, internal runs of spaces are collapsed, `{` and `}` are removed, `/` is replaced with `-`, and the remaining space-separated parts are joined with `-`. If that process yields an empty string, the segment `unknown` is used.
+
+**Examples (tag `name` → segment):** `tasks` → `tasks`, `data stream` → `data-stream`, `ccr` → `ccr`.
+
+The `tags` first-level path is reserved: intro and outro Markdown files must not use a slug that would collide with the reserved `types` and `tags` API Explorer segments; see [Advanced configuration with intro and outro pages](#advanced-configuration-with-intro-and-outro-pages).
 
 ### Tag groups [x-taggroups]
 
@@ -243,5 +284,6 @@ Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.c
 **Behavior:**
 
 - When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
+- In the navigation tree, a group’s section title links to the **main API overview** for that product (it is not a separate page and does not point at the first tag in the group; tag landings stay under `.../tags/...` only for tags).
 - When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
 - Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
