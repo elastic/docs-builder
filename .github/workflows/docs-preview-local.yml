@@ -118,8 +118,33 @@ jobs:
         with:
           script: |
             const ignorePatterns = process.env.IGNORE_PATTERNS;
-            const ignoreGlobber = await glob.create(ignorePatterns);
-            const ignoredPaths = new Set(await ignoreGlobber.glob());
+            const ignoreLines = ignorePatterns
+              .split(/\r?\n/)
+              .map((line) => line.trim())
+              .filter(Boolean);
+
+            const pathMatchesIgnorePattern = (path, pattern) => {
+              if (pattern.endsWith('/**')) {
+                const prefix = pattern.slice(0, -2);
+                const dir = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+                return path === dir || path.startsWith(`${dir}/`);
+              }
+              if (pattern.includes('*')) {
+                const re = new RegExp(
+                  '^' +
+                    pattern
+                      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+                      .replace(/\*\*/g, '.*')
+                      .replace(/\*/g, '[^/]*') +
+                    '$'
+                );
+                return re.test(path);
+              }
+              return path === pattern;
+            };
+
+            const pathMatchesAnyIgnore = (path) =>
+              ignoreLines.some((p) => pathMatchesIgnorePattern(path, p));
 
             const { owner, repo } = context.repo;
 
@@ -130,7 +155,7 @@ jobs:
               pull_number,
             });
 
-            const filteredFiles = allFiles.filter(file => !ignoredPaths.has(file.filename));
+            const filteredFiles = allFiles.filter((file) => !pathMatchesAnyIgnore(file.filename));
 
             const added = [];
             const modified = [];
