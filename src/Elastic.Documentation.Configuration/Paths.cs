@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -58,17 +59,32 @@ public static class Paths
 	/// a <c>.git</c> directory or file (worktree pointer) is found.
 	/// Returns <see langword="null"/> if no git root is found within the allowed depth.
 	/// </summary>
-	/// <remarks>Same depth protection as <see cref="FindGitRoot(string)"/>.</remarks>
-	public static IDirectoryInfo? FindGitRoot(IDirectoryInfo startDirectory)
+	/// <param name="startDirectory">Directory to start the upward search from.</param>
+	/// <param name="ceiling">
+	/// Optional upper bound for the search. When provided, the walk may reach <paramref name="ceiling"/>
+	/// but never goes above it, replacing the fixed depth limit with a directory boundary.
+	/// When <see langword="null"/>, the original depth-1 limit applies.
+	/// </param>
+	/// <remarks>
+	/// Without a ceiling the same depth protection as <see cref="FindGitRoot(string)"/> applies.
+	/// With a ceiling the caller guarantees the boundary is trustworthy (e.g. the working directory
+	/// root), so any <c>.git</c> found at or below it is accepted regardless of depth.
+	/// </remarks>
+	public static IDirectoryInfo? FindGitRoot(IDirectoryInfo startDirectory, IDirectoryInfo? ceiling = null)
 	{
 		var directory = startDirectory;
 		var depth = 0;
 		while (directory != null)
 		{
+			if (ceiling is not null && !directory.IsSubPathOf(ceiling))
+				return null;
+
 			var hasGit = directory.GetDirectories(".git").Length > 0
 					  || directory.GetFiles(".git").Length > 0;
 			if (hasGit)
 			{
+				if (ceiling is not null)
+					return directory;
 #if DEBUG
 				if (depth <= 1 || directory.GetFiles("*.slnx").Length > 0)
 					return directory;

@@ -314,9 +314,9 @@ apm_agent_java: beta 1.0+
 edot_dotnet: preview 1.0+
 edot_python:
 edot_node: ga 1.0+
-elasticsearch: preview 9.0+
-security: removed 9.0
-observability: deprecated 9.0+
+elasticsearch: preview
+security: removed
+observability: deprecated
 ```
 
 ### In-text example

@@ -25,12 +25,12 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 public abstract partial class ApiViewModel(ApiRenderContext context)
 {
-	public string NavigationHtml { get; } = context.NavigationHtml;
-	public StaticFileContentHashProvider StaticFileContentHashProvider { get; } = context.StaticFileContentHashProvider;
-	public INavigationItem CurrentNavigationItem { get; } = context.CurrentNavigation;
-	public IMarkdownStringRenderer MarkdownRenderer { get; } = context.MarkdownRenderer;
-	public BuildContext BuildContext { get; } = context.BuildContext;
-	public OpenApiDocument Document { get; } = context.Model;
+	public string NavigationHtml { get; } = context?.NavigationHtml ?? string.Empty;
+	public StaticFileContentHashProvider StaticFileContentHashProvider { get; } = context?.StaticFileContentHashProvider ?? throw new ArgumentNullException(nameof(context), "StaticFileContentHashProvider cannot be null");
+	public INavigationItem CurrentNavigationItem { get; } = context?.CurrentNavigation ?? throw new ArgumentNullException(nameof(context), "CurrentNavigation cannot be null");
+	public IMarkdownStringRenderer MarkdownRenderer { get; } = context?.MarkdownRenderer ?? throw new ArgumentNullException(nameof(context), "MarkdownRenderer cannot be null");
+	public BuildContext BuildContext { get; } = context?.BuildContext ?? throw new ArgumentNullException(nameof(context), "BuildContext cannot be null");
+	public OpenApiDocument Document { get; } = context?.Model ?? throw new ArgumentNullException(nameof(context), "OpenApiDocument cannot be null");
 
 
 	public HtmlString RenderMarkdown(string? markdown)
@@ -81,8 +81,8 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
 			// Header properties for isolated mode
-			HeaderTitle = Document.Info.Title,
-			HeaderVersion = Document.Info.Version,
+			HeaderTitle = Document.Info?.Title ?? "API Documentation",
+			HeaderVersion = Document.Info?.Version ?? "1.0",
 			GitBranch = BuildContext.Git.Branch != "unavailable" ? BuildContext.Git.Branch : null,
 			GitCommitShort = BuildContext.Git.Ref is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
 			GitRepository = BuildContext.Git.RepositoryName != "unavailable" ? BuildContext.Git.RepositoryName : null,

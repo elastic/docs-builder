@@ -154,6 +154,13 @@ public record DocumentationDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string[]? AiQuestions { get; set; }
 
+	[AiField("Short, simple questions a user would type into a search bar (3-10 words). Think autocomplete — what someone types when they're starting to explore a topic, not deep technical questions. Use the feature or product name but keep the question simple. Avoid jargon or implementation details. Examples: 'What is the bulk API?', 'How do I index documents?', 'Why is indexing slow?'",
+		MinItems = 3, MaxItems = 5)]
+	[Text]
+	[JsonPropertyName("ai_autocomplete_questions")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string[]? AiAutocompleteQuestions { get; set; }
+
 	[AiField("Simple 2-4 word tasks a dev wants to do. Examples: 'index documents', 'check cluster health', 'enable TLS', 'fix slow queries', 'backup data'",
 		MinItems = 2, MaxItems = 4)]
 	[Text]
