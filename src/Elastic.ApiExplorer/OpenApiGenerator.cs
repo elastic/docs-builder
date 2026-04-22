@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.IO.Abstractions;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
@@ -28,7 +30,7 @@ public record ApiClassification(string Name, string Description, IReadOnlyCollec
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
 }
 
-public record ApiTag(string Name, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
+public record ApiTag(string Name, string DisplayName, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
 {
 	/// <inheritdoc />
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
@@ -42,6 +44,9 @@ public record ApiEndpoint(List<ApiOperation> Operations, string? Name) : IApiGro
 
 public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, IMarkdownStringRenderer markdownStringRenderer)
 {
+	private const string TagOnlyClassificationKey = "__api_explorer_tag_only__";
+	private const string UnknownTagGroupName = "unknown";
+
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
@@ -50,6 +55,11 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	{
 		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
 		var rootNavigation = new LandingNavigationItem(url);
+
+		// Parse x-displayName from OpenAPI tags for user-friendly display names
+		var tagDisplayNames = ParseTagDisplayNames(openApiDocument);
+		var xTagGroups = TryParseXTagGroups(openApiDocument);
+		var orphanTagsLogged = new HashSet<string>(StringComparer.Ordinal);
 
 		var ops = openApiDocument.Paths
 			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
@@ -64,11 +74,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 					? anyApi.Node.GetValue<string>()
 					: null;
 				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
-				var tagClassification = (extensions?.TryGetValue("x-tag-group", out var g) ?? false) && g is JsonNodeExtension anyTagGroup
-					? anyTagGroup.Node.GetValue<string>()
-					: openApiDocument.Info.Title == "Elasticsearch Request & Response Specification"
-						? ClassifyElasticsearchTag(tag ?? "unknown")
-						: "unknown";
+				var tagClassification = ResolveTagClassification(tag, xTagGroups, orphanTagsLogged);
 
 				var apiString = ns is null
 					? api ?? op.Value.Summary ?? Guid.NewGuid().ToString("N") : $"{ns}.{api}";
@@ -85,11 +91,20 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 		// intermediate grouping of models to create the navigation tree
 		// this is two-phased because we need to know if an endpoint has one or more operations
+		var presentClassifications = ops.Select(o => o.Classification).ToHashSet();
+		var orderedClassificationKeys = xTagGroups is null
+			? [TagOnlyClassificationKey]
+			: GetOrderedClassificationKeys(xTagGroups, presentClassifications);
+
 		var classifications = new List<ApiClassification>();
-		foreach (var classGroup in ops.GroupBy(o => o.Classification))
+		foreach (var classKey in orderedClassificationKeys)
 		{
+			var classOps = ops.Where(o => o.Classification == classKey).ToArray();
+			if (classOps.Length == 0)
+				continue;
+
 			var tags = new List<ApiTag>();
-			foreach (var tagGroup in classGroup.GroupBy(o => o.Tag))
+			foreach (var tagGroup in classOps.GroupBy(o => o.Tag))
 			{
 				var apis = new List<ApiEndpoint>();
 				foreach (var apiGroup in tagGroup.GroupBy(o => o.Api))
@@ -104,18 +119,23 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 					var apiEndpoint = new ApiEndpoint(operations, apiGroup.Key);
 					apis.Add(apiEndpoint);
 				}
-				var tag = new ApiTag(tagGroup.Key ?? "unknown", "", apis);
+				var tagName = tagGroup.Key ?? "unknown";
+				var displayName = tagDisplayNames.TryGetValue(tagName, out var foundDisplayName) ? foundDisplayName : tagName;
+				var tag = new ApiTag(tagName, displayName, "", apis);
 				tags.Add(tag);
 			}
-			var classification = new ApiClassification(classGroup.Key, "", tags);
-			classifications.Add(classification);
+
+			// Sort tags alphabetically by display name, fallback to canonical name
+			tags = tags.OrderBy(t => t.DisplayName ?? t.Name, StringComparer.OrdinalIgnoreCase).ToList();
+
+			classifications.Add(new ApiClassification(classKey, "", tags));
 		}
 
 		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 		var hasClassifications = classifications.Count > 1;
 		foreach (var classification in classifications)
 		{
-			if (hasClassifications && classification.Name != "common")
+			if (hasClassifications)
 			{
 				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
 				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
@@ -518,69 +538,128 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		return parts.Length > 0 ? parts[^1] : schemaId;
 	}
 
-	private static string ClassifyElasticsearchTag(string tag)
+	private string ResolveTagClassification(string? tag, XTagGroupsDocument? xTagGroups, HashSet<string> orphanTagsLogged)
 	{
-#pragma warning disable IDE0066
-		switch (tag)
-#pragma warning restore IDE0066
+		if (xTagGroups is null)
+			return TagOnlyClassificationKey;
+
+		var tagName = tag ?? UnknownTagGroupName;
+		if (xTagGroups.TagToGroup.TryGetValue(tagName, out var group))
+			return group;
+
+		if (orphanTagsLogged.Add(tagName))
 		{
-			case "sql":
-			case "eql":
-			case "esql":
-			case "search":
-			case "document":
-				return "common";
-
-			case "autoscaling":
-			case "ccr":
-			case "indices":
-			case "data stream":
-			case "ilm":
-			case "slm":
-			case "cluster":
-			case "rollup":
-			case "searchable_snapshots":
-			case "shutdown":
-			case "snapshot":
-			case "script":
-			case "search_application":
-			case "connector":
-				return "management";
-
-			case "cat":
-			case "license":
-			case "info":
-			case "tasks":
-			case "xpack":
-			case "health_report":
-			case "features":
-			case "migration":
-			case "watcher":
-				return "info";
-
-
-			case "ml trained model":
-			case "ml anomaly":
-			case "ml data frame":
-			case "ml":
-			case "inference":
-			case "text_structure":
-			case "query_rules":
-			case "analytics":
-			case "graph":
-				return "ai/ml";
-
-			case "ingest":
-			case "enrich":
-			case "transform":
-			case "fleet":
-			case "logstash":
-			case "synonyms":
-				return "ingest";
-
-			case "security":
-				return "security";
+			_logger.LogWarning(
+				"OpenAPI tag '{TagName}' is not listed in any x-tagGroups entry; navigation will group it under '{UnknownGroup}'.",
+				tagName,
+				UnknownTagGroupName);
 		}
-		return "unknown";
+
+		return UnknownTagGroupName;
+	}
+
+	private static List<string> GetOrderedClassificationKeys(XTagGroupsDocument xTagGroups, HashSet<string> presentClassifications)
+	{
+		var ordered = new List<string>();
+		foreach (var g in xTagGroups.OrderedGroupNames)
+		{
+			if (presentClassifications.Contains(g))
+				ordered.Add(g);
+		}
+
+		if (presentClassifications.Contains(UnknownTagGroupName) && !ordered.Contains(UnknownTagGroupName))
+			ordered.Add(UnknownTagGroupName);
+
+		foreach (var c in presentClassifications)
+		{
+			if (!ordered.Contains(c))
+				ordered.Add(c);
+		}
+
+		return ordered;
+	}
+
+	private static XTagGroupsDocument? TryParseXTagGroups(OpenApiDocument openApiDocument)
+	{
+		if (openApiDocument.Extensions?.TryGetValue("x-tagGroups", out var extension) != true || extension is not JsonNodeExtension jsonExt)
+			return null;
+
+		if (jsonExt.Node is not JsonArray array || array.Count == 0)
+			return null;
+
+		var orderedGroupNames = new List<string>();
+		var tagToGroup = new Dictionary<string, string>(StringComparer.Ordinal);
+
+		foreach (var element in array)
+		{
+			if (element is not JsonObject groupObj)
+				continue;
+
+			if (!groupObj.TryGetPropertyValue("name", out var nameNode))
+				continue;
+
+			var groupName = nameNode?.GetValue<string>();
+			if (string.IsNullOrWhiteSpace(groupName))
+				continue;
+
+			if (!orderedGroupNames.Contains(groupName))
+				orderedGroupNames.Add(groupName);
+
+			if (!groupObj.TryGetPropertyValue("tags", out var tagsNode) || tagsNode is not JsonArray tagNames)
+				continue;
+
+			foreach (var tagElement in tagNames)
+			{
+				var tagName = tagElement?.GetValue<string>();
+				if (string.IsNullOrEmpty(tagName))
+					continue;
+
+				if (!tagToGroup.ContainsKey(tagName))
+					tagToGroup[tagName] = groupName;
+			}
+		}
+
+		if (orderedGroupNames.Count == 0 || tagToGroup.Count == 0)
+			return null;
+
+		return new XTagGroupsDocument(orderedGroupNames, tagToGroup);
+	}
+
+	private sealed record XTagGroupsDocument(IReadOnlyList<string> OrderedGroupNames, IReadOnlyDictionary<string, string> TagToGroup);
+
+	/// <summary>
+	/// Parses x-displayName extensions from OpenAPI tag objects to build a mapping of tag names to display names.
+	/// Falls back to the canonical tag name when no x-displayName is present.
+	/// </summary>
+	private static Dictionary<string, string> ParseTagDisplayNames(OpenApiDocument openApiDocument)
+	{
+		var displayNames = new Dictionary<string, string>();
+
+		if (openApiDocument.Tags is null)
+			return displayNames;
+
+		foreach (var tag in openApiDocument.Tags)
+		{
+			var tagName = tag.Name;
+			if (string.IsNullOrEmpty(tagName))
+				continue;
+
+			var displayName = tagName; // Default fallback
+
+			// Look for x-displayName extension
+			if (tag.Extensions?.TryGetValue("x-displayName", out var extension) == true &&
+				extension is JsonNodeExtension jsonExtension)
+			{
+				var displayNameValue = jsonExtension.Node.GetValue<string>();
+				if (!string.IsNullOrWhiteSpace(displayNameValue))
+				{
+					displayName = displayNameValue;
+				}
+			}
+
+			displayNames[tagName] = displayName;
+		}
+
+		return displayNames;
 	}
 }
