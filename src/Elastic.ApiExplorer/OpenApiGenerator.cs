@@ -405,7 +405,8 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
-			MarkdownRenderer = markdownStringRenderer
+			MarkdownRenderer = markdownStringRenderer,
+			ApiExplorerLog = _logger
 		};
 
 		await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, navigation, ctx);
