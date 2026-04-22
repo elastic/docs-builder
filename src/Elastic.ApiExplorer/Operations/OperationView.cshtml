@@ -134,6 +134,26 @@
 	@{
 		var pathParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Path).ToArray() ?? [];
 	}
+	@{
+		var prerequisiteLines = Model.RequiredAuthItems;
+	}
+	@if (prerequisiteLines is { Count: > 0 })
+	{
+		<h3 class="section-header" id="prerequisites" data-section="prerequisites">
+			<span>Prerequisites</span>
+			<span class="section-nav">
+				<span class="section-path">@Model.Operation.Route</span>
+				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+			</span>
+		</h3>
+		<ul class="prerequisite-list">
+		@foreach (var line in prerequisiteLines)
+		{
+			<li>@Model.RenderMarkdown(line)</li>
+		}
+		</ul>
+	}
 	@if (pathParameters.Length > 0)
 	{
 		<h4>Path Parameters</h4>

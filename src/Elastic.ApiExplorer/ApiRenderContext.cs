@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer;
@@ -23,4 +24,6 @@ public record ApiRenderContext(
 	public required INavigationItem CurrentNavigation { get; init; }
 	public required IMarkdownStringRenderer MarkdownRenderer { get; init; }
 
+	/// <summary>Logger for API Explorer rendering (e.g. OpenAPI extension parsing); optional when the host does not provide one.</summary>
+	public ILogger? ApiExplorerLog { get; init; }
 }

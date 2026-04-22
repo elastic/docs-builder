@@ -133,7 +133,7 @@ toc:
 The API Explorer generates the following types of pages from your OpenAPI spec:
 
 - **Landing page**: An overview of the API grouped by tag
-- **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
+- **Operation pages**: One page per API operation, with the HTTP method, path, optional **Prerequisites** (when `x-req-auth` is set), parameters, request body, response schemas, and examples
 - **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
 
 ## OpenAPI extensions

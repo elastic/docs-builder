@@ -37,12 +37,23 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	/// </summary>
 	public IReadOnlyList<CodeSample> CodeSamples { get; private set; } = [];
 
+	public IReadOnlyList<string>? RequiredAuthItems =>
+		OpenApiXReqAuthParser.TryGetPrerequisiteLines(
+			Operation.Operation,
+			RenderContext.ApiExplorerLog,
+			Operation.Route,
+			Operation.Operation.OperationId
+		);
+
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
 	{
 		CodeSamples = ParseCodeSamples(Operation.Operation);
 
 		var operation = Operation.Operation;
 		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
+
+		if (RequiredAuthItems is { Count: > 0 })
+			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
 
 		if (!string.IsNullOrWhiteSpace(operation.Description))
 			tocItems.Add(new ApiTocItem("Description", "description"));
