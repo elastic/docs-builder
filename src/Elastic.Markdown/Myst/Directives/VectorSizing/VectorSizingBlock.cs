@@ -21,8 +21,5 @@ public class VectorSizingBlock(DirectiveBlockParser parser, ParserContext contex
 {
 	public override string Directive => "vector-sizing-calculator";
 
-	public override void FinalizeAndValidate(ParserContext context)
-	{
-		_ = context;
-	}
+	public override void FinalizeAndValidate(ParserContext context) => _ = context;
 }

@@ -333,7 +333,13 @@ export function ConfigurationPanel({
                                     showRange
                                     fullWidth
                                     onChange={(e) =>
-                                        onHnswMChange(Number(e.target.value))
+                                        onHnswMChange(
+                                            Number(
+                                                (
+                                                    e.currentTarget as HTMLInputElement
+                                                ).value
+                                            )
+                                        )
                                     }
                                     aria-label="HNSW m"
                                 />
