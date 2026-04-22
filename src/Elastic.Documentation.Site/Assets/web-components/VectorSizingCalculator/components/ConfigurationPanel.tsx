@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { parseVectorCount } from '../parseVectorCount'
+import type {
+    ElementType,
+    IndexType,
+    Quantization,
+    ValidationResult,
+} from '../types'
+import { LabelWithTip } from './LabelWithTip'
 import {
     EuiCallOut,
     EuiFieldText,
@@ -7,15 +14,8 @@ import {
     EuiRange,
     EuiSelect,
     EuiSpacer,
-} from '@elastic/eui';
-import type {
-    ElementType,
-    IndexType,
-    Quantization,
-    ValidationResult,
-} from '../types';
-import { parseVectorCount } from '../parseVectorCount';
-import { LabelWithTip } from './LabelWithTip';
+} from '@elastic/eui'
+import { useEffect, useMemo, useState } from 'react'
 
 const VECTOR_COUNT_PRESETS = [
     { key: '1k', text: '1.000', value: 1_000 },
@@ -24,23 +24,21 @@ const VECTOR_COUNT_PRESETS = [
     { key: '1m', text: '1.000.000', value: 1_000_000 },
     { key: '10m', text: '10.000.000', value: 10_000_000 },
     { key: '50m', text: '50.000.000', value: 50_000_000 },
-] as const;
+] as const
 
 const VECTOR_PRESET_SELECT_OPTIONS = VECTOR_COUNT_PRESETS.map((p) => ({
     value: p.key,
     text: p.text,
-}));
+}))
 
-const DIMENSION_PRESETS = [
-    256, 384, 512, 768, 1024, 1536, 3072, 4096,
-] as const;
+const DIMENSION_PRESETS = [256, 384, 512, 768, 1024, 1536, 3072, 4096] as const
 
 const DIMENSION_SELECT_OPTIONS = [
     ...DIMENSION_PRESETS.map((n) => ({
         value: String(n),
         text: String(n),
     })),
-];
+]
 
 const TOOLTIPS = {
     vectors:
@@ -57,22 +55,25 @@ const TOOLTIPS = {
         'Compresses vectors to reduce memory. Options depend on element type and index structure.',
     replicas:
         'Each replica is a full copy of your index. Total copies = 1 primary + replicas.',
-};
+}
 
 function presetKeyForVectorsText(vectorsText: string): string {
-    const n = parseVectorCount(vectorsText);
-    if (!vectorsText.trim() || Number.isNaN(n) || n <= 0) return 'custom';
-    const hit = VECTOR_COUNT_PRESETS.find((p) => p.value === n);
-    return hit ? hit.key : 'custom';
+    const n = parseVectorCount(vectorsText)
+    if (!vectorsText.trim() || Number.isNaN(n) || n <= 0) return 'custom'
+    const hit = VECTOR_COUNT_PRESETS.find((p) => p.value === n)
+    return hit ? hit.key : 'custom'
 }
 
 function dimensionPresetKey(numDimensions: number | string): string {
-    if (numDimensions === '') return 'custom';
-    const n = typeof numDimensions === 'number' ? numDimensions : Number(numDimensions);
-    if (Number.isNaN(n)) return 'custom';
+    if (numDimensions === '') return 'custom'
+    const n =
+        typeof numDimensions === 'number'
+            ? numDimensions
+            : Number(numDimensions)
+    if (Number.isNaN(n)) return 'custom'
     return DIMENSION_PRESETS.includes(n as (typeof DIMENSION_PRESETS)[number])
         ? String(n)
-        : 'custom';
+        : 'custom'
 }
 
 const ELEMENT_TYPE_OPTIONS: { value: ElementType; text: string }[] = [
@@ -80,26 +81,26 @@ const ELEMENT_TYPE_OPTIONS: { value: ElementType; text: string }[] = [
     { value: 'bfloat16', text: 'Half precision (bfloat16)' },
     { value: 'byte', text: 'Byte compressed (int8)' },
     { value: 'bit', text: 'Binary compressed (bit)' },
-];
+]
 
 interface ConfigurationPanelProps {
-    vectorsText: string;
-    onVectorsChange: (value: string) => void;
-    numDimensions: number | string;
-    onDimensionsChange: (value: number | string) => void;
-    elementType: ElementType;
-    onElementTypeChange: (value: ElementType) => void;
-    indexType: IndexType;
-    onIndexTypeChange: (value: IndexType) => void;
-    indexTypeOptions: { value: string; text: string }[];
-    quantization: Quantization;
-    onQuantizationChange: (value: Quantization) => void;
-    quantOptions: { value: string; label: string }[];
-    replicas: number;
-    onReplicasChange: (value: number) => void;
-    hnswM: number;
-    onHnswMChange: (value: number) => void;
-    validation: ValidationResult;
+    vectorsText: string
+    onVectorsChange: (value: string) => void
+    numDimensions: number | string
+    onDimensionsChange: (value: number | string) => void
+    elementType: ElementType
+    onElementTypeChange: (value: ElementType) => void
+    indexType: IndexType
+    onIndexTypeChange: (value: IndexType) => void
+    indexTypeOptions: { value: string; text: string }[]
+    quantization: Quantization
+    onQuantizationChange: (value: Quantization) => void
+    quantOptions: { value: string; label: string }[]
+    replicas: number
+    onReplicasChange: (value: number) => void
+    hnswM: number
+    onHnswMChange: (value: number) => void
+    validation: ValidationResult
 }
 
 export function ConfigurationPanel({
@@ -124,72 +125,70 @@ export function ConfigurationPanel({
     const derivedVectorsPresetKey = useMemo(
         () => presetKeyForVectorsText(vectorsText),
         [vectorsText]
-    );
+    )
     const vectorsPresetSelectValue = VECTOR_COUNT_PRESETS.some(
         (preset) => preset.key === derivedVectorsPresetKey
     )
         ? derivedVectorsPresetKey
-        : VECTOR_PRESET_SELECT_OPTIONS[0].value;
+        : VECTOR_PRESET_SELECT_OPTIONS[0].value
 
     const derivedDimPresetKey = useMemo(
         () => dimensionPresetKey(numDimensions),
         [numDimensions]
-    );
+    )
     const dimensionsPresetSelectValue = DIMENSION_PRESETS.includes(
         Number(derivedDimPresetKey) as (typeof DIMENSION_PRESETS)[number]
     )
         ? derivedDimPresetKey
-        : String(DIMENSION_PRESETS[0]);
+        : String(DIMENSION_PRESETS[0])
 
-    const showHnswSlider = indexType === 'hnsw';
-    const showQuantizationControl = quantOptions.length > 1;
-    const [hnswMText, setHnswMText] = useState(String(hnswM));
-    const [isHnswMEditing, setIsHnswMEditing] = useState(false);
-    const [replicasText, setReplicasText] = useState(() => String(replicas));
-    const [isReplicasEditing, setIsReplicasEditing] = useState(false);
-
-    useEffect(() => {
-        if (isHnswMEditing) return;
-        setHnswMText(String(hnswM));
-    }, [hnswM, isHnswMEditing]);
+    const showHnswSlider = indexType === 'hnsw'
+    const showQuantizationControl = quantOptions.length > 1
+    const [hnswMText, setHnswMText] = useState(String(hnswM))
+    const [isHnswMEditing, setIsHnswMEditing] = useState(false)
+    const [replicasText, setReplicasText] = useState(() => String(replicas))
+    const [isReplicasEditing, setIsReplicasEditing] = useState(false)
 
     useEffect(() => {
-        if (isReplicasEditing) return;
-        setReplicasText(String(replicas));
-    }, [replicas, isReplicasEditing]);
+        if (isHnswMEditing) return
+        setHnswMText(String(hnswM))
+    }, [hnswM, isHnswMEditing])
+
+    useEffect(() => {
+        if (isReplicasEditing) return
+        setReplicasText(String(replicas))
+    }, [replicas, isReplicasEditing])
 
     const normalizeHnswM = (raw: string) => {
-        const trimmed = raw.trim();
-        if (!trimmed) return 2;
+        const trimmed = raw.trim()
+        if (!trimmed) return 2
 
-        const n = Number(trimmed.replace(/[^\d]/g, ''));
-        if (Number.isNaN(n)) return 2;
+        const n = Number(trimmed.replace(/[^\d]/g, ''))
+        if (Number.isNaN(n)) return 2
 
-        const rounded = Math.round(n);
-        const clamped = Math.min(512, Math.max(2, rounded));
+        const rounded = Math.round(n)
+        const clamped = Math.min(512, Math.max(2, rounded))
         // Keep values aligned with the slider step (2).
-        if (clamped % 2 === 0) return clamped;
-        const down = clamped - 1;
-        const up = clamped + 1;
-        if (down < 2) return 2;
-        if (up > 512) return 510;
-        return Math.abs(n - down) <= Math.abs(up - n) ? down : up;
-    };
+        if (clamped % 2 === 0) return clamped
+        const down = clamped - 1
+        const up = clamped + 1
+        if (down < 2) return 2
+        if (up > 512) return 510
+        return Math.abs(n - down) <= Math.abs(up - n) ? down : up
+    }
 
     const normalizeReplicas = (raw: string) => {
-        const trimmed = raw.trim();
-        if (trimmed === '') return 1;
-        const n = Number(trimmed.replace(/[^\d]/g, ''));
-        if (Number.isNaN(n)) return 1;
-        return Math.min(99, Math.max(1, n));
-    };
+        const trimmed = raw.trim()
+        if (trimmed === '') return 1
+        const n = Number(trimmed.replace(/[^\d]/g, ''))
+        if (Number.isNaN(n)) return 1
+        return Math.min(99, Math.max(1, n))
+    }
 
     const replicasFormRow = (
         <EuiFormRow
             label={
-                <LabelWithTip tip={TOOLTIPS.replicas}>
-                    Replicas
-                </LabelWithTip>
+                <LabelWithTip tip={TOOLTIPS.replicas}>Replicas</LabelWithTip>
             }
         >
             <EuiFieldText
@@ -200,29 +199,32 @@ export function ConfigurationPanel({
                 value={replicasText}
                 onFocus={() => setIsReplicasEditing(true)}
                 onChange={(e) => {
-                    const cleaned = e.target.value.replace(/[^\d]/g, '');
-                    setReplicasText(cleaned);
+                    const cleaned = e.target.value.replace(/[^\d]/g, '')
+                    setReplicasText(cleaned)
                 }}
                 onBlur={() => {
-                    const next = normalizeReplicas(replicasText);
-                    setReplicasText(String(next));
-                    onReplicasChange(next);
-                    setIsReplicasEditing(false);
+                    const next = normalizeReplicas(replicasText)
+                    setReplicasText(String(next))
+                    onReplicasChange(next)
+                    setIsReplicasEditing(false)
                 }}
             />
         </EuiFormRow>
-    );
+    )
 
     const hnswMInputWidthPx = useMemo(() => {
-        const digits = hnswMText.length;
+        const digits = hnswMText.length
         // Rough-but-stable sizing: enough room for digits + control chrome.
         // Tuned for 1–3 digit values (2..512) while still feeling "tight".
-        const base = 34;
-        const perDigit = 10;
-        const min = 44;
-        const max = 72;
-        return Math.min(max, Math.max(min, base + perDigit * Math.max(1, digits)));
-    }, [hnswMText]);
+        const base = 34
+        const perDigit = 10
+        const min = 44
+        const max = 72
+        return Math.min(
+            max,
+            Math.max(min, base + perDigit * Math.max(1, digits))
+        )
+    }, [hnswMText])
 
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--left">
@@ -242,11 +244,11 @@ export function ConfigurationPanel({
                     onChange={(e) => {
                         const preset = VECTOR_COUNT_PRESETS.find(
                             (p) => p.key === e.target.value
-                        );
+                        )
                         if (preset) {
                             onVectorsChange(
                                 preset.value.toLocaleString('en-US')
-                            );
+                            )
                         }
                     }}
                 />
@@ -265,7 +267,7 @@ export function ConfigurationPanel({
                     value={dimensionsPresetSelectValue}
                     aria-label="Dimensions"
                     onChange={(e) => {
-                        onDimensionsChange(Number(e.target.value));
+                        onDimensionsChange(Number(e.target.value))
                     }}
                 />
             </EuiFormRow>
@@ -348,14 +350,14 @@ export function ConfigurationPanel({
                                         const cleaned = e.target.value.replace(
                                             /[^\d]/g,
                                             ''
-                                        );
-                                        setHnswMText(cleaned);
+                                        )
+                                        setHnswMText(cleaned)
                                     }}
                                     onBlur={() => {
-                                        const next = normalizeHnswM(hnswMText);
-                                        setHnswMText(String(next));
-                                        onHnswMChange(next);
-                                        setIsHnswMEditing(false);
+                                        const next = normalizeHnswM(hnswMText)
+                                        setHnswMText(String(next))
+                                        onHnswMChange(next)
+                                        setIsHnswMEditing(false)
                                     }}
                                 />
                             </div>
@@ -406,9 +408,7 @@ export function ConfigurationPanel({
                         size="s"
                     >
                         {validation.warningLink && (
-                            <EuiLink
-                                href={validation.warningLink}
-                            >
+                            <EuiLink href={validation.warningLink}>
                                 See documentation
                             </EuiLink>
                         )}
@@ -416,5 +416,5 @@ export function ConfigurationPanel({
                 </>
             )}
         </div>
-    );
+    )
 }

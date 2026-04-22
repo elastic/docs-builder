@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react';
-import { EuiIcon, EuiToolTip } from '@elastic/eui';
+import { EuiIcon, EuiToolTip } from '@elastic/eui'
+import type { ReactNode } from 'react'
 
 interface LabelWithTipProps {
-    children: ReactNode;
-    tip: string;
+    children: ReactNode
+    tip: string
 }
 
 export function LabelWithTip({ children, tip }: LabelWithTipProps) {
@@ -16,5 +16,5 @@ export function LabelWithTip({ children, tip }: LabelWithTipProps) {
                 </span>
             </span>
         </EuiToolTip>
-    );
+    )
 }

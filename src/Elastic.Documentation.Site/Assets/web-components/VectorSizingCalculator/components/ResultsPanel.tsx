@@ -1,28 +1,28 @@
-import {
-    EuiCallOut,
-    EuiIcon,
-    EuiSpacer,
-    EuiText,
-} from '@elastic/eui';
-import type { Quantization, SizingResult, ValidationResult } from '../types';
-import { formatBytesString } from '../calculations';
+import { formatBytesString } from '../calculations'
+import type { Quantization, SizingResult, ValidationResult } from '../types'
+import { EuiCallOut, EuiIcon, EuiSpacer, EuiText } from '@elastic/eui'
 
 interface ResultsPanelProps {
-    result: SizingResult | null;
-    inputsValid: boolean;
-    quantizationLabel: string;
-    replicas: number;
-    quantization: Quantization;
-    validation: ValidationResult;
-    quantizationInsightText: string | null;
+    result: SizingResult | null
+    inputsValid: boolean
+    quantizationLabel: string
+    replicas: number
+    quantization: Quantization
+    validation: ValidationResult
+    quantizationInsightText: string | null
 }
 
 const QUANTIZATION_CALLOUT_FALLBACK =
-    'Quantization reduces storage usage compared to full-precision vectors for the same logical dataset.';
+    'Quantization reduces storage usage compared to full-precision vectors for the same logical dataset.'
 
 function formatRamHero(bytes: number): string {
-    const gb = bytes / 1024 ** 3;
-    return gb >= 10 ? `${Math.round(gb)} GB` : `${gb.toFixed(1)} GB`;
+    if (bytes <= 0) return '0 MB'
+    const gb = bytes / 1024 ** 3
+    if (gb >= 1) {
+        return gb >= 10 ? `${Math.round(gb)} GB` : `${gb.toFixed(1)} GB`
+    }
+    const mb = bytes / 1024 ** 2
+    return mb >= 10 ? `${Math.round(mb)} MB` : `${mb.toFixed(1)} MB`
 }
 
 export function ResultsPanel({
@@ -34,18 +34,18 @@ export function ResultsPanel({
     validation,
     quantizationInsightText,
 }: ResultsPanelProps) {
-    const showBody = inputsValid && result !== null;
+    const showBody = inputsValid && result !== null
     const infoText =
         validation.note ??
         quantizationInsightText ??
-        (quantization !== 'none' ? QUANTIZATION_CALLOUT_FALLBACK : '');
+        (quantization !== 'none' ? QUANTIZATION_CALLOUT_FALLBACK : '')
 
     const showInfoCallout =
         showBody &&
         !validation.warning &&
         (Boolean(validation.note) ||
             Boolean(quantizationInsightText) ||
-            quantization !== 'none');
+            quantization !== 'none')
 
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--right">
@@ -53,7 +53,10 @@ export function ResultsPanel({
                 <EuiText size="s" className="vectorSizingCalc__summaryLabel">
                     RAM required:
                 </EuiText>
-                <EuiSpacer size="xs" className="vectorSizingCalc__spacerHeroGap" />
+                <EuiSpacer
+                    size="xs"
+                    className="vectorSizingCalc__spacerHeroGap"
+                />
                 <div className="vectorSizingCalc__heroRam">
                     {showBody
                         ? formatRamHero(result.totalRam)
@@ -77,9 +80,7 @@ export function ResultsPanel({
                     </div>
                     <div className="vectorSizingCalc__kvRow">
                         <span>Replicas:</span>
-                        <strong>
-                            {showBody ? String(replicas) : '0'}
-                        </strong>
+                        <strong>{showBody ? String(replicas) : '0'}</strong>
                     </div>
                     <div className="vectorSizingCalc__kvRow">
                         <span>Total RAM required:</span>
@@ -102,16 +103,25 @@ export function ResultsPanel({
                 {showInfoCallout && infoText && (
                     <>
                         <EuiSpacer size="m" />
-                        <EuiCallOut className="vectorSizingCalc__infoCallout" color="success" size="s" iconType={undefined}>
+                        <EuiCallOut
+                            className="vectorSizingCalc__infoCallout"
+                            color="success"
+                            size="s"
+                            iconType={undefined}
+                        >
                             <div className="vectorSizingCalc__infoCalloutRow">
-                                <EuiIcon type="info" className="vectorSizingCalc__infoCalloutIcon" />
-                                <span className="vectorSizingCalc__infoCalloutText">{infoText}</span>
+                                <EuiIcon
+                                    type="info"
+                                    className="vectorSizingCalc__infoCalloutIcon"
+                                />
+                                <span className="vectorSizingCalc__infoCalloutText">
+                                    {infoText}
+                                </span>
                             </div>
                         </EuiCallOut>
                     </>
                 )}
-
             </div>
         </div>
-    );
+    )
 }

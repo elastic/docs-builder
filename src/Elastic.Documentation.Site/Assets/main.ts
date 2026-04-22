@@ -11,12 +11,12 @@ import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
 import { initTocNav } from './toc-nav'
+import './web-components/VectorSizingCalculator/VectorSizingCalculatorComponent'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import * as katex from 'katex'
 import { $, $$ } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
-import './web-components/VectorSizingCalculator/VectorSizingCalculatorComponent'
 
 // Injected at build time from MinVer
 const DOCS_BUILDER_VERSION =
