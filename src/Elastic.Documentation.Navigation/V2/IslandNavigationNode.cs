@@ -17,6 +17,9 @@ public class IslandNavigationNode(
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent
 ) : INodeNavigationItem<INavigationModel, INavigationItem>
 {
+	/// <summary>The Id of the wrapped toc root, used for island lookup by nav ownership.</summary>
+	public string SourceTocRootId { get; } = source.Id;
+
 	/// <inheritdoc />
 	public string Id { get; } = ShortId.Create("island", label);
 

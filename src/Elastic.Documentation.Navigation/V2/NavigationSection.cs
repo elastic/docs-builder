@@ -24,6 +24,7 @@ public record NavigationIsland(
 	string Id,
 	string Label,
 	string Url,
+	string SourceTocRootId,
 	NavigationSection ParentSection,
 	IReadOnlyList<INavigationItem> NavigationItems
 );

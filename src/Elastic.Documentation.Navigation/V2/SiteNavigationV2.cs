@@ -22,7 +22,7 @@ namespace Elastic.Documentation.Navigation.V2;
 public class SiteNavigationV2 : SiteNavigation
 {
 	private readonly Dictionary<string, NavigationSection> _urlToSection = new(StringComparer.OrdinalIgnoreCase);
-	private readonly Dictionary<string, NavigationIsland> _urlToIsland = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, NavigationIsland> _tocRootToIsland = new(StringComparer.Ordinal);
 
 	public SiteNavigationV2(
 		NavigationV2File v2File,
@@ -37,7 +37,7 @@ public class SiteNavigationV2 : SiteNavigation
 		Sections = BuildSections(V2NavigationItems);
 		Islands = BuildIslands(Sections);
 		BuildUrlToSectionLookup();
-		BuildUrlToIslandLookup();
+		BuildTocRootToIslandLookup();
 	}
 
 	/// <summary>
@@ -59,17 +59,11 @@ public class SiteNavigationV2 : SiteNavigation
 	public IReadOnlyList<NavigationIsland> Islands { get; }
 
 	/// <summary>
-	/// Resolves which island a page belongs to, if any. Islands take priority over sections.
+	/// Resolves which island a page belongs to by its toc root.
+	/// Uses the nav ownership model — the toc root that owns the page determines the island.
 	/// </summary>
-	public NavigationIsland? GetIslandForUrl(string? pageUrl)
-	{
-		if (pageUrl is null)
-			return null;
-		var normalized = pageUrl.TrimEnd('/');
-		if (_urlToIsland.TryGetValue(normalized, out var island))
-			return island;
-		return _urlToIsland.TryGetValue(normalized + "/", out island) ? island : null;
-	}
+	public NavigationIsland? GetIslandForTocRoot(IRootNavigationItem<INavigationModel, INavigationItem> tocRoot) =>
+		_tocRootToIsland.GetValueOrDefault(tocRoot.Id);
 
 	/// <summary>
 	/// Resolves which section a page belongs to by its URL.
@@ -116,6 +110,7 @@ public class SiteNavigationV2 : SiteNavigation
 					islandNode.Id,
 					islandNode.NavigationTitle,
 					islandNode.Url,
+					islandNode.SourceTocRootId,
 					parentSection,
 					[.. islandNode.NavigationItems]
 				));
@@ -152,33 +147,10 @@ public class SiteNavigationV2 : SiteNavigation
 		}
 	}
 
-	private void BuildUrlToIslandLookup()
+	private void BuildTocRootToIslandLookup()
 	{
 		foreach (var island in Islands)
-		{
-			// Register the island root URL (the toc entry point)
-			if (!string.IsNullOrEmpty(island.Url))
-			{
-				var normalized = island.Url.TrimEnd('/');
-				_ = _urlToIsland.TryAdd(normalized, island);
-			}
-			CollectUrlsForIsland(island.NavigationItems, island);
-		}
-	}
-
-	private void CollectUrlsForIsland(IEnumerable<INavigationItem> items, NavigationIsland island)
-	{
-		foreach (var item in items)
-		{
-			if (!string.IsNullOrEmpty(item.Url))
-			{
-				var normalized = item.Url.TrimEnd('/');
-				_ = _urlToIsland.TryAdd(normalized, island);
-			}
-
-			if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
-				CollectUrlsForIsland(node.NavigationItems, island);
-		}
+			_ = _tocRootToIsland.TryAdd(island.SourceTocRootId, island);
 	}
 
 	private static IReadOnlyList<INavigationItem> BuildV2Items(

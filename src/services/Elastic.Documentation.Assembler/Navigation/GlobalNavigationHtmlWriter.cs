@@ -29,7 +29,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 	{
 		// V2 nav: render per-section sidebar based on current page
 		if (globalNavigation is SiteNavigationV2 navV2)
-			return await RenderSectionNavigation(navV2, currentNavigationItem, ctx);
+			return await RenderSectionNavigation(navV2, currentRootNavigation, currentNavigationItem, ctx);
 
 		if (currentRootNavigation is SiteNavigation)
 			return NavigationRenderResult.Empty;
@@ -69,12 +69,13 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 
 	private async Task<NavigationRenderResult> RenderSectionNavigation(
 		SiteNavigationV2 navV2,
+		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		INavigationItem currentNavigationItem,
 		Cancel ctx
 	)
 	{
-		// Islands take priority: if the page belongs to an island, render the island sidebar
-		var island = navV2.GetIslandForUrl(currentNavigationItem.Url);
+		// Islands take priority: if the current toc root is an island, render the island sidebar
+		var island = navV2.GetIslandForTocRoot(currentRootNavigation);
 		if (island is not null)
 			return await RenderIslandNavigation(island, navV2, ctx);
 
