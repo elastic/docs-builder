@@ -156,7 +156,7 @@ public static partial class LinkAllowlistSanitizer
 		var ownerDefault = string.IsNullOrWhiteSpace(defaultOwner) ? "elastic" : defaultOwner;
 		var anyRewritten = false;
 
-		var prs = ApplyToReferenceList(
+		var prs = FilterReferenceList(
 			collector,
 			entry.Prs,
 			ownerDefault,
@@ -166,9 +166,8 @@ public static partial class LinkAllowlistSanitizer
 			ref anyRewritten);
 		if (prs == null && entry.Prs is not null)
 			return false;
-		prs = DropSentinels(prs, ref anyRewritten);
 
-		var issues = ApplyToReferenceList(
+		var issues = FilterReferenceList(
 			collector,
 			entry.Issues,
 			ownerDefault,
@@ -178,7 +177,6 @@ public static partial class LinkAllowlistSanitizer
 			ref anyRewritten);
 		if (issues == null && entry.Issues is not null)
 			return false;
-		issues = DropSentinels(issues, ref anyRewritten);
 
 		var description = ScrubText(entry.Description, allow, ref anyRewritten);
 		var impact = ScrubText(entry.Impact, allow, ref anyRewritten);
@@ -322,19 +320,73 @@ public static partial class LinkAllowlistSanitizer
 		return ScrubText(input, allow, ref changed);
 	}
 
-	private static IReadOnlyList<string>? DropSentinels(IReadOnlyList<string>? refs, ref bool changed)
+	private static IReadOnlyList<string>? FilterReferenceList(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<string>? refs,
+		string defaultOwner,
+		string? defaultBundleRepo,
+		HashSet<string> allow,
+		string referenceKind,
+		ref bool anyDropped)
 	{
 		if (refs is null)
 			return null;
 
-		var filtered = refs
-			.Where(r => !r.StartsWith(SentinelPrefix, StringComparison.OrdinalIgnoreCase))
-			.ToList();
+		if (refs.Count == 0)
+			return refs;
 
-		if (filtered.Count != refs.Count)
-			changed = true;
+		var list = new List<string>(refs.Count);
+		foreach (var r in refs)
+		{
+			if (string.IsNullOrWhiteSpace(r))
+			{
+				list.Add(r);
+				continue;
+			}
 
-		return filtered;
+			if (r.StartsWith(SentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			{
+				var underlyingRef = r.Substring(SentinelPrefix.Length).Trim();
+				if (string.IsNullOrWhiteSpace(underlyingRef))
+					continue;
+
+				if (!ChangelogTextUtilities.TryGetGitHubRepo(underlyingRef, defaultOwner, defaultBundleRepo ?? string.Empty, out var sOwner, out var sRepo))
+					continue;
+
+				if (allow.Contains($"{sOwner}/{sRepo}"))
+				{
+					list.Add(underlyingRef);
+					anyDropped = true;
+				}
+				else
+					anyDropped = true;
+
+				continue;
+			}
+
+			if (!ChangelogTextUtilities.TryGetGitHubRepo(r, defaultOwner, defaultBundleRepo ?? string.Empty, out var owner, out var repo))
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Link allowlist filtering could not parse {referenceKind} reference '{r}'. " +
+					"Use a full https://github.com/ URL, owner/repo#number, or a bare number with bundle owner/repo set.");
+				return null;
+			}
+
+			if (allow.Contains($"{owner}/{repo}"))
+			{
+				list.Add(r);
+			}
+			else
+			{
+				anyDropped = true;
+				collector.EmitWarning(
+					string.Empty,
+					$"PR/issue reference '{r}' targets repository '{owner}/{repo}', which is not in the allowlist. It was removed from public output.");
+			}
+		}
+
+		return list;
 	}
 
 	private static HashSet<string> BuildAllowSet(IReadOnlyList<string> allowRepos)
