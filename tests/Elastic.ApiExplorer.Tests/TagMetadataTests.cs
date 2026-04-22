@@ -290,9 +290,10 @@ public class TagMetadataTests
 		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false };
 		var result = await OpenApiDocument.LoadAsync(stream, settings: settings);
 
-		if (result.Diagnostic.Errors.Any())
+		var parseErrors = result.Diagnostic?.Errors;
+		if (parseErrors is not null && parseErrors.Any())
 		{
-			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", result.Diagnostic.Errors.Select(e => e.Message))}");
+			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", parseErrors.Select(e => e.Message))}");
 		}
 
 		return (generator, result.Document!);
@@ -518,7 +519,7 @@ public class TagMetadataTests
 	[Fact]
 	public async Task Tags_WithinClassification_SortedCorrectly()
 	{
-		// Arrange - Elasticsearch spec that creates MULTIPLE classifications so we get classification groups
+		// Arrange - x-tagGroups (Redocly-style) drives classification; sort tags by display name within a group
 		var openApiJson = /*lang=json,strict*/ """
 		{
 		  "openapi": "3.0.3",
@@ -573,6 +574,20 @@ public class TagMetadataTests
 		      "name": "tasks",
 		      "x-displayName": "Task management"
 		    }
+		  ],
+		  "x-tagGroups": [
+		    {
+		      "name": "Search & Document APIs",
+		      "tags": ["search"]
+		    },
+		    {
+		      "name": "Cluster Management",
+		      "tags": ["indices"]
+		    },
+		    {
+		      "name": "Information & Monitoring",
+		      "tags": ["watcher", "tasks"]
+		    }
 		  ]
 		}
 		""";
@@ -582,21 +597,171 @@ public class TagMetadataTests
 		// Act
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
-		// Assert - these should create multiple classifications:
-		// "search" -> "common", "indices" -> "management", "watcher"/"tasks" -> "info" 
-		// We should get classification groups since there are multiple classifications
+		// Assert
 		var classificationItems = navigation.NavigationItems.OfType<ClassificationNavigationItem>().ToList();
-		classificationItems.Should().HaveCountGreaterThan(1, "Should have multiple classification groups");
+		classificationItems.Should().HaveCount(3, "Should have one nav group per x-tagGroups entry that has operations");
 
-		// Find the "info" classification which should contain watcher and tasks
-		var infoClassification = classificationItems.FirstOrDefault(c => c.NavigationTitle == "info");
-		infoClassification.Should().NotBeNull("Should have 'info' classification for watcher and tasks");
+		var infoClassification = classificationItems.First(c => c.NavigationTitle == "Information & Monitoring");
 
 		var tagItems = infoClassification.NavigationItems.OfType<TagNavigationItem>().ToList();
-		tagItems.Should().HaveCount(2, "Info classification should have watcher and tasks");
+		tagItems.Should().HaveCount(2);
 
-		// Expected sort order within info classification: "Task management", "Watcher API" 
 		tagItems[0].NavigationTitle.Should().Be("Task management", "Should sort by displayName");
 		tagItems[1].NavigationTitle.Should().Be("Watcher API", "Should sort by displayName");
+	}
+
+	[Fact]
+	public async Task WithoutXTagGroups_ElasticsearchTitle_UsesFlatTagNavigation()
+	{
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": {
+		    "title": "Elasticsearch Request & Response Specification",
+		    "version": "1.0.0"
+		  },
+		  "paths": {
+		    "/search": {
+		      "get": {
+		        "operationId": "search-op",
+		        "tags": ["search"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/indices": {
+		      "get": {
+		        "operationId": "indices-op",
+		        "tags": ["indices"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    }
+		  },
+		  "tags": [
+		    { "name": "search" },
+		    { "name": "indices" }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+
+		navigation.NavigationItems.OfType<ClassificationNavigationItem>().Should().BeEmpty();
+		navigation.NavigationItems.OfType<TagNavigationItem>().Should().HaveCount(2);
+	}
+
+	[Fact]
+	public async Task XTagGroups_ClassificationOrder_FollowsSpecOrder()
+	{
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Order Test", "version": "1.0.0" },
+		  "paths": {
+		    "/z": {
+		      "get": {
+		        "operationId": "z-op",
+		        "tags": ["ztag"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/a": {
+		      "get": {
+		        "operationId": "a-op",
+		        "tags": ["atag"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/b": {
+		      "get": {
+		        "operationId": "b-op",
+		        "tags": ["btag"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    }
+		  },
+		  "tags": [
+		    { "name": "ztag" },
+		    { "name": "atag" },
+		    { "name": "btag" }
+		  ],
+		  "x-tagGroups": [
+		    { "name": "Z Group", "tags": ["ztag"] },
+		    { "name": "A Group", "tags": ["atag"] },
+		    { "name": "B Group", "tags": ["btag"] }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("test", openApiDocument);
+
+		var titles = navigation.NavigationItems
+			.OfType<ClassificationNavigationItem>()
+			.Select(c => c.NavigationTitle)
+			.ToList();
+
+		titles.Should().Equal("Z Group", "A Group", "B Group");
+	}
+
+	[Fact]
+	public async Task XTagGroups_OrphanTag_AssignsUnknownGroup()
+	{
+		// Two unlisted tags so the "unknown" classification has multiple tags; with a single tag,
+		// CreateTagNavigationItems attaches operations directly to the parent (no TagNavigationItem).
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Orphan Test", "version": "1.0.0" },
+		  "paths": {
+		    "/ok": {
+		      "get": {
+		        "operationId": "ok-op",
+		        "tags": ["listed"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/orphan": {
+		      "get": {
+		        "operationId": "orphan-op",
+		        "tags": ["not_in_any_group"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    },
+		    "/orphan2": {
+		      "get": {
+		        "operationId": "orphan2-op",
+		        "tags": ["other_orphan"],
+		        "responses": {"200": {"description": "Success"}}
+		      }
+		    }
+		  },
+		  "tags": [
+		    { "name": "listed" },
+		    { "name": "not_in_any_group" },
+		    { "name": "other_orphan" }
+		  ],
+		  "x-tagGroups": [
+		    { "name": "Main", "tags": ["listed"] }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("test", openApiDocument);
+
+		var classifications = navigation.NavigationItems.OfType<ClassificationNavigationItem>().ToList();
+		classifications.Should().HaveCount(2);
+
+		classifications[0].NavigationTitle.Should().Be("Main");
+		classifications[1].NavigationTitle.Should().Be("unknown");
+
+		var unknownTags = classifications[1].NavigationItems.OfType<TagNavigationItem>().ToList();
+		unknownTags.Should().HaveCount(2);
+		unknownTags
+			.Select(t => t.Index.Model.Name)
+			.OrderBy(name => name, StringComparer.Ordinal)
+			.Should()
+			.Equal("not_in_any_group", "other_orphan");
 	}
 }

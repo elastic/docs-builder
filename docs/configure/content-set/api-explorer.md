@@ -119,7 +119,7 @@ The API Explorer supports the following OpenAPI specification extensions to enha
 
 ### `x-displayName` for tags
 
-Use the `x-displayName` extension on tag objects to provide user-friendly display names in navigation and landing pages while maintaining stable URLs based on the canonical tag name.
+Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-display-name)) on tag objects to provide user-friendly display names in navigation and landing pages while maintaining stable URLs based on the canonical tag name.
 
 ```json
 {
@@ -139,7 +139,35 @@ Use the `x-displayName` extension on tag objects to provide user-friendly displa
 ```
 
 **Behavior:**
+
 - When `x-displayName` is present, it's used for navigation titles and section headings in the API Explorer
 - When `x-displayName` is absent, the canonical tag `name` is used as a fallback
 - Navigation URLs and internal references always use the canonical tag `name` for stability
-- This extension follows the [Redocly specification extension pattern](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-display-name)
+
+### `x-tagGroups` for sidebar grouping
+
+Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-tag-groups)) to define how tags are grouped in the API Explorer sidebar. Each group has a display `name` and a list of tag `name` values that belong to it. Group order in the array is the order of top-level sections in the navigation.
+
+```json
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Example", "version": "1.0.0" },
+  "paths": {},
+  "x-tagGroups": [
+    {
+      "name": "Search & Document APIs",
+      "tags": ["search", "document", "eql", "esql", "sql"]
+    },
+    {
+      "name": "Cluster Management",
+      "tags": ["indices", "cluster", "snapshot"]
+    }
+  ]
+}
+```
+
+**Behavior:**
+
+- When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
+- When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
+- Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
