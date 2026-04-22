@@ -23,6 +23,7 @@ public record NavigationSection(
 public record NavigationIsland(
 	string Id,
 	string Label,
+	string Url,
 	NavigationSection ParentSection,
 	IReadOnlyList<INavigationItem> NavigationItems
 );

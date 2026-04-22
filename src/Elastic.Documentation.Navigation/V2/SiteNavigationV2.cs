@@ -115,6 +115,7 @@ public class SiteNavigationV2 : SiteNavigation
 				islands.Add(new NavigationIsland(
 					islandNode.Id,
 					islandNode.NavigationTitle,
+					islandNode.Url,
 					parentSection,
 					[.. islandNode.NavigationItems]
 				));
@@ -154,7 +155,15 @@ public class SiteNavigationV2 : SiteNavigation
 	private void BuildUrlToIslandLookup()
 	{
 		foreach (var island in Islands)
+		{
+			// Register the island root URL (the toc entry point)
+			if (!string.IsNullOrEmpty(island.Url))
+			{
+				var normalized = island.Url.TrimEnd('/');
+				_ = _urlToIsland.TryAdd(normalized, island);
+			}
 			CollectUrlsForIsland(island.NavigationItems, island);
+		}
 	}
 
 	private void CollectUrlsForIsland(IEnumerable<INavigationItem> items, NavigationIsland island)
