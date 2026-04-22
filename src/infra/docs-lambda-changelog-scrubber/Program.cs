@@ -180,8 +180,8 @@ async Task<string> ScrubBundle(string content, ILambdaContext context)
 	var repo = bundle.Products.Count > 0 ? bundle.Products[0].Repo : null;
 
 	await using var collector = new DiagnosticsCollector([]);
-	if (!LinkAllowlistSanitizer.TryApplyBundle(collector, bundle, allowRepos, owner, repo, out var sanitized, out var changed))
-		throw new InvalidOperationException($"Failed to apply allowlist to bundle; errors: {collector.Errors}");
+	if (!LinkAllowlistSanitizer.ScrubBundleForPublic(collector, bundle, allowRepos, owner, repo, out var sanitized, out var changed))
+		throw new InvalidOperationException($"Failed to scrub bundle for public output; errors: {collector.Errors}");
 
 	if (!changed)
 	{
@@ -190,7 +190,6 @@ async Task<string> ScrubBundle(string content, ILambdaContext context)
 		return content;
 	}
 
-	sanitized = LinkAllowlistSanitizer.StripBundleSentinels(sanitized);
 	var result = ReleaseNotesSerialization.SerializeBundle(sanitized);
 	LinkAllowlistSanitizer.ValidateNoPrivateReferences(result, allowRepos);
 	return result;

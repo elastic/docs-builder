@@ -686,10 +686,10 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().NotContain("secret-repo");
 	}
 
-	// --- StripBundleSentinels ---
+	// --- ScrubBundleForPublic ---
 
 	[Fact]
-	public void StripBundleSentinels_RemovesSentinelsFromPrsAndIssues()
+	public void ScrubBundleForPublic_DropsPrivateRefsDirectly()
 	{
 		var bundle = new Bundle
 		{
@@ -697,23 +697,29 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 			[
 				new()
 				{
-					Title = "Entry with sentinels",
-					Prs = ["https://github.com/elastic/elasticsearch/pull/1", "# PRIVATE: https://github.com/elastic/secret/pull/2"],
-					Issues = ["# PRIVATE: elastic/secret#3", "https://github.com/elastic/elasticsearch/issues/4"]
+					Title = "Mixed refs",
+					Prs = ["https://github.com/elastic/elasticsearch/pull/1", "https://github.com/elastic/secret/pull/2"],
+					Issues = ["elastic/secret#3", "https://github.com/elastic/elasticsearch/issues/4"],
+					Description = "See elastic/secret#5 for context"
 				}
 			]
 		};
 
-		var result = LinkAllowlistSanitizer.StripBundleSentinels(bundle);
+		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
+			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
 
-		result.Entries[0].Prs.Should().HaveCount(1);
-		result.Entries[0].Prs![0].Should().Be("https://github.com/elastic/elasticsearch/pull/1");
-		result.Entries[0].Issues.Should().HaveCount(1);
-		result.Entries[0].Issues![0].Should().Be("https://github.com/elastic/elasticsearch/issues/4");
+		ok.Should().BeTrue();
+		changed.Should().BeTrue();
+		sanitized.Entries[0].Prs.Should().HaveCount(1);
+		sanitized.Entries[0].Prs![0].Should().Be("https://github.com/elastic/elasticsearch/pull/1");
+		sanitized.Entries[0].Issues.Should().HaveCount(1);
+		sanitized.Entries[0].Issues![0].Should().Be("https://github.com/elastic/elasticsearch/issues/4");
+		sanitized.Entries[0].Description.Should().NotContain("secret");
 	}
 
 	[Fact]
-	public void StripBundleSentinels_AllSentinels_ReturnsEmptyLists()
+	public void ScrubBundleForPublic_AllPrivate_ReturnsEmptyLists()
 	{
 		var bundle = new Bundle
 		{
@@ -722,49 +728,103 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 				new()
 				{
 					Title = "All private",
-					Prs = ["# PRIVATE: https://github.com/elastic/secret/pull/1"],
-					Issues = ["# PRIVATE: elastic/secret#2"]
+					Prs = ["https://github.com/elastic/secret/pull/1"],
+					Issues = ["elastic/secret#2"]
 				}
 			]
 		};
 
-		var result = LinkAllowlistSanitizer.StripBundleSentinels(bundle);
+		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
+			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
+			out var sanitized, out _);
 
-		result.Entries[0].Prs.Should().BeEmpty();
-		result.Entries[0].Issues.Should().BeEmpty();
+		ok.Should().BeTrue();
+		sanitized.Entries[0].Prs.Should().BeEmpty();
+		sanitized.Entries[0].Issues.Should().BeEmpty();
 	}
 
 	[Fact]
-	public void StripBundleSentinels_NullLists_PreservesNull()
+	public void ScrubBundleForPublic_NullLists_PreservesNull()
 	{
 		var bundle = new Bundle
 		{
 			Entries = [new() { Title = "No refs", Prs = null, Issues = null }]
 		};
 
-		var result = LinkAllowlistSanitizer.StripBundleSentinels(bundle);
+		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
+			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
 
-		result.Entries[0].Prs.Should().BeNull();
-		result.Entries[0].Issues.Should().BeNull();
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+		sanitized.Entries[0].Prs.Should().BeNull();
+		sanitized.Entries[0].Issues.Should().BeNull();
 	}
 
 	[Fact]
-	public void StripBundleSentinels_MultipleEntries_StripsAll()
+	public void ScrubBundleForPublic_MultipleEntries_ScrubsAll()
 	{
 		var bundle = new Bundle
 		{
 			Entries =
 			[
-				new() { Title = "A", Prs = ["# PRIVATE: x"] },
-				new() { Title = "B", Issues = ["# PRIVATE: y", "elastic/elasticsearch#1"] }
+				new() { Title = "A", Prs = ["https://github.com/elastic/secret/pull/1"] },
+				new() { Title = "B", Issues = ["elastic/secret#2", "elastic/elasticsearch#3"] }
 			]
 		};
 
-		var result = LinkAllowlistSanitizer.StripBundleSentinels(bundle);
+		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
+			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
+			out var sanitized, out _);
 
-		result.Entries[0].Prs.Should().BeEmpty();
-		result.Entries[1].Issues.Should().HaveCount(1);
-		result.Entries[1].Issues![0].Should().Be("elastic/elasticsearch#1");
+		ok.Should().BeTrue();
+		sanitized.Entries[0].Prs.Should().BeEmpty();
+		sanitized.Entries[1].Issues.Should().HaveCount(1);
+		sanitized.Entries[1].Issues![0].Should().Be("elastic/elasticsearch#3");
+	}
+
+	[Fact]
+	public void ScrubBundleForPublic_NeverProducesSentinels()
+	{
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "Entry",
+					Prs = ["https://github.com/elastic/secret/pull/1"],
+					Description = "See elastic/secret#2"
+				}
+			]
+		};
+
+		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
+			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
+			out var sanitized, out _);
+
+		ok.Should().BeTrue();
+		sanitized.Entries[0].Prs.Should().NotContain(r => r.Contains("# PRIVATE:"));
+		sanitized.Entries[0].Description.Should().NotContain("# PRIVATE:");
+		sanitized.Entries[0].Description.Should().NotContain("secret");
+	}
+
+	[Fact]
+	public void ScrubBundleForPublic_ScrubsBundleDescription()
+	{
+		var bundle = new Bundle
+		{
+			Description = "Release notes referencing elastic/secret#42",
+			Entries = [new() { Title = "Entry" }]
+		};
+
+		var ok = LinkAllowlistSanitizer.ScrubBundleForPublic(
+			Collector, bundle, AllowElasticsearch, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeTrue();
+		sanitized.Description.Should().NotContain("secret");
 	}
 
 	// --- ValidateNoPrivateReferences ---

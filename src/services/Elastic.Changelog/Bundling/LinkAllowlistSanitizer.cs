@@ -238,21 +238,43 @@ public static partial class LinkAllowlistSanitizer
 	}
 
 	/// <summary>
-	/// Strips <c># PRIVATE:</c> sentinel entries from all entries in a bundle.
-	/// Use after <see cref="TryApplyBundle"/> when the output is destined for a public bucket.
+	/// Scrubs a bundle for public output by directly removing disallowed references.
+	/// Unlike <see cref="TryApplyBundle"/> (which produces <c># PRIVATE:</c> sentinels for private-side tooling),
+	/// this method never creates sentinels. Disallowed PR/issue entries are dropped and text fields are scrubbed.
 	/// </summary>
-	public static Bundle StripBundleSentinels(Bundle bundle)
+	public static bool ScrubBundleForPublic(
+		IDiagnosticsCollector collector,
+		Bundle bundle,
+		IReadOnlyList<string> allowRepos,
+		string defaultOwner,
+		string? defaultBundleRepo,
+		out Bundle sanitized,
+		out bool changesApplied)
 	{
+		sanitized = bundle;
+		changesApplied = false;
+
+		var anyChanged = false;
 		var newEntries = new List<BundledEntry>(bundle.Entries.Count);
+
 		foreach (var entry in bundle.Entries)
 		{
-			var dummy = false;
-			var prs = DropSentinels(entry.Prs, ref dummy);
-			var issues = DropSentinels(entry.Issues, ref dummy);
-			newEntries.Add(entry with { Prs = prs, Issues = issues });
+			if (!TryApplyChangelogEntry(collector, entry, allowRepos, defaultOwner, defaultBundleRepo,
+				out var scrubbed, out var entryChanged))
+				return false;
+
+			if (entryChanged)
+				anyChanged = true;
+
+			newEntries.Add(scrubbed);
 		}
 
-		return bundle with { Entries = newEntries };
+		var allow = BuildAllowSet(allowRepos);
+		var description = ScrubText(bundle.Description, allow, ref anyChanged);
+
+		sanitized = bundle with { Entries = newEntries, Description = description };
+		changesApplied = anyChanged;
+		return true;
 	}
 
 	/// <summary>
