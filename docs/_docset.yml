@@ -8,8 +8,6 @@ cross_links:
 exclude:
   - '_*.md'
   - '!_search.md'
-  # API landing templates (see api.*.template): not standalone TOC pages; including them causes "Could not find … in navigation" during serve/build.
-  - '*-api-overview.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
   serverless-short: Serverless
@@ -51,8 +49,8 @@ suppress:
 api:
    elasticsearch: elasticsearch-openapi.json
    kibana:
-     spec: kibana-openapi.json
-     template: kibana-api-overview.md
+     - file: kibana-api-overview.md
+     - spec: kibana-openapi.json
    dashboard: dashboard-openapi.json
 
 toc:
@@ -76,6 +74,8 @@ toc:
       - file: changelog.md
         children:
           - file: configure-changelogs.md
+            children:
+              - file: configure-changelogs-ref.md
           - file: create-changelogs.md
           - file: bundle-changelogs.md
           - file: publish-changelogs.md
