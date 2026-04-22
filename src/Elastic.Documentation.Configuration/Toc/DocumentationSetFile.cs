@@ -164,7 +164,12 @@ public class DocumentationSetFile : TableOfContentsFile
 			};
 
 			if (resolvedItem != null)
+			{
 				resolved.Add(resolvedItem);
+				// Emit the deprecated rules overview as a sibling immediately after the active rules ref
+				if (resolvedItem is DetectionRuleOverviewRef { DeprecatedSiblingRef: { } deprecatedSibling })
+					resolved.Add(deprecatedSibling);
+			}
 		}
 
 		return resolved;
@@ -443,9 +448,33 @@ public class DocumentationSetFile : TableOfContentsFile
 			.ToList();
 		var tomlChildren = DetectionRuleOverviewRef.CreateTableOfContentItems(tocSourceFolders, context, baseDirectory);
 
-		var children = resolvedChildren.Concat(tomlChildren).ToList();
+		var children = resolvedChildren.ToList();
+		children.AddRange(tomlChildren);
 
-		return new DetectionRuleOverviewRef(fullPath, pathRelativeToContainer, detectionRuleRef.DetectionRuleFolders, children, context);
+		// Auto-detect _deprecated subdirectories. When found, build the deprecated overview FileRef
+		// and attach it as DeprecatedSiblingRef so ResolveTableOfContents can emit it as a sibling,
+		// not as a child nested under the active rules.
+		FileRef? deprecatedSiblingRef = null;
+		var hasDeprecatedRules = tocSourceFolders.Any(d =>
+			d.Exists && d.EnumerateDirectories("_deprecated", SearchOption.TopDirectoryOnly).Any());
+		if (hasDeprecatedRules)
+		{
+			var deprecatedFileName = detectionRuleRef.DeprecatedFile ?? "deprecated-detection-rules.md";
+			var overviewDir = fileSystem.Path.GetDirectoryName(fullPath);
+			var deprecatedFullPath = string.IsNullOrEmpty(overviewDir)
+				? deprecatedFileName
+				: $"{overviewDir}/{deprecatedFileName}";
+			var deprecatedPathRelativeToContainer = string.IsNullOrEmpty(containerPath)
+				? deprecatedFullPath
+				: deprecatedFullPath.Substring(containerPath.Length + 1);
+			var deprecatedTomlChildren = DetectionRuleOverviewRef.CreateDeprecatedTableOfContentItems(tocSourceFolders, context, baseDirectory);
+			deprecatedSiblingRef = new FileRef(deprecatedFullPath, deprecatedPathRelativeToContainer, false, deprecatedTomlChildren, context);
+		}
+
+		return new DetectionRuleOverviewRef(fullPath, pathRelativeToContainer, detectionRuleRef.DetectionRuleFolders, children, context, detectionRuleRef.DeprecatedFile)
+		{
+			DeprecatedSiblingRef = deprecatedSiblingRef
+		};
 	}
 
 
