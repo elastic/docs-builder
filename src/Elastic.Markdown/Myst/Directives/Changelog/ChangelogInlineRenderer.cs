@@ -178,7 +178,6 @@ public static class ChangelogInlineRenderer
 
 		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
 
-		// Add release date if present
 		if (releaseDate is { } date)
 		{
 			_ = sb.AppendLine();

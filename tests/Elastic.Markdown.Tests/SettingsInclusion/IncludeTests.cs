@@ -251,3 +251,35 @@ groups:
 		Html.Should().NotContain("Unavailable");
 	}
 }
+
+public class AppliesToInlineRoleInDescriptionRendersAsBadge(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/applies-to-in-description.yml
+::::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/applies-to-in-description.yml", """
+groups:
+  - group: Example
+    settings:
+      - setting: xpack.sample.versioned
+        description: |
+          Behavior depends on version:
+
+          * {applies_to}`stack: ga 9.2` Defaults to `model-a`.
+          * {applies_to}`stack: ga 9.1` Defaults to `model-b`.
+""");
+	}
+
+	[Fact]
+	public void RendersAppliesToRoleAsBadgeNotLiteralText()
+	{
+		Html.Should().Contain("applies-to-popover");
+		Html.Should().NotContain("Applies to (stack: ga 9.2)");
+		Html.Should().NotContain("Applies to (stack: ga 9.1)");
+	}
+}

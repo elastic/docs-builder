@@ -73,6 +73,7 @@ It demonstrates:
 - `note`, `tip`, `warning`, `important`, and `deprecation_details`.
 - Nested `settings`.
 - `applies_to` inheritance and override behavior.
+- Inline `{applies_to}` badges inside a setting `description` (for example, to label per-version defaults in a bulleted list).
 - Top-level `page_description`.
 
 ### Result

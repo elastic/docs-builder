@@ -6044,6 +6044,86 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 
+	[Fact]
+	public async Task BundleChangelogs_WithBundleReleaseDatesFalse_SuppressesReleaseDate()
+	{
+		// Arrange
+		CreateSampleChangelogs();
+
+		// Create a config with bundle.release_dates: false
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			bundle:
+			  release_dates: false
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = outputPath,
+			Config = configPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue("bundling should succeed with release_dates config");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().NotContain("release-date:", "release date should be suppressed when bundle.release_dates is false");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithBundleReleaseDatesTrue_AutoPopulatesReleaseDate()
+	{
+		// Arrange
+		CreateSampleChangelogs();
+
+		// Create a config with bundle.release_dates: true (explicit)
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			bundle:
+			  release_dates: true
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = outputPath,
+			Config = configPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue("bundling should succeed with release_dates config");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("release-date:", "release date should be auto-populated when bundle.release_dates is true");
+	}
+
 	private void CreateSampleChangelogs()
 	{
 		// language=yaml

@@ -52,7 +52,6 @@ public class IndexMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRender
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-release-notes-{context.TitleSlug}]");
 
-		// Add release date if present
 		if (context.BundleReleaseDate is { } releaseDate)
 		{
 			_ = sb.AppendLine();
