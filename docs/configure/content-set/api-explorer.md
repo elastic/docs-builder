@@ -112,3 +112,34 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 - **Landing page**: An overview of the API grouped by tag
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
 - **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
+
+## OpenAPI extensions
+
+The API Explorer supports the following OpenAPI specification extensions to enhance navigation and display:
+
+### `x-displayName` for tags
+
+Use the `x-displayName` extension on tag objects to provide user-friendly display names in navigation and landing pages while maintaining stable URLs based on the canonical tag name.
+
+```json
+{
+  "tags": [
+    {
+      "name": "tasks",
+      "description": "The task management APIs enable you to get information about tasks currently running.",
+      "x-displayName": "Task management"
+    },
+    {
+      "name": "ml_anomaly", 
+      "description": "Machine learning anomaly detection APIs.",
+      "x-displayName": "Machine Learning Anomaly Detection"
+    }
+  ]
+}
+```
+
+**Behavior:**
+- When `x-displayName` is present, it's used for navigation titles and section headings in the API Explorer
+- When `x-displayName` is absent, the canonical tag `name` is used as a fallback
+- Navigation URLs and internal references always use the canonical tag `name` for stability
+- This extension follows the [Redocly specification extension pattern](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-display-name)

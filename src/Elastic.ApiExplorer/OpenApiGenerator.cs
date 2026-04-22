@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Landing;
@@ -29,7 +30,7 @@ public record ApiClassification(string Name, string Description, IReadOnlyCollec
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
 }
 
-public record ApiTag(string Name, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
+public record ApiTag(string Name, string DisplayName, string Description, IReadOnlyCollection<ApiEndpoint> Endpoints) : IApiGroupingModel
 {
 	/// <inheritdoc />
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
@@ -52,6 +53,9 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	{
 		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
 		var rootNavigation = new LandingNavigationItem(url);
+
+		// Parse x-displayName from OpenAPI tags for user-friendly display names
+		var tagDisplayNames = ParseTagDisplayNames(openApiDocument);
 
 		var ops = openApiDocument.Paths
 			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
@@ -106,9 +110,15 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 					var apiEndpoint = new ApiEndpoint(operations, apiGroup.Key);
 					apis.Add(apiEndpoint);
 				}
-				var tag = new ApiTag(tagGroup.Key ?? "unknown", "", apis);
+				var tagName = tagGroup.Key ?? "unknown";
+				var displayName = tagDisplayNames.TryGetValue(tagName, out var foundDisplayName) ? foundDisplayName : tagName;
+				var tag = new ApiTag(tagName, displayName, "", apis);
 				tags.Add(tag);
 			}
+
+			// Sort tags alphabetically by display name, fallback to canonical name
+			tags = tags.OrderBy(t => t.DisplayName ?? t.Name, StringComparer.OrdinalIgnoreCase).ToList();
+
 			var classification = new ApiClassification(classGroup.Key, "", tags);
 			classifications.Add(classification);
 		}
@@ -460,5 +470,41 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				return "security";
 		}
 		return "unknown";
+	}
+
+	/// <summary>
+	/// Parses x-displayName extensions from OpenAPI tag objects to build a mapping of tag names to display names.
+	/// Falls back to the canonical tag name when no x-displayName is present.
+	/// </summary>
+	private static Dictionary<string, string> ParseTagDisplayNames(OpenApiDocument openApiDocument)
+	{
+		var displayNames = new Dictionary<string, string>();
+
+		if (openApiDocument.Tags is null)
+			return displayNames;
+
+		foreach (var tag in openApiDocument.Tags)
+		{
+			var tagName = tag.Name;
+			if (string.IsNullOrEmpty(tagName))
+				continue;
+
+			var displayName = tagName; // Default fallback
+
+			// Look for x-displayName extension
+			if (tag.Extensions?.TryGetValue("x-displayName", out var extension) == true &&
+				extension is JsonNodeExtension jsonExtension)
+			{
+				var displayNameValue = jsonExtension.Node.GetValue<string>();
+				if (!string.IsNullOrWhiteSpace(displayNameValue))
+				{
+					displayName = displayNameValue;
+				}
+			}
+
+			displayNames[tagName] = displayName;
+		}
+
+		return displayNames;
 	}
 }
