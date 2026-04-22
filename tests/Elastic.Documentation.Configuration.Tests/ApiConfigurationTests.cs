@@ -38,18 +38,6 @@ public class ApiConfigurationTests
 	}
 
 
-	[Fact]
-	public void ApiConfiguration_WithTemplate()
-	{
-		var config = new ApiConfiguration
-		{
-			Spec = "elasticsearch-openapi.json",
-			Template = "elasticsearch-api-overview.md"
-		};
-
-		config.IsValid.Should().BeTrue();
-		config.Template.Should().Be("elasticsearch-api-overview.md");
-	}
 
 	[Fact]
 	public void ApiConfiguration_InvalidWhenSpecIsEmpty()
@@ -69,6 +57,109 @@ public class ApiConfigurationTests
 
 }
 
+public class ApiProductSequenceTests
+{
+	[Fact]
+	public void ApiProductSequence_ValidatesRequiresAtLeastOneSpec()
+	{
+		var sequence = new ApiProductSequence
+		{
+			Entries = [new ApiProductEntry { File = "intro.md" }]
+		};
+
+		sequence.IsValid.Should().BeFalse();
+	}
+
+	[Fact]
+	public void ApiProductSequence_ValidWithSpecOnly()
+	{
+		var sequence = new ApiProductSequence
+		{
+			Entries = [new ApiProductEntry { Spec = "api.json" }]
+		};
+
+		sequence.IsValid.Should().BeTrue();
+		sequence.GetSpecPaths().Should().BeEquivalentTo(["api.json"]);
+		sequence.GetIntroMarkdownFiles().Should().BeEmpty();
+		sequence.GetOutroMarkdownFiles().Should().BeEmpty();
+	}
+
+	[Fact]
+	public void ApiProductSequence_ValidWithIntroSpecOutro()
+	{
+		var sequence = new ApiProductSequence
+		{
+			Entries = [
+				new ApiProductEntry { File = "intro.md" },
+				new ApiProductEntry { Spec = "api.json" },
+				new ApiProductEntry { File = "outro.md" }
+			]
+		};
+
+		sequence.IsValid.Should().BeTrue();
+		sequence.GetSpecPaths().Should().BeEquivalentTo(["api.json"]);
+		sequence.GetIntroMarkdownFiles().Should().BeEquivalentTo(["intro.md"]);
+		sequence.GetOutroMarkdownFiles().Should().BeEquivalentTo(["outro.md"]);
+	}
+
+	[Fact]
+	public void ApiProductSequence_InvalidWhenMultipleSpecs()
+	{
+		var sequence = new ApiProductSequence
+		{
+			Entries = [
+				new ApiProductEntry { File = "intro.md" },
+				new ApiProductEntry { Spec = "api1.json" },
+				new ApiProductEntry { Spec = "api2.json" },
+				new ApiProductEntry { File = "outro.md" }
+			]
+		};
+
+		sequence.IsValid.Should().BeFalse(); // Invalid due to multiple specs
+	}
+
+	[Fact]
+	public void ApiProductSequence_SeparatesIntroAndOutroFiles()
+	{
+		var sequence = new ApiProductSequence
+		{
+			Entries = [
+				new ApiProductEntry { File = "intro1.md" },
+				new ApiProductEntry { File = "intro2.md" },
+				new ApiProductEntry { Spec = "api1.json" },
+				new ApiProductEntry { Spec = "api2.json" },
+				new ApiProductEntry { File = "outro1.md" },
+				new ApiProductEntry { File = "outro2.md" }
+			]
+		};
+
+		sequence.IsValid.Should().BeFalse(); // Invalid due to multiple specs
+		sequence.GetIntroMarkdownFiles().Should().BeEquivalentTo(["intro1.md", "intro2.md"]);
+		sequence.GetSpecPaths().Should().BeEquivalentTo(["api1.json", "api2.json"]);
+		sequence.GetOutroMarkdownFiles().Should().BeEquivalentTo(["outro1.md", "outro2.md"]);
+	}
+
+	[Fact]
+	public void ApiProductEntry_ValidatesExactlyOneProperty()
+	{
+		var validFile = new ApiProductEntry { File = "test.md" };
+		var validSpec = new ApiProductEntry { Spec = "test.json" };
+		var invalidBoth = new ApiProductEntry { File = "test.md", Spec = "test.json" };
+		var invalidNone = new ApiProductEntry();
+
+		validFile.IsValid.Should().BeTrue();
+		validFile.IsMarkdownFile.Should().BeTrue();
+		validFile.IsOpenApiSpec.Should().BeFalse();
+
+		validSpec.IsValid.Should().BeTrue();
+		validSpec.IsMarkdownFile.Should().BeFalse();
+		validSpec.IsOpenApiSpec.Should().BeTrue();
+
+		invalidBoth.IsValid.Should().BeFalse();
+		invalidNone.IsValid.Should().BeFalse();
+	}
+}
+
 public class ApiConfigurationConverterTests
 {
 	private readonly IDeserializer _deserializer;
@@ -86,12 +177,11 @@ public class ApiConfigurationConverterTests
 
 		config.Should().NotBeNull();
 		config.Spec.Should().Be("elasticsearch-openapi.json");
-		config.Template.Should().BeNull();
 		config.Specs.Should().BeNull();
 	}
 
 	[Fact]
-	public void Converter_HandlesObjectFormat()
+	public void Converter_HandlesObjectFormat_IgnoresTemplate()
 	{
 		const string yaml = """
 			spec: elasticsearch-openapi.json
@@ -102,7 +192,6 @@ public class ApiConfigurationConverterTests
 
 		config.Should().NotBeNull();
 		config.Spec.Should().Be("elasticsearch-openapi.json");
-		config.Template.Should().Be("elasticsearch-api-overview.md");
 		config.Specs.Should().BeNull();
 	}
 
@@ -123,7 +212,6 @@ public class ApiConfigurationConverterTests
 
 		config.Should().NotBeNull();
 		config.Spec.Should().Be("elasticsearch-openapi.json");
-		config.Template.Should().Be("elasticsearch-api-overview.md");
 		config.Specs.Should().BeNull();
 	}
 
@@ -140,12 +228,11 @@ public class ApiConfigurationConverterTests
 
 		config.Should().NotBeNull();
 		config.Spec.Should().BeNull(); // Should be null when wrong token type
-		config.Template.Should().Be("elasticsearch-api-overview.md");
 		config.Specs.Should().BeNull();
 	}
 
 	[Fact]
-	public void Converter_HandlesWrongTokenTypeForTemplate()
+	public void Converter_IgnoresTemplateWithWrongTokenType()
 	{
 		const string yaml = """
 			spec: elasticsearch-openapi.json
@@ -158,7 +245,6 @@ public class ApiConfigurationConverterTests
 
 		config.Should().NotBeNull();
 		config.Spec.Should().Be("elasticsearch-openapi.json");
-		config.Template.Should().BeNull(); // Should be null when wrong token type
 		config.Specs.Should().BeNull();
 	}
 
@@ -177,7 +263,6 @@ public class ApiConfigurationConverterTests
 
 		config.Should().NotBeNull();
 		config.Spec.Should().Be("elasticsearch-openapi.json");
-		config.Template.Should().Be("elasticsearch-api-overview.md");
 		// Specs should remain null since multi-spec support is deferred
 		config.Specs.Should().BeNull();
 	}
@@ -203,25 +288,105 @@ public class ApiConfigurationConverterTests
 
 		config.Should().NotBeNull();
 		config.Spec.Should().Be("elasticsearch-openapi.json");
-		config.Template.Should().Be("elasticsearch-api-overview.md");
 		config.Specs.Should().BeNull();
+	}
+}
+
+public class ApiProductSequenceConverterTests
+{
+	private readonly IDeserializer _deserializer;
+
+	public ApiProductSequenceConverterTests() => _deserializer = new DeserializerBuilder()
+			.WithTypeConverter(new ApiConfigurationConverter())
+			.Build();
+
+	[Fact]
+	public void Converter_HandlesSequenceFormat()
+	{
+		const string yaml = """
+			- file: intro.md
+			- spec: api.json
+			- file: outro.md
+			""";
+
+		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+
+		sequence.Should().NotBeNull();
+		sequence.IsValid.Should().BeTrue();
+		sequence.Entries.Should().HaveCount(3);
+		sequence.GetIntroMarkdownFiles().Should().BeEquivalentTo(["intro.md"]);
+		sequence.GetSpecPaths().Should().BeEquivalentTo(["api.json"]);
+		sequence.GetOutroMarkdownFiles().Should().BeEquivalentTo(["outro.md"]);
+	}
+
+	[Fact]
+	public void Converter_ConvertLegacyStringToSequence()
+	{
+		const string yaml = "api.json";
+
+		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+
+		sequence.Should().NotBeNull();
+		sequence.IsValid.Should().BeTrue();
+		sequence.Entries.Should().HaveCount(1);
+		sequence.GetSpecPaths().Should().BeEquivalentTo(["api.json"]);
+		sequence.GetIntroMarkdownFiles().Should().BeEmpty();
+		sequence.GetOutroMarkdownFiles().Should().BeEmpty();
+	}
+
+	[Fact]
+	public void Converter_ConvertLegacyObjectToSequence_IgnoresTemplate()
+	{
+		const string yaml = """
+			spec: api.json
+			template: template.md
+			""";
+
+		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+
+		sequence.Should().NotBeNull();
+		sequence.IsValid.Should().BeTrue();
+		sequence.Entries.Should().HaveCount(1);
+		sequence.GetIntroMarkdownFiles().Should().BeEmpty();
+		sequence.GetSpecPaths().Should().BeEquivalentTo(["api.json"]);
+		sequence.GetOutroMarkdownFiles().Should().BeEmpty();
+	}
+
+	[Fact]
+	public void Converter_ConvertLegacyObjectWithoutTemplateToSequence()
+	{
+		const string yaml = """
+			spec: api.json
+			""";
+
+		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+
+		sequence.Should().NotBeNull();
+		sequence.IsValid.Should().BeTrue();
+		sequence.Entries.Should().HaveCount(1);
+		sequence.GetSpecPaths().Should().BeEquivalentTo(["api.json"]);
+		sequence.GetIntroMarkdownFiles().Should().BeEmpty();
+		sequence.GetOutroMarkdownFiles().Should().BeEmpty();
 	}
 }
 
 public class ConfigurationFileApiTests
 {
 	[Fact]
-	public void ConfigurationFile_ProcessesNewApiConfiguration()
+	public void ConfigurationFile_ProcessesNewApiSequenceConfiguration()
 	{
 		// Arrange  
 		var docSetFile = new DocumentationSetFile
 		{
-			Api = new Dictionary<string, ApiConfiguration>
+			Api = new Dictionary<string, ApiProductSequence>
 			{
 				["elasticsearch"] = new()
 				{
-					Spec = "elasticsearch-openapi.json",
-					Template = "elasticsearch-api-overview.md"
+					Entries = [
+						new ApiProductEntry { File = "intro.md" },
+						new ApiProductEntry { Spec = "elasticsearch-openapi.json" },
+						new ApiProductEntry { File = "outro.md" }
+					]
 				}
 			}
 		};
@@ -230,18 +395,20 @@ public class ConfigurationFileApiTests
 
 		// Assert
 		config.ApiConfigurations.Should().NotBeNull();
-		config.ApiConfigurations!.Should().ContainKey("elasticsearch");
+		config.ApiConfigurations.Should().ContainKey("elasticsearch");
 
 		var elasticConfig = config.ApiConfigurations["elasticsearch"];
 		elasticConfig.ProductKey.Should().Be("elasticsearch");
-		elasticConfig.HasCustomTemplate.Should().BeTrue();
-		elasticConfig.TemplateFile!.Name.Should().Be("elasticsearch-api-overview.md");
+		elasticConfig.IntroMarkdownFiles.Should().HaveCount(1);
+		elasticConfig.IntroMarkdownFiles[0].Name.Should().Be("intro.md");
 		elasticConfig.SpecFiles.Should().HaveCount(1);
 		elasticConfig.PrimarySpecFile.Name.Should().Be("elasticsearch-openapi.json");
+		elasticConfig.OutroMarkdownFiles.Should().HaveCount(1);
+		elasticConfig.OutroMarkdownFiles[0].Name.Should().Be("outro.md");
 
 		// Backward compatibility
 		config.OpenApiSpecifications.Should().NotBeNull();
-		config.OpenApiSpecifications!.Should().ContainKey("elasticsearch");
+		config.OpenApiSpecifications.Should().ContainKey("elasticsearch");
 		config.OpenApiSpecifications["elasticsearch"].Name.Should().Be("elasticsearch-openapi.json");
 	}
 
@@ -254,7 +421,9 @@ public class ConfigurationFileApiTests
 		{
 			{ configFilePath, new MockFileData("") },
 			{ Path.Join(root, "docs", "elasticsearch-openapi.json"), new MockFileData("{}") },
-			{ Path.Join(root, "docs", "elasticsearch-api-overview.md"), new MockFileData("# Elasticsearch APIs") }
+			{ Path.Join(root, "docs", "elasticsearch-api-overview.md"), new MockFileData("# Elasticsearch APIs") },
+			{ Path.Join(root, "docs", "intro.md"), new MockFileData("# Introduction") },
+			{ Path.Join(root, "docs", "outro.md"), new MockFileData("# Conclusion") }
 		}, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);

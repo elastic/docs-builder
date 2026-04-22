@@ -9,7 +9,6 @@ using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Schemas;
-using Elastic.ApiExplorer.Templates;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
@@ -51,9 +50,8 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
-	private readonly TemplateProcessor _templateProcessor = TemplateProcessorFactory.Create(markdownStringRenderer, context.ReadFileSystem);
 
-	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument)
+	public LandingNavigationItem CreateNavigation(string apiUrlSuffix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig = null)
 	{
 		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
 		var rootNavigation = new LandingNavigationItem(url);
@@ -154,14 +152,149 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		// Add schema type pages for shared types
 		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
-		// Multi-tag / multi-classification builds into topLevelNavigationItems; single-tag writes endpoints
-		// directly onto root. Assigning topLevel here must not wipe root when that list is still empty.
-		if (topLevelNavigationItems.Count > 0 && rootNavigation.NavigationItems.Count == 0)
-			rootNavigation.NavigationItems = topLevelNavigationItems;
-		else if (topLevelNavigationItems.Count > 0 && rootNavigation.NavigationItems.Count > 0)
-			rootNavigation.NavigationItems = [.. rootNavigation.NavigationItems, .. topLevelNavigationItems];
+		// Collect operation monikers for collision detection
+		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var path in openApiDocument.Paths)
+		{
+			foreach (var operation in path.Value.Operations ?? [])
+			{
+				// Use same moniker logic as OperationNavigationItem
+				var moniker = !string.IsNullOrWhiteSpace(operation.Value.OperationId)
+					? operation.Value.OperationId
+					: path.Key.Replace("}", "").Replace("{", "").Replace('/', '-');
+				_ = operationMonikers.Add(moniker);
+			}
+		}
+
+		// Add intro and outro markdown pages if available
+		var finalNavigationItems = new List<INavigationItem>();
+		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		// Add intro pages first
+		if (apiConfig?.IntroMarkdownFiles.Count > 0)
+		{
+			foreach (var introFile in apiConfig.IntroMarkdownFiles)
+			{
+				var introNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, introFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
+				finalNavigationItems.Add(introNavItem);
+			}
+		}
+
+		// Add existing navigation items (OpenAPI generated content)
+		if (topLevelNavigationItems.Count > 0)
+			finalNavigationItems.AddRange(topLevelNavigationItems);
+		else if (rootNavigation.NavigationItems.Count > 0)
+			finalNavigationItems.AddRange(rootNavigation.NavigationItems);
+
+		// Add outro pages last
+		if (apiConfig?.OutroMarkdownFiles.Count > 0)
+		{
+			foreach (var outroFile in apiConfig.OutroMarkdownFiles)
+			{
+				var outroNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, outroFile, rootNavigation, rootNavigation, operationMonikers, markdownSlugs);
+				finalNavigationItems.Add(outroNavItem);
+			}
+		}
+
+		// Set the final navigation items
+		if (finalNavigationItems.Count > 0)
+			rootNavigation.NavigationItems = finalNavigationItems;
 
 		return rootNavigation;
+	}
+
+	private SimpleMarkdownNavigationItem CreateMarkdownNavigationItem(
+		string apiUrlSuffix,
+		IFileInfo markdownFile,
+		LandingNavigationItem rootNavigation,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		HashSet<string> operationMonikers,
+		HashSet<string> markdownSlugs)
+	{
+		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(markdownFile);
+
+		// Check for duplicate markdown slugs
+		if (!markdownSlugs.Add(slug))
+		{
+			throw new InvalidOperationException(
+				$"Duplicate markdown slug '{slug}' found in API product '{apiUrlSuffix}'. " +
+				$"File: {markdownFile.FullName}");
+		}
+
+		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName, operationMonikers);
+
+		var url = $"{context.UrlPathPrefix}/api/{apiUrlSuffix}/{slug}/";
+		var title = GetNavigationTitleFromFile(markdownFile);
+
+		// Create simple navigation item - will be handled by regular documentation system
+		var navItem = new SimpleMarkdownNavigationItem(url, title, markdownFile, rootNavigation)
+		{
+			Parent = parent
+		};
+
+		return navItem;
+	}
+
+	private string GetNavigationTitleFromFile(IFileInfo markdownFile)
+	{
+		try
+		{
+			// Read file content to parse frontmatter
+			var content = context.ReadFileSystem.File.ReadAllText(markdownFile.FullName);
+
+			// Simple frontmatter parsing - look for navigation_title
+			if (content.StartsWith("---"))
+			{
+				var lines = content.Split('\n');
+				var frontMatterEndIndex = -1;
+
+				for (var i = 1; i < lines.Length; i++)
+				{
+					if (lines[i].TrimStart().StartsWith("---"))
+					{
+						frontMatterEndIndex = i;
+						break;
+					}
+				}
+
+				if (frontMatterEndIndex > 0)
+				{
+					for (var i = 1; i < frontMatterEndIndex; i++)
+					{
+						var line = lines[i].Trim();
+						if (line.StartsWith("navigation_title:"))
+						{
+							var title = line.Substring("navigation_title:".Length).Trim();
+							// Remove quotes if present
+							if ((title.StartsWith('"') && title.EndsWith('"')) ||
+								(title.StartsWith('\'') && title.EndsWith('\'')))
+							{
+								title = title.Substring(1, title.Length - 2);
+							}
+							if (!string.IsNullOrEmpty(title))
+							{
+								return title;
+							}
+						}
+					}
+				}
+			}
+		}
+		catch (Exception)
+		{
+			// Fall back to filename-based title if parsing fails
+		}
+
+		// Fallback: Extract a friendly navigation title from the filename
+		var fileName = Path.GetFileNameWithoutExtension(markdownFile.Name);
+
+		// Convert kebab-case/snake_case to title case
+		return fileName
+			.Replace('-', ' ')
+			.Replace('_', ' ')
+			.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+			.Select(word => char.ToUpper(word[0]) + word[1..].ToLower())
+			.Aggregate((current, next) => $"{current} {next}");
 	}
 
 	private void CreateTagNavigationItems(
@@ -263,25 +396,16 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 	private async Task GenerateApiProduct(string prefix, OpenApiDocument openApiDocument, ResolvedApiConfiguration? apiConfig, Cancel ctx)
 	{
-		var navigation = CreateNavigation(prefix, openApiDocument);
+		var navigation = CreateNavigation(prefix, openApiDocument, apiConfig);
 		_logger.LogInformation("Generating OpenApiDocument {Title}", openApiDocument.Info?.Title ?? "<no title>");
 
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation);
-
-		TemplateLanding? templateLanding = null;
-		if (apiConfig?.HasCustomTemplate == true)
-		{
-			var templateContent = await _templateProcessor.ProcessTemplateAsync(apiConfig, ctx);
-			if (!string.IsNullOrWhiteSpace(templateContent))
-				templateLanding = new TemplateLanding(templateContent);
-		}
 
 		var renderContext = new ApiRenderContext(context, openApiDocument, _contentHashProvider)
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
-			MarkdownRenderer = markdownStringRenderer,
-			TemplateLandingPage = templateLanding
+			MarkdownRenderer = markdownStringRenderer
 		};
 
 		await RenderNavigationItems(prefix, renderContext, navigationRenderer, navigation, navigation, ctx);
@@ -297,9 +421,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 	{
 		if (currentNavigation is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			_ = renderContext.TemplateLandingPage is { } templateLanding && ReferenceEquals(currentNavigation, rootNavigation)
-				? await Render(prefix, node, templateLanding, renderContext, navigationRenderer, ctx)
-				: await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
+			_ = await Render(prefix, node, node.Index.Model, renderContext, navigationRenderer, ctx);
 
 			foreach (var child in node.NavigationItems)
 				await RenderNavigationItems(prefix, renderContext, navigationRenderer, child, rootNavigation, ctx);

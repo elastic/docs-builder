@@ -23,6 +23,4 @@ public record ApiRenderContext(
 	public required INavigationItem CurrentNavigation { get; init; }
 	public required IMarkdownStringRenderer MarkdownRenderer { get; init; }
 
-	/// <summary>When set, the API root index uses this model instead of <see cref="Landing.ApiLanding"/>.</summary>
-	public TemplateLanding? TemplateLandingPage { get; init; }
 }
