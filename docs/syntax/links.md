@@ -111,7 +111,17 @@ Link to websites and resources outside the Elastic docs:
 [Elastic Documentation](https://www.elastic.co/guide)
 ```
 
-External links display an arrow indicator next to the link text. The indicator is omitted when the link wraps an image (for example, a screenshot or badge), since the image already conveys the target.
+External links display an arrow indicator next to the link text.
+
+### Linked images
+
+Wrap an image in a link to make the image itself clickable. Combine the image syntax with the link syntax:
+
+```markdown
+[![Deploy to AWS](images/launch-stack.png)](https://console.aws.amazon.com/cloudformation/home)
+```
+
+When an external link wraps an image (for example, a screenshot or badge), the arrow indicator is omitted because the image already conveys the target.
 
 ### Autolinks
 
