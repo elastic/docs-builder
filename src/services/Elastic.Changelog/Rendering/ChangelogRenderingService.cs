@@ -31,6 +31,7 @@ public record RenderChangelogsArguments
 	public string[]? HideFeatures { get; init; }
 	public string? Config { get; init; }
 	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
+
 }
 
 /// <summary>

@@ -101,11 +101,11 @@ public class ContentDateEnrichment(
 		}
 	}.ToJsonString();
 
-	public async Task ResolveContentDatesAsync(string indexAlias, Cancel ct)
+	public async Task ResolveContentDatesAsync(string indexAlias, Cancel ct, TimeSpan? maxDuration = null)
 	{
 		logger.LogInformation("Resolving content dates in {Index} via pipeline {Pipeline}", indexAlias, PipelineName);
 
-		await operations.UpdateByQueryAsync(indexAlias, PostData.String(UnresolvedContentDatesQuery), PipelineName, ct);
+		await operations.UpdateByQueryAsync(indexAlias, PostData.String(UnresolvedContentDatesQuery), PipelineName, ct, maxDuration);
 
 		logger.LogInformation("Content date resolution complete for {Index}", indexAlias);
 	}

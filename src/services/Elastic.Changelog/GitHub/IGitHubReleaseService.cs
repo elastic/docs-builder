@@ -38,6 +38,11 @@ public record GitHubReleaseInfo
 	/// The URL to the release page on GitHub
 	/// </summary>
 	public string HtmlUrl { get; init; } = "";
+
+	/// <summary>
+	/// The date and time when this release was published on GitHub
+	/// </summary>
+	public DateTimeOffset? PublishedAt { get; init; }
 }
 
 /// <summary>
