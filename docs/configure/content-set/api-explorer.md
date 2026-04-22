@@ -15,7 +15,7 @@ This feature is still under development and the functionality described on this 
 Add the `api` key to your `docset.yml` file to enable the API Explorer. The key maps product names to OpenAPI JSON specification files.
 Paths are relative to the folder that contains `docset.yml`.
 
-### Basic Configuration
+### Basic configuration
 
 ```yaml
 api:
@@ -133,14 +133,65 @@ toc:
 The API Explorer generates the following types of pages from your OpenAPI spec:
 
 - **Landing page**: An overview of the API grouped by tag
-- **Operation pages**: One page per API operation, with the HTTP method, path, optional **Prerequisites** (when `x-req-auth` is set), parameters, request body, response schemas, and examples
+- **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
 - **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
 
 ## OpenAPI extensions
 
-The API Explorer supports the following OpenAPI specification extensions to enhance navigation and display:
+The API Explorer supports some OpenAPI specification extensions to enhance navigation and display:
 
-### `x-displayName` for tags
+- [x-codeSamples](#x-codesamples)
+- [x-displayName](#x-displayname)
+- [x-req-auth](#x-req-auth)
+- [x-tagGroups](#x-taggroups)
+
+For background on OpenAPI vendor extensions, refer to [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#specification-extensions).
+
+### Multi-language code examples [x-codesamples]
+
+When an OpenAPI operation includes the `x-codeSamples` extension, the API Explorer renders the code samples with a language selector tab. This lets users switch between available languages such as Console, cURL, Python, JavaScript, Ruby, PHP, and Java.
+
+The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and `source` field:
+
+```json
+"x-codeSamples": [
+  { "lang": "Console", "source": "GET /_search" },
+  { "lang": "curl", "source": "curl -X GET ..." },
+  { "lang": "Python", "source": "resp = client.search()" }
+]
+```
+
+The code samples appear in a standalone "Code Examples" section on every operation page that has the extension, regardless of HTTP method. This means GET, DELETE, and other operations without a request body also display language tabs when `x-codeSamples` are present. When multiple languages are available, they appear as tabs. The selected language persists across operations and page navigations. When only one language is available, the example renders without a tab selector.
+
+Console is treated as the default language and appears first in the tab order when present.
+
+### Prerequisites [x-req-auth]
+
+Add the operation-level `x-req-auth` extension to list authentication or privilege requirements that users must satisfy before calling the API.
+The API Explorer renders these lines in a **Prerequisites** section on the operation page.
+
+`x-req-auth` is a JSON array of strings.
+Each non-empty string becomes one item in the prerequisites list (leading and trailing whitespace is trimmed).
+
+```json
+{
+  "get": {
+    "operationId": "get-snapshot",
+    "responses": { "200": { "description": "ok" } },
+    "x-req-auth": [
+      "Cluster privilege: `cluster:admin/snapshot`"
+    ]
+  }
+}
+```
+
+
+
+When prerequisites are present, **Prerequisites** also appears in the on-page table of contents (after **Paths**).
+When the extension is missing, empty, or not a JSON array, the section is omitted.
+Malformed values are skipped and the build may log a warning.
+
+### Tag labels [x-displayname]
 
 Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-display-name)) on tag objects to provide user-friendly display names in navigation and landing pages while maintaining stable URLs based on the canonical tag name.
 
@@ -167,7 +218,7 @@ Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legac
 - When `x-displayName` is absent, the canonical tag `name` is used as a fallback
 - Navigation URLs and internal references always use the canonical tag `name` for stability
 
-### `x-tagGroups` for sidebar grouping
+### Tag groups [x-taggroups]
 
 Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-tag-groups)) to define how tags are grouped in the API Explorer sidebar. Each group has a display `name` and a list of tag `name` values that belong to it. Group order in the array is the order of top-level sections in the navigation.
 
@@ -194,21 +245,3 @@ Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.c
 - When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
 - When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
 - Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
-
-### Multi-language code examples
-
-When an OpenAPI operation includes the `x-codeSamples` extension, the API Explorer renders the code samples with a language selector tab. This lets users switch between available languages such as Console, cURL, Python, JavaScript, Ruby, PHP, and Java.
-
-The `x-codeSamples` extension is a JSON array of objects, each with a `lang` and `source` field:
-
-```json
-"x-codeSamples": [
-  { "lang": "Console", "source": "GET /_search" },
-  { "lang": "curl", "source": "curl -X GET ..." },
-  { "lang": "Python", "source": "resp = client.search()" }
-]
-```
-
-The code samples appear in a standalone "Code Examples" section on every operation page that has the extension, regardless of HTTP method. This means GET, DELETE, and other operations without a request body also display language tabs when `x-codeSamples` are present. When multiple languages are available, they appear as tabs. The selected language persists across operations and page navigations. When only one language is available, the example renders without a tab selector.
-
-Console is treated as the default language and appears first in the tab order when present.
