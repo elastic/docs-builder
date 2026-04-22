@@ -147,7 +147,6 @@ The API Explorer supports some OpenAPI specification extensions to enhance navig
 
 - [x-codeSamples](#x-codesamples)
 - [x-displayName](#x-displayname)
-- [Tag landing URLs](#tag-landing-urls) (path segment for tag pages, derived from the canonical tag `name`)
 - [x-req-auth](#x-req-auth)
 - [x-tagGroups](#x-taggroups)
 
