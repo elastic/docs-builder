@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
@@ -57,8 +58,9 @@ public static partial class AvailabilityBadgeHelper
 		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
 			return null;
 
-		var stateValue = jsonNodeExtension.Node.GetValue<string>();
-		if (string.IsNullOrEmpty(stateValue))
+		if (jsonNodeExtension.Node is not JsonValue jsonValue
+			|| !jsonValue.TryGetValue<string>(out var stateValue)
+			|| string.IsNullOrEmpty(stateValue))
 			return null;
 
 		var lifecycleString = ProjectToLifecycleFormat(stateValue);
@@ -81,19 +83,15 @@ public static partial class AvailabilityBadgeHelper
 	{
 		var lower = xState.ToLowerInvariant();
 
-		string lifecycle;
-		if (lower.Contains("generally available"))
-			lifecycle = "ga";
-		else if (lower.Contains("beta"))
-			lifecycle = "beta";
-		else if (lower.Contains("tech") && lower.Contains("preview"))
-			lifecycle = "preview";
-		else if (lower.Contains("deprecated"))
-			lifecycle = "deprecated";
-		else if (lower.Contains("removed"))
-			lifecycle = "removed";
-		else
-			lifecycle = "ga";
+		var lifecycle = lower switch
+		{
+			_ when lower.Contains("removed") => "removed",
+			_ when lower.Contains("deprecated") => "deprecated",
+			_ when lower.Contains("beta") => "beta",
+			_ when lower.Contains("preview") => "preview",
+			_ when lower.Contains("generally available") => "ga",
+			_ => "ga"
+		};
 
 		var versionMatch = SemVersionRegex().Match(xState);
 		return versionMatch.Success ? $"{lifecycle} {versionMatch.Groups[1].Value}" : lifecycle;
