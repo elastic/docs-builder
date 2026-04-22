@@ -186,10 +186,14 @@ async Task<string> ScrubBundle(string content, ILambdaContext context)
 	if (!changed)
 	{
 		context.Logger.LogInformation("Bundle had no private references, writing unchanged");
+		LinkAllowlistSanitizer.ValidateNoPrivateReferences(content, allowRepos);
 		return content;
 	}
 
-	return ReleaseNotesSerialization.SerializeBundle(sanitized);
+	sanitized = LinkAllowlistSanitizer.StripBundleSentinels(sanitized);
+	var result = ReleaseNotesSerialization.SerializeBundle(sanitized);
+	LinkAllowlistSanitizer.ValidateNoPrivateReferences(result, allowRepos);
+	return result;
 }
 
 async Task<string> ScrubChangelog(string content, ILambdaContext context)
@@ -220,6 +224,7 @@ async Task<string> ScrubChangelog(string content, ILambdaContext context)
 	if (!changed)
 	{
 		context.Logger.LogInformation("Changelog entry had no private references, writing unchanged");
+		LinkAllowlistSanitizer.ValidateNoPrivateReferences(content, allowRepos);
 		return content;
 	}
 
@@ -232,5 +237,7 @@ async Task<string> ScrubChangelog(string content, ILambdaContext context)
 		Issues = sanitized.Issues
 	};
 
-	return ReleaseNotesSerialization.SerializeEntry(scrubEntry);
+	var result = ReleaseNotesSerialization.SerializeEntry(scrubEntry);
+	LinkAllowlistSanitizer.ValidateNoPrivateReferences(result, allowRepos);
+	return result;
 }

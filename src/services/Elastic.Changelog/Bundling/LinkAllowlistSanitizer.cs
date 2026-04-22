@@ -238,6 +238,60 @@ public static partial class LinkAllowlistSanitizer
 	}
 
 	/// <summary>
+	/// Strips <c># PRIVATE:</c> sentinel entries from all entries in a bundle.
+	/// Use after <see cref="TryApplyBundle"/> when the output is destined for a public bucket.
+	/// </summary>
+	public static Bundle StripBundleSentinels(Bundle bundle)
+	{
+		var newEntries = new List<BundledEntry>(bundle.Entries.Count);
+		foreach (var entry in bundle.Entries)
+		{
+			var dummy = false;
+			var prs = DropSentinels(entry.Prs, ref dummy);
+			var issues = DropSentinels(entry.Issues, ref dummy);
+			newEntries.Add(entry with { Prs = prs, Issues = issues });
+		}
+
+		return bundle with { Entries = newEntries };
+	}
+
+	/// <summary>
+	/// Scans serialized YAML for GitHub references not in <paramref name="allowRepos"/>.
+	/// Throws <see cref="InvalidOperationException"/> if any are found, providing defense-in-depth
+	/// against new or renamed fields leaking private references.
+	/// </summary>
+	public static void ValidateNoPrivateReferences(string serializedYaml, IReadOnlyList<string> allowRepos)
+	{
+		var allow = BuildAllowSet(allowRepos);
+		var violations = new List<string>();
+
+		foreach (var match in GitHubUrlRegex().EnumerateMatches(serializedYaml))
+		{
+			var text = serializedYaml.Substring(match.Index, match.Length);
+			var m = GitHubUrlRegex().Match(text);
+			var fullName = $"{m.Groups["owner"].Value}/{m.Groups["repo"].Value}";
+			if (!allow.Contains(fullName))
+				violations.Add(text);
+		}
+
+		foreach (var match in ShortFormRefRegex().EnumerateMatches(serializedYaml))
+		{
+			var text = serializedYaml.Substring(match.Index, match.Length);
+			var m = ShortFormRefRegex().Match(text);
+			var fullName = $"{m.Groups["owner"].Value}/{m.Groups["repo"].Value}";
+			if (!allow.Contains(fullName))
+				violations.Add(text);
+		}
+
+		if (serializedYaml.Contains(SentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			violations.Add("Residual # PRIVATE: sentinel found");
+
+		if (violations.Count > 0)
+			throw new InvalidOperationException(
+				$"Post-serialize validation failed: {violations.Count} private reference(s) found in public output: {string.Join(", ", violations)}");
+	}
+
+	/// <summary>
 	/// Overload that accepts a list of allowed repos (converts to the internal <see cref="HashSet{T}"/>).
 	/// </summary>
 	internal static string? ScrubText(string? input, IReadOnlyList<string> allowRepos, ref bool changed)

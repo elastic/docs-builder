@@ -685,4 +685,218 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		changed.Should().BeTrue();
 		result.Should().NotContain("secret-repo");
 	}
+
+	// --- StripBundleSentinels ---
+
+	[Fact]
+	public void StripBundleSentinels_RemovesSentinelsFromPrsAndIssues()
+	{
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "Entry with sentinels",
+					Prs = ["https://github.com/elastic/elasticsearch/pull/1", "# PRIVATE: https://github.com/elastic/secret/pull/2"],
+					Issues = ["# PRIVATE: elastic/secret#3", "https://github.com/elastic/elasticsearch/issues/4"]
+				}
+			]
+		};
+
+		var result = LinkAllowlistSanitizer.StripBundleSentinels(bundle);
+
+		result.Entries[0].Prs.Should().HaveCount(1);
+		result.Entries[0].Prs![0].Should().Be("https://github.com/elastic/elasticsearch/pull/1");
+		result.Entries[0].Issues.Should().HaveCount(1);
+		result.Entries[0].Issues![0].Should().Be("https://github.com/elastic/elasticsearch/issues/4");
+	}
+
+	[Fact]
+	public void StripBundleSentinels_AllSentinels_ReturnsEmptyLists()
+	{
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new()
+				{
+					Title = "All private",
+					Prs = ["# PRIVATE: https://github.com/elastic/secret/pull/1"],
+					Issues = ["# PRIVATE: elastic/secret#2"]
+				}
+			]
+		};
+
+		var result = LinkAllowlistSanitizer.StripBundleSentinels(bundle);
+
+		result.Entries[0].Prs.Should().BeEmpty();
+		result.Entries[0].Issues.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void StripBundleSentinels_NullLists_PreservesNull()
+	{
+		var bundle = new Bundle
+		{
+			Entries = [new() { Title = "No refs", Prs = null, Issues = null }]
+		};
+
+		var result = LinkAllowlistSanitizer.StripBundleSentinels(bundle);
+
+		result.Entries[0].Prs.Should().BeNull();
+		result.Entries[0].Issues.Should().BeNull();
+	}
+
+	[Fact]
+	public void StripBundleSentinels_MultipleEntries_StripsAll()
+	{
+		var bundle = new Bundle
+		{
+			Entries =
+			[
+				new() { Title = "A", Prs = ["# PRIVATE: x"] },
+				new() { Title = "B", Issues = ["# PRIVATE: y", "elastic/elasticsearch#1"] }
+			]
+		};
+
+		var result = LinkAllowlistSanitizer.StripBundleSentinels(bundle);
+
+		result.Entries[0].Prs.Should().BeEmpty();
+		result.Entries[1].Issues.Should().HaveCount(1);
+		result.Entries[1].Issues![0].Should().Be("elastic/elasticsearch#1");
+	}
+
+	// --- ValidateNoPrivateReferences ---
+
+	[Fact]
+	public void ValidateNoPrivateReferences_CleanYaml_DoesNotThrow()
+	{
+		var yaml = """
+			title: Feature
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/1
+			description: Some clean text
+			""";
+
+		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
+		act.Should().NotThrow();
+	}
+
+	[Fact]
+	public void ValidateNoPrivateReferences_PrivateUrl_Throws()
+	{
+		var yaml = """
+			title: Feature
+			prs:
+			  - https://github.com/elastic/secret-repo/pull/42
+			""";
+
+		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*secret-repo*");
+	}
+
+	[Fact]
+	public void ValidateNoPrivateReferences_PrivateShortForm_Throws()
+	{
+		var yaml = """
+			description: See elastic/secret-team#99
+			""";
+
+		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*secret-team*");
+	}
+
+	[Fact]
+	public void ValidateNoPrivateReferences_ResidualSentinel_Throws()
+	{
+		var yaml = """
+			prs:
+			  - "# PRIVATE: https://github.com/elastic/secret/pull/1"
+			""";
+
+		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*PRIVATE*");
+	}
+
+	[Fact]
+	public void ValidateNoPrivateReferences_AllowedUrl_DoesNotThrow()
+	{
+		var yaml = "See https://github.com/elastic/elasticsearch/pull/100 and elastic/kibana#50";
+
+		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearchAndKibana);
+		act.Should().NotThrow();
+	}
+
+	[Fact]
+	public void ValidateNoPrivateReferences_EmptyYaml_DoesNotThrow()
+	{
+		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences("", AllowElasticsearch);
+		act.Should().NotThrow();
+	}
+
+	[Fact]
+	public void ValidateNoPrivateReferences_MixedAllowedAndPrivate_Throws()
+	{
+		var yaml = "Public https://github.com/elastic/elasticsearch/pull/1 and private https://github.com/elastic/secret/issues/2";
+
+		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences(yaml, AllowElasticsearch);
+		act.Should().Throw<InvalidOperationException>()
+			.WithMessage("*secret*");
+	}
+
+	// --- TryApplyChangelogEntry mixed scenarios ---
+
+	[Fact]
+	public void TryApplyChangelogEntry_MixedPrs_KeepsAllowedDropsPrivate()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Mixed refs",
+			Prs = [
+				"https://github.com/elastic/elasticsearch/pull/1",
+				"https://github.com/elastic/secret-repo/pull/2",
+				"https://github.com/elastic/kibana/pull/3"
+			]
+		};
+
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, AllowElasticsearchAndKibana, "elastic", "elasticsearch",
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeTrue();
+		sanitized.Prs.Should().HaveCount(2);
+		sanitized.Prs.Should().Contain("https://github.com/elastic/elasticsearch/pull/1");
+		sanitized.Prs.Should().Contain("https://github.com/elastic/kibana/pull/3");
+		sanitized.Prs.Should().NotContain(r => r.Contains("secret-repo"));
+	}
+
+	[Fact]
+	public void TryApplyChangelogEntry_PrivateRefsInAllFields_ScrubsEverything()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Full scrub test",
+			Prs = ["https://github.com/elastic/secret/pull/1"],
+			Issues = ["elastic/secret#2"],
+			Description = "Caused by https://github.com/elastic/secret/issues/3",
+			Impact = "See elastic/secret#4",
+			Action = "Use https://github.com/elastic/secret/pull/5 to migrate"
+		};
+
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, AllowElasticsearch, "elastic", "elasticsearch",
+			out var sanitized, out _);
+
+		ok.Should().BeTrue();
+		sanitized.Prs.Should().BeEmpty();
+		sanitized.Issues.Should().BeEmpty();
+		sanitized.Description.Should().NotContain("secret");
+		sanitized.Impact.Should().NotContain("secret");
+		sanitized.Action.Should().NotContain("secret");
+	}
 }
