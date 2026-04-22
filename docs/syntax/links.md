@@ -118,8 +118,12 @@ External links display an arrow indicator next to the link text.
 Wrap an image in a link to make the image itself clickable. Combine the image syntax with the link syntax:
 
 ```markdown
-[![Deploy to AWS](images/launch-stack.png)](https://console.aws.amazon.com/cloudformation/home)
+[![A bear](/syntax/images/bear.png "bear =300x")](https://example.com)
 ```
+
+Rendered:
+
+[![A bear](/syntax/images/bear.png "bear =300x")](https://example.com)
 
 When an external link wraps an image (for example, a screenshot or badge), the arrow indicator is omitted because the image already conveys the target.
 
