@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -25,6 +26,7 @@ public sealed record AvailabilityBadgeData(
 
 /// <summary>
 /// Parses x-state extension values into structured badge data for the applies-to-popover web component.
+/// Projects x-state into the applies_to lifecycle format and delegates parsing to <see cref="AppliesCollection"/>.
 /// </summary>
 public static partial class AvailabilityBadgeHelper
 {
@@ -59,25 +61,61 @@ public static partial class AvailabilityBadgeHelper
 		if (string.IsNullOrEmpty(stateValue))
 			return null;
 
-		var lifecycle = ParseLifecycle(stateValue);
-		var version = ParseVersion(stateValue);
+		var lifecycleString = ProjectToLifecycleFormat(stateValue);
 
-		return BuildBadgeData(lifecycle, version, versionsConfig);
+		var diagnostics = new List<(Severity, string)>();
+		if (!AppliesCollection.TryParse(lifecycleString, diagnostics, out var appliesCollection) || appliesCollection is null)
+			return null;
+
+		var applicableTo = new ApplicableTo { Stack = appliesCollection };
+
+		return BuildBadgeData(applicableTo, versionsConfig);
 	}
 
-	private static AvailabilityBadgeData BuildBadgeData(
-		ProductLifecycle lifecycle,
-		VersionSpec? version,
+	/// <summary>
+	/// Converts an x-state string (e.g. "Added in 7.7.0", "Technical preview",
+	/// "Generally available; added in 9.1.0") into the lifecycle format
+	/// understood by <see cref="AppliesCollection.TryParse"/> (e.g. "ga 7.7.0", "preview").
+	/// </summary>
+	internal static string ProjectToLifecycleFormat(string xState)
+	{
+		var lower = xState.ToLowerInvariant();
+
+		string lifecycle;
+		if (lower.Contains("generally available"))
+			lifecycle = "ga";
+		else if (lower.Contains("beta"))
+			lifecycle = "beta";
+		else if (lower.Contains("tech") && lower.Contains("preview"))
+			lifecycle = "preview";
+		else if (lower.Contains("deprecated"))
+			lifecycle = "deprecated";
+		else if (lower.Contains("removed"))
+			lifecycle = "removed";
+		else
+			lifecycle = "ga";
+
+		var versionMatch = SemVersionRegex().Match(xState);
+		return versionMatch.Success ? $"{lifecycle} {versionMatch.Groups[1].Value}" : lifecycle;
+	}
+
+	private static AvailabilityBadgeData? BuildBadgeData(
+		ApplicableTo applicableTo,
 		VersionsConfiguration? versionsConfig)
 	{
-		var lifecycleClass = ProductLifecycleInfo.GetShortName(lifecycle).ToLowerInvariant().Replace(" ", "-");
-		var lifecycleName = ProductLifecycleInfo.GetShortName(lifecycle);
+		if (applicableTo.Stack is null)
+			return null;
+
+		var applicability = applicableTo.Stack.First();
+		var lifecycleClass = applicability.GetLifeCycleName().ToLowerInvariant().Replace(" ", "-");
+		var lifecycleName = applicability.GetLifeCycleName();
 
 		var versionDisplay = "";
 		var showVersion = false;
-		var showLifecycleName = lifecycle != ProductLifecycle.GenerallyAvailable;
+		var showLifecycleName = applicability.Lifecycle != ProductLifecycle.GenerallyAvailable;
 		var badgeLifecycleText = "";
 
+		var version = applicability.Version;
 		if (version is not null && version != AllVersionsSpec.Instance)
 		{
 			var currentVersion = GetCurrentStackVersion(versionsConfig);
@@ -88,12 +126,12 @@ public static partial class AvailabilityBadgeHelper
 				versionDisplay = FormatVersion(version);
 				showVersion = !string.IsNullOrEmpty(versionDisplay);
 
-				if (lifecycle == ProductLifecycle.Removed && versionDisplay.EndsWith('+'))
+				if (applicability.Lifecycle == ProductLifecycle.Removed && versionDisplay.EndsWith('+'))
 					versionDisplay = versionDisplay.TrimEnd('+');
 			}
 			else
 			{
-				badgeLifecycleText = lifecycle switch
+				badgeLifecycleText = applicability.Lifecycle switch
 				{
 					ProductLifecycle.Deprecated => "Deprecation planned",
 					ProductLifecycle.Removed => "Removal planned",
@@ -145,33 +183,5 @@ public static partial class AvailabilityBadgeHelper
 				$"{minVersion}-{(versionSpec.ShowMaxPatch ? $"{max.Major}.{max.Minor}.{max.Patch}" : $"{max.Major}.{max.Minor}")}",
 			_ => minVersion
 		};
-	}
-
-	private static ProductLifecycle ParseLifecycle(string stateValue)
-	{
-		var lower = stateValue.ToLowerInvariant();
-
-		if (lower.Contains("generally available"))
-			return ProductLifecycle.GenerallyAvailable;
-		if (lower.Contains("beta"))
-			return ProductLifecycle.Beta;
-		if (lower.Contains("tech") && lower.Contains("preview"))
-			return ProductLifecycle.TechnicalPreview;
-		if (lower.Contains("deprecated"))
-			return ProductLifecycle.Deprecated;
-		if (lower.Contains("removed"))
-			return ProductLifecycle.Removed;
-
-		return ProductLifecycle.GenerallyAvailable;
-	}
-
-	private static VersionSpec? ParseVersion(string stateValue)
-	{
-		var match = SemVersionRegex().Match(stateValue);
-		if (!match.Success)
-			return null;
-
-		var versionString = match.Groups[1].Value;
-		return VersionSpec.TryParse(versionString, out var version) ? version : null;
 	}
 }
