@@ -90,67 +90,6 @@ Some of the fields in the schema accept only a specific set of values:
 
 ## Examples
 
-### Create a changelog with PR label mappings [example-map-label]
-
-You can configure label mappings in your changelog configuration file:
-
-```yaml
-pivot:
-  # Keys are type names, values can be:
-  #   - simple string: comma-separated label list (e.g., ">bug, >fix")
-  #   - empty/null: no labels for this type
-  #   - object: { labels: "...", subtypes: {...} } for breaking-change type only
-  types:
-    # Example mappings - customize based on your label naming conventions
-    breaking-change:
-      labels: ">breaking, >bc"
-    bug-fix: ">bug"
-    enhancement: ">enhancement"
-  
-  # Area definitions with labels
-  # Keys are area display names, values are label strings
-  # Multiple labels can be comma-separated
-  areas:
-    # Example mappings - customize based on your label naming conventions
-    Autoscaling: ":Distributed Coordination/Autoscaling"
-    "ES|QL": ":Search Relevance/ES|QL"
-
-  # Product definitions with labels (optional)
-  # Keys are product spec strings; values are label strings or lists.
-  # A product spec string is: "<product-id> [<target-version>] [<lifecycle>]"
-  products:
-    'elasticsearch':
-      - ":stack/elasticsearch"
-    'kibana':
-      - ":stack/kibana"
-    # Include a target version if known:
-    # 'cloud-serverless 2025-06 ga':
-    #   - ":cloud/serverless"
-```
-
-When you use the `--prs` option to derive information from a pull request, it can make use of those mappings. Similarly, when you use the `--issues` option (without `--prs`), the command derives title, type, areas, and products from the GitHub issue labels using the same mappings.
-
-The following example omits `--products`, so the command derives them from the PR labels:
-
-```sh
-docs-builder changelog add \
-  --prs https://github.com/elastic/elasticsearch/pull/139272 \
-  --config test/changelog.yml \
-  --strip-title-prefix
-```
-
-In this case, the changelog file derives the title, type, areas, and products from the pull request.
-If none of the PR's labels match `pivot.products`, the command falls back to `products.default` or repository name inference from `--repo` (refer to [Products resolution](/cli/changelog/add.md#products-resolution) for more details).
-The command also looks for patterns like `Fixes #123`, `Closes owner/repo#456`, `Resolves https://github.com/.../issues/789` in the pull request to derive its issues. Similarly, when using `--issues`, the command extracts linked PRs from the issue body (for example, "Fixed by #123"). You can turn off this behavior in either case with the `--no-extract-issues` flag or by setting `extract.issues: false` in the changelog configuration file. The `extract.issues` setting applies to both directions: issues extracted from PR bodies (when using `--prs`) and PRs extracted from issue bodies (when using `--issues`).
-
-The `--strip-title-prefix` option in this example means that if the PR title has a prefix in square brackets (such as `[ES|QL]` or `[Security]`), it is automatically removed from the changelog title. Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`). If a colon follows the closing bracket, it is also removed.
-
-By default, `--strip-title-prefix` is disabled. You can enable it globally by setting `extract.strip_title_prefix: true` in the changelog configuration file, which will apply the prefix stripping to all `changelog add` and `changelog gh-release` commands without requiring the CLI flag. The CLI flag `--strip-title-prefix` overrides the configuration setting.
-
-:::{note}
-The `--strip-title-prefix` option only applies when the title is derived from the PR (when `--title` is not explicitly provided). If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
-:::
-
 ### Extract release notes from PR descriptions [example-extract-release-notes]
 
 When you use the `--prs` option, by default the `docs-builder changelog add` command automatically extracts text from the PR descriptions and use it in your changelog.
