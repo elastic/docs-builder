@@ -1,5 +1,5 @@
 nav:
-  - section: Docs
+  - section: Guides
     url: /
     children:
     - label: Elasticsearch fundamentals
@@ -2859,7 +2859,7 @@ nav:
     children:
     - toc: docs-content://troubleshoot
 
-  - section: API reference
+  - section: APIs
     url: https://www.elastic.co/docs/api
 
   - section: Reference
