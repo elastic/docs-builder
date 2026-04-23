@@ -687,7 +687,7 @@ nav:
             - title: AI-powered search
             - title: Hybrid search
             - title: Ranking and reranking
-          - group: Build search queries with APIs and query languages and search templates
+          - group: Query languages and APIs
             children:
             - title: ES|QL
             - title: Query DSL
