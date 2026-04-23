@@ -2849,16 +2849,6 @@ nav:
   #      - page: docs-content://troubleshoot/ingest/opentelemetry/index.md
   #        title: Troubleshoot EDOT
 
-  - section: Release notes
-    url: /release-notes/
-    children:
-    - toc: docs-content://release-notes/intro
-
-  - section: Troubleshoot
-    url: /troubleshoot/
-    children:
-    - toc: docs-content://troubleshoot
-
   - section: APIs
     url: https://www.elastic.co/docs/api
 
@@ -2870,6 +2860,16 @@ nav:
       toc: logstash-docs-md://lsr
     - island: Logstash versioned plugins
       toc: logstash-docs-md://vpr
+
+  - section: Troubleshoot
+    url: /troubleshoot/
+    children:
+    - toc: docs-content://troubleshoot
+
+  - section: Release notes
+    url: /release-notes/
+    children:
+    - toc: docs-content://release-notes/intro
 
   - section: Extension points
     url: /extend/
