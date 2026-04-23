@@ -51,6 +51,23 @@ function normalizeDocPathname(pathname: string) {
     return p === '' ? '/' : p
 }
 
+/**
+ * Returns true when the current page is the section root URL.
+ * Section root pages should not get current-page highlighting in the sidebar
+ * because the section URL is a tab target, not a page within the nav tree.
+ */
+function isOnSectionRootPage(nav: HTMLElement): boolean {
+    const sectionUrl = nav.dataset.sectionUrl
+    if (!sectionUrl) {
+        return false
+    }
+
+    return (
+        normalizeDocPathname(window.location.pathname) ===
+        normalizeDocPathname(sectionUrl)
+    )
+}
+
 /** Matches {@link markCurrentPage} / {@link expandToCurrentPage} href selectors (not root-normalized). */
 function stripTrailingSlashForNavHref(pathname: string) {
     return pathname.replace(/\/$/, '')
@@ -318,6 +335,9 @@ function deepestCurrentSidebarLink(nav: HTMLElement): HTMLAnchorElement | null {
  */
 function applyActiveSubtreeHighlight(nav: HTMLElement) {
     clearActiveSubtreeHighlight(nav)
+    if (isOnSectionRootPage(nav)) {
+        return
+    }
     const current = deepestCurrentSidebarLink(nav)
     if (!current || !nav.contains(current)) {
         return
@@ -377,8 +397,13 @@ function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
 
 /**
  * Mark the current page's nav link with the "current" CSS class.
+ * Skips marking when the current page is the section root URL.
  */
 function markCurrentPage(nav: HTMLElement) {
+    if (isOnSectionRootPage(nav)) {
+        $$('.current', nav).forEach((el) => el.classList.remove('current'))
+        return
+    }
     markCurrentPageForPath(nav, window.location.pathname)
 }
 
@@ -461,6 +486,16 @@ function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
  * is the current page (see session storage + folder row link match).
  */
 function expandToCurrentPage(nav: HTMLElement) {
+    if (isOnSectionRootPage(nav)) {
+        // On the section root page, expand all top-level folders so the
+        // section content is visible even though no specific page is current.
+        nav.querySelectorAll<HTMLInputElement>(
+            '#nav-tree > li > .peer > input[type="checkbox"]'
+        ).forEach((cb) => {
+            cb.checked = true
+        })
+        return
+    }
     expandToCurrentPageForPath(nav, window.location.pathname)
 }
 

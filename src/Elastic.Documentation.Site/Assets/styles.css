@@ -207,8 +207,11 @@ body:has([data-nav-v2]) aside.sidebar {
 	display: flex;
 }
 
-/* Nav V2: vertical padding on top-level li under the root ul (not nested folder children). */
-#pages-nav nav[data-nav-v2] ul.docs-sidebar-nav-v2__tree > li {
+/* Nav V2: vertical padding on top-level label sections only (not leaf links or folders). */
+#pages-nav
+	nav[data-nav-v2]
+	ul.docs-sidebar-nav-v2__tree
+	> li:has(> .docs-sidebar-nav-v2__label) {
 	padding-top: 16px;
 	padding-bottom: 24px;
 }

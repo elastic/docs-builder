@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.V2;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
@@ -35,6 +36,12 @@ public class IndexViewModel
 	public required INavigationItem[] Breadcrumbs { get; init; }
 
 	public required string NavigationHtml { get; init; }
+
+	/// <summary>V2 section metadata for the secondary nav bar tabs. Null for V1 builds.</summary>
+	public IReadOnlyList<NavigationSection>? NavV2Sections { get; init; }
+
+	/// <summary>The active section ID for highlighting the current tab in the secondary nav.</summary>
+	public string? ActiveSectionId { get; init; }
 
 	public required string? CurrentVersion { get; init; }
 

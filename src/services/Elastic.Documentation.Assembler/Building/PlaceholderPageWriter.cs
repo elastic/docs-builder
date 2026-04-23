@@ -13,6 +13,7 @@ using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.V2;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Page;
 using Microsoft.Extensions.Logging;
@@ -39,16 +40,24 @@ public class PlaceholderPageWriter(
 
 	public async Task WriteAllAsync(Cancel ctx)
 	{
-		var navHtml = (await htmlWriter.RenderNavigation(navigation, navigation.Index, ctx)).Html;
-
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var placeholders = CollectPlaceholders(navigation.V2NavigationItems);
+		var placeholders = CollectPlaceholders(navigation.V2NavigationItems).ToList();
 
-		foreach (var (title, navItem) in placeholders)
+		// Group placeholders by section so we render each section's nav once
+		var groups = placeholders.GroupBy(p => navigation.GetSectionForUrl(p.Item.Url));
+		foreach (var group in groups)
 		{
-			if (!seen.Add(navItem.Url))
-				continue;
-			await WritePlaceholderPageAsync(title, navItem, navHtml, ctx);
+			var section = group.Key;
+			// Use the first placeholder in the group to resolve the section's nav HTML
+			var representative = group.First().Item;
+			var renderResult = await htmlWriter.RenderNavigation(navigation, representative, ctx);
+
+			foreach (var (title, navItem) in group)
+			{
+				if (!seen.Add(navItem.Url))
+					continue;
+				await WritePlaceholderPageAsync(title, navItem, renderResult, ctx);
+			}
 		}
 
 		_logger.LogInformation("Wrote {Count} placeholder pages", seen.Count);
@@ -85,11 +94,11 @@ public class PlaceholderPageWriter(
 	private async Task WritePlaceholderPageAsync(
 		string title,
 		ILeafNavigationItem<INavigationModel> navItem,
-		string navHtml,
+		NavigationRenderResult renderResult,
 		Cancel ctx
 	)
 	{
-		var model = CreateViewModel(title, navItem, navHtml);
+		var model = CreateViewModel(title, navItem, renderResult);
 		var slice = PlaceholderPage.Create(model);
 		var html = await slice.RenderAsync(cancellationToken: ctx);
 
@@ -106,7 +115,7 @@ public class PlaceholderPageWriter(
 	private MarkdownLayoutViewModel CreateViewModel(
 		string title,
 		ILeafNavigationItem<INavigationModel> navItem,
-		string navHtml
+		NavigationRenderResult renderResult
 	)
 	{
 		var env = context.Environment;
@@ -123,7 +132,9 @@ public class PlaceholderPageWriter(
 			CurrentNavigationItem = navItem,
 			Previous = null,
 			Next = null,
-			NavigationHtml = navHtml,
+			NavigationHtml = renderResult.Html,
+			NavV2Sections = renderResult.Sections,
+			ActiveSectionId = renderResult.ActiveSectionId,
 			UrlPathPrefix = urlPathPrefix,
 			Htmx = new DefaultHtmxAttributeProvider(rootPath),
 			CanonicalBaseUrl = context.CanonicalBaseUrl,

@@ -26,4 +26,13 @@ public class NavigationViewModel
 
 	/// <summary>When true, the sidebar renders using the V2 nav partial with accordion behaviour.</summary>
 	public bool IsNavV2 { get; init; }
+
+	/// <summary>When true, the sidebar renders a back arrow instead of appearing in the top bar.</summary>
+	public bool IsIsolatedSection { get; init; }
+
+	/// <summary>The section's own URL, used by JS to skip current-page highlighting on the section root.</summary>
+	public string? SectionUrl { get; init; }
+
+	/// <summary>Back arrow URL for islands — points to the parent section's landing page.</summary>
+	public string? BackArrowUrl { get; init; }
 }
