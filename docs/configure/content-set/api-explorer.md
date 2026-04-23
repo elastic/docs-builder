@@ -83,6 +83,10 @@ Make sure you have:
 - Understanding of RESTful API principles
 ```
 
+:::{important}
+Intro and outro Markdown files must not use a slug that would collide with the reserved API Explorer segments like `types` and `tags`.
+:::
+
 ## Place your spec files
 
 OpenAPI specification files must be in JSON format and located in the same folder as your `docset.yml` (or in a subfolder of it). The path you specify in `api` is resolved relative to the `docset.yml` location.
@@ -133,6 +137,7 @@ toc:
 The API Explorer generates the following types of pages from your OpenAPI spec:
 
 - **Landing page**: An overview of the API grouped by tag
+- **Tag landing pages**: One page per tag that lists operations in that tag, with the tag's display name, optional OpenAPI `description` (CommonMark), and optional `externalDocs` link
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
 - **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
 
@@ -214,9 +219,13 @@ Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legac
 
 **Behavior:**
 
-- When `x-displayName` is present, it's used for navigation titles and section headings in the API Explorer
+- When `x-displayName` is present, it's used for navigation titles, tag landing page titles, and section headings on the main API overview
 - When `x-displayName` is absent, the canonical tag `name` is used as a fallback
-- Navigation URLs and internal references always use the canonical tag `name` for stability
+- Tag landing page URLs and tag URL segments are derived from the canonical tag `name`
+
+:::{note}
+If two different canonical tag names normalize to the same tag landing page URL, the build fails with an error that names both tags and the colliding segment so the spec can be fixed.
+:::
 
 ### Tag groups [x-taggroups]
 
@@ -243,5 +252,6 @@ Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.c
 **Behavior:**
 
 - When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
+- In the navigation tree, a group's section title links to the **main API overview** for that product (it is not a separate page and does not point at the first tag in the group; tag landings stay under `.../tags/...` only for tags).
 - When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
 - Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.
