@@ -30,15 +30,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--no-extract-release-notes`
 :   Optional: Turn off extraction of release notes from PR or issue descriptions.
-:   The extractor looks for content in various formats in the PR or issue description:
-:   - `Release Notes: ...`
-:   - `Release-Notes: ...`
-:   - `release notes: ...`
-:   - `Release Note: ...`
-:   - `Release Notes - ...`
-:   - `## Release Note` (as a markdown header)
-:   Matched release note text is used as the changelog description (only if `--description` is not explicitly provided). The changelog title is always taken from `--title` or from the PR or issue title, not from the release note section.
-:   By default, the behavior is determined by the `extract.release_notes` changelog configuration setting.
+:   By default, the behavior is determined by the [extract.release_notes](/contribute/configure-changelogs-ref.md#extract) changelog configuration setting.
 
 `--feature-id <string?>`
 :   Optional: Feature flag ID

@@ -44,6 +44,7 @@ If you already have automated release notes for GitHub releases, you can use the
 
     When you specify `--prs` or `--issues`, the command tries to fetch information from GitHub.
     It derives the title from the pull request or issue title, extracts linked references, and derives the areas, products, and type from labels (if mappings are defined in the configuration file).
+    To control what information is extracted, refer to the [extract](/contribute/configure-changelogs-ref.md#extract) and [pivot](/contribute/configure-changelogs-ref.md#pivot) sections of the changelog configuration file.
 
     For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/add.md).
 
@@ -89,29 +90,6 @@ Some of the fields in the schema accept only a specific set of values:
 :::
 
 ## Examples
-
-### Extract release notes from PR descriptions [example-extract-release-notes]
-
-When you use the `--prs` option, by default the `docs-builder changelog add` command automatically extracts text from the PR descriptions and use it in your changelog.
-
-In particular, it looks for content in these formats in the PR description:
-
-- `Release Notes: This is the extracted sentence.`
-- `Release-Notes: This is the extracted sentence.`
-- `release notes: This is the extracted sentence.`
-- `Release Note: This is the extracted sentence.`
-- `Release Notes - This is the extracted sentence.`
-- `## Release Note` (as a markdown header)
-
-How the extracted text is used:
-
-- **Release note found**: The extracted text is used as the changelog description (only if `--description` is not explicitly provided). The changelog title comes from `--title` or the PR title, not from the release note section.
-- **No release note found**: No description is filled from the PR body; the title still comes from `--title` or the PR title as usual.
-
-:::{note}
-If you explicitly provide `--title` or `--description`, those values take precedence over extracted release notes.
-You can turn off the release note extraction in the changelog configuration file or by using the `--no-extract-release-notes` option.
-:::
 
 ### Control changelog creation [example-block-label]
 

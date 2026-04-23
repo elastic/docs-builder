@@ -104,7 +104,7 @@ Controls how the `changelog add` command extracts information from PR descriptio
 | Setting                      | Description                                                         |
 | ---------------------------- | ------------------------------------------------------------------- |
 | `extract.issues`             | Auto-extract linked issues/PRs from descriptions (default: `true`). |
-| `extract.release_notes`      | Auto-extract release notes from PR descriptions (default: `true`).  |
+| `extract.release_notes`      | Auto-extract descriptions from GitHub (default: `true`).  |
 | `extract.strip_title_prefix` | Remove square-bracket prefixes from PR titles (default: `false`).   |
 
 When `extract.issues` is `true`, the system looks for patterns like "Fixes #123" in PR bodies (when you're creating changelogs from PRs) or "Fixed by #123" in issue bodies (when you're creating changelogs from issues).
