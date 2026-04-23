@@ -43,7 +43,7 @@
 				else if (navigationItem is TagNavigationItem tag)
 				{
 					<tr>
-						<td colspan="2"><h3>@(tag.NavigationTitle)</h3><td>
+						<td colspan="2"><h3><a href="@tag.Url" class="api-tag-landing-link">@tag.NavigationTitle</a></h3></td>
 					</tr>
 					@RenderProduct(tag)
 				}
