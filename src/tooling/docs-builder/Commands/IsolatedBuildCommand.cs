@@ -68,17 +68,18 @@ internal sealed class IsolatedBuildCommand(
 
 		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var readFs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.RealGitRootForPath(path);
-		// For real builds supply an explicit write FS without .git access; for in-memory null falls back to readFs
 		var writeFs = inMemory ? null : FileSystemFactory.RealGitRootForPathWrite(path, output);
+		var options = new IsolatedBuildOptions
+		{
+			Path = path, Output = output, PathPrefix = pathPrefix,
+			Force = force, Strict = strict, AllowIndexing = allowIndexing,
+			MetadataOnly = metadataOnly, Exporters = exporters,
+			CanonicalBaseUrl = canonicalBaseUrl, SkipOpenApi = skipApi
+		};
 		var strictCommand = service.IsStrict(strict);
 
-		serviceInvoker.AddCommand(service,
-			(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, exporters, canonicalBaseUrl, readFs, writeFs, skipApi), strictCommand,
-			async static (s, collector, state, ctx) => await s.Build(
-				collector, state.readFs, state.path, state.output, state.pathPrefix,
-				state.force, state.strict, state.allowIndexing, state.metadataOnly,
-				state.exporters, state.canonicalBaseUrl, state.writeFs, state.skipApi, false, ctx
-			)
+		serviceInvoker.AddCommand(service, (options, readFs, writeFs), strictCommand,
+			static async (s, col, state, ctx) => await s.Build(col, state.readFs, state.options, state.writeFs, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

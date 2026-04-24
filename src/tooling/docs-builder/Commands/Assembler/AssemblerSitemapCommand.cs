@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
@@ -44,13 +43,8 @@ internal sealed class AssemblerSitemapCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealWrite;
 		var service = new AssemblerSitemapService(logFactory, configuration, configurationContext, githubActionsService);
-		var state = (fs, environment, es);
-		serviceInvoker.AddCommand(service, state,
-			static async (s, col, state, ctx) => await s.GenerateSitemapAsync(col, state.fs,
-				state.es.Endpoint?.ToString(), state.environment, state.es.ApiKey, state.es.Username, state.es.Password,
-				state.es.DebugMode, state.es.ProxyAddress?.ToString(), state.es.ProxyPassword, state.es.ProxyUsername,
-				state.es.DisableSslVerification, state.es.CertificateFingerprint, state.es.CertificatePath, state.es.CertificateNotRoot,
-				ctx)
+		serviceInvoker.AddCommand(service,
+			async (s, col, ctx) => await s.GenerateSitemapAsync(col, fs, es, environment, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Indexing;
 using Elastic.Documentation.Configuration;
@@ -47,15 +46,8 @@ internal sealed class AssemblerIndexCommand(
 		var readFs = FileSystemFactory.RealRead;
 		var writeFs = FileSystemFactory.RealWrite;
 		var service = new AssemblerIndexService(logFactory, configuration, configurationContext, githubActionsService, environmentVariables);
-		var state = (readFs, writeFs, environment, es);
-		serviceInvoker.AddCommand(service, state,
-			static async (s, collector, state, ctx) => await s.Index(collector, state.readFs, state.writeFs,
-				state.es.Endpoint?.ToString(), state.environment, state.es.ApiKey, state.es.Username, state.es.Password,
-				state.es.NoAiEnrichment, state.es.SearchNumThreads, state.es.IndexNumThreads, state.es.NoEis, state.es.BootstrapTimeout,
-				state.es.ForceReindex, state.es.BufferSize, state.es.MaxRetries, state.es.DebugMode,
-				state.es.ProxyAddress?.ToString(), state.es.ProxyPassword, state.es.ProxyUsername,
-				state.es.DisableSslVerification, state.es.CertificateFingerprint, state.es.CertificatePath, state.es.CertificateNotRoot,
-				ctx)
+		serviceInvoker.AddCommand(service,
+			async (s, col, ctx) => await s.Index(col, readFs, writeFs, es, environment, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

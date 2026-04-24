@@ -8,7 +8,6 @@ using Documentation.Builder.Arguments;
 using Documentation.Builder.Http;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Building;
-using Elastic.Documentation.Assembler.Configuration;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -74,17 +73,26 @@ internal sealed class AssembleOneShotCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
+		var cloneOptions = new AssemblerCloneOptions
+		{
+			Strict = strict, Environment = environment,
+			FetchLatest = fetchLatest, AssumeCloned = assumeCloned
+		};
 		var cloneService = new AssemblerCloneService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(cloneService, (strict, environment, fetchLatest, assumeCloned), strict ?? false,
-			static async (s, collector, state, ctx) => await s.CloneAll(collector, state.strict, state.environment, state.fetchLatest, state.assumeCloned, ctx)
+		serviceInvoker.AddCommand(cloneService, cloneOptions, strict ?? false,
+			static async (s, col, opts, ctx) => await s.CloneAll(col, opts, ctx)
 		);
 
-		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
+		var buildOptions = new AssemblerBuildOptions
+		{
+			Strict = strict, Environment = environment, MetadataOnly = metadataOnly,
+			ShowHints = showHints, Exporters = exporters, AssumeBuild = assumeBuild
+		};
 		var readFs = FileSystemFactory.RealRead;
 		var writeFs = FileSystemFactory.RealWrite;
-		serviceInvoker.AddCommand(buildService, (strict, environment, metadataOnly, showHints, exporters, assumeBuild, readFs, writeFs), strict ?? false,
-			static async (s, collector, state, ctx) =>
-				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.readFs, state.writeFs, ctx)
+		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
+		serviceInvoker.AddCommand(buildService, (buildOptions, readFs, writeFs), strict ?? false,
+			static async (s, col, state, ctx) => await s.BuildAll(col, state.buildOptions, state.readFs, state.writeFs, ctx)
 		);
 		var result = await serviceInvoker.InvokeAsync(ct);
 
@@ -123,12 +131,15 @@ internal sealed class AssemblerCommands(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-
+		var options = new AssemblerCloneOptions
+		{
+			Strict = strict, Environment = environment,
+			FetchLatest = fetchLatest, AssumeCloned = assumeCloned
+		};
 		var service = new AssemblerCloneService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(service, (strict, environment, fetchLatest, assumeCloned), strict ?? false,
-			static async (s, collector, state, ctx) => await s.CloneAll(collector, state.strict, state.environment, state.fetchLatest, state.assumeCloned, ctx)
+		serviceInvoker.AddCommand(service, options, strict ?? false,
+			static async (s, col, opts, ctx) => await s.CloneAll(col, opts, ctx)
 		);
-
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
@@ -154,15 +165,17 @@ internal sealed class AssemblerCommands(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-
+		var options = new AssemblerBuildOptions
+		{
+			Strict = strict, Environment = environment, AssumeBuild = assumeBuild,
+			MetadataOnly = metadataOnly, ShowHints = showHints, Exporters = exporters
+		};
 		var readFs = FileSystemFactory.RealRead;
 		var writeFs = FileSystemFactory.RealWrite;
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
-		serviceInvoker.AddCommand(service, (strict, environment, assumeBuild, metadataOnly, showHints, exporters, readFs, writeFs), strict ?? false,
-			static async (s, collector, state, ctx) =>
-				await s.BuildAll(collector, state.strict, state.environment, state.metadataOnly, state.showHints, state.exporters, state.assumeBuild, state.readFs, state.writeFs, ctx)
+		serviceInvoker.AddCommand(service, (options, readFs, writeFs), strict ?? false,
+			static async (s, col, state, ctx) => await s.BuildAll(col, state.options, state.readFs, state.writeFs, ctx)
 		);
-
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 

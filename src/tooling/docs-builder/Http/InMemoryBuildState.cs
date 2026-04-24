@@ -177,18 +177,18 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			_ = await service.Build(
 				streamingCollector,
 				readFs,
-				sourcePath,
-				null,  // output
-				null,  // pathPrefix
-				true,  // force - always rebuild for validation
-				false, // strict
-				false, // allowIndexing
-				false, // metadataOnly
-				ExportOptions.Default,
-				null,  // canonicalBaseUrl
+				new IsolatedBuildOptions
+				{
+					Path = sourcePath,
+					Force = true,
+					Strict = false,
+					AllowIndexing = false,
+					MetadataOnly = false,
+					Exporters = ExportOptions.Default,
+					SkipOpenApi = true,
+					SkipCrossLinks = false
+				},
 				_writeFs, // reuse MockFileSystem across builds for caching
-				true,  // skipOpenApi - skip for faster validation builds
-				false, // skipCrossLinks - enable cross-links (cached in MockFileSystem)
 				ct
 			);
 
