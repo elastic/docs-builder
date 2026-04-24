@@ -6,6 +6,9 @@
 	                     github-link="@(Model.GitHubDocsUrl)"
 	                     git-branch="@(Model.GitBranch)"
 	                     git-commit="@(Model.GitCommitShort)"
-	                     github-ref="@(Model.GitHubRef)">
+	                     github-ref="@(Model.GitHubRef)"
+	                     branded="@(Model.Branding != null ? "true" : "false")"
+	                     header-bg="@(Model.Branding?.HeaderBg)"
+	                     icon-src="@(Model.BrandingIconStaticPath)">
 	</elastic-docs-header>
 </div>

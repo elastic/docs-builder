@@ -68,6 +68,11 @@ public record ConfigurationFile
 	/// </summary>
 	public HashSet<HintType> SuppressDiagnostics { get; } = [];
 
+	/// <summary>
+	/// White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.
+	/// </summary>
+	public BrandingConfiguration? Branding { get; private set; }
+
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
@@ -248,12 +253,20 @@ public record ConfigurationFile
 					.ToHashSet()!;
 			}
 
+			// Process branding with validation
+			if (docSetFile.Branding is not null)
+				Branding = ValidateBranding(docSetFile.Branding, context);
+
 			// Process features
 			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 			if (docSetFile.Features.PrimaryNav.HasValue)
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
 			if (docSetFile.Features.DisableGithubEditLink.HasValue)
 				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
+
+			// primary-nav requires the Elastic global navigation which is not available for white-label builds
+			if (Branding is not null && docSetFile.Features.PrimaryNav is true)
+				context.EmitError(context.ConfigurationPath, "'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation.");
 
 			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
@@ -281,6 +294,56 @@ public record ConfigurationFile
 			context.EmitError(context.ConfigurationPath, $"Could not load docset.yml: {e.Message}");
 			throw;
 		}
+	}
+
+	private static readonly HashSet<string> AllowedImageExtensions =
+		[".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico"];
+
+	private static BrandingConfiguration ValidateBranding(BrandingConfiguration branding, IDocumentationSetContext context)
+	{
+		branding.Icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
+		branding.OgImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
+		return branding;
+	}
+
+	private static string? ValidateBrandingImage(string? imagePath, string fieldName, IDocumentationSetContext context)
+	{
+		if (string.IsNullOrEmpty(imagePath))
+			return null;
+
+		var ext = Path.GetExtension(imagePath).ToLowerInvariant();
+		if (!AllowedImageExtensions.Contains(ext))
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' has unsupported extension '{ext}'. Allowed: {string.Join(", ", AllowedImageExtensions)}");
+			return null;
+		}
+
+		var resolved = context.ReadFileSystem.FileInfo.New(
+			Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, imagePath))
+		);
+
+		if (!resolved.IsSubPathOf(context.DocumentationSourceDirectory))
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' path '{imagePath}' escapes the documentation source directory.");
+			return null;
+		}
+
+		if (resolved.LinkTarget is not null)
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' path '{imagePath}' is a symbolic link, which is not allowed for branding images.");
+			return null;
+		}
+
+		if (!resolved.Exists)
+		{
+			context.EmitError(context.ConfigurationPath, $"'{fieldName}' file '{imagePath}' does not exist.");
+			return null;
+		}
+
+		return imagePath;
 	}
 
 	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
