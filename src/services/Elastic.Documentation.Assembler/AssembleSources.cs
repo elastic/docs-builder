@@ -42,13 +42,13 @@ public class AssembleSources
 	{
 		var logger = logFactory.CreateLogger<AssembleSources>();
 
-		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var navigationTocMappings = GetTocMappings(context);
 		var uriResolver = new PublishEnvironmentUriResolver(navigationTocMappings, context.Environment);
 
 		var sw = System.Diagnostics.Stopwatch.StartNew();
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
-		var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+		FetchedCrossLinks crossLinks;
+		using (var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, Aws3LinkIndexReader.CreateAnonymous()))
+			crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		logger.LogInformation("  AssembleAsync: FetchCrossLinks in {Elapsed:mm\\:ss\\.fff}", sw.Elapsed);
 

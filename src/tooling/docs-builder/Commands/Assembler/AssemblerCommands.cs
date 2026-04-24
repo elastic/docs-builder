@@ -166,11 +166,13 @@ internal sealed class AssemblerCommands(
 	/// </summary>
 	/// <param name="port">Port to serve the documentation.</param>
 	/// <param name="environment">The environment configuration to use.</param>
+	/// <param name="noWatchMd">Disable watching checkout directories for markdown changes. Static asset live reload still works. Useful when doing frontend (CSS/JS) work.</param>
 	/// <param name="ctx"></param>
 	[Command("serve")]
 	public async Task ServeAssemblerOnDemand(
 		int port = 4000,
 		string? environment = null,
+		bool noWatchMd = false,
 		Cancel ctx = default
 	)
 	{
@@ -204,7 +206,7 @@ internal sealed class AssemblerCommands(
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 
-		var host = new AssemblerServeWebHost(port, assembleSources, builder, logFactory);
+		var host = new AssemblerServeWebHost(port, assembleSources, builder, logFactory, watchMarkdown: !noWatchMd);
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
 		// since this command does not use ServiceInvoker, we stop the collector manually.

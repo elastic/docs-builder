@@ -34,7 +34,8 @@ public class AssemblerServeWebHost
 		int port,
 		AssembleSources assembleSources,
 		AssemblerBuilder assemblerBuilder,
-		ILoggerFactory logFactory
+		ILoggerFactory logFactory,
+		bool watchMarkdown = true
 	)
 	{
 		_prefixMap = BuildPrefixMap(assembleSources, assemblerBuilder);
@@ -65,7 +66,7 @@ public class AssemblerServeWebHost
 
 		var sets = assembleSources.AssembleSets.Values.ToList();
 		_ = builder.Services.AddHostedService<AssemblerReloadService>(_ =>
-			new AssemblerReloadService(sets, logFactory.CreateLogger<AssemblerReloadService>())
+			new AssemblerReloadService(sets, watchMarkdown, logFactory.CreateLogger<AssemblerReloadService>())
 		);
 
 		_ = builder.WebHost.UseUrls($"http://localhost:{port}");
