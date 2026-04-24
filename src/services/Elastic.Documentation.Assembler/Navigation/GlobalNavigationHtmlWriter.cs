@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.V2;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.Navigation;
 using Microsoft.Extensions.Logging;
@@ -28,6 +29,10 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		Cancel ctx = default
 	)
 	{
+		// V2 nav: always render the full V2 tree regardless of current section
+		if (globalNavigation is SiteNavigationV2 navV2)
+			return await RenderV2Navigation(navV2, ctx);
+
 		if (currentRootNavigation is SiteNavigation)
 			return NavigationRenderResult.Empty;
 
@@ -64,6 +69,50 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		}
 	}
 
+	private const string NavV2CacheKey = "nav-v2";
+
+	private async Task<NavigationRenderResult> RenderV2Navigation(SiteNavigationV2 navV2, Cancel ctx)
+	{
+		if (_renderedNavigationCache.TryGetValue(NavV2CacheKey, out var cachedHtml))
+			return new NavigationRenderResult { Html = cachedHtml, Id = NavV2CacheKey };
+
+		await _semaphore.WaitAsync(ctx);
+		try
+		{
+			if (_renderedNavigationCache.TryGetValue(NavV2CacheKey, out cachedHtml))
+				return new NavigationRenderResult { Html = cachedHtml, Id = NavV2CacheKey };
+
+			_logger.LogInformation("Rendering V2 navigation");
+
+			var model = CreateV2NavigationModel(navV2);
+			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
+			_renderedNavigationCache[NavV2CacheKey] = html;
+			return new NavigationRenderResult { Html = html, Id = NavV2CacheKey };
+		}
+		finally
+		{
+			_ = _semaphore.Release();
+		}
+	}
+
+	private static NavigationViewModel CreateV2NavigationModel(SiteNavigationV2 navV2)
+	{
+		var syntheticV2Root = new SiteNavigationV2Wrapper(navV2);
+		return new NavigationViewModel
+		{
+			Title = "Elastic Docs",
+			TitleUrl = navV2.Url,
+			Tree = syntheticV2Root,
+			IsPrimaryNavEnabled = true,
+			IsUsingNavigationDropdown = false,
+			IsGlobalAssemblyBuild = true,
+			TopLevelItems = [],
+			Htmx = new DefaultHtmxAttributeProvider("/"),
+			BuildType = BuildType.Assembler,
+			IsNavV2 = true
+		};
+	}
+
 	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group)
 	{
 		var topLevelItems = globalNavigation.TopLevelItems;
@@ -85,5 +134,23 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 	{
 		_semaphore.Dispose();
 		GC.SuppressFinalize(this);
+	}
+
+	/// <summary>
+	/// Thin wrapper so <see cref="SiteNavigationV2.V2NavigationItems"/> is exposed as
+	/// <see cref="INodeNavigationItem{TIndex,TChildNavigation}.NavigationItems"/> for the Razor partial.
+	/// </summary>
+	private sealed class SiteNavigationV2Wrapper(SiteNavigationV2 navV2)
+		: INodeNavigationItem<INavigationModel, INavigationItem>
+	{
+		public string Id => "nav-v2-root";
+		public string Url => navV2.Url;
+		public string NavigationTitle => navV2.NavigationTitle;
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => navV2;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+		public ILeafNavigationItem<INavigationModel> Index => navV2.Index;
+		public IReadOnlyCollection<INavigationItem> NavigationItems => navV2.V2NavigationItems;
 	}
 }
