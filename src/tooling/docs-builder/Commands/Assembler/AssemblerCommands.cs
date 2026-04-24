@@ -168,8 +168,9 @@ internal sealed class AssemblerCommands(
 	/// </summary>
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="environment">Named deployment target. Determines which repositories are used.</param>
+	/// <param name="noWatchMd">Disable watching checkout directories for markdown changes. Static asset live reload still works. Useful when doing frontend (CSS/JS) work.</param>
 	[NoOptionsInjection]
-	public async Task Serve(int port = 4000, string? environment = null, CancellationToken ct = default)
+	public async Task Serve(int port = 4000, string? environment = null, bool noWatchMd = false, CancellationToken ct = default)
 	{
 		environment ??= "dev";
 		var readFs = FileSystemFactory.RealRead;
@@ -201,7 +202,7 @@ internal sealed class AssemblerCommands(
 		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
 		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
 
-		var host = new AssemblerServeWebHost(port, assembleSources, builder, logFactory);
+		var host = new AssemblerServeWebHost(port, assembleSources, builder, logFactory, watchMarkdown: !noWatchMd);
 		await host.RunAsync(ct);
 		await host.StopAsync(ct);
 		await collector.StopAsync(ct);

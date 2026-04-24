@@ -60,6 +60,7 @@ public record FetchedCrossLinks
 public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, ScopedFileSystem? fileSystem = null) : IDisposable
 {
 	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
+	protected ILinkIndexReader LinkIndexProvider => linkIndexProvider;
 	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.AppData;
 	private LinkRegistry? _linkIndex;
 
@@ -205,6 +206,8 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 
 	public void Dispose()
 	{
+		if (linkIndexProvider is IDisposable disposableReader)
+			disposableReader.Dispose();
 		logFactory.Dispose();
 		GC.SuppressFinalize(this);
 	}

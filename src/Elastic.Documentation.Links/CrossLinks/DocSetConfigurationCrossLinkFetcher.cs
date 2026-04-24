@@ -31,7 +31,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		var codexRepositories = new HashSet<string>();
 		var declaredRepositories = new HashSet<string>();
 
-		var publicReader = linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous();
+		var publicReader = LinkIndexProvider;
 		var useDualRegistry = configuration.Registry != DocSetRegistry.Public && _codexReader is not null;
 
 		// Fetch each registry once up front so per-repository lookups don't trigger N S3 round-trips.
