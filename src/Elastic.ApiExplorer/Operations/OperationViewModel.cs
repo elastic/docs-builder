@@ -25,6 +25,16 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 
 	public static string GetHighlightClass(string language) =>
 		LanguageHighlightMap.GetValueOrDefault(language, $"language-{language.ToLowerInvariant()}");
+
+	/// <summary>Maps a hljs <c>language-*</c> class to the outer Myst-style wrapper, e.g. <c>language-json</c> to <c>highlight-json</c>.</summary>
+	public static string GetHighlightGroupClass(string? highlightClass)
+	{
+		if (string.IsNullOrEmpty(highlightClass) || !highlightClass.StartsWith("language-", StringComparison.Ordinal))
+			return "highlight-plaintext";
+
+		var id = highlightClass["language-".Length..];
+		return string.IsNullOrEmpty(id) ? "highlight-plaintext" : $"highlight-{id}";
+	}
 }
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)

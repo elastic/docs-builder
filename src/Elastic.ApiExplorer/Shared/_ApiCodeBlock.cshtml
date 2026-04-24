@@ -1,0 +1,10 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<ApiCodeBlockModel>
+@{
+	var highlightGroupClass = CodeSample.GetHighlightGroupClass(Model.HighlightClass);
+}
+<div class="@highlightGroupClass notranslate">
+	<div class="highlight">
+		<pre><code class="@Model.HighlightClass">@Model.Source</code></pre>
+	</div>
+</div>

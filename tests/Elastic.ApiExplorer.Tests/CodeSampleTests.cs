@@ -151,4 +151,24 @@ public class CodeSampleTests
 
 		result[0].HighlightClass.Should().Be("language-bash");
 	}
+
+	[Theory]
+	[InlineData("language-json", "highlight-json")]
+	[InlineData("language-bash", "highlight-bash")]
+	[InlineData("language-console", "highlight-console")]
+	[InlineData("language-python", "highlight-python")]
+	public void GetHighlightGroupClass_MapsLanguageClassToHighlightClass(string input, string expected) =>
+		CodeSample.GetHighlightGroupClass(input).Should().Be(expected);
+
+	[Fact]
+	public void GetHighlightGroupClass_HandlesNonLanguageClass() =>
+		CodeSample.GetHighlightGroupClass("some-other-class").Should().Be("highlight-plaintext");
+
+	[Fact]
+	public void GetHighlightGroupClass_HandlesEmptyInput() =>
+		CodeSample.GetHighlightGroupClass("").Should().Be("highlight-plaintext");
+
+	[Fact]
+	public void GetHighlightGroupClass_HandlesLanguagePrefixOnly() =>
+		CodeSample.GetHighlightGroupClass("language-").Should().Be("highlight-plaintext");
 }
