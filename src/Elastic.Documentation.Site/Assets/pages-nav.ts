@@ -137,7 +137,9 @@ export function initNav() {
 
     // When the page is a hidden nav item (e.g. an individual detection rule), the server
     // emits docs:nav-active pointing to the nearest visible ancestor so we can highlight it.
-    const navActiveMeta = document.querySelector<HTMLMetaElement>('meta[name="docs:nav-active"]')
+    const navActiveMeta = document.querySelector<HTMLMetaElement>(
+        'meta[name="docs:nav-active"]'
+    )
     const activePathname = navActiveMeta?.content ?? pathname
 
     const navItems = $$(
