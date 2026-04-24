@@ -92,7 +92,7 @@ public static partial class AvailabilityBadgeHelper
 			_ when lower.Contains("beta") => "beta",
 			_ when lower.Contains("preview") => "preview",
 			_ when lower.Contains("generally available") => "ga",
-			_ => (string?)null
+			_ => null
 		};
 
 		var versionMatch = SemVersionRegex().Match(xState);
