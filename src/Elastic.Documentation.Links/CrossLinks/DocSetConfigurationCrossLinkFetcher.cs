@@ -30,7 +30,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		var codexRepositories = new HashSet<string>();
 		var declaredRepositories = new HashSet<string>();
 
-		var publicReader = linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous();
+		var publicReader = LinkIndexProvider;
 		var useDualRegistry = configuration.Registry != DocSetRegistry.Public && _codexReader is not null;
 
 		foreach (var entry in configuration.CrossLinkEntries)

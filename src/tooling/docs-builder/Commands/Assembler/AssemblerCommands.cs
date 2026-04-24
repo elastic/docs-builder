@@ -8,13 +8,19 @@ using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Documentation.Builder.Http;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
+using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LegacyDocs;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Documentation.Builder.Commands.Assembler;
 
@@ -153,17 +159,71 @@ internal sealed class AssemblerCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary> Serve the output of an assembler build</summary>
+	/// <summary>
+	/// Serve assembled documentation with live reload and on-demand per-request rendering.
+	/// Requires 'assembler clone' to have been run first. No prior build needed.
+	/// Pages are rendered on demand; file changes invalidate the repo and trigger a live reload.
+	/// </summary>
 	/// <param name="port">Port to serve the documentation.</param>
+	/// <param name="environment">The environment configuration to use.</param>
+	/// <param name="noWatchMd">Disable watching checkout directories for markdown changes. Static asset live reload still works. Useful when doing frontend (CSS/JS) work.</param>
 	/// <param name="ctx"></param>
 	[Command("serve")]
-	public async Task ServeAssemblerBuild(int port = 4000, string? path = null, Cancel ctx = default)
+	public async Task ServeAssemblerOnDemand(
+		int port = 4000,
+		string? environment = null,
+		bool noWatchMd = false,
+		Cancel ctx = default
+	)
+	{
+		environment ??= "dev";
+		var readFs = FileSystemFactory.RealRead;
+		var writeFs = FileSystemFactory.RealWrite;
+
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, readFs, writeFs, null, null);
+
+		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
+		var checkoutResult = cloner.GetAll();
+		var checkouts = checkoutResult.Checkouts.ToArray();
+
+		if (checkouts.Length == 0)
+			throw new Exception("No checkouts found. Run 'assembler clone' first.");
+
+		var exporters = ExportOptions.Default
+			.Except([Exporter.DocumentationState])
+			.ToHashSet();
+
+		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ctx);
+
+		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
+		var siteNavigationFile = SiteNavigationFile.Deserialize(await readFs.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
+		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
+		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
+
+		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
+		using var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
+		var legacyPageChecker = new LegacyPageService(logFactory);
+		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
+		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
+
+		var host = new AssemblerServeWebHost(port, assembleSources, builder, logFactory, watchMarkdown: !noWatchMd);
+		await host.RunAsync(ctx);
+		await host.StopAsync(ctx);
+		// since this command does not use ServiceInvoker, we stop the collector manually.
+		await collector.StopAsync(ctx);
+	}
+
+	/// <summary>Serve the static output of a prior 'assembler build' run.</summary>
+	/// <param name="port">Port to serve the documentation.</param>
+	/// <param name="path">Optional path to serve from, defaults to .artifacts/assembly.</param>
+	/// <param name="ctx"></param>
+	[Command("serve-static")]
+	public async Task ServeStaticAssemblerBuild(int port = 4000, string? path = null, Cancel ctx = default)
 	{
 		var host = new StaticWebHost(port, path);
 		await host.RunAsync(ctx);
 		await host.StopAsync(ctx);
 		// since this command does not use ServiceInvoker, we stop the collector manually.
-		// this should be an exception to the regular command pattern.
 		await collector.StopAsync(ctx);
 	}
 
