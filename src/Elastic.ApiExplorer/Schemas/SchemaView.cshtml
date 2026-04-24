@@ -1,7 +1,6 @@
 @using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Schema
 @using Elastic.ApiExplorer.Schemas
-@using Elastic.ApiExplorer.Shared
 @using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Schemas.SchemaViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
@@ -210,6 +209,6 @@
 		<h3 class="section-header" id="example" data-section="example">
 			<span>Example</span>
 		</h3>
-		<pre><code class="language-json">@openApiSchema.Example</code></pre>
+		@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-json", openApiSchema.Example!.ToString()!)))
 	}
 </section>

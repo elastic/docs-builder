@@ -1,7 +1,6 @@
 @using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Operations
 @using Elastic.ApiExplorer.Schema
-@using Elastic.ApiExplorer.Shared
 @using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
@@ -512,7 +511,7 @@
 		</h3>
 		<div class="example-block">
 			<h4>@codeSamples[0].Language</h4>
-			<pre><code class="@codeSamples[0].HighlightClass">@codeSamples[0].Source</code></pre>
+			@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(codeSamples[0].HighlightClass, codeSamples[0].Source)))
 		</div>
 	}
 	else if (codeSamples.Count > 1)
@@ -533,7 +532,7 @@
 				<input class="tabs-input" checked="@(i == 0 ? "checked" : "")" id="@tabId" name="code-samples" type="radio" tabindex="0">
 				<label class="tabs-label" data-sync-id="@sample.Language" data-sync-group="api-language" for="@tabId">@sample.Language</label>
 				<div class="tabs-content" tabindex="0">
-					<pre><code class="@sample.HighlightClass">@sample.Source</code></pre>
+					@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source)))
 				</div>
 			}
 		</div>
@@ -568,7 +567,7 @@
 				}
 				@if (example.Value?.Value is not null)
 				{
-					<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
+					@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-json", example.Value.Value.ToString()!)))
 				}
 				@if (!string.IsNullOrEmpty(example.Value?.ExternalValue))
 				{
@@ -597,7 +596,7 @@
 				}
 				@if (example.Value?.Value is not null)
 				{
-					<pre><code class="language-json">@example.Value.Value.ToString()</code></pre>
+					@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-json", example.Value.Value.ToString()!)))
 				}
 				@if (!string.IsNullOrEmpty(example.Value?.ExternalValue))
 				{
