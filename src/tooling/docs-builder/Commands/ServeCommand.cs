@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using ConsoleAppFramework;
 using Documentation.Builder.Http;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands;
 
@@ -15,24 +16,26 @@ internal sealed class ServeCommand(ILoggerFactory logFactory, IConfigurationCont
 	private readonly ILogger _logger = logFactory.CreateLogger<ServeCommand>();
 
 	/// <summary>
-	///	Continuously serve a documentation folder at http://localhost:3000.
-	/// File systems changes will be reflected without having to restart the server.
+	/// Continuously serve a documentation folder at <c>http://localhost:3000</c>.
 	/// </summary>
-	/// <param name="path">-p, Path to serve the documentation.
-	/// Defaults to the`{pwd}/docs` folder
-	/// </param>
-	/// <param name="port">Port to serve the documentation.</param>
-	/// <param name="watch"> special flag for dotnet watch optimizations during development</param>
-	/// <param name="ctx"></param>
-	[Command("")]
-	public async Task Serve(string? path = null, int port = 3000, bool watch = false, Cancel ctx = default)
+	/// <remarks>
+	/// File system changes are reflected without restarting the server.
+	/// <code>
+	/// docs-builder serve
+	/// docs-builder serve -p ./my-docs --port 8080
+	/// </code>
+	/// </remarks>
+	/// <param name="path">-p, Path to serve. Defaults to the <c>cwd/docs</c> folder</param>
+	/// <param name="port">Port to serve the documentation. Default: 3000</param>
+	/// <param name="watch">Special flag for <c>dotnet watch</c> optimizations during development</param>
+	[CommandName("serve")]
+	public async Task Serve(GlobalCliOptions _, string? path = null, int port = 3000, bool watch = false, CancellationToken ct = default)
 	{
 		var host = new DocumentationWebHost(logFactory, path, port, FileSystemFactory.RealGitRootForPath(path), FileSystemFactory.InMemory(), configurationContext, watch);
-		await host.RunAsync(ctx);
+		await host.RunAsync(ct);
 		_logger.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')
 		);
-		await host.StopAsync(ctx);
+		await host.StopAsync(ct);
 	}
-
 }

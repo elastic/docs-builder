@@ -4,10 +4,11 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using ConsoleAppFramework;
+
 using Elastic.Codex;
 using Elastic.Codex.Indexing;
 using Elastic.Codex.Sourcing;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
@@ -15,12 +16,11 @@ using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Codex;
 
-/// <summary>
-/// Command for indexing codex documentation into Elasticsearch.
-/// </summary>
+/// <summary>Index codex documentation into Elasticsearch.</summary>
 internal sealed class CodexIndexCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -30,67 +30,19 @@ internal sealed class CodexIndexCommand(
 )
 {
 	/// <summary>
-	/// Index codex documentation to Elasticsearch.
+	/// Index a built codex documentation set to Elasticsearch.
 	/// </summary>
-	/// <param name="config">Path to the codex configuration file.</param>
-	/// <param name="endpoint">-es, Elasticsearch endpoint, alternatively set env DOCUMENTATION_ELASTIC_URL</param>
-	/// <param name="apiKey">Elasticsearch API key, alternatively set env DOCUMENTATION_ELASTIC_APIKEY</param>
-	/// <param name="username">Elasticsearch username (basic auth), alternatively set env DOCUMENTATION_ELASTIC_USERNAME</param>
-	/// <param name="password">Elasticsearch password (basic auth), alternatively set env DOCUMENTATION_ELASTIC_PASSWORD</param>
-	/// <param name="noAiEnrichment">Disable AI enrichment of documents using LLM-generated metadata (enabled by default)</param>
-	/// <param name="searchNumThreads">The number of search threads the inference endpoint should use. Defaults: 8</param>
-	/// <param name="indexNumThreads">The number of index threads the inference endpoint should use. Defaults: 8</param>
-	/// <param name="noEis">Do not use the Elastic Inference Service, bootstrap inference endpoint</param>
-	/// <param name="forceReindex">Force reindex strategy to semantic index</param>
-	/// <param name="bootstrapTimeout">Timeout in minutes for the inference endpoint creation. Defaults: 4</param>
-	/// <param name="bufferSize">The number of documents to send to ES as part of the bulk. Defaults: 100</param>
-	/// <param name="maxRetries">The number of times failed bulk items should be retried. Defaults: 3</param>
-	/// <param name="debugMode">Buffer ES request/responses for better error messages and pass ?pretty to all requests</param>
-	/// <param name="proxyAddress">Route requests through a proxy server</param>
-	/// <param name="proxyPassword">Proxy server password</param>
-	/// <param name="proxyUsername">Proxy server username</param>
-	/// <param name="disableSslVerification">Disable SSL certificate validation (EXPERT OPTION)</param>
-	/// <param name="certificateFingerprint">Pass a self-signed certificate fingerprint to validate the SSL connection</param>
-	/// <param name="certificatePath">Pass a self-signed certificate to validate the SSL connection</param>
-	/// <param name="certificateNotRoot">If the certificate is not root but only part of the validation chain pass this</param>
-	/// <param name="ctx"></param>
-	/// <returns></returns>
-	[Command("")]
+	/// <remarks>
+	/// <code>
+	/// docs-builder codex index ./codex.yml --endpoint https://es:9200 --api-key KEY
+	/// </code>
+	/// </remarks>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file</param>
 	public async Task<int> Index(
+		GlobalCliOptions _,
 		[Argument] string config,
-		string? endpoint = null,
-		string? apiKey = null,
-		string? username = null,
-		string? password = null,
-
-		// inference options
-		bool? noAiEnrichment = null,
-		int? searchNumThreads = null,
-		int? indexNumThreads = null,
-		bool? noEis = null,
-		int? bootstrapTimeout = null,
-
-		// index options
-		bool? forceReindex = null,
-
-		// channel buffer options
-		int? bufferSize = null,
-		int? maxRetries = null,
-
-		// connection options
-		bool? debugMode = null,
-
-		// proxy options
-		string? proxyAddress = null,
-		string? proxyPassword = null,
-		string? proxyUsername = null,
-
-		// certificate options
-		bool? disableSslVerification = null,
-		string? certificateFingerprint = null,
-		string? certificatePath = null,
-		bool? certificateNotRoot = null,
-		Cancel ctx = default
+		[AsParameters] ElasticsearchIndexOptions es,
+		CancellationToken ct = default
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
@@ -117,7 +69,7 @@ internal sealed class CodexIndexCommand(
 
 		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
-		var cloneResult = await cloneService.CloneAll(codexContext, fetchLatest: false, assumeCloned: true, ctx);
+		var cloneResult = await cloneService.CloneAll(codexContext, fetchLatest: false, assumeCloned: true, ct);
 
 		if (cloneResult.Checkouts.Count == 0)
 		{
@@ -125,37 +77,13 @@ internal sealed class CodexIndexCommand(
 			return 1;
 		}
 
-		var esOptions = new ElasticsearchIndexOptions
-		{
-			Endpoint = endpoint,
-			ApiKey = apiKey,
-			Username = username,
-			Password = password,
-			NoAiEnrichment = noAiEnrichment,
-			SearchNumThreads = searchNumThreads,
-			IndexNumThreads = indexNumThreads,
-			NoEis = noEis,
-			BootstrapTimeout = bootstrapTimeout,
-			ForceReindex = forceReindex,
-			BufferSize = bufferSize,
-			MaxRetries = maxRetries,
-			DebugMode = debugMode,
-			ProxyAddress = proxyAddress,
-			ProxyPassword = proxyPassword,
-			ProxyUsername = proxyUsername,
-			DisableSslVerification = disableSslVerification,
-			CertificateFingerprint = certificateFingerprint,
-			CertificatePath = certificatePath,
-			CertificateNotRoot = certificateNotRoot
-		};
-
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var service = new CodexIndexService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(service, (codexContext, cloneResult, fs, esOptions),
+		serviceInvoker.AddCommand(service, (codexContext, cloneResult, fs, es),
 			static async (s, col, state, c) =>
-				await s.Index(state.codexContext, state.cloneResult, state.fs, state.esOptions, c)
+				await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
 		);
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 }

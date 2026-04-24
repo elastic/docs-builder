@@ -3,35 +3,33 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using ConsoleAppFramework;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Codex;
 
-/// <summary>
-/// Command for updating CloudFront KeyValueStore redirects for codex.
-/// </summary>
+/// <summary>Update CloudFront KeyValueStore redirects for a codex deployment.</summary>
 internal sealed class CodexUpdateRedirectsCommand(
 	IDiagnosticsCollector collector,
 	ILoggerFactory logFactory
 )
 {
-	/// <summary>Refreshes the redirects mapping in CloudFront's KeyValueStore for codex.</summary>
-	/// <param name="config">Path to the codex configuration file (used to resolve environment).</param>
-	/// <param name="environment">The environment to deploy to. Defaults to config or ENVIRONMENT env var.</param>
-	/// <param name="redirectsFile">Path to the redirects mapping. Defaults to .artifacts/codex/docs/redirects.json.</param>
-	/// <param name="ctx"></param>
-	[Command("")]
-	public async Task<int> Run(
+	/// <summary>Refresh the redirects mapping in CloudFront's KeyValueStore for codex.</summary>
+	/// <param name="config">Path to the codex configuration file (used to resolve environment)</param>
+	/// <param name="environment">The environment to deploy to. Defaults to config or <c>ENVIRONMENT</c> env var</param>
+	/// <param name="redirectsFile">Path to the redirects mapping. Defaults to <c>.artifacts/codex/docs/redirects.json</c></param>
+	public async Task<int> UpdateRedirects(
+		GlobalCliOptions _,
 		[Argument] string config,
 		string? environment = null,
 		string? redirectsFile = null,
-		Cancel ctx = default)
+		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -55,6 +53,6 @@ internal sealed class CodexUpdateRedirectsCommand(
 		serviceInvoker.AddCommand(service, (environment: resolvedEnvironment, redirectsFile, kvsNamePrefix: "codex", defaultRedirectsFile: ".artifacts/codex/docs/redirects.json"),
 			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile, state.kvsNamePrefix, state.defaultRedirectsFile, c)
 		);
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 }

@@ -2,57 +2,66 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
 using Documentation.Builder;
 using Documentation.Builder.Commands;
 using Documentation.Builder.Commands.Assembler;
 using Documentation.Builder.Commands.Codex;
-using Documentation.Builder.Filters;
+using Documentation.Builder.Middleware;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Nullean.Argh.Hosting;
 
 var builder = Host.CreateApplicationBuilder()
-	.AddDocumentationServiceDefaults(ref args, (s, p) =>
+	.AddDocumentationServiceDefaults(args, (s, p) =>
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 	})
 	.AddDocumentationToolingDefaults()
 	.AddOpenTelemetryDefaults();
 
-var app = builder.ToConsoleAppBuilder();
+_ = builder.Services.AddArgh(args, app =>
+{
+	_ = app.UseGlobalOptions<GlobalCliOptions>();
 
-app.UseFilter<ReplaceLogFilter>();
-app.UseFilter<InfoLoggerFilter>();
-app.UseFilter<StopwatchFilter>();
-app.UseFilter<CatchExceptionFilter>();
-app.UseFilter<CheckForUpdatesFilter>();
+	_ = app.UseMiddleware<InfoLoggerMiddleware>();
+	_ = app.UseMiddleware<StopwatchMiddleware>();
+	_ = app.UseMiddleware<CatchExceptionMiddleware>();
+	_ = app.UseMiddleware<CheckForUpdatesMiddleware>();
 
-app.Add<IsolatedBuildCommand>();
-app.Add<InboundLinkCommands>("inbound-links");
-app.Add<DiffCommands>("diff");
-app.Add<MoveCommand>("mv");
-app.Add<ServeCommand>("serve");
-app.Add<IndexCommand>("index");
-app.Add<FormatCommand>("format");
-app.Add<ChangelogCommand>("changelog");
+	// Root default: `docs-builder` with no sub-command → build docs from cwd
+	_ = app.Map<IsolatedBuildCommand>();
 
-//assembler commands
+	_ = app.Map<DiffCommand>();
+	_ = app.Map<RefactorCommands>();
+	_ = app.Map<ServeCommand>();
+	_ = app.Map<IndexCommand>();
+	_ = app.MapNamespace<ChangelogCommands>("changelog");
+	_ = app.MapNamespace<InboundLinkCommands>("inbound-links");
 
-app.Add<ContentSourceCommands>("assembler content-source");
-app.Add<DeployCommands>("assembler deploy");
-app.Add<BloomFilterCommands>("assembler bloom-filter");
-app.Add<NavigationCommands>("assembler navigation");
-app.Add<ConfigurationCommands>("assembler config");
-app.Add<AssemblerIndexCommand>("assembler index");
-app.Add<AssemblerSitemapCommand>("assembler sitemap");
-app.Add<AssemblerCommands>("assembler");
-app.Add<AssembleCommands>("assemble");
+	_ = app.Map<AssembleOneShotCommand>();
 
-//codex commands
-app.Add<CodexUpdateRedirectsCommand>("codex update-redirects");
-app.Add<CodexIndexCommand>("codex index");
-app.Add<CodexCommands>("codex");
+	// assembler commands (assemble merged into assembler default)
+	_ = app.MapNamespace<AssemblerCommands>("assembler", g =>
+	{
+		_ = g.MapNamespace<ContentSourceCommands>("content-source");
+		_ = g.MapNamespace<DeployCommands>("deploy");
+		_ = g.MapNamespace<BloomFilterCommands>("bloom-filter");
+		_ = g.MapNamespace<NavigationCommands>("navigation");
+		_ = g.MapNamespace<ConfigurationCommand>("config");
+		_ = g.Map<AssemblerIndexCommand>();
+		_ = g.Map<AssemblerSitemapCommand>();
+	});
 
-await app.RunAsync(args).ConfigureAwait(false);
+	// codex commands
+	_ = app.MapNamespace<CodexCommands>("codex", g =>
+	{
+		_ = g.Map<CodexIndexCommand>();
+		_ = g.Map<CodexUpdateRedirectsCommand>();
+	});
+});
+
+using var host = builder.Build();
+await host.RunAsync();

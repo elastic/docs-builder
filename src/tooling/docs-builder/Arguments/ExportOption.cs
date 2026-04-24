@@ -2,23 +2,32 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
 using Elastic.Documentation;
+using Nullean.Argh.Parsing;
 using static Elastic.Documentation.Exporter;
 
 namespace Documentation.Builder.Arguments;
 
-[AttributeUsage(AttributeTargets.Parameter)]
-public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<Exporter>>
+/// <summary>
+/// Parses a comma-separated exporter list into <see cref="IReadOnlySet{T}"/>.
+/// Use with <c>[ArgumentParser(typeof(ExporterParser))]</c> on command parameters.
+/// </summary>
+/// <remarks>
+/// Accepted values: <c>html</c>, <c>es</c> / <c>elasticsearch</c>, <c>config</c>, <c>links</c>,
+/// <c>state</c>, <c>llm</c> / <c>llmtext</c>, <c>redirect</c> / <c>redirects</c>, <c>metadata</c>,
+/// <c>none</c>, <c>default</c>.
+/// </remarks>
+public class ExporterParser : IArgumentParser<IReadOnlySet<Exporter>>
 {
-	public static bool TryParse(ReadOnlySpan<char> s, out IReadOnlySet<Exporter> result)
+	public bool TryParse(string raw, out IReadOnlySet<Exporter> result)
 	{
 		result = ExportOptions.Default;
 		var set = new HashSet<Exporter>();
-		var options = s.Split(',');
+		var span = raw.AsSpan();
+		var options = span.Split(',');
 		foreach (var option in options)
 		{
-			var export = s[option].Trim().ToString().ToLowerInvariant() switch
+			var export = span[option].Trim().ToString().ToLowerInvariant() switch
 			{
 				"llm" => LLMText,
 				"llmtext" => LLMText,
@@ -33,7 +42,7 @@ public class ExporterParserAttribute : Attribute, IArgumentParser<IReadOnlySet<E
 				"none" => null,
 				"default" => AddDefaultReturnNull(set, ExportOptions.Default),
 				"metadata" => AddDefaultReturnNull(set, ExportOptions.MetadataOnly),
-				_ => throw new Exception($"Unknown exporter {s[option].Trim().ToString().ToLowerInvariant()}")
+				_ => throw new Exception($"Unknown exporter {span[option].Trim().ToString().ToLowerInvariant()}")
 			};
 			if (export.HasValue)
 				_ = set.Add(export.Value);

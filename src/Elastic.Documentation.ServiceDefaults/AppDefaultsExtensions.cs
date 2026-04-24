@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
@@ -19,19 +20,23 @@ namespace Elastic.Documentation.ServiceDefaults;
 public static class AppDefaultsExtensions
 {
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
-	{
-		var args = Array.Empty<string>();
-		return builder.AddDocumentationServiceDefaults(ref args);
-	}
+		=> builder.AddDocumentationServiceDefaults([], null);
+
+	/// <summary>Backward-compatible overload — <paramref name="args"/> are scanned but no longer modified.</summary>
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
 		where TBuilder : IHostApplicationBuilder
+		=> builder.AddDocumentationServiceDefaults(args, configure);
+
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, string[] args, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
+		where TBuilder : IHostApplicationBuilder
 	{
-		GlobalCli.Process(ref args, out var globalArgs);
+		var cliArgs = GlobalCli.ScanArgs(args);
+		var isMcp = GlobalCli.IsMcpMode(args);
 
 		var services = builder.Services;
-		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, noConsole: globalArgs.IsMcp);
+		_ = services.AddElasticDocumentationLogging(cliArgs.LogLevel, noConsole: isMcp);
 		_ = services
-			.AddConfigurationFileProvider(globalArgs.SkipPrivateRepositories, globalArgs.ConfigurationSource, (s, p) =>
+			.AddConfigurationFileProvider(cliArgs.SkipPrivateRepositories, cliArgs.ConfigurationSource, (s, p) =>
 			{
 				var versionConfiguration = p.CreateVersionConfiguration();
 				var products = p.CreateProducts(versionConfiguration);
@@ -42,8 +47,7 @@ public static class AppDefaultsExtensions
 				_ = s.AddSingleton(search);
 				configure?.Invoke(s, p);
 			});
-		_ = builder.Services.AddElasticDocumentationLogging(globalArgs.LogLevel, noConsole: globalArgs.IsMcp);
-		_ = services.AddSingleton(globalArgs);
+		_ = services.AddSingleton(cliArgs);
 
 		var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
 		_ = services.AddSingleton(endpoints);
@@ -65,5 +69,4 @@ public static class AppDefaultsExtensions
 		});
 		return services;
 	}
-
 }

@@ -4,13 +4,14 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using ConsoleAppFramework;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler.ContentSources;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
@@ -22,8 +23,9 @@ internal sealed class ContentSourceCommands(
 	ICoreService githubActionsService
 )
 {
-	[Command("validate")]
-	public async Task<int> Validate(Cancel ctx = default)
+	/// <summary>Validate that all configured repositories have been published.</summary>
+	[NoOptionsInjection]
+	public async Task<int> Validate(CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -31,15 +33,14 @@ internal sealed class ContentSourceCommands(
 		var service = new RepositoryPublishValidationService(logFactory, configuration, configurationContext, fs);
 		serviceInvoker.AddCommand(service, static async (s, collector, ctx) => await s.ValidatePublishStatus(collector, ctx));
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>  </summary>
-	/// <param name="repository"></param>
-	/// <param name="branchOrTag"></param>
-	/// <param name="ctx"></param>
-	[Command("match")]
-	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, Cancel ctx = default)
+	/// <summary>Match a repository to a branch or tag and determine whether it should be built.</summary>
+	/// <param name="repository">Repository to match</param>
+	/// <param name="branchOrTag">Branch or tag to match against</param>
+	[NoOptionsInjection]
+	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -49,12 +50,9 @@ internal sealed class ContentSourceCommands(
 			static async (s, collector, state, ctx) =>
 			{
 				_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag, ctx);
-				// ShouldBuild throws an exception on bad args and will return false if it has no matches
-				// We return true to the service invoker to continue
 				return true;
 			});
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
-
 }

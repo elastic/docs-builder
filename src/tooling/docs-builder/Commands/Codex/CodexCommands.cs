@@ -4,11 +4,11 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using ConsoleAppFramework;
 using Documentation.Builder.Http;
 using Elastic.Codex;
 using Elastic.Codex.Building;
 using Elastic.Codex.Sourcing;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
@@ -16,11 +16,12 @@ using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Codex;
 
 /// <summary>
-/// Commands for building documentation codexes from multiple isolated documentation sets.
+/// Build documentation codexes from multiple isolated documentation sets.
 /// </summary>
 internal sealed class CodexCommands(
 	ILoggerFactory logFactory,
@@ -33,27 +34,33 @@ internal sealed class CodexCommands(
 	/// <summary>
 	/// Clone and build a documentation codex in one step.
 	/// </summary>
-	/// <param name="config">Path to the codex.yml configuration file.</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
-	/// <param name="fetchLatest">Fetch the latest commit even if already cloned.</param>
-	/// <param name="assumeCloned">Assume repositories are already cloned.</param>
-	/// <param name="output">Output directory for the built codex.</param>
-	/// <param name="serve">Serve the documentation on port 4000 after build.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	[Command("")]
+	/// <remarks>
+	/// <code>
+	/// docs-builder codex ./codex.yml
+	/// docs-builder codex ./codex.yml --strict --fetch-latest
+	/// docs-builder codex ./codex.yml --serve
+	/// </code>
+	/// </remarks>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file</param>
+	/// <param name="strict">Treat warnings as errors and fail on warnings</param>
+	/// <param name="fetchLatest">Fetch the latest commit even if already cloned</param>
+	/// <param name="assumeCloned">Assume repositories are already cloned</param>
+	/// <param name="output">Output directory for the built codex</param>
+	/// <param name="serve">Serve the documentation on port 4000 after a successful build</param>
+	[DefaultCommand]
 	public async Task<int> CloneAndBuild(
+		GlobalCliOptions _,
 		[Argument] string config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
 		string? output = null,
 		bool serve = false,
-		Cancel ctx = default)
+		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
 
-		// Load codex configuration
 		var configPath = fs.Path.GetFullPath(config);
 		var configFile = fs.FileInfo.New(configPath);
 
@@ -84,45 +91,41 @@ internal sealed class CodexCommands(
 				return cloneResult.Checkouts.Count > 0;
 			});
 
-		// Build service
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
-				if (cloneResult == null)
+				if (state.cloneResult == null)
 					return false;
-				var result = await s.BuildAll(state.codexContext, cloneResult, state.fs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 
-		var result = await serviceInvoker.InvokeAsync(ctx);
+		var result = await serviceInvoker.InvokeAsync(ct);
 
 		if (serve && result == 0)
 		{
 			var host = new StaticWebHost(4000, codexContext.OutputDirectory.FullName);
-			await host.RunAsync(ctx);
-			await host.StopAsync(ctx);
+			await host.RunAsync(ct);
+			await host.StopAsync(ct);
 		}
 
 		return result;
 	}
 
-	/// <summary>
-	/// Clone all repositories defined in the codex configuration.
-	/// </summary>
-	/// <param name="config">Path to the codex.yml configuration file.</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
-	/// <param name="fetchLatest">Fetch the latest commit even if already cloned.</param>
-	/// <param name="assumeCloned">Assume repositories are already cloned.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	[Command("clone")]
+	/// <summary>Clone all repositories defined in the codex configuration.</summary>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file</param>
+	/// <param name="strict">Treat warnings as errors and fail on warnings</param>
+	/// <param name="fetchLatest">Fetch the latest commit even if already cloned</param>
+	/// <param name="assumeCloned">Assume repositories are already cloned</param>
+	[NoOptionsInjection]
 	public async Task<int> Clone(
 		[Argument] string config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
-		Cancel ctx = default)
+		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
@@ -155,22 +158,19 @@ internal sealed class CodexCommands(
 				return result.Checkouts.Count > 0;
 			});
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>
-	/// Build all documentation sets from already cloned repositories.
-	/// </summary>
-	/// <param name="config">Path to the codex.yml configuration file.</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
-	/// <param name="output">Output directory for the built codex.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	[Command("build")]
+	/// <summary>Build all documentation sets from already-cloned repositories.</summary>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file</param>
+	/// <param name="strict">Treat warnings as errors and fail on warnings</param>
+	/// <param name="output">Output directory for the built codex</param>
+	[NoOptionsInjection]
 	public async Task<int> Build(
 		[Argument] string config,
 		bool strict = false,
 		string? output = null,
-		Cancel ctx = default)
+		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
@@ -193,8 +193,7 @@ internal sealed class CodexCommands(
 		}
 
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
-
-		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ctx);
+		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
 		{
@@ -211,30 +210,21 @@ internal sealed class CodexCommands(
 				return result.DocumentationSets.Count > 0;
 			});
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>
-	/// Serve the built codex documentation.
-	/// </summary>
-	/// <param name="port">Port to serve on.</param>
-	/// <param name="path">Path to the codex output directory.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	[Command("serve")]
-	public async Task Serve(
-		int port = 4000,
-		string? path = null,
-		Cancel ctx = default)
+	/// <summary>Serve the built codex documentation at <c>http://localhost:4000</c>.</summary>
+	/// <param name="port">Port to serve on. Default: 4000</param>
+	/// <param name="path">Path to the codex output directory</param>
+	[NoOptionsInjection]
+	public async Task Serve(int port = 4000, string? path = null, CancellationToken ct = default)
 	{
 		var fs = FileSystemFactory.RealRead;
-		var servePath = path ?? fs.Path.Join(
-			Environment.CurrentDirectory, ".artifacts", "codex", "docs");
+		var servePath = path ?? fs.Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
 		var host = new StaticWebHost(port, servePath);
-		await host.RunAsync(ctx);
-		await host.StopAsync(ctx);
-
-		// Since this command doesn't use ServiceInvoker, stop collector manually
-		await collector.StopAsync(ctx);
+		await host.RunAsync(ct);
+		await host.StopAsync(ct);
+		await collector.StopAsync(ct);
 	}
 }

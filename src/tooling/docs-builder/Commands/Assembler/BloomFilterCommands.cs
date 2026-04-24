@@ -2,21 +2,21 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
 internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector)
 {
-	/// <summary> Generate the bloom filter binary file </summary>
-	/// <param name="builtDocsDir">The local dir of local elastic/built-docs repository</param>
-	/// <param name="ctx"></param>
-	[Command("create")]
-	public async Task<int> CreateBloomBin(string builtDocsDir, Cancel ctx = default)
+	/// <summary>Generate the bloom filter binary file from a local <c>elastic/built-docs</c> repository.</summary>
+	/// <param name="builtDocsDir">Path to the local <c>elastic/built-docs</c> repository</param>
+	[NoOptionsInjection]
+	public async Task<int> Create(string builtDocsDir, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -28,14 +28,13 @@ internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnostic
 			var result = s.GenerateBloomFilterBinary(pagesProvider);
 			return Task.FromResult(result);
 		});
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Lookup whether <paramref name="path"/> exists in the bloomfilter </summary>
-	/// <param name="path">The local dir of local elastic/built-docs repository</param>
-	/// <param name="ctx"></param>
-	[Command("lookup")]
-	public async Task<int> PageExists(string path, Cancel ctx = default)
+	/// <summary>Look up whether a path exists in the bloom filter.</summary>
+	/// <param name="path">The URL path to look up</param>
+	[NoOptionsInjection]
+	public async Task<int> Lookup(string path, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -45,6 +44,6 @@ internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnostic
 			var result = s.PathExists(path, logResult: true);
 			return Task.FromResult(result);
 		});
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 }
