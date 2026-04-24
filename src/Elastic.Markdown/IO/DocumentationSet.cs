@@ -217,6 +217,9 @@ public class DocumentationSet : INavigationTraversable
 	}
 
 	private bool _resolved;
+
+	public void InvalidateResolved() => _resolved = false;
+
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		if (_resolved)

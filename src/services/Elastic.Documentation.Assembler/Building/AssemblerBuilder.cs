@@ -157,6 +157,38 @@ public class AssemblerBuilder(
 		}
 	}
 
+	public DocumentationGenerator CreateGenerator(AssemblerDocumentationSet set)
+	{
+		SetFeatureFlags(set);
+		var documentInferrer = new DocumentInferrerService(
+			context.ProductsConfiguration,
+			context.VersionsConfiguration,
+			context.LegacyUrlMappings,
+			set.DocumentationSet.Configuration,
+			set.DocumentationSet.Context.Git
+		);
+		return new DocumentationGenerator(
+			set.DocumentationSet,
+			logFactory, NavigationTraversable, HtmlWriter,
+			pathProvider,
+			legacyUrlMapper: LegacyUrlMapper,
+			documentInferrer: documentInferrer
+		);
+	}
+
+	public async Task BuildOneAsync(AssemblerDocumentationSet set, Cancel ctx)
+	{
+		await set.DocumentationSet.ResolveDirectoryTree(ctx);
+		var documentInferrer = new DocumentInferrerService(
+			context.ProductsConfiguration,
+			context.VersionsConfiguration,
+			context.LegacyUrlMappings,
+			set.DocumentationSet.Configuration,
+			set.DocumentationSet.Context.Git
+		);
+		_ = await BuildAsync(set, null, documentInferrer, ctx);
+	}
+
 	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, IDocumentInferrerService documentInferrer, Cancel ctx)
 	{
 		SetFeatureFlags(set);

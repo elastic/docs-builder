@@ -42,6 +42,8 @@ let private format (formatArgs: ParseResults<FormatArgs>) =
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
+let private watchFull _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "assembler" "serve" }
+
 let private lint (lintArgs: ParseResults<LintArgs>) =
     let includeFiles = lintArgs.TryGetResult LintArgs.Include |> Option.defaultValue []
     let includeArgs = 
@@ -256,6 +258,7 @@ let Setup (parsed:ParseResults<Build>) =
 
         | Format formatArgs -> Build.Step (fun _ -> format formatArgs)
         | Watch -> Build.Step watch
+        | Watch_Full -> Build.Step watchFull
 
         // steps
         | Lint lintArgs -> Build.Step (fun _ -> lint lintArgs)
