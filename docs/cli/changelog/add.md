@@ -1,7 +1,7 @@
 # changelog add
 
 Create a changelog file that describes a single item in the release documentation.
-For details and examples, go to [](/contribute/changelog.md).
+For details and examples, go to [](/contribute/create-changelogs.md).
 
 ## Usage
 
@@ -29,16 +29,15 @@ docs-builder changelog add [options...] [-h|--help]
 :   If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--no-extract-release-notes`
-:   Optional: Turn off extraction of release notes from PR descriptions.
-:   The extractor looks for content in various formats in the PR description:
+:   Optional: Turn off extraction of release notes from PR or issue descriptions.
+:   The extractor looks for content in various formats in the PR or issue description:
 :   - `Release Notes: ...`
 :   - `Release-Notes: ...`
 :   - `release notes: ...`
 :   - `Release Note: ...`
 :   - `Release Notes - ...`
 :   - `## Release Note` (as a markdown header)
-:   Short release notes (≤120 characters, single line) are used as the changelog title (only if `--title` is not explicitly provided).
-:   Long release notes (>120 characters or multi-line) are used as the changelog description (only if `--description` is not explicitly provided).
+:   Matched release note text is used as the changelog description (only if `--description` is not explicitly provided). The changelog title is always taken from `--title` or from the PR or issue title, not from the release note section.
 :   By default, the behavior is determined by the `extract.release_notes` changelog configuration setting.
 
 `--feature-id <string?>`
@@ -137,12 +136,19 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 | --- | --- | --- |
 | `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
 | `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
+| `CHANGELOG_DESCRIPTION` | `--description` | `steps.evaluate.outputs.description` |
 | `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
 | `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
 | `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
 | `CHANGELOG_REPO` | `--repo` | `github.event.repository.name` |
 
 **Precedence**: explicit CLI arguments always take priority over environment variables. Environment variables are only used when the corresponding CLI argument is not provided.
+
+`CHANGELOG_DESCRIPTION` has additional precedence rules related to release note extraction:
+
+- If `--description` is provided on the command line, it always wins.
+- If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored. This prevents a description that was extracted by `evaluate-pr` from being applied when extraction has been disabled.
+- Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
 
 The filename strategy is controlled by the `filename` option in `changelog.yml` (defaulting to `timestamp`). Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for details.
 
@@ -163,3 +169,19 @@ When you run the `changelog add` command without the `--products` option, it res
 5. **Error** — if none of the above resolves to at least one product, an error is raised.
 
 Product-specific `rules.create` rules are evaluated *after* products are resolved from labels, so label-derived products correctly participate in per-product create rule checks.
+
+## Configuration checks
+
+By default, the command checks the following path for a configuration file: `docs/changelog.yml`.
+You can specify a different path with the `--config` command option.
+
+If a configuration file exists, the command validates its values before generating changelog files:
+
+- If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the values in `ChangelogEntryType.cs`, `ChangelogEntrySubtype.cs`, or `Lifecycle.cs`, validation fails.
+- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails.
+- If the configuration file contains `lifecycles` or `products` values that are a subset of the available values and you try to create a changelog with values outside that subset, validation fails.
+
+In each of these cases where validation fails, a changelog file is not created.
+
+If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
+For more information, refer to [Rules for creation and publishing](/contribute/configure-changelogs.md#rules).

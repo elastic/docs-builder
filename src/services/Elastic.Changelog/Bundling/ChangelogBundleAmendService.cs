@@ -134,22 +134,14 @@ public partial class ChangelogBundleAmendService(
 			if (_configLoader != null)
 				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
 
-			var sanitizePrivateLinks = changelogConfig?.Bundle?.SanitizePrivateLinks == true;
-			Bundle? parentBundleForSanitize = null;
-			AssemblyConfiguration? assemblyForSanitize = null;
+			var linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
+			var linkAllowlistActive = linkAllowRepos != null;
+			Bundle? parentBundleForAllowlist = null;
 
-			if (sanitizePrivateLinks)
+			if (linkAllowlistActive)
 			{
-				if (configurationContext == null)
-				{
-					collector.EmitError(
-						string.Empty,
-						"Private link sanitization requires assembler configuration. Run docs-builder with a valid configuration context.");
-					return false;
-				}
-
 				if (parentBundleFromInfer != null)
-					parentBundleForSanitize = parentBundleFromInfer;
+					parentBundleForAllowlist = parentBundleFromInfer;
 				else
 				{
 					var (ok, loaded) = await TryDeserializeParentBundleAsync(
@@ -160,61 +152,47 @@ public partial class ChangelogBundleAmendService(
 					if (!ok)
 						return false;
 					ArgumentNullException.ThrowIfNull(loaded);
-					parentBundleForSanitize = loaded;
+					parentBundleForAllowlist = loaded;
 				}
 
-				ArgumentNullException.ThrowIfNull(parentBundleForSanitize);
-				if (!parentBundleForSanitize.IsResolved)
+				ArgumentNullException.ThrowIfNull(parentBundleForAllowlist);
+				if (!parentBundleForAllowlist.IsResolved)
 				{
 					collector.EmitError(
 						string.Empty,
-						"Private link sanitization requires the parent bundle to be resolved (inline entry content). " +
-						"Re-create the bundle with resolve enabled, or disable bundle.sanitize_private_links.");
+						"bundle.link_allow_repos requires the parent bundle to be resolved (inline entry content). " +
+						"Re-create the bundle with resolve enabled, or remove bundle.link_allow_repos.");
 					return false;
 				}
 
-				var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-				try
-				{
-					assemblyForSanitize = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-				}
-				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-				{
-					collector.EmitError(
-						string.Empty,
-						$"Failed to parse assembler configuration YAML: {ex.Message}",
-						ex);
-					return false;
-				}
-
-				var owner = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Owner ?? "elastic" : "elastic";
-				var repo = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Repo : null;
-				if (!PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+				var owner = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Repo : null;
+				if (!LinkAllowlistSanitizer.TryApplyBundle(
 					collector,
-					parentBundleForSanitize,
-					assemblyForSanitize,
+					parentBundleForAllowlist,
+					linkAllowRepos!,
 					owner,
 					repo,
 					out _,
-					out var parentHadUnsanitizedLinks))
+					out var parentHadAllowlistChanges))
 					return false;
 
-				if (parentHadUnsanitizedLinks)
+				if (parentHadAllowlistChanges)
 				{
 					collector.EmitError(
 						string.Empty,
-						"Private link sanitization requires the parent bundle to already reflect sanitized PR/issue references. " +
-						"Re-create the parent bundle with bundle.sanitize_private_links enabled and resolve enabled, " +
-						"or disable bundle.sanitize_private_links for amend.");
+						"bundle.link_allow_repos requires the parent bundle to already reflect filtered PR/issue references. " +
+						"Re-create the parent bundle with the same bundle.link_allow_repos and resolve enabled, " +
+						"or remove bundle.link_allow_repos for amend.");
 					return false;
 				}
 			}
 
-			if (sanitizePrivateLinks && !shouldResolve)
+			if (linkAllowlistActive && !shouldResolve)
 			{
 				collector.EmitError(
 					string.Empty,
-					"Private link sanitization requires resolved amend content. Use --resolve or ensure the original bundle is resolved, or disable bundle.sanitize_private_links.");
+					"bundle.link_allow_repos requires resolved amend content. Use --resolve or ensure the original bundle is resolved, or remove bundle.link_allow_repos.");
 				return false;
 			}
 
@@ -236,23 +214,38 @@ public partial class ChangelogBundleAmendService(
 			};
 
 			var bundleForWrite = amendBundle;
-			if (sanitizePrivateLinks && shouldResolve)
+			if (linkAllowlistActive && shouldResolve)
 			{
-				ArgumentNullException.ThrowIfNull(parentBundleForSanitize);
-				ArgumentNullException.ThrowIfNull(assemblyForSanitize);
-				var owner = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Owner ?? "elastic" : "elastic";
-				var repo = parentBundleForSanitize.Products.Count > 0 ? parentBundleForSanitize.Products[0].Repo : null;
+				ArgumentNullException.ThrowIfNull(parentBundleForAllowlist);
+				var owner = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundleForAllowlist.Products.Count > 0 ? parentBundleForAllowlist.Products[0].Repo : null;
 
-				if (!PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+				if (!LinkAllowlistSanitizer.TryApplyBundle(
 					collector,
 					amendBundle,
-					assemblyForSanitize,
+					linkAllowRepos!,
 					owner,
 					repo,
 					out var sanitized,
 					out _))
 					return false;
 				bundleForWrite = sanitized;
+
+				if (configurationContext != null && linkAllowRepos!.Count > 0)
+				{
+					try
+					{
+						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, linkAllowRepos!, assembly);
+					}
+					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+					{
+						collector.EmitWarning(
+							string.Empty,
+							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
+					}
+				}
 			}
 
 			// Serialize and write the amend file

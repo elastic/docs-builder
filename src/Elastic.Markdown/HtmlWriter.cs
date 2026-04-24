@@ -47,11 +47,18 @@ public class HtmlWriter(
 	private IPageViewFactory PageViewFactory { get; } = pageViewFactory ?? new DefaultPageViewFactory();
 
 	/// <inheritdoc />
-	public string Render(string markdown, IFileInfo? source)
+	public string Render(string markdown, IFileInfo? source) =>
+		RenderCore(markdown, source, stripFirstHeadingLevel1: true);
+
+	/// <inheritdoc />
+	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
+		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
+
+	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
-		return MarkdownFile.CreateHtml(parsed);
+		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
@@ -88,7 +95,7 @@ public class HtmlWriter(
 		Uri? reportLinkParameter = null;
 		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
 		{
-			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, current.Url);
 		}
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
@@ -117,7 +124,9 @@ public class HtmlWriter(
 			?? throw new InvalidOperationException($"No versioning system available for page '{markdown.RelativePath}'. " +
 				"Ensure VersionsConfiguration contains a Stack versioning system or the inferred product has a VersioningSystem defined.");
 
-		var currentBaseVersion = $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
+		var currentBaseVersion = pageVersioning.IsVersionless
+			? null
+			: $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
 		//TODO should we even distinctby
 		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
@@ -193,7 +202,7 @@ public class HtmlWriter(
 		{
 			Position = position++,
 			Name = parent.NavigationTitle,
-			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
+			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
 		}));
 		// Add current page
 		breadcrumbItems.Add(new BreadcrumbListItem

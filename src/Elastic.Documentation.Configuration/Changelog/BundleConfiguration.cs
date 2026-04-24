@@ -28,6 +28,12 @@ public record BundleConfiguration
 	public bool Resolve { get; init; } = true;
 
 	/// <summary>
+	/// Default bundle description used when no profile-specific description is provided.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
+
+	/// <summary>
 	/// Default GitHub repository name applied to all profiles that do not specify their own.
 	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
 	/// </summary>
@@ -39,10 +45,16 @@ public record BundleConfiguration
 	public string? Owner { get; init; }
 
 	/// <summary>
-	/// When true, PR/issue references targeting repositories marked <c>private: true</c> in
-	/// <c>assembler.yml</c> are rewritten to sentinel values at bundle time (requires <see cref="Resolve"/>).
+	/// When set (including an empty list), PR/issue references whose resolved <c>owner/repo</c> is not listed
+	/// are rewritten to <c># PRIVATE:</c> sentinels at bundle time. When absent, no link filtering is applied.
+	/// Requires <see cref="Resolve"/>.
 	/// </summary>
-	public bool SanitizePrivateLinks { get; init; }
+	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
+
+	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.
@@ -81,6 +93,12 @@ public record BundleProfile
 	public string? OutputProducts { get; init; }
 
 	/// <summary>
+	/// Profile-specific bundle description. When provided, overrides the bundle.description default.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
+
+	/// <summary>
 	/// GitHub repository name stored on each product in the bundle output.
 	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
 	/// </summary>
@@ -99,14 +117,14 @@ public record BundleProfile
 	public IReadOnlyList<string>? HideFeatures { get; init; }
 
 	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; init; }
+
+	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
 	/// PR references directly from a GitHub release and uses them as the bundle filter.
 	/// Mutually exclusive with <see cref="Products"/>.
 	/// </summary>
 	public string? Source { get; init; }
-
-	/// <summary>
-	/// When set, overrides <see cref="BundleConfiguration.SanitizePrivateLinks"/> for this profile.
-	/// </summary>
-	public bool? SanitizePrivateLinks { get; init; }
 }

@@ -2,8 +2,8 @@
 
 Generate markdown or asciidoc files from changelog bundle files.
 
-To create the bundle files, use [](/cli/release/changelog-bundle.md).
-For details and examples, go to [](/contribute/changelog.md).
+To create the bundle files, use [](/cli/changelog/bundle.md).
+For details and examples, go to [](/contribute/publish-changelogs.md).
 
 ## Usage
 
@@ -37,7 +37,7 @@ docs-builder changelog render [options...] [-h|--help]
 :   Paths support tilde (`~`) expansion and relative paths.
 
 :::{note}
-The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information about amended bundles, go to [](changelog-bundle-amend.md).
+The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information about amended bundles, go to [](bundle-amend.md).
 :::
 
 `--file-type <string>`
@@ -60,7 +60,7 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 :   Defaults to the version in the first bundle.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
 
-The `changelog render` command does **not** use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`. For more information, refer to [](/contribute/changelog.md). For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
+The `changelog render` command does **not** use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`. For more information, refer to [](/contribute/publish-changelogs.md). For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
 
 ## Output formats
 

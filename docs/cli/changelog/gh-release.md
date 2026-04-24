@@ -31,8 +31,17 @@ docs-builder changelog gh-release <repo> [version] [options...] [-h|--help]
 `--config <string?>`
 :   Optional: Path to the changelog.yml configuration file. Defaults to `docs/changelog.yml`.
 
+`--description <string?>`
+:   Optional: Bundle description text with placeholder support.
+:   Supports `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` placeholders. Overrides `bundle.description` from config.
+
 `--output <string?>`
 :   Optional: Output directory for the generated changelog files. Falls back to `bundle.directory` in `changelog.yml` when not specified. Defaults to `./changelogs`.
+
+`--release-date <string?>`
+:   Optional: Explicit release date for the bundle in YYYY-MM-DD format.
+:   By default, the bundle uses the GitHub release's published date. This option overrides that behavior.
+:   If the GitHub release has no published date, falls back to today's date (UTC).
 
 `--strip-title-prefix`
 :   Optional: Remove square brackets and the text within them from the beginning of pull request titles, and also remove a colon if it follows the closing bracket.
@@ -54,9 +63,7 @@ The product, target version, and lifecycle are inferred automatically from the r
 ## Configuration
 
 The `rules.bundle` section of your `changelog.yml` applies to bundles created by this command (after changelog files are gathered from the release).
-Which fields take effect depends on [bundle rule modes](/contribute/changelog.md#bundle-rule-modes).
-For details, refer to [Rules for filtered bundles](/cli/release/changelog-bundle.md#changelog-bundle-rules).
-If you use per-product rule overrides, refer to [Single-product rule resolution (Mode 3 only)](/contribute/changelog.md#changelog-bundle-rule-resolution).
+For details, refer to [Rules for filtered bundles](/cli/changelog/bundle.md#changelog-bundle-rules).
 
 ## Examples
 
@@ -84,6 +91,13 @@ docs-builder changelog gh-release elasticsearch v9.2.0
 docs-builder changelog gh-release elasticsearch v9.2.0 \
   --output ./docs/changelog \
   --config ./docs/changelog.yml
+```
+
+### Add description with placeholders
+
+```sh
+docs-builder changelog gh-release elasticsearch v9.2.0 \
+  --description "Elasticsearch {version} includes new features and fixes. Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
 ```
 
 ### Strip component prefixes from titles

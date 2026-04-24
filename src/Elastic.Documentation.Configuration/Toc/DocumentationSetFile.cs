@@ -52,7 +52,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	public DocumentationSetFeatures Features { get; set; } = new();
 
 	[YamlMember(Alias = "api")]
-	public Dictionary<string, string> Api { get; set; } = [];
+	public Dictionary<string, ApiProductSequence> Api { get; set; } = [];
 
 	/// <summary>
 	/// Default products for this documentation set. These are merged with page-level frontmatter products.

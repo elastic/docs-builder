@@ -13,8 +13,8 @@ public abstract class CreateChangelogTestBase(ITestOutputHelper output) : Change
 {
 	protected IGitHubPrService MockGitHubService { get; } = A.Fake<IGitHubPrService>();
 
-	protected ChangelogCreationService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, MockGitHubService, FileSystem);
+	protected ChangelogCreationService CreateService(IEnvironmentVariables? env = null) =>
+		new(LoggerFactory, ConfigurationContext, MockGitHubService, FileSystem, env);
 
 	protected async Task<string> CreateConfigDirectory(string configContent)
 	{

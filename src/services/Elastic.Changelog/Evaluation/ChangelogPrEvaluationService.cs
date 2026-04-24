@@ -75,39 +75,30 @@ public class ChangelogPrEvaluationService(
 		}
 
 		// Label-based skip check
+		var skipLabels = CollectExcludeLabels(config.Rules?.Create);
 		if (PrInfoProcessor.AreAllProductsBlocked(input.PrLabels, config.Rules?.Create))
 		{
 			_logger.LogInformation("Skipping: all products blocked by label rules");
-			return await SetOutputs(PrEvaluationResult.Skipped);
+			return await SetOutputs(PrEvaluationResult.Skipped, skipLabels: skipLabels);
 		}
 
-		// Resolve title: prefer release notes from PR body, fall back to PR title
+		// Resolve title from PR title only (release note text is never used as title)
 		var prTitle = input.PrTitle;
 		if (input.StripTitlePrefix)
 			prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
 
-		string? title = null;
 		string? description = null;
-
 		if (config.Extract.ReleaseNotes && !string.IsNullOrWhiteSpace(input.PrBody))
 		{
-			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(input.PrBody);
-
-			if (releaseNoteTitle != null)
+			var releaseNote = ReleaseNotesExtractor.FindReleaseNote(input.PrBody);
+			if (releaseNote != null)
 			{
-				title = releaseNoteTitle;
-				_logger.LogInformation("Using extracted release note as title: {Title}", title);
-			}
-
-			if (releaseNoteDescription != null)
-			{
-				description = releaseNoteDescription;
+				description = releaseNote;
 				_logger.LogInformation("Using extracted release note as description (length: {Length} characters)", description.Length);
 			}
 		}
 
-		// Fall back to PR title when no short release note was found
-		title ??= prTitle;
+		var title = prTitle;
 
 		if (string.IsNullOrWhiteSpace(title))
 		{
@@ -142,7 +133,8 @@ public class ChangelogPrEvaluationService(
 				PrEvaluationResult.NoLabel, title,
 				resolvedDescription: description,
 				labelTable: BuildLabelTable(config.LabelToType),
-				productLabelTable: productLabelTable
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels
 			);
 		}
 
@@ -169,7 +161,8 @@ public class ChangelogPrEvaluationService(
 		string? labelTable = null,
 		string? productLabelTable = null,
 		string? changelogDir = null,
-		string? existingFilename = null)
+		string? existingFilename = null,
+		string? skipLabels = null)
 	{
 		var statusString = status == PrEvaluationResult.Success
 			? ProceedStatus
@@ -196,8 +189,42 @@ public class ChangelogPrEvaluationService(
 			await coreService.SetOutputAsync("changelog-dir", changelogDir);
 		if (existingFilename != null)
 			await coreService.SetOutputAsync("existing-changelog-filename", existingFilename);
+		if (skipLabels != null)
+			await coreService.SetOutputAsync("skip-labels", skipLabels);
 
 		return true;
+	}
+
+	/// <summary>
+	/// Collects all exclude-mode labels from global and per-product create rules.
+	/// Returns a comma-separated string of unique labels, or null when none are configured.
+	/// </summary>
+	internal static string? CollectExcludeLabels(CreateRules? createRules)
+	{
+		if (createRules == null)
+			return null;
+
+		var labels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		if (createRules is { Mode: FieldMode.Exclude, Labels.Count: > 0 })
+		{
+			foreach (var label in createRules.Labels)
+				_ = labels.Add(label);
+		}
+
+		if (createRules.ByProduct is { Count: > 0 })
+		{
+			foreach (var (_, productRules) in createRules.ByProduct)
+			{
+				if (productRules is { Mode: FieldMode.Exclude, Labels.Count: > 0 })
+				{
+					foreach (var label in productRules.Labels)
+						_ = labels.Add(label);
+				}
+			}
+		}
+
+		return labels.Count > 0 ? string.Join(",", labels) : null;
 	}
 
 	/// <summary>

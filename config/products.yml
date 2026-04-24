@@ -1,4 +1,9 @@
 products:
+  agent-skills:
+    display: 'Elastic Agent Skills'
+    versioning: 'all'
+    features:
+      public-reference: false
   apm:
     display: 'APM'
     versioning: 'stack'
@@ -59,6 +64,11 @@ products:
     versioning: 'terraform-google-edot-cf'
   curator:
     display: 'Elasticsearch Curator'
+  docs-builder:
+    display: 'Elastic Docs Builder'
+    repository: 'docs-builder'
+    features:
+      public-reference: false
   ecs:
     display: 'Elastic Common Schema (ECS)'
   ecs-logging:
@@ -233,6 +243,12 @@ products:
   serverless-security:
     display: 'Elastic Security Serverless'
     versioning: 'all'
+  transport-go:
+    display: 'Elastic Transport Go'
+    repository: 'elastic-transport-go'
+    versioning: 'all'
+    features:
+      public-reference: false
   winlogbeat:
     display: 'Winlogbeat'
     versioning: 'stack'

@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Changelog;
@@ -85,19 +86,38 @@ public record BundleChangelogsArguments
 	public string[]? HideFeatures { get; init; }
 
 	/// <summary>
-	/// Effective flag after merging CLI, profile, and config (see <see cref="SanitizePrivateLinksCli"/>).
+	/// Optional bundle description with placeholder substitution.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
 	/// </summary>
-	public bool SanitizePrivateLinks { get; init; }
+	public string? Description { get; init; }
 
 	/// <summary>
-	/// CLI override for option-based bundling only. null = use changelog.yml bundle default.
+	/// Optional explicit release date for the bundle in YYYY-MM-DD format.
+	/// When provided, overrides auto-population behavior.
 	/// </summary>
-	public bool? SanitizePrivateLinksCli { get; init; }
+	public string? ReleaseDate { get; init; }
 
 	/// <summary>
-	/// When true, forces sanitization off (overrides other sources).
+	/// When true, skips auto-population of release date (respects --no-release-date).
+	/// Existing dates in bundle YAML files are still preserved.
 	/// </summary>
-	public bool NoSanitizePrivateLinks { get; init; }
+	public bool SuppressReleaseDate { get; init; }
+
+	/// <summary>
+	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
+	/// </summary>
+	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
+}
+
+/// <summary>
+/// Structured plan output for CI actions. Describes what Docker flags and output path to expect
+/// without actually executing the bundle.
+/// </summary>
+public record BundlePlanResult
+{
+	public bool NeedsNetwork { get; init; }
+	public bool NeedsGithubToken { get; init; }
+	public string? OutputPath { get; init; }
 }
 
 /// <summary>
@@ -176,7 +196,10 @@ public partial class ChangelogBundlingService(
 			if (!ValidateInput(collector, input))
 				return false;
 
-			if (!ValidateSanitizePrivateLinks(collector, input))
+			if (!ValidatePlaceholderUsage(collector, input))
+				return false;
+
+			if (!ValidateLinkAllowlist(collector, input))
 				return false;
 
 			// Load PR or issue filter values
@@ -290,22 +313,81 @@ public partial class ChangelogBundlingService(
 				return false;
 
 			var bundleData = buildResult.Data;
-			if (input.SanitizePrivateLinks)
+			if (input.LinkAllowRepos != null)
 			{
-				ArgumentNullException.ThrowIfNull(configurationContext);
-				var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-				var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-				if (!PrivateChangelogLinkSanitizer.TrySanitizeBundle(
+				if (!LinkAllowlistSanitizer.TryApplyBundle(
 					collector,
 					bundleData,
-					assembly,
+					input.LinkAllowRepos,
 					input.Owner ?? "elastic",
 					input.Repo,
 					out var sanitizedBundle,
 					out _))
 					return false;
 				bundleData = sanitizedBundle;
+
+				if (configurationContext != null && input.LinkAllowRepos.Count > 0)
+				{
+					try
+					{
+						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, input.LinkAllowRepos, assembly);
+					}
+					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+					{
+						collector.EmitWarning(
+							string.Empty,
+							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
+					}
+				}
 			}
+
+			// Apply description with placeholder substitution
+			if (!string.IsNullOrEmpty(input.Description))
+			{
+				var version = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Target : null)
+							  ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Target : null);
+				var lifecycle = (input.OutputProducts?.Count > 0 ? input.OutputProducts[0].Lifecycle : null)
+								?? (bundleData.Products.Count > 0 ? bundleData.Products[0].Lifecycle?.ToStringFast(true) : null);
+				var owner = input.Owner ?? "elastic";
+				var repo = input.Repo ?? (bundleData.Products.Count > 0 ? bundleData.Products[0].ProductId : null) ?? "unknown";
+
+				try
+				{
+					var substitutedDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+						input.Description, version, lifecycle, owner, repo, validateResolvable: true);
+					bundleData = bundleData with { Description = substitutedDescription };
+				}
+				catch (InvalidOperationException ex)
+				{
+					collector.EmitError(string.Empty, $"Description placeholder substitution failed: {ex.Message}");
+					return false;
+				}
+			}
+
+			// Apply release date: CLI override → existing bundle date → auto-populate (unless suppressed)
+			var finalReleaseDate = bundleData.ReleaseDate; // Preserve existing date if present
+			if (!string.IsNullOrEmpty(input.ReleaseDate))
+			{
+				// Explicit CLI override
+				if (DateOnly.TryParseExact(input.ReleaseDate, "yyyy-MM-dd", out var parsedDate))
+				{
+					finalReleaseDate = parsedDate;
+				}
+				else
+				{
+					collector.EmitError(string.Empty, $"Invalid release date format '{input.ReleaseDate}'. Expected YYYY-MM-DD format.");
+					return false;
+				}
+			}
+			else if (finalReleaseDate == null && !input.SuppressReleaseDate)
+			{
+				// Auto-populate with today's date (UTC) if no existing date
+				finalReleaseDate = DateOnly.FromDateTime(DateTime.UtcNow);
+			}
+
+			bundleData = bundleData with { ReleaseDate = finalReleaseDate };
 
 			// Write bundle file
 			await WriteBundleFileAsync(bundleData, outputPath, ctx);
@@ -341,13 +423,14 @@ public partial class ChangelogBundlingService(
 		if (filterResult == null)
 			return null;
 
-		// Resolve bundle-specific output path, output products, repo, owner, and hide-features from profile
+		// Resolve bundle-specific output path, output products, repo, owner, hide-features, and description from profile
 		string? outputPath = null;
 		IReadOnlyList<ProductArgument>? outputProducts = null;
 		string? repo = null;
 		string? owner = null;
 		string[]? mergedHideFeatures = null;
-		var sanitizePrivateLinks = false;
+		string? profileDescription = null;
+		var profileSuppressReleaseDate = false;
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
@@ -366,7 +449,7 @@ public partial class ChangelogBundlingService(
 					?? input.OutputDirectory
 					?? config.Bundle.Directory
 					?? _fileSystem.Directory.GetCurrentDirectory();
-				outputPath = _fileSystem.Path.Join(outputDir, outputPattern);
+				outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution
@@ -389,7 +472,38 @@ public partial class ChangelogBundlingService(
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
-			sanitizePrivateLinks = profile.SanitizePrivateLinks ?? config.Bundle.SanitizePrivateLinks;
+			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
+
+			// Handle profile-specific description with placeholder substitution
+			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
+			if (!string.IsNullOrEmpty(descriptionTemplate))
+			{
+				// Validate placeholder usage in profile mode
+				var hasVersionPlaceholder = descriptionTemplate.Contains("{version}") || descriptionTemplate.Contains("{lifecycle}");
+				var hasOwnerRepoPlaceholder = descriptionTemplate.Contains("{owner}") || descriptionTemplate.Contains("{repo}");
+
+				if (hasVersionPlaceholder &&
+					filterResult.Version == "unknown" &&
+					string.IsNullOrEmpty(profile.OutputProducts))
+				{
+					collector.EmitError(string.Empty,
+						$"Profile '{input.Profile}' uses {{version}} or {{lifecycle}} placeholders in description but no version is available for substitution. " +
+						"Either provide a version argument, or add 'output_products' pattern to the profile configuration.");
+					return null;
+				}
+
+				if (hasOwnerRepoPlaceholder &&
+					(string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(repo)))
+				{
+					collector.EmitError(string.Empty,
+						$"Profile '{input.Profile}' uses {{owner}} or {{repo}} placeholders in description but values are not resolvable. " +
+						"Ensure repository metadata is available in the configuration.");
+					return null;
+				}
+
+				profileDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+					descriptionTemplate, filterResult.Version, resolvedLifecycle, owner, repo);
+			}
 		}
 
 		return input with
@@ -403,28 +517,23 @@ public partial class ChangelogBundlingService(
 			Repo = repo,
 			Owner = owner,
 			HideFeatures = mergedHideFeatures,
-			SanitizePrivateLinks = sanitizePrivateLinks
+			Description = profileDescription,
+			SuppressReleaseDate = profileSuppressReleaseDate
 		};
 	}
 
-	private static BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
+	private BundleChangelogsArguments ApplyConfigDefaults(BundleChangelogsArguments input, ChangelogConfiguration? config)
 	{
 		// Apply directory: CLI takes precedence. Only use config when --directory not specified.
-		var directory = input.Directory ?? config?.Bundle?.Directory ?? Directory.GetCurrentDirectory();
+		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
-		{
-			var sanitizeNoConfig = !input.NoSanitizePrivateLinks &&
-				(string.IsNullOrWhiteSpace(input.Profile)
-					? input.SanitizePrivateLinksCli ?? false
-					: input.SanitizePrivateLinks);
-			return input with { Directory = directory, SanitizePrivateLinks = sanitizeNoConfig };
-		}
+			return input with { Directory = directory, LinkAllowRepos = null };
 
 		// Apply output default when --output not specified: use bundle.output_directory if set
 		var output = input.Output;
 		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
-			output = Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml");
+			output = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
 
 		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
 		var resolve = input.Resolve ?? config.Bundle.Resolve;
@@ -433,11 +542,14 @@ public partial class ChangelogBundlingService(
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
 
-		// Profile mode forbids --sanitize-private-links on the CLI; SanitizePrivateLinksCli is only set for option-based bundle.
-		var sanitizePrivateLinks = !input.NoSanitizePrivateLinks &&
-			(!string.IsNullOrWhiteSpace(input.Profile)
-				? input.SanitizePrivateLinks
-				: input.SanitizePrivateLinksCli ?? config.Bundle.SanitizePrivateLinks);
+		// Apply description: CLI takes precedence; fall back to bundle-level config default
+		var description = input.Description ?? config.Bundle.Description;
+
+		// Apply release date suppression: CLI takes precedence; config can enable suppression when CLI didn't
+		// In profile mode, profile has already resolved inheritance, so skip bundle logic
+		var suppressReleaseDate = !string.IsNullOrWhiteSpace(input.Profile)
+			? input.SuppressReleaseDate
+			: input.SuppressReleaseDate || !(config.Bundle.ReleaseDates ?? true);
 
 		return input with
 		{
@@ -446,7 +558,76 @@ public partial class ChangelogBundlingService(
 			Resolve = resolve,
 			Repo = repo,
 			Owner = owner,
-			SanitizePrivateLinks = sanitizePrivateLinks
+			Description = description,
+			SuppressReleaseDate = suppressReleaseDate,
+			LinkAllowRepos = config.Bundle.LinkAllowRepos
+		};
+	}
+
+	/// <summary>
+	/// Resolves a bundle plan from config and profile metadata without executing any network calls or
+	/// file-scanning. Used by <c>--plan</c> mode to emit GitHub Actions step outputs
+	/// (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>) that CI actions consume.
+	/// </summary>
+	public async Task<BundlePlanResult?> PlanBundleAsync(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		bool hasReleaseVersion,
+		Cancel ctx)
+	{
+		var needsNetwork = hasReleaseVersion;
+		var needsGithubToken = hasReleaseVersion;
+
+		ChangelogConfiguration? config = null;
+		if (!string.IsNullOrWhiteSpace(input.Profile))
+		{
+			if (_configLoader == null)
+			{
+				collector.EmitError(string.Empty, "Changelog configuration loader is required for profile-based bundling.");
+				return null;
+			}
+			config = string.IsNullOrWhiteSpace(input.Config)
+				? await _configLoader.LoadChangelogConfigurationForProfileMode(collector, ctx)
+				: await _configLoader.LoadChangelogConfigurationRequired(collector, input.Config, ctx);
+			if (config == null)
+				return null;
+		}
+		else if (_configLoader != null)
+			config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+
+		BundleProfile? profileDef = null;
+		if (!string.IsNullOrWhiteSpace(input.Profile) &&
+			config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
+		{
+			if (string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase))
+			{
+				needsNetwork = true;
+				needsGithubToken = true;
+			}
+		}
+
+		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults.
+		var outputPath = input.Output;
+		if (string.IsNullOrWhiteSpace(outputPath) && profileDef?.Output != null)
+		{
+			var version = input.ProfileArgument ?? "unknown";
+			var lifecycle = VersionLifecycleInference.InferLifecycle(version);
+			var outputPattern = profileDef.Output
+				.Replace("{version}", version)
+				.Replace("{lifecycle}", lifecycle);
+			var outputDir = config?.Bundle?.OutputDirectory
+				?? config?.Bundle?.Directory
+				?? _fileSystem.Directory.GetCurrentDirectory();
+			outputPath = _fileSystem.Path.Join(outputDir, outputPattern).OptionalWindowsReplace();
+		}
+		else if (string.IsNullOrWhiteSpace(outputPath) && config?.Bundle?.OutputDirectory != null)
+			outputPath = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
+
+		return new BundlePlanResult
+		{
+			NeedsNetwork = needsNetwork,
+			NeedsGithubToken = needsGithubToken,
+			OutputPath = outputPath
 		};
 	}
 
@@ -491,29 +672,41 @@ public partial class ChangelogBundlingService(
 		return true;
 	}
 
-	private bool ValidateSanitizePrivateLinks(IDiagnosticsCollector collector, BundleChangelogsArguments input)
+	private static bool ValidatePlaceholderUsage(IDiagnosticsCollector collector, BundleChangelogsArguments input)
 	{
-		if (!input.SanitizePrivateLinks)
+		if (!string.IsNullOrEmpty(input.Profile))
+			return true;
+
+		if (string.IsNullOrEmpty(input.Description))
+			return true;
+
+		var hasPlaceholders = input.Description.Contains("{version}") ||
+							 input.Description.Contains("{lifecycle}") ||
+							 input.Description.Contains("{owner}") ||
+							 input.Description.Contains("{repo}");
+
+		if (hasPlaceholders && (input.OutputProducts == null || input.OutputProducts.Count == 0))
+		{
+			collector.EmitError(string.Empty,
+				"When using placeholders in bundle description in option-based mode, " +
+				"--output-products must be explicitly specified to ensure predictable substitution values.");
+			return false;
+		}
+
+		return true;
+	}
+
+	private static bool ValidateLinkAllowlist(IDiagnosticsCollector collector, BundleChangelogsArguments input)
+	{
+		if (input.LinkAllowRepos == null)
 			return true;
 
 		if (!(input.Resolve ?? false))
 		{
 			collector.EmitError(
 				string.Empty,
-				"Private link sanitization requires resolved bundle content. " +
-				"Use --resolve or set bundle.resolve: true in changelog.yml, or disable sanitization " +
-				"(bundle.sanitize_private_links / --sanitize-private-links)."
-			);
-			return false;
-		}
-
-		if (configurationContext == null)
-		{
-			collector.EmitError(
-				string.Empty,
-				"Private link sanitization requires assembler configuration (assembler.yml). " +
-				"Ensure docs-builder runs with a valid configuration source."
-			);
+				"bundle.link_allow_repos requires resolved bundle content. " +
+				"Use --resolve or set bundle.resolve: true in changelog.yml, or remove bundle.link_allow_repos.");
 			return false;
 		}
 
@@ -837,7 +1030,7 @@ public partial class ChangelogBundlingService(
 						collector.EmitHint(string.Empty,
 							$"Note: Per-product rule '{ruleContextProduct}' uses 'match_products: any' with 'include_products' which acts as " +
 							$"{(wouldIncludeAll ? "include-all" : "exclude-all")} for this context. " +
-							$"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
+							$"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md");
 						ruleStats["ineffective_pattern_warned"] = 1;
 					}
 

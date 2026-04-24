@@ -111,6 +111,22 @@ Link to websites and resources outside the Elastic docs:
 [Elastic Documentation](https://www.elastic.co/guide)
 ```
 
+External links display an arrow indicator next to the link text.
+
+### Linked images
+
+Wrap an image in a link to make the image itself clickable. Combine the image syntax with the link syntax:
+
+```markdown
+[![A bear](/syntax/images/bear.png "bear =300x")](https://example.com)
+```
+
+Rendered:
+
+[![A bear](/syntax/images/bear.png "bear =300x")](https://example.com)
+
+When an external link wraps an image (for example, a screenshot or badge), the arrow indicator is omitted because the image already conveys the target.
+
 ### Autolinks
 
 Bare `https://` URLs in text are automatically converted to clickable links.

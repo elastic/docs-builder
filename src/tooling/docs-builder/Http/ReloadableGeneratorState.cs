@@ -56,8 +56,13 @@ public class ReloadableGeneratorState : IDisposable
 
 	// Track OpenAPI spec file modification times to detect changes
 	private readonly Dictionary<string, DateTimeOffset> _openApiSpecLastModified = [];
+
+	// Track intro/outro markdown file modification times to detect changes
+	private readonly Dictionary<string, DateTimeOffset> _apiMarkdownFilesLastModified = [];
+
 	private volatile bool _apiReferencesStale = true;
 	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
+	private CancellationTokenSource? _apiGenerationCts;
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
@@ -89,16 +94,24 @@ public class ReloadableGeneratorState : IDisposable
 		if (!_apiReferencesStale)
 			return;
 
-		await _apiSemaphore.WaitAsync(ctx);
+		// Create isolated cancellation for API generation (or reuse existing)
+		_apiGenerationCts ??= new CancellationTokenSource();
+
+		// Use combined token that respects both HTTP cancellation AND generation-specific timeout
+		using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(ctx, _apiGenerationCts.Token);
+		combinedCts.CancelAfter(TimeSpan.FromMinutes(5)); // Reasonable timeout for API generation
+
+		await _apiSemaphore.WaitAsync(ctx); // Still respect immediate HTTP cancellation for semaphore
 		try
 		{
 			if (!_apiReferencesStale)
 				return;
 
+			// Use the isolated token for actual generation
 			var config = _generator.DocumentationSet.Configuration;
 			if (HaveOpenApiSpecsChanged(config))
 			{
-				await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);
+				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
 				UpdateOpenApiSpecTimestamps(config);
 			}
 			_apiReferencesStale = false;
@@ -113,20 +126,61 @@ public class ReloadableGeneratorState : IDisposable
 	{
 		if (_isWatchBuild)
 			return false;
-		if (config.OpenApiSpecifications is null)
+		if (config.OpenApiSpecifications is null && config.ApiConfigurations is null)
 			return false;
 
 		// First run - no timestamps yet
-		if (_openApiSpecLastModified.Count == 0)
+		if (_openApiSpecLastModified.Count == 0 && _apiMarkdownFilesLastModified.Count == 0)
 			return true;
 
-		foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+		// Check legacy OpenAPI specification files
+		if (config.OpenApiSpecifications is not null)
 		{
-			fileInfo.Refresh();
-			if (!_openApiSpecLastModified.TryGetValue(fileInfo.FullName, out var lastModified))
-				return true; // New file
-			if (fileInfo.LastWriteTimeUtc > lastModified)
-				return true; // File modified
+			foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+			{
+				fileInfo.Refresh();
+				if (!_openApiSpecLastModified.TryGetValue(fileInfo.FullName, out var lastModified))
+					return true; // New file
+				if (fileInfo.LastWriteTimeUtc > lastModified)
+					return true; // File modified
+			}
+		}
+
+		// Check new API configuration files (specs and intro/outro markdown files)
+		if (config.ApiConfigurations is not null)
+		{
+			foreach (var apiConfig in config.ApiConfigurations.Values)
+			{
+				// Check spec files
+				foreach (var specFile in apiConfig.SpecFiles)
+				{
+					specFile.Refresh();
+					if (!_openApiSpecLastModified.TryGetValue(specFile.FullName, out var lastModified))
+						return true; // New file
+					if (specFile.LastWriteTimeUtc > lastModified)
+						return true; // File modified
+				}
+
+				// Check intro markdown files
+				foreach (var markdownFile in apiConfig.IntroMarkdownFiles)
+				{
+					markdownFile.Refresh();
+					if (!_apiMarkdownFilesLastModified.TryGetValue(markdownFile.FullName, out var lastModified))
+						return true; // New file
+					if (markdownFile.LastWriteTimeUtc > lastModified)
+						return true; // File modified
+				}
+
+				// Check outro markdown files
+				foreach (var markdownFile in apiConfig.OutroMarkdownFiles)
+				{
+					markdownFile.Refresh();
+					if (!_apiMarkdownFilesLastModified.TryGetValue(markdownFile.FullName, out var lastModified))
+						return true; // New file
+					if (markdownFile.LastWriteTimeUtc > lastModified)
+						return true; // File modified
+				}
+			}
 		}
 
 		return false;
@@ -134,14 +188,45 @@ public class ReloadableGeneratorState : IDisposable
 
 	private void UpdateOpenApiSpecTimestamps(ConfigurationFile config)
 	{
-		if (config.OpenApiSpecifications is null)
-			return;
-
 		_openApiSpecLastModified.Clear();
-		foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+		_apiMarkdownFilesLastModified.Clear();
+
+		// Update legacy OpenAPI specification timestamps
+		if (config.OpenApiSpecifications is not null)
 		{
-			fileInfo.Refresh();
-			_openApiSpecLastModified[fileInfo.FullName] = fileInfo.LastWriteTimeUtc;
+			foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+			{
+				fileInfo.Refresh();
+				_openApiSpecLastModified[fileInfo.FullName] = fileInfo.LastWriteTimeUtc;
+			}
+		}
+
+		// Update new API configuration timestamps (specs and intro/outro markdown files)
+		if (config.ApiConfigurations is not null)
+		{
+			foreach (var apiConfig in config.ApiConfigurations.Values)
+			{
+				// Update spec file timestamps
+				foreach (var specFile in apiConfig.SpecFiles)
+				{
+					specFile.Refresh();
+					_openApiSpecLastModified[specFile.FullName] = specFile.LastWriteTimeUtc;
+				}
+
+				// Update intro markdown file timestamps
+				foreach (var markdownFile in apiConfig.IntroMarkdownFiles)
+				{
+					markdownFile.Refresh();
+					_apiMarkdownFilesLastModified[markdownFile.FullName] = markdownFile.LastWriteTimeUtc;
+				}
+
+				// Update outro markdown file timestamps
+				foreach (var markdownFile in apiConfig.OutroMarkdownFiles)
+				{
+					markdownFile.Refresh();
+					_apiMarkdownFilesLastModified[markdownFile.FullName] = markdownFile.LastWriteTimeUtc;
+				}
+			}
 		}
 	}
 
@@ -161,6 +246,8 @@ public class ReloadableGeneratorState : IDisposable
 
 	public void Dispose()
 	{
+		_apiGenerationCts?.Cancel();
+		_apiGenerationCts?.Dispose();
 		_apiSemaphore.Dispose();
 		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);

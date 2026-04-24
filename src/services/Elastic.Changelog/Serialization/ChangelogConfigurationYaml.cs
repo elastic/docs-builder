@@ -281,6 +281,11 @@ internal record BundleConfigurationYaml
 	public bool? Resolve { get; set; }
 
 	/// <summary>
+	/// Default bundle description used when no profile-specific description is provided.
+	/// </summary>
+	public string? Description { get; set; }
+
+	/// <summary>
 	/// Default GitHub repository name applied to all profiles that do not specify their own.
 	/// </summary>
 	public string? Repo { get; set; }
@@ -291,9 +296,14 @@ internal record BundleConfigurationYaml
 	public string? Owner { get; set; }
 
 	/// <summary>
-	/// When true, sanitize private-repo PR/issue links at bundle time (requires resolve).
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
-	public bool? SanitizePrivateLinks { get; set; }
+	public bool? ReleaseDates { get; set; }
+
+	/// <summary>
+	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels (requires resolve).
+	/// </summary>
+	public YamlLenientList? LinkAllowRepos { get; set; }
 
 	/// <summary>
 	/// Named bundle profiles.
@@ -325,6 +335,11 @@ internal record BundleProfileYaml
 	public string? OutputProducts { get; set; }
 
 	/// <summary>
+	/// Profile-specific bundle description. Overrides bundle.description when provided.
+	/// </summary>
+	public string? Description { get; set; }
+
+	/// <summary>
 	/// GitHub repository name for generating PR/issue links in bundle output.
 	/// </summary>
 	public string? Repo { get; set; }
@@ -341,16 +356,16 @@ internal record BundleProfileYaml
 	public YamlLenientList? HideFeatures { get; set; }
 
 	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; set; }
+
+	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
 	/// PR references directly from a GitHub release and uses them as the bundle filter.
 	/// Mutually exclusive with <see cref="Products"/>.
 	/// </summary>
 	public string? Source { get; set; }
-
-	/// <summary>
-	/// When set, overrides bundle.sanitize_private_links for this profile.
-	/// </summary>
-	public bool? SanitizePrivateLinks { get; set; }
 }
 
 /// <summary>
@@ -359,7 +374,8 @@ internal record BundleProfileYaml
 internal record ExtractConfigurationYaml
 {
 	/// <summary>
-	/// Whether to extract release notes from PR descriptions by default.
+	/// Whether to extract release note text from PR or issue descriptions for the changelog entry description by default.
+	/// Does not affect the title (title comes from <c>--title</c> or the PR/issue title).
 	/// Defaults to true.
 	/// </summary>
 	public bool? ReleaseNotes { get; set; }

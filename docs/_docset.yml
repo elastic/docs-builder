@@ -48,7 +48,10 @@ suppress:
 
 api:
    elasticsearch: elasticsearch-openapi.json
-   kibana: kibana-openapi.json
+   kibana:
+     - file: kibana-api-overview.md
+     - spec: kibana-openapi.json
+   dashboard: dashboard-openapi.json
 
 toc:
   - file: index.md
@@ -69,6 +72,13 @@ toc:
       - file: add-repo.md
       - file: release-new-version.md
       - file: changelog.md
+        children:
+          - file: configure-changelogs.md
+            children:
+              - file: configure-changelogs-ref.md
+          - file: create-changelogs.md
+          - file: bundle-changelogs.md
+          - file: publish-changelogs.md
       - hidden: locally.md
       - hidden: on-the-web.md
   - folder: building-blocks
@@ -185,17 +195,17 @@ toc:
           - file: inbound-links-validate.md
           - file: inbound-links-validate-all.md
           - file: inbound-links-validate-link-reference.md
-      - folder: release
+      - folder: changelog
         children:
           - file: index.md
-          - file: changelog-add.md
-          - file: changelog-bundle.md
-          - file: changelog-bundle-amend.md
-          - file: changelog-evaluate-pr.md
-          - file: changelog-gh-release.md
-          - file: changelog-init.md
-          - file: changelog-remove.md
-          - file: changelog-render.md
+          - file: add.md
+          - file: bundle.md
+          - file: bundle-amend.md
+          - file: evaluate-pr.md
+          - file: gh-release.md
+          - file: init.md
+          - file: remove.md
+          - file: render.md
   - folder: mcp
     children:
       - file: index.md

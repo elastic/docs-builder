@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using Actions.Core.Services;
 using ConsoleAppFramework;
 using Elastic.Documentation.Assembler.Deploying;
@@ -33,8 +32,7 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
-		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, fs);
+		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, FileSystemFactory.RealRead, FileSystemFactory.RealWrite);
 		serviceInvoker.AddCommand(service, (environment, s3BucketName, @out, deleteThreshold),
 			static async (s, collector, state, ctx) => await s.Plan(collector, state.environment, state.s3BucketName, state.@out, state.deleteThreshold, ctx)
 		);
@@ -51,8 +49,7 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealWrite;
-		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, fs);
+		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, FileSystemFactory.RealRead, FileSystemFactory.RealWrite);
 		serviceInvoker.AddCommand(service, (environment, s3BucketName, planFile),
 			static async (s, collector, state, ctx) => await s.Apply(collector, state.environment, state.s3BucketName, state.planFile, ctx)
 		);
