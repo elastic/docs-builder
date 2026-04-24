@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Configuration;
 
 namespace Elastic.Documentation.Links.CrossLinks;
 
@@ -107,7 +108,7 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		var baseUrl = GetLinksJsonBaseUrl(registryUrl);
 		var linksJson = fetchedCrossLinks.LinkIndexEntries.TryGetValue(crossLinkUri.Scheme, out var indexEntry)
 			? $"{baseUrl}/{indexEntry.Path}"
-			: $"{baseUrl}/elastic/{crossLinkUri.Scheme}/main/links.json";
+			: BuildFallbackLinksJsonUrl(baseUrl, crossLinkUri.Scheme, fetchedCrossLinks);
 
 		errorEmitter($"'{originalLookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}");
 		resolvedUri = null;
@@ -256,5 +257,22 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (registryUrl.Contains("/link-index.json", StringComparison.OrdinalIgnoreCase))
 			return registryUrl.Replace("/link-index.json", "", StringComparison.OrdinalIgnoreCase).TrimEnd('/');
 		return registryUrl.TrimEnd('/');
+	}
+
+	/// <summary>
+	/// Builds a best-effort links.json URL to show in error messages when the index could not be fetched
+	/// and no <see cref="LinkRegistryEntry"/> is available. Codex/internal indexes use
+	/// <c>{env}/elastic/{scheme}/links.json</c>; the public S3 index uses <c>elastic/{scheme}/main/links.json</c>.
+	/// </summary>
+	private static string BuildFallbackLinksJsonUrl(string baseUrl, string scheme, FetchedCrossLinks fetchedCrossLinks)
+	{
+		if (fetchedCrossLinks.RegistryByRepository is not null
+			&& fetchedCrossLinks.RegistryByRepository.TryGetValue(scheme, out var registry)
+			&& registry != DocSetRegistry.Public)
+		{
+			return $"{baseUrl}/{registry.ToStringFast(true)}/elastic/{scheme}/links.json";
+		}
+
+		return $"{baseUrl}/elastic/{scheme}/main/links.json";
 	}
 }
