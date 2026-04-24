@@ -29,6 +29,7 @@
 @import './markdown/agent-skill.css';
 @import './markdown/contributors.css';
 @import './api-docs.css';
+@import './web-components/VectorSizingCalculator/vector-sizing-calculator.css';
 @import 'tippy.js/dist/tippy.css';
 
 html {
