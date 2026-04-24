@@ -63,8 +63,7 @@ public record DetectionRuleTechnique : DetectionRuleSubTechnique
 
 public record DetectionRule
 {
-	// Reuse a single TomlParser instance for better performance
-	private static readonly TomlParser Parser = new();
+	// TomlParser is stateful across calls; create a new instance per parse to avoid accumulation bugs in serve/reload mode
 
 	// Cached version lock data, loaded once per build
 	private static FrozenDictionary<string, VersionLockEntry>? VersionLock;
@@ -102,6 +101,9 @@ public record DetectionRule
 	public required int Version { get; init; }
 
 	public required DetectionRuleThreat[] Threats { get; init; } = [];
+
+	public required string? DeprecationDate { get; init; }
+	public required string? Maturity { get; init; }
 
 	/// <summary>
 	/// Initializes the version lock cache from the version.lock.json file.
@@ -145,14 +147,14 @@ public record DetectionRule
 			// Use optimized Utf8StreamReader for better I/O performance
 			using var reader = new Utf8StreamReader(source.FullName, fileOpenMode: FileOpenMode.Throughput);
 			var sourceText = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
-			model = Parser.Parse(sourceText);
+			model = new TomlParser().Parse(sourceText);
 		}
 		catch (Exception e)
 		{
 			throw new Exception($"Could not parse toml in: {source.FullName}", e);
 		}
 
-		if (!model.TryGetValue("metadata", out var node) || node is not TomlTable)
+		if (!model.TryGetValue("metadata", out var node) || node is not TomlTable metadata)
 			throw new Exception($"Could not find metadata section in {source.FullName}");
 
 		if (!model.TryGetValue("rule", out node) || node is not TomlTable rule)
@@ -190,7 +192,9 @@ public record DetectionRule
 			RunsEvery = TryGetString(rule, "interval"),
 			MaximumAlertsPerExecution = maxSignals,
 			Version = version,
-			Threats = threats
+			Threats = threats,
+			DeprecationDate = TryGetString(metadata, "deprecation_date"),
+			Maturity = TryGetString(metadata, "maturity")
 		};
 	}
 

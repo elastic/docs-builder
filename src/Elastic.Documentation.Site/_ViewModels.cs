@@ -44,6 +44,13 @@ public record GlobalLayoutViewModel
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
 
+	/// <summary>
+	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
+	/// the URL of its nearest visible ancestor. The client uses this to highlight the correct
+	/// nav entry when the page has no rendered nav link of its own.
+	/// </summary>
+	public string? NavigationActiveUrl { get; init; }
+
 
 	// Header properties for isolated mode
 	public string? HeaderTitle { get; init; }

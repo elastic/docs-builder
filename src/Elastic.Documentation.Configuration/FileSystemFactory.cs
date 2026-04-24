@@ -68,6 +68,21 @@ public static class FileSystemFactory
 	public static ScopedFileSystem InMemory() => new(new MockFileSystem(), WorkingDirectoryReadOptions);
 
 	/// <summary>
+	/// Creates a new <see cref="ScopedFileSystem"/> wrapping a fresh <see cref="MockFileSystem"/>,
+	/// scoped to the git root of <paramref name="sourcePath"/> so that paths such as
+	/// <c>{sourceRoot}/.artifacts/docs/html</c> are within the allowed write scope.
+	/// Falls back to <see cref="InMemory()"/> when <paramref name="sourcePath"/> is <see langword="null"/>.
+	/// </summary>
+	public static ScopedFileSystem InMemoryForSourceRoot(string? sourcePath)
+	{
+		if (sourcePath is null)
+			return InMemory();
+		var root = Paths.FindGitRoot(sourcePath);
+		var inner = new MockFileSystem();
+		return new ScopedFileSystem(inner, BuildWriteOptions(inner, root, Paths.ApplicationData.FullName));
+	}
+
+	/// <summary>
 	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
 	/// <see cref="Paths.ApplicationData"/> for reading. Use when the inner FS contains files
 	/// that live within the current working-directory tree (e.g. a test <c>MockFileSystem</c>
