@@ -48,30 +48,33 @@ To get started:
 
 #### CI configuration
 
-To ensure repositories that use the [tagged branching strategy](#tagged) can be onboarded correctly, our CI integration needs to have appropriate `push`
- branch triggers.
+To ensure repositories that use the [tagged branching strategy](#tagged) can be onboarded correctly, our CI integration needs appropriate `push` branch triggers and matching settings on the reusable workflows in [`elastic/docs-actions`](https://github.com/elastic/docs-actions).
+
+Also add **`docs-deploy.yml`** and **`docs-preview-cleanup.yml`** as described in [How to set up docs previews](../migration/guide/how-to-set-up-docs-previews.md); the snippet below only highlights the tagged-branching-specific parts of **docs-build** (and the same `with:` block must be passed through on your **docs-deploy** consumer job).
 
 ```yml
 name: docs-build
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   push:
     branches:
       - main
       - '\d+.\d+' <1>
-  pull_request_target: ~
   merge_group: ~
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
-  docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-build.yml@main
+  build:
+    uses: elastic/docs-actions/.github/workflows/docs-build.yml@v1
     with:
       path-pattern: docs/**
-    permissions:
-      deployments: write
-      id-token: write
-      contents: read
-      pull-requests: write
+      use-release-branches: true <2>
 ```
 
 1. Ensure version branches are built and publish their links ahead of time.
+2. Matches **docs-deploy** `with:` (`path-pattern`, `use-release-branches`) so release-line pushes still produce `links.json` when needed even if `docs/**` is unchanged for a long time.
