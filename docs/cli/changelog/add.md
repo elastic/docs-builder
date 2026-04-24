@@ -30,15 +30,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--no-extract-release-notes`
 :   Optional: Turn off extraction of release notes from PR or issue descriptions.
-:   The extractor looks for content in various formats in the PR or issue description:
-:   - `Release Notes: ...`
-:   - `Release-Notes: ...`
-:   - `release notes: ...`
-:   - `Release Note: ...`
-:   - `Release Notes - ...`
-:   - `## Release Note` (as a markdown header)
-:   Matched release note text is used as the changelog description (only if `--description` is not explicitly provided). The changelog title is always taken from `--title` or from the PR or issue title, not from the release note section.
-:   By default, the behavior is determined by the `extract.release_notes` changelog configuration setting.
+:   By default, the behavior is determined by the [extract.release_notes](/contribute/configure-changelogs-ref.md#extract) changelog configuration setting.
 
 `--feature-id <string?>`
 :   Optional: Feature flag ID
@@ -123,10 +115,16 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
 `--use-pr-number`
-:   Optional: Use PR numbers for filenames instead of the configured `filename` strategy. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires `--prs` or `--issues`. Mutually exclusive with `--use-issue-number`.
+:   Optional: Use PR numbers for filenames instead of the configured `filename` strategy.
+:   Requires `--prs` or `--issues`.
+:   Mutually exclusive with `--use-issue-number`.
+:   Refer to [](#filenames).
 
 `--use-issue-number`
-:   Optional: Use issue numbers for filenames instead of the configured `filename` strategy. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
+:   Optional: Use issue numbers for filenames instead of the configured `filename` strategy.
+:   Requires `--prs` or `--issues`.
+:   Mutually exclusive with `--use-pr-number`.
+:   Refer to [](#filenames).
 
 ## CI auto-detection [ci-auto-detection]
 
@@ -157,6 +155,38 @@ This allows the CI action to invoke `changelog add` with a minimal command line:
 ```sh
 docs-builder changelog add --config docs/changelog.yml --output /tmp/staging --concise --strip-title-prefix
 ```
+
+## Filenames
+
+By default, output files are named according to the `filename` strategy in `changelog.yml`:
+
+| Strategy | Example filename | Description |
+|---|---|---|
+| `timestamp` (default) | `1735689600-fixes-enrich-and-lookup-join-resolution.yaml` | Uses a Unix timestamp with a sanitized title slug. |
+| `pr` | `137431.yaml` | Uses the PR number. |
+| `issue` | `2571.yaml` | Uses the issue number. |
+
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) or [](/contribute/configure-changelogs-ref.md).
+
+You can override those settings with the `--use-pr-number` or `--use-issue-number` CLI flags:
+
+```sh
+docs-builder changelog add \
+  --prs 1234 \
+  --products "elasticsearch 9.2.3" \
+  --use-pr-number
+
+docs-builder changelog add \
+  --issues 4567 \
+  --products "elasticsearch 9.3.0" \
+  --use-issue-number
+```
+
+:::{important}
+`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. Each requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide or from linked references in the issue or PR body when extraction is enabled.
+
+**Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`timestamp`).
+:::
 
 ## Products resolution [products-resolution]
 
