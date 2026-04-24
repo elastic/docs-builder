@@ -64,6 +64,8 @@ public static partial class AvailabilityBadgeHelper
 			return null;
 
 		var lifecycleString = ProjectToLifecycleFormat(stateValue);
+		if (lifecycleString is null)
+			return null;
 
 		var diagnostics = new List<(Severity, string)>();
 		if (!AppliesCollection.TryParse(lifecycleString, diagnostics, out var appliesCollection) || appliesCollection is null)
@@ -79,7 +81,7 @@ public static partial class AvailabilityBadgeHelper
 	/// "Generally available; added in 9.1.0") into the lifecycle format
 	/// understood by <see cref="AppliesCollection.TryParse"/> (e.g. "ga 7.7.0", "preview").
 	/// </summary>
-	internal static string ProjectToLifecycleFormat(string xState)
+	internal static string? ProjectToLifecycleFormat(string xState)
 	{
 		var lower = xState.ToLowerInvariant();
 
@@ -90,11 +92,14 @@ public static partial class AvailabilityBadgeHelper
 			_ when lower.Contains("beta") => "beta",
 			_ when lower.Contains("preview") => "preview",
 			_ when lower.Contains("generally available") => "ga",
-			_ => "ga"
+			_ => (string?)null
 		};
 
 		var versionMatch = SemVersionRegex().Match(xState);
-		return versionMatch.Success ? $"{lifecycle} {versionMatch.Groups[1].Value}" : lifecycle;
+		if (versionMatch.Success)
+			return $"{lifecycle ?? "ga"} {versionMatch.Groups[1].Value}";
+
+		return lifecycle;
 	}
 
 	private static AvailabilityBadgeData? BuildBadgeData(
