@@ -126,14 +126,26 @@
 			{
 				<span class="deprecated-badge">deprecated</span>
 			}
-			@if (ctx.ShowVersionInfo)
+		@if (ctx.ShowVersionInfo)
+		{
+			var propBadgeData = Elastic.ApiExplorer.Operations.AvailabilityBadgeHelper.FromSchema(propSchema, ctx.VersionsConfiguration);
+			if (propBadgeData is not null)
 			{
-				var propVersionInfo = (propSchema.Extensions?.TryGetValue("x-state", out var propStateValue) == true && propStateValue is JsonNodeExtension propStateExt) ? propStateExt.Node.GetValue<string>() : null;
-				if (!string.IsNullOrEmpty(propVersionInfo))
-				{
-					<span class="version-badge">@propVersionInfo</span>
-				}
+				<applies-to-popover
+					badge-key="@propBadgeData.BadgeKey"
+					badge-lifecycle-text="@propBadgeData.BadgeLifecycleText"
+					badge-version="@propBadgeData.BadgeVersion"
+					lifecycle-class="@propBadgeData.LifecycleClass"
+					lifecycle-name="@propBadgeData.LifecycleName"
+					show-lifecycle-name="@propBadgeData.ShowLifecycleName.ToString().ToLowerInvariant()"
+					show-version="@propBadgeData.ShowVersion.ToString().ToLowerInvariant()"
+					has-multiple-lifecycles="false"
+					popover-data=""
+					show-popover="false"
+					is-inline="true"
+				></applies-to-popover>
 			}
+		}
 		</a>
 	</dt>
 	@if (hasDescription)
@@ -331,7 +343,8 @@
 			ShowVersionInfo = ctx.ShowVersionInfo,
 			ShowExternalDocs = ctx.ShowExternalDocs,
 			UseHiddenUntilFound = ctx.UseHiddenUntilFound,
-			CollapseMode = ctx.CollapseMode
+			CollapseMode = ctx.CollapseMode,
+			VersionsConfiguration = ctx.VersionsConfiguration
 		};
 
 		var useHidden = ctx.UseHiddenUntilFound && isCollapsible && !defaultExpanded;
@@ -428,7 +441,8 @@
 				RenderMarkdown = ctx.RenderMarkdown,
 				UseHiddenUntilFound = ctx.UseHiddenUntilFound,
 				CollapseMode = ctx.CollapseMode,
-				MaxDepth = ctx.MaxDepth
+				MaxDepth = ctx.MaxDepth,
+				VersionsConfiguration = ctx.VersionsConfiguration
 			};
 			<div class="nested-properties" id="@Model.PropId-children">
 				@(await RenderPartialAsync<_UnionOptions, UnionVariantsContext>(unionCtx))
@@ -447,7 +461,8 @@
 				RenderMarkdown = ctx.RenderMarkdown,
 				UseHiddenUntilFound = ctx.UseHiddenUntilFound,
 				CollapseMode = ctx.CollapseMode,
-				MaxDepth = ctx.MaxDepth
+				MaxDepth = ctx.MaxDepth,
+				VersionsConfiguration = ctx.VersionsConfiguration
 			};
 			if (useHidden)
 			{
