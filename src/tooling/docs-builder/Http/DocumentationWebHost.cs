@@ -213,20 +213,7 @@ public class DocumentationWebHost
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
-		try
-		{
-			await holder.EnsureApiReferencesAsync(ctx);
-		}
-		catch (OperationCanceledException) when (ctx.IsCancellationRequested)
-		{
-			// HTTP request was canceled - return 499 or appropriate status
-			return Results.Problem("Request canceled", statusCode: 499);
-		}
-		catch (OperationCanceledException)
-		{
-			// API generation timed out - return 503 with retry info
-			return Results.Problem("API generation in progress, please retry", statusCode: 503);
-		}
+		await holder.EnsureApiReferencesAsync(ctx);
 
 		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
 		var path = Path.GetFullPath(Path.Join(apiRoot, slug.Trim('/'), "index.html"));

@@ -9,9 +9,9 @@ namespace Elastic.Documentation.Configuration.Search;
 
 public record SearchConfiguration
 {
-	private readonly IReadOnlyList<string[]> _synonyms;
+	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
 
-	public required IReadOnlyList<string[]> Synonyms
+	public required IReadOnlyDictionary<string, string[]> Synonyms
 	{
 		get => _synonyms;
 		[MemberNotNull(nameof(_synonyms))]
@@ -19,6 +19,7 @@ public record SearchConfiguration
 		{
 			_synonyms = value;
 			SynonymBiDirectional = value
+				.Select(kv => kv.Value.Concat([kv.Key]).ToArray())
 				.SelectMany(a =>
 				{
 					var targets = new List<string[]>();
@@ -119,17 +120,15 @@ public static class SearchConfigurationExtensions
 	public static SearchConfiguration CreateSearchConfiguration(this ConfigurationFileProvider provider)
 	{
 		var searchFile = provider.SearchFile;
+		var synonyms = new Dictionary<string, string[]>();
 
 		if (!searchFile.Exists)
-			return new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
+			return new SearchConfiguration { Synonyms = synonyms, Rules = [], DiminishTerms = [] };
 
 		var searchDto = ConfigurationFileProvider.Deserializer.Deserialize<SearchConfigDto>(searchFile.OpenText());
-		var synonyms = searchDto.Synonyms
+		synonyms = searchDto.Synonyms
 			.Where(s => s.Count > 1)
-			.Select(s => s.ToArray())
-			.GroupBy(s => s[0], StringComparer.OrdinalIgnoreCase)
-			.Select(g => g.First())
-			.ToArray();
+			.ToDictionary(k => k[0], sl => sl.Skip(1).ToArray(), StringComparer.OrdinalIgnoreCase);
 		var rules = searchDto.Rules.Select(ParseRule).ToImmutableArray();
 		var diminishTerms = searchDto.DiminishTerms.ToImmutableArray();
 		return new SearchConfiguration { Synonyms = synonyms, Rules = rules, DiminishTerms = diminishTerms };

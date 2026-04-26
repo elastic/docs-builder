@@ -24,7 +24,6 @@ A relevant piece of information with no serious repercussions if ignored.
 
 :::{note}
 This is a note.
-
 It can span multiple lines and supports inline formatting.
 :::
 
@@ -35,7 +34,6 @@ It can span multiple lines and supports inline formatting.
 ```markdown
 :::{note}
 This is a note.
-
 It can span multiple lines and supports inline formatting.
 :::
 ```

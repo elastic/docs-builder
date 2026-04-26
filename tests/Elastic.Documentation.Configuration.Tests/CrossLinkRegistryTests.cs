@@ -118,7 +118,6 @@ public class CrossLinkRegistryTests
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
-			PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
 			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
 		};
 

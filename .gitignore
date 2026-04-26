@@ -4,7 +4,6 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 .artifacts
-.superset
 .claude/*
 !.claude/settings.json
 !.claude/skills/
@@ -404,4 +403,3 @@ FodyWeavers.xsd
 
 # Elastic synthetics
 .synthetics/
-.worktrees/

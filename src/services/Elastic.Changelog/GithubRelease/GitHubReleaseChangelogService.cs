@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Changelog.Bundling;
@@ -54,18 +53,6 @@ public record CreateChangelogsFromReleaseArguments
 	/// Whether to warn when Release Drafter type doesn't match label-derived type (defaults to true)
 	/// </summary>
 	public bool WarnOnTypeMismatch { get; init; } = true;
-
-	/// <summary>
-	/// Optional bundle description text with placeholder support.
-	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
-	/// </summary>
-	public string? Description { get; init; }
-
-	/// <summary>
-	/// Optional explicit release date for the bundle in YYYY-MM-DD format.
-	/// When provided, overrides the GitHub release published_at date.
-	/// </summary>
-	public string? ReleaseDate { get; init; }
 
 	/// <summary>
 	/// Whether to create a bundle file after creating individual changelog files. Defaults to true.
@@ -194,7 +181,7 @@ public class GitHubReleaseChangelogService(
 			// 8. Optionally create bundle file if changelogs were created
 			if (input.CreateBundle && createdFiles.Count > 0)
 			{
-				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, release, ctx);
+				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input.Config, ctx);
 				if (bundlePath != null)
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
 			}
@@ -319,8 +306,7 @@ public class GitHubReleaseChangelogService(
 		ProductArgument productInfo,
 		string owner,
 		string repo,
-		CreateChangelogsFromReleaseArguments input,
-		GitHubReleaseInfo release,
+		string? configPath,
 		Cancel ctx)
 	{
 		// Build the bundles subfolder path (mirrors the previous CreateBundleFile convention)
@@ -341,13 +327,6 @@ public class GitHubReleaseChangelogService(
 			})
 			.ToArray();
 
-		// Use explicit release date if provided, otherwise GitHub release published date, otherwise fall back to auto-population
-		var releaseDate = input.ReleaseDate;
-		if (string.IsNullOrEmpty(releaseDate) && release.PublishedAt.HasValue)
-		{
-			releaseDate = DateOnly.FromDateTime(release.PublishedAt.Value.UtcDateTime).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-		}
-
 		var bundleArgs = new BundleChangelogsArguments
 		{
 			Directory = outputDir,
@@ -355,10 +334,8 @@ public class GitHubReleaseChangelogService(
 			Prs = prUrls,
 			Owner = owner,
 			Repo = repo,
-			Config = input.Config,
-			OutputProducts = [productInfo],
-			Description = input.Description,
-			ReleaseDate = releaseDate
+			Config = configPath,
+			OutputProducts = [productInfo]
 		};
 
 		var success = await _bundlingService.BundleChangelogs(collector, bundleArgs, ctx);

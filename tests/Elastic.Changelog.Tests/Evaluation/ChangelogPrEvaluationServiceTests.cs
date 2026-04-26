@@ -523,7 +523,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task EvaluatePr_ShortReleaseNote_UsesPrTitleAndDescription()
+	public async Task EvaluatePr_ShortReleaseNote_OverridesPrTitle()
 	{
 		await WriteMinimalConfig();
 		var service = CreateService();
@@ -535,8 +535,8 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
 		result.Should().BeTrue();
-		VerifyOutputSet("title", "Some PR title");
-		VerifyOutputSet("description", "Added new search API endpoint");
+		VerifyOutputSet("title", "Added new search API endpoint");
+		A.CallTo(() => _mockCore.SetOutputAsync("description", A<string>._)).MustNotHaveHappened();
 	}
 
 	[Fact]
@@ -620,7 +620,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task EvaluatePr_ReleaseNoteHeader_ExtractedAsDescription_PrTitleAsTitle()
+	public async Task EvaluatePr_ReleaseNoteHeader_ExtractedAsTitle()
 	{
 		await WriteMinimalConfig();
 		var service = CreateService();
@@ -638,8 +638,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
 		result.Should().BeTrue();
-		VerifyOutputSet("title", "Some PR title");
-		VerifyOutputSet("description", "New aggregation pipeline support");
+		VerifyOutputSet("title", "New aggregation pipeline support");
 	}
 
 	// --- CollectExcludeLabels unit tests ---

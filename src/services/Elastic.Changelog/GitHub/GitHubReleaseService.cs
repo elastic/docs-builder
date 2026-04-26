@@ -103,8 +103,7 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 			Body = releaseData.Body ?? string.Empty,
 			Prerelease = releaseData.Prerelease,
 			Draft = releaseData.Draft,
-			HtmlUrl = releaseData.HtmlUrl ?? string.Empty,
-			PublishedAt = releaseData.PublishedAt
+			HtmlUrl = releaseData.HtmlUrl ?? string.Empty
 		};
 	}
 
@@ -127,9 +126,6 @@ public partial class GitHubReleaseService(ILoggerFactory loggerFactory) : IGitHu
 
 		[JsonPropertyName("html_url")]
 		public string? HtmlUrl { get; set; }
-
-		[JsonPropertyName("published_at")]
-		public DateTimeOffset? PublishedAt { get; set; }
 	}
 
 	[JsonSerializable(typeof(GitHubReleaseResponse))]

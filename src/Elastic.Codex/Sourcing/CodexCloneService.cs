@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Security;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
@@ -269,9 +268,9 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 					return found;
 			}
 		}
-		catch (Exception ex) when (ex is UnauthorizedAccessException or SecurityException)
+		catch (UnauthorizedAccessException)
 		{
-			// Skip directories we can't access (including ScopedFileSystem-blocked hidden dirs)
+			// Skip directories we can't access
 		}
 
 		return null;

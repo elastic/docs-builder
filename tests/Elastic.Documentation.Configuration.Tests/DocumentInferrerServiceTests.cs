@@ -81,7 +81,6 @@ public class DocumentInferrerServiceTests
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 	}
@@ -397,7 +396,6 @@ public class DocumentInferrerServiceTests
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 		var legacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] };

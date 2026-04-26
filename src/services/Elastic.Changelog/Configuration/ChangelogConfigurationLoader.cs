@@ -517,11 +517,9 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						Products = kvp.Value.Products,
 						Output = kvp.Value.Output,
 						OutputProducts = kvp.Value.OutputProducts,
-						Description = kvp.Value.Description,
 						Repo = kvp.Value.Repo,
 						Owner = kvp.Value.Owner,
 						HideFeatures = kvp.Value.HideFeatures?.Values,
-						ReleaseDates = kvp.Value.ReleaseDates,
 						Source = kvp.Value.Source
 					});
 		}
@@ -531,10 +529,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Directory = yaml.Directory,
 			OutputDirectory = yaml.OutputDirectory,
 			Resolve = yaml.Resolve ?? true,
-			Description = yaml.Description,
 			Repo = yaml.Repo,
 			Owner = yaml.Owner,
-			ReleaseDates = yaml.ReleaseDates,
 			LinkAllowRepos = linkAllowRepos,
 			Profiles = profiles
 		};
@@ -804,7 +800,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						collector.EmitWarning(configPath,
 							$"Configuration pattern 'match_products: any' with 'include_products' in per-product rule '{normalizedProductId}' provides no selective filtering. " +
 							"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
-							"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md");
+							"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
 					}
 
 					// Detect disjoint products in per-product include_products
@@ -819,7 +815,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 								$"Per-product rule '{normalizedProductId}' includes disjoint products [{string.Join(", ", disjointProducts)}] " +
 								"which cannot be included due to single-product rule resolution. " +
 								"Use separate bundles (each with a single product in output_products or profile output_products), or multi-product changelogs instead. " +
-								"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md");
+								"See: https://elastic.github.io/docs-builder/contribute/changelog/#ineffective-configuration-patterns");
 						}
 					}
 
@@ -870,7 +866,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			{
 				collector.EmitHint(configPath,
 					"rules.bundle: When 'products' is present, global include_products, exclude_products, and type/area rules are not applied for filtering; configure filters under each product key or use global-only rules.bundle (no 'products' section). " +
-					"See: https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md#bundle-rule-modes");
+					"See: https://elastic.github.io/docs-builder/contribute/changelog/#bundle-rule-modes");
 			}
 		}
 

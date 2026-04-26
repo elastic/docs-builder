@@ -42,11 +42,11 @@ applies_to:
 type ``parses serverless as string to set all projects`` () =
     static let markdown = frontMatter """
 applies_to:
-   serverless: ga
+   serverless: ga 9.0.0
 """
     [<Fact>]
     let ``apply matches expected`` () =
-        let expectedAvailability = AppliesCollection.op_Explicit "ga"
+        let expectedAvailability = AppliesCollection.op_Explicit "ga 9.0.0"
         markdown |> appliesTo (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
                 Elasticsearch=expectedAvailability,
@@ -59,17 +59,17 @@ type ``parses serverless projects`` () =
     static let markdown = frontMatter """
 applies_to:
    serverless:
-      security: ga
-      elasticsearch: beta
-      observability: removed
+      security: ga 9.0.0
+      elasticsearch: beta 9.1.0
+      observability: removed 9.2.0
 """
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Serverless=ServerlessProjectApplicability(
-                Security=AppliesCollection.op_Explicit "ga",
-                Elasticsearch=AppliesCollection.op_Explicit "beta",
-                Observability=AppliesCollection.op_Explicit "removed"
+                Security=AppliesCollection.op_Explicit "ga 9.0.0",
+                Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
+                Observability=AppliesCollection.op_Explicit "removed 9.2.0"
             )
         ))
 
@@ -87,11 +87,11 @@ applies_to:
 type ``parses deployment as string to set all deployment targets`` () =
     static let markdown = frontMatter """
 applies_to:
-   deployment: ga
+   deployment: ga 9.0.0
 """
     [<Fact>]
     let ``apply matches expected`` () =
-        let expectedAvailability = AppliesCollection.op_Explicit "ga"
+        let expectedAvailability = AppliesCollection.op_Explicit "ga 9.0.0"
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
                 Eck=expectedAvailability,
@@ -106,7 +106,7 @@ type ``parses deployment types as individual properties`` () =
 applies_to:
    deployment:
       eck: ga 9.0
-      ess: beta
+      ess: beta 9.1
       ece: removed 9.2.0
       self: unavailable 9.3.0
 """
@@ -115,7 +115,7 @@ applies_to:
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
                 Eck=AppliesCollection.op_Explicit "ga 9.0",
-                Ess=AppliesCollection.op_Explicit "beta",
+                Ess=AppliesCollection.op_Explicit "beta 9.1",
                 Ece=AppliesCollection.op_Explicit "removed 9.2.0",
                 Self=AppliesCollection.op_Explicit "unavailable 9.3.0"
             )
@@ -125,21 +125,21 @@ type ``parses ech as alias for ess`` () =
     static let markdown = frontMatter """
 applies_to:
    deployment:
-      ech: ga
+      ech: ga 9.0
 """
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Ess=AppliesCollection.op_Explicit "ga"
+                Ess=AppliesCollection.op_Explicit "ga 9.0"
             )
         ))
 
-type ``parses ech alongside other deployment types`` () =
+type ``parses ech with version alongside other deployment types`` () =
     static let markdown = frontMatter """
 applies_to:
    deployment:
-      ech: beta
+      ech: beta 9.1
       eck: ga 9.0
       ece: removed 9.2.0
       self: unavailable 9.3.0
@@ -148,7 +148,7 @@ applies_to:
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Ess=AppliesCollection.op_Explicit "beta",
+                Ess=AppliesCollection.op_Explicit "beta 9.1",
                 Eck=AppliesCollection.op_Explicit "ga 9.0",
                 Ece=AppliesCollection.op_Explicit "removed 9.2.0",
                 Self=AppliesCollection.op_Explicit "unavailable 9.3.0"
@@ -159,14 +159,14 @@ type ``both ess and ech defined uses ech value and warns`` () =
     static let markdown = frontMatter """
 applies_to:
    deployment:
-      ess: ga
-      ech: beta
+      ess: ga 9.0
+      ech: beta 9.1
 """
     [<Fact>]
     let ``ech value wins`` () =
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Ess=AppliesCollection.op_Explicit "beta"
+                Ess=AppliesCollection.op_Explicit "beta 9.1"
             )
         ))
 
@@ -177,14 +177,14 @@ applies_to:
 type ``parses ech at top level`` () =
     static let markdown = frontMatter """
 applies_to:
-   ech: preview
+   ech: preview 9.1
    stack: ga 9.1
 """
     [<Fact>]
     let ``apply matches expected`` () =
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Ess=AppliesCollection.op_Explicit "preview"
+                Ess=AppliesCollection.op_Explicit "preview 9.1"
             ),
             Stack=AppliesCollection.op_Explicit "ga 9.1.0"
         ))
@@ -238,12 +238,12 @@ type ``lenient to defining types at top level`` () =
     static let markdown = frontMatter """
 applies_to:
   eck: ga 9.0
-  ess: beta
+  ess: beta 9.1
   ece: removed 9.2.0
   self: unavailable 9.3.0
-  security: ga
-  elasticsearch: beta
-  observability: removed
+  security: ga 9.0.0
+  elasticsearch: beta 9.1.0
+  observability: removed 9.2.0
   product: preview 9.5, removed 9.7
   apm_agent_dotnet: ga 9.0
   ecctl: ga 10.0
@@ -254,14 +254,14 @@ applies_to:
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
                 Eck=AppliesCollection.op_Explicit "ga 9.0",
-                Ess=AppliesCollection.op_Explicit "beta",
+                Ess=AppliesCollection.op_Explicit "beta 9.1",
                 Ece=AppliesCollection.op_Explicit "removed 9.2.0",
                 Self=AppliesCollection.op_Explicit "unavailable 9.3.0"
             ),
             Serverless=ServerlessProjectApplicability(
-                Security=AppliesCollection.op_Explicit "ga",
-                Elasticsearch=AppliesCollection.op_Explicit "beta",
-                Observability=AppliesCollection.op_Explicit "removed"
+                Security=AppliesCollection.op_Explicit "ga 9.0.0",
+                Elasticsearch=AppliesCollection.op_Explicit "beta 9.1.0",
+                Observability=AppliesCollection.op_Explicit "removed 9.2.0"
             ),
             Stack=AppliesCollection.op_Explicit "ga 9.1.0",
             Product=AppliesCollection.op_Explicit "preview 9.5, removed 9.7",
@@ -286,7 +286,7 @@ applies_to:
    deployment:
       eck: ga 9.0
    serverless:
-      security: ga
+      security: ga 9.0.0
    stack: ga 9.1
    ecctl: ga 10.0
    apm_agent_dotnet: ga 9.0
@@ -296,7 +296,7 @@ applies_to:
         markdown |> appliesTo (ApplicableTo(
             Stack=AppliesCollection.op_Explicit "ga 9.1",
             Serverless=ServerlessProjectApplicability(
-                Security=AppliesCollection.op_Explicit "ga"
+                Security=AppliesCollection.op_Explicit "ga 9.0.0"
             ),
             Deployment=DeploymentApplicability(
                 Eck=AppliesCollection.op_Explicit "ga 9.0"
@@ -314,14 +314,14 @@ applies_to:
    deployment:
       self: ga 9.0
       ece: ga 9.1
-      ess: ga
+      ess: ga 9.2
       eck: ga 9.3
 """
     [<Fact>]
     let ``deployment types are rendered in ESS ECK ECE Self order`` () =
         markdown |> appliesTo (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Ess=AppliesCollection.op_Explicit "ga",
+                Ess=AppliesCollection.op_Explicit "ga 9.2",
                 Eck=AppliesCollection.op_Explicit "ga 9.3",
                 Ece=AppliesCollection.op_Explicit "ga 9.1",
                 Self=AppliesCollection.op_Explicit "ga 9.0"
@@ -428,63 +428,3 @@ applies_to:
         markdown |> appliesTo (ApplicableTo(
             Stack=AppliesCollection(expectedVersions |> Array.ofList)
         ))
-
-// Versionless product validation tests
-
-type ``serverless string with version emits error`` () =
-    static let markdown = frontMatter """
-applies_to:
-   serverless: ga 9.5
-"""
-    [<Fact>]
-    let ``emits error for versioned serverless`` () =
-        markdown |> hasError "Can't specify a version for 'serverless'"
-
-type ``serverless project with version emits error`` () =
-    static let markdown = frontMatter """
-applies_to:
-   serverless:
-      elasticsearch: ga 9.5
-"""
-    [<Fact>]
-    let ``emits error for versioned elasticsearch project`` () =
-        markdown |> hasError "Can't specify a version for 'elasticsearch'"
-
-type ``deployment ess with version emits error`` () =
-    static let markdown = frontMatter """
-applies_to:
-   deployment:
-      ess: ga 9.5
-"""
-    [<Fact>]
-    let ``emits error for versioned ess`` () =
-        markdown |> hasError "Can't specify a version for 'ess'"
-
-type ``deployment ech with version emits error`` () =
-    static let markdown = frontMatter """
-applies_to:
-   deployment:
-      ech: preview 9.5
-"""
-    [<Fact>]
-    let ``emits error for versioned ech`` () =
-        markdown |> hasError "Can't specify a version for 'ech'"
-
-type ``top level ech with version emits error`` () =
-    static let markdown = frontMatter """
-applies_to:
-   ech: preview 9.5
-   stack: ga 9.1
-"""
-    [<Fact>]
-    let ``emits error for versioned top level ech`` () =
-        markdown |> hasError "Can't specify a version for 'ech'"
-
-type ``deployment string shorthand with version emits error for ess`` () =
-    static let markdown = frontMatter """
-applies_to:
-   deployment: ga 9.0.0
-"""
-    [<Fact>]
-    let ``emits error because ess does not support versions`` () =
-        markdown |> hasError "Can't specify a version for 'ess'"

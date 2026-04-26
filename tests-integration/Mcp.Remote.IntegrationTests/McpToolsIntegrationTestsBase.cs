@@ -92,7 +92,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 
 		var searchConfig = new SearchConfiguration
 		{
-			Synonyms = [],
+			Synonyms = new Dictionary<string, string[]>(),
 			Rules = [],
 			DiminishTerms = ["plugin", "client", "integration", "glossary"]
 		};
@@ -121,7 +121,6 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
 		};
 	}

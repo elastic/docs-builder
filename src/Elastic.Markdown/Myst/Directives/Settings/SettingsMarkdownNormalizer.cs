@@ -17,6 +17,8 @@ internal static class SettingsMarkdownNormalizer
 		var result = markdown.Replace("\r\n", "\n", StringComparison.Ordinal);
 		if (result.Contains("[source,", StringComparison.Ordinal))
 			result = NormalizeAsciiDocSourceBlocks(result);
+		if (result.Contains('{'))
+			result = NormalizeKibanaMarkupArtifacts(result);
 		if (result.Contains("](/", StringComparison.Ordinal)
 			|| result.Contains("](docs-content://", StringComparison.Ordinal)
 			|| result.Contains("(elasticsearch://", StringComparison.Ordinal)
@@ -24,6 +26,45 @@ internal static class SettingsMarkdownNormalizer
 			result = RewriteReferenceLinksForDocset(result, product);
 
 		return result;
+	}
+
+	private static string NormalizeKibanaMarkupArtifacts(string markdown)
+	{
+		var s = markdown.Replace("{applies_to}", "Applies to", StringComparison.Ordinal);
+		return NormalizeAppliesToBacktickArtifacts(s);
+	}
+
+	/// <summary>Kibana-exported blurbs sometimes emit `` `key: value` `` pairs that break markdown code spans.</summary>
+	private static string NormalizeAppliesToBacktickArtifacts(string markdown)
+	{
+		const string prefix = "Applies to`";
+		var idx = 0;
+		var output = new StringBuilder(markdown.Length);
+		while (idx < markdown.Length)
+		{
+			var found = markdown.IndexOf(prefix, idx, StringComparison.OrdinalIgnoreCase);
+			if (found < 0)
+			{
+				_ = output.Append(markdown.AsSpan(idx));
+				break;
+			}
+
+			_ = output.Append(markdown.AsSpan(idx, found - idx));
+			var valueStart = found + prefix.Length;
+			var close = markdown.IndexOf('`', valueStart);
+			if (close < 0)
+			{
+				_ = output.Append(markdown.AsSpan(found));
+				break;
+			}
+
+			_ = output.Append("Applies to (");
+			_ = output.Append(markdown.AsSpan(valueStart, close - valueStart));
+			_ = output.Append(')');
+			idx = close + 1;
+		}
+
+		return output.ToString();
 	}
 
 	/// <summary>

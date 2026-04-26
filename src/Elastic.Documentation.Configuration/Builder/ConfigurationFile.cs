@@ -59,11 +59,6 @@ public record ConfigurationFile
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
 	/// <summary>
-	/// Resolved API configurations with template and specification file information.
-	/// </summary>
-	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
-
-	/// <summary>
 	/// Set of diagnostic hint types to suppress for this documentation set.
 	/// </summary>
 	public HashSet<HintType> SuppressDiagnostics { get; } = [];
@@ -139,81 +134,17 @@ public record ConfigurationFile
 			// Read substitutions
 			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
 
-			// Process API configurations
+			// Process API specifications
 			if (docSetFile.Api.Count > 0)
 			{
 				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
-				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
-
-				foreach (var (productKey, apiConfig) in docSetFile.Api)
+				foreach (var (k, v) in docSetFile.Api)
 				{
-					if (!apiConfig.IsValid)
-					{
-						context.EmitError(
-							context.ConfigurationPath,
-							$"API configuration for '{productKey}' is invalid. Must have at least one spec and cannot specify both 'spec' and 'specs'."
-						);
-						continue;
-					}
-
-					// Resolve template file if specified
-					IFileInfo? templateFile = null;
-					if (!string.IsNullOrEmpty(apiConfig.Template))
-					{
-						var templatePath = Path.Join(context.DocumentationSourceDirectory.FullName, apiConfig.Template);
-						templateFile = context.ReadFileSystem.FileInfo.New(templatePath);
-						if (!templateFile.Exists)
-						{
-							context.EmitWarning(
-								context.ConfigurationPath,
-								$"Template file '{apiConfig.Template}' for API '{productKey}' does not exist."
-							);
-							templateFile = null;
-						}
-					}
-
-					// Resolve specification files
-					var specFiles = new List<IFileInfo>();
-					foreach (var specPath in apiConfig.GetSpecPaths())
-					{
-						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, specPath);
-						var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
-						if (!specFile.Exists)
-						{
-							context.EmitError(
-								context.ConfigurationPath,
-								$"API specification file '{specPath}' for product '{productKey}' does not exist."
-							);
-							continue;
-						}
-						specFiles.Add(specFile);
-					}
-
-					if (specFiles.Count == 0)
-					{
-						context.EmitError(
-							context.ConfigurationPath,
-							$"No valid specification files found for API product '{productKey}'."
-						);
-						continue;
-					}
-
-					// Create resolved configuration
-					var resolvedConfig = new ResolvedApiConfiguration
-					{
-						ProductKey = productKey,
-						TemplateFile = templateFile,
-						SpecFiles = specFiles
-					};
-
-					apiConfigs[productKey] = resolvedConfig;
-
-					// For backward compatibility, populate OpenApiSpecifications with primary spec
-					specs[productKey] = resolvedConfig.PrimarySpecFile;
+					var path = Path.Join(context.DocumentationSourceDirectory.FullName, v);
+					var fi = context.ReadFileSystem.FileInfo.New(path);
+					specs[k] = fi;
 				}
-
-				OpenApiSpecifications = specs.Count > 0 ? specs : null;
-				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
+				OpenApiSpecifications = specs;
 			}
 
 			// Process products from docset - resolve ProductLinks to Product objects
@@ -243,8 +174,8 @@ public record ConfigurationFile
 				_substitutions[$"version.{alternativeName}.base"] = system.Base;
 			}
 
-			// Add product substitutions (only for products with public-reference feature)
-			foreach (var product in productsConfig.PublicReferenceProducts.Values)
+			// Add product substitutions
+			foreach (var product in productsConfig.Products.Values)
 			{
 				var alternativeProductId = product.Id.Replace('-', '_');
 				_substitutions[$"product.{product.Id}"] = product.DisplayName;

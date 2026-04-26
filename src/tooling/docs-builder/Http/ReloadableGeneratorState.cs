@@ -58,7 +58,6 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly Dictionary<string, DateTimeOffset> _openApiSpecLastModified = [];
 	private volatile bool _apiReferencesStale = true;
 	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
-	private CancellationTokenSource? _apiGenerationCts;
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
@@ -90,24 +89,16 @@ public class ReloadableGeneratorState : IDisposable
 		if (!_apiReferencesStale)
 			return;
 
-		// Create isolated cancellation for API generation (or reuse existing)
-		_apiGenerationCts ??= new CancellationTokenSource();
-
-		// Use combined token that respects both HTTP cancellation AND generation-specific timeout
-		using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(ctx, _apiGenerationCts.Token);
-		combinedCts.CancelAfter(TimeSpan.FromMinutes(5)); // Reasonable timeout for API generation
-
-		await _apiSemaphore.WaitAsync(ctx); // Still respect immediate HTTP cancellation for semaphore
+		await _apiSemaphore.WaitAsync(ctx);
 		try
 		{
 			if (!_apiReferencesStale)
 				return;
 
-			// Use the isolated token for actual generation
 			var config = _generator.DocumentationSet.Configuration;
 			if (HaveOpenApiSpecsChanged(config))
 			{
-				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
+				await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);
 				UpdateOpenApiSpecTimestamps(config);
 			}
 			_apiReferencesStale = false;
@@ -170,8 +161,6 @@ public class ReloadableGeneratorState : IDisposable
 
 	public void Dispose()
 	{
-		_apiGenerationCts?.Cancel();
-		_apiGenerationCts?.Dispose();
 		_apiSemaphore.Dispose();
 		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);

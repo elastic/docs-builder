@@ -43,8 +43,6 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(SiteNavigationFile))]
 [YamlSerializable(typeof(PhantomRegistration))]
 [YamlSerializable(typeof(ProductLink))]
-// API configuration (used in DocumentationSetFile.Api Dictionary<string, ApiConfiguration>)
-[YamlSerializable(typeof(ApiConfiguration))]
 // Search configuration
 [YamlSerializable(typeof(SearchConfigDto))]
 [YamlSerializable(typeof(QueryRuleDto))]

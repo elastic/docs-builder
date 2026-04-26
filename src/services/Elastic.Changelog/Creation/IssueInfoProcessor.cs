@@ -102,15 +102,22 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 
 		if (input.ExtractReleaseNotes ?? false)
 		{
-			var releaseNote = ReleaseNotesExtractor.FindReleaseNote(issueInfo.Body);
-			if (releaseNote != null && string.IsNullOrWhiteSpace(input.Description))
+			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(issueInfo.Body);
+
+			if (releaseNoteTitle != null && string.IsNullOrWhiteSpace(input.Title))
 			{
-				derived.Description = releaseNote;
-				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNote.Length);
+				derived.Title = releaseNoteTitle;
+				logger.LogInformation("Using extracted release note as title: {Title}", derived.Title);
+			}
+
+			if (releaseNoteDescription != null && string.IsNullOrWhiteSpace(input.Description))
+			{
+				derived.Description = releaseNoteDescription;
+				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNoteDescription.Length);
 			}
 		}
 
-		if (string.IsNullOrWhiteSpace(input.Title))
+		if (string.IsNullOrWhiteSpace(input.Title) && derived.Title == null)
 		{
 			if (string.IsNullOrWhiteSpace(issueInfo.Title))
 			{

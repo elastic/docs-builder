@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -70,11 +69,8 @@ public class ElasticsearchOperations(
 		string operation,
 		string sourceIndex,
 		string? destIndex,
-		CancellationToken ct,
-		TimeSpan? maxDuration = null)
+		CancellationToken ct)
 	{
-		maxDuration ??= TimeSpan.FromMinutes(30);
-		var sw = Stopwatch.StartNew();
 		bool completed;
 		do
 		{
@@ -105,46 +101,10 @@ public class ElasticsearchOperations(
 					operation, sourceIndex, time.ToString(@"hh\:mm\:ss"), total, updated, created, deleted, batches);
 			}
 
-			if (!completed && sw.Elapsed > maxDuration.Value)
-			{
-				_logger.LogWarning(
-					"Task {TaskId} for {Operation} on '{SourceIndex}' exceeded max duration {MaxDuration} (elapsed: {Elapsed}). Attempting to cancel",
-					taskId, operation, sourceIndex, maxDuration.Value, sw.Elapsed);
-
-				await CancelTaskBestEffortAsync(taskId, operation, ct);
-
-				throw new TimeoutException(
-					$"Elasticsearch task {taskId} for {operation} on '{sourceIndex}' did not complete within {maxDuration.Value}");
-			}
-
 			if (!completed)
 				await Task.Delay(TimeSpan.FromSeconds(5), ct);
 
 		} while (!completed);
-	}
-
-	/// <summary>Attempts to cancel an ES task with a short timeout. Logs on failure but does not throw.</summary>
-	private async Task CancelTaskBestEffortAsync(string taskId, string operation, CancellationToken ct)
-	{
-		using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-		cts.CancelAfter(TimeSpan.FromSeconds(5));
-
-		try
-		{
-			var response = await _transport.PostAsync<DynamicResponse>(
-				$"/_tasks/{taskId}/_cancel", PostData.Empty, cts.Token);
-
-			if (response.ApiCallDetails.HasSuccessfulStatusCode)
-				_logger.LogInformation("Successfully requested cancellation of task {TaskId} ({Operation})", taskId, operation);
-			else
-				_logger.LogWarning(
-					"Cancel request for task {TaskId} ({Operation}) returned status {StatusCode}",
-					taskId, operation, response.ApiCallDetails.HttpStatusCode);
-		}
-		catch (Exception ex)
-		{
-			_logger.LogWarning(ex, "Failed to cancel task {TaskId} ({Operation})", taskId, operation);
-		}
 	}
 
 	/// <summary>
@@ -194,28 +154,11 @@ public class ElasticsearchOperations(
 	public async Task DeleteByQueryAsync(
 		string index,
 		PostData query,
-		CancellationToken ct,
-		TimeSpan? maxDuration = null)
+		CancellationToken ct)
 	{
-		var taskId = await DeleteByQueryFireAndForgetAsync(index, query, ct)
-			?? throw new InvalidOperationException($"Failed to start _delete_by_query on {index}");
-		await PollTaskUntilCompleteAsync(taskId, "_delete_by_query", index, null, ct, maxDuration);
-	}
-
-	/// <summary>
-	/// Executes a reindex operation and waits for completion.
-	/// </summary>
-	public async Task ReindexAsync(
-		string sourceIndex,
-		PostData request,
-		string destIndex,
-		CancellationToken ct,
-		TimeSpan? maxDuration = null)
-	{
-		var url = "/_reindex?wait_for_completion=false";
-		var taskId = await PostAsyncTaskAsync(url, request, $"POST _reindex ({sourceIndex} => {destIndex})", ct)
-			?? throw new InvalidOperationException($"Failed to start _reindex ({sourceIndex} => {destIndex})");
-		await PollTaskUntilCompleteAsync(taskId, "_reindex", sourceIndex, destIndex, ct, maxDuration);
+		var taskId = await DeleteByQueryFireAndForgetAsync(index, query, ct);
+		if (taskId is not null)
+			await PollTaskUntilCompleteAsync(taskId, "_delete_by_query", index, null, ct);
 	}
 
 	/// <summary>
@@ -225,13 +168,12 @@ public class ElasticsearchOperations(
 		string index,
 		PostData query,
 		string? pipeline,
-		CancellationToken ct,
-		TimeSpan? maxDuration = null)
+		CancellationToken ct)
 	{
 		var pipelineParam = pipeline is not null ? $"&pipeline={pipeline}" : "";
 		var url = $"/{index}/_update_by_query?wait_for_completion=false{pipelineParam}";
-		var taskId = await PostAsyncTaskAsync(url, query, $"POST {index}/_update_by_query", ct)
-			?? throw new InvalidOperationException($"Failed to start _update_by_query on {index}");
-		await PollTaskUntilCompleteAsync(taskId, "_update_by_query", index, null, ct, maxDuration);
+		var taskId = await PostAsyncTaskAsync(url, query, $"POST {index}/_update_by_query", ct);
+		if (taskId is not null)
+			await PollTaskUntilCompleteAsync(taskId, "_update_by_query", index, null, ct);
 	}
 }

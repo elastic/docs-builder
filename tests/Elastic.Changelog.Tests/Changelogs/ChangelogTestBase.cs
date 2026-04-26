@@ -93,7 +93,6 @@ public abstract class ChangelogTestBase : IDisposable
 		var productsConfiguration = new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 
@@ -106,7 +105,7 @@ public abstract class ChangelogTestBase : IDisposable
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem),
 			VersionsConfiguration = versionsConfiguration,
 			ProductsConfiguration = productsConfiguration,
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
+			SearchConfiguration = new SearchConfiguration { Synonyms = new Dictionary<string, string[]>(), Rules = [], DiminishTerms = [] },
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
 	}
