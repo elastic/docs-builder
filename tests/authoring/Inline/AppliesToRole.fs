@@ -40,7 +40,7 @@ This is an inline {applies_to}`stack: preview 9.1` element.
 type ``parses nested ess moniker`` () =
     static let markdown = Setup.Markdown """
 
-This is an inline {applies_to}`ess: preview 9.1` element.
+This is an inline {applies_to}`ess: preview` element.
 """
 
     [<Fact>]
@@ -49,14 +49,14 @@ This is an inline {applies_to}`ess: preview 9.1` element.
         test <@ directives.Length = 1 @>
         directives |> appliesToDirective (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Ess=AppliesCollection.op_Explicit "preview 9.1.0"
+                Ess=AppliesCollection.op_Explicit "preview"
             )
         ))
 
 type ``parses nested ech moniker as ess`` () =
     static let markdown = Setup.Markdown """
 
-This is an inline {applies_to}`ech: preview 9.1` element.
+This is an inline {applies_to}`ech: preview` element.
 """
 
     [<Fact>]
@@ -65,7 +65,7 @@ This is an inline {applies_to}`ech: preview 9.1` element.
         test <@ directives.Length = 1 @>
         directives |> appliesToDirective (ApplicableTo(
             Deployment=DeploymentApplicability(
-                Ess=AppliesCollection.op_Explicit "preview 9.1.0"
+                Ess=AppliesCollection.op_Explicit "preview"
             )
         ))
 

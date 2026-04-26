@@ -13,6 +13,8 @@ If no docs folder exists, the command creates `{path}/docs` and places `changelo
 The command creates a `changelog.yml` configuration file (from the built-in template) and `changelog` and `releases` subdirectories in the `docs` folder.
 When `--changelog-dir` or `--bundles-dir` is specified, the corresponding `bundle.directory` and `bundle.output_directory` values in `changelog.yml` are set or updated (whether creating a new file or the file already exists).
 
+When the template is written for the first time, the command can **seed** `bundle.owner`, `bundle.repo`, and `bundle.link_allow_repos` so PR and issue links resolve under the explicit link allowlist in [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) (there is no implicit allow for your own repository). Seeding runs when `git` remote `origin` points at **github.com** and/or when you pass `--owner` and/or `--repo`. CLI values override values inferred from `git`. If you pass `--repo` without `--owner` and `git` does not supply an owner, the owner defaults to `elastic`. If neither `git` nor CLI provides enough information, the placeholder line is removed from the template and you can set bundle fields manually.
+
 ## Usage
 
 ```sh
@@ -32,6 +34,12 @@ docs-builder changelog init [options...] [-h|--help]
 `--bundles-dir <string?>`
 :   Optional: Path to the bundles output directory.
 :   Defaults to `{docsFolder}/releases`.
+
+`--owner <string?>`
+:   Optional: GitHub organization or user for `bundle.owner` and for seeding `bundle.link_allow_repos` when creating `changelog.yml`. Overrides the owner parsed from `git` remote `origin`.
+
+`--repo <string?>`
+:   Optional: GitHub repository name for `bundle.repo` and for seeding `bundle.link_allow_repos` when creating `changelog.yml`. Overrides the repository name parsed from `git` remote `origin`.
 
 ## Examples
 
@@ -54,4 +62,10 @@ Sets or updates `bundle.directory` and `bundle.output_directory` in `changelog.y
 docs-builder changelog init \
   --changelog-dir ./my-changelogs \
   --bundles-dir ./my-releases
+```
+
+Initialize without relying on `git` (for example in a clean checkout or CI), setting the GitHub owner and repository used to seed bundle defaults and `link_allow_repos`:
+
+```sh
+docs-builder changelog init --owner elastic --repo kibana
 ```

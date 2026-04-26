@@ -11,7 +11,7 @@ These modes are mutually exclusive. You can't combine a profile argument with th
 
 Before deleting anything, the command checks whether any of the matching files are referenced by unresolved bundles, to prevent silently breaking the `{changelog}` directive.
 
-For more context, go to [](/contribute/changelog.md#changelog-remove).
+For more context, go to [](/contribute/bundle-changelogs.md#changelog-remove).
 
 ## Usage
 

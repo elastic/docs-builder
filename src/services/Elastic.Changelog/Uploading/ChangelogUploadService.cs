@@ -99,6 +99,8 @@ public partial class ChangelogUploadService(
 
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir)
 	{
+		var rootDir = _fileSystem.DirectoryInfo.New(changelogDir);
+
 		var yamlFiles = _fileSystem.Directory.GetFiles(changelogDir, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(_fileSystem.Directory.GetFiles(changelogDir, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();
@@ -107,6 +109,13 @@ public partial class ChangelogUploadService(
 
 		foreach (var filePath in yamlFiles)
 		{
+			var fileInfo = _fileSystem.FileInfo.New(filePath);
+			if (SymlinkValidator.ValidateFileAccess(fileInfo, rootDir) is { } accessError)
+			{
+				collector.EmitWarning(filePath, $"Skipping: {accessError}");
+				continue;
+			}
+
 			var products = ReadProductsFromFragment(filePath);
 			if (products.Count == 0)
 			{

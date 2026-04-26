@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
@@ -135,6 +136,8 @@ public static partial class ReleaseNotesSerialization
 	private static Bundle ToBundle(BundleDto dto) => new()
 	{
 		Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
+		Description = dto.Description,
+		ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
 		HideFeatures = dto.HideFeatures ?? [],
 		Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? []
 	};
@@ -211,6 +214,11 @@ public static partial class ReleaseNotesSerialization
 			: null;
 	}
 
+	private static DateOnly? ParseReleaseDate(string? value) =>
+		DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+			? date
+			: null;
+
 	// Reverse mappings (Domain → DTO) for serialization
 
 	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
@@ -239,6 +247,8 @@ public static partial class ReleaseNotesSerialization
 	private static BundleDto ToDto(Bundle bundle) => new()
 	{
 		Products = bundle.Products.Select(ToDto).ToList(),
+		Description = bundle.Description,
+		ReleaseDate = bundle.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
 		HideFeatures = bundle.HideFeatures.Count > 0 ? bundle.HideFeatures.ToList() : null,
 		Entries = bundle.Entries.Select(ToDto).ToList()
 	};

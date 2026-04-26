@@ -54,6 +54,15 @@ groups:
           xpack.example.mode: strict
           ```
 
+      - setting: xpack.example.defaultModel
+        id: xpack-example-default-model
+        description: |
+          Default model used by the feature. The default varies by version:
+
+          * {applies_to}`stack: ga 9.2` Defaults to `model-v2`.
+          * {applies_to}`stack: ga 9.1` Defaults to `model-v1`.
+        datatype: string
+
   - group: Advanced settings
     id: advanced-settings
     description: |
