@@ -367,17 +367,6 @@ nav:
           title: Upload data files
         - page: docs-content://manage-data/ingest/sample-data.md
           title: Sample data
-        - group: Migrating your Elasticsearch data
-          page: docs-content://manage-data/migrate.md
-          children:
-          - page: docs-content://manage-data/migrate/migrate-from-a-self-managed-cluster-with-a-self-signed-certificate-using-remote-reindex.md
-            title: Reindex using a private CA
-          - page: docs-content://manage-data/migrate/migrate-with-logstash.md
-            title: Migrate Elastic Cloud Hosted data to Serverless with Logstash
-          - page: docs-content://manage-data/migrate/migrate-data-between-elasticsearch-clusters-with-minimal-downtime.md
-            title: Minimal-downtime migration using snapshots
-          - page: docs-content://manage-data/migrate/migrate-internal-indices.md
-            title: Migrate system indices
       - group: Ingest tools
         page: docs-content://reference/ingestion-tools/index.md
         children:
@@ -1402,6 +1391,9 @@ nav:
           title: Manage access to AI features
       - page: docs-content://explore-analyze/ai-features/agent-skills.md
         title: AI agent skills for Elastic
+  - label: Migrate your data
+    children:
+    - toc: docs-content://migrate
   - label: Solutions and project types
     children:
     - page: docs-content://solutions/index.md
