@@ -47,7 +47,10 @@ public class AssembleSources
 
 		var sw = System.Diagnostics.Stopwatch.StartNew();
 		FetchedCrossLinks crossLinks;
-		using (var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, Aws3LinkIndexReader.CreateAnonymous()))
+		// Use a separate using for the reader so ownership is explicit: the caller (this method)
+		// disposes it, not the fetcher (ownsReader stays false/default on AssemblerCrossLinkFetcher).
+		using var linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
+		using (var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader))
 			crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		logger.LogInformation("  AssembleAsync: FetchCrossLinks in {Elapsed:mm\\:ss\\.fff}", sw.Elapsed);
