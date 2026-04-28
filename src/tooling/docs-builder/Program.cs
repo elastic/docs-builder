@@ -31,7 +31,9 @@ _ = builder.Services.AddArgh(args, app =>
 	_ = app.UseMiddleware<CatchExceptionMiddleware>();
 	_ = app.UseMiddleware<CheckForUpdatesMiddleware>();
 
-	// Root default: `docs-builder` with no sub-command → build docs from cwd
+	// `docs-builder build` as a named command; also the root default via [DefaultCommand].
+	// TODO: switch to MapAndRootAlias<IsolatedBuildCommand>() once argh PR#19 generator bug is fixed
+	// (missing opening brace on methods emitted after the alias registration).
 	_ = app.Map<IsolatedBuildCommand>();
 
 	_ = app.Map<DiffCommand>();

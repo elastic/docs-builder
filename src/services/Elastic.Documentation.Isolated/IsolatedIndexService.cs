@@ -39,7 +39,7 @@ public class IsolatedIndexService(
 			MetadataOnly = true,
 			Strict = false,
 			Force = true,
-			SkipOpenApi = true,
+			SkipApi = true,
 			Exporters = new HashSet<Exporter> { Elasticsearch }
 		}, ctx: ctx);
 	}

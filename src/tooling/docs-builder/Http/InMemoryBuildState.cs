@@ -185,7 +185,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 					AllowIndexing = false,
 					MetadataOnly = false,
 					Exporters = ExportOptions.Default,
-					SkipOpenApi = true,
+					SkipApi = true,
 					SkipCrossLinks = false
 				},
 				_writeFs, // reuse MockFileSystem across builds for caching

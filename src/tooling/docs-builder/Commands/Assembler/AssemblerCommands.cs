@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using Documentation.Builder.Arguments;
 using Documentation.Builder.Http;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Building;
@@ -40,33 +39,19 @@ internal sealed class AssembleOneShotCommand(
 	/// <para>Equivalent to running <c>assembler config init</c>, <c>assembler clone</c>, and <c>assembler build</c> in sequence.</para>
 	/// <code>
 	/// docs-builder assemble
-	/// docs-builder assemble --environment staging --fetch-latest --exporters html,es
+	/// docs-builder assemble --environment staging --fetch-latest --exporters Html --exporters Elasticsearch
 	/// docs-builder assemble --serve
 	/// </code>
 	/// </remarks>
-	/// <param name="strict">Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="environment">The environment to build</param>
 	/// <param name="fetchLatest">Fetch the latest commit of the branch instead of the link registry entry ref</param>
 	/// <param name="assumeCloned">Assume the repository folder already exists on disk (skip clone); primarily used for testing</param>
-	/// <param name="assumeBuild">Assume the build output already exists (skip build if <c>index.html</c> exists); primarily used for testing</param>
-	/// <param name="metadataOnly">Only emit documentation metadata to output (ignored when <c>--exporters</c> is also set)</param>
-	/// <param name="showHints">Show hints from all documentation sets during the build</param>
-	/// <param name="exporters">
-	/// Comma-separated exporter list. Values: html, es, config, links, state, llm, redirect, metadata, none, default.
-	/// Default: (html, config, links, state, redirect).
-	/// </param>
 	/// <param name="serve">Serve the documentation on port 4000 after a successful build</param>
 	[CommandName("assemble")]
 	public async Task<int> Assemble(
 		GlobalCliOptions _,
-		bool? strict = null,
-		string? environment = null,
+		[AsParameters] AssemblerBuildOptions buildOptions,
 		bool? fetchLatest = null,
 		bool? assumeCloned = null,
-		bool? assumeBuild = null,
-		bool? metadataOnly = null,
-		bool? showHints = null,
-		[ArgumentParser(typeof(ExporterParser))] IReadOnlySet<Exporter>? exporters = null,
 		bool serve = false,
 		CancellationToken ct = default
 	)
@@ -75,23 +60,20 @@ internal sealed class AssembleOneShotCommand(
 
 		var cloneOptions = new AssemblerCloneOptions
 		{
-			Strict = strict, Environment = environment,
-			FetchLatest = fetchLatest, AssumeCloned = assumeCloned
+			Strict = buildOptions.Strict,
+			Environment = buildOptions.Environment,
+			FetchLatest = fetchLatest,
+			AssumeCloned = assumeCloned
 		};
 		var cloneService = new AssemblerCloneService(logFactory, assemblyConfiguration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(cloneService, cloneOptions, strict ?? false,
+		serviceInvoker.AddCommand(cloneService, cloneOptions, buildOptions.Strict ?? false,
 			static async (s, col, opts, ctx) => await s.CloneAll(col, opts, ctx)
 		);
 
-		var buildOptions = new AssemblerBuildOptions
-		{
-			Strict = strict, Environment = environment, MetadataOnly = metadataOnly,
-			ShowHints = showHints, Exporters = exporters, AssumeBuild = assumeBuild
-		};
 		var readFs = FileSystemFactory.RealRead;
 		var writeFs = FileSystemFactory.RealWrite;
 		var buildService = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
-		serviceInvoker.AddCommand(buildService, (buildOptions, readFs, writeFs), strict ?? false,
+		serviceInvoker.AddCommand(buildService, (buildOptions, readFs, writeFs), buildOptions.Strict ?? false,
 			static async (s, col, state, ctx) => await s.BuildAll(col, state.buildOptions, state.readFs, state.writeFs, ctx)
 		);
 		var result = await serviceInvoker.InvokeAsync(ct);
@@ -144,36 +126,17 @@ internal sealed class AssemblerCommands(
 	}
 
 	/// <summary>Build all cloned repositories into assembled documentation.</summary>
-	/// <param name="strict">Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="environment">The environment to build</param>
-	/// <param name="assumeBuild">Assume the build output already exists; primarily used for testing</param>
-	/// <param name="metadataOnly">Only emit documentation metadata to output (ignored when <c>--exporters</c> is also set)</param>
-	/// <param name="showHints">Show hints from all documentation sets during the build</param>
-	/// <param name="exporters">
-	/// Comma-separated exporter list. Values: html, es, config, links, state, llm, redirect, metadata, none, default.
-	/// Default: (html, config, links, state, redirect).
-	/// </param>
 	[NoOptionsInjection]
 	public async Task<int> Build(
-		bool? strict = null,
-		string? environment = null,
-		bool? assumeBuild = null,
-		bool? metadataOnly = null,
-		bool? showHints = null,
-		[ArgumentParser(typeof(ExporterParser))] IReadOnlySet<Exporter>? exporters = null,
+		[AsParameters] AssemblerBuildOptions options,
 		CancellationToken ct = default
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var options = new AssemblerBuildOptions
-		{
-			Strict = strict, Environment = environment, AssumeBuild = assumeBuild,
-			MetadataOnly = metadataOnly, ShowHints = showHints, Exporters = exporters
-		};
 		var readFs = FileSystemFactory.RealRead;
 		var writeFs = FileSystemFactory.RealWrite;
 		var service = new AssemblerBuildService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, environmentVariables);
-		serviceInvoker.AddCommand(service, (options, readFs, writeFs), strict ?? false,
+		serviceInvoker.AddCommand(service, (options, readFs, writeFs), options.Strict ?? false,
 			static async (s, col, state, ctx) => await s.BuildAll(col, state.options, state.readFs, state.writeFs, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);

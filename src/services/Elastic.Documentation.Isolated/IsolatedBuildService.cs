@@ -59,7 +59,7 @@ public class IsolatedBuildService(
 		var metadataOnly = options.MetadataOnly;
 		var exporters = options.Exporters;
 		var canonicalBaseUrl = options.CanonicalBaseUrl;
-		var skipOpenApi = options.SkipOpenApi;
+		var skipOpenApi = options.SkipApi;
 		var skipCrossLinks = options.SkipCrossLinks;
 
 		strict = IsStrict(strict);
