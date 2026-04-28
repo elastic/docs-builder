@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Actions.Core.Services;
+using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
@@ -11,7 +12,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
-using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 

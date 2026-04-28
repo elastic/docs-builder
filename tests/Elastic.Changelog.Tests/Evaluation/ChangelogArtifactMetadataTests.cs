@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json;
+using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.ReleaseNotes;
-using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
