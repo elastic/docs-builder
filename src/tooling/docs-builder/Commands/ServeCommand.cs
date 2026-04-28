@@ -17,13 +17,13 @@ internal sealed class ServeCommand(ILoggerFactory logFactory, IConfigurationCont
 
 	/// <summary>Serve a documentation folder at <c>http://localhost:3000</c> with live reload.</summary>
 	/// <remarks>File-system changes are reflected without restarting the server.</remarks>
-	/// <param name="path">-p, Path to serve. Defaults to the <c>cwd/docs</c> folder</param>
+	/// <param name="path">-p, Documentation source directory. Defaults to the <c>cwd/docs</c> folder.</param>
 	/// <param name="port">Port to serve the documentation. Default: 3000</param>
 	/// <param name="watch">Special flag for <c>dotnet watch</c> optimizations during development</param>
 	[CommandName("serve")]
-	public async Task Serve(GlobalCliOptions _, string? path = null, int port = 3000, bool watch = false, CancellationToken ct = default)
+	public async Task Serve(GlobalCliOptions _, DirectoryInfo? path = null, int port = 3000, bool watch = false, CancellationToken ct = default)
 	{
-		var host = new DocumentationWebHost(logFactory, path, port, FileSystemFactory.RealGitRootForPath(path), FileSystemFactory.InMemory(), configurationContext, watch);
+		var host = new DocumentationWebHost(logFactory, path?.FullName, port, FileSystemFactory.RealGitRootForPath(path?.FullName), FileSystemFactory.InMemory(), configurationContext, watch);
 		await host.RunAsync(ct);
 		_logger.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')

@@ -157,9 +157,9 @@ internal sealed class AssemblerCommands(
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="path">Path to the built site. Defaults to <c>.artifacts/docs/</c>.</param>
 	[NoOptionsInjection]
-	public async Task Serve(int port = 4000, string? path = null, CancellationToken ct = default)
+	public async Task Serve(int port = 4000, DirectoryInfo? path = null, CancellationToken ct = default)
 	{
-		var host = new StaticWebHost(port, path);
+		var host = new StaticWebHost(port, path?.FullName);
 		await host.RunAsync(ct);
 		await host.StopAsync(ct);
 		await collector.StopAsync(ct);

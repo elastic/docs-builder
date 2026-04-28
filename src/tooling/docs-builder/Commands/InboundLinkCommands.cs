@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -55,11 +56,11 @@ internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnostic
 	/// <param name="file">Path to <c>links.json</c>. Defaults to <c>.artifacts/docs/html/links.json</c>.</param>
 	/// <param name="path">-p, Root of the documentation source. Defaults to <c>cwd</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> ValidateLinkReference(string? file = null, string? path = null, CancellationToken ct = default)
+	public async Task<int> ValidateLinkReference([FileExtensions(Extensions = "json")] FileInfo? file = null, string? path = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		serviceInvoker.AddCommand(_linkIndexService, (file, path),
-			static async (s, collector, state, ctx) => await s.CheckWithLocalLinksJson(collector, state.file, state.path, ctx)
+			static async (s, collector, state, ctx) => await s.CheckWithLocalLinksJson(collector, state.file?.FullName, state.path, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

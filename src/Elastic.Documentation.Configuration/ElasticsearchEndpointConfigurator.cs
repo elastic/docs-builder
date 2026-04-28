@@ -88,7 +88,8 @@ public record ElasticsearchIndexOptions
 	public string? CertificateFingerprint { get; init; }
 
 	/// <summary>Path to a PEM or DER certificate file for SSL validation.</summary>
-	public string? CertificatePath { get; init; }
+	[FileExtensions(Extensions = "pem,der,crt,cer")]
+	public FileInfo? CertificatePath { get; init; }
 
 	/// <summary>Set when the certificate is an intermediate CA rather than the root.</summary>
 	public bool? CertificateNotRoot { get; init; }
@@ -138,11 +139,11 @@ public static class ElasticsearchEndpointConfigurator
 			cfg.ProxyUsername = options.ProxyUsername;
 		if (options.DisableSslVerification.HasValue)
 			cfg.DisableSslVerification = options.DisableSslVerification.Value;
-		if (!string.IsNullOrEmpty(options.CertificatePath))
+		if (options.CertificatePath is not null)
 		{
-			if (!fileSystem.File.Exists(options.CertificatePath))
-				collector.EmitGlobalError($"'{options.CertificatePath}' does not exist");
-			var bytes = await fileSystem.File.ReadAllBytesAsync(options.CertificatePath, ctx);
+			if (!fileSystem.File.Exists(options.CertificatePath.FullName))
+				collector.EmitGlobalError($"'{options.CertificatePath.FullName}' does not exist");
+			var bytes = await fileSystem.File.ReadAllBytesAsync(options.CertificatePath.FullName, ctx);
 			cfg.Certificate = X509CertificateLoader.LoadCertificate(bytes);
 		}
 		if (options.CertificateNotRoot.HasValue)

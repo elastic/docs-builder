@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
@@ -56,14 +57,14 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
 	[NoOptionsInjection]
 	public Task<int> Init(
-		string? path = null,
-		string? changelogDir = null,
-		string? bundlesDir = null,
+		DirectoryInfo? path = null,
+		DirectoryInfo? changelogDir = null,
+		DirectoryInfo? bundlesDir = null,
 		string? owner = null,
 		string? repo = null
 	)
 	{
-		var rootPath = NormalizePath(path ?? ".");
+		var rootPath = path?.FullName ?? Path.GetFullPath(".");
 		var rootDir = _fileSystem.DirectoryInfo.New(rootPath);
 
 		IDirectoryInfo docsFolder;
@@ -84,8 +85,8 @@ internal sealed partial class ChangelogCommands(
 		}
 
 		var configPath = _fileSystem.Path.Join(docsFolder.FullName, "changelog.yml");
-		var changelogPath = NormalizePath(changelogDir ?? "changelog");
-		var bundlesPath = NormalizePath(bundlesDir ?? "releases");
+		var changelogPath = changelogDir?.FullName ?? Path.GetFullPath("changelog");
+		var bundlesPath = bundlesDir?.FullName ?? Path.GetFullPath("releases");
 
 		var useNonDefaultChangelogDir = changelogDir != null;
 		var useNonDefaultBundlesDir = bundlesDir != null;
@@ -237,7 +238,7 @@ internal sealed partial class ChangelogCommands(
 		string? action = null,
 		string[]? areas = null,
 		bool concise = false,
-		string? config = null,
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? description = null,
 		bool noExtractReleaseNotes = false,
 		bool noExtractIssues = false,
@@ -288,7 +289,7 @@ internal sealed partial class ChangelogCommands(
 		// Precedence: CLI option > bundle section in changelog.yml > built-in default.
 		// This applies to --prs, --issues, and --release-version alike.
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
-			.LoadChangelogConfiguration(collector, config, ctx);
+			.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
@@ -317,7 +318,7 @@ internal sealed partial class ChangelogCommands(
 			{
 				Repository = repoArg,
 				Version = releaseVersion,
-				Config = config,
+				Config = config?.FullName,
 				Output = resolvedOutput,
 				StripTitlePrefix = stripTitlePrefixResolved,
 				CreateBundle = false
@@ -463,7 +464,7 @@ internal sealed partial class ChangelogCommands(
 			FeatureId = featureId,
 			Highlight = highlight,
 			Output = resolvedOutput,
-			Config = config,
+			Config = config?.FullName,
 			UsePrNumber = usePrNumber,
 			UseIssueNumber = useIssueNumber,
 			StripTitlePrefix = stripTitlePrefixResolved,
@@ -513,8 +514,8 @@ internal sealed partial class ChangelogCommands(
 		[Argument] string? profileArg = null,
 		[Argument] string? profileReport = null,
 		bool all = false,
-		string? config = null,
-		string? directory = null,
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		DirectoryInfo? directory = null,
 		string? description = null,
 		string[]? hideFeatures = null,
 		bool noReleaseDate = false,
@@ -554,7 +555,7 @@ internal sealed partial class ChangelogCommands(
 			{
 				// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
 				var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
-					.LoadChangelogConfiguration(collector, config, ctx);
+					.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 				var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 				var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 
@@ -617,9 +618,9 @@ internal sealed partial class ChangelogCommands(
 				forbidden.Add("--resolve / --no-resolve");
 			if (hideFeatures is { Length: > 0 })
 				forbidden.Add("--hide-features");
-			if (!string.IsNullOrWhiteSpace(config))
+			if (config != null)
 				forbidden.Add("--config");
-			if (!string.IsNullOrWhiteSpace(directory))
+			if (directory != null)
 				forbidden.Add("--directory");
 			if (!string.IsNullOrWhiteSpace(description))
 				forbidden.Add("--description");
@@ -773,7 +774,7 @@ internal sealed partial class ChangelogCommands(
 				Output = processedOutput,
 				Profile = profile,
 				ProfileArgument = profileArg,
-				Config = config,
+				Config = config?.FullName,
 				Description = description
 			};
 			var planResult = await service.PlanBundleAsync(collector, planInput, releaseVersion != null, ctx);
@@ -823,7 +824,7 @@ internal sealed partial class ChangelogCommands(
 
 		var input = new BundleChangelogsArguments
 		{
-			Directory = directory,
+			Directory = directory?.FullName,
 			Output = processedOutput,
 			All = all,
 			InputProducts = inputProducts,
@@ -837,7 +838,7 @@ internal sealed partial class ChangelogCommands(
 			ProfileArgument = profileArg,
 			ProfileReport = isProfileMode ? profileReport : null,
 			Report = !isProfileMode ? report : null,
-			Config = config,
+			Config = config?.FullName,
 			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
 			Description = description,
 			ReleaseDate = releaseDate,
@@ -879,9 +880,9 @@ internal sealed partial class ChangelogCommands(
 		[Argument] string? profileArg = null,
 		[Argument] string? profileReport = null,
 		bool all = false,
-		string? bundlesDir = null,
-		string? config = null,
-		string? directory = null,
+		DirectoryInfo? bundlesDir = null,
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		DirectoryInfo? directory = null,
 		bool dryRun = false,
 		bool force = false,
 		string[]? issues = null,
@@ -913,7 +914,7 @@ internal sealed partial class ChangelogCommands(
 
 			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
 			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
-				.LoadChangelogConfiguration(collector, config, ctx);
+				.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
 			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
 
@@ -1055,9 +1056,7 @@ internal sealed partial class ChangelogCommands(
 		// In profile mode, directory is derived from the changelog config (not from CLI).
 		// In raw mode, pass null when --directory is not specified so ApplyConfigDefaults can consult
 		// bundle.directory before falling back to CWD.
-		var resolvedDirectory = isProfileMode || string.IsNullOrWhiteSpace(directory)
-			? null
-			: NormalizePath(directory);
+		var resolvedDirectory = isProfileMode ? null : directory?.FullName;
 
 		var input = new ChangelogRemoveArguments
 		{
@@ -1069,9 +1068,9 @@ internal sealed partial class ChangelogCommands(
 			Owner = owner,
 			Repo = repo,
 			DryRun = dryRun,
-			BundlesDir = string.IsNullOrWhiteSpace(bundlesDir) ? null : NormalizePath(bundlesDir),
+			BundlesDir = bundlesDir?.FullName,
 			Force = force,
-			Config = string.IsNullOrWhiteSpace(config) ? null : NormalizePath(config),
+			Config = config?.FullName,
 			Profile = isProfileMode ? profile : null,
 			ProfileArgument = isProfileMode ? profileArg : null,
 			ProfileReport = isProfileMode ? profileReport : null,
@@ -1097,7 +1096,7 @@ internal sealed partial class ChangelogCommands(
 	[NoOptionsInjection]
 	public async Task<int> Render(
 		string[]? input = null,
-		string? config = null,
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? fileType = "markdown",
 		string[]? hideFeatures = null,
 		string? output = null,
@@ -1136,7 +1135,7 @@ internal sealed partial class ChangelogCommands(
 			Subsections = subsections,
 			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
 			FileType = ft.Value,
-			Config = config
+			Config = config?.FullName
 		};
 
 		serviceInvoker.AddCommand(service, renderInput,
@@ -1160,7 +1159,7 @@ internal sealed partial class ChangelogCommands(
 	public async Task<int> GhRelease(
 		[Argument] string repo,
 		[Argument] string version = "latest",
-		string? config = null,
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? description = null,
 		string? output = null,
 		string? releaseDate = null,
@@ -1174,7 +1173,7 @@ internal sealed partial class ChangelogCommands(
 
 		// --output CLI > bundle.directory config > ./changelogs (service default)
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
-			.LoadChangelogConfiguration(collector, config, ctx);
+			.LoadChangelogConfiguration(collector, config?.FullName, ctx);
 		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
@@ -1195,7 +1194,7 @@ internal sealed partial class ChangelogCommands(
 		{
 			Repository = repo,
 			Version = version,
-			Config = config,
+			Config = config?.FullName,
 			Output = resolvedOutput,
 			StripTitlePrefix = stripTitlePrefixResolved,
 			WarnOnTypeMismatch = warnOnTypeMismatch,
@@ -1217,7 +1216,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
-		[Argument] string bundlePath,
+		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
 		string[]? add = null,
 		bool? resolve = null,
 		CancellationToken ct = default
@@ -1238,7 +1237,7 @@ internal sealed partial class ChangelogCommands(
 		}
 
 		// Normalize the bundle path
-		var normalizedBundlePath = NormalizePath(bundlePath);
+		var normalizedBundlePath = bundlePath.FullName;
 
 		var normalizedAddFiles = ExpandCommaSeparated(add)
 			.Select(NormalizePath)
@@ -1283,7 +1282,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> EvaluatePr(
-		string config,
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string owner,
 		string repo,
 		int prNumber,
@@ -1309,7 +1308,7 @@ internal sealed partial class ChangelogCommands(
 
 		var args = new EvaluatePrArguments
 		{
-			Config = config,
+			Config = config.FullName,
 			Owner = owner,
 			Repo = repo,
 			PrNumber = prNumber,
@@ -1389,8 +1388,8 @@ internal sealed partial class ChangelogCommands(
 		string artifactType,
 		string target,
 		string s3BucketName = "",
-		string? config = null,
-		string? directory = null,
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		DirectoryInfo? directory = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1413,8 +1412,8 @@ internal sealed partial class ChangelogCommands(
 			return 1;
 		}
 
-		var resolvedDirectory = directory != null ? NormalizePath(directory) : null;
-		var resolvedConfig = config != null ? NormalizePath(config) : null;
+		var resolvedDirectory = directory != null ? directory?.FullName : null;
+		var resolvedConfig = config != null ? config?.FullName : null;
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, configurationContext);

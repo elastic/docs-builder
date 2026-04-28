@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using Documentation.Builder.Http;
@@ -48,23 +49,24 @@ internal sealed class CodexCommands(
 	[DefaultCommand]
 	public async Task<int> CloneAndBuild(
 		GlobalCliOptions _,
-		[Argument] string config,
+		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
-		string? output = null,
+		DirectoryInfo? output = null,
 		bool serve = false,
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
 
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+
+
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 
@@ -76,7 +78,7 @@ internal sealed class CodexCommands(
 			return 1;
 		}
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output?.FullName);
 
 		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -119,7 +121,7 @@ internal sealed class CodexCommands(
 	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
 	[NoOptionsInjection]
 	public async Task<int> Clone(
-		[Argument] string config,
+		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
@@ -128,12 +130,13 @@ internal sealed class CodexCommands(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
 
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+
+
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 
@@ -166,20 +169,21 @@ internal sealed class CodexCommands(
 	/// <param name="output">Output directory. Defaults to <c>.artifacts/codex/</c>.</param>
 	[NoOptionsInjection]
 	public async Task<int> Build(
-		[Argument] string config,
+		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
-		string? output = null,
+		DirectoryInfo? output = null,
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
 
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+
+
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 
@@ -191,7 +195,7 @@ internal sealed class CodexCommands(
 			return 1;
 		}
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output?.FullName);
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
@@ -217,10 +221,10 @@ internal sealed class CodexCommands(
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="path">Path to the portal output. Defaults to <c>.artifacts/codex/docs/</c>.</param>
 	[NoOptionsInjection]
-	public async Task Serve(int port = 4000, string? path = null, CancellationToken ct = default)
+	public async Task Serve(int port = 4000, DirectoryInfo? path = null, CancellationToken ct = default)
 	{
 		var fs = FileSystemFactory.RealRead;
-		var servePath = path ?? fs.Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
+		var servePath = path?.FullName ?? fs.Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
 		var host = new StaticWebHost(port, servePath);
 		await host.RunAsync(ct);

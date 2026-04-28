@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Deploying;
@@ -27,20 +28,19 @@ internal sealed class CodexUpdateRedirectsCommand(
 	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/codex/docs/redirects.json</c>.</param>
 	public async Task<int> UpdateRedirects(
 		GlobalCliOptions _,
-		[Argument] string config,
+		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string? environment = null,
-		string? redirectsFile = null,
+		[FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null,
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = FileSystemFactory.RealRead;
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 
@@ -52,7 +52,7 @@ internal sealed class CodexUpdateRedirectsCommand(
 
 		var service = new DeployUpdateRedirectsService(logFactory, fs);
 		serviceInvoker.AddCommand(service, (environment: resolvedEnvironment, redirectsFile, kvsNamePrefix: "codex", defaultRedirectsFile: ".artifacts/codex/docs/redirects.json"),
-			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile, state.kvsNamePrefix, state.defaultRedirectsFile, c)
+			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile?.FullName, state.kvsNamePrefix, state.defaultRedirectsFile, c)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

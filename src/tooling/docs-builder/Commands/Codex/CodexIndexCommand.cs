@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using Actions.Core.Services;
 
@@ -36,20 +37,18 @@ internal sealed class CodexIndexCommand(
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	public async Task<int> Index(
 		GlobalCliOptions _,
-		[Argument] string config,
+		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		[AsParameters] ElasticsearchIndexOptions es,
 		CancellationToken ct = default
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
-
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 

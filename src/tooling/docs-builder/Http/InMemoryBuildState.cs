@@ -179,7 +179,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 				readFs,
 				new IsolatedBuildOptions
 				{
-					Path = sourcePath,
+					Path = new DirectoryInfo(sourcePath),
 					Force = true,
 					Strict = false,
 					AllowIndexing = false,

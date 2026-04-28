@@ -35,7 +35,7 @@ public class IsolatedIndexService(
 
 		return await Build(collector, fileSystem, new IsolatedBuildOptions
 		{
-			Path = path,
+			Path = path != null ? new DirectoryInfo(path) : null,
 			MetadataOnly = true,
 			Strict = false,
 			Force = true,

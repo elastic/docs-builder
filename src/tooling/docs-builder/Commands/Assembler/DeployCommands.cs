@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using Actions.Core.Services;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Deploying;
@@ -33,13 +34,13 @@ internal sealed class DeployCommands(
 	/// <param name="out">Path to write the plan file. Defaults to <c>stdout</c>.</param>
 	/// <param name="deleteThreshold">Abort if the plan would delete more than this percentage of objects (0–100).</param>
 	[NoOptionsInjection]
-	public async Task<int> Plan(string environment, string s3BucketName, string @out = "", float? deleteThreshold = null, CancellationToken ct = default)
+	public async Task<int> Plan(string environment, string s3BucketName, FileInfo? @out = null, float? deleteThreshold = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, FileSystemFactory.RealRead, FileSystemFactory.RealWrite);
 		serviceInvoker.AddCommand(service, (environment, s3BucketName, @out, deleteThreshold),
-			static async (s, collector, state, ctx) => await s.Plan(collector, state.environment, state.s3BucketName, state.@out, state.deleteThreshold, ctx)
+			static async (s, collector, state, ctx) => await s.Plan(collector, state.environment, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -50,13 +51,13 @@ internal sealed class DeployCommands(
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
 	/// <param name="planFile">Path to the plan file produced by <c>assembler deploy plan</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> Apply(string environment, string s3BucketName, string planFile, CancellationToken ct = default)
+	public async Task<int> Apply(string environment, string s3BucketName, [FileExtensions(Extensions = "json")] FileInfo planFile, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, FileSystemFactory.RealRead, FileSystemFactory.RealWrite);
 		serviceInvoker.AddCommand(service, (environment, s3BucketName, planFile),
-			static async (s, collector, state, ctx) => await s.Apply(collector, state.environment, state.s3BucketName, state.planFile, ctx)
+			static async (s, collector, state, ctx) => await s.Apply(collector, state.environment, state.s3BucketName, state.planFile.FullName, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -66,14 +67,14 @@ internal sealed class DeployCommands(
 	/// <param name="environment">Named deployment target.</param>
 	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/docs/redirects.json</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> UpdateRedirects(string environment, string? redirectsFile = null, CancellationToken ct = default)
+	public async Task<int> UpdateRedirects(string environment, [FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = FileSystemFactory.RealRead;
 		var service = new DeployUpdateRedirectsService(logFactory, fs);
 		serviceInvoker.AddCommand(service, (environment, redirectsFile),
-			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile, ctx: ctx)
+			static async (s, collector, state, ctx) => await s.UpdateRedirects(collector, state.environment, state.redirectsFile?.FullName, ctx: ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

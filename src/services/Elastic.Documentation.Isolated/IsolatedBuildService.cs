@@ -50,8 +50,8 @@ public class IsolatedBuildService(
 		Cancel ctx = default
 	)
 	{
-		var path = options.Path;
-		var output = options.Output;
+		var path = options.Path?.FullName;
+		var output = options.Output?.FullName;
 		var pathPrefix = options.PathPrefix;
 		var force = options.Force;
 		var strict = options.Strict;

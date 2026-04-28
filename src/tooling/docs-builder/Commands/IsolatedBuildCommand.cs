@@ -39,8 +39,8 @@ internal sealed class IsolatedBuildCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var readFs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.RealGitRootForPath(options.Path);
-		var writeFs = inMemory ? null : FileSystemFactory.RealGitRootForPathWrite(options.Path, options.Output);
+		var readFs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.RealGitRootForPath(options.Path?.FullName);
+		var writeFs = inMemory ? null : FileSystemFactory.RealGitRootForPathWrite(options.Path?.FullName, options.Output?.FullName);
 		var strictCommand = service.IsStrict(options.Strict);
 
 		serviceInvoker.AddCommand(service, (options, readFs, writeFs), strictCommand,
