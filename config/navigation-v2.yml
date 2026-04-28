@@ -114,16 +114,15 @@ nav:
             children:
             - page: docs-content://deploy-manage/deploy/elastic-cloud/create-an-elastic-cloud-hosted-deployment.md
               title: Create a deployment
-            - page: docs-content://deploy-manage/deploy/elastic-cloud/elastic-cloud-hosted-planning.md
-              title: Plan for production
-            - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-customize-deployment-components.md  # BOTH PHASES
-              title: Customize deployment components
-            - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-vcpu-boost-instance.md
-              title: vCPU boosting and credits
             - title: Connect to Elasticsearch
             - page: docs-content://deploy-manage/deploy/elastic-cloud/access-kibana.md  # BOTH PHASES
               title: Access Kibana
-            - title: Production readiness checklist
+            - group: Prepare for production
+              page: docs-content://deploy-manage/deploy/elastic-cloud/elastic-cloud-hosted-planning.md
+              children:
+              - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-customize-deployment-components.md  # BOTH PHASES
+                title: Customize deployment components
+              - title: Production readiness checklist
           - page: docs-content://deploy-manage/deploy/elastic-cloud/fedramp.md
             title: FedRAMP authorized Cloud offerings
             # - page: docs-content://deploy-manage/deploy/elastic-cloud/azure-marketplace-pricing.md
@@ -340,6 +339,7 @@ nav:
         page: docs-content://deploy-manage/index.md
         children:
         - title: Administration skills
+        - label: Deployment-specific administration
         - group: Elastic Cloud Hosted
           children:
           - group: Manage deployments
@@ -691,40 +691,42 @@ nav:
             title: Access Kibana
           - page: docs-content://deploy-manage/deploy/self-managed/tools-apis.md
             title: Tools and APIs
-        - page: docs-content://deploy-manage/stack-settings.md
-          title: Stack settings
-        - group: Autoscaling
-          page: docs-content://deploy-manage/autoscaling.md
-        - group: Backup, high availability, and resilience tools
-          page: docs-content://deploy-manage/tools.md
-        - page: docs-content://deploy-manage/cloud-connect.md
-          title: Cloud Connect
+        - label: ───
         - group: Security and encryption
           page: docs-content://deploy-manage/security.md
         - group: Authentication and authorization
           page: docs-content://deploy-manage/users-roles.md
-        - group: Spaces
-          page: docs-content://deploy-manage/manage-spaces.md
         - group: API keys
           page: docs-content://deploy-manage/api-keys.md
-        - page: docs-content://deploy-manage/manage-connectors.md
-          title: Connectors
-        - group: Remote clusters
-          page: docs-content://deploy-manage/remote-clusters.md
+        - group: Spaces
+          page: docs-content://deploy-manage/manage-spaces.md
         - group: Monitoring
           page: docs-content://deploy-manage/monitor.md
         - page: docs-content://deploy-manage/kibana-reporting-configuration.md
           title: Configure Kibana reporting
-        - group: Manage your Cloud organization
-          page: docs-content://deploy-manage/cloud-organization.md
-        - group: Licenses and subscriptions
-          page: docs-content://deploy-manage/license.md
+        - group: Backup, high availability, and resilience tools
+          page: docs-content://deploy-manage/tools.md
+        - group: Autoscaling
+          page: docs-content://deploy-manage/autoscaling.md
+        - page: docs-content://deploy-manage/stack-settings.md
+          title: Stack settings
+        - page: docs-content://deploy-manage/manage-connectors.md
+          title: Connectors
+        - group: Remote clusters
+          page: docs-content://deploy-manage/remote-clusters.md
+        - page: docs-content://deploy-manage/cloud-connect.md
+          title: Cloud Connect
+        - label: ───
         - group: Maintenance
           page: docs-content://deploy-manage/maintenance.md
         - group: Upgrade
           page: docs-content://deploy-manage/upgrade.md
         - group: Uninstall
           page: docs-content://deploy-manage/uninstall.md
+        - group: Licenses and subscriptions
+          page: docs-content://deploy-manage/license.md
+        - group: Manage your Cloud organization
+          page: docs-content://deploy-manage/cloud-organization.md
       - group: Deployment and administration tools
         children:
         - toc: ecctl://reference
