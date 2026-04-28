@@ -14,7 +14,7 @@ public record IsolatedBuildOptions
 	public bool? Strict { get; init; }
 	public bool? AllowIndexing { get; init; }
 	public bool? MetadataOnly { get; init; }
-	// TODO: add [CollectionSyntax(Separator=",")] once argh fixes [AsParameters] + IReadOnlySet<Enum> interaction
+	// TODO: add [CollectionSyntax(Separator=",")] once argh fixes [AsParameters] + [CollectionSyntax] interaction
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 	public string? CanonicalBaseUrl { get; init; }
 	public bool SkipApi { get; init; }

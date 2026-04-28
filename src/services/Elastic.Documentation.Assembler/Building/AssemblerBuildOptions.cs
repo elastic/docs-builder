@@ -13,7 +13,7 @@ public record AssemblerBuildOptions
 	public string? Environment { get; init; }
 	public bool? MetadataOnly { get; init; }
 	public bool? ShowHints { get; init; }
-	// TODO: add [CollectionSyntax(Separator=",")] once argh fixes [AsParameters] + IReadOnlySet<Enum> interaction
+	// TODO: add [CollectionSyntax(Separator=",")] once argh fixes [AsParameters] + [CollectionSyntax] interaction
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 	public bool? AssumeBuild { get; init; }
 }
