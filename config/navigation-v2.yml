@@ -108,6 +108,7 @@ nav:
               title: Create a serverless project
             - page: docs-content://deploy-manage/deploy/elastic-cloud/regions.md
               title: Regions
+            - title: Production readiness checklist
           - group: Elastic Cloud Hosted
             page: docs-content://deploy-manage/deploy/elastic-cloud/cloud-hosted.md
             children:
@@ -119,6 +120,7 @@ nav:
               title: Customize deployment components
             - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-vcpu-boost-instance.md
               title: vCPU boosting and credits
+            - title: Production readiness checklist
           - page: docs-content://deploy-manage/deploy/elastic-cloud/fedramp.md
             title: FedRAMP authorized Cloud offerings
             # - page: docs-content://deploy-manage/deploy/elastic-cloud/azure-marketplace-pricing.md
@@ -129,7 +131,6 @@ nav:
               # title: Monthly GCP subscription
             # - page: docs-content://deploy-manage/deploy/elastic-cloud/complete-registration-of-an-annual-subscription-on-aws-marketplace.md
               # title: Annual AWS subscription
-          - title: Production readiness checklist
         - group: Elastic Cloud Enterprise
           page: docs-content://deploy-manage/deploy/cloud-enterprise.md
           children:
@@ -709,13 +710,12 @@ nav:
           page: docs-content://deploy-manage/license.md
         - group: Maintenance
           page: docs-content://deploy-manage/maintenance.md
-        - group: Upgrade your deployment, cluster, or orchestrator
+        - group: Upgrade
           page: docs-content://deploy-manage/upgrade.md
         - group: Uninstall
           page: docs-content://deploy-manage/uninstall.md
       - group: Deployment and administration tools
         children:
-        - title: Overview
         - toc: ecctl://reference
         - page: elasticsearch://reference/elasticsearch/command-line-tools/index.md
           title: Command-line tools
