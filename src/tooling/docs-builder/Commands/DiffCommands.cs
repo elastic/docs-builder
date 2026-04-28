@@ -19,10 +19,12 @@ internal sealed class DiffCommand(
 	IConfigurationContext configurationContext
 )
 {
-	/// <summary>
-	/// Validate redirect updates in the current branch using the redirect file against changes reported by git.
-	/// </summary>
-	/// <param name="path">-p, Defaults to the <c>cwd/docs</c> folder</param>
+	/// <summary>Verify every renamed or removed page in the current branch has a redirect entry.</summary>
+	/// <remarks>
+	/// Compares the git diff of the working branch against the redirect file. Exits 1 if any moved
+	/// or deleted page is missing a redirect entry. Run before merging to catch broken links early.
+	/// </remarks>
+	/// <param name="path">-p, Root of the documentation source. Defaults to <c>cwd/docs</c>.</param>
 	[NoOptionsInjection]
 	[CommandName("diff")]
 	public async Task<int> Validate(string? path = null, CancellationToken ct = default)

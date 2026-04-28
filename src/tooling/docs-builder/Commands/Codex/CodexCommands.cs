@@ -20,9 +20,14 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Codex;
 
-/// <summary>
-/// Build documentation codexes from multiple isolated documentation sets.
-/// </summary>
+/// <summary>Build a documentation portal over multiple independent documentation sets, each with its own navigation.</summary>
+/// <remarks>
+/// <para>
+/// A codex is a portal composed of several documentation sets. Unlike the assembler, each set retains
+/// its own navigation structure — there is no merged global navigation tree. The codex configuration
+/// (<c>codex.yml</c>) lists which repositories to include and how to compose the portal.
+/// </para>
+/// </remarks>
 internal sealed class CodexCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -31,9 +36,7 @@ internal sealed class CodexCommands(
 	IEnvironmentVariables environmentVariables
 )
 {
-	/// <summary>
-	/// Clone and build a documentation codex in one step.
-	/// </summary>
+	/// <summary>Clone all repositories and build the portal in one step.</summary>
 	/// <remarks>
 	/// <code>
 	/// docs-builder codex ./codex.yml
@@ -41,12 +44,12 @@ internal sealed class CodexCommands(
 	/// docs-builder codex ./codex.yml --serve
 	/// </code>
 	/// </remarks>
-	/// <param name="config">Path to the <c>codex.yml</c> configuration file</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings</param>
-	/// <param name="fetchLatest">Fetch the latest commit even if already cloned</param>
-	/// <param name="assumeCloned">Assume repositories are already cloned</param>
-	/// <param name="output">Output directory for the built codex</param>
-	/// <param name="serve">Serve the documentation on port 4000 after a successful build</param>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
+	/// <param name="strict">Treat warnings as errors.</param>
+	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned ref.</param>
+	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
+	/// <param name="output">Output directory for the built portal. Defaults to <c>.artifacts/codex/</c>.</param>
+	/// <param name="serve">Serve the portal on port 4000 after a successful build.</param>
 	[DefaultCommand]
 	public async Task<int> CloneAndBuild(
 		GlobalCliOptions _,
@@ -114,11 +117,11 @@ internal sealed class CodexCommands(
 		return result;
 	}
 
-	/// <summary>Clone all repositories defined in the codex configuration.</summary>
-	/// <param name="config">Path to the <c>codex.yml</c> configuration file</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings</param>
-	/// <param name="fetchLatest">Fetch the latest commit even if already cloned</param>
-	/// <param name="assumeCloned">Assume repositories are already cloned</param>
+	/// <summary>Clone all repositories listed in the codex configuration.</summary>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
+	/// <param name="strict">Treat warnings as errors.</param>
+	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned ref.</param>
+	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
 	[NoOptionsInjection]
 	public async Task<int> Clone(
 		[Argument] string config,
@@ -161,10 +164,11 @@ internal sealed class CodexCommands(
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Build all documentation sets from already-cloned repositories.</summary>
-	/// <param name="config">Path to the <c>codex.yml</c> configuration file</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings</param>
-	/// <param name="output">Output directory for the built codex</param>
+	/// <summary>Build the portal from previously cloned repositories.</summary>
+	/// <remarks>Run after <c>codex clone</c>.</remarks>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
+	/// <param name="strict">Treat warnings as errors.</param>
+	/// <param name="output">Output directory. Defaults to <c>.artifacts/codex/</c>.</param>
 	[NoOptionsInjection]
 	public async Task<int> Build(
 		[Argument] string config,
@@ -213,9 +217,10 @@ internal sealed class CodexCommands(
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Serve the built codex documentation at <c>http://localhost:4000</c>.</summary>
-	/// <param name="port">Port to serve on. Default: 4000</param>
-	/// <param name="path">Path to the codex output directory</param>
+	/// <summary>Serve the built portal at <c>http://localhost:4000</c>.</summary>
+	/// <remarks>Run after <c>codex build</c>. Does not rebuild on file changes.</remarks>
+	/// <param name="port">Port to listen on. Default: 4000.</param>
+	/// <param name="path">Path to the portal output. Defaults to <c>.artifacts/codex/docs/</c>.</param>
 	[NoOptionsInjection]
 	public async Task Serve(int port = 4000, string? path = null, CancellationToken ct = default)
 	{

@@ -21,11 +21,12 @@ internal sealed class IndexCommand(
 	IEnvironmentVariables environmentVariables
 )
 {
-	/// <summary>
-	/// Index a single documentation set to Elasticsearch.
-	/// </summary>
+	/// <summary>Index a single documentation set into Elasticsearch.</summary>
 	/// <remarks>
-	/// <para>Calls <c>docs-builder --exporters elasticsearch</c> with full control over all Elasticsearch options.</para>
+	/// <para>
+	/// Builds the documentation set in metadata-only mode and streams the output to Elasticsearch.
+	/// Does not write HTML to disk. Requires a running cluster and valid credentials.
+	/// </para>
 	/// <code>
 	/// docs-builder index --endpoint https://localhost:9200 --api-key YOUR_KEY
 	/// docs-builder index --endpoint https://es:9200 --username elastic --password secret

@@ -22,14 +22,12 @@ internal sealed class IsolatedBuildCommand(
 	IEnvironmentVariables environmentVariables
 )
 {
-	/// <summary>
-	/// Builds a source documentation set folder.
-	/// </summary>
+	/// <summary>Build a single documentation set from source.</summary>
 	/// <remarks>
 	/// <code>
 	/// docs-builder build
 	/// docs-builder build -p ./my-docs -o .artifacts/html --strict
-	/// docs-builder build --exporters Html --exporters Elasticsearch
+	/// docs-builder build --exporters Html,Elasticsearch
 	/// </code>
 	/// </remarks>
 	[DefaultCommand]

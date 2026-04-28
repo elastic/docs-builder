@@ -13,8 +13,13 @@ namespace Documentation.Builder.Commands.Assembler;
 
 internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector)
 {
-	/// <summary>Generate the bloom filter binary file from a local <c>elastic/built-docs</c> repository.</summary>
-	/// <param name="builtDocsDir">Path to the local <c>elastic/built-docs</c> repository</param>
+	/// <summary>Build a bloom filter binary from a local legacy-docs repository.</summary>
+	/// <remarks>
+	/// The bloom filter is a compact data structure that records which legacy URLs existed before migration.
+	/// It is used to verify redirect coverage: if a legacy URL is absent from the filter, any redirect
+	/// pointing to it cannot be validated. Run once after cloning the legacy-docs repository.
+	/// </remarks>
+	/// <param name="builtDocsDir">Path to the local legacy-docs repository checkout.</param>
 	[NoOptionsInjection]
 	public async Task<int> Create(string builtDocsDir, CancellationToken ct = default)
 	{
@@ -31,8 +36,8 @@ internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnostic
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Look up whether a path exists in the bloom filter.</summary>
-	/// <param name="path">The URL path to look up</param>
+	/// <summary>Test whether a URL path is recorded in the bloom filter.</summary>
+	/// <param name="path">URL path to look up (e.g. <c>/guide/en/elasticsearch/reference/current/index.html</c>).</param>
 	[NoOptionsInjection]
 	public async Task<int> Lookup(string path, CancellationToken ct = default)
 	{

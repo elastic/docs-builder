@@ -17,12 +17,6 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
-/// <summary>
-/// Full assembler pipeline in one shot: init configuration, clone all repositories, then build assembled documentation.
-/// </summary>
-/// <remarks>
-/// Hoisted to the root scope via <c>app.Map&lt;AssembleOneShotCommand&gt;()</c> as the <c>assemble</c> command.
-/// </remarks>
 internal sealed class AssembleOneShotCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -32,20 +26,22 @@ internal sealed class AssembleOneShotCommand(
 	IEnvironmentVariables environmentVariables
 )
 {
-	/// <summary>
-	/// Full assembler pipeline: init configuration, clone all repositories, then build assembled documentation.
-	/// </summary>
+	/// <summary>Clone all repositories and build the unified documentation site in one step.</summary>
 	/// <remarks>
-	/// <para>Equivalent to running <c>assembler config init</c>, <c>assembler clone</c>, and <c>assembler build</c> in sequence.</para>
+	/// <para>
+	/// The assembler clones multiple documentation repositories and builds them into a single unified site
+	/// composed by a shared <c>navigation.yml</c>. This command combines <c>assembler config init</c>,
+	/// <c>assembler clone</c>, and <c>assembler build</c> into a single invocation.
+	/// </para>
 	/// <code>
 	/// docs-builder assemble
-	/// docs-builder assemble --environment staging --fetch-latest --exporters Html --exporters Elasticsearch
-	/// docs-builder assemble --serve
+	/// docs-builder assemble --environment staging --fetch-latest
+	/// docs-builder assemble --exporters Html,Elasticsearch --serve
 	/// </code>
 	/// </remarks>
-	/// <param name="fetchLatest">Fetch the latest commit of the branch instead of the link registry entry ref</param>
-	/// <param name="assumeCloned">Assume the repository folder already exists on disk (skip clone); primarily used for testing</param>
-	/// <param name="serve">Serve the documentation on port 4000 after a successful build</param>
+	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned link-registry ref.</param>
+	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk. Useful for iterating on the build.</param>
+	/// <param name="serve">Serve the site on port 4000 after a successful build.</param>
 	[CommandName("assemble")]
 	public async Task<int> Assemble(
 		GlobalCliOptions _,
@@ -89,6 +85,23 @@ internal sealed class AssembleOneShotCommand(
 	}
 }
 
+/// <summary>Build a unified documentation site by composing multiple documentation sets under a shared navigation.</summary>
+/// <remarks>
+/// <para>
+/// The assembler clones multiple documentation repositories and builds them into a single unified site.
+/// A central <c>navigation.yml</c> defines the global structure, merging content from every repository
+/// into one consistent navigation tree.
+/// </para>
+/// <para>
+/// Typical workflow:
+/// <code>
+/// docs-builder assembler config init          # fetch configuration
+/// docs-builder assembler clone                # clone all repositories
+/// docs-builder assembler build                # build the unified site
+/// docs-builder assembler serve                # preview the result
+/// </code>
+/// </para>
+/// </remarks>
 internal sealed class AssemblerCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -98,11 +111,15 @@ internal sealed class AssemblerCommands(
 	IEnvironmentVariables environmentVariables
 )
 {
-	/// <summary>Clone all repositories configured in the assembler.</summary>
-	/// <param name="strict">Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="environment">The environment to clone for</param>
-	/// <param name="fetchLatest">Fetch the latest commit of the branch instead of the link registry entry ref</param>
-	/// <param name="assumeCloned">Assume repositories are already cloned; primarily used for testing</param>
+	/// <summary>Clone all repositories listed in the assembler configuration.</summary>
+	/// <remarks>
+	/// Run <c>assembler config init</c> first to fetch the repository list. Clones into a local
+	/// working directory; subsequent <c>assembler build</c> reads from there.
+	/// </remarks>
+	/// <param name="strict">Treat warnings as errors.</param>
+	/// <param name="environment">Named deployment target. Determines which repositories and branches are cloned.</param>
+	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned link-registry ref.</param>
+	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
 	[NoOptionsInjection]
 	public async Task<int> Clone(
 		bool? strict = null,
@@ -125,7 +142,11 @@ internal sealed class AssemblerCommands(
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Build all cloned repositories into assembled documentation.</summary>
+	/// <summary>Build the unified site from all previously cloned repositories.</summary>
+	/// <remarks>
+	/// Run after <c>assembler clone</c>. Reads every cloned repository, applies the shared <c>navigation.yml</c>,
+	/// and writes the unified site to <c>.artifacts/docs/</c>.
+	/// </remarks>
 	[NoOptionsInjection]
 	public async Task<int> Build(
 		[AsParameters] AssemblerBuildOptions options,
@@ -142,9 +163,10 @@ internal sealed class AssemblerCommands(
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Serve the output of an assembler build at <c>http://localhost:4000</c>.</summary>
-	/// <param name="port">Port to serve the documentation. Default: 4000</param>
-	/// <param name="path">Path to the built documentation. Defaults to the standard assembler output</param>
+	/// <summary>Serve the output of a completed assembler build at <c>http://localhost:4000</c>.</summary>
+	/// <remarks>Run after <c>assembler build</c>. Does not watch for file changes.</remarks>
+	/// <param name="port">Port to listen on. Default: 4000.</param>
+	/// <param name="path">Path to the built site. Defaults to <c>.artifacts/docs/</c>.</param>
 	[NoOptionsInjection]
 	public async Task Serve(int port = 4000, string? path = null, CancellationToken ct = default)
 	{

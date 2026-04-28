@@ -23,7 +23,7 @@ internal sealed class ContentSourceCommands(
 	ICoreService githubActionsService
 )
 {
-	/// <summary>Validate that all configured repositories have been published.</summary>
+	/// <summary>Verify that every repository in the assembler configuration has an active published entry in the link registry.</summary>
 	[NoOptionsInjection]
 	public async Task<int> Validate(CancellationToken ct = default)
 	{
@@ -36,9 +36,10 @@ internal sealed class ContentSourceCommands(
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Match a repository to a branch or tag and determine whether it should be built.</summary>
-	/// <param name="repository">Repository to match</param>
-	/// <param name="branchOrTag">Branch or tag to match against</param>
+	/// <summary>Check whether a repository at a specific branch or tag should be included in the next build.</summary>
+	/// <remarks>Exits 0 if the repository matches; 1 otherwise. Useful for conditional CI steps.</remarks>
+	/// <param name="repository">Repository slug to match (e.g. <c>elastic/elasticsearch</c>).</param>
+	/// <param name="branchOrTag">Branch name or version tag to test against.</param>
 	[NoOptionsInjection]
 	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, CancellationToken ct = default)
 	{

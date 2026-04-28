@@ -21,7 +21,7 @@ internal sealed class NavigationCommands(
 	IConfigurationContext configurationContext
 )
 {
-	/// <summary>Validate that <c>navigation.yml</c> has no colliding path prefixes and all URLs are unique.</summary>
+	/// <summary>Check <c>navigation.yml</c> for duplicate path prefixes and non-unique URLs.</summary>
 	[NoOptionsInjection]
 	public async Task<int> Validate(CancellationToken ct = default)
 	{
@@ -31,8 +31,8 @@ internal sealed class NavigationCommands(
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Validate that all links in a local <c>links.json</c> do not collide with navigation path prefixes.</summary>
-	/// <param name="file">Path to <c>links.json</c>. Defaults to <c>.artifacts/docs/html/links.json</c></param>
+	/// <summary>Check that no link in a local <c>links.json</c> conflicts with a path prefix defined in <c>navigation.yml</c>.</summary>
+	/// <param name="file">Path to <c>links.json</c>. Defaults to <c>.artifacts/docs/html/links.json</c>.</param>
 	[NoOptionsInjection]
 	public async Task<int> ValidateLinkReference([Argument] string? file = null, CancellationToken ct = default)
 	{

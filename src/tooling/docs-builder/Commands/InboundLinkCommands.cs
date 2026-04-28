@@ -13,11 +13,19 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands;
 
+/// <summary>Validate cross-doc-set links against the published link registry.</summary>
+/// <remarks>
+/// <para>
+/// Every documentation set publishes a <c>links.json</c> file containing the URLs of all its pages.
+/// These files are aggregated into a shared link registry. Inbound-links commands validate that
+/// cross-links between documentation sets resolve to real pages in the registry.
+/// </para>
+/// </remarks>
 internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector)
 {
 	private readonly LinkIndexService _linkIndexService = new(logFactory, FileSystemFactory.RealRead);
 
-	/// <summary>Validate all published cross-links across all published <c>links.json</c> files.</summary>
+	/// <summary>Validate all cross-links across every published <c>links.json</c> in the registry.</summary>
 	[NoOptionsInjection]
 	public async Task<int> ValidateAll(CancellationToken ct = default)
 	{
@@ -26,9 +34,9 @@ internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnostic
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>Validate cross-links for a specific repository.</summary>
-	/// <param name="from">Source repository</param>
-	/// <param name="to">Target repository</param>
+	/// <summary>Validate all cross-links originating from or targeting a specific repository.</summary>
+	/// <param name="from">Only check links published by this repository slug.</param>
+	/// <param name="to">Only check links that point to this repository slug.</param>
 	[NoOptionsInjection]
 	public async Task<int> Validate(string? from = null, string? to = null, CancellationToken ct = default)
 	{
@@ -39,11 +47,13 @@ internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnostic
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>
-	/// Validate a locally published <c>links.json</c> against all published link registries.
-	/// </summary>
-	/// <param name="file">Path to <c>links.json</c>. Defaults to <c>.artifacts/docs/html/links.json</c></param>
-	/// <param name="path">-p, Defaults to the <c>cwd</c> folder</param>
+	/// <summary>Validate a locally built <c>links.json</c> against the published link registry.</summary>
+	/// <remarks>
+	/// Use this to verify cross-links before publishing. The local <c>links.json</c> is checked against
+	/// all currently published registries to ensure every outbound cross-link resolves.
+	/// </remarks>
+	/// <param name="file">Path to <c>links.json</c>. Defaults to <c>.artifacts/docs/html/links.json</c>.</param>
+	/// <param name="path">-p, Root of the documentation source. Defaults to <c>cwd</c>.</param>
 	[NoOptionsInjection]
 	public async Task<int> ValidateLinkReference(string? file = null, string? path = null, CancellationToken ct = default)
 	{

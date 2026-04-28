@@ -24,16 +24,18 @@ internal sealed class AssemblerIndexCommand(
 	IEnvironmentVariables environmentVariables
 )
 {
-	/// <summary>
-	/// Index assembled documentation to Elasticsearch.
-	/// </summary>
+	/// <summary>Index the assembled documentation into Elasticsearch.</summary>
 	/// <remarks>
-	/// <para>Calls <c>docs-builder assembler build --exporters elasticsearch</c> with full Elasticsearch option control.</para>
+	/// <para>
+	/// Runs an assembler build with only the Elasticsearch exporter enabled, then streams documents
+	/// to the cluster. The index name is derived from the environment name.
+	/// </para>
+	/// <para>Run after <c>assembler build</c> or use instead of it when indexing is the only goal.</para>
 	/// <code>
 	/// docs-builder assembler index --endpoint https://es:9200 --api-key KEY --environment staging
 	/// </code>
 	/// </remarks>
-	/// <param name="environment">The environment name; becomes part of the index name</param>
+	/// <param name="environment">Named deployment target; becomes part of the Elasticsearch index name.</param>
 	[CommandName("index")]
 	public async Task<int> Index(
 		GlobalCliOptions _,

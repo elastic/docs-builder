@@ -20,9 +20,14 @@ internal sealed class ConfigurationCommand(
 	AssemblyConfiguration assemblyConfiguration
 )
 {
-	/// <summary>Clone the assembler configuration folder into application data.</summary>
-	/// <param name="gitRef">Git reference to clone. Defaults to <c>main</c></param>
-	/// <param name="local">Save the remote configuration locally in <c>pwd</c> so later commands can pick it up as a local source</param>
+	/// <summary>Fetch the assembler configuration into local application data.</summary>
+	/// <remarks>
+	/// All assembler and codex commands read their repository list from a central configuration repository.
+	/// Run this once before the first <c>assembler clone</c> or <c>assemble</c> invocation, and whenever
+	/// the configuration has changed upstream.
+	/// </remarks>
+	/// <param name="gitRef">Git ref to fetch. Defaults to <c>main</c>.</param>
+	/// <param name="local">Write the configuration into <c>cwd</c> so subsequent commands treat it as a local override.</param>
 	[NoOptionsInjection]
 	public async Task<int> Init(string? gitRef = null, bool local = false, CancellationToken ct = default)
 	{

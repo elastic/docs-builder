@@ -20,10 +20,11 @@ internal sealed class CodexUpdateRedirectsCommand(
 	ILoggerFactory logFactory
 )
 {
-	/// <summary>Refresh the redirects mapping in CloudFront's KeyValueStore for codex.</summary>
-	/// <param name="config">Path to the codex configuration file (used to resolve environment)</param>
-	/// <param name="environment">The environment to deploy to. Defaults to config or <c>ENVIRONMENT</c> env var</param>
-	/// <param name="redirectsFile">Path to the redirects mapping. Defaults to <c>.artifacts/codex/docs/redirects.json</c></param>
+	/// <summary>Push the codex redirects mapping to CloudFront's KeyValueStore.</summary>
+	/// <remarks>Run after <c>codex build</c> produces a <c>redirects.json</c>.</remarks>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file (used to resolve the environment).</param>
+	/// <param name="environment">Named deployment target. Defaults to the value in <c>codex.yml</c> or the <c>ENVIRONMENT</c> env var.</param>
+	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/codex/docs/redirects.json</c>.</param>
 	public async Task<int> UpdateRedirects(
 		GlobalCliOptions _,
 		[Argument] string config,
