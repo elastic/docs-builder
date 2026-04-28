@@ -2,6 +2,7 @@
 @using Elastic.ApiExplorer.Operations
 @using Elastic.ApiExplorer.Schema
 @using Elastic.ApiExplorer.Shared
+@using Elastic.Documentation.Configuration.Versions
 @using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
@@ -34,7 +35,8 @@
 			ShowVersionInfo = true,
 			ShowExternalDocs = true,
 			UseHiddenUntilFound = true,
-			CollapseMode = CollapseMode.AlwaysCollapsed
+			CollapseMode = CollapseMode.AlwaysCollapsed,
+			VersionsConfiguration = Model.BuildContext.VersionsConfiguration
 		};
 
 	// Helper to create SchemaTypeContext
@@ -74,16 +76,28 @@
 		{
 			<span class="beta-badge">Beta</span>
 		}
-		@{
-			var versionInfo = (operation.Extensions?.TryGetValue("x-state", out var stateValue) == true && stateValue is JsonNodeExtension stateExt) ? stateExt.Node.GetValue<string>() : null;
-		}
-		@if (!string.IsNullOrEmpty(versionInfo))
-		{
-			<span class="version-badge">@versionInfo</span>
-		}
 	</h1>
-	<span style="background:cyan; display:none;" id="debug-version">DEBUG: Extensions=@(operation.Extensions != null ? string.Join(",", operation.Extensions.Keys) : "null"), x-state=@(versionInfo ?? "null")</span>
-	<span style="background:yellow; display:none;" id="debug-externaldocs">DEBUG: ExternalDocs=@(operation.ExternalDocs != null ? "exists" : "null"), Url=@(operation.ExternalDocs?.Url?.ToString() ?? "null")</span>
+	@{
+		var badgeData = AvailabilityBadgeHelper.FromOperation(operation, Model.BuildContext.VersionsConfiguration);
+	}
+	@if (badgeData is not null)
+	{
+		<p class="applies applies-block">
+			<applies-to-popover
+				badge-key="@badgeData.BadgeKey"
+				badge-lifecycle-text="@badgeData.BadgeLifecycleText"
+				badge-version="@badgeData.BadgeVersion"
+				lifecycle-class="@badgeData.LifecycleClass"
+				lifecycle-name="@badgeData.LifecycleName"
+				show-lifecycle-name="@badgeData.ShowLifecycleName.ToString().ToLowerInvariant()"
+				show-version="@badgeData.ShowVersion.ToString().ToLowerInvariant()"
+				has-multiple-lifecycles="false"
+				popover-data=""
+				show-popover="false"
+				is-inline="false"
+			></applies-to-popover>
+		</p>
+	}
 	@{
 		// Servers can be at operation level or document level
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : Model.Document.Servers;
