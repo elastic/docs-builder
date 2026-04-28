@@ -27,17 +27,21 @@ public class ChangelogArtifactEvaluationService(
 
 	public async Task<bool> EvaluateArtifact(IDiagnosticsCollector collector, EvaluateArtifactArguments input, Cancel ctx)
 	{
-		if (!_fileSystem.File.Exists(input.MetadataPath))
-		{
-			_logger.LogInformation("Metadata file not found at {Path}, nothing to evaluate", input.MetadataPath);
-			return true;
-		}
-
 		ChangelogArtifactMetadata? metadata;
 		try
 		{
 			var artifactMetadataJson = await _fileSystem.File.ReadAllTextAsync(input.MetadataPath, ctx);
 			metadata = JsonSerializer.Deserialize(artifactMetadataJson, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		}
+		catch (FileNotFoundException)
+		{
+			_logger.LogInformation("Metadata file not found at {Path}, nothing to evaluate", input.MetadataPath);
+			return true;
+		}
+		catch (DirectoryNotFoundException)
+		{
+			_logger.LogInformation("Metadata file not found at {Path}, nothing to evaluate", input.MetadataPath);
+			return true;
 		}
 		catch (IOException ex)
 		{
