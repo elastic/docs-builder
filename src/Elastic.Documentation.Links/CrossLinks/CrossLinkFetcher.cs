@@ -44,7 +44,7 @@ public record FetchedCrossLinks
 	};
 }
 
-public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, ScopedFileSystem? fileSystem = null) : IDisposable
+public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, ScopedFileSystem? fileSystem = null, bool ownsReader = false) : IDisposable
 {
 	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
 	protected ILinkIndexReader LinkIndexProvider => linkIndexProvider;
@@ -193,9 +193,10 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 
 	public void Dispose()
 	{
-		// Dispose the reader only when this fetcher created it (e.g. Aws3LinkIndexReader.CreateAnonymous()).
-		// logFactory is injected and owned by the caller — do not dispose it here.
-		if (linkIndexProvider is IDisposable disposableReader)
+		// Only dispose linkIndexProvider when this fetcher created it (ownsReader = true).
+		// When the reader was injected by the caller, the caller retains ownership and must dispose it.
+		// logFactory is always injected — never disposed here.
+		if (ownsReader && linkIndexProvider is IDisposable disposableReader)
 			disposableReader.Dispose();
 		GC.SuppressFinalize(this);
 	}
