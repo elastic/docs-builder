@@ -33,8 +33,22 @@ public class ChangelogArtifactEvaluationService(
 			return true;
 		}
 
-		var artifactMetadataJson = await _fileSystem.File.ReadAllTextAsync(input.MetadataPath, ctx);
-		var metadata = JsonSerializer.Deserialize(artifactMetadataJson, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		ChangelogArtifactMetadata? metadata;
+		try
+		{
+			var artifactMetadataJson = await _fileSystem.File.ReadAllTextAsync(input.MetadataPath, ctx);
+			metadata = JsonSerializer.Deserialize(artifactMetadataJson, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
+		}
+		catch (IOException ex)
+		{
+			collector.EmitError(input.MetadataPath, $"Failed to read artifact metadata: {ex.Message}");
+			return false;
+		}
+		catch (JsonException ex)
+		{
+			collector.EmitError(input.MetadataPath, $"Failed to deserialize artifact metadata: {ex.Message}");
+			return false;
+		}
 		if (metadata is null)
 		{
 			collector.EmitError(input.MetadataPath, "Failed to deserialize artifact metadata");

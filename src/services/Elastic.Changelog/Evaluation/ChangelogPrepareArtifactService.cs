@@ -40,8 +40,9 @@ public class ChangelogPrepareArtifactService(
 
 			if (sourceYaml != null)
 			{
-				changelogFilename = input.ExistingChangelogFilename
-					?? _fileSystem.Path.GetFileName(sourceYaml);
+				changelogFilename = input.ExistingChangelogFilename != null
+					? _fileSystem.Path.GetFileName(input.ExistingChangelogFilename)
+					: _fileSystem.Path.GetFileName(sourceYaml);
 
 				if (input.ExistingChangelogFilename != null)
 					_logger.LogInformation("Reusing existing filename {Filename} for stable path on branch", changelogFilename);
@@ -101,7 +102,10 @@ public class ChangelogPrepareArtifactService(
 			return null;
 
 		if (yamlFiles.Length > 1)
-			_logger.LogWarning("Multiple YAML files found in staging directory, using first: {File}", yamlFiles[0]);
+		{
+			_logger.LogError("Multiple YAML files found in staging directory: {Files}", string.Join(", ", yamlFiles));
+			return null;
+		}
 
 		return yamlFiles[0];
 	}

@@ -7,10 +7,11 @@ using Actions.Core.Services;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
@@ -19,19 +20,23 @@ public class ChangelogArtifactEvaluationServiceTests(ITestOutputHelper output) :
 	private readonly IGitHubPrService _mockGitHub = A.Fake<IGitHubPrService>();
 	private readonly ICoreService _mockCore = A.Fake<ICoreService>();
 
+	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
+	private static readonly string MetadataFilePath = Path.Join(Root, "artifact/metadata.json");
+
 	private ChangelogArtifactEvaluationService CreateService() =>
 		new(LoggerFactory, _mockGitHub, _mockCore, FileSystem);
 
 	private static EvaluateArtifactArguments DefaultArgs() =>
 		new()
 		{
-			MetadataPath = "/artifact/metadata.json",
+			MetadataPath = MetadataFilePath,
 			Owner = "elastic",
 			Repo = "test-repo"
 		};
 
-	private async Task WriteMetadata(ChangelogArtifactMetadata metadata, string path = "/artifact/metadata.json")
+	private async Task WriteMetadata(ChangelogArtifactMetadata metadata, string? path = null)
 	{
+		path ??= MetadataFilePath;
 		var dir = FileSystem.Path.GetDirectoryName(path)!;
 		FileSystem.Directory.CreateDirectory(dir);
 		var json = JsonSerializer.Serialize(metadata, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);

@@ -4,17 +4,23 @@
 
 using System.Text.Json;
 using Actions.Core.Services;
+using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
 public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
 {
 	private readonly ICoreService _mockCore = A.Fake<ICoreService>();
+
+	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
+	private static readonly string StagingDir = Path.Join(Root, "staging");
+	private static readonly string OutputDir = Path.Join(Root, "output");
+	private static readonly string ConfigPath = Path.Join(Root, "config/changelog.yml");
 
 	private const string MinimalConfig = """
 		pivot:
@@ -44,26 +50,27 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	) =>
 		new()
 		{
-			StagingDir = "/staging",
-			OutputDir = "/output",
+			StagingDir = StagingDir,
+			OutputDir = OutputDir,
 			EvaluateStatus = evaluateStatus,
 			GenerateOutcome = generateOutcome,
 			PrNumber = 42,
 			HeadRef = "feature/test",
 			HeadSha = "abc123",
 			LabelTable = null,
-			Config = config ?? "/config/changelog.yml"
+			Config = config ?? ConfigPath
 		};
 
 	private async Task SetupStagingYaml(string? filename = null)
 	{
-		FileSystem.Directory.CreateDirectory("/staging");
+		FileSystem.Directory.CreateDirectory(StagingDir);
 		filename ??= "42.yaml";
-		await FileSystem.File.WriteAllTextAsync($"/staging/{filename}", "title: test changelog");
+		await FileSystem.File.WriteAllTextAsync(Path.Join(StagingDir, filename), "title: test changelog");
 	}
 
-	private async Task SetupConfig(string configPath = "/config/changelog.yml")
+	private async Task SetupConfig(string? configPath = null)
 	{
+		configPath ??= ConfigPath;
 		var dir = FileSystem.Path.GetDirectoryName(configPath)!;
 		FileSystem.Directory.CreateDirectory(dir);
 		await FileSystem.File.WriteAllTextAsync(configPath, MinimalConfig);
@@ -71,7 +78,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 
 	private ChangelogArtifactMetadata ReadMetadata()
 	{
-		var json = FileSystem.File.ReadAllText("/output/metadata.json");
+		var json = FileSystem.File.ReadAllText(Path.Join(OutputDir, "metadata.json"));
 		return JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata)!;
 	}
 
@@ -85,7 +92,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		var result = await service.PrepareArtifact(Collector, DefaultArgs(), CancellationToken.None);
 
 		result.Should().BeTrue();
-		FileSystem.File.Exists("/output/42.yaml").Should().BeTrue();
+		FileSystem.File.Exists(Path.Join(OutputDir, "42.yaml")).Should().BeTrue();
 		var metadata = ReadMetadata();
 		metadata.Status.Should().Be("success");
 		metadata.PrNumber.Should().Be(42);
@@ -169,7 +176,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		var result = await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
 		result.Should().BeTrue();
-		FileSystem.File.Exists("/output/42.yaml").Should().BeFalse();
+		FileSystem.File.Exists(Path.Join(OutputDir, "42.yaml")).Should().BeFalse();
 		var metadata = ReadMetadata();
 		metadata.Status.Should().Be("error");
 	}
@@ -184,7 +191,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		var result = await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
 		result.Should().BeTrue();
-		FileSystem.File.Exists("/output/42.yaml").Should().BeFalse();
+		FileSystem.File.Exists(Path.Join(OutputDir, "42.yaml")).Should().BeFalse();
 		var metadata = ReadMetadata();
 		metadata.Status.Should().Be("no-label");
 		metadata.LabelTable.Should().Contain("Label");
@@ -202,7 +209,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 
 		var metadata = ReadMetadata();
 		metadata.CreateRules.Should().NotBeNull();
-		metadata.CreateRules!.Labels.Should().Contain("changelog:skip");
+		metadata.CreateRules.Labels.Should().Contain("changelog:skip");
 		metadata.CreateRules.Mode.Should().Be(FieldMode.Exclude);
 	}
 
@@ -217,8 +224,8 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		var result = await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
 		result.Should().BeTrue();
-		FileSystem.File.Exists("/output/1735689600-old-title.yaml").Should().BeTrue();
-		FileSystem.File.Exists("/output/1735700000-new-title.yaml").Should().BeFalse();
+		FileSystem.File.Exists(Path.Join(OutputDir, "1735689600-old-title.yaml")).Should().BeTrue();
+		FileSystem.File.Exists(Path.Join(OutputDir, "1735700000-new-title.yaml")).Should().BeFalse();
 		var metadata = ReadMetadata();
 		metadata.ChangelogFilename.Should().Be("1735689600-old-title.yaml");
 	}

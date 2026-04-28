@@ -6,7 +6,7 @@ using System.Text.Json;
 using Elastic.Changelog.Evaluation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.ReleaseNotes;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
@@ -51,7 +51,7 @@ public class ChangelogArtifactMetadataTests
 		var deserialized = JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.PrNumber.Should().Be(42);
+		deserialized.PrNumber.Should().Be(42);
 		deserialized.HeadRef.Should().Be("feature/test");
 		deserialized.HeadSha.Should().Be("abc123def456");
 		deserialized.Status.Should().Be("success");
@@ -65,7 +65,7 @@ public class ChangelogArtifactMetadataTests
 		deserialized.ConfigFile.Should().Be("changelog.yml");
 		deserialized.ChangelogDir.Should().Be("changelogs");
 		deserialized.CreateRules.Should().NotBeNull();
-		deserialized.CreateRules!.Labels.Should().BeEquivalentTo(["changelog:skip", "no-changelog"]);
+		deserialized.CreateRules.Labels.Should().BeEquivalentTo(["changelog:skip", "no-changelog"]);
 		deserialized.CreateRules.Mode.Should().Be(FieldMode.Exclude);
 		deserialized.CreateRules.Match.Should().Be(MatchMode.Any);
 		deserialized.CreateRules.ByProduct.Should().ContainKey("elasticsearch");
@@ -89,7 +89,7 @@ public class ChangelogArtifactMetadataTests
 		var deserialized = JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.PrNumber.Should().Be(1);
+		deserialized.PrNumber.Should().Be(1);
 		deserialized.IsFork.Should().BeFalse();
 		deserialized.CanCommit.Should().BeFalse();
 		deserialized.HeadRepo.Should().BeNull();
