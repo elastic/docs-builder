@@ -19,6 +19,8 @@ public class DocSetConfigurationCrossLinkFetcher(
 	: CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous(), ownsReader: linkIndexProvider is null)
 {
 	private readonly ILogger _logger = logFactory.CreateLogger(nameof(DocSetConfigurationCrossLinkFetcher));
+	// _codexReader is injected by the caller who retains ownership and is responsible for disposal.
+	// ReloadableGeneratorState, the primary caller, disposes it directly in its own Dispose().
 	private readonly ILinkIndexReader? _codexReader = codexLinkIndexReader;
 
 	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
