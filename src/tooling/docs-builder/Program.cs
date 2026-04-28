@@ -12,7 +12,12 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Nullean.Argh;
 using Nullean.Argh.Hosting;
+
+// Pre-host fast path: run --help, --version, __schema, __completion directly and exit
+// before the host (and its startup logs) are ever constructed.
+await ArghApp.TryArghIntrinsicCommand(args);
 
 var builder = Host.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(args, (s, p) =>

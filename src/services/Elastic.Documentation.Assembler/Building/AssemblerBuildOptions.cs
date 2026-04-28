@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Nullean.Argh;
 
 namespace Elastic.Documentation.Assembler.Building;
 
@@ -13,7 +14,7 @@ public record AssemblerBuildOptions
 	public string? Environment { get; init; }
 	public bool? MetadataOnly { get; init; }
 	public bool? ShowHints { get; init; }
-	// TODO: add [CollectionSyntax(Separator=",")] once argh fixes [AsParameters] + [CollectionSyntax] interaction
+	[CollectionSyntax(Separator = ",")]
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 	public bool? AssumeBuild { get; init; }
 }
