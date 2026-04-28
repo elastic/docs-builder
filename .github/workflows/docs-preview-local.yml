@@ -258,11 +258,9 @@ jobs:
 
       - name: Generate env.PATH_PREFIX
         id: generate-path-prefix
-        # disabled: preview path prefix is not needed on this branch
         if: >
-          false
-          && env.MATCH == 'true'
-          && steps.deployment.outputs.result
+          env.MATCH == 'true'
+          && needs.check.outputs.any_modified != 'false'
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -336,13 +334,10 @@ jobs:
 
       - name: Upload to S3
         id: s3-upload
-        # disabled: preview uploads are not enabled on this branch
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && !cancelled()
           && steps.internal-docs-build.outputs.skip != 'true'
-          && steps.deployment.outputs.result
           && steps.internal-docs-build.outcome == 'success'
         env:
           AWS_RETRY_MODE: standard
