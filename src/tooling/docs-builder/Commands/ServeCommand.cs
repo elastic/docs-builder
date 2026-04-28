@@ -21,7 +21,7 @@ internal sealed class ServeCommand(ILoggerFactory logFactory, IConfigurationCont
 	/// <param name="port">Port to serve the documentation. Default: 3000</param>
 	/// <param name="watch">Special flag for <c>dotnet watch</c> optimizations during development</param>
 	[CommandName("serve")]
-	public async Task Serve(GlobalCliOptions _, DirectoryInfo? path = null, int port = 3000, bool watch = false, CancellationToken ct = default)
+	public async Task Serve(GlobalCliOptions _, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, int port = 3000, bool watch = false, CancellationToken ct = default)
 	{
 		var host = new DocumentationWebHost(logFactory, path?.FullName, port, FileSystemFactory.RealGitRootForPath(path?.FullName), FileSystemFactory.InMemory(), configurationContext, watch);
 		await host.RunAsync(ct);

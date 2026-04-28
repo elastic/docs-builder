@@ -57,9 +57,9 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
 	[NoOptionsInjection]
 	public Task<int> Init(
-		DirectoryInfo? path = null,
-		DirectoryInfo? changelogDir = null,
-		DirectoryInfo? bundlesDir = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? changelogDir = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null,
 		string? owner = null,
 		string? repo = null
 	)
@@ -238,7 +238,7 @@ internal sealed partial class ChangelogCommands(
 		string? action = null,
 		string[]? areas = null,
 		bool concise = false,
-		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? description = null,
 		bool noExtractReleaseNotes = false,
 		bool noExtractIssues = false,
@@ -514,8 +514,8 @@ internal sealed partial class ChangelogCommands(
 		[Argument] string? profileArg = null,
 		[Argument] string? profileReport = null,
 		bool all = false,
-		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
-		DirectoryInfo? directory = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
 		string? description = null,
 		string[]? hideFeatures = null,
 		bool noReleaseDate = false,
@@ -880,9 +880,9 @@ internal sealed partial class ChangelogCommands(
 		[Argument] string? profileArg = null,
 		[Argument] string? profileReport = null,
 		bool all = false,
-		DirectoryInfo? bundlesDir = null,
-		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
-		DirectoryInfo? directory = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
 		bool dryRun = false,
 		bool force = false,
 		string[]? issues = null,
@@ -1096,7 +1096,7 @@ internal sealed partial class ChangelogCommands(
 	[NoOptionsInjection]
 	public async Task<int> Render(
 		string[]? input = null,
-		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? fileType = "markdown",
 		string[]? hideFeatures = null,
 		string? output = null,
@@ -1159,7 +1159,7 @@ internal sealed partial class ChangelogCommands(
 	public async Task<int> GhRelease(
 		[Argument] string repo,
 		[Argument] string version = "latest",
-		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? description = null,
 		string? output = null,
 		string? releaseDate = null,
@@ -1216,7 +1216,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
-		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
 		string[]? add = null,
 		bool? resolve = null,
 		CancellationToken ct = default
@@ -1388,8 +1388,8 @@ internal sealed partial class ChangelogCommands(
 		string artifactType,
 		string target,
 		string s3BucketName = "",
-		[FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
-		DirectoryInfo? directory = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
 		CancellationToken ct = default
 	)
 	{

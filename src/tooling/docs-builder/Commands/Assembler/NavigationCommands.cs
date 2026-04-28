@@ -36,7 +36,7 @@ internal sealed class NavigationCommands(
 	/// <summary>Check that no link in a local <c>links.json</c> conflicts with a path prefix defined in <c>navigation.yml</c>.</summary>
 	/// <param name="file">Path to <c>links.json</c>. Defaults to <c>.artifacts/docs/html/links.json</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> ValidateLinkReference([Argument, FileExtensions(Extensions = "json")] FileInfo? file = null, CancellationToken ct = default)
+	public async Task<int> ValidateLinkReference([Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? file = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new GlobalNavigationService(logFactory, configuration, configurationContext, FileSystemFactory.RealRead);

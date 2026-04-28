@@ -56,7 +56,7 @@ internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnostic
 	/// <param name="file">Path to <c>links.json</c>. Defaults to <c>.artifacts/docs/html/links.json</c>.</param>
 	/// <param name="path">-p, Root of the documentation source. Defaults to <c>cwd</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> ValidateLinkReference([FileExtensions(Extensions = "json")] FileInfo? file = null, string? path = null, CancellationToken ct = default)
+	public async Task<int> ValidateLinkReference([Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? file = null, string? path = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		serviceInvoker.AddCommand(_linkIndexService, (file, path),

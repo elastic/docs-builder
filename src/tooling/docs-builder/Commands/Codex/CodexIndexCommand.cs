@@ -37,7 +37,7 @@ internal sealed class CodexIndexCommand(
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	public async Task<int> Index(
 		GlobalCliOptions _,
-		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		[AsParameters] ElasticsearchIndexOptions es,
 		CancellationToken ct = default
 	)

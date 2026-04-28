@@ -34,7 +34,7 @@ internal sealed class DeployCommands(
 	/// <param name="out">Path to write the plan file. Defaults to <c>stdout</c>.</param>
 	/// <param name="deleteThreshold">Abort if the plan would delete more than this percentage of objects (0–100).</param>
 	[NoOptionsInjection]
-	public async Task<int> Plan(string environment, string s3BucketName, FileInfo? @out = null, float? deleteThreshold = null, CancellationToken ct = default)
+	public async Task<int> Plan(string environment, string s3BucketName, [ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null, float? deleteThreshold = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -51,7 +51,7 @@ internal sealed class DeployCommands(
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
 	/// <param name="planFile">Path to the plan file produced by <c>assembler deploy plan</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> Apply(string environment, string s3BucketName, [FileExtensions(Extensions = "json")] FileInfo planFile, CancellationToken ct = default)
+	public async Task<int> Apply(string environment, string s3BucketName, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo planFile, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -67,7 +67,7 @@ internal sealed class DeployCommands(
 	/// <param name="environment">Named deployment target.</param>
 	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/docs/redirects.json</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> UpdateRedirects(string environment, [FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null, CancellationToken ct = default)
+	public async Task<int> UpdateRedirects(string environment, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 

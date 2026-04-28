@@ -88,7 +88,7 @@ public record ElasticsearchIndexOptions
 	public string? CertificateFingerprint { get; init; }
 
 	/// <summary>Path to a PEM or DER certificate file for SSL validation.</summary>
-	[FileExtensions(Extensions = "pem,der,crt,cer")]
+	[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "pem,der,crt,cer")]
 	public FileInfo? CertificatePath { get; init; }
 
 	/// <summary>Set when the certificate is an intermediate CA rather than the root.</summary>

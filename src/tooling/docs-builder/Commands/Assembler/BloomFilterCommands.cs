@@ -22,7 +22,7 @@ internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnostic
 	/// </remarks>
 	/// <param name="builtDocsDir">Path to the local legacy-docs repository checkout.</param>
 	[NoOptionsInjection]
-	public async Task<int> Create(DirectoryInfo builtDocsDir, CancellationToken ct = default)
+	public async Task<int> Create([Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo builtDocsDir, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 

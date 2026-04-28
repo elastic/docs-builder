@@ -11,9 +11,11 @@ namespace Elastic.Documentation.Isolated;
 public record IsolatedBuildOptions
 {
 	/// <summary>-p, Root directory of the documentation source. Defaults to <c>cwd/docs</c>.</summary>
+	[Existing, ExpandUserProfile, RejectSymbolicLinks]
 	public DirectoryInfo? Path { get; init; }
 
 	/// <summary>-o, Destination for generated HTML. Defaults to <c>.artifacts/html</c>.</summary>
+	[ExpandUserProfile, RejectSymbolicLinks]
 	public DirectoryInfo? Output { get; init; }
 
 	/// <summary>URL path prefix prepended to every generated link.</summary>

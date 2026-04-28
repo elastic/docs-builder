@@ -28,9 +28,9 @@ internal sealed class CodexUpdateRedirectsCommand(
 	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/codex/docs/redirects.json</c>.</param>
 	public async Task<int> UpdateRedirects(
 		GlobalCliOptions _,
-		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string? environment = null,
-		[FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null,
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);

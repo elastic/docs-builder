@@ -49,11 +49,11 @@ internal sealed class CodexCommands(
 	[DefaultCommand]
 	public async Task<int> CloneAndBuild(
 		GlobalCliOptions _,
-		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
-		DirectoryInfo? output = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? output = null,
 		bool serve = false,
 		CancellationToken ct = default)
 	{
@@ -121,7 +121,7 @@ internal sealed class CodexCommands(
 	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
 	[NoOptionsInjection]
 	public async Task<int> Clone(
-		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
@@ -169,9 +169,9 @@ internal sealed class CodexCommands(
 	/// <param name="output">Output directory. Defaults to <c>.artifacts/codex/</c>.</param>
 	[NoOptionsInjection]
 	public async Task<int> Build(
-		[Argument, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
-		DirectoryInfo? output = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? output = null,
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
@@ -221,7 +221,7 @@ internal sealed class CodexCommands(
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="path">Path to the portal output. Defaults to <c>.artifacts/codex/docs/</c>.</param>
 	[NoOptionsInjection]
-	public async Task Serve(int port = 4000, DirectoryInfo? path = null, CancellationToken ct = default)
+	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
 	{
 		var fs = FileSystemFactory.RealRead;
 		var servePath = path?.FullName ?? fs.Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
