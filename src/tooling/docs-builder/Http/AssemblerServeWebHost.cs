@@ -30,8 +30,9 @@ public class AssemblerServeWebHost
 	// Sorted longest-prefix-first for greedy matching
 	private readonly (string Prefix, string FileSlugBase, AssemblerDocumentationSet Set, DocumentationGenerator Generator)[] _prefixMap;
 
-	// Shortest top-level prefix → first real content section (e.g. "/docs/get-started")
-	private readonly string _rootRedirectUrl;
+	// Shortest top-level prefix → first real content section (e.g. "/docs/get-started").
+	// Null when no mappings exist and no path prefix is configured — callers must guard.
+	private readonly string? _rootRedirectUrl;
 
 	public AssemblerServeWebHost(
 		int port,
@@ -42,10 +43,13 @@ public class AssemblerServeWebHost
 	)
 	{
 		_prefixMap = BuildPrefixMap(assembleSources, assemblerBuilder);
-		_rootRedirectUrl = "/" + (_prefixMap
-			.OrderBy(e => e.Prefix.Length)
-			.Select(e => e.Prefix)
-			.FirstOrDefault() ?? assembleSources.AssembleContext.Environment.PathPrefix ?? "");
+		var firstPrefix = _prefixMap.OrderBy(e => e.Prefix.Length).Select(e => e.Prefix).FirstOrDefault();
+		var envPrefix = assembleSources.AssembleContext.Environment.PathPrefix;
+		_rootRedirectUrl = firstPrefix is not null
+			? $"/{firstPrefix}"
+			: envPrefix is { Length: > 0 }
+				? $"/{envPrefix}"
+				: null;
 
 		var urlPathPrefix = assembleSources.AssembleSets.Values.FirstOrDefault()?.BuildContext.UrlPathPrefix ?? "";
 
@@ -67,7 +71,7 @@ public class AssemblerServeWebHost
 		_ = builder.Services.AddAotLiveReload(s =>
 		{
 			s.FolderToMonitor = assembleSources.AssembleContext.CheckoutDirectory.FullName;
-			s.ClientFileExtensions = ".md,.yml";
+			s.ClientFileExtensions = watchMarkdown ? ".md,.yml" : ".css,.js";
 		});
 
 		var sets = assembleSources.AssembleSets.Values.ToList();
@@ -169,7 +173,9 @@ public class AssemblerServeWebHost
 	}
 
 	private Task<IResult> ServeRoot(Cancel _) =>
-		Task.FromResult(Results.Redirect(_rootRedirectUrl));
+		Task.FromResult(_rootRedirectUrl is not null
+			? Results.Redirect(_rootRedirectUrl)
+			: Results.NotFound());
 
 	private async Task<IResult> ServeDocumentationFile(string slug, Cancel ctx)
 	{
@@ -182,7 +188,7 @@ public class AssemblerServeWebHost
 
 		var match = FindRepo(slug);
 		if (match is null)
-			return Results.Redirect(_rootRedirectUrl);
+			return _rootRedirectUrl is not null ? Results.Redirect(_rootRedirectUrl) : Results.NotFound();
 
 		var (set, generator, relFileSlug) = match.Value;
 
@@ -224,7 +230,12 @@ public class AssemblerServeWebHost
 	{
 		foreach (var (prefix, fileSlugBase, set, generator) in _prefixMap)
 		{
-			if (!slug.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+			var matchesPrefix =
+				slug.Equals(prefix, StringComparison.OrdinalIgnoreCase)
+				|| (slug.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+					&& slug.Length > prefix.Length
+					&& slug[prefix.Length] == '/');
+			if (!matchesPrefix)
 				continue;
 			var afterPrefix = slug[prefix.Length..].TrimStart('/');
 			var relFileSlug = string.IsNullOrEmpty(fileSlugBase)
