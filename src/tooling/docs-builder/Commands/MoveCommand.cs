@@ -19,19 +19,11 @@ internal sealed class RefactorCommands(
 	IConfigurationContext configurationContext
 )
 {
-	/// <summary>
-	/// Move a file or folder and update all links in the documentation.
-	/// </summary>
-	/// <remarks>
-	/// <code>
-	/// docs-builder mv ./docs/old-page.md ./docs/new-page.md
-	/// docs-builder mv ./docs/old-section ./docs/new-section --dry-run
-	/// </code>
-	/// </remarks>
-	/// <param name="source">The source file or folder path to move from</param>
-	/// <param name="target">The target file or folder path to move to</param>
-	/// <param name="path">-p, Defaults to the <c>cwd</c> folder</param>
-	/// <param name="dryRun">Preview the move operation without applying changes</param>
+	/// <summary>Move a file or folder and rewrite all inbound links across the documentation set.</summary>
+	/// <param name="source">Source file or folder path.</param>
+	/// <param name="target">Destination file or folder path.</param>
+	/// <param name="path">-p, Documentation root. Defaults to <c>cwd</c>.</param>
+	/// <param name="dryRun">Print the changes that would be made without applying them.</param>
 	[CommandName("mv")]
 	public async Task<int> Move(
 		GlobalCliOptions _,
@@ -53,19 +45,11 @@ internal sealed class RefactorCommands(
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>
-	/// Format documentation files by fixing common issues such as irregular spacing.
-	/// </summary>
-	/// <remarks>
-	/// <para>Exactly one of <c>--check</c> or <c>--write</c> must be specified.</para>
-	/// <code>
-	/// docs-builder format --check
-	/// docs-builder format --write -p ./my-docs
-	/// </code>
-	/// </remarks>
-	/// <param name="path">-p, Path to the documentation folder. Defaults to <c>cwd</c></param>
-	/// <param name="check">Check if files need formatting without modifying them (exits with code 1 if formatting is needed)</param>
-	/// <param name="write">Write formatting changes to files</param>
+	/// <summary>Fix common formatting issues (irregular spacing, trailing whitespace) across documentation files.</summary>
+	/// <remarks>Exactly one of <c>--check</c> or <c>--write</c> must be specified.</remarks>
+	/// <param name="path">-p, Documentation root. Defaults to <c>cwd</c>.</param>
+	/// <param name="check">Report files that need formatting without modifying them. Exits 1 when any file is out of format.</param>
+	/// <param name="write">Apply formatting changes in place.</param>
 	[CommandName("format")]
 	public async Task<int> Format(
 		GlobalCliOptions _,

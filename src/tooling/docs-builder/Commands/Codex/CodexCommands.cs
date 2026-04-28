@@ -38,11 +38,6 @@ internal sealed class CodexCommands(
 {
 	/// <summary>Clone all repositories and build the portal in one step.</summary>
 	/// <remarks>
-	/// <code>
-	/// docs-builder codex ./codex.yml
-	/// docs-builder codex ./codex.yml --strict --fetch-latest
-	/// docs-builder codex ./codex.yml --serve
-	/// </code>
 	/// </remarks>
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	/// <param name="strict">Treat warnings as errors.</param>

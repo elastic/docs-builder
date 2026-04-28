@@ -26,6 +26,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Documentation.Builder.Commands;
 
+/// <summary>Create, bundle, and publish changelog entries.</summary>
 internal sealed partial class ChangelogCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -42,16 +43,17 @@ internal sealed partial class ChangelogCommands(
 
 	private readonly IFileSystem _fileSystem = FileSystemFactory.RealRead;
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommands>();
-	/// <summary>
-	/// Initialize changelog configuration and folder structure. Creates changelog.yml from the example template in the docs folder (discovered via docset.yml when present, or at PATH/docs which is created if needed), and creates changelog and releases subdirectories if they do not exist.
-	/// When changelog.yml already exists and --changelog-dir or --bundles-dir is specified, updates the bundle.directory and/or bundle.output_directory fields accordingly.
-	/// When creating a new changelog.yml, seeds bundle.owner, bundle.repo, and bundle.link_allow_repos from git remote origin (github.com only) and/or --owner / --repo.
-	/// </summary>
-	/// <param name="path">Optional: Repository root path. Defaults to the output of pwd (current directory). Docs folder is PATH/docs, created if it does not exist.</param>
-	/// <param name="changelogDir">Optional: Path to changelog directory. Defaults to DOCS_FOLDER/changelog.</param>
-	/// <param name="bundlesDir">Optional: Path to bundles output directory. Defaults to DOCS_FOLDER/releases.</param>
-	/// <param name="owner">Optional: GitHub owner for bundle defaults and link_allow_repos seeding. Overrides the owner inferred from git remote origin.</param>
-	/// <param name="repo">Optional: GitHub repository name for bundle defaults and link_allow_repos seeding. Overrides the repo inferred from git remote origin.</param>
+	/// <summary>Create <c>changelog.yml</c> and the changelog/releases directory structure.</summary>
+	/// <remarks>
+	/// Discovers the docs folder via <c>docset.yml</c>; falls back to creating <c>PATH/docs</c>.
+	/// When <c>changelog.yml</c> already exists, updates only the paths specified via <see paramref="changelogDir"/> or <see paramref="bundlesDir"/>.
+	/// Seeds <c>bundle.owner</c>, <c>bundle.repo</c>, and <c>bundle.link_allow_repos</c> from the git remote origin when available.
+	/// </remarks>
+	/// <param name="path">Repository root. Defaults to <c>cwd</c>.</param>
+	/// <param name="changelogDir">Changelog entry directory. Defaults to <c>docs/changelog</c>.</param>
+	/// <param name="bundlesDir">Bundle output directory. Defaults to <c>docs/releases</c>.</param>
+	/// <param name="owner">GitHub owner for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
+	/// <param name="repo">GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
 	[NoOptionsInjection]
 	public Task<int> Init(
 		string? path = null,
@@ -204,9 +206,7 @@ internal sealed partial class ChangelogCommands(
 		return Task.FromResult(0);
 	}
 
-	/// <summary>
-	/// Add a new changelog from command-line input
-	/// </summary>
+	/// <summary>Create a new changelog entry YAML file.</summary>
 	/// <param name="products">Optional: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"). If not specified, will be inferred from repository or config defaults.</param>
 	/// <param name="action">Optional: What users must do to mitigate</param>
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
@@ -479,9 +479,12 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Bundle changelog files. Can use either profile-based bundling (for example, "bundle elasticsearch-release 9.2.0") or command-line options (for example, "bundle --all") Only one command-line filter option can be specified: `--all`, `--input-products`, `--prs`, `--issues`, `--release-version`, or `--report`.
-	/// </summary>
+	/// <summary>Aggregate changelog entries matching a filter into a single bundle YAML.</summary>
+	/// <remarks>
+	/// Accepts either a named profile from <c>changelog.yml</c> (e.g. <c>bundle my-release 9.2.0</c>) or
+	/// an explicit filter flag. Exactly one filter must be specified: <c>--all</c>, <c>--input-products</c>,
+	/// <c>--prs</c>, <c>--issues</c>, <c>--release-version</c>, or <c>--report</c>.
+	/// </remarks>
 	/// <param name="profile">Optional: Profile name from bundle.profiles in config (for example, "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
 	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html")</param>
 	/// <param name="profileReport">Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source (for example, "bundle serverless-release 2026-02 ./report.html").</param>
@@ -848,11 +851,11 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Remove changelog files. Can use either profile-based removal (e.g., "remove elasticsearch-release 9.2.0") or raw flags (e.g., "remove --all").
-	/// When a file is referenced by an unresolved bundle, the command blocks by default to prevent breaking
-	/// the changelog directive. Use --force to override.
-	/// </summary>
+	/// <summary>Delete changelog entry files matching a filter.</summary>
+	/// <remarks>
+	/// Blocks when a file is referenced by an unresolved bundle to avoid breaking the <c>{changelog}</c>
+	/// directive in published documentation. Pass <c>--force</c> to override.
+	/// </remarks>
 	/// <param name="profile">Optional: Profile name from bundle.profiles in config (for example, "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
 	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html")</param>
 	/// <param name="profileReport">Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source.</param>
@@ -1082,9 +1085,7 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Render bundled changelog(s) to markdown or asciidoc files
-	/// </summary>
+	/// <summary>Render one or more changelog bundles to Markdown or AsciiDoc.</summary>
 	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Use "hide-links" for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="fileType">Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown"</param>
@@ -1145,9 +1146,7 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Create changelogs from a GitHub release
-	/// </summary>
+	/// <summary>Create changelog entries from the PRs referenced in a GitHub release.</summary>
 	/// <param name="repo">Required: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch" which defaults to elastic/elasticsearch)</param>
 	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
@@ -1211,9 +1210,8 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file.
-	/// </summary>
+	/// <summary>Append additional changelog entries to a published bundle without modifying it.</summary>
+	/// <remarks>Creates an immutable <c>.amend-N.yaml</c> sidecar file alongside the original bundle.</remarks>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
 	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).</param>
@@ -1263,9 +1261,12 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// (CI) Evaluate a PR for changelog generation eligibility. Performs pre-flight checks (body-only edit, bot loop, manual edit), loads config, checks label rules, resolves title/type, and sets GitHub Actions outputs.
-	/// </summary>
+	/// <summary>(CI) Evaluate a pull request for changelog generation eligibility and set GitHub Actions outputs.</summary>
+	/// <remarks>
+	/// Runs pre-flight checks (body-only edit, bot loop, manual edit), applies label rules from
+	/// <c>changelog.yml</c>, and resolves the entry type and title. Designed to be called from a
+	/// GitHub Actions workflow step.
+	/// </remarks>
 	/// <param name="config">Path to the changelog.yml configuration file</param>
 	/// <param name="owner">GitHub repository owner</param>
 	/// <param name="repo">GitHub repository name</param>
@@ -1331,10 +1332,6 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Expands a CLI array parameter where each element may be comma-separated into a flat list of values.
-	/// Filters out blank entries.
-	/// </summary>
 	private static List<string> ExpandCommaSeparated(string[]? values)
 	{
 		if (values is not { Length: > 0 })
@@ -1351,10 +1348,6 @@ internal sealed partial class ChangelogCommands(
 		return result;
 	}
 
-	/// <summary>
-	/// Returns a path suitable for changelog.yml config (relative to repo when possible, forward slashes).
-	/// Quotes the value if it contains YAML-special characters.
-	/// </summary>
 	private static string GetPathForConfig(string repoPath, string targetPath)
 	{
 		var relativePath = Path.GetRelativePath(repoPath, targetPath);
@@ -1384,10 +1377,8 @@ internal sealed partial class ChangelogCommands(
 		return ChangelogTemplateSeeder.ApplyBundleRepoSeed(content, ownerCli, repoCli, gitOwner, gitRepo);
 	}
 
-	/// <summary>
-	/// Upload changelog or bundle artifacts to S3 or Elasticsearch.
-	/// Uses content-hash–based incremental upload: only files whose content has changed are transferred.
-	/// </summary>
+	/// <summary>Upload changelog entries or bundle artifacts to S3 or Elasticsearch.</summary>
+	/// <remarks>Uses content-hash–based incremental transfer — only changed files are uploaded.</remarks>
 	/// <param name="artifactType">Artifact type to upload: 'changelog' (individual entries) or 'bundle' (consolidated bundles).</param>
 	/// <param name="target">Upload destination: 's3' or 'elasticsearch'.</param>
 	/// <param name="s3BucketName">S3 bucket name (required when target is 's3').</param>

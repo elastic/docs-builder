@@ -27,10 +27,6 @@ internal sealed class IndexCommand(
 	/// Builds the documentation set in metadata-only mode and streams the output to Elasticsearch.
 	/// Does not write HTML to disk. Requires a running cluster and valid credentials.
 	/// </para>
-	/// <code>
-	/// docs-builder index --endpoint https://localhost:9200 --api-key YOUR_KEY
-	/// docs-builder index --endpoint https://es:9200 --username elastic --password secret
-	/// </code>
 	/// </remarks>
 	[CommandName("index")]
 	public async Task<int> Index(

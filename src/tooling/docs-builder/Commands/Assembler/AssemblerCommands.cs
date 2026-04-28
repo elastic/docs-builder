@@ -33,11 +33,6 @@ internal sealed class AssembleOneShotCommand(
 	/// composed by a shared <c>navigation.yml</c>. This command combines <c>assembler config init</c>,
 	/// <c>assembler clone</c>, and <c>assembler build</c> into a single invocation.
 	/// </para>
-	/// <code>
-	/// docs-builder assemble
-	/// docs-builder assemble --environment staging --fetch-latest
-	/// docs-builder assemble --exporters Html,Elasticsearch --serve
-	/// </code>
 	/// </remarks>
 	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned link-registry ref.</param>
 	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk. Useful for iterating on the build.</param>
@@ -94,12 +89,6 @@ internal sealed class AssembleOneShotCommand(
 /// </para>
 /// <para>
 /// Typical workflow:
-/// <code>
-/// docs-builder assembler config init          # fetch configuration
-/// docs-builder assembler clone                # clone all repositories
-/// docs-builder assembler build                # build the unified site
-/// docs-builder assembler serve                # preview the result
-/// </code>
 /// </para>
 /// </remarks>
 internal sealed class AssemblerCommands(

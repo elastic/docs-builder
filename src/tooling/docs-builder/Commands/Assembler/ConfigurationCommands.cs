@@ -14,6 +14,7 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
+/// <summary>Fetch and manage the central assembler configuration repository.</summary>
 internal sealed class ConfigurationCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,

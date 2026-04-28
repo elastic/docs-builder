@@ -12,7 +12,7 @@ namespace Documentation.Builder;
 /// </summary>
 public class GlobalCliOptions
 {
-	/// <summary>-l,--log-level, Log verbosity level: trace, debug, information, warning, error, critical. Default: information</summary>
+	/// <summary>-l,--log-level, Minimum log level. Default: information</summary>
 	public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
 	/// <summary>-c,--config-source, Override the configuration source: local, remote</summary>

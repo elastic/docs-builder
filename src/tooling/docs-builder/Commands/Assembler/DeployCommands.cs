@@ -14,6 +14,7 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
+/// <summary>Deploy built documentation to S3 and update CloudFront redirect rules.</summary>
 internal sealed class DeployCommands(
 	AssemblyConfiguration assemblyConfiguration,
 	IDiagnosticsCollector collector,

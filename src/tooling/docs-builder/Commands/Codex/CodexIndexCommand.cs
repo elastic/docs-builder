@@ -32,9 +32,6 @@ internal sealed class CodexIndexCommand(
 	/// <summary>Index the built portal documentation into Elasticsearch.</summary>
 	/// <remarks>
 	/// <para>Run after <c>codex build</c>. Streams documents from all included documentation sets to the cluster.</para>
-	/// <code>
-	/// docs-builder codex index ./codex.yml --endpoint https://es:9200 --api-key KEY
-	/// </code>
 	/// </remarks>
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	public async Task<int> Index(

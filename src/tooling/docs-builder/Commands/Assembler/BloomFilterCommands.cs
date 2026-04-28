@@ -11,6 +11,7 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
+/// <summary>Build and query the bloom filter used for legacy-URL redirect coverage.</summary>
 internal sealed class BloomFilterCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector)
 {
 	/// <summary>Build a bloom filter binary from a local legacy-docs repository.</summary>

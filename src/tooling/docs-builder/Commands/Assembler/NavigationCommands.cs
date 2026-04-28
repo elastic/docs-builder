@@ -14,6 +14,7 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
+/// <summary>Validate the global navigation structure and cross-doc-set link references.</summary>
 internal sealed class NavigationCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,

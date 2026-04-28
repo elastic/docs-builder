@@ -15,6 +15,7 @@ using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
+/// <summary>Inspect and validate repository entries in the link registry.</summary>
 internal sealed class ContentSourceCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,

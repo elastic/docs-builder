@@ -30,9 +30,6 @@ internal sealed class AssemblerSitemapCommand(
 	/// Run this command after <c>assembler index</c> to overwrite it with precise last-modified dates
 	/// sourced from the search index.
 	/// </para>
-	/// <code>
-	/// docs-builder assembler sitemap --endpoint https://es:9200 --api-key KEY --environment staging
-	/// </code>
 	/// </remarks>
 	/// <param name="environment">Named deployment target; used to resolve the correct Elasticsearch index.</param>
 	[CommandName("sitemap")]

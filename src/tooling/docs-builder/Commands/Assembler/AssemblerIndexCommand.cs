@@ -31,9 +31,6 @@ internal sealed class AssemblerIndexCommand(
 	/// to the cluster. The index name is derived from the environment name.
 	/// </para>
 	/// <para>Run after <c>assembler build</c> or use instead of it when indexing is the only goal.</para>
-	/// <code>
-	/// docs-builder assembler index --endpoint https://es:9200 --api-key KEY --environment staging
-	/// </code>
 	/// </remarks>
 	/// <param name="environment">Named deployment target; becomes part of the Elasticsearch index name.</param>
 	[CommandName("index")]

@@ -15,16 +15,8 @@ internal sealed class ServeCommand(ILoggerFactory logFactory, IConfigurationCont
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ServeCommand>();
 
-	/// <summary>
-	/// Continuously serve a documentation folder at <c>http://localhost:3000</c>.
-	/// </summary>
-	/// <remarks>
-	/// File system changes are reflected without restarting the server.
-	/// <code>
-	/// docs-builder serve
-	/// docs-builder serve -p ./my-docs --port 8080
-	/// </code>
-	/// </remarks>
+	/// <summary>Serve a documentation folder at <c>http://localhost:3000</c> with live reload.</summary>
+	/// <remarks>File-system changes are reflected without restarting the server.</remarks>
 	/// <param name="path">-p, Path to serve. Defaults to the <c>cwd/docs</c> folder</param>
 	/// <param name="port">Port to serve the documentation. Default: 3000</param>
 	/// <param name="watch">Special flag for <c>dotnet watch</c> optimizations during development</param>
