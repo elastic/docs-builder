@@ -249,6 +249,9 @@ public class ReloadableGeneratorState : IDisposable
 		_apiGenerationCts?.Cancel();
 		_apiGenerationCts?.Dispose();
 		_apiSemaphore.Dispose();
+		// _crossLinkFetcher owns its internally-created Aws3LinkIndexReader; dispose it.
+		// _codexReader is owned by this class (not by the fetcher); dispose it separately.
+		_crossLinkFetcher.Dispose();
 		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);
 	}

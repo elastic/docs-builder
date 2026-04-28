@@ -193,9 +193,10 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 
 	public void Dispose()
 	{
+		// Dispose the reader only when this fetcher created it (e.g. Aws3LinkIndexReader.CreateAnonymous()).
+		// logFactory is injected and owned by the caller — do not dispose it here.
 		if (linkIndexProvider is IDisposable disposableReader)
 			disposableReader.Dispose();
-		logFactory.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }
