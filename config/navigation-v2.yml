@@ -120,6 +120,9 @@ nav:
               title: Customize deployment components
             - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-vcpu-boost-instance.md
               title: vCPU boosting and credits
+            - title: Connect to Elasticsearch
+            - page: docs-content://deploy-manage/deploy/elastic-cloud/access-kibana.md  # BOTH PHASES
+              title: Access Kibana
             - title: Production readiness checklist
           - page: docs-content://deploy-manage/deploy/elastic-cloud/fedramp.md
             title: FedRAMP authorized Cloud offerings
@@ -169,29 +172,30 @@ nav:
           - group: Install ECE
             page: docs-content://deploy-manage/deploy/cloud-enterprise/install.md
             children:
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/deploy-an-orchestrator.md
-              title: Install an orchestrator
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/install-ece-procedures.md
-              title: Installation procedures
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/deploy-small-installation.md
-              title: Small installation
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/deploy-medium-installation.md
-              title: Medium installation
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/deploy-large-installation.md
-              title: Large installation
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/fresh-installation-of-ece-using-podman-hosts.md
-              title: Deploy using Podman
+            - group: Installation procedures
+              page: docs-content://deploy-manage/deploy/cloud-enterprise/install-ece-procedures.md
+              children:
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/deploy-small-installation.md
+                title: Small installation
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/deploy-medium-installation.md
+                title: Medium installation
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/deploy-large-installation.md
+                title: Large installation
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/fresh-installation-of-ece-using-podman-hosts.md
+                title: Deploy using Podman
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/alternative-install-ece-with-ansible.md
               title: Ansible playbook
             - group: Air-gapped install
               page: docs-content://deploy-manage/deploy/cloud-enterprise/air-gapped-install.md
               children:
-              - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-install-offline-images.md
-                title: Available Docker images
               - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-install-offline-with-registry.md
                 title: With your private Docker registry
               - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-install-offline-no-registry.md
                 title: Without a private Docker registry
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-install-offline-images.md
+                title: Available Docker images
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/log-into-cloud-ui.md  # BOTH PHASES
+              title: Log into the Cloud UI
           - group: Post-installation
             page: docs-content://deploy-manage/deploy/cloud-enterprise/post-installation-steps.md
             children:
@@ -199,43 +203,29 @@ nav:
               title: Wildcard DNS and certificates
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-load-balancers.md
               title: Load balancers
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/generate-roles-tokens.md
-              title: Manage roles tokens
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/default-system-deployment-versions.md
-              title: Default system deployment versions
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/system-deployments-configuration.md  # BOTH PHASES
               title: System deployments configuration
-          - group: Design deployment templates
-            children:
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/deployment-templates.md  # BOTH PHASES
-              title: Deployment templates
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/configure-deployment-templates.md  # BOTH PHASES
-              title: Manage deployment templates
+              children:
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/default-system-deployment-versions.md
+                title: Default system deployment versions
           - group: Create your first deployment
             children:
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/create-deployment.md  # BOTH PHASES
               title: Create a deployment
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/log-into-cloud-ui.md
-              title: Log into the Cloud UI
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/connect-elasticsearch.md
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/connect-elasticsearch.md  # BOTH PHASES
               title: Connect to Elasticsearch
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/access-kibana.md
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/access-kibana.md  # BOTH PHASES
               title: Access Kibana
         - group: Elastic Cloud on Kubernetes
           page: docs-content://deploy-manage/deploy/cloud-on-k8s.md
           children:
-          - group: Deploy an orchestrator 
-            page: docs-content://deploy-manage/deploy/cloud-on-k8s/deploy-an-orchestrator.md
+          - group: Deploy an orchestrator
+            page: docs-content://deploy-manage/deploy/cloud-on-k8s/install.md
             children:
-            - group: Install ECK
-              page: docs-content://deploy-manage/deploy/cloud-on-k8s/install.md
-              children:
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart.md
-                title: YAML manifests
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/install-using-helm-chart.md
-                title: Helm chart
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/required-rbac-permissions.md
-                title: Required RBAC permissions
+            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart.md
+              title: YAML manifests
+            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/install-using-helm-chart.md
+              title: Helm chart
             - group: Deploy on OpenShift
               page: docs-content://deploy-manage/deploy/cloud-on-k8s/deploy-eck-on-openshift.md
               children:
@@ -253,16 +243,18 @@ nav:
               title: Deploy on Google Distributed Cloud air-gapped
             - page: docs-content://deploy-manage/deploy/cloud-on-k8s/deploy-fips-compatible-version-of-eck.md
               title: FIPS compatibility
-          - page: docs-content://deploy-manage/deploy/cloud-on-k8s/air-gapped-install.md
-            title: Air-gapped environments
-          - page: docs-content://deploy-manage/deploy/cloud-on-k8s/virtual-memory.md
-            title: Virtual memory
+            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/air-gapped-install.md
+              title: Air-gapped environments
+            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/required-rbac-permissions.md  # BOTH PHASES
+              title: Required RBAC permissions
           - group: Deploy your first workloads
             children:
             - page: docs-content://deploy-manage/deploy/cloud-on-k8s/elasticsearch-deployment-quickstart.md
               title: Deploy an Elasticsearch cluster
             - page: docs-content://deploy-manage/deploy/cloud-on-k8s/kibana-instance-quickstart.md
               title: Deploy a Kibana instance
+            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/accessing-services.md  # BOTH PHASES
+              title: Accessing services
           - title: Production readiness checklist
         - group: Self-managed cluster
           page: docs-content://deploy-manage/deploy/self-managed.md
@@ -308,12 +300,14 @@ nav:
                 title: Single-node cluster
               - page: docs-content://deploy-manage/deploy/self-managed/install-elasticsearch-docker-compose.md
                 title: Multi-node with Docker Compose
-              - page: docs-content://deploy-manage/deploy/self-managed/install-elasticsearch-docker-configure.md
-                title: Configure with Docker
               - page: docs-content://deploy-manage/deploy/self-managed/install-elasticsearch-docker-prod.md
                 title: Docker in production
-              - page: docs-content://deploy-manage/deploy/self-managed/important-settings-configuration.md
-                title: Important Elasticsearch settings
+              - page: docs-content://deploy-manage/deploy/self-managed/install-elasticsearch-docker-configure.md
+                title: Configure with Docker
+            - page: docs-content://deploy-manage/deploy/self-managed/important-settings-configuration.md
+              title: Important Elasticsearch settings
+            - page: docs-content://deploy-manage/deploy/self-managed/configure-elasticsearch.md  # BOTH PHASES
+              title: Configure Elasticsearch
           - group: Install Kibana
             page: docs-content://deploy-manage/deploy/self-managed/install-kibana.md
             children:
@@ -327,6 +321,13 @@ nav:
               title: RPM
             - page: docs-content://deploy-manage/deploy/self-managed/install-kibana-with-docker.md
               title: Docker
+            - page: docs-content://deploy-manage/deploy/self-managed/configure-kibana.md  # BOTH PHASES
+              title: Configure Kibana
+          - title: Access Elasticsearch
+          - page: docs-content://deploy-manage/deploy/self-managed/access-kibana.md  # BOTH PHASES
+            title: Access Kibana
+          - page: docs-content://deploy-manage/deploy/self-managed/air-gapped-install.md
+            title: Air-gapped install
           - group: Tutorials
             page: docs-content://deploy-manage/deploy/self-managed/tutorials.md
             children:
@@ -334,8 +335,6 @@ nav:
               title: Install a self-managed Elastic Stack
             - page: docs-content://deploy-manage/deploy/self-managed/tutorial-self-managed-secure.md
               title: Customize TLS certificates for a self-managed Elastic Stack
-          - page: docs-content://deploy-manage/deploy/self-managed/air-gapped-install.md
-            title: Air-gapped install
           - title: Production readiness checklist
       - group: Administer your orchestrator, deployment, or project
         page: docs-content://deploy-manage/index.md
@@ -343,40 +342,45 @@ nav:
         - title: Administration skills
         - group: Elastic Cloud Hosted
           children:
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-deployments.md
-            title: Manage deployments
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-customize-deployment-components.md  # BOTH PHASES
-            title: Customize deployment components
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/configure.md
-            title: Configure your deployment
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-change-hardware-profile.md
-            title: Manage hardware profiles
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/change-hardware.md
-            title: Change instance configuration
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/edit-stack-settings.md
-            title: Edit stack settings
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/custom-endpoint-aliases.md
-            title: Custom endpoint aliases
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-deployments-using-elastic-cloud-api.md
-            title: Manage deployments via API
-          - group: Plugins and extensions
+          - group: Manage deployments
+            page: docs-content://deploy-manage/deploy/elastic-cloud/manage-deployments.md
             children:
-            - page: docs-content://deploy-manage/deploy/elastic-cloud/add-plugins-extensions.md
-              title: Add plugins and extensions
-            - page: docs-content://deploy-manage/deploy/elastic-cloud/upload-custom-plugins-bundles.md
-              title: Upload custom plugins
-            - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-plugins-extensions-through-api.md
-              title: Manage via API
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-integrations-server.md
-            title: Manage Integrations Server
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/switch-from-apm-to-integrations-server-payload.md
-            title: Switch from APM to Integrations Server
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/keep-track-of-deployment-activity.md
-            title: Keep track of deployment activity
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/access-kibana.md
+            - group: Configure
+              page: docs-content://deploy-manage/deploy/elastic-cloud/configure.md
+              children:
+              - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-change-hardware-profile.md
+                title: Manage hardware profiles
+                children:
+                - page: docs-content://deploy-manage/deploy/elastic-cloud/change-hardware.md
+                  title: Change instance configuration
+              - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-customize-deployment-components.md  # BOTH PHASES
+                title: Customize deployment components
+              - page: docs-content://deploy-manage/deploy/elastic-cloud/edit-stack-settings.md
+                title: Edit stack settings
+              - page: docs-content://deploy-manage/deploy/elastic-cloud/add-plugins-extensions.md
+                title: Add plugins and extensions
+                children:
+                - page: docs-content://deploy-manage/deploy/elastic-cloud/upload-custom-plugins-bundles.md
+                  title: Upload custom plugins
+                - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-plugins-extensions-through-api.md
+                  title: Manage through the API
+              - page: docs-content://deploy-manage/deploy/elastic-cloud/custom-endpoint-aliases.md
+                title: Custom endpoint aliases
+            - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-integrations-server.md
+              title: Manage Integrations Server
+              children:
+              - page: docs-content://deploy-manage/deploy/elastic-cloud/switch-from-apm-to-integrations-server-payload.md
+                title: Switch from APM to Integrations Server
+            - page: docs-content://deploy-manage/deploy/elastic-cloud/find-cloud-id.md
+              title: Find your Cloud ID
+            - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-deployments-using-elastic-cloud-api.md
+              title: Manage deployments using the API
+            - page: docs-content://deploy-manage/deploy/elastic-cloud/keep-track-of-deployment-activity.md
+              title: Keep track of deployment activity
+          - page: docs-content://deploy-manage/deploy/elastic-cloud/access-kibana.md  # BOTH PHASES
             title: Access Kibana
-          - page: docs-content://deploy-manage/deploy/elastic-cloud/find-cloud-id.md
-            title: Find your Cloud ID
+          - page: docs-content://deploy-manage/deploy/elastic-cloud/ec-vcpu-boost-instance.md
+            title: vCPU boosting and credits
           - page: docs-content://deploy-manage/deploy/elastic-cloud/available-stack-versions.md
             title: Available stack versions
           - page: docs-content://deploy-manage/deploy/elastic-cloud/restrictions-known-problems.md
@@ -389,15 +393,22 @@ nav:
             title: Manage project settings
           - page: docs-content://deploy-manage/deploy/elastic-cloud/manage-serverless-projects-using-api.md
             title: Manage projects with API
+          - page: docs-content://deploy-manage/deploy/elastic-cloud/tools-apis.md
+            title: Tools and APIs
         - group: Elastic Cloud Enterprise
           children:
           - group: Manage your orchestrator
             page: docs-content://deploy-manage/deploy/cloud-enterprise/configure.md
             children:
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/log-into-cloud-ui.md  # BOTH PHASES
+              title: Log into the Cloud UI
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/assign-roles-to-hosts.md
               title: Assign roles to hosts
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/system-deployments-configuration.md  # BOTH PHASES
               title: System deployments configuration
+              children:
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/default-system-deployment-versions.md
+                title: Default system deployment versions
             - group: Deployment templates
               page: docs-content://deploy-manage/deploy/cloud-enterprise/configure-deployment-templates.md  # BOTH PHASES
               children:
@@ -417,6 +428,8 @@ nav:
                 title: Configure index management
               - page: docs-content://deploy-manage/deploy/cloud-enterprise/ce-add-support-for-node-roles-autoscaling.md
                 title: Data tiers and autoscaling support
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-ce-add-support-for-integrations-server.md
+                title: Integrations server support
               - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-configuring-ece-instance-configurations-default.md
                 title: Default instance configurations
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/change-ece-api-url.md
@@ -425,8 +438,6 @@ nav:
               title: Change endpoint URLs
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/enable-custom-endpoint-aliases.md
               title: Enable custom endpoint aliases
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-regional-deployment-aliases.md
-              title: Custom endpoint aliases
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-manage-capacity.md
               title: Manage allocator capacity
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/configure-allocator-affinity.md
@@ -435,10 +446,18 @@ nav:
               title: Change allocator disconnect timeout
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/install-ece-on-additional-hosts.md
               title: Add hosts
+              children:
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/generate-roles-tokens.md
+                title: Manage roles tokens
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/migrate-ece-to-podman-hosts.md
               title: Migrate to Podman
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/migrate-to-podman-5.md
-              title: Migrate to Podman 5
+              children:
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/migrate-to-podman-5.md
+                title: Migrate to Podman 5
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-include-additional-kibana-plugin.md
+              title: Include additional Kibana plugins
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/manage-elastic-stack-versions.md
+              title: Manage stack versions
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/statistics-collected-by-cloud-enterprise.md
               title: Statistics collected by ECE
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/tools-apis.md
@@ -446,59 +465,53 @@ nav:
           - group: Manage deployments
             page: docs-content://deploy-manage/deploy/cloud-enterprise/working-with-deployments.md
             children:
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/deployment-templates.md  # BOTH PHASES
+              title: Deployment templates reference
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/create-deployment.md  # BOTH PHASES
               title: Create a deployment
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/access-kibana.md
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/access-kibana.md  # BOTH PHASES
               title: Access Kibana
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/connect-elasticsearch.md
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/connect-elasticsearch.md  # BOTH PHASES
               title: Connect to Elasticsearch
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/log-into-cloud-ui.md
-              title: Log into the Cloud UI
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/configure-deployment.md
               title: Configure
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/customize-deployment.md
-              title: Customize deployment components
-            - group: Stack settings
-              page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings.md
               children:
-              - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings-elasticsearch.md
-                title: Elasticsearch user settings
-              - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings-kibana.md
-                title: Kibana user settings
-              - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings-apm.md
-                title: APM user settings
-              - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings-enterprise.md
-                title: Enterprise search user settings
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/resize-deployment.md
-              title: Resize a deployment
-            - group: Plugins and extensions
-              children:
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/customize-deployment.md
+                title: Customize deployment components
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings.md
+                title: Edit stack settings
+                children:
+                - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings-elasticsearch.md
+                  title: Elasticsearch user settings
+                - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings-kibana.md
+                  title: Kibana user settings
+                - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings-apm.md
+                  title: APM user settings
+                - page: docs-content://deploy-manage/deploy/cloud-enterprise/edit-stack-settings-enterprise.md
+                  title: Enterprise search user settings
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/resize-deployment.md
+                title: Resize a deployment
               - page: docs-content://deploy-manage/deploy/cloud-enterprise/add-plugins.md
                 title: Add plugins and extensions
               - page: docs-content://deploy-manage/deploy/cloud-enterprise/add-custom-bundles-plugins.md
                 title: Add custom bundles and plugins
-              - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-include-additional-kibana-plugin.md
-                title: Include additional Kibana plugins
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/resource-overrides.md
-              title: Resource overrides
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/advanced-cluster-configuration.md
-              title: Advanced cluster configuration
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-regional-deployment-aliases.md
+                title: Custom endpoint aliases
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/resource-overrides.md
+                title: Resource overrides
+              - page: docs-content://deploy-manage/deploy/cloud-enterprise/advanced-cluster-configuration.md
+                title: Advanced cluster configuration
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/search-filter-deployments.md
               title: Search and filter deployments
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/keep-track-of-deployment-activity.md
               title: Keep track of deployment activity
-            - group: Integrations Server
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/manage-integrations-server.md
+              title: Manage Integrations Server
               children:
-              - page: docs-content://deploy-manage/deploy/cloud-enterprise/manage-integrations-server.md
-                title: Manage Integrations Server
               - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-integrations-server-api-example.md
-                title: Enable via API
-              - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-ce-add-support-for-integrations-server.md
-                title: Integrations server support
+                title: Enable through the API
               - page: docs-content://deploy-manage/deploy/cloud-enterprise/switch-from-apm-to-integrations-server-payload.md
                 title: Switch from APM
-            - page: docs-content://deploy-manage/deploy/cloud-enterprise/manage-elastic-stack-versions.md
-              title: Manage stack versions
         - group: Elastic Cloud on Kubernetes
           children:
           - group: Manage the ECK operator
@@ -519,50 +532,72 @@ nav:
                 title: Linkerd
             - page: docs-content://deploy-manage/deploy/cloud-on-k8s/webhook-namespace-selectors.md
               title: Webhook namespace selectors
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/create-custom-images.md
-              title: Custom images
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/security-context.md
-              title: Security context
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/required-rbac-permissions.md
-              title: RBAC permissions reference
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/settings-managed-by-eck.md
-              title: Settings managed by ECK
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/known-limitations.md
-              title: Known limitations
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/storage-recommendations.md
-              title: Storage recommendations
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/tools-apis.md
-              title: Tools and APIs
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/recipes.md
-              title: Recipes
           - group: Manage deployments and workloads
             page: docs-content://deploy-manage/deploy/cloud-on-k8s/manage-deployments.md
             children:
-            - group: Elasticsearch and Kibana
-              page: docs-content://deploy-manage/deploy/cloud-on-k8s/configure-deployments.md
-              children:
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/elasticsearch-configuration.md
-                title: Elasticsearch configuration
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/kibana-configuration.md
-                title: Kibana configuration
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/node-configuration.md
-                title: Node configuration
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/nodes-orchestration.md
-                title: Nodes orchestration
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/elastic-stack-configuration-policies.md
-                title: Stack configuration policies
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/k8s-kibana-advanced-configuration.md
-                title: Advanced configuration
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/k8s-kibana-es.md
-                title: Connect Kibana to Elasticsearch
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/k8s-kibana-plugins.md
-                title: Kibana plugins
             - page: docs-content://deploy-manage/deploy/cloud-on-k8s/managing-deployments-using-helm-chart.md
               title: Elastic Stack Helm chart
             - page: docs-content://deploy-manage/deploy/cloud-on-k8s/update-deployments.md
               title: Applying updates
-            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/accessing-services.md
+            - page: docs-content://deploy-manage/deploy/cloud-on-k8s/accessing-services.md  # BOTH PHASES
               title: Accessing services
+            - group: Configure deployments
+              page: docs-content://deploy-manage/deploy/cloud-on-k8s/configure-deployments.md
+              children:
+              - group: Elasticsearch configuration
+                page: docs-content://deploy-manage/deploy/cloud-on-k8s/elasticsearch-configuration.md
+                children:
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/nodes-orchestration.md
+                  title: Nodes orchestration
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/storage-recommendations.md
+                  title: Storage recommendations
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/node-configuration.md
+                  title: Node configuration
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/volume-claim-templates.md
+                  title: Volume claim templates
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/virtual-memory.md
+                  title: Virtual memory
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/settings-managed-by-eck.md
+                  title: Settings managed by ECK
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/custom-configuration-files-plugins.md
+                  title: Custom configuration files and plugins
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/init-containers-for-plugin-downloads.md
+                  title: Init containers for plugins
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/update-strategy.md
+                  title: Update strategy
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/pod-disruption-budget.md
+                  title: Pod disruption budget
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/advanced-elasticsearch-node-scheduling.md
+                  title: Advanced node scheduling
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/readiness-probe.md
+                  title: Readiness probe
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/pod-prestop-hook.md
+                  title: Pod PreStop hook
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/security-context.md
+                  title: Security context
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/requests-routing-to-elasticsearch-nodes.md
+                  title: Traffic splitting
+              - group: Kibana configuration
+                page: docs-content://deploy-manage/deploy/cloud-on-k8s/kibana-configuration.md
+                children:
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/k8s-kibana-es.md
+                  title: Connect Kibana to Elasticsearch
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/k8s-kibana-advanced-configuration.md
+                  title: Advanced configuration
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/k8s-kibana-plugins.md
+                  title: Kibana plugins
+              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/customize-pods.md
+                title: Customize pods
+              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/propagate-labels-annotations.md
+                title: Labels and annotations
+              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/manage-compute-resources.md
+                title: Compute resources
+              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/recipes.md
+                title: Recipes
+              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/connect-to-external-elastic-resources.md
+                title: Connect to external resources
+              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/elastic-stack-configuration-policies.md
+                title: Stack configuration policies
             - group: Other Elastic applications
               page: docs-content://deploy-manage/deploy/cloud-on-k8s/orchestrate-other-elastic-applications.md
               children:
@@ -595,6 +630,8 @@ nav:
                   title: Configuration
                 - page: docs-content://deploy-manage/deploy/cloud-on-k8s/configuration-examples-fleet.md
                   title: Configuration examples
+                - page: docs-content://deploy-manage/deploy/cloud-on-k8s/known-limitations.md
+                  title: Known limitations
               - group: Elastic Maps Server
                 page: docs-content://deploy-manage/deploy/cloud-on-k8s/elastic-maps-server.md
                 children:
@@ -638,36 +675,10 @@ nav:
                   title: Advanced configuration
               - page: docs-content://deploy-manage/deploy/cloud-on-k8s/package-registry.md
                 title: Elastic Package Registry
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/connect-to-external-elastic-resources.md
-                title: Connect to external resources
-            - group: Pod and resource tuning
-              children:
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/volume-claim-templates.md
-                title: Volume claim templates
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/update-strategy.md
-                title: Update strategy
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/pod-disruption-budget.md
-                title: Pod disruption budget
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/advanced-elasticsearch-node-scheduling.md
-                title: Advanced node scheduling
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/readiness-probe.md
-                title: Readiness probe
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/pod-prestop-hook.md
-                title: Pod PreStop hook
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/requests-routing-to-elasticsearch-nodes.md
-                title: Traffic splitting
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/customize-pods.md
-                title: Customize pods
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/propagate-labels-annotations.md
-                title: Labels and annotations
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/manage-compute-resources.md
-                title: Compute resources
-            - group: Plugins
-              children:
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/init-containers-for-plugin-downloads.md
-                title: Init containers for plugins
-              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/custom-configuration-files-plugins.md
-                title: Custom configuration files and plugins
+          - page: docs-content://deploy-manage/deploy/cloud-on-k8s/create-custom-images.md
+            title: Custom images
+          - page: docs-content://deploy-manage/deploy/cloud-on-k8s/tools-apis.md
+            title: Tools and APIs
         - group: Self-managed clusters
           children:
           - page: docs-content://deploy-manage/deploy/self-managed/configure-elasticsearch.md  # BOTH PHASES
