@@ -7,6 +7,8 @@
     <!-- CS0618: Obsolete members - DisplayName is deprecated but still used by YAML deserialization -->
     <NoWarn>$(NoWarn);CS0618</NoWarn>
     <IsAotCompatible>true</IsAotCompatible>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

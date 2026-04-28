@@ -32,8 +32,7 @@ public record IsolatedBuildOptions
 
 	/// <summary>
 	/// Comma-separated list of exporters to run.
-	/// Values: Html, Elasticsearch, Configuration, LinkMetadata, DocumentationState, LLMText, Redirects.
-	/// Default: Html, Configuration, LinkMetadata, DocumentationState, Redirects.
+	/// Default: html, configuration, linkmetadata, documentationState, dedirects.
 	/// </summary>
 	// TODO: add [CollectionSyntax(Separator=",")] once argh fixes [AsParameters] + [CollectionSyntax] interaction
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
