@@ -19,7 +19,7 @@ public record ElasticsearchIndexOptions
 	// --- endpoint ---
 
 	/// <summary>-es,--endpoint, Elasticsearch endpoint URL. Falls back to env <c>DOCUMENTATION_ELASTIC_URL</c>.</summary>
-	[UriScheme("http", "https")]
+	[Url]
 	public Uri? Endpoint { get; init; }
 
 	/// <summary>API key for authentication. Falls back to env <c>DOCUMENTATION_ELASTIC_APIKEY</c>.</summary>
@@ -70,7 +70,7 @@ public record ElasticsearchIndexOptions
 	// --- proxy ---
 
 	/// <summary>Route requests through this proxy URL.</summary>
-	[UriScheme("http", "https")]
+	[Url]
 	public Uri? ProxyAddress { get; init; }
 
 	/// <summary>Proxy server username.</summary>

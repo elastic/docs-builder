@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using Nullean.Argh;
 
 namespace Elastic.Documentation.Isolated;
@@ -38,7 +39,8 @@ public record IsolatedBuildOptions
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 
 	/// <summary>Base URL written into <c>&lt;link rel=canonical&gt;</c> tags.</summary>
-	public string? CanonicalBaseUrl { get; init; }
+	[Url]
+	public Uri? CanonicalBaseUrl { get; init; }
 
 	/// <summary>Skip OpenAPI spec generation for faster builds.</summary>
 	public bool SkipApi { get; init; }

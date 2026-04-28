@@ -16,7 +16,7 @@ public class GlobalCliOptions
 	public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
 	/// <summary>-c,--config-source, Override the configuration source: local, remote</summary>
-	//public ConfigurationSource? ConfigurationSource { get; set; }
+	public ConfigurationSource? ConfigSource { get; set; }
 
 	/// <summary>Skip cloning private repositories</summary>
 	public bool SkipPrivateRepositories { get; set; }

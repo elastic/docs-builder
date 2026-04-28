@@ -58,7 +58,7 @@ public class IsolatedBuildService(
 		var allowIndexing = options.AllowIndexing;
 		var metadataOnly = options.MetadataOnly;
 		var exporters = options.Exporters;
-		var canonicalBaseUrl = options.CanonicalBaseUrl;
+		var canonicalBaseUri = options.CanonicalBaseUrl;
 		var skipOpenApi = options.SkipApi;
 		var skipCrossLinks = options.SkipCrossLinks;
 
@@ -74,18 +74,13 @@ public class IsolatedBuildService(
 		var runningOnCi = _env.IsRunningOnCI;
 		BuildContext context;
 
-		Uri? canonicalBaseUri;
+		canonicalBaseUri ??= new Uri("https://docs-v3-preview.elastic.dev");
 
 		if (runningOnCi)
 		{
 			_logger.LogInformation("Build running on CI, forcing a full rebuild of the destination folder");
 			force = true;
 		}
-
-		if (canonicalBaseUrl is null)
-			canonicalBaseUri = new Uri("https://docs-v3-preview.elastic.dev");
-		else if (!Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out canonicalBaseUri))
-			throw new ArgumentException($"The canonical base url '{canonicalBaseUrl}' is not a valid absolute uri");
 
 		try
 		{
