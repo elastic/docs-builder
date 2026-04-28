@@ -10,6 +10,9 @@ using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
+#if DEBUG
+using Elastic.Documentation.Api.Infrastructure;
+#endif
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -52,6 +55,9 @@ public class AssemblerServeWebHost
 		});
 
 		_ = builder.AddDocumentationServiceDefaults();
+#if DEBUG
+		builder.Services.AddElasticDocsApiUsecases("dev");
+#endif
 
 		_ = builder.Logging
 			.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Error)
@@ -151,6 +157,12 @@ public class AssemblerServeWebHost
 		}
 
 		_ = pipeline.UseRouting();
+
+#if DEBUG
+		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
+		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(_webApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
+#endif
 
 		_ = _webApplication.MapGet("/", (Cancel ctx) => ServeRoot(ctx));
 		_ = _webApplication.MapGet("{**slug}", (string slug, Cancel ctx) => ServeDocumentationFile(slug, ctx));
