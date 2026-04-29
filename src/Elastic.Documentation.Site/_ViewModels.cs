@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.IO;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 
@@ -67,6 +69,17 @@ public record GlobalLayoutViewModel
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	public bool RenderHamburgerIcon { get; init; } = true;
+
+	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
+	public BrandingConfiguration? Branding { get; init; }
+
+	/// <summary>Static URL of the branding icon, if configured.</summary>
+	public string? BrandingIconStaticPath =>
+		Branding?.Icon is { } icon ? Static(Path.GetFileName(icon)) : null;
+
+	/// <summary>Static URL of the OG image, if configured.</summary>
+	public string? BrandingOgImageStaticPath =>
+		Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
 
 	/// <summary>Root path for static assets. For codex builds, strips the /r/repoName segment from the URL path prefix.</summary>
 	public string StaticPathPrefix => GetStaticPathPrefix();

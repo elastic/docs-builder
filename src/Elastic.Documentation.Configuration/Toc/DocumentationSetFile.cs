@@ -66,6 +66,12 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "codex")]
 	public CodexDocSetMetadata? Codex { get; set; }
 
+	/// <summary>
+	/// Optional white-label branding overrides. When present, all Elastic-specific chrome is suppressed.
+	/// </summary>
+	[YamlMember(Alias = "branding")]
+	public BrandingConfiguration? Branding { get; set; }
+
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
 	{
 		if (item is FileRef fileRef)
@@ -649,4 +655,24 @@ public class CodexDocSetMetadata
 {
 	[YamlMember(Alias = "group")]
 	public string? Group { get; set; }
+}
+
+/// <summary>
+/// White-label branding overrides for isolated builds. Presence of this section removes all Elastic-specific chrome.
+/// All image paths are relative to the directory containing <c>docset.yml</c>.
+/// </summary>
+[YamlSerializable]
+public class BrandingConfiguration
+{
+	/// <summary>Path to the site icon image, relative to the docs source directory.</summary>
+	[YamlMember(Alias = "icon")]
+	public string? Icon { get; set; }
+
+	/// <summary>CSS colour value for the header background. Defaults to <c>#000000</c> when not specified.</summary>
+	[YamlMember(Alias = "header-bg", ApplyNamingConventions = false)]
+	public string? HeaderBg { get; set; }
+
+	/// <summary>Path to the Open Graph image, relative to the docs source directory.</summary>
+	[YamlMember(Alias = "og-image", ApplyNamingConventions = false)]
+	public string? OgImage { get; set; }
 }

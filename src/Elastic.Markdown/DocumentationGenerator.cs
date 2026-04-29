@@ -145,7 +145,10 @@ public partial class DocumentationGenerator
 			HintUnusedSubstitutionKeys();
 
 		if (Context.AvailableExporters.Contains(Exporter.Html))
+		{
 			await ExtractEmbeddedStaticResources(ctx);
+			CopyBrandingResources();
+		}
 
 		if (generateState)
 		{
@@ -195,6 +198,43 @@ public partial class DocumentationGenerator
 		});
 		_logger.LogInformation(" {Name} -> Processed {ProcessedFileCount}/{TotalFileCount} files", Context.Git.RepositoryName, processedFileCount, totalFileCount);
 
+	}
+
+	private void CopyBrandingResources()
+	{
+		var branding = Context.Configuration.Branding;
+		if (branding is null)
+			return;
+
+		var sourceDir = DocumentationSet.Context.DocumentationSourceDirectory.FullName;
+		var outputStaticDir = Path.Join(DocumentationSet.OutputDirectory.FullName, "_static");
+		_ = _writeFileSystem.Directory.CreateDirectory(outputStaticDir);
+
+		// Track destination basenames to catch collisions between icon and og-image
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var imagePath in new[] { branding.Icon, branding.OgImage })
+		{
+			if (string.IsNullOrEmpty(imagePath))
+				continue;
+
+			var source = Context.ReadFileSystem.FileInfo.New(Path.Join(sourceDir, imagePath));
+			if (!source.Exists)
+			{
+				Context.Collector.EmitError(Context.ConfigurationPath.FullName, $"Branding image '{imagePath}' does not exist.");
+				continue;
+			}
+
+			if (!seen.Add(source.Name))
+			{
+				Context.Collector.EmitError(Context.ConfigurationPath.FullName,
+					$"Branding image '{imagePath}' has the same filename as another branding image — use unique filenames to avoid overwriting.");
+				continue;
+			}
+
+			var destination = _writeFileSystem.FileInfo.New(Path.Join(outputStaticDir, source.Name));
+			_ = source.CopyTo(destination.FullName, overwrite: true);
+			_logger.LogInformation("Copied branding asset {Source} -> {Destination}", source.FullName, destination.FullName);
+		}
 	}
 
 	private void HintUnusedSubstitutionKeys()

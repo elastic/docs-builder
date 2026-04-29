@@ -40,6 +40,72 @@ public partial record GitCheckoutInformation
 	[JsonPropertyName("github_ref")]
 	public string? GitHubRef { get; init; }
 
+	/// <summary>
+	/// The GitHub repository in <c>org/repo</c> format, derived from the git remote URL.
+	/// Falls back to <c>elastic/docs-builder</c> when either <see cref="Remote"/> or <see cref="RepositoryName"/> is unavailable,
+	/// or when the remote does not resolve to a valid GitHub <c>org/repo</c> path,
+	/// to avoid silently linking to an arbitrary repository.
+	/// </summary>
+	[JsonIgnore]
+	public string GitHubRepository => ExtractGitHubOrgRepo(Remote) ?? "elastic/docs-builder";
+
+	/// <summary>Extracts a validated <c>org/repo</c> path from a GitHub remote URL, or returns <c>null</c>.</summary>
+	/// <remarks>
+	/// Handles the common remote formats:
+	/// <list type="bullet">
+	///   <item><c>https://github.com/org/repo.git</c></item>
+	///   <item><c>git@github.com:org/repo.git</c></item>
+	///   <item><c>ssh://git@github.com/org/repo.git</c></item>
+	///   <item><c>org/repo</c> (bare, e.g. from <c>GITHUB_REPOSITORY</c>)</item>
+	/// </list>
+	/// </remarks>
+	private static string? ExtractGitHubOrgRepo(string? remote)
+	{
+		if (string.IsNullOrEmpty(remote) || remote == "unavailable")
+			return null;
+
+		var path = NormalizeToGitHubPath(remote);
+		if (path is null)
+			return null;
+
+		// Strip trailing .git
+		if (path.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+			path = path[..^4];
+
+		// Validate: must be exactly org/repo — two non-empty segments, no extra slashes
+		var parts = path.Split('/');
+		if (parts.Length != 2 || string.IsNullOrEmpty(parts[0]) || string.IsNullOrEmpty(parts[1]))
+			return null;
+
+		return path;
+	}
+
+	/// <summary>Normalises the remote to the <c>org/repo[.git]</c> path portion, or <c>null</c> if not a GitHub remote.</summary>
+	private static string? NormalizeToGitHubPath(string remote)
+	{
+		const string githubHost = "github.com";
+
+		// git@github.com:org/repo.git  →  org/repo.git
+		if (remote.StartsWith("git@github.com:", StringComparison.OrdinalIgnoreCase))
+			return remote["git@github.com:".Length..].TrimStart('/');
+
+		// ssh://git@github.com/org/repo.git  →  org/repo.git
+		if (remote.StartsWith("ssh://git@github.com/", StringComparison.OrdinalIgnoreCase))
+			return remote["ssh://git@github.com/".Length..].TrimStart('/');
+
+		// https://github.com/org/repo.git  or  http://github.com/org/repo.git  →  org/repo.git
+		if (remote.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
+			return remote["https://github.com/".Length..].TrimStart('/');
+		if (remote.StartsWith("http://github.com/", StringComparison.OrdinalIgnoreCase))
+			return remote["http://github.com/".Length..].TrimStart('/');
+
+		// Bare org/repo (e.g. GITHUB_REPOSITORY env var) — must not contain "://" or "@" (i.e. not a URL)
+		if (!remote.Contains("://") && !remote.Contains('@') && !remote.Contains(githubHost, StringComparison.OrdinalIgnoreCase))
+			return remote.TrimStart('/');
+
+		return null;
+	}
+
 	// manual read because libgit2sharp is not yet AOT ready
 	public static GitCheckoutInformation Create(IDirectoryInfo? source, IFileSystem fileSystem, ILogger? logger = null)
 	{
