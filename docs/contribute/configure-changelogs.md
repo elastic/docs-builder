@@ -1,13 +1,45 @@
 # Configure changelogs
 
-Before you can use the `docs-builder changelog` commands in your development workflow, you must make some decisions and do some setup steps:
+Before you can use the `docs-builder changelog` commands, you must evaluate your GitHub label strategy and verify that the necessary product metadata exists.
+You can then set up a changelog configuration file to make the content workflow more automated and repeatable.
+
+## Before you begin
 
 1. Ensure that your products exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Products that only need release notes (not public documentation) can be added with `features: { public-reference: false }`. For more information, refer to [Products](/configure/site/products.md).
-1. Add labels to your GitHub pull requests that map to [changelog types](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs). At a minimum, create labels for the `feature`, `bug-fix`, and `breaking-change` types.
-1. Optional: Choose areas or components that your changes affect and add labels to your GitHub pull requests (such as `:Analytics/Aggregations`).
-1. Optional: Add labels to your GitHub pull requests to indicate that they are not notable and should not generate changelogs. For example, `non-issue` or `release_notes:skip`. Alternatively, you can assume that all PRs are *not* notable unless a specific label is present (for example, `@Public`).
 
-After you collect all this information, you can use it to make the changelog process more automated and repeatable by setting up a changelog configuration file.
+1. Optional: Choose the GitHub labels that you'll use to automatically derive some changelog fields.
+
+    1. Create labels for _types_. The supported types are defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs). At a minimum, add labels for the `feature`, `bug-fix`, and `breaking-change` types.
+
+    1. Create labels for _products_. If your repo only pertains to a single product or you don't want to use labels to accomplish this classification, this step is not required.
+
+    1. Create labels for _areas_ (or "features" or "components") of your products. If you don't want to show categories (other than the default "type" categories) in your documentation, this step is not required.
+
+    1. Create labels to opt in or out of changelogs. For example, create `non-issue` or `release_notes:skip` labels for PRs that _shouldn't_ have changelogs. Alternatively, create a `@Public` label to identify PRs that _should_ have changelogs. You can only choose one label strategy for this behavior: exclusion or inclusion.
+
+    1. Create labels for _highlights_. This step is not required unless you want to publish release highlights.
+
+1. If you'll be accessing GitHub from the command line, set up the necessary privileges as described in the following section.
+
+### Authorization
+
+Any of the `docs-builder changelog` commands that access GitHub require authority to view your pull requests and issues.
+For example, this authority is required if you'll be running any of these [changelog commands](/cli/changelog/index.md) from the command line: `changelog add`, `changelog bundle`, `changelog gh-release`.
+
+You must log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token (PAT) to pull information from your repository.
+Otherwise, there will be fetch failures when you access private repositories and you might also encounter GitHub rate limiting errors.
+
+For example, to create a new token with the minimum authority to read pull request details:
+
+   1. Go to **GitHub Settings** > **Developer settings** > **Personal access tokens** > [Fine-grained tokens](https://github.com/settings/personal-access-tokens).
+   1. Click **Generate new token**.
+   1. Give your token a descriptive name (such as "docs-builder changelog").
+   1. Under **Resource owner** if you're an Elastic employee, select **Elastic**.
+   1. Set an expiration date.
+   1. Under **Repository access**, select **Only select repositories** and choose the repositories you want to access.
+   1. Under **Permissions** > **Repository permissions**, set **Pull requests** to **Read-only**. If you want to be able to read issue details, do the same for **Issues**.
+   1. Click **Generate token**.
+   1. Copy the token to a safe location and use it in the `GITHUB_TOKEN` environment variable.
 
 ## Create a changelog configuration file [changelog-settings]
 
