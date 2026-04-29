@@ -47,7 +47,8 @@ public class AssemblerBuildService(
 
 		collector.NoHints = !showHints.GetValueOrDefault(false);
 		strict ??= false;
-		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
+		if (exporters is not { Count: > 0 })
+			exporters = metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
 		// ensure we never generate a documentation state for assembler builds
 		if (exporters.Contains(Exporter.DocumentationState))
 			exporters = new HashSet<Exporter>(exporters.Except([Exporter.DocumentationState]));

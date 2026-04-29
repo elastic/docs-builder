@@ -37,7 +37,7 @@ public record IsolatedBuildOptions
 	/// Comma-separated list of exporters to run.
 	/// Default: html, configuration, linkmetadata, documentationState, dedirects.
 	/// </summary>
-	// TODO: add [CollectionSyntax(Separator=",")] once argh fixes [AsParameters] + [CollectionSyntax] interaction
+	[CollectionSyntax(Separator = ",")]
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 
 	/// <summary>Base URL written into <c>&lt;link rel=canonical&gt;</c> tags.</summary>
