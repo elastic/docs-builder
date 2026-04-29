@@ -1,4 +1,5 @@
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.LandingViewModel>
+@using Elastic.ApiExplorer
 @using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Operations
 @using Elastic.ApiExplorer.Schemas
@@ -83,6 +84,13 @@
 					<tr>
 						<td class="api-name"><a href="@schemaItem.Url">@(schemaItem.NavigationTitle)</a></td>
 						<td><code>@schemaItem.Model.SchemaId</code></td>
+					</tr>
+				}
+				else if (navigationItem is SimpleMarkdownNavigationItem markdownPage)
+				{
+					<tr>
+						<td class="api-name"><a href="@markdownPage.Url">@(markdownPage.NavigationTitle)</a></td>
+						<td>Additional documentation</td>
 					</tr>
 				}
 				else

@@ -1,104 +1,88 @@
-# AI Assistant Guide for docs-builder
+# docs-builder
 
-This file contains instructions and guidance for AIs when working with the docs-builder repository.
+Elastic's documentation build toolchain. Processes Markdown from multiple repos into a unified documentation site, validates cross-repo references, serves with live reload, and ships as native AOT binaries for CI.
 
-## Repository overview
+## Architecture
 
-This is Elastic's distributed documentation tooling system built on .NET 9, consisting of:
+| Project | Purpose |
+|---|---|
+| `src/Elastic.Markdown/` | Core Markdown parser and Myst directive/role engine |
+| `src/tooling/docs-builder/` | CLI — entry point `Program.cs`, commands in `Commands/` |
+| `src/Elastic.Documentation.Site/` | Frontend (TypeScript · React · Parcel) |
+| `src/Elastic.Documentation.Configuration/` | YAML config schema and loading |
+| `src/Elastic.Documentation.Navigation/` | Nav tree assembly and validation |
+| `src/Elastic.Documentation.Links/` | Cross-repo link index and resolution |
+| `src/Elastic.ApiExplorer/` | API reference rendering |
+| `src/Elastic.Codex/` | Content management and assembly |
+| `src/services/` | Background microservices |
+| `src/infra/` | AWS Lambda functions (link index updater, changelog scrubber) |
 
-- **docs-builder**: CLI tool for building documentation sets (either individual or assembled)
-- Written in C# and F# with extensive Markdown processing capabilities
-
-## Essential commands
-
-### Development
-```bash
-# Ensure no compilation failures -- run this to confirm the absence of build errors.
-dotnet build
-
-# Run docs-builder locally
-dotnet run --project src/tooling/docs-builder 
-
-# Run all the unit tests which complete fast.
-./build.sh unit-test
-
-# Clean all the build artifacts located in .artifacts folder
-./build.sh clean
-
-# Produce native binaries -- only call this if a change touches serialization and you are committing on behalf of the developer.
- ./build.sh publishbinaries
-
-```
-
-### Linting and Code Quality
+## Essential Commands
 
 ```bash
-# Format code. Always run this when output contains formatting errors.
-dotnet format
-
-# Run specific test project
-dotnet test tests/Elastic.Markdown.Tests/
-
-# Run tests with verbose output
-dotnet test --logger "console;verbosity=detailed"
+dotnet build                                    # verify compilation
+dotnet run --project src/tooling/docs-builder   # run CLI locally
+./build.sh unit-test                            # all unit tests (fast, ~1 min)
+./build.sh integrate                            # integration tests (slow — needs cloned repos)
+./build.sh lint                                 # C# format check (read-only)
+./build.sh clean                                # remove .artifacts/
+dotnet format                                   # auto-fix C# formatting
+dotnet test tests/Elastic.Markdown.Tests/       # single test project
 ```
 
-## Key architecture Points
+### TypeScript frontend
 
-### Main Projects
+```bash
+cd src/Elastic.Documentation.Site
+npm ci
+npm run build           # production build
+npm run watch           # dev with live reload
+npm run test            # Jest
+npm run lint            # ESLint
+npm run fmt:write       # Prettier auto-fix
+npm run compile:check   # TypeScript type check only
+```
 
-- `src/Elastic.Markdown/` - Core Markdown processing engine
-- `src/tooling/docs-builder/` - Main CLI application
-- `src/Elastic.Documentation.Site/` - Web rendering components
+## Testing
 
-### Testing Structure
+Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
-- `tests/` - C# unit tests
-- `tests/authoring/` - F# authoring tests
-- `tests-integration/` - Integration tests
+- **C#**: xUnit v3 · TUnit · FakeItEasy
+- **TypeScript**: Jest
+- **F# authoring**: `tests/authoring/`
+- **Integration**: clones real repos, runs full assembler — only run when integration files change
 
-### Configuration
+Use the `/test` skill to pick the right test project automatically.
 
-- `config/` - YAML configuration files
-- `Directory.Build.props` - MSBuild properties
-- `Directory.Packages.props` - Centralized package management
+## Key Locations
 
-## Development guidelines
+| What | Where |
+|---|---|
+| Myst extensions (directives, roles) | `src/Elastic.Markdown/Myst/` |
+| CLI commands | `src/tooling/docs-builder/Commands/` |
+| Config schema | `src/Elastic.Documentation.Configuration/` |
+| Frontend assets | `src/Elastic.Documentation.Site/Assets/` |
+| Test helpers | `tests/Elastic.Markdown.Tests/TestHelpers.cs` |
+| Repo / nav config | `config/` |
+| Docs site | `/docs/` |
 
-### Adding New Features
+## Code Style
 
-1. **Markdown Extensions**: Add to `src/Elastic.Markdown/Myst/`
-2. **CLI Commands**: Extend `src/tooling/docs-builder/Commands/` 
-3. **Web Components**: Add to `src/Elastic.Documentation.Site/`
-4. **Configuration**: Modify `src/Elastic.Documentation.Configuration/`
+Mechanical formatting is fully enforced by `.editorconfig` and the Husky.Net pre-commit/pre-push hooks — run `dotnet format` or `/lint` to fix before committing. Never use `--no-verify`.
 
-### Code style
+Beyond what `.editorconfig` can check:
 
-- Follow existing C# and F# conventions in the codebase
-- ...
+- **Async**: public async methods → `PascalCaseAsync`; private → `PascalCase`. Never `.Result`/`.Wait()`. Always accept `CancellationToken`. Use `ConfigureAwait(false)` in library code.
+- **Class member order**: fields → constructors (prefer primary) → properties → methods (grouped by function, not visibility).
+- **Complexity**: max 5–7 branches per method. Extract named helpers rather than nesting.
+- **Early returns**: guard clauses first, happy path last.
+- **Parameters**: max 4 — use a record/options object beyond that. Boolean params must be named at call sites.
+- **Collections**: never return `null` — return `[]`. Use the TryGet pattern for lookups.
+- **Testing**: TUnit for new test projects; AwesomeAssertions fluent style. Method naming: `Method_Scenario_Expected`.
+- **Comments**: only when *why* is non-obvious. No `#region`. No multi-paragraph docstrings.
 
-### Testing requirements
-
-- Add unit tests for new functionality
-- Use F# for authoring/documentation-specific tests
-- ...
-
-### Common patterns
-
-- ...
+Use `/style-review` to check a diff against these rules.
 
 ## Documentation
 
-The repository is self-documenting:
-
-- `/docs/` contains comprehensive documentation
-
-You MUST update the documentation when there are changes in the markdown syntax or rendering behaviour.
-
-## Useful file locations
-
-- Entry points: `src/tooling/docs-builder/Program.cs`
-- Markdown processing: `src/Elastic.Markdown/Myst/`
-- Web assets: `src/Elastic.Documentation.Site/Assets/`
-- Configuration schemas: `src/Elastic.Documentation.Configuration/`
-- Test helpers: `tests/Elastic.Markdown.Tests/TestHelpers.cs`
+Update `/docs/` whenever Markdown syntax or rendering behaviour changes.
