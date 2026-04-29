@@ -17,27 +17,8 @@ reviews:
   estimate_code_review_effort: false
   collapse_walkthrough: true
   changed_files_summary: false
-  suggested_labels: true
-  auto_apply_labels: true
-  labeling_instructions:
-    - label: breaking
-      instructions: "Apply only this label when the PR introduces breaking changes to public APIs, CLI behavior, or configuration formats"
-    - label: feature
-      instructions: "Apply only this label when the PR introduces entirely new functionality or capabilities"
-    - label: enhancement
-      instructions: "Apply only this label when the PR improves or extends existing functionality (not new features)"
-    - label: fix
-      instructions: "Apply only this label when the PR fixes a bug or incorrect behavior"
-    - label: documentation
-      instructions: "Apply only this label when the PR primarily updates docs/ content, README, or doc comments"
-    - label: chore
-      instructions: "Apply only this label for maintenance: refactoring, code cleanup, or config changes with no user-facing impact"
-    - label: dependencies
-      instructions: "Apply only this label when NuGet packages or other dependency versions are added or updated"
-    - label: ci
-      instructions: "Apply only this label when GitHub Actions workflows, CI/CD scripts, or build automation is modified"
-    - label: redesign
-      instructions: "Apply only this label when the PR contains site template, layout, or UI overhaul work"
+  suggested_labels: false
+  auto_apply_labels: false
   suggested_reviewers: false
   auto_review:
     enabled: true
