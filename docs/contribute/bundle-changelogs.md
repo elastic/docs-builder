@@ -261,7 +261,7 @@ docs-builder changelog bundle \
   --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
 ```
 
-1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/contribute/create-changelogs.md#product-format).
+1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/bundle.md#product-format).
 
 You can use wildcards in any of the three parts:
 
@@ -594,3 +594,4 @@ docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
 ```
 
 For full option details, go to [](/cli/changelog/remove.md).
+
