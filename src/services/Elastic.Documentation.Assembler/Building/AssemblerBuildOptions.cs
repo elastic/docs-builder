@@ -27,7 +27,8 @@ public record AssemblerBuildOptions
 	/// Values: Html, Elasticsearch, Configuration, LinkMetadata, DocumentationState, LLMText, Redirects.
 	/// Default: Html, Configuration, LinkMetadata, DocumentationState, Redirects.
 	/// </summary>
-	[CollectionSyntax(Separator = ",")]
+	// [CollectionSyntax(Separator=",")] omitted: 0.12.2 generator bug — null-return for empty [AsParameters]
+	// collection declared with non-nullable type (CS8600). Re-enable when fixed upstream.
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 
 	/// <summary>Skip the build step when <c>.artifacts/docs/index.html</c> already exists. Intended for test scenarios only.</summary>

@@ -37,7 +37,8 @@ public record IsolatedBuildOptions
 	/// Comma-separated list of exporters to run.
 	/// Default: html, configuration, linkmetadata, documentationState, dedirects.
 	/// </summary>
-	[CollectionSyntax(Separator = ",")]
+	// [CollectionSyntax(Separator=",")] omitted: 0.12.2 generator bug — null-return for empty [AsParameters]
+	// collection declared with non-nullable type (CS8600). Re-enable when fixed upstream.
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 
 	/// <summary>Base URL written into <c>&lt;link rel=canonical&gt;</c> tags.</summary>

@@ -47,6 +47,7 @@ public class AssemblerBuildService(
 
 		collector.NoHints = !showHints.GetValueOrDefault(false);
 		strict ??= false;
+		// See IsolatedBuildService — same argh 0.12.0 empty-set workaround.
 		if (exporters is not { Count: > 0 })
 			exporters = metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
 		// ensure we never generate a documentation state for assembler builds
