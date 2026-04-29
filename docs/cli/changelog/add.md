@@ -68,8 +68,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   Products affected in format "product target lifecycle, ..." (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
 :   The valid product identifiers are listed in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 :   The valid lifecycles are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
-:   **Precedence when `--products` is not specified:** products are derived from PR/issue labels via `pivot.products` label mappings (if configured), then from `products.default` in `changelog.yml`, and finally inferred from the current git repository name. An error is raised if no products can be determined by any of these means.
-:   Refer to [Products resolution](#products-resolution) in the how-to guide for full details.
+:   For more information about the valid product and lifecycle values, go to [Product format](#product-format).
 
 `--prs <string[]?>`
 :   Optional: Pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
@@ -126,36 +125,6 @@ docs-builder changelog add [options...] [-h|--help]
 :   Mutually exclusive with `--use-pr-number`.
 :   Refer to [](#filenames).
 
-## CI auto-detection [ci-auto-detection]
-
-When running inside GitHub Actions, `changelog add` automatically reads the following environment variables to fill in arguments that were not provided on the command line:
-
-| Environment variable | Fills | Set from |
-| --- | --- | --- |
-| `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
-| `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
-| `CHANGELOG_DESCRIPTION` | `--description` | `steps.evaluate.outputs.description` |
-| `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
-| `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
-| `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
-| `CHANGELOG_REPO` | `--repo` | `github.event.repository.name` |
-
-**Precedence**: explicit CLI arguments always take priority over environment variables. Environment variables are only used when the corresponding CLI argument is not provided.
-
-`CHANGELOG_DESCRIPTION` has additional precedence rules related to release note extraction:
-
-- If `--description` is provided on the command line, it always wins.
-- If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored. This prevents a description that was extracted by `evaluate-pr` from being applied when extraction has been disabled.
-- Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
-
-The filename strategy is controlled by the `filename` option in `changelog.yml` (defaulting to `timestamp`). Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for details.
-
-This allows the CI action to invoke `changelog add` with a minimal command line:
-
-```sh
-docs-builder changelog add --config docs/changelog.yml --output /tmp/staging --concise --strip-title-prefix
-```
-
 ## Filenames
 
 By default, output files are named according to the `filename` strategy in `changelog.yml`:
@@ -188,17 +157,30 @@ docs-builder changelog add \
 **Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`timestamp`).
 :::
 
-## Products resolution [products-resolution]
+## Product format and resolution [product-format]
 
-When you run the `changelog add` command without the `--products` option, it resolves products in the following order:
+The `--products` command option accepts values with the format `"product target lifecycle, ..."` where:
 
-1. **`--products` CLI option** — always takes priority.
-2. **`pivot.products` label mapping** — if `pivot.products` is configured and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
-3. **`products.default` in `changelog.yml`** — the configured default products are used.
-4. **Repository name inference** — if `--repo` is specified (or `bundle.repo` is set in `changelog.yml`), the repository name is matched against known product IDs in `products.yml`.
-5. **Error** — if none of the above resolves to at least one product, an error is raised.
+- `product` is a product ID that exists in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (required)
+- `target` is the target version or date (optional)
+- `lifecycle` exists in [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) (optional)
 
-Product-specific `rules.create` rules are evaluated *after* products are resolved from labels, so label-derived products correctly participate in per-product create rule checks.
+You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
+
+For example:
+
+- `"kibana 9.2.0 ga"`
+- `"cloud-serverless 2025-08-05"`
+- `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
+
+The `changelog add` command resolves product values in the following order:
+
+1. The `--products` CLI option always takes priority.
+1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
+1. If `products.default` is defined in the changelog configuration file, those default products are used.
+1. If `--repo` is specified (or `bundle.repo` is set in the changelog configuraiton file), the repository name is matched against known product IDs in `products.yml` and the derived value is used.
+
+If none of these steps yield at least one product, the command returns an error.
 
 ## Configuration checks
 
@@ -215,3 +197,34 @@ In each of these cases where validation fails, a changelog file is not created.
 
 If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
 For more information, refer to [Rules for creation and publishing](/contribute/configure-changelogs.md#rules).
+
+
+## CI auto-detection [ci-auto-detection]
+
+When running inside GitHub Actions, `changelog add` automatically reads the following environment variables to fill in arguments that were not provided on the command line:
+
+| Environment variable | Fills | Set from |
+| --- | --- | --- |
+| `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
+| `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
+| `CHANGELOG_DESCRIPTION` | `--description` | `steps.evaluate.outputs.description` |
+| `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
+| `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
+| `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
+| `CHANGELOG_REPO` | `--repo` | `github.event.repository.name` |
+
+**Precedence**: explicit CLI arguments always take priority over environment variables. Environment variables are only used when the corresponding CLI argument is not provided.
+
+`CHANGELOG_DESCRIPTION` has additional precedence rules related to release note extraction:
+
+- If `--description` is provided on the command line, it always wins.
+- If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored. This prevents a description that was extracted by `evaluate-pr` from being applied when extraction has been disabled.
+- Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
+
+The filename strategy is controlled by the `filename` option in `changelog.yml` (defaulting to `timestamp`). Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) for details.
+
+This allows the CI action to invoke `changelog add` with a minimal command line:
+
+```sh
+docs-builder changelog add --config docs/changelog.yml --output /tmp/staging --concise --strip-title-prefix
+```

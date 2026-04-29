@@ -93,7 +93,7 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 
 `--input-products <List<ProductInfo>?>`
 :   Filter by products in the format "product target lifecycle, ...".
-:   For more information about the valid product and lifecycle values, go to [Product format](/contribute/create-changelogs.md#product-format).
+:   For more information about the valid product and lifecycle values, go to [Product format](#product-format).
 :   When specified, all three parts (product, target, lifecycle) are required but can be wildcards (`*`). Multiple comma-separated values are combined with OR: a changelog is included if it matches any of the specified product/target/lifecycle combinations. For example:
 
 - `"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"` — include changelogs for either cloud-serverless 2025-12-02 ga or cloud-serverless 2025-12-06 beta
@@ -122,6 +122,7 @@ The `--input-products` option determines which changelog files are gathered for 
 `--output-products <List<ProductInfo>?>`
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
 :   This value replaces information that would otherwise be derived from changelogs.
+:   For more information about the valid product and lifecycle values, go to [Product format](#product-format).
 :   When `rules.bundle.products` per-product overrides are configured, `--output-products` also supplies the product IDs used to choose the **rule context product** (first alphabetically) for Mode 3. To use a different product's rules, run a separate bundle with only that product in `--output-products`. For details, refer to [Product-specific bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle-products).
 
 `--no-release-date`
@@ -210,6 +211,22 @@ If you specify a file path with a different extension (not `.yml` or `.yaml`), t
 "Current working directory" means the directory you are in when you run the command (`pwd`).
 Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is recommended so you don't need to rely on running the command from a specific directory.
 :::
+
+## Product format
+
+The `changelog bundle` command has `--input-products` and `--output-products` options that accept values with the format `"product target lifecycle, ..."` where:
+
+- `product` is the product ID from [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (required)
+- `target` is the target version or date (optional)
+- `lifecycle` exists in [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) (optional)
+
+You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
+
+For example:
+
+- `"kibana 9.2.0 ga"`
+- `"cloud-serverless 2025-08-05"`
+- `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
 
 ## Repository name in bundles [changelog-bundle-repo]
 
@@ -439,6 +456,7 @@ If you're using profile-based commands, they're affected by the following fields
 :   Not used when the filter comes from a promotion report, URL list file, or `source: github_release` — in those cases the PR or issue list determines what's included and `products` is ignored.
 :   Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
 :   Example: `"elasticsearch {version} {lifecycle}"`
+:   Refer to [](#product-format).
 
 :::{note}
 The `products` field determines which changelog files are gathered for consideration. **`rules.bundle` still applies** afterward (see the note under [`--input-products`](#options)). Input stage and bundle filtering stage are conceptually separate.
@@ -457,6 +475,7 @@ The `products` field determines which changelog files are gathered for considera
 :   The `{lifecycle}` placeholder is substituted at runtime with the inferred lifecycle. For `source: github_release` profiles this comes from the release tag suffix. For standard profiles it comes from the version argument. Refer to [](#changelog-bundle-standard-profile-lifecycle) and [](#changelog-bundle-github-release-profile) for details.
 :   If you omit lifecycle from the pattern (for example, `"elasticsearch {version}"`), the lifecycle field is omitted from the products array entirely.
 :   Example: `"elasticsearch {version} {lifecycle}"` or `"elasticsearch {version} ga"` to hardcode GA regardless of tag.
+:   Refer to [](#product-format).
 
 `repo`
 :   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name. Overrides `bundle.repo` when set. Required when `source: github_release` is used and no `bundle.repo` default is set.
@@ -481,7 +500,7 @@ If your configuration file defines a standard profile (that is to say, not a Git
 | `9.2.0-alpha.1` | `preview` |
 | `9.2.0-preview.1` | `preview` |
 
-For more information about acceptable product and lifecycle values, go to [Product format](/contribute/create-changelogs.md#product-format).
+For more information about acceptable product and lifecycle values, go to [Product format](#product-format).
 
 You can invoke those profiles with commands like this:
 

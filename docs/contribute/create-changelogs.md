@@ -82,31 +82,24 @@ Changelog files use the following schema:
 
 For content guidelines, go to [Changelogs](https://www.elastic.co/docs/contribute-docs/content-types/changelogs).
 
-:::{note}
+:::{important}
 Some of the fields in the schema accept only a specific set of values:
 
 - Product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 - Type, subtype, and lifecycle values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs), [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs), and [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) respectively.
+
+You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
 :::
 
 ## Examples
 
 ### Control changelog creation [example-block-label]
 
-You can prevent changelog creation for certain PRs based on their labels.
-
-If you run the `docs-builder changelog add` command with the `--prs` option and a PR has a blocking label for any of the resolved products (from `--products`, `pivot.products` label mapping, or `products.default`), that PR will be skipped and no changelog file will be created for it.
-A warning message will be emitted indicating which PR was skipped and why.
-
-For example, your configuration file can contain a `rules` section like this:
+You can prevent changelog creation for PRs based on their labels.
+For example, your configuration file can contain a `rules.create` section like this:
 
 ```yaml
 rules:
-  # Global match default for multi-valued fields (labels, areas).
-  #   any (default) = match if ANY item matches the list
-  #   all           = match only if ALL items match the list
-  # match: any
-
   # Create — controls which PRs generate changelogs.
   create:
     # Labels that block changelog creation (comma-separated string)
@@ -121,15 +114,13 @@ Those settings affect commands with the `--prs` or `--issues` options, for examp
 
 ```sh
 docs-builder changelog add --prs "1234, 5678" \
-  --products "cloud-serverless" \
-  --owner elastic --repo elasticsearch \
-  --config test/changelog.yml
+  --products "cloud-serverless"
 ```
 
 If PR 1234 has the `>non-issue` or `>test` labels, it will be skipped and no changelog will be created.
 If PR 5678 does not have any blocking labels, a changelog is created.
 
-You can also use **include** mode instead of **exclude** mode.
+Alternatively, you can define `rules.create.include` labels.
 For example, to only create changelogs for PRs with specific labels:
 
 ```yaml
@@ -137,6 +128,8 @@ rules:
   create:
     include: "@Public, @Notable"
 ```
+
+For more information about these changelog configuration settings, refer to [](/contribute/configure-changelogs-ref.md#rules-create).
 
 ### Create changelogs from a file [example-file-add]
 
@@ -152,8 +145,7 @@ EOF
 
 # Use the file with --prs
 docs-builder changelog add --prs prs.txt \
-  --products "elasticsearch 9.2.0 ga" \
-  --config test/changelog.yml
+  --products "elasticsearch 9.2.0 ga"
 ```
 
 In this example, the command creates one changelog for each pull request in the list.
@@ -164,9 +156,7 @@ If you have GitHub releases with automated release notes (the default format or 
 For example:
 
 ```sh
-docs-builder changelog add \
-  --release-version v1.34.0 \
-  --repo apm-agent-dotnet --owner elastic
+docs-builder changelog add --release-version v1.34.0
 ```
 
 This command creates one changelog file per PR found in the `v1.34.0` GitHub release notes.
@@ -175,24 +165,8 @@ For example, a tag of `v1.34.0` in the `apm-agent-dotnet` repo creates changelog
 
 :::{note}
 `--release-version` requires `--repo` (or `bundle.repo` set in `changelog.yml`) and is mutually exclusive with `--prs` and `--issues`.
-The option precedence is: CLI option > `changelog.yml` bundle section > built-in default. This applies to `--repo`, `--owner`, and `--output` for all `changelog add` modes.
+The option precedence is: CLI option > `changelog.yml` bundle section > built-in default.
 :::
 
 You can use the `docs-builder changelog gh-release` command as a one-shot alternative to `changelog add` and `changelog bundle` commands.
 The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
-
-### Product format
-
-The `docs-builder changelog add` has a `--products` option and the `docs-builder changelog bundle` has `--input-products` and `--output-products` options that all use the same format.
-
-They accept values with the format `"product target lifecycle, ..."` where:
-
-- `product` is the product ID from [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (required)
-- `target` is the target version or date (optional)
-- `lifecycle` is one of: `preview`, `beta`, or `ga` (optional)
-
-Examples:
-
-- `"kibana 9.2.0 ga"`
-- `"cloud-serverless 2025-08-05"`
-- `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
