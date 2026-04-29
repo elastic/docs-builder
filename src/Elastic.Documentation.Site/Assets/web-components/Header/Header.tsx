@@ -65,9 +65,15 @@ export const Header = ({
                                         padding-block: 7px;
                                         height: auto;
                                         line-height: normal;
-                                        border-radius: ${euiTheme.border.radius.small};
+                                        border-radius: ${euiTheme.border.radius
+                                            .small};
                                         &:hover {
-                                            background: rgba(0, 0, 0, 0.06) !important;
+                                            background: rgba(
+                                                0,
+                                                0,
+                                                0,
+                                                0.06
+                                            ) !important;
                                         }
                                         & > span {
                                             color: ${euiTheme.colors.ink};
@@ -90,8 +96,11 @@ export const Header = ({
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     css={css`
-                                                        ${headerButtonCss(euiTheme)};
-                                                        margin-inline: ${euiTheme.size.s};
+                                                        ${headerButtonCss(
+                                                            euiTheme
+                                                        )};
+                                                        margin-inline: ${euiTheme
+                                                            .size.s};
                                                     `}
                                                 >
                                                     <EuiIcon
