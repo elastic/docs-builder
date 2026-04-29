@@ -2,7 +2,7 @@
 	@apply text-ink font-body text-base text-pretty;
 
 	h1 {
-		@apply text-ink-dark mt-6 text-5xl font-semibold;
+		@apply text-ink-dark text-5xl font-semibold;
 		line-height: 1.2em;
 	}
 
