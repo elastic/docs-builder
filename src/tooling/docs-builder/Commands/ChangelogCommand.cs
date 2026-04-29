@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using Actions.Core.Services;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
-using Nullean.Argh;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
@@ -24,6 +23,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands;
 
