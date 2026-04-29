@@ -67,10 +67,7 @@ public class IsolatedBuildService(
 		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
 			metadataOnly ??= metaValue;
 
-		// Argh 0.12.0 initialises IReadOnlySet<T>? in [AsParameters] DTOs to an empty set (not null) when the
-		// flag is omitted; 0.12.1+ fixes this but introduces CS8600. Guard against both null and empty for now.
-		if (exporters is not { Count: > 0 })
-			exporters = metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
+		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
 
 		pathPrefix ??= githubActionsService.GetInput("prefix");
 
