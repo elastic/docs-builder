@@ -27,37 +27,60 @@ Each product key produces its own section of API documentation. For example, `el
 
 The `api` key is only valid in `docset.yml`. You can't use it in `toc.yml` files.
 
-### Advanced configuration with templates
+### Advanced configuration with intro and outro pages
 
-When you specify a `template` file, `docs-builder` uses your custom Markdown file as the API landing page instead of generating an automatic overview:
+You can add custom Markdown content before and after the auto-generated API documentation using a sequence format:
 
 ```yaml
 api:
   kibana:
-    spec: kibana-openapi.json
-    template: kibana-api-overview.md
+    - file: kibana-intro.md
+    - spec: kibana-openapi.json
+    - file: kibana-additional-notes.md
 ```
 
-Template files:
+This configuration creates a navigation structure where:
 
-- Must be Markdown files with `.md` extension
-- Can use standard Markdown, substitutions
+1. **Intro pages** (before the first `spec`) appear at the top of the sidebar
+2. **Generated API content** (operations, tags, types) appears in the middle
+3. **Outro pages** (after the spec) appear at the bottom
 
-:::{note}
-They must be explicitly excluded if they are not used in your table of contents.
-Otherwise `docs-builder` treats them like normal pages and navigation can fail at build or serve time.
-Add a glob (or explicit paths) under `exclude:` in `docset.yml` that matches your template filenames.
-For example, exclude `*-api-overview.md`.
-:::
+#### Intro and outro page features:
 
-#### Template example
+- **Full Myst support**: Intro/outro pages support the full range of Myst Markdown features including cross-links, substitutions, and directives
+- **Automatic exclusion**: No need to add intro/outro files to the `exclude:` list - they're automatically excluded from normal HTML generation
+- **URL collision detection**: Build fails if intro/outro page names conflict with reserved API Explorer segments (`types/`, `tags/`) or operation names
 
-Here's a sample template file (`kibana-api-overview.md`):
+#### Multiple intro/outro pages
+
+You can include multiple intro and outro pages:
+
+```yaml
+api:
+  kibana:
+    - file: introduction.md
+    - file: getting-started.md
+    - spec: kibana-openapi.json
+    - file: examples.md
+    - file: troubleshooting.md
+```
+
+#### Sample intro page
+
+Here's a sample intro page (`kibana-intro.md`):
 
 ```markdown
 # Kibana APIs
 
-Welcome to the Kibana API documentation.
+Welcome to the Kibana API documentation. These APIs allow you to manage Kibana programmatically.
+
+## Before you begin
+
+Make sure you have:
+
+- A running Kibana instance
+- Valid authentication credentials
+- Understanding of RESTful API principles
 ```
 
 ## Place your spec files
@@ -112,3 +135,62 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 - **Landing page**: An overview of the API grouped by tag
 - **Operation pages**: One page per API operation, with the HTTP method, path, parameters, request body, response schemas, and examples
 - **Schema type pages**: Dedicated pages for complex shared types such as `QueryContainer` and `AggregationContainer`
+
+## OpenAPI extensions
+
+The API Explorer supports the following OpenAPI specification extensions to enhance navigation and display:
+
+### `x-displayName` for tags
+
+Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-display-name)) on tag objects to provide user-friendly display names in navigation and landing pages while maintaining stable URLs based on the canonical tag name.
+
+```json
+{
+  "tags": [
+    {
+      "name": "tasks",
+      "description": "The task management APIs enable you to get information about tasks currently running.",
+      "x-displayName": "Task management"
+    },
+    {
+      "name": "ml_anomaly", 
+      "description": "Machine learning anomaly detection APIs.",
+      "x-displayName": "Machine Learning Anomaly Detection"
+    }
+  ]
+}
+```
+
+**Behavior:**
+
+- When `x-displayName` is present, it's used for navigation titles and section headings in the API Explorer
+- When `x-displayName` is absent, the canonical tag `name` is used as a fallback
+- Navigation URLs and internal references always use the canonical tag `name` for stability
+
+### `x-tagGroups` for sidebar grouping
+
+Use the document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/docs-legacy/api-reference-docs/specification-extensions/x-tag-groups)) to define how tags are grouped in the API Explorer sidebar. Each group has a display `name` and a list of tag `name` values that belong to it. Group order in the array is the order of top-level sections in the navigation.
+
+```json
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Example", "version": "1.0.0" },
+  "paths": {},
+  "x-tagGroups": [
+    {
+      "name": "Search & Document APIs",
+      "tags": ["search", "document", "eql", "esql", "sql"]
+    },
+    {
+      "name": "Cluster Management",
+      "tags": ["indices", "cluster", "snapshot"]
+    }
+  ]
+}
+```
+
+**Behavior:**
+
+- When `x-tagGroups` is present and valid, the API Explorer uses it as an additional level of grouping in the sidebar.
+- When `x-tagGroups` is absent, tags are listed directly under the API root in a single flat layer.
+- Any operation tag that is not listed under any group is still included: it appears under a fallback section named `unknown`, and the build logs a warning so you can fix the spec.

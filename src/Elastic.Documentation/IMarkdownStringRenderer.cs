@@ -9,6 +9,11 @@ namespace Elastic.Documentation;
 public interface IMarkdownStringRenderer
 {
 	string Render(string markdown, IFileInfo? source);
+
+	/// <summary>
+	/// Renders markdown without removing the first level-1 heading. <see cref="Render"/> strips it so the layout can render the title separately; API intro/outro pages keep the hash heading as the main title in HTML.
+	/// </summary>
+	string RenderPreservingFirstHeading(string markdown, IFileInfo? source) => Render(markdown, source);
 }
 public class NoopMarkdownStringRenderer : IMarkdownStringRenderer
 {
