@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Navigation.V2;
 using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.Documentation.Site;
@@ -65,6 +66,12 @@ public record GlobalLayoutViewModel
 	public required StaticFileContentHashProvider StaticFileContentHashProvider { get; init; }
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
+
+	/// <summary>V2 section metadata for the secondary nav bar tabs. Null for V1 builds.</summary>
+	public IReadOnlyList<NavigationSection>? NavV2Sections { get; init; }
+
+	/// <summary>The active section ID for highlighting the current tab in the secondary nav.</summary>
+	public string? ActiveSectionId { get; init; }
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 

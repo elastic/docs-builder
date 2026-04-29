@@ -10,14 +10,20 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 namespace Elastic.Documentation.Navigation.V2;
 
 /// <summary>
-/// Extends <see cref="SiteNavigation"/> with a V2 label-structured sidebar tree derived from
+/// Extends <see cref="SiteNavigation"/> with a V2 section-structured sidebar derived from
 /// <c>navigation-v2.yml</c>. Content is built at the same URL paths as V1 (the original
 /// <paramref name="originalFile"/> is passed to the base constructor unchanged).
-/// Only the sidebar presentation changes — <see cref="V2NavigationItems"/> exposes the
-/// label/placeholder hierarchy used by <c>_TocTreeNavV2.cshtml</c>.
+/// <para>
+/// Top-level <c>section:</c> items become independent nav trees (<see cref="Sections"/>).
+/// Each section drives a tab in the secondary nav bar and its own sidebar.
+/// Sections marked <c>isolated: true</c> do not appear in the top bar and render with a back arrow.
+/// </para>
 /// </summary>
 public class SiteNavigationV2 : SiteNavigation
 {
+	private readonly Dictionary<string, NavigationSection> _urlToSection = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, NavigationIsland> _tocRootToIsland = new(StringComparer.Ordinal);
+
 	public SiteNavigationV2(
 		NavigationV2File v2File,
 		SiteNavigationFile originalFile,
@@ -25,14 +31,127 @@ public class SiteNavigationV2 : SiteNavigation
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
 		string? sitePrefix
 	) : base(originalFile, context, documentationSetNavigations, sitePrefix)
-		=> V2NavigationItems = BuildV2Items(v2File.Nav, Nodes, this, sitePrefix ?? string.Empty);
+	{
+		var prefix = sitePrefix ?? string.Empty;
+		V2NavigationItems = BuildV2Items(v2File.Nav, Nodes, this, prefix);
+		Sections = BuildSections(V2NavigationItems);
+		Islands = BuildIslands(Sections);
+		BuildUrlToSectionLookup();
+		BuildTocRootToIslandLookup();
+	}
 
 	/// <summary>
-	/// Label-structured navigation items for V2 sidebar rendering.
-	/// Contains <see cref="LabelNavigationNode"/>, <see cref="PlaceholderNavigationLeaf"/>,
-	/// <see cref="PageCrossLinkLeaf"/>, and existing <see cref="IRootNavigationItem{TIndex,TChildNavigation}"/> nodes.
+	/// All V2 navigation items (flat list including sections, labels, etc.).
+	/// Used for placeholder generation and full-tree traversal.
 	/// </summary>
 	public IReadOnlyList<INavigationItem> V2NavigationItems { get; }
+
+	/// <summary>
+	/// Top-level sections extracted from <see cref="V2NavigationItems"/>.
+	/// Each section owns an independent sidebar nav tree.
+	/// </summary>
+	public IReadOnlyList<NavigationSection> Sections { get; }
+
+	/// <summary>
+	/// Nav islands nested within sections. When a page belongs to an island,
+	/// the sidebar shows the island's tree with a back arrow to the parent section.
+	/// </summary>
+	public IReadOnlyList<NavigationIsland> Islands { get; }
+
+	/// <summary>
+	/// Resolves which island a page belongs to by its toc root.
+	/// Uses the nav ownership model — the toc root that owns the page determines the island.
+	/// </summary>
+	public NavigationIsland? GetIslandForTocRoot(IRootNavigationItem<INavigationModel, INavigationItem> tocRoot) =>
+		_tocRootToIsland.GetValueOrDefault(tocRoot.Id);
+
+	/// <summary>
+	/// Resolves which section a page belongs to by its URL.
+	/// Returns the first non-isolated section as fallback for unresolved URLs.
+	/// </summary>
+	public NavigationSection? GetSectionForUrl(string? pageUrl)
+	{
+		if (pageUrl is not null)
+		{
+			var normalized = pageUrl.TrimEnd('/');
+			if (_urlToSection.TryGetValue(normalized, out var section))
+				return section;
+			if (_urlToSection.TryGetValue(normalized + "/", out section))
+				return section;
+		}
+		return Sections.FirstOrDefault(s => !s.Isolated);
+	}
+
+	private static IReadOnlyList<NavigationSection> BuildSections(IReadOnlyList<INavigationItem> items) =>
+		items
+			.OfType<SectionNavigationNode>()
+			.Select(s => new NavigationSection(s.Id, s.NavigationTitle, s.Url, s.Isolated, [.. s.NavigationItems]))
+			.ToList();
+
+	private static IReadOnlyList<NavigationIsland> BuildIslands(IReadOnlyList<NavigationSection> sections)
+	{
+		var islands = new List<NavigationIsland>();
+		foreach (var section in sections)
+			CollectIslandsFromItems(section.NavigationItems, section, islands);
+		return islands;
+	}
+
+	private static void CollectIslandsFromItems(
+		IEnumerable<INavigationItem> items,
+		NavigationSection parentSection,
+		List<NavigationIsland> islands
+	)
+	{
+		foreach (var item in items)
+		{
+			if (item is IslandNavigationNode islandNode)
+			{
+				islands.Add(new NavigationIsland(
+					islandNode.Id,
+					islandNode.NavigationTitle,
+					islandNode.Url,
+					islandNode.SourceTocRootId,
+					parentSection,
+					[.. islandNode.NavigationItems]
+				));
+			}
+			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+			{
+				CollectIslandsFromItems(node.NavigationItems, parentSection, islands);
+			}
+		}
+	}
+
+	private void BuildUrlToSectionLookup()
+	{
+		foreach (var section in Sections)
+			CollectUrlsForSection(section.NavigationItems, section);
+	}
+
+	private void CollectUrlsForSection(IEnumerable<INavigationItem> items, NavigationSection section)
+	{
+		foreach (var item in items)
+		{
+			// Skip island subtrees — they're handled by the island lookup
+			if (item is IslandNavigationNode)
+				continue;
+
+			if (!string.IsNullOrEmpty(item.Url))
+			{
+				var normalized = item.Url.TrimEnd('/');
+				_ = _urlToSection.TryAdd(normalized, section);
+			}
+
+			if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+				CollectUrlsForSection(node.NavigationItems, section);
+		}
+	}
+
+	private void BuildTocRootToIslandLookup()
+	{
+		foreach (var island in Islands)
+			_ = _tocRootToIsland.TryAdd(island.SourceTocRootId, island);
+	}
 
 	private static IReadOnlyList<INavigationItem> BuildV2Items(
 		IReadOnlyList<INavV2Item> v2Items,
@@ -54,6 +173,8 @@ public class SiteNavigationV2 : SiteNavigation
 	) =>
 		item switch
 		{
+			SectionNavV2Item section => CreateSection(section, nodes, parent, sitePrefix),
+			IslandNavV2Item island => CreateIsland(island, nodes, parent),
 			LabelNavV2Item label => CreateLabel(label, nodes, parent, sitePrefix),
 			GroupNavV2Item group => CreateGroup(group, nodes, parent, sitePrefix),
 			TocNavV2Item toc => CreateToc(toc, nodes, parent, sitePrefix),
@@ -98,6 +219,29 @@ public class SiteNavigationV2 : SiteNavigation
 		public int NavigationIndex { get; set; }
 		public ILeafNavigationItem<INavigationModel> Index => source.Index;
 		public IReadOnlyCollection<INavigationItem> NavigationItems => children;
+	}
+
+	private static SectionNavigationNode CreateSection(
+		SectionNavV2Item section,
+		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		string sitePrefix
+	)
+	{
+		var placeholder = new SectionNavigationNode(section.Label, section.Url, section.Isolated, [], parent);
+		var children = BuildV2Items(section.Children, nodes, placeholder, sitePrefix);
+		return new SectionNavigationNode(section.Label, section.Url, section.Isolated, children, parent);
+	}
+
+	private static INavigationItem? CreateIsland(
+		IslandNavV2Item island,
+		IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> nodes,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent
+	)
+	{
+		if (!nodes.TryGetValue(island.Source, out var node))
+			return null;
+		return new IslandNavigationNode(island.Label, node, parent);
 	}
 
 	private static LabelNavigationNode CreateLabel(

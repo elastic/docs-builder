@@ -23,15 +23,13 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 
 	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
-#pragma warning disable IDE0060
-		INavigationItem currentNavigationItem, // temporary https://github.com/elastic/docs-content/pull/3730
-#pragma warning restore IDE0060
+		INavigationItem currentNavigationItem,
 		Cancel ctx = default
 	)
 	{
-		// V2 nav: always render the full V2 tree regardless of current section
+		// V2 nav: render per-section sidebar based on current page
 		if (globalNavigation is SiteNavigationV2 navV2)
-			return await RenderV2Navigation(navV2, ctx);
+			return await RenderSectionNavigation(navV2, currentRootNavigation, currentNavigationItem, ctx);
 
 		if (currentRootNavigation is SiteNavigation)
 			return NavigationRenderResult.Empty;
@@ -69,25 +67,54 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		}
 	}
 
-	private const string NavV2CacheKey = "nav-v2";
-
-	private async Task<NavigationRenderResult> RenderV2Navigation(SiteNavigationV2 navV2, Cancel ctx)
+	private async Task<NavigationRenderResult> RenderSectionNavigation(
+		SiteNavigationV2 navV2,
+		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
+		INavigationItem currentNavigationItem,
+		Cancel ctx
+	)
 	{
-		if (_renderedNavigationCache.TryGetValue(NavV2CacheKey, out var cachedHtml))
-			return new NavigationRenderResult { Html = cachedHtml, Id = NavV2CacheKey };
+		// Islands take priority: if the current toc root is an island, render the island sidebar
+		var island = navV2.GetIslandForTocRoot(currentRootNavigation);
+		if (island is not null)
+			return await RenderIslandNavigation(island, navV2, ctx);
+
+		var section = navV2.GetSectionForUrl(currentNavigationItem.Url);
+		if (section is null)
+			return await RenderFullV2Navigation(navV2, ctx);
+
+		var cacheKey = $"nav-v2-section-{section.Id}";
+		if (_renderedNavigationCache.TryGetValue(cacheKey, out var cachedHtml))
+			return CreateSectionResult(cachedHtml, section, navV2);
 
 		await _semaphore.WaitAsync(ctx);
 		try
 		{
-			if (_renderedNavigationCache.TryGetValue(NavV2CacheKey, out cachedHtml))
-				return new NavigationRenderResult { Html = cachedHtml, Id = NavV2CacheKey };
+			if (_renderedNavigationCache.TryGetValue(cacheKey, out cachedHtml))
+				return CreateSectionResult(cachedHtml, section, navV2);
 
-			_logger.LogInformation("Rendering V2 navigation");
+			_logger.LogInformation("Rendering V2 section navigation: {SectionLabel} ({SectionId})", section.Label, section.Id);
 
-			var model = CreateV2NavigationModel(navV2);
+			var wrapper = new SectionNavigationV2Wrapper(section, navV2);
+			var model = new NavigationViewModel
+			{
+				Title = section.Label,
+				TitleUrl = section.Url,
+				Tree = wrapper,
+				IsPrimaryNavEnabled = true,
+				IsUsingNavigationDropdown = false,
+				IsGlobalAssemblyBuild = true,
+				TopLevelItems = [],
+				Htmx = new DefaultHtmxAttributeProvider("/"),
+				BuildType = BuildType.Assembler,
+				IsNavV2 = true,
+				IsIsolatedSection = section.Isolated,
+				SectionUrl = CombineWithSitePrefix(navV2, section.Url)
+			};
+
 			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
-			_renderedNavigationCache[NavV2CacheKey] = html;
-			return new NavigationRenderResult { Html = html, Id = NavV2CacheKey };
+			_renderedNavigationCache[cacheKey] = html;
+			return CreateSectionResult(html, section, navV2);
 		}
 		finally
 		{
@@ -95,22 +122,118 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		}
 	}
 
-	private static NavigationViewModel CreateV2NavigationModel(SiteNavigationV2 navV2)
+	private async Task<NavigationRenderResult> RenderIslandNavigation(
+		NavigationIsland island,
+		SiteNavigationV2 navV2,
+		Cancel ctx
+	)
 	{
-		var syntheticV2Root = new SiteNavigationV2Wrapper(navV2);
-		return new NavigationViewModel
+		var cacheKey = $"nav-v2-island-{island.Id}";
+		if (_renderedNavigationCache.TryGetValue(cacheKey, out var cachedHtml))
+			return CreateIslandResult(cachedHtml, island, navV2);
+
+		await _semaphore.WaitAsync(ctx);
+		try
 		{
-			Title = "Elastic Docs",
-			TitleUrl = navV2.Url,
-			Tree = syntheticV2Root,
-			IsPrimaryNavEnabled = true,
-			IsUsingNavigationDropdown = false,
-			IsGlobalAssemblyBuild = true,
-			TopLevelItems = [],
-			Htmx = new DefaultHtmxAttributeProvider("/"),
-			BuildType = BuildType.Assembler,
-			IsNavV2 = true
+			if (_renderedNavigationCache.TryGetValue(cacheKey, out cachedHtml))
+				return CreateIslandResult(cachedHtml, island, navV2);
+
+			_logger.LogInformation("Rendering V2 island navigation: {IslandLabel} ({IslandId})", island.Label, island.Id);
+
+			var wrapper = new SectionNavigationV2Wrapper(
+				new NavigationSection(island.Id, island.Label, "", false, island.NavigationItems),
+				navV2
+			);
+			var model = new NavigationViewModel
+			{
+				Title = island.Label,
+				TitleUrl = "",
+				Tree = wrapper,
+				IsPrimaryNavEnabled = true,
+				IsUsingNavigationDropdown = false,
+				IsGlobalAssemblyBuild = true,
+				TopLevelItems = [],
+				Htmx = new DefaultHtmxAttributeProvider("/"),
+				BuildType = BuildType.Assembler,
+				IsNavV2 = true,
+				IsIsolatedSection = true,
+				SectionUrl = null,
+				BackArrowUrl = CombineWithSitePrefix(navV2, island.ParentSection.Url)
+			};
+
+			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
+			_renderedNavigationCache[cacheKey] = html;
+			return CreateIslandResult(html, island, navV2);
+		}
+		finally
+		{
+			_ = _semaphore.Release();
+		}
+	}
+
+	private static NavigationRenderResult CreateIslandResult(string html, NavigationIsland island, SiteNavigationV2 navV2) =>
+		new()
+		{
+			Html = html,
+			Id = $"nav-v2-island-{island.Id}",
+			Sections = navV2.Sections,
+			ActiveSectionId = island.ParentSection.Id
 		};
+
+	private static string CombineWithSitePrefix(SiteNavigation nav, string sectionUrl)
+	{
+		var prefix = nav.Url.TrimEnd('/');
+		var path = sectionUrl.TrimStart('/');
+		return string.IsNullOrEmpty(path) ? $"{prefix}/" : $"{prefix}/{path}";
+	}
+
+	private static NavigationRenderResult CreateSectionResult(string html, NavigationSection activeSection, SiteNavigationV2 navV2) =>
+		new()
+		{
+			Html = html,
+			Id = $"nav-v2-section-{activeSection.Id}",
+			Sections = navV2.Sections,
+			ActiveSectionId = activeSection.Id
+		};
+
+	/// <summary>Fallback when no <c>section:</c> items exist — renders the full V2 tree as before.</summary>
+	private async Task<NavigationRenderResult> RenderFullV2Navigation(SiteNavigationV2 navV2, Cancel ctx)
+	{
+		const string cacheKey = "nav-v2";
+		if (_renderedNavigationCache.TryGetValue(cacheKey, out var cachedHtml))
+			return new NavigationRenderResult { Html = cachedHtml, Id = cacheKey };
+
+		await _semaphore.WaitAsync(ctx);
+		try
+		{
+			if (_renderedNavigationCache.TryGetValue(cacheKey, out cachedHtml))
+				return new NavigationRenderResult { Html = cachedHtml, Id = cacheKey };
+
+			_logger.LogInformation("Rendering V2 navigation (full tree fallback)");
+
+			var syntheticV2Root = new FullV2Wrapper(navV2);
+			var model = new NavigationViewModel
+			{
+				Title = "Elastic Docs",
+				TitleUrl = navV2.Url,
+				Tree = syntheticV2Root,
+				IsPrimaryNavEnabled = true,
+				IsUsingNavigationDropdown = false,
+				IsGlobalAssemblyBuild = true,
+				TopLevelItems = [],
+				Htmx = new DefaultHtmxAttributeProvider("/"),
+				BuildType = BuildType.Assembler,
+				IsNavV2 = true
+			};
+
+			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
+			_renderedNavigationCache[cacheKey] = html;
+			return new NavigationRenderResult { Html = html, Id = cacheKey };
+		}
+		finally
+		{
+			_ = _semaphore.Release();
+		}
 	}
 
 	private NavigationViewModel CreateNavigationModel(INodeNavigationItem<INavigationModel, INavigationItem> group)
@@ -136,11 +259,23 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		GC.SuppressFinalize(this);
 	}
 
-	/// <summary>
-	/// Thin wrapper so <see cref="SiteNavigationV2.V2NavigationItems"/> is exposed as
-	/// <see cref="INodeNavigationItem{TIndex,TChildNavigation}.NavigationItems"/> for the Razor partial.
-	/// </summary>
-	private sealed class SiteNavigationV2Wrapper(SiteNavigationV2 navV2)
+	/// <summary>Wraps a single <see cref="NavigationSection"/> as the sidebar tree root.</summary>
+	private sealed class SectionNavigationV2Wrapper(NavigationSection section, SiteNavigationV2 navV2)
+		: INodeNavigationItem<INavigationModel, INavigationItem>
+	{
+		public string Id => section.Id;
+		public string Url => section.Url;
+		public string NavigationTitle => section.Label;
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => navV2;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+		public ILeafNavigationItem<INavigationModel> Index => navV2.Index;
+		public IReadOnlyCollection<INavigationItem> NavigationItems => section.NavigationItems;
+	}
+
+	/// <summary>Fallback wrapper exposing the full V2 tree (used when no sections are defined).</summary>
+	private sealed class FullV2Wrapper(SiteNavigationV2 navV2)
 		: INodeNavigationItem<INavigationModel, INavigationItem>
 	{
 		public string Id => "nav-v2-root";
