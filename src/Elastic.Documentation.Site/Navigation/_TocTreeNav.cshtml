@@ -6,7 +6,7 @@
 @{
 	var isTopLevel = Model.Level == 0;
 }
-@if (isTopLevel)
+@if (isTopLevel && !Model.IsGlobalAssemblyBuild && !Model.IsPrimaryNavEnabled && !Model.SubTree.Index.Hidden)
 {
 	var idx = Model.SubTree.Index;
 	<li class="flex group/li pr-8 mt-6">
