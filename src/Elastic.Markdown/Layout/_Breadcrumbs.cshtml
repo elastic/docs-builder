@@ -4,7 +4,9 @@
 	var crumbs = targets.ToList();
 }
 
-<ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full py-6">
+@if (crumbs.Count > 1)
+{
+<ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full pt-4 pb-2">
 	@for (var i = 0; i < crumbs.Count; i++)
 	{
 		var item = crumbs[i];
@@ -23,3 +25,4 @@
 		</li>
 	}
 </ol>
+}
