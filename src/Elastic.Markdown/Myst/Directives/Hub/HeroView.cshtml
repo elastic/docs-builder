@@ -36,10 +36,43 @@
 		<div class="hub-hero-meta">
 			@if (!string.IsNullOrWhiteSpace(Model.Version))
 			{
-				<span class="hub-hero-version">
-					<span class="hub-hero-version-dot" aria-hidden="true"></span>
-					<span class="hub-hero-version-text">@Model.Version</span>
-				</span>
+				if (Model.OtherVersions.Count > 0)
+				{
+					<details class="hub-hero-version hub-hero-version-dropdown">
+						<summary>
+							<span class="hub-hero-version-dot" aria-hidden="true"></span>
+							<span class="hub-hero-version-text">@Model.Version</span>
+							<span class="hub-hero-version-caret" aria-hidden="true">▾</span>
+						</summary>
+						<ul class="hub-hero-version-menu" role="menu">
+							<li class="hub-hero-version-current" role="menuitem" aria-current="page">
+								<span>@Model.Version</span>
+								<span class="hub-hero-version-tick" aria-hidden="true">✓</span>
+							</li>
+							@foreach (var v in Model.OtherVersions)
+							{
+								if (string.IsNullOrEmpty(v.Url))
+								{
+									<li class="hub-hero-version-disabled" role="menuitem" aria-disabled="true">
+										<span>@v.Label</span>
+										<span class="hub-hero-version-soon">soon</span>
+									</li>
+								}
+								else
+								{
+									<li role="menuitem"><a href="@v.Url">@v.Label</a></li>
+								}
+							}
+						</ul>
+					</details>
+				}
+				else
+				{
+					<span class="hub-hero-version">
+						<span class="hub-hero-version-dot" aria-hidden="true"></span>
+						<span class="hub-hero-version-text">@Model.Version</span>
+					</span>
+				}
 			}
 			@if (Model.QuickLinks.Count > 0)
 			{

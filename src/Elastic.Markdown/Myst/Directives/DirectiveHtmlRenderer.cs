@@ -365,6 +365,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Version = block.Version,
 			ShowSearch = block.ShowSearch,
 			QuickLinks = block.QuickLinks,
+			OtherVersions = block.OtherVersions,
 			ReleasesHtml = releasesHtml
 		});
 		RenderRazorSlice(slice, renderer);

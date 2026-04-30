@@ -33,6 +33,7 @@ public class HeroBlock(DirectiveBlockParser parser, ParserContext context)
 	public string? Version { get; private set; }
 	public bool ShowSearch { get; private set; }
 	public IReadOnlyList<HeroQuickLink> QuickLinks { get; private set; } = [];
+	public IReadOnlyList<HeroVersion> OtherVersions { get; private set; } = [];
 	public string? Releases { get; private set; }
 
 	public override void FinalizeAndValidate(ParserContext context)
@@ -42,26 +43,44 @@ public class HeroBlock(DirectiveBlockParser parser, ParserContext context)
 		Version = Prop("version");
 		// search defaults to true; explicit ":search: false" hides it
 		ShowSearch = TryPropBool("search") ?? true;
-		QuickLinks = ParseQuickLinks(Prop("quick-links"));
+		QuickLinks = ParsePairs(Prop("quick-links"), allowEmptyUrl: false)
+			.Select(p => new HeroQuickLink(p.Label, p.Url!)).ToList();
+		OtherVersions = ParsePairs(Prop("versions"), allowEmptyUrl: true)
+			.Select(p => new HeroVersion(p.Label, p.Url)).ToList();
 		Releases = Prop("releases");
 	}
 
-	private static IReadOnlyList<HeroQuickLink> ParseQuickLinks(string? raw)
+	private static IReadOnlyList<(string Label, string? Url)> ParsePairs(string? raw, bool allowEmptyUrl)
 	{
 		if (string.IsNullOrWhiteSpace(raw))
 			return [];
 
-		var entries = new List<HeroQuickLink>();
+		var entries = new List<(string, string?)>();
 		foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
 		{
 			var separator = part.IndexOf('=');
-			if (separator <= 0 || separator == part.Length - 1)
-				continue;
-
-			var label = part[..separator].Trim();
-			var url = part[(separator + 1)..].Trim();
-			if (label.Length > 0 && url.Length > 0)
-				entries.Add(new HeroQuickLink(label, url));
+			string label;
+			string? url;
+			if (separator < 0)
+			{
+				if (!allowEmptyUrl)
+					continue;
+				label = part.Trim();
+				url = null;
+			}
+			else
+			{
+				label = part[..separator].Trim();
+				url = part[(separator + 1)..].Trim();
+				if (string.IsNullOrEmpty(url))
+				{
+					if (!allowEmptyUrl)
+						continue;
+					url = null;
+				}
+			}
+			if (label.Length > 0)
+				entries.Add((label, url));
 		}
 
 		return entries;
@@ -69,3 +88,5 @@ public class HeroBlock(DirectiveBlockParser parser, ParserContext context)
 }
 
 public readonly record struct HeroQuickLink(string Label, string Url);
+
+public readonly record struct HeroVersion(string Label, string? Url);

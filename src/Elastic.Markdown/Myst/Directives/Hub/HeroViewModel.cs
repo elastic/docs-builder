@@ -11,5 +11,6 @@ public class HeroViewModel : DirectiveViewModel
 	public required string? Version { get; init; }
 	public required bool ShowSearch { get; init; }
 	public required IReadOnlyList<HeroQuickLink> QuickLinks { get; init; }
+	public required IReadOnlyList<HeroVersion> OtherVersions { get; init; }
 	public required string? ReleasesHtml { get; init; }
 }
