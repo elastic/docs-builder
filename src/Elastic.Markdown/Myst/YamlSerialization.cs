@@ -47,4 +47,5 @@ public static class YamlSerialization
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardAside))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewData))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewItem))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewConfig))]
 public partial class DocsBuilderYamlStaticContext;
