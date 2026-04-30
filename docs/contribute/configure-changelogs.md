@@ -56,7 +56,7 @@ Only one configuration file is required for each repository.
 You must maintain the file if your repo labels change over time.
 :::
 
-You can use the [changelog init](/cli/changelog/init.md) command to create the changelog configuration file and folder structure automatically.
+You can use the [changelog init](/cli/changelog/cmd-init.md) command to create the changelog configuration file and folder structure automatically.
 
 For example, run the following command in your GitHub repo's root directory:
 

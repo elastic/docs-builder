@@ -28,7 +28,7 @@ All product-specific filtering must be configured at bundle time via `rules.bund
 ## Generate markdown or asciidoc [render-changelogs]
 
 The `docs-builder changelog render` command creates markdown or asciidoc files from changelog bundles for documentation purposes.
-For up-to-date details, use the `-h` command option or refer to [](/cli/changelog/render.md).
+For up-to-date details, use the `-h` command option or refer to [](/cli/changelog/cmd-render.md).
 
 Before you can use this command you must create changelog files and collect them into bundles.
 For example, the `docs-builder changelog bundle` command creates a file like this:

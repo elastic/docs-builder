@@ -12,8 +12,8 @@ Refer to [](/contribute/configure-changelogs.md).
 
 ## Create changelog files from command line [command-line]
 
-These steps describe how to use the [changelog add](/cli/changelog/add.md) command.
-If you already have automated release notes for GitHub releases, you can use the [changelog gh-release](/cli/changelog/gh-release.md) command instead.
+These steps describe how to use the [changelog add](/cli/changelog/cmd-add.md) command.
+If you already have automated release notes for GitHub releases, you can use the [changelog gh-release](/cli/changelog/cmd-gh-release.md) command instead.
 
 1. If you're accessing private repositories or creating a large number of changelogs, log into GitHub or set the `GITHUB_TOKEN` (or `GH_TOKEN` ) environment variable with a sufficient personal access token. Refer to [Authorization](/contribute/configure-changelogs.md#authorization).
 
@@ -46,7 +46,7 @@ If you already have automated release notes for GitHub releases, you can use the
     It derives the title from the pull request or issue title, extracts linked references, and derives the areas, products, and type from labels (if mappings are defined in the configuration file).
     To control what information is extracted, refer to the [extract](/contribute/configure-changelogs-ref.md#extract) and [pivot](/contribute/configure-changelogs-ref.md#pivot) sections of the changelog configuration file.
 
-    For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/add.md).
+    For the most up-to-date command syntax, use the `-h` option or refer to [](/cli/changelog/cmd-add.md).
 
 1. [Review the output file](#review).
 
@@ -60,7 +60,7 @@ When automated via the [changelog GitHub Actions](https://github.com/elastic/doc
 The `description` output from step 1 contains the release note extracted from the PR body (when `extract.release_notes` is enabled).
 If extraction is disabled (either by setting `extract.release_notes: false` in `changelog.yml` or by passing `--no-extract-release-notes` to `changelog add`), the `CHANGELOG_DESCRIPTION` environment variable is ignored and the extracted description is not written to the changelog.
 
-Refer to [CI auto-detection](/cli/changelog/add.md#ci-auto-detection) for the full list of environment variables and precedence rules.
+Refer to [CI auto-detection](/cli/changelog/cmd-add.md) for the full list of environment variables and precedence rules.
 
 ## Review the content [review]
 
@@ -68,7 +68,7 @@ Refer to [CI auto-detection](/cli/changelog/add.md#ci-auto-detection) for the fu
 
    You can specify the file location with command options (`--output`) or configuration options (`bundle.directory`).
    Likewise you can control the file names with command options (`--use-issue-number` or `--use-pr-number`) or the `filename` configuration option.
-   Refer to the [Filenames](/cli/changelog/add.md#filenames).
+   Refer to the [Filenames](/cli/changelog/cmd-add.md).
 
 1. Verify that the files contain content that is accurate and user-friendly.
    This review is especially important when you're pulling content from GitHub, since there might be some missing or extraneous information.
@@ -169,4 +169,4 @@ The option precedence is: CLI option > `changelog.yml` bundle section > built-in
 :::
 
 You can use the `docs-builder changelog gh-release` command as a one-shot alternative to `changelog add` and `changelog bundle` commands.
-The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
+The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/cmd-gh-release.md)
