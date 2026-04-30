@@ -36,12 +36,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Commands");
 			_ = sb.AppendLine();
 			foreach (var cmd in visibleCommands)
-			{
-				_ = sb.AppendLine($"`{cmd.Name}`");
-				var summary = string.IsNullOrWhiteSpace(cmd.Summary) ? string.Empty : CleanSummary(cmd.Summary).description;
-				_ = sb.AppendLine($":   {summary}");
-				_ = sb.AppendLine();
-			}
+				AppendPageCard(sb, cmd.Name, $"./cmd-{cmd.Name}.md", cmd.Summary);
 		}
 
 		if (schema.Namespaces.Count > 0)
@@ -49,12 +44,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Namespaces");
 			_ = sb.AppendLine();
 			foreach (var ns in schema.Namespaces)
-			{
-				_ = sb.AppendLine($"`{ns.Segment}`");
-				var summary = string.IsNullOrWhiteSpace(ns.Summary) ? string.Empty : ns.Summary;
-				_ = sb.AppendLine($":   {summary}");
-				_ = sb.AppendLine();
-			}
+				AppendPageCard(sb, ns.Segment, $"./{ns.Segment}/index.md", ns.Summary);
 		}
 
 		return sb.ToString();
@@ -79,12 +69,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Commands");
 			_ = sb.AppendLine();
 			foreach (var cmd in visibleCmds)
-			{
-				_ = sb.AppendLine($"`{cmd.Name}`");
-				var summary = string.IsNullOrWhiteSpace(cmd.Summary) ? string.Empty : CleanSummary(cmd.Summary).description;
-				_ = sb.AppendLine($":   {summary}");
-				_ = sb.AppendLine();
-			}
+				AppendPageCard(sb, cmd.Name, $"./cmd-{cmd.Name}.md", cmd.Summary);
 		}
 
 		if (ns.Namespaces.Count > 0)
@@ -92,12 +77,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Sub-namespaces");
 			_ = sb.AppendLine();
 			foreach (var sub in ns.Namespaces)
-			{
-				_ = sb.AppendLine($"`{sub.Segment}`");
-				var summary = string.IsNullOrWhiteSpace(sub.Summary) ? string.Empty : sub.Summary;
-				_ = sb.AppendLine($":   {summary}");
-				_ = sb.AppendLine();
-			}
+				AppendPageCard(sb, sub.Segment, $"./{sub.Segment}/index.md", sub.Summary);
 		}
 
 		if (ns.Options.Count > 0)
@@ -175,6 +155,16 @@ internal static partial class CliMarkdownGenerator
 		}
 
 		return sb.ToString();
+	}
+
+	private static void AppendPageCard(StringBuilder sb, string title, string url, string? summary)
+	{
+		var description = string.IsNullOrWhiteSpace(summary) ? string.Empty : CleanSummary(summary).description.Trim();
+		_ = sb.AppendLine(":::{page-card} [" + title + "](" + url + ")");
+		if (!string.IsNullOrEmpty(description))
+			_ = sb.AppendLine(description);
+		_ = sb.AppendLine(":::");
+		_ = sb.AppendLine();
 	}
 
 	private static void AppendParameters(StringBuilder sb, IEnumerable<CliParamSchema> parameters)
