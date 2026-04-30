@@ -280,7 +280,9 @@ public record DetectionRule
 
 	private static DetectionRuleTactic ReadTactic(TomlTable threatTable)
 	{
-		var tacticTable = (TomlTable)threatTable["tactic"];
+		if (!threatTable.TryGetValue("tactic", out var tacticObj) || tacticObj is not TomlTable tacticTable)
+			throw new InvalidOperationException("Threat entry is missing required 'tactic' section");
+
 		return new DetectionRuleTactic
 		{
 			Id = GetString(tacticTable, "id"),
