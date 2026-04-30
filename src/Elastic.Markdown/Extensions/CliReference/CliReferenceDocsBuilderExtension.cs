@@ -16,7 +16,9 @@ namespace Elastic.Markdown.Extensions.CliReference;
 internal sealed record CliEntityInfo(
 	ArghCliSchema Schema,
 	object Entity, // ArghCliSchema | CliNamespaceSchema | CliCommandSchema
-	IFileInfo? SupplementalDoc
+	IFileInfo? SupplementalDoc,
+	/// <summary>The clean synthetic file (no cmd- prefix) — used as the MarkdownFile source for correct URL generation.</summary>
+	IFileInfo? CleanSyntheticFile = null
 );
 
 public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilderExtension
@@ -25,6 +27,12 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 
 	private Dictionary<string, CliEntityInfo>? _syntheticFiles;
 	private List<IFileInfo>? _syntheticFileInfos;
+	// Maps physical supplemental file paths (cmd-*.md, index.md) → entity info with clean synthetic path
+	private Dictionary<string, CliEntityInfo>? _supplementalFiles;
+	// Cache of created MarkdownFile instances keyed by clean synthetic path — ensures the same instance
+	// is returned from both CreateMarkdownFile (supplemental) and CreateDocumentationFile (synthetic),
+	// so NavigationDocumentationFileLookup can find the file regardless of which key is used.
+	private readonly Dictionary<string, MarkdownFile> _createdFiles = [];
 
 	// Must be called before CreateMarkdownFile or CreateDocumentationFile can match anything.
 	// ScanDocumentationFiles calls this; CreateMarkdownFile also triggers it because the main
@@ -34,6 +42,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		if (_syntheticFiles is not null)
 			return;
 		_syntheticFiles = [];
+		_supplementalFiles = [];
 		_syntheticFileInfos = BuildSyntheticFiles();
 	}
 
@@ -44,36 +53,65 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		EnsureSyntheticFilesBuilt();
 		if (!_syntheticFiles!.TryGetValue(file.FullName, out var info))
 			return null;
-
-		return info.Entity switch
-		{
-			ArghCliSchema schema => new CliRootFile(file, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
-			CliNamespaceSchema ns => new CliNamespaceFile(file, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc),
-			CliCommandSchema cmd => new CliCommandFile(file, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc),
-			_ => null
-		};
+		// Use the clean synthetic file as source if available (commands registered under clean path)
+		var sourceFile = info.CleanSyntheticFile ?? file;
+		// Return cached instance if CreateMarkdownFile already created it for this path
+		if (_createdFiles.TryGetValue(sourceFile.FullName, out var cached))
+			return cached;
+		var result = CreateCliFileFromInfo(sourceFile, markdownParser, info);
+		if (result != null)
+			_createdFiles[sourceFile.FullName] = result;
+		return result;
 	}
 
 	public MarkdownFile? CreateMarkdownFile(IFileInfo file, IDirectoryInfo sourceDirectory, MarkdownParser markdownParser)
 	{
-		// Physical CLI supplemental docs (index.md for namespaces, cmd-*.md for commands) live at the same
-		// path as their synthetic CLI page. EnsureSyntheticFilesBuilt() is needed here because
-		// CreateMarkdownFile is called during the main directory scan, before ScanDocumentationFiles runs.
+		// Physical CLI supplemental docs (index.md for namespaces, cmd-*.md for commands) need to be
+		// intercepted before the factory creates a plain MarkdownFile for them.
+		// EnsureSyntheticFilesBuilt() is called here because CreateMarkdownFile runs during the main
+		// directory scan, before ScanDocumentationFiles populates the lookups.
 		var name = file.Name;
 		if (name != "index.md" && !name.StartsWith("cmd-", StringComparison.OrdinalIgnoreCase))
 			return null;
 		EnsureSyntheticFilesBuilt();
 		var fullPath = Path.GetFullPath(file.FullName);
-		if (!_syntheticFiles!.TryGetValue(fullPath, out var info))
-			return null;
-		return info.Entity switch
+
+		// index.md: file path IS the synthetic path (namespace pages)
+		if (_syntheticFiles!.TryGetValue(fullPath, out var info))
 		{
-			ArghCliSchema schema => new CliRootFile(file, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
-			CliNamespaceSchema ns => new CliNamespaceFile(file, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc),
-			CliCommandSchema cmd => new CliCommandFile(file, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc),
+			if (_createdFiles.TryGetValue(fullPath, out var cached))
+				return cached;
+			var result = CreateCliFileFromInfo(file, markdownParser, info);
+			if (result != null)
+				_createdFiles[fullPath] = result;
+			return result;
+		}
+
+		// cmd-*.md: physical supplemental file — render as the associated CLI command page
+		// using the clean synthetic path (no cmd- prefix) as the source file so RelativePath
+		// and thus the output URL are both clean (e.g. apply.md → /cli/.../apply).
+		if (_supplementalFiles!.TryGetValue(fullPath, out var suppInfo) && suppInfo.CleanSyntheticFile is not null)
+		{
+			var cleanPath = suppInfo.CleanSyntheticFile.FullName;
+			if (_createdFiles.TryGetValue(cleanPath, out var cached))
+				return cached;
+			var result = CreateCliFileFromInfo(suppInfo.CleanSyntheticFile, markdownParser, suppInfo);
+			if (result != null)
+				_createdFiles[cleanPath] = result;
+			return result;
+		}
+
+		return null;
+	}
+
+	private MarkdownFile? CreateCliFileFromInfo(IFileInfo sourceFile, MarkdownParser markdownParser, CliEntityInfo info) =>
+		info.Entity switch
+		{
+			ArghCliSchema schema => new CliRootFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
+			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc),
+			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc),
 			_ => null
 		};
-	}
 
 	public void VisitNavigation(INavigationItem navigation, IDocumentationFile model) { }
 
@@ -141,7 +179,10 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 			var rootSupplemental = FindSupplemental(supplementalDirPath, [], isNamespace: true, matched);
 			var rootSyntheticPath = SyntheticPath(Build.DocumentationSourceDirectory.FullName, virtualRoot, [], isNamespace: true);
 			var rootFileInfo = Build.ReadFileSystem.FileInfo.New(rootSyntheticPath);
-			_syntheticFiles![rootSyntheticPath] = new CliEntityInfo(schema, schema, rootSupplemental);
+			var rootInfo = new CliEntityInfo(schema, schema, rootSupplemental, rootFileInfo);
+			_syntheticFiles![rootSyntheticPath] = rootInfo;
+			if (rootSupplemental != null)
+				_supplementalFiles![rootSupplemental.FullName] = rootInfo;
 			fileInfos.Add(rootFileInfo);
 
 			// Root commands
@@ -150,7 +191,10 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 				var path = SyntheticPath(Build.DocumentationSourceDirectory.FullName, virtualRoot, [cmd.Name], isNamespace: false);
 				var fileInfo = Build.ReadFileSystem.FileInfo.New(path);
 				var supplemental = FindSupplemental(supplementalDirPath, [cmd.Name], isNamespace: false, matched);
-				_syntheticFiles[path] = new CliEntityInfo(schema, cmd, supplemental);
+				var cmdInfo = new CliEntityInfo(schema, cmd, supplemental, fileInfo);
+				_syntheticFiles[path] = cmdInfo;
+				if (supplemental != null)
+					_supplementalFiles![supplemental.FullName] = cmdInfo;
 				fileInfos.Add(fileInfo);
 			}
 
@@ -182,7 +226,10 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 			var nsFilePath = SyntheticPath(docSourceDir, virtualRoot, fullNsPath, isNamespace: true);
 			var nsFileInfo = Build.ReadFileSystem.FileInfo.New(nsFilePath);
 			var nsSupplemental = FindSupplemental(supplementalDirPath, fullNsPath, isNamespace: true, matched);
-			_syntheticFiles![nsFilePath] = new CliEntityInfo(schema, ns, nsSupplemental);
+			var nsInfo = new CliEntityInfo(schema, ns, nsSupplemental, nsFileInfo);
+			_syntheticFiles![nsFilePath] = nsInfo;
+			if (nsSupplemental != null)
+				_supplementalFiles![nsSupplemental.FullName] = nsInfo;
 			fileInfos.Add(nsFileInfo);
 
 			foreach (var cmd in ns.Commands)
@@ -191,7 +238,10 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 				var cmdPath = SyntheticPath(docSourceDir, virtualRoot, cmdSegments, isNamespace: false);
 				var cmdFileInfo = Build.ReadFileSystem.FileInfo.New(cmdPath);
 				var cmdSupplemental = FindSupplemental(supplementalDirPath, cmdSegments, isNamespace: false, matched);
-				_syntheticFiles[cmdPath] = new CliEntityInfo(schema, cmd, cmdSupplemental);
+				var cmdInfo = new CliEntityInfo(schema, cmd, cmdSupplemental, cmdFileInfo);
+				_syntheticFiles[cmdPath] = cmdInfo;
+				if (cmdSupplemental != null)
+					_supplementalFiles![cmdSupplemental.FullName] = cmdInfo;
 				fileInfos.Add(cmdFileInfo);
 			}
 
@@ -199,8 +249,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		}
 	}
 
-	// Absolute synthetic path: docSourceDir/virtualRoot/segments.../index.md (namespace) or .../cmd-<name>.md (command)
-	// Commands always use the cmd- prefix to avoid collisions with namespace index.md files.
+	// Clean synthetic path (no cmd- prefix) — used for URL generation and Files registration.
 	// GetFullPath normalizes any ".." segments so the key matches IFileInfo.FullName lookups.
 	internal static string SyntheticPath(string docSourceDir, string virtualRoot, string[] segments, bool isNamespace)
 	{
@@ -214,13 +263,16 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		}
 		else
 		{
-			// Command pages: all parent segments as path, final name prefixed with cmd-
-			var cmdName = $"cmd-{segments[^1]}";
+			// Commands use clean name (no cmd- prefix) for URL e.g. /cli/assembler/deploy/apply.
+			// Exception: commands named "index" must keep cmd- prefix to avoid collision with namespace index.md pages.
+			var name = segments[^1].Equals("index", StringComparison.OrdinalIgnoreCase)
+				? $"cmd-{segments[^1]}"
+				: segments[^1];
 			var parentSegments = segments.Length > 1 ? segments[..^1] : [];
 			var parentPath = parentSegments.Length > 0 ? Path.Combine([.. parentSegments]) : string.Empty;
 			return string.IsNullOrEmpty(parentPath)
-				? Path.GetFullPath(Path.Join(docSourceDir, virtualRoot, cmdName + ".md"))
-				: Path.GetFullPath(Path.Join(docSourceDir, virtualRoot, parentPath, cmdName + ".md"));
+				? Path.GetFullPath(Path.Join(docSourceDir, virtualRoot, name + ".md"))
+				: Path.GetFullPath(Path.Join(docSourceDir, virtualRoot, parentPath, name + ".md"));
 		}
 	}
 

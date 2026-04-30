@@ -16,9 +16,9 @@ Inbound cross-link validation allows you to:
 
 ## How it works
 
-A regular [build](../cli/cmd-build.md) of a documentation set won't validate inbound links automatically.
+A regular [build](../cli/build.md) of a documentation set won't validate inbound links automatically.
 
-You have to use the [inbound-links validate-link-reference](../cli/inbound-links/cmd-validate-link-reference.md) after a build to validate all inbound links.
+You have to use the [inbound-links validate-link-reference](../cli/inbound-links/validate-link-reference.md) after a build to validate all inbound links.
 
 The reason for this is that validating all inbound links has to download all published [Link Index](link-index.md) files
 for the current [Content Source](../configure/content-sources.md).

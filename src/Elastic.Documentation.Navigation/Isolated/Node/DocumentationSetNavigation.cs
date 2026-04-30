@@ -567,6 +567,8 @@ public class DocumentationSetNavigation<TModel>
 		IDocumentationSetContext context
 	)
 	{
+		// SyntheticPath in the extension now uses clean names (no cmd- prefix)
+		// so factory registration path and URL path are the same.
 		var syntheticPath = SyntheticRelativePath(virtualRoot, segments, isNamespace);
 		var absolutePath = Path.GetFullPath(Path.Join(docSourceDir, syntheticPath));
 		var fileInfo = context.ReadFileSystem.FileInfo.New(absolutePath);
@@ -583,8 +585,7 @@ public class DocumentationSetNavigation<TModel>
 		return DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args);
 	}
 
-	// Relative path within doc source directory (used for file lookup and URL generation)
-	// Commands always use cmd- prefix to avoid collisions with namespace index.md files.
+	// Synthetic path — clean command names (no cmd- prefix) matching CliReferenceDocsBuilderExtension.SyntheticPath
 	private static string SyntheticRelativePath(string virtualRoot, string[] segments, bool isNamespace)
 	{
 		if (segments.Length == 0)
@@ -596,7 +597,10 @@ public class DocumentationSetNavigation<TModel>
 		}
 		else
 		{
-			var cmdName = $"cmd-{segments[^1]}";
+			// Keep cmd- prefix only for "index" commands to avoid collision with namespace index.md pages
+			var cmdName = segments[^1].Equals("index", StringComparison.OrdinalIgnoreCase)
+				? $"cmd-{segments[^1]}"
+				: segments[^1];
 			var parentPath = segments.Length > 1 ? string.Join("/", segments[..^1]) + "/" : string.Empty;
 			return $"{virtualRoot}/{parentPath}{cmdName}.md";
 		}

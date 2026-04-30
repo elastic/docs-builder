@@ -420,3 +420,55 @@ math {
 	scrollbar-width: thin;
 	scrollbar-color: rgba(113, 134, 168, 0.5) transparent;
 }
+
+/* Heading anchor links — show # on hover */
+h1, h2, h3, h4, h5, h6 {
+	position: relative;
+
+	& .headerlink {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	& .headerlink::after {
+		content: '#';
+		position: absolute;
+		right: calc(100% + 0.4rem);
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 0.85em;
+		font-weight: 400;
+		color: var(--color-grey-40, #9aa5b4);
+		opacity: 0;
+		transition: opacity 0.15s;
+		pointer-events: none;
+	}
+
+	&:hover .headerlink::after,
+	& .headerlink:focus::after {
+		opacity: 1;
+	}
+}
+
+/* Definition term anchor links — show # on hover for code-quoted terms */
+dl dt[id] {
+	position: relative;
+	cursor: pointer;
+
+	&::before {
+		content: '#';
+		position: absolute;
+		right: calc(100% + 0.4rem);
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 0.85em;
+		color: var(--color-grey-40, #9aa5b4);
+		opacity: 0;
+		transition: opacity 0.15s;
+		pointer-events: none;
+	}
+
+	&:hover::before {
+		opacity: 1;
+	}
+}
