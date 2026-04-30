@@ -3,32 +3,50 @@
 <section class="hub-hero">
 	<div class="hub-hero-inner">
 		<div class="hub-hero-top">
-			@if (!string.IsNullOrWhiteSpace(Model.Icon))
+			@if (!string.IsNullOrWhiteSpace(Model.IconSvg))
 			{
-				<span class="hub-hero-icon" aria-hidden="true">@Model.Icon</span>
+				<span class="hub-hero-icon hub-hero-icon-svg">
+					@(new HtmlString(Model.IconSvg))
+				</span>
 			}
-			@if (!string.IsNullOrWhiteSpace(Model.Version))
+			else if (!string.IsNullOrWhiteSpace(Model.IconKey))
 			{
-				<span class="hub-hero-version">@Model.Version</span>
+				<span class="hub-hero-icon" aria-hidden="true">@Elastic.Markdown.Myst.Directives.Hub.ProductIcons.Initials(Model.IconKey)</span>
 			}
+			<div class="hub-hero-title">
+				@Model.RenderBlock()
+			</div>
 		</div>
-		<div class="hub-hero-content">
-			@Model.RenderBlock()
-		</div>
+
 		@if (Model.ShowSearch)
 		{
 			<div class="hub-hero-search">
 				<navigation-search></navigation-search>
 			</div>
 		}
-		@if (Model.QuickLinks.Count > 0)
+
+		<div class="hub-hero-meta">
+			@if (!string.IsNullOrWhiteSpace(Model.Version))
+			{
+				<span class="hub-hero-version">
+					<span class="hub-hero-version-dot" aria-hidden="true"></span>
+					<span class="hub-hero-version-text">@Model.Version</span>
+				</span>
+			}
+			@if (Model.QuickLinks.Count > 0)
+			{
+				<ul class="hub-hero-pills">
+					@foreach (var link in Model.QuickLinks)
+					{
+						<li><a href="@link.Url">@link.Label</a></li>
+					}
+				</ul>
+			}
+		</div>
+
+		@if (!string.IsNullOrWhiteSpace(Model.ReleasesHtml))
 		{
-			<ul class="hub-hero-links">
-				@foreach (var link in Model.QuickLinks)
-				{
-					<li><a href="@link.Url">@link.Label</a></li>
-				}
-			</ul>
+			<p class="hub-hero-releases">@(new HtmlString(Model.ReleasesHtml))</p>
 		}
 	</div>
 </section>

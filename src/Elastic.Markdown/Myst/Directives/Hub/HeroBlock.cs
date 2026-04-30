@@ -5,20 +5,21 @@
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
 /// <summary>
-/// Renders a full-bleed page hero (dark background, icon, title, description, optional
-/// version badge, optional quick links, optional search box). Designed for landing-style
-/// pages such as product hubs, but the directive is generic and reusable.
+/// Renders a full-bleed page hero with product icon, title (from inner H1),
+/// description, search box, version chip, quick-link pills, and an optional
+/// release-status line. Designed for landing-style pages such as product hubs.
 /// </summary>
 /// <example>
 /// <code>
 /// :::{hero}
-/// :icon: elasticsearch
-/// :version: 9.0
-/// :quick-links: What's new=#whats-new,Get started=/get-started
+/// :icon: kibana
+/// :version: v9 / Serverless (current)
+/// :quick-links: Install=/install,Tutorial=/tutorial,API reference=/api,Release notes=/release-notes
+/// :releases: Latest&#58; [Stack 9.4.1](/rn) (Mar 28, 2026) · [Serverless deployed](/srn) Apr 1, 2026
 ///
-/// # Elasticsearch
+/// # Kibana
 ///
-/// The distributed search and analytics engine.
+/// The UI for the Elasticsearch platform.
 /// :::
 /// </code>
 /// </example>
@@ -28,17 +29,21 @@ public class HeroBlock(DirectiveBlockParser parser, ParserContext context)
 	public override string Directive => "hero";
 
 	public string? Icon { get; private set; }
+	public string? IconSvg { get; private set; }
 	public string? Version { get; private set; }
 	public bool ShowSearch { get; private set; }
 	public IReadOnlyList<HeroQuickLink> QuickLinks { get; private set; } = [];
+	public string? Releases { get; private set; }
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Icon = Prop("icon");
+		IconSvg = ProductIcons.Get(Icon);
 		Version = Prop("version");
 		// search defaults to true; explicit ":search: false" hides it
 		ShowSearch = TryPropBool("search") ?? true;
 		QuickLinks = ParseQuickLinks(Prop("quick-links"));
+		Releases = Prop("releases");
 	}
 
 	private static IReadOnlyList<HeroQuickLink> ParseQuickLinks(string? raw)

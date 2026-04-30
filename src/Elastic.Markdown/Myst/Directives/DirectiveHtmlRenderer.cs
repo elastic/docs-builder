@@ -131,6 +131,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case LinkCardBlock linkCardBlock:
 				WriteLinkCard(renderer, linkCardBlock);
 				return;
+			case WhatsNewBlock whatsNewBlock:
+				WriteWhatsNew(renderer, whatsNewBlock);
+				return;
+			case IntroBlock introBlock:
+				WriteIntro(renderer, introBlock);
+				return;
+			case OnThisPageBlock onThisPageBlock:
+				WriteOnThisPage(renderer, onThisPageBlock);
+				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
 				// 	WriteCode(renderer, directiveBlock);
@@ -344,13 +353,19 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteHero(HtmlRenderer renderer, HeroBlock block)
 	{
+		var releasesHtml = string.IsNullOrWhiteSpace(block.Releases)
+			? null
+			: RenderInlineMarkdown(block.Releases!);
+
 		var slice = HeroView.Create(new HeroViewModel
 		{
 			DirectiveBlock = block,
-			Icon = block.Icon,
+			IconKey = block.Icon,
+			IconSvg = block.IconSvg,
 			Version = block.Version,
 			ShowSearch = block.ShowSearch,
-			QuickLinks = block.QuickLinks
+			QuickLinks = block.QuickLinks,
+			ReleasesHtml = releasesHtml
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -373,11 +388,47 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = LinkCardView.Create(new LinkCardViewModel
 		{
 			DirectiveBlock = block,
-			Title = block.Title,
-			Link = block.Link,
-			Badge = block.Badge
+			Data = block.Data,
+			IconSvg = ProductIcons.Get(block.Data.Icon)
 		});
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteWhatsNew(HtmlRenderer renderer, WhatsNewBlock block)
+	{
+		var slice = WhatsNewView.Create(new WhatsNewViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteIntro(HtmlRenderer renderer, IntroBlock block)
+	{
+		var slice = IntroView.Create(new IntroViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteOnThisPage(HtmlRenderer renderer, OnThisPageBlock block)
+	{
+		var slice = OnThisPageView.Create(new OnThisPageViewModel
+		{
+			DirectiveBlock = block,
+			Items = block.CollectItems()
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static string RenderInlineMarkdown(string source)
+	{
+		var html = Markdig.Markdown.ToHtml(source).Trim();
+		// Strip a single wrapping <p>...</p> so the result can drop into a span/p directly.
+		const string open = "<p>";
+		const string close = "</p>";
+		if (html.StartsWith(open, StringComparison.Ordinal) && html.EndsWith(close, StringComparison.Ordinal))
+			html = html[open.Length..^close.Length];
+		return html;
 	}
 
 	private static void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)

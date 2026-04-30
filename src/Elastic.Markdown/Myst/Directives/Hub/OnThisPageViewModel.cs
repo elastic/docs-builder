@@ -4,8 +4,7 @@
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
-public class LinkCardViewModel : DirectiveViewModel
+public class OnThisPageViewModel : DirectiveViewModel
 {
-	public required LinkCardData Data { get; init; }
-	public required string? IconSvg { get; init; }
+	public required IReadOnlyList<OnThisPageItem> Items { get; init; }
 }

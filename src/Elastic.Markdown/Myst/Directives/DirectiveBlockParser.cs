@@ -146,6 +146,15 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{link-card}") > 0)
 			return new LinkCardBlock(this, context);
 
+		if (info.IndexOf("{whats-new}") > 0)
+			return new WhatsNewBlock(this, context);
+
+		if (info.IndexOf("{intro}") > 0)
+			return new IntroBlock(this, context);
+
+		if (info.IndexOf("{on-this-page}") > 0)
+			return new OnThisPageBlock(this, context);
+
 		foreach (var admonition in Admonitions)
 		{
 			if (info.IndexOf(admonition) > 0)

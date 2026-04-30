@@ -4,8 +4,7 @@
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
-public class LinkCardViewModel : DirectiveViewModel
+public class WhatsNewViewModel : DirectiveViewModel
 {
-	public required LinkCardData Data { get; init; }
-	public required string? IconSvg { get; init; }
+	public required WhatsNewData Data { get; init; }
 }

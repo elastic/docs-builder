@@ -42,4 +42,9 @@ public static class YamlSerialization
 [YamlSerializable(typeof(ContributorEntry))]
 [YamlSerializable(typeof(ChangelogDirectiveConfigYaml))]
 [YamlSerializable(typeof(ChangelogDirectiveBundleConfigYaml))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardData))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardLink))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardAside))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewData))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewItem))]
 public partial class DocsBuilderYamlStaticContext;

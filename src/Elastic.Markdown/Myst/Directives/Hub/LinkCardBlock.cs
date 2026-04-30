@@ -3,21 +3,34 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
-using Elastic.Markdown.Helpers;
+using YamlDotNet.Core;
+using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
 /// <summary>
-/// A single card with a required title and link, plus an optional badge and
-/// description body. Designed to live inside a <see cref="CardGroupBlock"/>
-/// but rendered standalone if used outside one.
+/// A rich card with title, link, description, primary-link list, and an optional
+/// aside (e.g. "Panel types: A · B · C"). The card schema is YAML-formatted in the
+/// directive body for predictable structure.
 /// </summary>
 /// <example>
 /// <code>
-/// :::{link-card} Self-managed
-/// :link: /deploy-manage/deploy/self-managed
-/// :badge: 9.0
-/// Run Elasticsearch on your own infrastructure.
+/// :::{link-card}
+/// title: Discover
+/// link: /discover/
+/// description: Browse documents, filter, and query your indices in real time.
+/// links:
+///   - label: Get started with Discover
+///     url: /discover/get-started
+///   - label: Use ES|QL in Kibana
+///     url: /esql
+/// aside:
+///   label: Panel types
+///   links:
+///     - label: Visualizations
+///       url: /viz
+///     - label: Maps
+///       url: /maps
 /// :::
 /// </code>
 /// </example>
@@ -26,20 +39,77 @@ public class LinkCardBlock(DirectiveBlockParser parser, ParserContext context)
 {
 	public override string Directive => "link-card";
 
-	public string Title { get; private set; } = default!;
-	public string? Link { get; private set; }
-	public string? Badge { get; private set; }
+	public LinkCardData Data { get; private set; } = LinkCardData.Empty;
+
+	public string Title => Data.Title ?? string.Empty;
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		if (string.IsNullOrWhiteSpace(Arguments))
-			this.EmitError("{link-card} requires a title argument, e.g. `:::{link-card} My title`.");
+		var yaml = HubYamlBody.Extract(this, new BuildContextFileReader(Build.ReadFileSystem));
+		if (yaml is null)
+		{
+			this.EmitError("{link-card} requires a YAML body. See the link-card directive docs.");
+			return;
+		}
 
-		Title = (Arguments ?? "{undefined}").ReplaceSubstitutions(context);
-		Link = Prop("link");
-		Badge = Prop("badge");
+		try
+		{
+			Data = YamlSerialization.Deserialize<LinkCardData>(yaml, Build.ProductsConfiguration) ?? LinkCardData.Empty;
+		}
+		catch (YamlException ex)
+		{
+			this.EmitError($"{{link-card}} YAML parse error: {ex.Message}");
+			return;
+		}
 
-		if (string.IsNullOrWhiteSpace(Link))
-			this.EmitError("{link-card} requires a `:link:` option.");
+		if (string.IsNullOrWhiteSpace(Data.Title))
+			this.EmitError("{link-card} requires a `title` field in its YAML body.");
 	}
+}
+
+[YamlSerializable]
+public record LinkCardData
+{
+	[YamlMember(Alias = "title")]
+	public string? Title { get; set; }
+
+	[YamlMember(Alias = "link")]
+	public string? Link { get; set; }
+
+	[YamlMember(Alias = "description")]
+	public string? Description { get; set; }
+
+	[YamlMember(Alias = "icon")]
+	public string? Icon { get; set; }
+
+	[YamlMember(Alias = "variant")]
+	public string? Variant { get; set; }
+
+	[YamlMember(Alias = "links")]
+	public LinkCardLink[] Links { get; set; } = [];
+
+	[YamlMember(Alias = "aside")]
+	public LinkCardAside? Aside { get; set; }
+
+	public static LinkCardData Empty { get; } = new();
+}
+
+[YamlSerializable]
+public record LinkCardLink
+{
+	[YamlMember(Alias = "label")]
+	public string? Label { get; set; }
+
+	[YamlMember(Alias = "url")]
+	public string? Url { get; set; }
+}
+
+[YamlSerializable]
+public record LinkCardAside
+{
+	[YamlMember(Alias = "label")]
+	public string? Label { get; set; }
+
+	[YamlMember(Alias = "links")]
+	public LinkCardLink[] Links { get; set; } = [];
 }
