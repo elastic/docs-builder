@@ -15,6 +15,7 @@ using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -120,6 +121,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
+				return;
+			case HeroBlock heroBlock:
+				WriteHero(renderer, heroBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -329,6 +333,19 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private static void WriteTabSet(HtmlRenderer renderer, TabSetBlock block)
 	{
 		var slice = TabSetView.Create(new TabSetViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteHero(HtmlRenderer renderer, HeroBlock block)
+	{
+		var slice = HeroView.Create(new HeroViewModel
+		{
+			DirectiveBlock = block,
+			Icon = block.Icon,
+			Version = block.Version,
+			ShowSearch = block.ShowSearch,
+			QuickLinks = block.QuickLinks
+		});
 		RenderRazorSlice(slice, renderer);
 	}
 

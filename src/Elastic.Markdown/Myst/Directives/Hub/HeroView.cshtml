@@ -1,0 +1,34 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.HeroViewModel>
+
+<section class="hub-hero">
+	<div class="hub-hero-inner">
+		<div class="hub-hero-top">
+			@if (!string.IsNullOrWhiteSpace(Model.Icon))
+			{
+				<span class="hub-hero-icon" aria-hidden="true">@Model.Icon</span>
+			}
+			@if (!string.IsNullOrWhiteSpace(Model.Version))
+			{
+				<span class="hub-hero-version">@Model.Version</span>
+			}
+		</div>
+		<div class="hub-hero-content">
+			@Model.RenderBlock()
+		</div>
+		@if (Model.ShowSearch)
+		{
+			<div class="hub-hero-search">
+				<navigation-search></navigation-search>
+			</div>
+		}
+		@if (Model.QuickLinks.Count > 0)
+		{
+			<ul class="hub-hero-links">
+				@foreach (var link in Model.QuickLinks)
+				{
+					<li><a href="@link.Url">@link.Label</a></li>
+				}
+			</ul>
+		}
+	</div>
+</section>

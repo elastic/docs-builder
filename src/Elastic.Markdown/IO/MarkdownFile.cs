@@ -156,6 +156,16 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
 			.GetData("header") as string ?? Title;
 
+		// Fall back to any H1 nested in directive containers (e.g. {hero}) so layouts
+		// that wrap the page title in a directive still get title detection.
+		if (Title == RelativePath)
+		{
+			Title = document
+				.Descendants<HeadingBlock>()
+				.FirstOrDefault(h => h.Level == 1)?
+				.GetData("header") as string ?? Title;
+		}
+
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;
 		if (yamlFrontMatter.NavigationTitle is not null)
