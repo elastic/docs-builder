@@ -36,6 +36,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		// Fetch each registry once up front so per-repository lookups don't trigger N S3 round-trips.
 		var publicRegistry = await TryGetRegistry(publicReader, ctx);
 		var codexRegistry = useDualRegistry ? await TryGetRegistry(_codexReader!, ctx) : null;
+		var hadFetchFailures = false;
 
 		foreach (var entry in configuration.CrossLinkEntries)
 		{
@@ -61,6 +62,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 			}
 			catch (Exception ex)
 			{
+				hadFetchFailures = true;
 				_logger.LogWarning(ex, "Error fetching link data for repository '{Repository}'. Cross-links to this repository may not resolve correctly.", entry.Repository);
 				_ = registryUrlsByRepository.TryAdd(entry.Repository, reader.RegistryUrl);
 
@@ -90,6 +92,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
 			RegistryUrlsByRepository = registryUrlsByRepository.ToFrozenDictionary(),
 			CodexRepositories = codexRepositories.Count > 0 ? codexRepositories.ToFrozenSet() : null,
+			IsComplete = !hadFetchFailures,
 		};
 	}
 

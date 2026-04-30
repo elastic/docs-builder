@@ -34,6 +34,12 @@ public record FetchedCrossLinks
 	/// </summary>
 	public FrozenSet<string>? CodexRepositories { get; init; }
 
+	/// <summary>
+	/// True when all declared repositories resolved without falling back to placeholder data.
+	/// When false, callers should avoid caching so a subsequent reload retries the fetch.
+	/// </summary>
+	public bool IsComplete { get; init; } = true;
+
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
 		DeclaredRepositories = [],

@@ -83,9 +83,13 @@ public class ReloadableGeneratorState : IDisposable
 				: null;
 			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		}
-		if (_cachedCrossLinks is null || reloadConfiguration)
-			_cachedCrossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
 		var crossLinks = _cachedCrossLinks;
+		if (crossLinks is null || reloadConfiguration)
+		{
+			crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+			// Only cache successful fetches so transient failures get retried on the next reload.
+			_cachedCrossLinks = crossLinks.IsComplete ? crossLinks : null;
+		}
 		IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
 			: null;
