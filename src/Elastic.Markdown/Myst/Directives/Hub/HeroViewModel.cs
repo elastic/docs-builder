@@ -8,6 +8,8 @@ public class HeroViewModel : DirectiveViewModel
 {
 	public required string? IconKey { get; init; }
 	public required string? IconSvg { get; init; }
+	public required string? Title { get; init; }
+	public required string? DescriptionHtml { get; init; }
 	public required string? Version { get; init; }
 	public required bool ShowSearch { get; init; }
 	public required IReadOnlyList<HeroQuickLink> QuickLinks { get; init; }

@@ -50,10 +50,9 @@
 	.hub-hero .hub-hero-title {
 		display: contents;
 	}
-	.hub-hero .hub-hero-title .heading-wrapper {
+	.hub-hero .hub-hero-title h1 {
 		grid-column: 2;
 		grid-row: 1;
-		margin: 0;
 	}
 	.hub-hero .hub-hero-title p {
 		grid-column: 1 / -1;

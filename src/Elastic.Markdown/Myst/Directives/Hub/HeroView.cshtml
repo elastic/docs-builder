@@ -14,7 +14,11 @@
 				<span class="hub-hero-icon" aria-hidden="true">@Elastic.Markdown.Myst.Directives.Hub.ProductIcons.Initials(Model.IconKey)</span>
 			}
 			<div class="hub-hero-title">
-				@Model.RenderBlock()
+				<h1>@Model.Title</h1>
+				@if (!string.IsNullOrWhiteSpace(Model.DescriptionHtml))
+				{
+					<p>@(new HtmlString(Model.DescriptionHtml))</p>
+				}
 			</div>
 		</div>
 

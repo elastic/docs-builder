@@ -166,6 +166,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				.GetData("header") as string ?? Title;
 		}
 
+		// Fall back to a {hero} directive's :title: option -- hero pages express
+		// the title declaratively rather than via a body H1.
+		if (Title == RelativePath)
+		{
+			var heroTitle = document
+				.Descendants<Elastic.Markdown.Myst.Directives.Hub.HeroBlock>()
+				.FirstOrDefault()?
+				.Title;
+			if (!string.IsNullOrWhiteSpace(heroTitle))
+				Title = heroTitle!;
+		}
+
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;
 		if (yamlFrontMatter.NavigationTitle is not null)

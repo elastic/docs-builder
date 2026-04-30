@@ -357,11 +357,17 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			? null
 			: RenderInlineMarkdown(block.Releases!);
 
+		var descriptionHtml = string.IsNullOrWhiteSpace(block.Description)
+			? null
+			: RenderInlineMarkdown(block.Description!);
+
 		var slice = HeroView.Create(new HeroViewModel
 		{
 			DirectiveBlock = block,
 			IconKey = block.Icon,
 			IconSvg = block.IconSvg,
+			Title = block.Title,
+			DescriptionHtml = descriptionHtml,
 			Version = block.Version,
 			ShowSearch = block.ShowSearch,
 			QuickLinks = block.QuickLinks,
