@@ -1,0 +1,16 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.LinkCardViewModel>
+
+<li class="hub-card">
+	<a class="hub-card-link" href="@Model.Link">
+		<div class="hub-card-head">
+			<span class="hub-card-title">@Model.Title</span>
+			@if (!string.IsNullOrWhiteSpace(Model.Badge))
+			{
+				<span class="hub-card-badge">@Model.Badge</span>
+			}
+		</div>
+		<div class="hub-card-body">
+			@Model.RenderBlock()
+		</div>
+	</a>
+</li>

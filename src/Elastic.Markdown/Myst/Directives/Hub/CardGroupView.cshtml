@@ -1,0 +1,23 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.CardGroupViewModel>
+
+@{
+	var sectionClass = string.IsNullOrWhiteSpace(Model.Variant)
+		? "hub-card-group"
+		: $"hub-card-group hub-card-group-{Model.Variant}";
+}
+
+<section class="@sectionClass" id="@Model.Anchor">
+	@if (!string.IsNullOrWhiteSpace(Model.Title))
+	{
+		<header class="hub-card-group-header">
+			<h2>@Model.Title</h2>
+			@if (!string.IsNullOrWhiteSpace(Model.Intro))
+			{
+				<p class="hub-card-group-intro">@Model.Intro</p>
+			}
+		</header>
+	}
+	<ul class="hub-card-grid">
+		@Model.RenderBlock()
+	</ul>
+</section>

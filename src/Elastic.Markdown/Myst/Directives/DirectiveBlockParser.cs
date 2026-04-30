@@ -140,6 +140,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{hero}") > 0)
 			return new HeroBlock(this, context);
 
+		if (info.IndexOf("{card-group}") > 0)
+			return new CardGroupBlock(this, context);
+
+		if (info.IndexOf("{link-card}") > 0)
+			return new LinkCardBlock(this, context);
+
 		foreach (var admonition in Admonitions)
 		{
 			if (info.IndexOf(admonition) > 0)

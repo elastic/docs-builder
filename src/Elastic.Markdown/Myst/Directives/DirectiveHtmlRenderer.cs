@@ -125,6 +125,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case HeroBlock heroBlock:
 				WriteHero(renderer, heroBlock);
 				return;
+			case CardGroupBlock cardGroupBlock:
+				WriteCardGroup(renderer, cardGroupBlock);
+				return;
+			case LinkCardBlock linkCardBlock:
+				WriteLinkCard(renderer, linkCardBlock);
+				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
 				// 	WriteCode(renderer, directiveBlock);
@@ -345,6 +351,31 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Version = block.Version,
 			ShowSearch = block.ShowSearch,
 			QuickLinks = block.QuickLinks
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteCardGroup(HtmlRenderer renderer, CardGroupBlock block)
+	{
+		var slice = CardGroupView.Create(new CardGroupViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor,
+			Variant = block.Variant
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteLinkCard(HtmlRenderer renderer, LinkCardBlock block)
+	{
+		var slice = LinkCardView.Create(new LinkCardViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Link = block.Link,
+			Badge = block.Badge
 		});
 		RenderRazorSlice(slice, renderer);
 	}
