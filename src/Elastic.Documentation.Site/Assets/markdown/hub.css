@@ -41,7 +41,24 @@
 		@apply mx-auto w-full max-w-5xl;
 	}
 	.hub-hero .hub-hero-top {
-		@apply mb-3 flex items-center gap-4;
+		display: grid;
+		grid-template-columns: auto 1fr;
+		column-gap: 16px;
+		align-items: center;
+		margin-bottom: 12px;
+	}
+	.hub-hero .hub-hero-title {
+		display: contents;
+	}
+	.hub-hero .hub-hero-title .heading-wrapper {
+		grid-column: 2;
+		grid-row: 1;
+		margin: 0;
+	}
+	.hub-hero .hub-hero-title p {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		margin-top: 16px;
 	}
 	.hub-hero .hub-hero-icon {
 		@apply inline-flex h-13 w-13 shrink-0 items-center justify-center rounded-xl text-2xl font-bold;
@@ -74,7 +91,6 @@
 		color: rgb(255 255 255 / 0.7);
 		max-width: 720px;
 		line-height: 1.6;
-		margin-top: 12px;
 	}
 
 	.hub-hero .hub-hero-search {
