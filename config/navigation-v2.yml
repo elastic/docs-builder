@@ -2872,12 +2872,12 @@ nav:
     - toc: docs-content://release-notes/intro
 
   - section: Product hubs
-    url: /hubs/
+    url: /products/
     children:
     - label: Stack products
       children:
-      - page: docs-builder://hubs/elasticsearch/9.0.md
-      - page: docs-builder://hubs/kibana/9.0.md
+      - page: docs-builder://testing/products/elasticsearch/9.0.md
+      - page: docs-builder://testing/products/kibana/9.0.md
       - title: Observability
       - title: Security
     - label: Deployment runbooks

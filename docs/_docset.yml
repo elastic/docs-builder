@@ -232,7 +232,7 @@ toc:
   - folder: testing
     children:
       - file: index.md
-      - folder: hubs
+      - folder: products
         children:
           - folder: elasticsearch
             children:
