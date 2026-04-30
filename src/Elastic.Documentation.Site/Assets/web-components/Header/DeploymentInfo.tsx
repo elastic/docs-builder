@@ -70,6 +70,7 @@ export const DeploymentInfo = ({
     const popoverButton = (
         <EuiHeaderSectionItem>
             <button
+                type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
                 css={css`
                     ${headerButtonCss(euiTheme)};
