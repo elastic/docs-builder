@@ -36,7 +36,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Commands");
 			_ = sb.AppendLine();
 			foreach (var cmd in visibleCommands)
-				AppendPageCard(sb, cmd.Name, $"./cmd-{cmd.Name}.md", cmd.Summary);
+				AppendPageCard(sb, cmd.Name, $"./{CommandPath(cmd.Name)}.md", cmd.Summary);
 		}
 
 		if (schema.Namespaces.Count > 0)
@@ -69,7 +69,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Commands");
 			_ = sb.AppendLine();
 			foreach (var cmd in visibleCmds)
-				AppendPageCard(sb, cmd.Name, $"./cmd-{cmd.Name}.md", cmd.Summary);
+				AppendPageCard(sb, cmd.Name, $"./{CommandPath(cmd.Name)}.md", cmd.Summary);
 		}
 
 		if (ns.Namespaces.Count > 0)
@@ -156,6 +156,10 @@ internal static partial class CliMarkdownGenerator
 
 		return sb.ToString();
 	}
+
+	// Commands named "index" keep cmd- prefix to avoid collision with namespace index.md pages
+	private static string CommandPath(string name) =>
+		name.Equals("index", StringComparison.OrdinalIgnoreCase) ? $"cmd-{name}" : name;
 
 	private static void AppendPageCard(StringBuilder sb, string title, string url, string? summary)
 	{

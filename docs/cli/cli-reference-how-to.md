@@ -91,8 +91,8 @@ Two naming conventions are supported. Both can coexist in the same folder.
 cli-reference/
   database/
     index.md          ← intro for the database namespace
-    cmd-migrate.md    ← intro for database migrate command
-  cmd-deploy.md       ← intro for the root deploy command
+    migrate.md    ← intro for database migrate command
+  deploy.md       ← intro for the root deploy command
 ```
 
 **Flat prefix style** — all files at the folder root, full path encoded in the name:
@@ -100,14 +100,14 @@ cli-reference/
 ```
 cli-reference/
   ns-database.md             ← intro for the database namespace
-  cmd-database-migrate.md    ← intro for database migrate command
-  cmd-deploy.md              ← intro for the root deploy command
+  database-migrate.md    ← intro for database migrate command
+  deploy.md              ← intro for the root deploy command
 ```
 
 For a live example, see how `docs-builder` uses both files in its own `cli/changelog/` folder:
 
 - [changelog namespace intro](/cli/changelog/index.md) — `docs/cli/changelog/index.md` introduces the changelog workflow before the auto-generated commands list
-- [changelog bundle command](/cli/changelog/cmd-bundle.md) — `docs/cli/changelog/cmd-bundle.md` explains the two bundling modes; the generated parameter table follows underneath
+- [changelog bundle command](/cli/changelog/bundle.md) — `docs/cli/changelog/bundle.md` explains the two bundling modes; the generated parameter table follows underneath
 
 ::::
 
@@ -136,6 +136,6 @@ Your CLI reference section is live. As your CLI evolves, regenerate the schema a
 | `ns-root.md` | Root CLI overview page |
 | `<ns>/index.md` | Namespace `<ns>` (hierarchy style) |
 | `ns-<ns>.md` | Namespace `<ns>` (flat style) |
-| `<ns>/cmd-<cmd>.md` | Command `<cmd>` inside namespace `<ns>` |
-| `cmd-<ns>-<cmd>.md` | Same, flat style |
-| `cmd-<cmd>.md` | Root-level command `<cmd>` |
+| `<ns>/<cmd>.md` | Command `<cmd>` inside namespace `<ns>` |
+| `<ns>-<cmd>.md` | Same, flat style |
+| `<cmd>.md` | Root-level command `<cmd>` |

@@ -133,10 +133,10 @@ Both explicit and auto-discovered paths must resolve within the repository check
 
 You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
 
-The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/changelog/cmd-bundle.md) for full syntax.
+The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/changelog/bundle.md) for full syntax.
 
 `rules.bundle` supports product, type, and area filtering, and per-product overrides.
-For full syntax, refer to the [rules for filtered bundles](/cli/changelog/cmd-bundle.md).
+For full syntax, refer to the [rules for filtered bundles](/cli/changelog/bundle.md).
 
 ## Hiding features
 
@@ -250,7 +250,7 @@ Download the release binaries: https://github.com/elastic/elasticsearch/releases
 ...
 ```
 
-When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: April 9, 2026_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents. If the `release-date` field is present in a bundle, it is always displayed. To control release dates, set `release_dates: false` at the bundle or profile level in the configuration (see [profile configuration](/cli/changelog/cmd-bundle.md)); when false, this prevents the date from being written to the bundle during bundling. Defaults to true when omitted.
+When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: April 9, 2026_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents. If the `release-date` field is present in a bundle, it is always displayed. To control release dates, set `release_dates: false` at the bundle or profile level in the configuration (see [profile configuration](/cli/changelog/bundle.md)); when false, this prevents the date from being written to the bundle during bundling. Defaults to true when omitted.
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
@@ -316,12 +316,12 @@ The following renders all changelog bundles from the default `changelog/bundles/
 | Generating static markdown files for external use | `changelog render` command |
 | Selective rendering of specific versions | `changelog render` command |
 
-The `{changelog}` directive is ideal for release notes pages that should always show the complete changelog history. For more selective workflows or external publishing, use the [`changelog render`](/cli/changelog/cmd-render.md) command.
+The `{changelog}` directive is ideal for release notes pages that should always show the complete changelog history. For more selective workflows or external publishing, use the [`changelog render`](/cli/changelog/render.md) command.
 
 ## Related
 
 - [Create and bundle changelogs](/contribute/changelog.md) — Overview, workflow, and links to detailed guides
-- [`changelog add`](/cli/changelog/cmd-add.md) — CLI command to create changelog entries
-- [`changelog bundle`](/cli/changelog/cmd-bundle.md) — CLI command to bundle changelog entries
-- [`changelog remove`](/cli/changelog/cmd-remove.md) — CLI command to remove changelog files
-- [`changelog render`](/cli/changelog/cmd-render.md) — CLI command to render changelogs to markdown files
+- [`changelog add`](/cli/changelog/add.md) — CLI command to create changelog entries
+- [`changelog bundle`](/cli/changelog/bundle.md) — CLI command to bundle changelog entries
+- [`changelog remove`](/cli/changelog/remove.md) — CLI command to remove changelog files
+- [`changelog render`](/cli/changelog/render.md) — CLI command to render changelogs to markdown files

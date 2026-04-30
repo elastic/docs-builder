@@ -185,6 +185,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UsePipeTables()
 				.UseDirectives()
 				.UseDefinitionLists()
+				.UseDefinitionTermAnchors()
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
