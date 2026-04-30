@@ -79,6 +79,10 @@ toc:
 
 The supplemental folder lets you replace the auto-generated summary on any namespace or command page with your own prose. The parameter table, usage synopsis, and examples are always appended from the schema — you're only replacing the introductory description.
 
+**Files are discovered automatically** — drop a file into the folder following the naming convention and it is picked up on the next build with no configuration needed.
+
+**Validation is strict** — any supplemental file whose name doesn't match a known namespace or command in the schema produces a build error. This means renamed or removed commands can't leave orphaned docs behind silently; your CI catches it immediately.
+
 Two naming conventions are supported. Both can coexist in the same folder.
 
 **Hierarchy style** — mirrors the CLI namespace structure, works well alongside the `index.md` convention already common in documentation repos:
@@ -100,7 +104,10 @@ cli-reference/
   cmd-deploy.md              ← intro for the root deploy command
 ```
 
-Any supplemental file that doesn't match a known namespace or command produces a build error. Renamed commands don't leave orphaned docs silently.
+For a live example, see how `docs-builder` uses both files in its own `cli/changelog/` folder:
+
+- [changelog namespace intro](/cli/changelog/index.md) — `docs/cli/changelog/index.md` introduces the changelog workflow before the auto-generated commands list
+- [changelog bundle command](/cli/changelog/cmd-bundle.md) — `docs/cli/changelog/cmd-bundle.md` explains the two bundling modes; the generated parameter table follows underneath
 
 ::::
 
