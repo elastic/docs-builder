@@ -60,6 +60,8 @@ toc:
   - hidden: 404.md
   - hidden: _search.md
   - hidden: developer-notes.md
+  - hidden: hubs/elasticsearch/9.0.md
+  - hidden: hubs/kibana/9.0.md
   - hidden: contribute/cumulative-docs/index.md
   - hidden: contribute/cumulative-docs/guidelines.md
   - hidden: contribute/cumulative-docs/badge-placement.md

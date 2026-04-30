@@ -22,7 +22,7 @@
 	private async Task RenderDefault()
 	{
 		<div class="relative">
-			
+
 			<div class="min-h-screen
 						w-full
 						max-w-(--max-layout-width)
@@ -41,6 +41,23 @@
 							</article>
 							@await RenderPartialAsync(_PrevNextNav.Create(Model))
 						</div>
+					</main>
+				</div>
+			</div>
+		</div>
+	}
+
+	private async Task RenderHub()
+	{
+		<div class="relative hub-page">
+			<div class="min-h-screen w-full max-w-(--max-layout-width) mx-auto md:px-4">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
+					<main id="content-container" class="min-w-0">
+						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						<article id="hub-content" class="hub-content min-w-0">
+							@await RenderBodyAsync()
+						</article>
 					</main>
 				</div>
 			</div>
@@ -74,6 +91,9 @@
 		break;
 	case MarkdownPageLayout.FullSearch:
 		await RenderPartialAsync(_FullSearch.Create(Model));
+		break;
+	case MarkdownPageLayout.Hub:
+		await RenderHub();
 		break;
 	default:
 		await RenderDefault();
