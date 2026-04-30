@@ -29,6 +29,8 @@ public record CliRootFile : IO.MarkdownFile
 		Title = schema.Name;
 	}
 
+	public override string NavigationTitle => $"{_schema.Name} CLI";
+
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
 		Title = _schema.Name;
