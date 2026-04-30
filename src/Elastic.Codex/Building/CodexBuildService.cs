@@ -178,14 +178,16 @@ public class CodexBuildService(
 				? parsed
 				: null;
 
-			// Create build context for this documentation set
+			// Repository clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
+			// discovers .git inside that ceiling (#3115). Using DocsDirectory alone would cap the ceiling
+			// at the docs subtree and return null above repo/.git, breaking GithubEditUrl generation.
 			var buildContext = new BuildContext(
 				context.Collector,
 				fileSystem,
 				fileSystem,
 				configurationContext,
 				ExportOptions.Default,
-				checkout.DocsDirectory.FullName,
+				checkout.RepositoryDirectory.FullName,
 				outputPath,
 				git)
 			{

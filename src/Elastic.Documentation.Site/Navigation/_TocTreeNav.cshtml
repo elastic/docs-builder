@@ -6,6 +6,19 @@
 @{
 	var isTopLevel = Model.Level == 0;
 }
+@if (isTopLevel && !Model.IsGlobalAssemblyBuild && !Model.IsPrimaryNavEnabled && !Model.SubTree.Index.Hidden)
+{
+	var idx = Model.SubTree.Index;
+	<li class="flex group/li pr-8 mt-6">
+		<a
+			href="@idx.Url"
+			@Model.Htmx.GetNavHxAttributes(true)
+			class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
+		>
+			@idx.NavigationTitle
+		</a>
+	</li>
+}
 @foreach (var item in Model.SubTree.NavigationItems)
 {
 	if (item.Hidden)
