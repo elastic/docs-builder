@@ -53,6 +53,8 @@ public partial class DefinitionListAnchorRenderer : HtmlDefinitionListRenderer
 					_ = renderer.WriteAttributes(term);
 					_ = renderer.Write('>');
 					_ = renderer.WriteLeafInline(term);
+					if (!string.IsNullOrEmpty(id))
+						_ = renderer.Write($"<a class=\"paramlink\" href=\"#{id}\" aria-hidden=\"true\">#</a>");
 					_ = renderer.WriteLine("</dt>");
 				}
 				else

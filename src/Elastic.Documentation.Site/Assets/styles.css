@@ -452,23 +452,17 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Definition term anchor links — show # on hover for code-quoted terms */
 dl dt[id] {
-	position: relative;
-	cursor: pointer;
-
-	&::before {
-		content: '#';
-		position: absolute;
-		right: calc(100% + 0.4rem);
-		top: 50%;
-		transform: translateY(-50%);
+	& .paramlink {
+		margin-left: 0.4rem;
 		font-size: 0.85em;
+		font-weight: 400;
 		color: var(--color-grey-40, #9aa5b4);
+		text-decoration: none;
 		opacity: 0;
 		transition: opacity 0.15s;
-		pointer-events: none;
 	}
 
-	&:hover::before {
+	&:hover .paramlink {
 		opacity: 1;
 	}
 }
