@@ -13,7 +13,7 @@ internal static partial class CliMarkdownGenerator
 	public static string RootPage(ArghCliSchema schema, string? supplementalContent)
 	{
 		var sb = new StringBuilder();
-		_ = sb.AppendLine($"# {schema.EntryAssembly}");
+		_ = sb.AppendLine($"# {schema.Name}");
 		_ = sb.AppendLine();
 
 		if (supplementalContent is not null)
@@ -30,11 +30,12 @@ internal static partial class CliMarkdownGenerator
 			AppendParameters(sb, schema.GlobalOptions);
 		}
 
-		if (schema.Commands.Count > 0)
+		var visibleCommands = schema.Commands.Where(c => !c.Hidden).ToList();
+		if (visibleCommands.Count > 0)
 		{
 			_ = sb.AppendLine("## Commands");
 			_ = sb.AppendLine();
-			foreach (var cmd in schema.Commands)
+			foreach (var cmd in visibleCommands)
 			{
 				_ = sb.AppendLine($"`{cmd.Name}`");
 				var summary = string.IsNullOrWhiteSpace(cmd.Summary) ? string.Empty : CleanSummary(cmd.Summary).description;
@@ -72,11 +73,12 @@ internal static partial class CliMarkdownGenerator
 
 		_ = sb.AppendLine();
 
-		if (ns.Commands.Count > 0)
+		var visibleCmds = ns.Commands.Where(c => !c.Hidden).ToList();
+		if (visibleCmds.Count > 0)
 		{
 			_ = sb.AppendLine("## Commands");
 			_ = sb.AppendLine();
-			foreach (var cmd in ns.Commands)
+			foreach (var cmd in visibleCmds)
 			{
 				_ = sb.AppendLine($"`{cmd.Name}`");
 				var summary = string.IsNullOrWhiteSpace(cmd.Summary) ? string.Empty : CleanSummary(cmd.Summary).description;
@@ -177,26 +179,37 @@ internal static partial class CliMarkdownGenerator
 
 	private static void AppendParameters(StringBuilder sb, IEnumerable<CliParamSchema> parameters)
 	{
-		foreach (var p in parameters.Where(p => p.Name != "_"))
+		foreach (var p in parameters.Where(p => p.Name != "_" && !p.Hidden))
 		{
-			var isBool = IsBoolFlag(p.Kind);
+			var isBool = IsBoolFlag(p.Type);
 			var flagName = FormatFlagName(p);
-			var typeHint = isBool ? string.Empty : $" `{FormatTypeHint(p.Kind)}`";
+			var typeHint = isBool ? string.Empty : $" `{FormatTypeHint(p)}`";
 			var requiredMarker = p.Required ? " **required**" : string.Empty;
 
 			_ = sb.AppendLine($"{flagName}{typeHint}{requiredMarker}");
 
-			var (description, values, defaultValue) = CleanSummary(p.Summary);
+			// v2: summary may still embed "Values:" / "Default:" for legacy generators;
+			// prefer dedicated fields (EnumValues, DefaultValue) when present.
+			var (description, legacyValues, legacySummaryDefault) = CleanSummary(p.Summary);
 
 			_ = sb.AppendLine($":   {description.Trim()}");
 
-			// Blank line + 4-space-indented continuation paragraphs keep Values/Default inside the definition item
+			// Enum values: prefer schema EnumValues, fall back to legacy embedded text
+			var values = p.EnumValues is { Length: > 0 }
+				? string.Join(", ", p.EnumValues)
+				: legacyValues;
+
 			if (!string.IsNullOrWhiteSpace(values))
 			{
 				_ = sb.AppendLine();
 				_ = sb.AppendLine($"    **Values:** {values.Trim()}");
 			}
 
+			// Default: prefer dedicated schema field, fall back to legacy embedded text
+			// Skip "default" as a literal value — argh emits this for nullable booleans with no meaningful default
+			var defaultValue = (!string.IsNullOrWhiteSpace(p.DefaultValue) && !p.DefaultValue.Equals("default", StringComparison.OrdinalIgnoreCase))
+				? p.DefaultValue
+				: legacySummaryDefault;
 			if (!string.IsNullOrWhiteSpace(defaultValue))
 			{
 				_ = sb.AppendLine();
@@ -212,7 +225,7 @@ internal static partial class CliMarkdownGenerator
 		if (p.Role == "positional")
 			return $"`<{p.Name}>`";
 
-		var isBool = IsBoolFlag(p.Kind);
+		var isBool = IsBoolFlag(p.Type);
 		var prefix = isBool ? "`--[no-]" : "`--";
 		var shortPart = p.ShortName is not null ? $"`-{p.ShortName}` " : string.Empty;
 
@@ -260,14 +273,38 @@ internal static partial class CliMarkdownGenerator
 		return (description, values, defaultValue);
 	}
 
-	private static bool IsBoolFlag(string kind) =>
-		kind.StartsWith("Primitive:bool", StringComparison.OrdinalIgnoreCase) ||
-		kind.Equals("Primitive", StringComparison.OrdinalIgnoreCase);
+	// Schema v2 uses JSON Schema primitives: "boolean", "string", "integer", "number", "array", "enum"
+	// Schema v1 used "Primitive:bool", "Primitive:bool?", "Primitive" for booleans
+	private static bool IsBoolFlag(string type) =>
+		type.Equals("boolean", StringComparison.OrdinalIgnoreCase) ||
+		type.StartsWith("Primitive:bool", StringComparison.OrdinalIgnoreCase) ||
+		type.Equals("Primitive", StringComparison.OrdinalIgnoreCase);
 
-	private static string FormatTypeHint(string kind)
+	private static string FormatTypeHint(CliParamSchema p)
 	{
-		// "Primitive:string" → "string", "Enum:LogLevel" → "LogLevel",
-		// "Collection<enum>" → "enum[]", "FileInfo:..." → "path"
+		var type = p.Type;
+
+		// v2 JSON Schema primitives
+		return type.ToLowerInvariant() switch
+		{
+			"string" => "string",
+			"integer" => "int",
+			"number" => "number",
+			"boolean" => string.Empty, // shown as --[no-] prefix instead
+			"enum" => "enum",
+			"array" => p.ElementType switch
+			{
+				"enum" => "enum[]",
+				"integer" => "int[]",
+				_ => "string[]"
+			},
+			// v1 fallback (kind-style strings)
+			_ => FormatKindV1(type)
+		};
+	}
+
+	private static string FormatKindV1(string kind)
+	{
 		var colon = kind.IndexOf(':');
 		var left = colon >= 0 ? kind[..colon] : kind;
 		var right = colon >= 0 ? kind[(colon + 1)..] : string.Empty;

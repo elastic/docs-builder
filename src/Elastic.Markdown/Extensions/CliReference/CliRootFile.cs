@@ -26,12 +26,12 @@ public record CliRootFile : IO.MarkdownFile
 	{
 		_schema = schema;
 		_supplementalDoc = supplementalDoc;
-		Title = schema.EntryAssembly;
+		Title = schema.Name;
 	}
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
-		Title = _schema.EntryAssembly;
+		Title = _schema.Name;
 		var markdown = BuildMarkdown();
 		return Task.FromResult(MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null));
 	}

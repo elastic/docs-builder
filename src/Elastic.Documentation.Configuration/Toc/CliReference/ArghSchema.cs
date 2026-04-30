@@ -7,9 +7,10 @@ using System.Text.Json;
 
 namespace Elastic.Documentation.Configuration.Toc.CliReference;
 
+// Schema v2: entryAssembly renamed to name, kind replaced by type (JSON Schema primitives)
 public record ArghCliSchema(
 	int SchemaVersion,
-	string EntryAssembly,
+	string Name,
 	string? Description,
 	List<CliParamSchema> GlobalOptions,
 	CliDefaultSchema? RootDefault,
@@ -32,7 +33,9 @@ public record CliCommandSchema(
 	string? Notes,
 	string? Usage,
 	string[]? Examples,
-	List<CliParamSchema> Parameters
+	List<CliParamSchema> Parameters,
+	string[]? Aliases = null,
+	bool Hidden = false
 );
 
 public record CliNamespaceSchema(
@@ -49,9 +52,17 @@ public record CliParamSchema(
 	string Role,
 	string Name,
 	string? ShortName,
-	string Kind,
+	// v2: type uses JSON Schema primitives ("string","integer","number","boolean","array","enum")
+	string Type,
 	bool Required,
-	string? Summary
+	string? Summary,
+	string? DefaultValue = null,
+	string[]? EnumValues = null,
+	string? ElementType = null,
+	bool Repeatable = false,
+	string? Separator = null,
+	string[]? Aliases = null,
+	bool Hidden = false
 );
 
 public record CliDefaultSchema(
