@@ -30,7 +30,14 @@
       "Bash(npm run build:*)",
       "Bash(npm exec:*)",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh label list:*)"
     ]
   }
 }

@@ -104,9 +104,8 @@ Controls how the `changelog add` command extracts information from PR descriptio
 | Setting                      | Description                                                         |
 | ---------------------------- | ------------------------------------------------------------------- |
 | `extract.issues`             | Auto-extract linked issues/PRs from descriptions (default: `true`). |
-| `extract.release_notes`      | Auto-extract release notes from PR descriptions (default: `true`).  |
+| `extract.release_notes`      | Auto-extract descriptions from GitHub (default: `true`).  |
 | `extract.strip_title_prefix` | Remove square-bracket prefixes from PR titles (default: `false`).   |
-
 
 When `extract.issues` is `true`, the system looks for patterns like "Fixes #123" in PR bodies (when you're creating changelogs from PRs) or "Fixed by #123" in issue bodies (when you're creating changelogs from issues).
 
@@ -121,6 +120,14 @@ When `extract.release_notes` is `true`, the system looks for content like this i
 
 The extracted release note text is used in the changelog `description`.
 
+When `extract.strip_title_prefix` is `true` and PR or issue titles have a prefix in square brackets (such as `[ES|QL]` or `[Security]`), they are automatically removed from the changelog title.
+Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`).
+If a colon follows the closing bracket, it is also removed.
+
+:::{note}
+The title cleanup only occurs when the title is derived from GitHub. If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
+:::
+
 ## Filename [filename]
 
 Controls how the `changelog add` command generates changelog file names.
@@ -128,13 +135,11 @@ Controls how the `changelog add` command generates changelog file names.
 :::{table}
 :widths: description
 
-
 | Value                 | Description                                                                    |
 | --------------------- | ------------------------------------------------------------------------------ |
 | `timestamp` (default) | Use Unix timestamp with title slug (for example, `1735689600-fix-search.yaml`) |
 | `pr`                  | Use the PR number (for example, `12345.yaml`)                                  |
 | `issue`               | Use the issue number (for example, `67890.yaml`)                               |
-
 
 :::
 
@@ -145,13 +150,11 @@ Specifies the allowed lifecycle values for your changelogs.
 :::{table}
 :widths: description
 
-
 | Value     | Description                       |
 | --------- | --------------------------------- |
 | `preview` | Technical preview or early access |
 | `beta`    | Beta release                      |
 | `ga`      | General availability              |
-
 
 :::
 
@@ -181,6 +184,26 @@ Also controls how the `changelog add` command maps GitHub labels to various chan
 :::{note}
 Type and subtype values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs) and [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs).
 :::
+
+The following example demonstrates some GitHub label mappings in the `pivot` section of the changelog configuration file:
+```yaml
+pivot:
+  types:
+    # Example mappings - customize based on your label naming conventions
+    breaking-change:
+      labels: ">breaking, >bc"
+    bug-fix: ">bug"
+    enhancement: ">enhancement"
+  areas:
+    # Example mappings - customize based on your label naming conventions
+    Autoscaling: ":Distributed Coordination/Autoscaling"
+    "ES|QL": ":Search Relevance/ES|QL"
+  products:
+    'elasticsearch':
+      - ":product/elasticsearch"
+    'cloud-serverless':
+      - ":product/serverless"
+```
 
 ## Products [products]
 

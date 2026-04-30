@@ -1,7 +1,9 @@
-name: preview-cleanup
+name: Docs preview cleanup (local)
+
+# Runs when a PR is closed. Pairs with docs-preview-local.yml (push/PR build).
+# Inlined cleanup: GitHub deployment records + S3 preview prefix (no docs-actions call).
 
 on:
-  workflow_call: ~
   pull_request_target:
     types: [closed]
 
@@ -12,7 +14,7 @@ permissions:
 
 jobs:
   destroy:
-    if: github.event.repository.fork == false # Skip running the job on the fork itself (It still runs on PRs on the upstream from forks)
+    if: github.event.repository.fork == false # Skip on fork repo; upstream PRs still run here.
     runs-on: ubuntu-latest
     steps:
       - name: Delete GitHub environment

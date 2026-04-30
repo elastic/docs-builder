@@ -11,7 +11,6 @@ import {
     del as idbDel,
     createStore as createIdbStore,
 } from 'idb-keyval'
-import { v4 as uuidv4 } from 'uuid'
 import { createStore } from 'zustand'
 import { persist, PersistStorage, StorageValue } from 'zustand/middleware'
 import { useStore } from 'zustand/react'
@@ -180,6 +179,10 @@ const activeStreams = new Map<string, ActiveStream>()
 
 const sentAiMessageIds = new Set<string>()
 
+const createMessageId = () =>
+    globalThis.crypto?.randomUUID?.() ??
+    `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`
+
 // Maximum number of conversations to keep (oldest are deleted when exceeded)
 // This is a temporary limit to prevent the IndexedDB from growing too large
 // As soon as we support multiple conversation in the UI, we will set a more reasonable limit
@@ -244,10 +247,10 @@ export const chatStore = createStore<ChatState>()(
             actions: {
                 submitQuestion: (question: string) => {
                     const state = get()
-                    const aiMessageId = uuidv4()
+                    const aiMessageId = createMessageId()
 
                     const userMessage: ChatMessage = {
-                        id: uuidv4(),
+                        id: createMessageId(),
                         type: 'user',
                         content: question,
                         conversationId: state.activeConversationId ?? '',
