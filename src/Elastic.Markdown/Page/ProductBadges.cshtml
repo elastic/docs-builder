@@ -1,0 +1,24 @@
+@inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
+@{
+	// Hide on layouts that own the page chrome themselves (hub, landing, archive, search).
+	var layout = Model.CurrentDocument.YamlFrontMatter?.Layout;
+	var skip = layout is not null;
+	var withHubs = skip
+		? []
+		: Model.Products
+			.Where(p => !string.IsNullOrWhiteSpace(p.Hub))
+			.OrderBy(p => p.DisplayName, StringComparer.Ordinal)
+			.ToList();
+	var prefix = Model.UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
+}
+@if (withHubs.Count > 0)
+{
+	<ul class="product-badges" aria-label="Related product hubs">
+		@foreach (var product in withHubs)
+		{
+			<li>
+				<a class="product-badge" href="@($"{prefix}/{product.Hub!.Trim('/')}/")">@product.DisplayName</a>
+			</li>
+		}
+	</ul>
+}
