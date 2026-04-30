@@ -450,19 +450,30 @@ h1, h2, h3, h4, h5, h6 {
 	}
 }
 
-/* Definition term anchor links — show # on hover for code-quoted terms */
+/* Definition term anchor links — whole term is the link, # appears on the left on hover */
 dl dt[id] {
-	& .paramlink {
-		margin-left: 0.4rem;
-		font-size: 0.85em;
-		font-weight: 400;
-		color: var(--color-grey-40, #9aa5b4);
+	& a.paramlink {
+		color: inherit;
 		text-decoration: none;
-		opacity: 0;
-		transition: opacity 0.15s;
+		position: relative;
+
+		&::before {
+			content: '#';
+			position: absolute;
+			right: calc(100% + 0.35rem);
+			top: 50%;
+			transform: translateY(-50%);
+			font-size: 0.85em;
+			font-weight: 400;
+			color: var(--color-grey-40, #9aa5b4);
+			opacity: 0;
+			transition: opacity 0.15s;
+			pointer-events: none;
+		}
 	}
 
-	&:hover .paramlink {
+	&:hover a.paramlink::before,
+	& a.paramlink:focus::before {
 		opacity: 1;
 	}
 }
