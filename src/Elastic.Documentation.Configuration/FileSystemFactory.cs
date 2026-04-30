@@ -68,6 +68,26 @@ public static class FileSystemFactory
 	public static ScopedFileSystem InMemory() => new(new MockFileSystem(), WorkingDirectoryReadOptions);
 
 	/// <summary>
+	/// Like <see cref="InMemory"/> but additionally scopes the mock filesystem to <paramref name="path"/>'s
+	/// git root. Use when serving docs from a directory outside the current working tree so that the
+	/// in-memory output path (<c>&lt;source&gt;/.artifacts/docs/html</c>) passes scope validation.
+	/// </summary>
+	public static ScopedFileSystem InMemoryForPath(string? path)
+	{
+		if (path is null)
+			return InMemory();
+		var root = Paths.FindGitRoot(path);
+		if (root == Paths.WorkingDirectoryRoot.FullName)
+			return InMemory();
+		return new(new MockFileSystem(), new ScopedFileSystemOptions(
+			[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName, root])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+		});
+	}
+
+	/// <summary>
 	/// Scopes <paramref name="inner"/> to <see cref="Paths.WorkingDirectoryRoot"/> and
 	/// <see cref="Paths.ApplicationData"/> for reading. Use when the inner FS contains files
 	/// that live within the current working-directory tree (e.g. a test <c>MockFileSystem</c>

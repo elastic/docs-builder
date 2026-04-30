@@ -14,6 +14,9 @@ public record CliNamespaceFile : IO.MarkdownFile
 {
 	private readonly CliNamespaceSchema _namespace;
 	private readonly IFileInfo? _supplementalDoc;
+	private readonly string? _binaryName;
+
+	private readonly string[] _fullPath;
 
 	public CliNamespaceFile(
 		IFileInfo sourceFile,
@@ -21,11 +24,15 @@ public record CliNamespaceFile : IO.MarkdownFile
 		MarkdownParser parser,
 		BuildContext build,
 		CliNamespaceSchema @namespace,
-		IFileInfo? supplementalDoc
+		IFileInfo? supplementalDoc,
+		string[]? fullPath = null,
+		string? binaryName = null
 	) : base(sourceFile, rootPath, parser, build)
 	{
 		_namespace = @namespace;
 		_supplementalDoc = supplementalDoc;
+		_fullPath = fullPath ?? [@namespace.Segment];
+		_binaryName = binaryName;
 		Title = @namespace.Segment;
 	}
 
@@ -49,6 +56,6 @@ public record CliNamespaceFile : IO.MarkdownFile
 		var supplemental = _supplementalDoc?.Exists == true
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
-		return CliMarkdownGenerator.NamespacePage(_namespace, supplemental);
+		return CliMarkdownGenerator.NamespacePage(_namespace, supplemental, _fullPath, _binaryName);
 	}
 }

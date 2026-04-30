@@ -477,3 +477,35 @@ dl dt[id] {
 		opacity: 1;
 	}
 }
+
+/* CLI page type badge in <h1> — right-aligned span, colored by type */
+h1:has(.cli-badge-ns, .cli-badge-cmd) {
+	display: flex;
+	align-items: center;
+}
+
+.cli-badge-ns,
+.cli-badge-cmd {
+	margin-left: auto;
+	flex-shrink: 0;
+	font-size: 0.34em;
+	font-family: var(--font-body, sans-serif);
+	font-weight: 700;
+	padding: 1px 6px;
+	border-radius: 3px;
+	letter-spacing: 0.04em;
+	text-transform: lowercase;
+	line-height: 1.5;
+}
+
+.cli-badge-ns {
+	background: #f5f3ff;
+	color: #7c3aed;
+	border: 1px solid #ddd6fe;
+}
+
+.cli-badge-cmd {
+	background: #fffbeb;
+	color: #b45309;
+	border: 1px solid #fde68a;
+}
