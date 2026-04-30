@@ -282,7 +282,10 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 
 		var pathOnDisk = Path.GetFullPath(Path.Join(includeFrom, url.TrimStart('/')));
-		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk))
+		// Synthetic files (e.g. generated CLI reference pages) don't exist on disk but ARE registered in the documentation set
+		var relativeToSource = Path.GetRelativePath(context.Build.DocumentationSourceDirectory.FullName, pathOnDisk);
+		var existsInSet = context.TryFindDocumentByRelativePath(relativeToSource) is not null;
+		if (!context.Build.ReadFileSystem.File.Exists(pathOnDisk) && !existsInSet)
 		{
 			if (context.Configuration.Redirects is not null && context.Configuration.Redirects.TryGetValue(url.TrimStart('/'), out var redirect))
 			{

@@ -53,8 +53,10 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly Lock _diagnosticsLock = new();
 	private readonly List<DiagnosticDto> _diagnostics = [];
 
-	// Reuse MockFileSystem across builds to benefit from caching
-	private readonly ScopedFileSystem _writeFs = FileSystemFactory.InMemory();
+	// Reuse MockFileSystem across builds to benefit from caching.
+	// Initialized lazily on first ExecuteBuildAsync so we can scope it to the source path.
+	private ScopedFileSystem? _writeFs;
+	private string? _writeFsPath;
 
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();
@@ -170,6 +172,11 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
 			var readFs = FileSystemFactory.RealGitRootForPath(sourcePath);
+			if (_writeFs is null || _writeFsPath != sourcePath)
+			{
+				_writeFs = FileSystemFactory.InMemoryForPath(sourcePath);
+				_writeFsPath = sourcePath;
+			}
 			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
 
 			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
@@ -188,7 +195,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 					SkipApi = true,
 					SkipCrossLinks = false
 				},
-				_writeFs, // reuse MockFileSystem across builds for caching
+				_writeFs, // reuse MockFileSystem across builds for caching; initialized above
 				ct
 			);
 

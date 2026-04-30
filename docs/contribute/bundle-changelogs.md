@@ -81,7 +81,7 @@ Top-level `bundle` fields:
 | `repo` | Default GitHub repository name applied to all profiles. Falls back to product ID if not set at any level. |
 | `owner` | Default GitHub repository owner applied to all profiles. |
 | `resolve` | When `true`, embeds full changelog entry content in the bundle (same as `--resolve`). Required when `link_allow_repos` is set. |
-| `link_allow_repos` | When set (including an empty list), only PR/issue links whose resolved repository is in this `owner/repo` list are kept; others are rewritten to `# PRIVATE:` sentinels in bundle YAML. When absent, no link filtering is applied. Requires `resolve: true`. Refer to [PR and issue link allowlist](/cli/changelog/bundle.md#link-allowlist). |
+| `link_allow_repos` | When set (including an empty list), only PR/issue links whose resolved repository is in this `owner/repo` list are kept; others are rewritten to `# PRIVATE:` sentinels in bundle YAML. When absent, no link filtering is applied. Requires `resolve: true`. Refer to [PR and issue link allowlist](/cli/changelog/bundle.md). |
 
 Profile configuration fields in `bundle.profiles`:
 
@@ -261,7 +261,7 @@ docs-builder changelog bundle \
   --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
 ```
 
-1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/bundle.md#product-format).
+1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/bundle.md).
 
 You can use wildcards in any of the three parts:
 
@@ -483,7 +483,7 @@ The `--hide-features` option on the `render` command and the `hide-features` fie
 
 A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
 
-To comment out links that are not in your allowlist in all changelogs in your bundles, refer to [changelog bundle](/cli/changelog/bundle.md#link-allowlist).
+To comment out links that are not in your allowlist in all changelogs in your bundles, refer to [changelog bundle](/cli/changelog/bundle.md).
 
 If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you also have the option to configure link visibiblity in the [changelog directive](/syntax/changelog.md) and [changelog render](/cli/changelog/render.md) command.
 

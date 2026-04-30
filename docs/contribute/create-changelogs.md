@@ -60,7 +60,7 @@ When automated via the [changelog GitHub Actions](https://github.com/elastic/doc
 The `description` output from step 1 contains the release note extracted from the PR body (when `extract.release_notes` is enabled).
 If extraction is disabled (either by setting `extract.release_notes: false` in `changelog.yml` or by passing `--no-extract-release-notes` to `changelog add`), the `CHANGELOG_DESCRIPTION` environment variable is ignored and the extracted description is not written to the changelog.
 
-Refer to [CI auto-detection](/cli/changelog/add.md#ci-auto-detection) for the full list of environment variables and precedence rules.
+Refer to [CI auto-detection](/cli/changelog/add.md) for the full list of environment variables and precedence rules.
 
 ## Review the content [review]
 
@@ -68,7 +68,7 @@ Refer to [CI auto-detection](/cli/changelog/add.md#ci-auto-detection) for the fu
 
    You can specify the file location with command options (`--output`) or configuration options (`bundle.directory`).
    Likewise you can control the file names with command options (`--use-issue-number` or `--use-pr-number`) or the `filename` configuration option.
-   Refer to the [Filenames](/cli/changelog/add.md#filenames).
+   Refer to the [Filenames](/cli/changelog/add.md).
 
 1. Verify that the files contain content that is accurate and user-friendly.
    This review is especially important when you're pulling content from GitHub, since there might be some missing or extraneous information.

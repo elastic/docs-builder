@@ -149,6 +149,7 @@ toc:
       - file: line_breaks.md
       - file: links.md
       - file: list-sub-pages.md
+      - file: page-card.md
       - file: passthrough.md
       - file: sidebars.md
       - file: stepper.md
@@ -159,53 +160,12 @@ toc:
       - file: tabs.md
       - file: tagged_regions.md
       - file: titles.md
-  - folder: cli
+  - cli: cli-schema.json
+    folder: cli
     children:
-      - file: index.md
-      - folder: docset
-        children:
-          - file: index.md
-          - file: build.md
-          - file: diff-validate.md
-          - file: format.md
-          - file: index-command.md
-          - file: mv.md
-          - file: serve.md
-      - folder: assembler
-        children:
-          - file: index.md
-          - file: assemble.md
-          - file: assembler-bloom-filter-create.md
-          - file: assembler-bloom-filter-lookup.md
-          - file: assembler-build.md
-          - file: assembler-clone.md
-          - file: assembler-config-init.md
-          - file: assembler-content-source-match.md
-          - file: assembler-content-source-validate.md
-          - file: assembler-deploy-apply.md
-          - file: assembler-deploy-plan.md
-          - file: assembler-deploy-update-redirects.md
-          - file: assembler-index.md
-          - file: assembler-navigation-validate.md
-          - file: assembler-navigation-validate-link-reference.md
-          - file: assembler-serve.md
-      - folder: links
-        children:
-          - file: index.md
-          - file: inbound-links-validate.md
-          - file: inbound-links-validate-all.md
-          - file: inbound-links-validate-link-reference.md
-      - folder: changelog
-        children:
-          - file: index.md
-          - file: add.md
-          - file: bundle.md
-          - file: bundle-amend.md
-          - file: evaluate-pr.md
-          - file: gh-release.md
-          - file: init.md
-          - file: remove.md
-          - file: render.md
+      - file: installation.md
+      - file: shell-autocompletion.md
+      - file: cli-reference-how-to.md
   - folder: mcp
     children:
       - file: index.md

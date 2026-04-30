@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
@@ -174,6 +175,7 @@ public class DocumentationSetNavigation<TModel>
 			CrossLinkRef crossLinkRef => CreateCrossLinkNavigation(crossLinkRef, index, parent, homeAccessor),
 			FolderRef folderRef => CreateFolderNavigation(folderRef, index, context, parent, homeAccessor),
 			IsolatedTableOfContentsRef tocRef => CreateTocNavigation(tocRef, index, context, parent, homeAccessor),
+			CliReferenceRef cliRef => CreateCliReferenceNavigation(cliRef, index, context, parent, homeAccessor),
 			_ => null
 		};
 
@@ -437,6 +439,171 @@ public class DocumentationSetNavigation<TModel>
 		tocNavigation.SetNavigationItems(children);
 
 		return tocNavigation;
+	}
+
+	private INavigationItem? CreateCliReferenceNavigation(
+		CliReferenceRef cliRef,
+		int index,
+		IDocumentationSetContext context,
+		INodeNavigationItem<INavigationModel, INavigationItem>? parent,
+		INavigationHomeAccessor homeAccessor
+	)
+	{
+		var schemaFileInfo = context.ReadFileSystem.FileInfo.New(
+			context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, cliRef.SchemaPath));
+
+		ArghCliSchema schema;
+		try
+		{
+			schema = ArghCliSchema.Load(schemaFileInfo);
+		}
+		catch (Exception ex)
+		{
+			context.EmitError(context.ConfigurationPath, $"Failed to load CLI schema from {cliRef.SchemaPath}: {ex.Message}");
+			return null;
+		}
+
+		var virtualRoot = cliRef.PathRelativeToDocumentationSet;
+		var docSourceDir = context.DocumentationSourceDirectory.FullName;
+
+		// Root folder navigation
+		var folderNavigation = new FolderNavigation<TModel>(virtualRoot, parent, homeAccessor) { NavigationIndex = index };
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
+
+		// Root index file
+		var rootNav = MakeFileLeaf(docSourceDir, virtualRoot, [], isNamespace: true, childIndex++, folderNavigation, homeAccessor, context);
+		if (rootNav is not null)
+			children.Add(rootNav);
+
+		// Explicit children are prepended before the schema-generated pages
+		foreach (var child in cliRef.Children)
+		{
+			var childNav = ConvertToNavigationItem(child, childIndex++, context, folderNavigation, homeAccessor);
+			if (childNav is not null)
+				children.Add(childNav);
+		}
+
+		// All root commands + namespaces from the schema always follow
+		foreach (var cmd in schema.Commands)
+		{
+			var cmdNav = MakeFileLeaf(docSourceDir, virtualRoot, [cmd.Name], isNamespace: false, childIndex++, folderNavigation, homeAccessor, context);
+			if (cmdNav is not null)
+				children.Add(cmdNav);
+		}
+		foreach (var ns in schema.Namespaces)
+		{
+			var nsNav = BuildNamespaceNavigation(docSourceDir, virtualRoot, ns, [ns.Segment], childIndex++, folderNavigation, homeAccessor, context);
+			if (nsNav is not null)
+				children.Add(nsNav);
+		}
+
+		if (children.Count == 0)
+		{
+			context.Collector.EmitError(cliRef.Context, $"CLI reference '{cliRef.SchemaPath}' produced no navigation items");
+			return null;
+		}
+
+		folderNavigation.SetNavigationItems(children);
+		return folderNavigation;
+	}
+
+	private INavigationItem? BuildNamespaceNavigation(
+		string docSourceDir,
+		string virtualRoot,
+		CliNamespaceSchema ns,
+		string[] segments,
+		int index,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		INavigationHomeAccessor homeAccessor,
+		IDocumentationSetContext context
+	)
+	{
+		// Create folder node for the namespace
+		var nsPath = string.Join("/", segments.Select(s => s));
+		var nsFolderPath = $"{virtualRoot}/{nsPath}";
+		var nsFolderNav = new FolderNavigation<TModel>(nsFolderPath, parent, homeAccessor) { NavigationIndex = index };
+		var children = new List<INavigationItem>();
+		var childIndex = 0;
+
+		// Namespace index file
+		var nsIndexNav = MakeFileLeaf(docSourceDir, virtualRoot, segments, isNamespace: true, childIndex++, nsFolderNav, homeAccessor, context);
+		if (nsIndexNav is not null)
+			children.Add(nsIndexNav);
+
+		// Namespace commands
+		foreach (var cmd in ns.Commands)
+		{
+			var cmdSegments = segments.Append(cmd.Name).ToArray();
+			var cmdNav = MakeFileLeaf(docSourceDir, virtualRoot, cmdSegments, isNamespace: false, childIndex++, nsFolderNav, homeAccessor, context);
+			if (cmdNav is not null)
+				children.Add(cmdNav);
+		}
+
+		// Sub-namespaces
+		foreach (var subNs in ns.Namespaces)
+		{
+			var subSegments = segments.Append(subNs.Segment).ToArray();
+			var subNav = BuildNamespaceNavigation(docSourceDir, virtualRoot, subNs, subSegments, childIndex++, nsFolderNav, homeAccessor, context);
+			if (subNav is not null)
+				children.Add(subNav);
+		}
+
+		if (children.Count == 0)
+			return null;
+
+		nsFolderNav.SetNavigationItems(children);
+		return nsFolderNav;
+	}
+
+	private INavigationItem? MakeFileLeaf(
+		string docSourceDir,
+		string virtualRoot,
+		string[] segments,
+		bool isNamespace,
+		int index,
+		INodeNavigationItem<INavigationModel, INavigationItem> parent,
+		INavigationHomeAccessor homeAccessor,
+		IDocumentationSetContext context
+	)
+	{
+		// SyntheticPath in the extension now uses clean names (no cmd- prefix)
+		// so factory registration path and URL path are the same.
+		var syntheticPath = SyntheticRelativePath(virtualRoot, segments, isNamespace);
+		var absolutePath = Path.GetFullPath(Path.Join(docSourceDir, syntheticPath));
+		var fileInfo = context.ReadFileSystem.FileInfo.New(absolutePath);
+
+		var docFile = _factory.TryCreateDocumentationFile(fileInfo, context.ReadFileSystem);
+		if (docFile is null)
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"CLI reference: could not create documentation file for '{syntheticPath}'");
+			return null;
+		}
+
+		var args = new FileNavigationArgs(syntheticPath, syntheticPath, false, index, parent, homeAccessor);
+		return DocumentationNavigationFactory.CreateFileNavigationLeaf(docFile, fileInfo, args);
+	}
+
+	// Synthetic path — clean command names (no cmd- prefix) matching CliReferenceDocsBuilderExtension.SyntheticPath
+	private static string SyntheticRelativePath(string virtualRoot, string[] segments, bool isNamespace)
+	{
+		if (segments.Length == 0)
+			return $"{virtualRoot}/index.md";
+		if (isNamespace)
+		{
+			var joined = string.Join("/", segments);
+			return $"{virtualRoot}/{joined}/index.md";
+		}
+		else
+		{
+			// Keep cmd- prefix only for "index" commands to avoid collision with namespace index.md pages
+			var cmdName = segments[^1].Equals("index", StringComparison.OrdinalIgnoreCase)
+				? $"cmd-{segments[^1]}"
+				: segments[^1];
+			var parentPath = segments.Length > 1 ? string.Join("/", segments[..^1]) + "/" : string.Empty;
+			return $"{virtualRoot}/{parentPath}{cmdName}.md";
+		}
 	}
 
 }

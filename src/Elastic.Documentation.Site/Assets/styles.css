@@ -420,3 +420,92 @@ math {
 	scrollbar-width: thin;
 	scrollbar-color: rgba(113, 134, 168, 0.5) transparent;
 }
+
+/* Heading anchor links — show # on hover */
+h1, h2, h3, h4, h5, h6 {
+	position: relative;
+
+	& .headerlink {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	& .headerlink::after {
+		content: '#';
+		position: absolute;
+		right: calc(100% + 0.4rem);
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 0.85em;
+		font-weight: 400;
+		color: var(--color-grey-40, #9aa5b4);
+		opacity: 0;
+		transition: opacity 0.15s;
+		pointer-events: none;
+	}
+
+	&:hover .headerlink::after,
+	& .headerlink:focus::after {
+		opacity: 1;
+	}
+}
+
+/* Definition term anchor links — whole term is the link, # appears on the left on hover */
+dl dt[id] {
+	& a.paramlink {
+		color: inherit;
+		text-decoration: none;
+		position: relative;
+
+		&::before {
+			content: '#';
+			position: absolute;
+			right: calc(100% + 0.35rem);
+			top: 50%;
+			transform: translateY(-50%);
+			font-size: 0.85em;
+			font-weight: 400;
+			color: var(--color-grey-40, #9aa5b4);
+			opacity: 0;
+			transition: opacity 0.15s;
+			pointer-events: none;
+		}
+	}
+
+	&:hover a.paramlink::before,
+	& a.paramlink:focus::before {
+		opacity: 1;
+	}
+}
+
+/* CLI page type badge in <h1> — right-aligned span, colored by type */
+h1:has(.cli-badge-ns, .cli-badge-cmd) {
+	display: flex;
+	align-items: center;
+}
+
+.cli-badge-ns,
+.cli-badge-cmd {
+	margin-left: auto;
+	flex-shrink: 0;
+	font-size: 0.34em;
+	font-family: var(--font-body, sans-serif);
+	font-weight: 700;
+	padding: 1px 6px;
+	border-radius: 3px;
+	letter-spacing: 0.04em;
+	text-transform: lowercase;
+	line-height: 1.5;
+}
+
+.cli-badge-ns {
+	background: #f5f3ff;
+	color: #7c3aed;
+	border: 1px solid #ddd6fe;
+}
+
+.cli-badge-cmd {
+	background: #fffbeb;
+	color: #b45309;
+	border: 1px solid #fde68a;
+}

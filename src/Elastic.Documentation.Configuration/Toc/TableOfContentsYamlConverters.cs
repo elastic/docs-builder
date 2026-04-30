@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -110,6 +111,14 @@ public class TocItemYamlConverter : IYamlTypeConverter
 
 		// Capture exclude list for folder auto-discovery
 		var exclude = dictionary.TryGetValue("exclude", out var excludeObj) && excludeObj is string[] excludeArr ? excludeArr : null;
+
+		// Check for CLI reference (cli: schema.json, optional folder: supplemental-docs/)
+		// Must come before the folder+file check to prevent folder: from being consumed by that branch
+		if (dictionary.TryGetValue("cli", out var cliSchemaPath) && cliSchemaPath is string cliSchema)
+		{
+			var supplementalFolder = dictionary.TryGetValue("folder", out var f) && f is string fStr ? fStr : null;
+			return new CliReferenceRef(cliSchema, supplementalFolder, cliSchema, cliSchema, placeholderContext, children);
+		}
 
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
 		// This represents a folder with a specific index file

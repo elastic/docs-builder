@@ -76,7 +76,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public string? Description { get; private set; }
 
 	[field: AllowNull, MaybeNull]
-	public string NavigationTitle
+	public virtual string NavigationTitle
 	{
 		get => !string.IsNullOrEmpty(field) ? field : Title ?? string.Empty;
 		private set => field = value.StripMarkdown();
