@@ -162,7 +162,7 @@ public class HtmlWriter(
 			SiteRootPath = DocumentationSet.Context.SiteRootPath,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			MarkdownUrl = current.Url.TrimEnd('/') + ".md",
+			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,

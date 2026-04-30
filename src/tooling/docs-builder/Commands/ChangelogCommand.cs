@@ -1331,6 +1331,119 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
+	/// <summary>(CI) Package changelog artifact for cross-workflow transfer.</summary>
+	/// <remarks>
+	/// Resolves final status from evaluate-pr + changelog add outcomes, copies generated YAML,
+	/// writes metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.
+	/// </remarks>
+	/// <param name="stagingDir">Directory where changelog add wrote the generated YAML</param>
+	/// <param name="outputDir">Directory to write the artifact (metadata.json + YAML)</param>
+	/// <param name="evaluateStatus">Status output from the evaluate-pr step</param>
+	/// <param name="generateOutcome">Outcome of the changelog add step (success/failure)</param>
+	/// <param name="prNumber">Pull request number</param>
+	/// <param name="headRef">PR head branch ref</param>
+	/// <param name="headSha">PR head commit SHA</param>
+	/// <param name="isFork">Whether the PR is from a fork</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits</param>
+	/// <param name="headRepo">Fork repository full name (owner/repo)</param>
+	/// <param name="labelTable">Optional: markdown label table from evaluate-pr</param>
+	/// <param name="productLabelTable">Optional: markdown product label table from evaluate-pr</param>
+	/// <param name="skipLabels">Optional: comma-separated skip labels from evaluate-pr</param>
+	/// <param name="config">Optional: path to changelog.yml</param>
+	/// <param name="existingChangelogFilename">Optional: filename of a previously committed changelog for this PR</param>
+	[NoOptionsInjection]
+	public async Task<int> PrepareArtifact(
+		string stagingDir,
+		string outputDir,
+		string evaluateStatus,
+		string generateOutcome,
+		int prNumber,
+		string headRef,
+		string headSha,
+		bool isFork = false,
+		bool canCommit = false,
+		bool maintainerCanModify = false,
+		string? headRepo = null,
+		string? labelTable = null,
+		string? productLabelTable = null,
+		string? skipLabels = null,
+		string? config = null,
+		string? existingChangelogFilename = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fs = FileSystemFactory.RealGitRootForPathWrite(null, outputDir);
+		var service = new ChangelogPrepareArtifactService(logFactory, configurationContext, githubActionsService, fs);
+
+		var args = new PrepareArtifactArguments
+		{
+			StagingDir = stagingDir,
+			OutputDir = outputDir,
+			EvaluateStatus = evaluateStatus,
+			GenerateOutcome = generateOutcome,
+			PrNumber = prNumber,
+			HeadRef = headRef,
+			HeadSha = headSha,
+			IsFork = isFork,
+			HeadRepo = headRepo,
+			CanCommit = canCommit,
+			MaintainerCanModify = maintainerCanModify,
+			LabelTable = labelTable,
+			ProductLabelTable = productLabelTable,
+			SkipLabels = skipLabels,
+			Config = config,
+			ExistingChangelogFilename = existingChangelogFilename
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			async static (s, collector, state, ctx) => await s.PrepareArtifact(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI) Evaluate downloaded artifact in the resolving workflow.</summary>
+	/// <remarks>
+	/// Reads metadata, validates PR state (SHA, labels), and sets GitHub Actions outputs
+	/// for downstream steps (commit, comment).
+	/// </remarks>
+	/// <param name="metadata">Path to the downloaded metadata.json file</param>
+	/// <param name="owner">GitHub repository owner</param>
+	/// <param name="repo">GitHub repository name</param>
+	[NoOptionsInjection]
+	public async Task<int> EvaluateArtifact(
+		string metadata,
+		string owner,
+		string repo,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fs = FileSystemFactory.RealGitRootForPathWrite(null, metadata);
+		IGitHubPrService prService = new GitHubPrService(logFactory);
+		var service = new ChangelogArtifactEvaluationService(logFactory, prService, githubActionsService, fs);
+
+		var args = new EvaluateArtifactArguments
+		{
+			MetadataPath = metadata,
+			Owner = owner,
+			Repo = repo
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			async static (s, collector, state, ctx) => await s.EvaluateArtifact(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+
 	private static List<string> ExpandCommaSeparated(string[]? values)
 	{
 		if (values is not { Length: > 0 })
