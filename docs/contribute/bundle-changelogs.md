@@ -3,7 +3,7 @@
 You can use the `docs-builder changelog bundle` command to create a YAML file that lists multiple changelogs.
 The command has two modes of operation: you can specify all the command options or you can define "profiles" in the changelog configuration file.
 The latter is more convenient and consistent for repetitive workflows.
-For up-to-date details, use the `-h` option or refer to [](/cli/changelog/bundle.md).
+For up-to-date details, use the `-h` option or refer to [](/cli/changelog/cmd-bundle.md).
 
 The command supports two mutually exclusive usage modes:
 
@@ -13,7 +13,7 @@ The command supports two mutually exclusive usage modes:
 You cannot mix these two modes: when you use a profile name, no filter or output options are accepted on the command line.
 
 :::{tip}
-Alternatively, if you already have automated release notes for GitHub releases, you can use the `docs-builder changelog gh-release` command to create changelog files and a bundle from your GitHub release notes. Refer to [](/cli/changelog/gh-release.md).
+Alternatively, if you already have automated release notes for GitHub releases, you can use the `docs-builder changelog gh-release` command to create changelog files and a bundle from your GitHub release notes. Refer to [](/cli/changelog/cmd-gh-release.md).
 :::
 
 ## Option-based bundling [changelog-bundle-options]
@@ -81,7 +81,7 @@ Top-level `bundle` fields:
 | `repo` | Default GitHub repository name applied to all profiles. Falls back to product ID if not set at any level. |
 | `owner` | Default GitHub repository owner applied to all profiles. |
 | `resolve` | When `true`, embeds full changelog entry content in the bundle (same as `--resolve`). Required when `link_allow_repos` is set. |
-| `link_allow_repos` | When set (including an empty list), only PR/issue links whose resolved repository is in this `owner/repo` list are kept; others are rewritten to `# PRIVATE:` sentinels in bundle YAML. When absent, no link filtering is applied. Requires `resolve: true`. Refer to [PR and issue link allowlist](/cli/changelog/bundle.md#link-allowlist). |
+| `link_allow_repos` | When set (including an empty list), only PR/issue links whose resolved repository is in this `owner/repo` list are kept; others are rewritten to `# PRIVATE:` sentinels in bundle YAML. When absent, no link filtering is applied. Requires `resolve: true`. Refer to [PR and issue link allowlist](/cli/changelog/cmd-bundle.md). |
 
 Profile configuration fields in `bundle.profiles`:
 
@@ -261,7 +261,7 @@ docs-builder changelog bundle \
   --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
 ```
 
-1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/bundle.md#product-format).
+1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/cmd-bundle.md).
 
 You can use wildcards in any of the three parts:
 
@@ -385,7 +385,7 @@ You can also combine multiple `--prs` options:
 4. Optionally include the contents of each changelog in the output file.
 
 :::{tip}
-You can use these files with profile-based bundling too. Refer to [](/cli/changelog/bundle.md).
+You can use these files with profile-based bundling too. Refer to [](/cli/changelog/cmd-bundle.md).
 :::
 
 If you have changelog files that reference those pull requests, the command creates a file like this:
@@ -436,7 +436,7 @@ The bundle's product metadata is inferred automatically from the release tag and
 
 :::{tip}
 If you are not creating changelogs when you create your pull requests, consider the `docs-builder changelog gh-release` command as a one-shot alternative to the `changelog add` and `changelog bundle` commands.
-It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
+It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/cmd-gh-release.md)
 :::
 
 ## Hide features [changelog-bundle-hide-features]
@@ -455,7 +455,7 @@ docs-builder changelog bundle \
 <!--
 TO-DO: Add info about how to do this in bundle.
 :::{tip}
-You can do this with profile-based bundling too. Refer to [](/cli/changelog/bundle.md).
+You can do this with profile-based bundling too. Refer to [](/cli/changelog/cmd-bundle.md).
 ::: -->
 
 The bundle output will include a `hide-features` field:
@@ -483,9 +483,9 @@ The `--hide-features` option on the `render` command and the `hide-features` fie
 
 A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
 
-To comment out links that are not in your allowlist in all changelogs in your bundles, refer to [changelog bundle](/cli/changelog/bundle.md#link-allowlist).
+To comment out links that are not in your allowlist in all changelogs in your bundles, refer to [changelog bundle](/cli/changelog/cmd-bundle.md).
 
-If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you also have the option to configure link visibiblity in the [changelog directive](/syntax/changelog.md) and [changelog render](/cli/changelog/render.md) command.
+If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you also have the option to configure link visibiblity in the [changelog directive](/syntax/changelog.md) and [changelog render](/cli/changelog/cmd-render.md) command.
 
 :::{tip}
 You must run the `docs-builder changelog bundle` command with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained) in order to hide the private links.
@@ -503,7 +503,7 @@ The changelogs from all matching amend files are combined with the parent bundle
 If you explicitly list the amend bundles in the `--input` option of the `docs-builder changelog render` command, you'll get duplicate entries in the output files. List only the original bundles.
 :::
 
-For more details and examples, go to [](/cli/changelog/bundle-amend.md).
+For more details and examples, go to [](/cli/changelog/cmd-bundle-amend.md).
 
 ## Remove changelog files [changelog-remove]
 
@@ -593,5 +593,5 @@ When using a file for `--prs` or `--issues`, every line must be a fully-qualifie
 docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
 ```
 
-For full option details, go to [](/cli/changelog/remove.md).
+For full option details, go to [](/cli/changelog/cmd-remove.md).
 

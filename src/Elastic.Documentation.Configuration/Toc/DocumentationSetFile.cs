@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
@@ -76,6 +77,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			return tocRef.Children.SelectMany(GetFileRefs).ToArray();
 		if (item is CrossLinkRef)
 			return [];
+		if (item is CliReferenceRef cliRef2)
+			return cliRef2.Children.SelectMany(GetFileRefs).ToArray();
 		throw new Exception($"Unexpected item type {item.GetType().Name}");
 	}
 
@@ -157,6 +160,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			{
 				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(collector, tocRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				DetectionRuleOverviewRef ruleOverviewReference => ResolveRuleOverviewReference(collector, ruleOverviewReference, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
+				CliReferenceRef cliRef => ResolveCliReference(collector, cliRef, baseDirectory, fileSystem, parentPath, containerPath, context),
 				FileRef fileRef => ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				FolderRef folderRef => ResolveFolderRef(collector, folderRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				CrossLinkRef crossLink => ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
@@ -448,6 +452,66 @@ public class DocumentationSetFile : TableOfContentsFile
 		return new DetectionRuleOverviewRef(fullPath, pathRelativeToContainer, detectionRuleRef.DetectionRuleFolders, children, context);
 	}
 
+
+	private static ITableOfContentsItem? ResolveCliReference(
+		IDiagnosticsCollector collector,
+		CliReferenceRef cliRef,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath,
+		string containerPath,
+		string context)
+	{
+		// Resolve schema path relative to docset root (context-relative for paths with '/')
+		string schemaFullPath;
+		if (cliRef.SchemaPath.Contains('/'))
+		{
+			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
+			var contextRelativePath = fileSystem.Path.GetRelativePath(baseDirectory.FullName, contextDir);
+			if (contextRelativePath == ".")
+				contextRelativePath = "";
+			schemaFullPath = string.IsNullOrEmpty(contextRelativePath)
+				? cliRef.SchemaPath
+				: $"{contextRelativePath}/{cliRef.SchemaPath}";
+		}
+		else
+		{
+			schemaFullPath = string.IsNullOrEmpty(parentPath)
+				? cliRef.SchemaPath
+				: $"{parentPath}/{cliRef.SchemaPath}";
+		}
+
+		var schemaFileInfo = fileSystem.FileInfo.New(fileSystem.Path.Join(baseDirectory.FullName, schemaFullPath));
+		if (!schemaFileInfo.Exists)
+		{
+			collector.EmitError(context, $"CLI schema file not found: {cliRef.SchemaPath}");
+			return null;
+		}
+
+		// Derive virtual root: use SupplementalFolder if set, otherwise schema path without extension
+		var virtualRoot = cliRef.SupplementalFolder is not null
+			? cliRef.SupplementalFolder.TrimEnd('/')
+			: Path.ChangeExtension(schemaFullPath, null);
+
+		var fullVirtualRoot = string.IsNullOrEmpty(parentPath) ? virtualRoot : $"{parentPath}/{virtualRoot}";
+		var pathRelativeToContainer = string.IsNullOrEmpty(containerPath)
+			? fullVirtualRoot
+			: fullVirtualRoot[(containerPath.Length + 1)..];
+
+		if (cliRef.SupplementalFolder is not null)
+		{
+			var supplementalDirPath = fileSystem.Path.Join(baseDirectory.FullName, cliRef.SupplementalFolder);
+			if (!fileSystem.Directory.Exists(supplementalDirPath))
+				collector.EmitWarning(context, $"CLI supplemental docs folder not found: {cliRef.SupplementalFolder}");
+		}
+
+		// Resolve explicit children (regular docs + namespace/folder refs) relative to the virtual root
+		var resolvedChildren = cliRef.Children.Count > 0
+			? ResolveTableOfContents(collector, cliRef.Children, baseDirectory, fileSystem, fullVirtualRoot, containerPath, context)
+			: [];
+
+		return new CliReferenceRef(schemaFullPath, cliRef.SupplementalFolder, fullVirtualRoot, pathRelativeToContainer, context, resolvedChildren);
+	}
 
 	/// <summary>
 	/// Resolves a FolderRef by prepending the parent path to the folder path and recursively resolving children.

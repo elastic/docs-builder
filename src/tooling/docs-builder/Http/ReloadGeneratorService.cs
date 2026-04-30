@@ -51,7 +51,9 @@ public sealed class ReloadGeneratorService(
 		// ReSharper disable once RedundantAssignment
 		var directory = ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
 #if DEBUG
-		directory = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName ?? throw new InvalidOperationException("No checkout directory");
+		// Fall back to source directory when there is no separate checkout directory (e.g. when serving the project's own docs from a worktree)
+		directory = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName
+			?? ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
 #endif
 		Logger.LogInformation("Start file watch on: {Directory}", directory);
 		var watcher = new FileSystemWatcher(directory)
