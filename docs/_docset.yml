@@ -60,8 +60,6 @@ toc:
   - hidden: 404.md
   - hidden: _search.md
   - hidden: developer-notes.md
-  - hidden: hubs/elasticsearch/9.0.md
-  - hidden: hubs/kibana/9.0.md
   - hidden: contribute/cumulative-docs/index.md
   - hidden: contribute/cumulative-docs/guidelines.md
   - hidden: contribute/cumulative-docs/badge-placement.md
@@ -234,6 +232,14 @@ toc:
   - folder: testing
     children:
       - file: index.md
+      - folder: hubs
+        children:
+          - folder: elasticsearch
+            children:
+              - file: 9.0.md
+          - folder: kibana
+            children:
+              - file: 9.0.md
       - file: kibana-settings-yaml-samples.md
       - file: security-settings.md
       - file: req.md
