@@ -45,21 +45,23 @@ public class IsolatedBuildService(
 	public async Task<bool> Build(
 		IDiagnosticsCollector collector,
 		ScopedFileSystem fileSystem,
-		string? path = null,
-		string? output = null,
-		string? pathPrefix = null,
-		bool? force = null,
-		bool? strict = null,
-		bool? allowIndexing = null,
-		bool? metadataOnly = null,
-		IReadOnlySet<Exporter>? exporters = null,
-		string? canonicalBaseUrl = null,
+		IsolatedBuildOptions options,
 		ScopedFileSystem? writeFileSystem = null,
-		bool skipOpenApi = false,
-		bool skipCrossLinks = false,
 		Cancel ctx = default
 	)
 	{
+		var path = options.Path?.FullName;
+		var output = options.Output?.FullName;
+		var pathPrefix = options.PathPrefix;
+		var force = options.Force;
+		var strict = options.Strict;
+		var allowIndexing = options.AllowIndexing;
+		var metadataOnly = options.MetadataOnly;
+		var exporters = options.Exporters;
+		var canonicalBaseUri = options.CanonicalBaseUrl;
+		var skipOpenApi = options.SkipApi;
+		var skipCrossLinks = options.SkipCrossLinks;
+
 		strict = IsStrict(strict);
 
 		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
@@ -72,18 +74,13 @@ public class IsolatedBuildService(
 		var runningOnCi = _env.IsRunningOnCI;
 		BuildContext context;
 
-		Uri? canonicalBaseUri;
+		canonicalBaseUri ??= new Uri("https://docs-v3-preview.elastic.dev");
 
 		if (runningOnCi)
 		{
 			_logger.LogInformation("Build running on CI, forcing a full rebuild of the destination folder");
 			force = true;
 		}
-
-		if (canonicalBaseUrl is null)
-			canonicalBaseUri = new Uri("https://docs-v3-preview.elastic.dev");
-		else if (!Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out canonicalBaseUri))
-			throw new ArgumentException($"The canonical base url '{canonicalBaseUrl}' is not a valid absolute uri");
 
 		try
 		{

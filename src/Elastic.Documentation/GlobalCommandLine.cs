@@ -6,68 +6,36 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation;
 
-public record GlobalCliArgs
-{
-	public LogLevel LogLevel { get; init; } = LogLevel.Information;
-	public ConfigurationSource? ConfigurationSource { get; init; }
-	public bool SkipPrivateRepositories { get; init; }
-	public bool IsHelpOrVersion { get; init; }
-	public bool IsMcp { get; init; }
-}
+/// <summary>
+/// Early-parse utilities for startup DI setup in <c>AppDefaultsExtensions</c> before the argh host builds.
+/// The authoritative CLI options for docs-builder itself live in <c>GlobalCliOptions</c> (docs-builder project).
+/// </summary>
 public static class GlobalCli
 {
-	public static void Process(ref string[] args, out GlobalCliArgs cli) => Process(ref args, out cli, out _);
-	public static void Process(ref string[] args, out GlobalCliArgs cli, out string[] globalArguments)
+	/// <summary>
+	/// Scans <paramref name="args"/> for startup flags without modifying the array.
+	/// Used by <c>AppDefaultsExtensions</c> before argh routing runs.
+	/// </summary>
+	public static GlobalCliArgs ScanArgs(string[] args)
 	{
-		cli = new GlobalCliArgs();
-		globalArguments = [];
-		var globalArgs = new List<string>();
-		var filteredArguments = new List<string>();
+		var options = new GlobalCliArgs();
 		for (var i = 0; i < args.Length; i++)
 		{
-			if (args[i] == "--log-level")
+			if (args[i] == "--log-level" && i + 1 < args.Length)
+				options = options with { LogLevel = ParseLogLevel(args[++i]) };
+			else if (args[i] is "--config-source" or "--configuration-source" or "-c" && i + 1 < args.Length)
 			{
-				if (args.Length > i + 1)
-				{
-					cli = cli with { LogLevel = GetLogLevel(args[i + 1]) };
-					globalArgs.Add("--log-level");
-					globalArgs.Add(args[i + 1]);
-				}
-				i++;
-			}
-			else if (args[i] is "--config-source" or "--configuration-source" or "-c")
-			{
-				if (args.Length > i + 1 && ConfigurationSourceExtensions.TryParse(args[i + 1], out var cs, true, true))
-				{
-					cli = cli with { ConfigurationSource = cs };
-					globalArgs.Add("--config-source");
-					globalArgs.Add(args[i + 1]);
-				}
+				if (ConfigurationSourceExtensions.TryParse(args[i + 1], out var cs, true, true))
+					options = options with { ConfigurationSource = cs };
 				i++;
 			}
 			else if (args[i] == "--skip-private-repositories")
-			{
-				cli = cli with { SkipPrivateRepositories = true };
-				globalArgs.Add("--skip-private-repositories");
-			}
-			else if (args[i] is "--help" or "--version")
-			{
-				cli = cli with { IsHelpOrVersion = true };
-				globalArgs.Add(args[i]);
-				filteredArguments.Add(args[i]);
-			}
-			else
-				filteredArguments.Add(args[i]);
+				options = options with { SkipPrivateRepositories = true };
 		}
-
-		args = [.. filteredArguments];
-		globalArguments = [.. globalArgs];
-
-		if (filteredArguments.Count > 0 && filteredArguments[0] == "mcp")
-			cli = cli with { IsMcp = true };
+		return options;
 	}
 
-	private static LogLevel GetLogLevel(string? logLevel) => logLevel switch
+	private static LogLevel ParseLogLevel(string? logLevel) => logLevel switch
 	{
 		"trace" => LogLevel.Trace,
 		"debug" => LogLevel.Debug,
@@ -78,5 +46,12 @@ public static class GlobalCli
 		"critical" => LogLevel.Critical,
 		_ => LogLevel.Information
 	};
+}
 
+/// <summary>Startup args scanned before the DI host builds. Used by <c>AppDefaultsExtensions</c>.</summary>
+public record GlobalCliArgs
+{
+	public LogLevel LogLevel { get; init; } = LogLevel.Information;
+	public ConfigurationSource? ConfigurationSource { get; init; }
+	public bool SkipPrivateRepositories { get; init; }
 }

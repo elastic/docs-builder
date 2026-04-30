@@ -4,16 +4,18 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using ConsoleAppFramework;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler.ContentSources;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Assembler;
 
+/// <summary>Inspect and validate repository entries in the link registry.</summary>
 internal sealed class ContentSourceCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -22,8 +24,9 @@ internal sealed class ContentSourceCommands(
 	ICoreService githubActionsService
 )
 {
-	[Command("validate")]
-	public async Task<int> Validate(Cancel ctx = default)
+	/// <summary>Verify that every repository in the assembler configuration has an active published entry in the link registry.</summary>
+	[NoOptionsInjection]
+	public async Task<int> Validate(CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -31,15 +34,15 @@ internal sealed class ContentSourceCommands(
 		var service = new RepositoryPublishValidationService(logFactory, configuration, configurationContext, fs);
 		serviceInvoker.AddCommand(service, static async (s, collector, ctx) => await s.ValidatePublishStatus(collector, ctx));
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>  </summary>
-	/// <param name="repository"></param>
-	/// <param name="branchOrTag"></param>
-	/// <param name="ctx"></param>
-	[Command("match")]
-	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, Cancel ctx = default)
+	/// <summary>Check whether a repository at a specific branch or tag should be included in the next build.</summary>
+	/// <remarks>Exits 0 if the repository matches; 1 otherwise. Useful for conditional CI steps.</remarks>
+	/// <param name="repository">Repository slug to match (e.g. <c>elastic/elasticsearch</c>).</param>
+	/// <param name="branchOrTag">Branch name or version tag to test against.</param>
+	[NoOptionsInjection]
+	public async Task<int> Match([Argument] string? repository = null, [Argument] string? branchOrTag = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -49,12 +52,9 @@ internal sealed class ContentSourceCommands(
 			static async (s, collector, state, ctx) =>
 			{
 				_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag, ctx);
-				// ShouldBuild throws an exception on bad args and will return false if it has no matches
-				// We return true to the service invoker to continue
 				return true;
 			});
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
-
 }

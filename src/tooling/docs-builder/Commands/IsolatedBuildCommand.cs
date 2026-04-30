@@ -4,14 +4,13 @@
 
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using ConsoleAppFramework;
-using Documentation.Builder.Arguments;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands;
 
@@ -23,59 +22,30 @@ internal sealed class IsolatedBuildCommand(
 	IEnvironmentVariables environmentVariables
 )
 {
-	/// <summary>
-	/// Builds a source documentation set folder.
-	/// <para>global options:</para>
-	/// --log-level level
-	/// </summary>
-	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
-	/// <param name="output"> -o, Defaults to `.artifacts/html` </param>
-	/// <param name="pathPrefix"> Specifies the path prefix for urls </param>
-	/// <param name="force"> Force a full rebuild of the destination folder</param>
-	/// <param name="strict"> Treat warnings as errors and fail the build on warnings</param>
-	/// <param name="allowIndexing"> Allow indexing and following of HTML files</param>
-	/// <param name="metadataOnly"> Only emit documentation metadata to output, ignored if 'exporters' is also set </param>
-	/// <param name="exporters"> Set available exporters:
-	///					html, es, config, links, state, llm, redirect, metadata, none.
-	///					Defaults to (html, config, links, state, redirect) or 'default'.
-	/// </param>
-	/// <param name="canonicalBaseUrl"> The base URL for the canonical url tag</param>
-	/// <param name="inMemory"> Run the build in memory without writing to disk</param>
-	/// <param name="skipApi"> Skip OpenAPI documentation generation for faster builds</param>
-	/// <param name="ctx"></param>
-	[Command("")]
+	/// <summary>Build a single documentation set from source.</summary>
+	/// <remarks>
+	/// Locates the documentation root by searching for a <c>docset.yml</c> file starting at <paramref name="options"/> <c>.Path</c>.
+	/// The output directory is wiped and rebuilt on each run unless incremental build detects no changes.
+	/// </remarks>
+	[DefaultCommand]
+	[CommandName("build")]
 	public async Task<int> Build(
-		string? path = null,
-		string? output = null,
-		string? pathPrefix = null,
-		bool? force = null,
-		bool? strict = null,
-		bool? allowIndexing = null,
-		bool? metadataOnly = null,
-		[ExporterParser] IReadOnlySet<Exporter>? exporters = null,
-		string? canonicalBaseUrl = null,
+		GlobalCliOptions _,
+		[AsParameters] IsolatedBuildOptions options,
 		bool inMemory = false,
-		bool skipApi = false,
-		Cancel ctx = default
+		CancellationToken ct = default
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
-		var readFs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.RealGitRootForPath(path);
-		// For real builds supply an explicit write FS without .git access; for in-memory null falls back to readFs
-		var writeFs = inMemory ? null : FileSystemFactory.RealGitRootForPathWrite(path, output);
-		var strictCommand = service.IsStrict(strict);
+		var readFs = inMemory ? FileSystemFactory.InMemory() : FileSystemFactory.RealGitRootForPath(options.Path?.FullName);
+		var writeFs = inMemory ? null : FileSystemFactory.RealGitRootForPathWrite(options.Path?.FullName, options.Output?.FullName);
+		var strictCommand = service.IsStrict(options.Strict);
 
-		serviceInvoker.AddCommand(service,
-			(path, output, pathPrefix, force, strict, allowIndexing, metadataOnly, exporters, canonicalBaseUrl, readFs, writeFs, skipApi), strictCommand,
-			async static (s, collector, state, ctx) => await s.Build(
-				collector, state.readFs, state.path, state.output, state.pathPrefix,
-				state.force, state.strict, state.allowIndexing, state.metadataOnly,
-				state.exporters, state.canonicalBaseUrl, state.writeFs, state.skipApi, false, ctx
-			)
+		serviceInvoker.AddCommand(service, (options, readFs, writeFs), strictCommand,
+			static async (s, col, state, ctx) => await s.Build(col, state.readFs, state.options, state.writeFs, ctx)
 		);
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
-
 }

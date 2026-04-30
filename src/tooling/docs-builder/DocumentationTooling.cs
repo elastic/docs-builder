@@ -39,9 +39,6 @@ public static class DocumentationTooling
 			{
 				var logFactory = sp.GetRequiredService<ILoggerFactory>();
 				var githubActionsService = sp.GetRequiredService<ICoreService>();
-				var globalArgs = sp.GetRequiredService<GlobalCliArgs>();
-				if (globalArgs.IsHelpOrVersion || globalArgs.IsMcp)
-					return new DiagnosticsCollector([]);
 				return new ConsoleDiagnosticsCollector(logFactory, githubActionsService);
 			})
 			.AddSingleton(_ =>

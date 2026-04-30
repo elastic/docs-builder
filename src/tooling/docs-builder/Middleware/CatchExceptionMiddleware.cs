@@ -2,18 +2,18 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using ConsoleAppFramework;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh.Middleware;
 
-namespace Documentation.Builder.Filters;
+namespace Documentation.Builder.Middleware;
 
-
-internal sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchExceptionFilter> logger, IDiagnosticsCollector collector)
-	: ConsoleAppFilter(next)
+internal sealed class CatchExceptionMiddleware(ILogger<CatchExceptionMiddleware> logger, IDiagnosticsCollector collector)
+	: ICommandMiddleware
 {
 	private bool _cancelKeyPressed;
-	public override async Task InvokeAsync(ConsoleAppContext context, Cancel cancellationToken)
+
+	public async ValueTask InvokeAsync(CommandContext context, CommandMiddlewareDelegate next)
 	{
 		Console.CancelKeyPress += (_, _) =>
 		{
@@ -22,19 +22,19 @@ internal sealed class CatchExceptionFilter(ConsoleAppFilter next, ILogger<CatchE
 		};
 		try
 		{
-			await Next.InvokeAsync(context, cancellationToken);
+			await next(context);
 		}
 		catch (Exception ex)
 		{
-			if (ex is OperationCanceledException && cancellationToken.IsCancellationRequested && _cancelKeyPressed)
+			if (ex is OperationCanceledException && context.CancellationToken.IsCancellationRequested && _cancelKeyPressed)
 			{
 				logger.LogInformation("Cancellation requested, exiting.");
 				return;
 			}
-			_ = collector.StartAsync(cancellationToken);
+			_ = collector.StartAsync(context.CancellationToken);
 			collector.EmitGlobalError($"Global unhandled exception: {ex.Message}", ex);
-			await collector.StopAsync(cancellationToken);
-			Environment.ExitCode = 1;
+			await collector.StopAsync(context.CancellationToken);
+			context.ExitCode = 1;
 		}
 	}
 }
