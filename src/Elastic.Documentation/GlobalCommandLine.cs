@@ -6,12 +6,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation;
 
-/// <summary>Early-parse utilities for use before the DI host is built.</summary>
+/// <summary>
+/// Early-parse utilities for startup DI setup in <c>AppDefaultsExtensions</c> before the argh host builds.
+/// The authoritative CLI options for docs-builder itself live in <c>GlobalCliOptions</c> (docs-builder project).
+/// </summary>
 public static class GlobalCli
 {
 	/// <summary>
-	/// Scans <paramref name="args"/> for known startup flags without modifying the array.
-	/// Used for pre-host setup before argh routing runs.
+	/// Scans <paramref name="args"/> for startup flags without modifying the array.
+	/// Used by <c>AppDefaultsExtensions</c> before argh routing runs.
 	/// </summary>
 	public static GlobalCliArgs ScanArgs(string[] args)
 	{
@@ -32,9 +35,6 @@ public static class GlobalCli
 		return options;
 	}
 
-	/// <summary>Returns <see langword="true"/> when the first non-flag argument is <c>mcp</c>.</summary>
-	public static bool IsMcpMode(string[] args) => args.Length > 0 && args[0] == "mcp";
-
 	private static LogLevel ParseLogLevel(string? logLevel) => logLevel switch
 	{
 		"trace" => LogLevel.Trace,
@@ -48,7 +48,7 @@ public static class GlobalCli
 	};
 }
 
-/// <summary>Startup args parsed before the DI host builds (not injected into commands).</summary>
+/// <summary>Startup args scanned before the DI host builds. Used by <c>AppDefaultsExtensions</c>.</summary>
 public record GlobalCliArgs
 {
 	public LogLevel LogLevel { get; init; } = LogLevel.Information;

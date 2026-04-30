@@ -31,10 +31,9 @@ public static class AppDefaultsExtensions
 		where TBuilder : IHostApplicationBuilder
 	{
 		var cliArgs = GlobalCli.ScanArgs(args);
-		var isMcp = GlobalCli.IsMcpMode(args);
 
 		var services = builder.Services;
-		_ = services.AddElasticDocumentationLogging(cliArgs.LogLevel, noConsole: isMcp);
+		_ = services.AddElasticDocumentationLogging(cliArgs.LogLevel);
 		_ = services
 			.AddConfigurationFileProvider(cliArgs.SkipPrivateRepositories, cliArgs.ConfigurationSource, (s, p) =>
 			{
@@ -55,17 +54,14 @@ public static class AppDefaultsExtensions
 		return builder.AddServiceDefaults();
 	}
 
-	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel, bool noConsole = false)
+	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel)
 		where TServiceCollection : IServiceCollection
 	{
 		_ = services.AddLogging(x =>
 		{
 			_ = x.ClearProviders().SetMinimumLevel(logLevel);
-			if (!noConsole)
-			{
-				services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
-				_ = x.AddConsole(c => c.FormatterName = "condensed");
-			}
+			services.TryAddEnumerable(ServiceDescriptor.Singleton<ConsoleFormatter, CondensedConsoleFormatter>());
+			_ = x.AddConsole(c => c.FormatterName = "condensed");
 		});
 		return services;
 	}

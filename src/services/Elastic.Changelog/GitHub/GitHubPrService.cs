@@ -446,6 +446,6 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory) : IGitHubPrSe
 	[JsonSerializable(typeof(List<GitHubCommitListItem>))]
 	private sealed partial class GitHubPrJsonContext : JsonSerializerContext;
 
-	[GeneratedRegex(@"https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/pull/(\d+)", RegexOptions.IgnoreCase, "en-CA")]
+	[GeneratedRegex(@"https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/pull/(\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex MyRegex();
 }
