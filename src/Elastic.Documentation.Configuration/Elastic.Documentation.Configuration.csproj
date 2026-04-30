@@ -18,7 +18,7 @@
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
-    <PackageReference Include="Samboy063.Tomlet" />
+    <PackageReference Include="Tomlyn" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

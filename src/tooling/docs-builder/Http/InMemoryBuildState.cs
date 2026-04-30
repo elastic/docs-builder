@@ -53,8 +53,11 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly Lock _diagnosticsLock = new();
 	private readonly List<DiagnosticDto> _diagnostics = [];
 
-	// Reuse MockFileSystem across builds to benefit from caching
-	private readonly ScopedFileSystem _writeFs = FileSystemFactory.InMemory();
+	// Reuse MockFileSystem across builds to benefit from caching.
+	// Scoped lazily to the git root of the first sourcePath seen, so paths like
+	// {externalRepo}/.artifacts/docs/html are within the allowed write scope.
+	private ScopedFileSystem? _writeFs;
+	private readonly Lock _writeFsLock = new();
 
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();
@@ -170,6 +173,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
 			var readFs = FileSystemFactory.RealGitRootForPath(sourcePath);
+			var writeFs = GetOrCreateWriteFs(sourcePath);
 			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
 
 			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
@@ -186,7 +190,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 				false, // metadataOnly
 				ExportOptions.Default,
 				null,  // canonicalBaseUrl
-				_writeFs, // reuse MockFileSystem across builds for caching
+				writeFs, // reuse MockFileSystem across builds for caching
 				true,  // skipOpenApi - skip for faster validation builds
 				false, // skipCrossLinks - enable cross-links (cached in MockFileSystem)
 				ct
@@ -307,6 +311,19 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		Status: Status.ToString().ToLowerInvariant(),
 		Diagnostics: GetStoredDiagnostics()
 	);
+
+	private ScopedFileSystem GetOrCreateWriteFs(string sourcePath)
+	{
+		if (_writeFs is not null)
+			return _writeFs;
+		lock (_writeFsLock)
+		{
+			if (_writeFs is not null)
+				return _writeFs;
+			_writeFs = FileSystemFactory.InMemoryForSourceRoot(sourcePath);
+			return _writeFs;
+		}
+	}
 
 	public void Dispose()
 	{
