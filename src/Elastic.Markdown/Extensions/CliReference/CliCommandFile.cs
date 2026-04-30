@@ -14,6 +14,9 @@ public record CliCommandFile : IO.MarkdownFile
 {
 	private readonly CliCommandSchema _command;
 	private readonly IFileInfo? _supplementalDoc;
+	private readonly string? _binaryName;
+
+	private readonly string[] _fullPath;
 
 	public CliCommandFile(
 		IFileInfo sourceFile,
@@ -21,11 +24,15 @@ public record CliCommandFile : IO.MarkdownFile
 		MarkdownParser parser,
 		BuildContext build,
 		CliCommandSchema command,
-		IFileInfo? supplementalDoc
+		IFileInfo? supplementalDoc,
+		string[]? fullPath = null,
+		string? binaryName = null
 	) : base(sourceFile, rootPath, parser, build)
 	{
 		_command = command;
 		_supplementalDoc = supplementalDoc;
+		_fullPath = fullPath ?? [command.Name];
+		_binaryName = binaryName;
 		Title = command.Name;
 	}
 
@@ -49,6 +56,6 @@ public record CliCommandFile : IO.MarkdownFile
 		var supplemental = _supplementalDoc?.Exists == true
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
-		return CliMarkdownGenerator.CommandPage(_command, supplemental);
+		return CliMarkdownGenerator.CommandPage(_command, supplemental, _fullPath, _binaryName);
 	}
 }

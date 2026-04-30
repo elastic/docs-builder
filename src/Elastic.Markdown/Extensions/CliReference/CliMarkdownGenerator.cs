@@ -50,10 +50,17 @@ internal static partial class CliMarkdownGenerator
 		return sb.ToString();
 	}
 
-	public static string NamespacePage(CliNamespaceSchema ns, string? supplementalContent)
+	public static string NamespacePage(CliNamespaceSchema ns, string? supplementalContent, string[]? fullPath = null, string? binaryName = null)
 	{
 		var sb = new StringBuilder();
-		_ = sb.AppendLine($"# {ns.Segment}");
+		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : ns.Segment;
+		_ = sb.AppendLine($"# {heading} <span class=\"cli-badge-ns\">cli namespace</span>");
+		_ = sb.AppendLine();
+
+		// Usage codeblock: binary full-path --help
+		_ = sb.AppendLine("```bash");
+		_ = sb.AppendLine($"{binaryName ?? heading} {heading} --help");
+		_ = sb.AppendLine("```");
 		_ = sb.AppendLine();
 
 		if (supplementalContent is not null)
@@ -90,19 +97,21 @@ internal static partial class CliMarkdownGenerator
 		return sb.ToString();
 	}
 
-	public static string CommandPage(CliCommandSchema cmd, string? supplementalContent)
+	public static string CommandPage(CliCommandSchema cmd, string? supplementalContent, string[]? fullPath = null, string? binaryName = null)
 	{
 		var sb = new StringBuilder();
-		_ = sb.AppendLine($"# {cmd.Name}");
+		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : cmd.Name;
+		_ = sb.AppendLine($"# {heading} <span class=\"cli-badge-cmd\">cli command</span>");
 		_ = sb.AppendLine();
 
-		if (!string.IsNullOrWhiteSpace(cmd.Usage))
-		{
-			_ = sb.AppendLine("```bash");
-			_ = sb.AppendLine(FormatUsage(cmd.Usage));
-			_ = sb.AppendLine("```");
-			_ = sb.AppendLine();
-		}
+		var usage = !string.IsNullOrWhiteSpace(cmd.Usage)
+			? cmd.Usage
+			: GenerateUsage(cmd, fullPath, binaryName);
+
+		_ = sb.AppendLine("```bash");
+		_ = sb.AppendLine(FormatUsage(usage));
+		_ = sb.AppendLine("```");
+		_ = sb.AppendLine();
 
 		if (supplementalContent is not null)
 			_ = sb.AppendLine(supplementalContent.Trim());
@@ -212,6 +221,38 @@ internal static partial class CliMarkdownGenerator
 
 			_ = sb.AppendLine();
 		}
+	}
+
+	private static string GenerateUsage(CliCommandSchema cmd, string[]? fullPath, string? binaryName)
+	{
+		var parts = new List<string>();
+		if (!string.IsNullOrWhiteSpace(binaryName))
+			parts.Add(binaryName);
+		if (fullPath is { Length: > 0 })
+			parts.AddRange(fullPath);
+		else
+			parts.Add(cmd.Name);
+
+		var visible = cmd.Parameters.Where(p => p.Name != "_" && !p.Hidden).ToList();
+		var positionals = visible.Where(p => p.Role == "positional").ToList();
+		var requiredFlags = visible.Where(p => p.Role != "positional" && p.Required).ToList();
+		var optionalFlags = visible.Where(p => p.Role != "positional" && !p.Required).ToList();
+
+		foreach (var p in positionals)
+			parts.Add(p.Required ? $"<{p.Name}>" : $"[<{p.Name}>]");
+
+		foreach (var p in requiredFlags)
+		{
+			if (IsBoolFlag(p.Type))
+				parts.Add($"--{p.Name}");
+			else
+				parts.Add($"--{p.Name} <{p.Name}>");
+		}
+
+		if (optionalFlags.Count > 0)
+			parts.Add("[options]");
+
+		return string.Join(" ", parts);
 	}
 
 	private static string FormatFlagName(CliParamSchema p)

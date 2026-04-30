@@ -18,7 +18,9 @@ internal sealed record CliEntityInfo(
 	object Entity, // ArghCliSchema | CliNamespaceSchema | CliCommandSchema
 	IFileInfo? SupplementalDoc,
 	/// <summary>The clean synthetic file (no cmd- prefix) — used as the MarkdownFile source for correct URL generation.</summary>
-	IFileInfo? CleanSyntheticFile = null
+	IFileInfo? CleanSyntheticFile = null,
+	/// <summary>Full path segments used to build the page heading (e.g. ["assembler", "bloom-filter"]).</summary>
+	string[]? FullPath = null
 );
 
 public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilderExtension
@@ -108,8 +110,8 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		info.Entity switch
 		{
 			ArghCliSchema schema => new CliRootFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
-			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc),
-			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc),
+			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc, info.FullPath ?? [ns.Segment], info.Schema.Name),
+			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc, info.FullPath ?? [cmd.Name], info.Schema.Name),
 			_ => null
 		};
 
@@ -191,7 +193,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 				var path = SyntheticPath(Build.DocumentationSourceDirectory.FullName, virtualRoot, [cmd.Name], isNamespace: false);
 				var fileInfo = Build.ReadFileSystem.FileInfo.New(path);
 				var supplemental = FindSupplemental(supplementalDirPath, [cmd.Name], isNamespace: false, matched);
-				var cmdInfo = new CliEntityInfo(schema, cmd, supplemental, fileInfo);
+				var cmdInfo = new CliEntityInfo(schema, cmd, supplemental, fileInfo, FullPath: [cmd.Name]);
 				_syntheticFiles[path] = cmdInfo;
 				if (supplemental != null)
 					_supplementalFiles![supplemental.FullName] = cmdInfo;
@@ -226,7 +228,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 			var nsFilePath = SyntheticPath(docSourceDir, virtualRoot, fullNsPath, isNamespace: true);
 			var nsFileInfo = Build.ReadFileSystem.FileInfo.New(nsFilePath);
 			var nsSupplemental = FindSupplemental(supplementalDirPath, fullNsPath, isNamespace: true, matched);
-			var nsInfo = new CliEntityInfo(schema, ns, nsSupplemental, nsFileInfo);
+			var nsInfo = new CliEntityInfo(schema, ns, nsSupplemental, nsFileInfo, FullPath: fullNsPath);
 			_syntheticFiles![nsFilePath] = nsInfo;
 			if (nsSupplemental != null)
 				_supplementalFiles![nsSupplemental.FullName] = nsInfo;
@@ -238,7 +240,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 				var cmdPath = SyntheticPath(docSourceDir, virtualRoot, cmdSegments, isNamespace: false);
 				var cmdFileInfo = Build.ReadFileSystem.FileInfo.New(cmdPath);
 				var cmdSupplemental = FindSupplemental(supplementalDirPath, cmdSegments, isNamespace: false, matched);
-				var cmdInfo = new CliEntityInfo(schema, cmd, cmdSupplemental, cmdFileInfo);
+				var cmdInfo = new CliEntityInfo(schema, cmd, cmdSupplemental, cmdFileInfo, FullPath: cmdSegments);
 				_syntheticFiles[cmdPath] = cmdInfo;
 				if (cmdSupplemental != null)
 					_supplementalFiles![cmdSupplemental.FullName] = cmdInfo;
