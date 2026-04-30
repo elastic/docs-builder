@@ -63,24 +63,31 @@ public class ReloadableGeneratorState : IDisposable
 	private volatile bool _apiReferencesStale = true;
 	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
 	private CancellationTokenSource? _apiGenerationCts;
+	private FetchedCrossLinks? _cachedCrossLinks;
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
+		if (!reloadConfiguration && _cachedCrossLinks is not null)
+			return;
+
 		SourcePath.Refresh();
 		OutputPath.Refresh();
 		if (reloadConfiguration)
 			_context.ReloadConfiguration();
-		var crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+
+		if (reloadConfiguration || _cachedCrossLinks is null)
+			_cachedCrossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+
+		var crossLinks = _cachedCrossLinks;
 		IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
 			: null;
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		var docSet = new DocumentationSet(_context, _logFactory, crossLinkResolver);
 
-		// Add LLM markdown export for dev server
 		var markdownExporters = new List<IMarkdownExporter>();
 		if (!_isWatchBuild)
-			markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
+			markdownExporters.AddLlmMarkdownExport();
 
 		var generator = new DocumentationGenerator(docSet, _logFactory, markdownExporters: markdownExporters.ToArray());
 		await generator.ResolveDirectoryTree(ctx);
