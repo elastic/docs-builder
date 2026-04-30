@@ -1,0 +1,136 @@
+@layer components {
+	.hub-page {
+		.hub-content {
+			@apply mx-auto mb-12 max-w-(--max-text-width) py-0;
+		}
+	}
+
+	/* Full-bleed hero, breaks out of the article container width. */
+	.hub-hero {
+		@apply bg-ink-navy mx-auto -mt-4 mb-10 w-full max-w-none px-6 py-14 text-white;
+
+		.hub-hero-inner {
+			@apply mx-auto max-w-(--max-text-width);
+		}
+
+		.hub-hero-top {
+			@apply mb-3 flex items-center gap-4;
+		}
+
+		.hub-hero-icon {
+			@apply inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/8 text-xl font-bold text-white;
+		}
+
+		.hub-hero-version {
+			@apply inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-xs font-semibold tracking-wide;
+		}
+
+		.hub-hero-content {
+			h1 {
+				@apply mb-3 text-4xl font-bold tracking-tight text-white;
+			}
+			h1 a.headerlink {
+				@apply text-white no-underline;
+			}
+			p {
+				@apply max-w-3xl text-base leading-relaxed text-white/70;
+			}
+		}
+
+		.hub-hero-search {
+			@apply mt-6 max-w-md;
+		}
+
+		.hub-hero-links {
+			@apply mt-5 flex list-none flex-wrap gap-x-5 gap-y-2 p-0;
+
+			li {
+				@apply m-0 p-0;
+			}
+
+			a {
+				@apply border-b border-transparent text-sm font-semibold text-white/85 no-underline;
+			}
+			a:hover {
+				@apply border-white/40 text-white;
+			}
+		}
+	}
+
+	.hub-card-group {
+		@apply mt-10 px-6;
+
+		.hub-card-group-header {
+			@apply mx-auto mb-5 max-w-(--max-text-width);
+
+			h2 {
+				@apply text-ink-dark m-0 text-2xl font-bold;
+			}
+		}
+
+		.hub-card-group-intro {
+			@apply text-ink-light mt-1;
+		}
+
+		.hub-card-grid {
+			@apply mx-auto grid max-w-(--max-text-width) list-none grid-cols-1 gap-4 p-0 md:grid-cols-2 lg:grid-cols-3;
+		}
+	}
+
+	/* News variant: vertical list, version chip leading. */
+	.hub-card-group-news {
+		.hub-card-grid {
+			@apply grid-cols-1 gap-3 lg:grid-cols-2;
+		}
+	}
+
+	.hub-card {
+		@apply m-0 p-0;
+	}
+
+	.hub-card-link {
+		@apply border-grey-20 block h-full rounded-xl border bg-white p-5 no-underline transition-colors;
+	}
+	.hub-card-link:hover {
+		@apply border-blue-elastic no-underline;
+	}
+
+	.hub-card-head {
+		@apply mb-2 flex items-start justify-between gap-3;
+	}
+
+	.hub-card-title {
+		@apply text-ink-dark text-base font-semibold;
+	}
+
+	.hub-card-badge {
+		@apply bg-grey-10 text-ink-light border-grey-20 inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wide;
+	}
+
+	.hub-card-body {
+		@apply text-ink-light text-sm leading-relaxed;
+
+		& > *:first-child {
+			@apply mt-0;
+		}
+		& > *:last-child {
+			@apply mb-0;
+		}
+	}
+
+	/* Product badges shown above the H1 of a regular page. */
+	.product-badges {
+		@apply mb-3 flex list-none flex-wrap gap-2 p-0;
+
+		li {
+			@apply m-0 p-0;
+		}
+	}
+
+	.product-badge {
+		@apply bg-grey-10 text-ink-light border-grey-20 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide no-underline;
+	}
+	.product-badge:hover {
+		@apply bg-blue-elastic-10 text-blue-elastic-100 border-blue-elastic no-underline;
+	}
+}
