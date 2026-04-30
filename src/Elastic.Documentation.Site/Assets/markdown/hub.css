@@ -1,16 +1,20 @@
 @layer components {
-	.hub-page {
-		.hub-content {
-			@apply mx-auto mb-12 max-w-(--max-text-width) py-0;
-		}
+	/* Full-width content area; hero and card-group manage their own inner rails. */
+	.hub-page .hub-content {
+		@apply mb-12 w-full max-w-none p-0;
 	}
 
-	/* Full-bleed hero, breaks out of the article container width. */
+	/* Section-content rail used by hero/group internals. */
+	.hub-page :where(.hub-rail) {
+		@apply mx-auto w-full max-w-5xl px-6;
+	}
+
+	/* Full-bleed hero with dark background and inner content rail. */
 	.hub-hero {
-		@apply bg-ink-navy mx-auto -mt-4 mb-10 w-full max-w-none px-6 py-14 text-white;
+		@apply bg-ink-navy mb-10 w-full px-0 py-14 text-white;
 
 		.hub-hero-inner {
-			@apply mx-auto max-w-(--max-text-width);
+			@apply mx-auto w-full max-w-5xl px-6;
 		}
 
 		.hub-hero-top {
@@ -18,11 +22,14 @@
 		}
 
 		.hub-hero-icon {
-			@apply inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/8 text-xl font-bold text-white;
+			@apply inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold text-white;
+			background-color: rgb(255 255 255 / 0.08);
 		}
 
 		.hub-hero-version {
-			@apply inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-xs font-semibold tracking-wide;
+			@apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide;
+			background-color: rgb(255 255 255 / 0.1);
+			border: 1px solid rgb(255 255 255 / 0.15);
 		}
 
 		.hub-hero-content {
@@ -33,7 +40,8 @@
 				@apply text-white no-underline;
 			}
 			p {
-				@apply max-w-3xl text-base leading-relaxed text-white/70;
+				@apply max-w-3xl text-base leading-relaxed;
+				color: rgb(255 255 255 / 0.7);
 			}
 		}
 
@@ -49,19 +57,22 @@
 			}
 
 			a {
-				@apply border-b border-transparent text-sm font-semibold text-white/85 no-underline;
+				@apply border-b border-transparent text-sm font-semibold no-underline;
+				color: rgb(255 255 255 / 0.85);
 			}
 			a:hover {
-				@apply border-white/40 text-white;
+				@apply text-white;
+				border-bottom-color: rgb(255 255 255 / 0.4);
 			}
 		}
 	}
 
+	/* Card group: section title rail, then card grid rail. */
 	.hub-card-group {
-		@apply mt-10 px-6;
+		@apply mt-10;
 
 		.hub-card-group-header {
-			@apply mx-auto mb-5 max-w-(--max-text-width);
+			@apply mx-auto mb-5 w-full max-w-5xl px-6;
 
 			h2 {
 				@apply text-ink-dark m-0 text-2xl font-bold;
@@ -73,15 +84,13 @@
 		}
 
 		.hub-card-grid {
-			@apply mx-auto grid max-w-(--max-text-width) list-none grid-cols-1 gap-4 p-0 md:grid-cols-2 lg:grid-cols-3;
+			@apply mx-auto grid w-full max-w-5xl list-none grid-cols-1 gap-4 p-0 px-6 md:grid-cols-2 lg:grid-cols-3;
 		}
 	}
 
-	/* News variant: vertical list, version chip leading. */
-	.hub-card-group-news {
-		.hub-card-grid {
-			@apply grid-cols-1 gap-3 lg:grid-cols-2;
-		}
+	/* News variant: tighter 2-column list. */
+	.hub-card-group-news .hub-card-grid {
+		@apply grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-2;
 	}
 
 	.hub-card {
