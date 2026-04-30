@@ -2871,6 +2871,21 @@ nav:
     children:
     - toc: docs-content://release-notes/intro
 
+  - section: Product hubs
+    url: /hubs/
+    children:
+    - label: Stack products
+      children:
+      - page: docs-builder://hubs/elasticsearch/9.0.md
+      - page: docs-builder://hubs/kibana/9.0.md
+      - title: Observability
+      - title: Security
+    - label: Deployment runbooks
+      children:
+      - title: Elastic Cloud Hosted
+      - title: Elastic Cloud Serverless
+      - title: Self-managed
+
   - section: Extension points
     url: /extend/
     isolated: true
