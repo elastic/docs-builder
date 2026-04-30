@@ -169,6 +169,7 @@ toc:
           - file: diff-validate.md
           - file: format.md
           - file: index-command.md
+          - file: list-dependents.md
           - file: mv.md
           - file: serve.md
       - folder: assembler
