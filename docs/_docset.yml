@@ -149,6 +149,7 @@ toc:
       - file: line_breaks.md
       - file: links.md
       - file: list-sub-pages.md
+      - file: page-card.md
       - file: passthrough.md
       - file: sidebars.md
       - file: stepper.md
