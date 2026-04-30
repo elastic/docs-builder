@@ -27,6 +27,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		var linkReferences = new Dictionary<string, RepositoryLinks>();
 		var linkIndexEntries = new Dictionary<string, LinkRegistryEntry>();
 		var registryUrlsByRepository = new Dictionary<string, string>();
+		var registryByRepository = new Dictionary<string, DocSetRegistry>();
 		var codexRepositories = new HashSet<string>();
 		var declaredRepositories = new HashSet<string>();
 
@@ -41,6 +42,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		foreach (var entry in configuration.CrossLinkEntries)
 		{
 			_ = declaredRepositories.Add(entry.Repository);
+			registryByRepository[entry.Repository] = entry.Registry;
 			var isCodexEntry = useDualRegistry && entry.Registry != DocSetRegistry.Public;
 			var reader = isCodexEntry ? _codexReader! : publicReader;
 			var registry = isCodexEntry ? codexRegistry : publicRegistry;
@@ -91,6 +93,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 			LinkReferences = linkReferences.ToFrozenDictionary(),
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
 			RegistryUrlsByRepository = registryUrlsByRepository.ToFrozenDictionary(),
+			RegistryByRepository = registryByRepository.ToFrozenDictionary(),
 			CodexRepositories = codexRepositories.Count > 0 ? codexRepositories.ToFrozenSet() : null,
 			IsComplete = !hadFetchFailures,
 		};
