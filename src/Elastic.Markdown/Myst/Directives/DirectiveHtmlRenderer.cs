@@ -19,6 +19,7 @@ using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
+using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
@@ -100,6 +101,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case MathBlock mathBlock:
 				WriteMathBlock(renderer, mathBlock);
 				return;
+			case PageCardBlock pageCardBlock:
+				WritePageCard(renderer, pageCardBlock);
+				return;
 			case StepperBlock stepperBlock:
 				WriteStepperBlock(renderer, stepperBlock);
 				return;
@@ -173,6 +177,17 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				ImageUrl = img.ImageUrl
 			}).ToList(),
 			MaxHeight = block.MaxHeight
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WritePageCard(HtmlRenderer renderer, PageCardBlock block)
+	{
+		var slice = PageCardView.Create(new PageCardViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Url = block.ResolvedUrl
 		});
 		RenderRazorSlice(slice, renderer);
 	}

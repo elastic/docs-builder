@@ -13,6 +13,7 @@ using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
+using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
@@ -147,6 +148,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			if (info.IndexOf(version) > 0)
 				return new VersionBlock(this, version[1..^1], context);
 		}
+
+		if (info.IndexOf("{page-card}") > 0)
+			return new PageCardBlock(this, context);
 
 		if (info.IndexOf("{stepper}") > 0)
 			return new StepperBlock(this, context);
