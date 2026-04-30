@@ -76,7 +76,7 @@ export const Header = ({
                                             ) !important;
                                         }
                                         & > span {
-                                            color: ${euiTheme.colors.ink};
+                                            color: ${euiTheme.colors.textInk};
                                         }
                                     `}
                                 >

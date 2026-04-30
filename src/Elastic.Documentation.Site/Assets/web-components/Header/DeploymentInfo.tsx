@@ -20,7 +20,7 @@ export const headerButtonCss = (euiTheme: EuiThemeComputed) => css`
     background: linear-gradient(to bottom, #f5f7fa 0%, #ffffff 100%);
     border: 1px solid ${euiTheme.colors.lightShade};
     border-radius: ${euiTheme.border.radius.small};
-    color: ${euiTheme.colors.ink};
+    color: ${euiTheme.colors.textInk};
     font-family:
         ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         'Liberation Mono', 'Courier New', monospace;
