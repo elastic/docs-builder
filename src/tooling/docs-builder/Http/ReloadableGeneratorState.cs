@@ -29,6 +29,7 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly bool _isWatchBuild;
 	private readonly DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
 	private readonly ILinkIndexReader? _codexReader;
+	private FetchedCrossLinks? _cachedCrossLinks;
 
 	public ReloadableGeneratorState(ILoggerFactory logFactory,
 		IDirectoryInfo sourcePath,
@@ -70,7 +71,11 @@ public class ReloadableGeneratorState : IDisposable
 		OutputPath.Refresh();
 		if (reloadConfiguration)
 			_context.ReloadConfiguration();
-		var crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+		// Cross-link entries are captured by the fetcher at construction and don't change during a serve session,
+		// so we only need to fetch when configuration changed (or on first reload).
+		if (_cachedCrossLinks is null || reloadConfiguration)
+			_cachedCrossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+		var crossLinks = _cachedCrossLinks;
 		IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
 			: null;
