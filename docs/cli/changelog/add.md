@@ -196,7 +196,7 @@ If a configuration file exists, the command validates its values before generati
 In each of these cases where validation fails, a changelog file is not created.
 
 If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
-For more information, refer to [Rules for creation and publishing](/contribute/configure-changelogs.md#rules).
+For more information, refer to [](/contribute/create-changelogs.md#rules).
 
 
 ## CI auto-detection [ci-auto-detection]

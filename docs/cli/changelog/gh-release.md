@@ -63,7 +63,7 @@ The product, target version, and lifecycle are inferred automatically from the r
 ## Configuration
 
 The `rules.bundle` section of your `changelog.yml` applies to bundles created by this command (after changelog files are gathered from the release).
-For details, refer to [Rules for filtered bundles](/cli/changelog/bundle.md#changelog-bundle-rules).
+For details, refer to [](/contribute/configure-changelogs-ref.md#rules-bundle).
 
 ## Examples
 

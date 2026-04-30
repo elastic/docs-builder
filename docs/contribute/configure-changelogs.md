@@ -64,7 +64,23 @@ For example, run the following command in your GitHub repo's root directory:
 docs-builder changelog init
 ```
 
-By default, it creates `docs/changelog.yml` file that contains settings like this:
+## Review the settings
+
+1. Find the configuration file.
+   By default, the `changelog init` command creates `docs/changelog.yml`.
+   If you move or rename this file, there will be extra steps when you configure its [usage](#usage).
+1. Review the settings and update them based on your preferences.
+   For descriptions of all the settings, refer to [](/contribute/configure-changelogs-ref.md).
+   For example:
+     - To limit the acceptable values, update [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) and [products](/contribute/configure-changelogs-ref.md#products).
+     - To set the changelog file name pattern, update [filename](/contribute/configure-changelogs-ref.md#filename).
+     - To control what is extracted from GitHub, update [extract](/contribute/configure-changelogs-ref.md#extract).
+     - To change bundle default behaviour or create reusable profiles, update [bundle](/contribute/configure-changelogs-ref.md#bundle).
+     - If you have GitHub labels to set changelog areas, types, or products, update [pivot](/contribute/configure-changelogs-ref.md#pivot).
+     - If you have GitHub labels to opt in or out of changelogs, update [rules.create](/contribute/configure-changelogs-ref.md#rules-create).
+     - If you want to filter changelogs in or out of release bundles based on their area, type, or products, update [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle).
+
+For example, a simple `docs/changelog.yml` looks like this:
 
 ```yml
 filename: timestamp
@@ -88,26 +104,11 @@ pivot:
 
 For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
-For descriptions of all the settings, refer to [Changelog configuration reference](/contribute/configure-changelogs-ref.md)
-
-## Rules for creation and bundling [rules]
-
-If you have pull request labels that indicate a changelog is not required (such as `>non-issue` or `release_note:skip`), you can declare these in the `rules.create` section of the changelog configuration.
-
-When you run the `docs-builder changelog add` command with the `--prs` or `--issues` options and the pull request or issue has one of the identified labels, the command does not create a changelog.
-
-Likewise, if you want to exclude changelogs with certain products, areas, or types from the release bundles, you can declare these in the `rules.bundle` section of the changelog configuration.
-For example, you might choose to omit `other` or `docs` changelogs.
-Or you might want to omit all autoscaling-related changelogs from the Cloud Serverless release bundles.
-
-You can define rules at the global level (applies to all products) or for specific products.
-Product-specific rules override the global rules entirely—they do not merge.
-For details, refer to [Rules](/contribute/configure-changelogs-ref.md#rules).
-
-## Use a changelog configuration file
+## Use a changelog configuration file [usage]
 
 After you've created a config file, all subsequent changelog commands can use it.
-By default, they look for `docs/changelog.yml` but you can specify a different path with the `--config` command option.
+By default, they look for `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
+Most changelog commands allow you to specify a different path with the `--config` option.
 
 For specific details about the usage and impact of the configuration file, refer to the [changelog commands](/cli/changelog/index.md).
 

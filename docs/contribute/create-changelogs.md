@@ -52,6 +52,8 @@ If you already have automated release notes for GitHub releases, you can use the
 
 ## Create changelogs from GitHub actions [github-actions]
 
+For details about this method, refer to the [README](https://github.com/elastic/docs-actions/blob/main/changelog/README.md).
+
 When automated via the [changelog GitHub Actions](https://github.com/elastic/docs-actions/tree/main/changelog), changelog creation is a two-step process:
 
 1. `changelog evaluate-pr` inspects the PR (title, labels, body) and produces outputs such as `title`, `type`, `description`, and `products`.
@@ -93,10 +95,10 @@ You can further limit the possible values with the [products](/contribute/config
 
 ## Examples
 
-### Control changelog creation [example-block-label]
+### Control changelog creation [rules]
 
-You can prevent changelog creation for PRs based on their labels.
-For example, your configuration file can contain a `rules.create` section like this:
+If you want to automatically block the creation of changelogs for pull requests or issues based on their labels, you can accomplish this with rules in your changelog configuration file.
+For example, your `changelog.yml` file can contain a `rules.create` section like this:
 
 ```yaml
 rules:
@@ -110,7 +112,11 @@ rules:
         exclude: ">non-issue, >test"
 ```
 
-Those settings affect commands with the `--prs` or `--issues` options, for example:
+You can define rules at the global level (applies to all products) or for specific products (`cloud-serverless` in this example).
+Product-specific rules override the global rules entirely—they do not merge.
+
+When you run the `docs-builder changelog add` command with the `--prs` or `--issues` options and the pull request or issue has one of the identified labels, the command does not create a changelog.
+For example:
 
 ```sh
 docs-builder changelog add --prs "1234, 5678" \
@@ -120,8 +126,7 @@ docs-builder changelog add --prs "1234, 5678" \
 If PR 1234 has the `>non-issue` or `>test` labels, it will be skipped and no changelog will be created.
 If PR 5678 does not have any blocking labels, a changelog is created.
 
-Alternatively, you can define `rules.create.include` labels.
-For example, to only create changelogs for PRs with specific labels:
+Alternatively, you can define `rules.create.include` to only create changelogs for PRs with specific labels:
 
 ```yaml
 rules:

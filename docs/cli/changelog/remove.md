@@ -223,7 +223,7 @@ You can remove the matching changelogs with:
 docs-builder changelog remove elasticsearch-release 9.2.0 --dry-run
 ```
 
-This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include. The lifecycle is inferred from the version string: `9.2.0` → `ga`, `9.2.0-beta.1` → `beta`. Refer to [Lifecycle inference for standard profiles](/cli/changelog/bundle.md#changelog-bundle-standard-profile-lifecycle) for details.
+This removes changelogs for `elasticsearch 9.2.0 ga` — the same set that `docs-builder changelog bundle elasticsearch-release 9.2.0` would include. The lifecycle is inferred from the version string: `9.2.0` → `ga`, `9.2.0-beta.1` → `beta`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for details.
 
 ### Remove by report or URL list
 
@@ -283,4 +283,4 @@ docs-builder changelog remove agent-gh-release 1.34.0 --dry-run
 The `repo` and `owner` used to identify the release follow the same precedence as bundling: profile-level `repo`/`owner` override `bundle.repo`/`bundle.owner`, which in turn override the default owner `elastic`.
 :::
 
-For the full list of profile configuration fields, go to [Profile configuration fields](/cli/changelog/bundle.md#changelog-bundle-profile-config).
+For the full list of profile configuration fields, go to [](/contribute/configure-changelogs-ref.md#bundle-profiles).

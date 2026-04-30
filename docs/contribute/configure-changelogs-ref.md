@@ -38,18 +38,16 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 :::{table}
 :widths: description
 
-
-| Setting                   | Description                                                                                                                                                                            |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bundle.description`      | Default template for bundle descriptions. Supports `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` placeholders.                                                                   |
-| `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`).                                                                                                           |
+| Setting                   | Description |
+| ------------------------- | ----------- |
+| `bundle.description`      | Default template for bundle descriptions. Supports `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` placeholders. |
+| `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. Requires `bundle.resolve: true` |
-| `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`).                                                                                                                         |
-| `bundle.owner`            | Default GitHub repository owner (for example, `elastic`).                                                                                                                              |
-| `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true).                                                                                                                   |
-| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`).                                                                                                                         |
-| `bundle.resolve`          | When `true`, changelog contents are copied into bundle (default: `true`).                                                                                                              |
-
+| `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
+| `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). |
+| `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
+| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links. Only needed when the product ID doesn't match the GitHub repository name. |
+| `bundle.resolve`          | When `true`, changelog contents are copied into bundle (default: `true`). |
 
 :::
 
@@ -62,29 +60,59 @@ When `bundle.link_allow_repos` is omitted, no link filtering occurs.
 
 ### Bundle profiles [bundle-profiles]
 
-Named profiles simplify bundle creation for different release scenarios.
-Profiles work with both `changelog bundle` and `changelog remove` commands.
+Named profiles enable you to run commands repeatedly with consistent options.
+They work with both `changelog bundle` and `changelog remove` commands.
 
-These settings are located in the `bundle.profiles.<name>` section of the configuration file.
+These settings are located in the `bundle.profiles.<name>` section of the configuration file:
 
-:::{table}
-:widths: description
+`description`
+:   Overrides the global [bundle.description](#bundle-basic).
 
+`hide_features`
+:   Feature IDs to mark as hidden in the bundle.
+:   When the bundle is rendered, entries with matching `feature-id` values are commented out.
 
-| Profile setting   | Description                                                                                                                              |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `description`     | Profile-specific description template. Overrides `bundle.description`.                                                                   |
-| `hide_features`   | List of feature IDs to mark as hidden (commented out) in bundle output.                                                                  |
-| `output`          | Output filename pattern (for example, `"elasticsearch/{version}.yaml"`).                                                                 |
-| `output_products` | Products list in bundle metadata; supports placeholders.                                                                                 |
-| `owner`           | Profile-specific GitHub owner. Overrides `bundle.owner`.                                                                                 |
-| `products`        | Product filter pattern (for example, `"elasticsearch {version} {lifecycle}"`) where placeholders are substituted at runtime.             |
-| `release_dates`   | When `true`, bundles include a `release-date` field. Overrides `bundle.release_dates`.                                                   |
-| `repo`            | Profile-specific GitHub repository name. Overrides `bundle.repo`.                                                                        |
-| `source`          | When set to `"github_release"`, fetches PR list from GitHub release instead of filtering changelogs. Mutually exclusive with `products`. |
+`output`
+:   The output filename pattern for the bundle file.
+:   Supports `{version}` and `{lifecycle}` placeholders.
+:   When not set, the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
+:   Setting this is recommended so each profile produces a distinctly named file rather than overwriting the default.
+:   Example: `"elasticsearch/{version}.yaml"`
 
+`output_products`
+:   The bundle's `products` metadata, which affects the bundle rules that are applied and the product and version titles that ultimately appear in documentation.
+:   Supports `{version}` and `{lifecycle}` placeholders.
+:   When not set, the products array is derived from the individual changelog files matched by the filter. This often produces multiple product entries (one per unique product/target/lifecycle combination across all matched files), which may not reflect a single clean release identity.
+:   When set, the products array in the bundle is exactly the value you specify, replacing anything that would be derived from the matched changelogs. Use this to publish a single, authoritative product entry with a specific version and lifecycle.
+:   The `{lifecycle}` placeholder is substituted at runtime with the inferred lifecycle. For `source: github_release` profiles this comes from the release tag suffix. For standard profiles it comes from the version argument. Refer to [](/cli/changelog/bundle.md#lifecycle-inference).
+:   If you omit lifecycle from the pattern (for example, `"elasticsearch {version}"`), the lifecycle field is omitted from the products array entirely.
+:   Example: `"elasticsearch {version} {lifecycle}"` or `"elasticsearch {version} ga"` to hardcode GA regardless of tag.
+:   Refer to [](/cli/changelog/bundle.md#product-format).
 
-:::
+`owner`
+:   Overrides [bundle.owner](#bundle-basic).
+
+`products`
+:   Derive the list of changelogs by matching their `products` values (equivalent to the `--input-products` command option).
+:   Not used when the source of truth for the release is a promotion report, URL list file, or `source: github_release`; in those cases this setting is ignored.
+:   Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
+:   The value `"* * *"` is equivalent to the `--all` command option.
+:   Example: `"elasticsearch {version} {lifecycle}"`
+:   Refer to [](/cli/changelog/bundle.md#product-format).
+
+`release_dates`
+:   Overrides [bundle.release_dates](#bundle-basic).
+
+`repo`
+:   Overrides [bundle.repo](#bundle-basic).
+:   Required when `source: github_release` is used and `bundle.repo` is not set.
+
+`source`
+:   Derive the list of changelogs from the specified source.
+:   Only `github_release` is currently supported (equivalent to the `--release-version` command option), which means a PR list is fetched from the GitHub release identified by the version argument.
+:   Requires `repo` to be set at the profile or `bundle` level.
+:   Mutually exclusive with `products`.
+:   Example: `source: github_release`
 
 Example profile usage:
 
@@ -286,10 +314,16 @@ rules:
         exclude: ">non-issue, ILM"
 ```
 
+For more context, go to [](/contribute/create-changelogs.md#rules).
+
 ### `rules.bundle` [rules-bundle]
 
 Controls which changelogs are included in bundles.
-These rules are applied by the `docs-builder changelog bundle` and `docs-builder changelog gh-release` commands **after** the primary filter (`--prs`, `--issues`, `--all`, or `--input-products`) has identified the relevant changelogs.
+These rules are applied by the `docs-builder changelog bundle` and `docs-builder changelog gh-release` commands **after** the primary filter (`--prs`, `--issues`, `--all`, or `--input-products`) has identified the relevant changelogs and **before** the bundle is written.
+
+:::{tip}
+The input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate.
+:::
 
 These settings are located in the `rules.bundle` section of the configuration file:
 
@@ -298,9 +332,9 @@ These settings are located in the `rules.bundle` section of the configuration fi
 | `exclude_areas`    | string or list | Changelog areas to exclude from the bundle. |
 | `exclude_products` | string or list | Changelog products to exclude from the bundle. |
 | `exclude_types`    | string or list | Changelog types to exclude from the bundle. |
-| `include_areas`    | string or list | Only changelogs with these areas are included. |
-| `include_products` | string or list | Only changelogs with these product IDs are included. |
-| `include_types`    | string or list | Only changelogs with these types are included. |
+| `include_areas`    | string or list | Changelog areas to include in the bundle. |
+| `include_products` | string or list | Changelog products to include in the bundle. |
+| `include_types`    | string or list | Changelog types to include in the bundle. |
 | `match_areas`      | string         | Override `rules.match` for area matching. Values: `any`, `all`, `conjunction`. |
 | `match_products`   | string         | Override `rules.match` for product matching. Values: `any`, `all`, `conjunction`. |
 | `products`         | map            | Per-product type/area filter overrides. Refer to [](#rules-bundle-products).|
