@@ -128,6 +128,7 @@ toc:
       - file: applies-switch.md
       - file: automated_settings.md
       - file: buttons.md
+      - file: card-group.md
       - file: changelog.md
       - file: code.md
       - file: comments.md
@@ -140,15 +141,20 @@ toc:
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
+      - file: hero.md
+      - file: hub-pages.md
       - file: icons.md
+      - file: intro.md
       - file: images.md
       - file: kbd.md
+      - file: link-card.md
       - file: math.md
       - file: diagrams.md
       - file: lists.md
       - file: line_breaks.md
       - file: links.md
       - file: list-sub-pages.md
+      - file: on-this-page.md
       - file: passthrough.md
       - file: sidebars.md
       - file: stepper.md
@@ -159,6 +165,7 @@ toc:
       - file: tabs.md
       - file: tagged_regions.md
       - file: titles.md
+      - file: whats-new.md
   - folder: cli
     children:
       - file: index.md
