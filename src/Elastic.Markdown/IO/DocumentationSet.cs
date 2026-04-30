@@ -214,14 +214,26 @@ public class DocumentationSet : INavigationTraversable
 	}
 
 	private bool _resolved;
+	private long _version;
+
+	public void InvalidateResolved()
+	{
+		_ = Interlocked.Increment(ref _version);
+		_resolved = false;
+	}
+
 	public async Task ResolveDirectoryTree(Cancel ctx)
 	{
 		if (_resolved)
 			return;
 
+		// Capture the version before parsing so that if InvalidateResolved() fires
+		// mid-flight we do not incorrectly mark the (now stale) result as resolved.
+		var capturedVersion = Interlocked.Read(ref _version);
 		await Parallel.ForEachAsync(MarkdownFiles, ctx, async (file, token) => await file.MinimalParseAsync(TryFindDocumentByRelativePath, token));
 
-		_resolved = true;
+		if (Interlocked.Read(ref _version) == capturedVersion)
+			_resolved = true;
 	}
 
 	public RepositoryLinks CreateLinkReference()

@@ -43,6 +43,7 @@ type Build =
 
     | [<CliPrefix(CliPrefix.None);SubCommand>] Format of ParseResults<FormatArgs>
     | [<CliPrefix(CliPrefix.None);SubCommand>] Watch
+    | [<CliPrefix(CliPrefix.None);SubCommand>] Watch_Full
 
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] Lint of ParseResults<LintArgs>
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PristineCheck
@@ -84,6 +85,7 @@ with
             | Format _ -> "runs dotnet format"
 
             | Watch -> "runs dotnet watch to continuous build code/templates and web assets on the fly"
+            | Watch_Full -> "runs assembler serve with dotnet watch — watches checkout dirs and live-reloads assembled docs"
 
             // steps
             | Lint _ -> "runs dotnet format --verify-no-changes"
