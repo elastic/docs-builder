@@ -13,7 +13,7 @@ that would re-render, so the comment can point at them instead.
 
 ## Usage
 
-```
+```bash
 docs-builder list-dependents --files <paths> [options...] [-h|--help] [--version]
 ```
 

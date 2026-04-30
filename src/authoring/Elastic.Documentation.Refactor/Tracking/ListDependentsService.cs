@@ -37,6 +37,13 @@ public class ListDependentsService(
 			return false;
 		}
 
+		if (!format.Equals("json", StringComparison.OrdinalIgnoreCase) &&
+			!format.Equals("text", StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitGlobalError($"Unsupported format '{format}'. Expected 'json' or 'text'.");
+			return false;
+		}
+
 		var context = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
 		var set = new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance);
 
