@@ -82,6 +82,33 @@
 		margin-bottom: 20px;
 		max-width: 480px;
 	}
+	.hub-hero .hub-hero-search-box {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		background: var(--color-white);
+		border-radius: 10px;
+		padding: 10px 16px;
+		box-shadow: 0 2px 12px rgb(0 0 0 / 0.15);
+		color: var(--color-grey-80);
+		cursor: text;
+	}
+	.hub-hero .hub-hero-search-icon {
+		flex-shrink: 0;
+	}
+	.hub-hero .hub-hero-search-box input {
+		flex: 1;
+		border: none;
+		outline: none;
+		background: transparent;
+		font-size: 15px;
+		font-family: inherit;
+		color: var(--color-ink-dark);
+		min-width: 0;
+	}
+	.hub-hero .hub-hero-search-box input::placeholder {
+		color: var(--color-grey-40);
+	}
 
 	.hub-hero .hub-hero-meta {
 		@apply mt-2 flex flex-wrap items-center gap-3;
