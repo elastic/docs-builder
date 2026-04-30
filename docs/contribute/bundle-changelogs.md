@@ -66,22 +66,24 @@ For example:
 
 ```yaml
 bundle:
-  directory: docs/changelog # The directory that contains changelog files.
-  output_directory: docs/releases # The directory that contains changelog bundles.
-  repo: elasticsearch # The default repository for PR and issue links.
-  owner: elastic # The default repository owner for PR and issue links.
-  profiles:
+  directory: docs/changelog <1>
+  output_directory: docs/releases <2>
+  repo: elasticsearch 
+  owner: elastic
+  profiles: 
     # Find changelogs that match a list of PRs
     serverless-report:
-      output: "serverless-{version}.yaml" <1>
-      output_products: "cloud-serverless {version}" <2>
+      output: "serverless-{version}.yaml" <3>
+      output_products: "cloud-serverless {version}" <4>
     elasticsearch-report:
       output: "elasticsearch-{version}.yaml"
       output_products: "elasticsearch {version} {lifecycle}"
 ```
 
-<1> If the `output` and `output_products` are omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename.
-<2> You can likewise set the bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation.
+1. The directory that contains changelog files.
+2. The directory that contains changelog bundles.
+3. If the `output` and `output_products` are omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename.
+4. You can likewise set the bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation.
 
 ### Bundle by GitHub releases [profile-gh-release]
 
