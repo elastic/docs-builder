@@ -27,8 +27,8 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly ILoggerFactory _logFactory;
 	private readonly BuildContext _context;
 	private readonly bool _isWatchBuild;
-	private readonly DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
-	private readonly ILinkIndexReader? _codexReader;
+	private DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
+	private ILinkIndexReader? _codexReader;
 	private FetchedCrossLinks? _cachedCrossLinks;
 
 	public ReloadableGeneratorState(ILoggerFactory logFactory,
@@ -75,9 +75,14 @@ public class ReloadableGeneratorState : IDisposable
 		SourcePath.Refresh();
 		OutputPath.Refresh();
 		if (reloadConfiguration)
+		{
 			_context.ReloadConfiguration();
-		// Cross-link entries are captured by the fetcher at construction and don't change during a serve session,
-		// so we only need to fetch when configuration changed (or on first reload).
+			(_codexReader as IDisposable)?.Dispose();
+			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
+				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
+				: null;
+			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
+		}
 		if (_cachedCrossLinks is null || reloadConfiguration)
 			_cachedCrossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
 		var crossLinks = _cachedCrossLinks;

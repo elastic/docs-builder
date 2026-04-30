@@ -99,6 +99,10 @@ public class DocSetConfigurationCrossLinkFetcher(
 		{
 			return await reader.GetRegistry(ctx);
 		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
 		catch (Exception ex)
 		{
 			_logger.LogWarning(ex, "Failed to fetch link index registry from {RegistryUrl}", reader.RegistryUrl);
