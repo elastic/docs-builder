@@ -67,6 +67,11 @@ public class ReloadableGeneratorState : IDisposable
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
+		// Content-only changes (e.g. .md edits) don't need a full rebuild:
+		// RenderLayout -> ParseFullAsync reads fresh content from disk on each request.
+		if (!reloadConfiguration && _cachedCrossLinks is not null)
+			return;
+
 		SourcePath.Refresh();
 		OutputPath.Refresh();
 		if (reloadConfiguration)
