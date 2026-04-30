@@ -305,6 +305,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 	{
 		if (segments.Length == 0)
 		{
+			yield return "index.md";
 			yield return "ns-root.md";
 			yield break;
 		}
@@ -343,11 +344,8 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 
 			if (name == "index.md")
 			{
-				// index.md at the supplemental root is not valid — must be inside a namespace subfolder
-				if (Path.GetDirectoryName(relPath) is "" or null or ".")
-					Build.Collector.EmitError(context, $"CLI supplemental docs folder must not contain a root-level index.md");
-				else if (!matched.Contains(file))
-					Build.Collector.EmitError(context, $"CLI supplemental 'index.md' at '{relPath}' does not match any CLI namespace (expected a subfolder named after the namespace path)");
+				if (!matched.Contains(file))
+					Build.Collector.EmitError(context, $"CLI supplemental 'index.md' at '{relPath}' does not match any CLI namespace or the CLI root page");
 				continue;
 			}
 
