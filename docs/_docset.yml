@@ -243,10 +243,10 @@ toc:
         children:
           - folder: elasticsearch
             children:
-              - file: 9.0.md
+              - file: v9.md
           - folder: kibana
             children:
-              - file: 9.0.md
+              - file: v9.md
       - file: kibana-settings-yaml-samples.md
       - file: security-settings.md
       - file: req.md
