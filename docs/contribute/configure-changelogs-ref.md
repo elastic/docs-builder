@@ -122,7 +122,7 @@ The extracted release note text is used in the changelog `description`.
 
 When `extract.strip_title_prefix` is `true`:
 
-- The separator hyphen is removed only when at least one bracket prefix was stripped; PR titles that intentionally start with `- ` and have no bracket prefix are left unchanged.
+- The separator hyphen is removed only when at least one bracket prefix was stripped; PR titles that intentionally start with `-` followed by whitespace and have no bracket prefix are left unchanged.
 - Titles that still begin with `-`, `*`, `+`, an en dash (U+2013), or an em dash (U+2014) are surrounded in quotes so they're not parsed as list markers.
 - The title cleanup only occurs when the title is derived from GitHub. If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
 
