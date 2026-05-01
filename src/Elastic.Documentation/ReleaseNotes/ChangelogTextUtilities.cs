@@ -100,7 +100,9 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
-	/// Strips square bracket prefix(es) and optional colon from title (e.g., "[Inference API] Title" -> "Title", "[Discover][ESQL] Title" -> "Title")
+	/// Strips square bracket prefix(es), optional colon, and a single ASCII hyphen used as a team/title separator
+	/// when it is followed by whitespace (e.g. <c>[Cases] - Enable …</c> → <c>Enable …</c>).
+	/// The hyphen is removed only when the prefix strip removed at least one bracket segment.
 	/// </summary>
 	public static string StripSquareBracketPrefix(string title)
 	{
@@ -108,10 +110,12 @@ public static partial class ChangelogTextUtilities
 			return title;
 
 		var span = title.AsSpan();
+		var removedBracketPrefix = false;
 
 		// Keep stripping square bracket prefixes until there are no more at the start
 		while (span.Length > 0 && span[0] == '[')
 		{
+			removedBracketPrefix = true;
 			// Find the matching ']'
 			var closingBracketIndex = span.IndexOf(']');
 			if (closingBracketIndex < 0)
@@ -128,7 +132,34 @@ public static partial class ChangelogTextUtilities
 		if (span.Length > 0 && span[0] == ':')
 			span = span[1..].TrimStart();
 
+		if (removedBracketPrefix &&
+			span.Length >= 2 &&
+			span[0] == '-' &&
+			char.IsWhiteSpace(span[1]))
+			span = span[2..].TrimStart();
+
 		return span.ToString();
+	}
+
+	/// <summary>
+	/// Whether a changelog title should be emitted as an explicitly quoted YAML scalar so unambiguous
+	/// plain scalars are not parsed as list markers. Does not change the semantic title string.
+	/// </summary>
+	public static bool TitleNeedsDefensiveYamlQuoting(string? title)
+	{
+		if (string.IsNullOrEmpty(title))
+			return false;
+
+		var s = title.AsSpan().TrimStart();
+		if (s.IsEmpty)
+			return false;
+
+		return s[0] switch
+		{
+			'-' or '*' or '+' => true,
+			'\u2013' or '\u2014' => true,
+			_ => false
+		};
 	}
 
 	/// <summary>

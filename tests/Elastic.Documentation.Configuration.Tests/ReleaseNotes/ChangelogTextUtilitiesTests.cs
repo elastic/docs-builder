@@ -52,10 +52,30 @@ public class ChangelogTextUtilitiesTests
 	[InlineData("[Test] Title", "Title")]
 	[InlineData("No bracket prefix", "No bracket prefix")]
 	[InlineData("[Unclosed bracket", "[Unclosed bracket")]
+	[InlineData("[Cases] - Enable cases numerical id service", "Enable cases numerical id service")]
+	[InlineData("[Team] - Leading", "Leading")]
+	[InlineData("- Leading dash without brackets", "- Leading dash without brackets")]
+	[InlineData("[Team]-NoSpace", "-NoSpace")]
 	public void StripSquareBracketPrefix_RemovesPrefix(string input, string expected)
 	{
 		var result = ChangelogTextUtilities.StripSquareBracketPrefix(input);
 		result.Should().Be(expected);
+	}
+
+	[Theory]
+	[InlineData(null, false)]
+	[InlineData("", false)]
+	[InlineData("  ", false)]
+	[InlineData("Plain title", false)]
+	[InlineData("- Leading dash", true)]
+	[InlineData("  - Leading dash", true)]
+	[InlineData("* Star", true)]
+	[InlineData("+ Plus", true)]
+	[InlineData("\u2013 En dash", true)]
+	[InlineData("\u2014 Em dash", true)]
+	public void TitleNeedsDefensiveYamlQuoting_DetectsBulletLikeScalars(string? input, bool expected)
+	{
+		ChangelogTextUtilities.TitleNeedsDefensiveYamlQuoting(input).Should().Be(expected);
 	}
 
 	[Theory]

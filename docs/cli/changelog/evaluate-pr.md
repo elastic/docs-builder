@@ -51,7 +51,8 @@ docs-builder changelog evaluate-pr [options...] [-h|--help]
 :   Default: `false`
 
 `--strip-title-prefix`
-:   Remove square-bracket prefixes from the PR title (e.g., `[Inference API] Title` becomes `Title`).
+:   Remove square-bracket prefixes from the PR title (for example, `[Inference API] Title` becomes `Title`), strip an optional colon after the prefix, and strip an ASCII ` - `-style separator after the prefix when the hyphen is followed by whitespace.
+:   Titles that still start with `-`, `*`, `+`, an en dash, or an em dash are surrounded by quotes to avoid rendering problems.
 :   Default: `false`
 
 `--bot-name <string>`

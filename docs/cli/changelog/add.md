@@ -92,10 +92,11 @@ docs-builder changelog add [options...] [-h|--help]
 :   Optional: GitHub repository name (used when `--prs`, `--issues`, or `--release-version` is specified). Falls back to `bundle.repo` in `changelog.yml` when not specified.
 
 `--strip-title-prefix`
-:   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
-:   For example, if a PR title is `"[Attack discovery]: Improves Attack discovery hallucination detection"`, the changelog title will be `"Improves Attack discovery hallucination detection"`.
-:   Multiple square bracket prefixes are also supported (for example `"[Discover][ESQL] Fix filtering by multiline string fields"` becomes `"Fix filtering by multiline string fields"`).
-:   This option applies only when the title is derived from the PR (when `--title` is not explicitly provided).
+:   Optional: When used with `--prs` or `--issues`, remove square brackets and text within them from the beginning of PR or issue titles, remove a colon if it follows the closing bracket, and remove a single ASCII hyphen when it's immediately after that prefix and followed by whitespace.
+:   For example, if a PR title is `"[Discover][ESQL]: Fix filtering by multiline string fields"` it becomes `"Fix filtering by multiline string fields"`.
+:   Likewise `"[Cases] - Enable numerical id service"` becomes `"Enable numerical id service"`.
+:   When a derived title still begins with `-`, `*`, `+`, an en dash, or an em dash, the emitted YAML uses a quoted `title` value so it is valid and unambiguous.
+:   This option applies only when the title is derived from GitHub (when `--title` is not explicitly provided).
 :   By default, the behavior is determined by the `extract.strip_title_prefix` changelog configuration setting (which defaults to `false`).
 
 `--subtype <string?>`
@@ -197,7 +198,6 @@ In each of these cases where validation fails, a changelog file is not created.
 
 If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
 For more information, refer to [Rules for creation and publishing](/contribute/configure-changelogs.md#rules).
-
 
 ## CI auto-detection [ci-auto-detection]
 

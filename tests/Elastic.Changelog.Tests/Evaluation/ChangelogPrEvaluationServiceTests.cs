@@ -308,6 +308,22 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task EvaluatePr_StripTitlePrefix_RemovesKibanaStyleTeamHyphenSeparator()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prTitle: "[Cases] - Enable cases numerical id service") with
+		{
+			StripTitlePrefix = true
+		};
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("title", "Enable cases numerical id service");
+	}
+
+	[Fact]
 	public async Task EvaluatePr_NoConfig_UsesDefaults()
 	{
 		var service = CreateService();

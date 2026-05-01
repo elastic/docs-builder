@@ -104,8 +104,8 @@ Controls how the `changelog add` command extracts information from PR descriptio
 | Setting                      | Description                                                         |
 | ---------------------------- | ------------------------------------------------------------------- |
 | `extract.issues`             | Auto-extract linked issues/PRs from descriptions (default: `true`). |
-| `extract.release_notes`      | Auto-extract descriptions from GitHub (default: `true`).  |
-| `extract.strip_title_prefix` | Remove square-bracket prefixes from PR titles (default: `false`).   |
+| `extract.release_notes`      | Auto-extract descriptions from GitHub (default: `true`). |
+| `extract.strip_title_prefix` | Remove square-bracket prefixes from PR titles; strip a single hyphen separator or colon after the prefix when it is followed by whitespace (default: `false`). |
 
 When `extract.issues` is `true`, the system looks for patterns like "Fixes #123" in PR bodies (when you're creating changelogs from PRs) or "Fixed by #123" in issue bodies (when you're creating changelogs from issues).
 
@@ -120,13 +120,11 @@ When `extract.release_notes` is `true`, the system looks for content like this i
 
 The extracted release note text is used in the changelog `description`.
 
-When `extract.strip_title_prefix` is `true` and PR or issue titles have a prefix in square brackets (such as `[ES|QL]` or `[Security]`), they are automatically removed from the changelog title.
-Multiple square bracket prefixes are also supported (for example `[Discover][ESQL] Title` becomes `Title`).
-If a colon follows the closing bracket, it is also removed.
+When `extract.strip_title_prefix` is `true`:
 
-:::{note}
-The title cleanup only occurs when the title is derived from GitHub. If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
-:::
+- The separator hyphen is removed only when at least one bracket prefix was stripped; PR titles that intentionally start with `-` followed by whitespace and have no bracket prefix are left unchanged.
+- Titles that still begin with `-`, `*`, `+`, an en dash (U+2013), or an em dash (U+2014) are surrounded in quotes so they're not parsed as list markers.
+- The title cleanup only occurs when the title is derived from GitHub. If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
 
 ## Filename [filename]
 
