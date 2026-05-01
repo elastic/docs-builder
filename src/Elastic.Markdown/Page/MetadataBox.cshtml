@@ -1,0 +1,97 @@
+@inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
+@using Elastic.Markdown.Myst.Components
+@{
+	var layout = Model.CurrentDocument.YamlFrontMatter?.Layout;
+	if (layout is not null)
+		return;
+
+	var prefix = Model.UrlPathPrefix?.TrimEnd('/') ?? string.Empty;
+	var productHubs = Model.Products
+		.Where(p => !string.IsNullOrWhiteSpace(p.Hub))
+		.OrderBy(p => p.DisplayName, StringComparer.Ordinal)
+		.ToList();
+
+	var hasStackVersions = false;
+	var hasDeployments = false;
+	var hasOtherProducts = false;
+	if (Model.AppliesTo is not null)
+	{
+		hasStackVersions = Model.AppliesTo.Stack is not null
+			|| (Model.AppliesTo.Deployment is null && Model.AppliesTo.Serverless is not null);
+		hasDeployments = Model.AppliesTo.Deployment is not null;
+		hasOtherProducts = Model.AppliesTo.ProductApplicability is not null
+			|| Model.AppliesTo.Product is not null;
+	}
+
+	var hasProducts = productHubs.Count > 0;
+	if (!hasProducts && !hasStackVersions && !hasDeployments && !hasOtherProducts)
+		return;
+}
+<aside class="metadata-box" aria-label="Page metadata">
+	@if (hasProducts)
+	{
+		<div class="metadata-row metadata-row-products">
+			<span class="metadata-label">Stack products</span>
+			<div class="metadata-values">
+				@foreach (var product in productHubs)
+				{
+					var hub = product.Hub!;
+					var isExternal = hub.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+						|| hub.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+					var href = isExternal ? hub : $"{prefix}/{hub.Trim('/')}/";
+					<a class="product-badge product-badge-@product.Id"
+						href="@href"
+						@(isExternal ? new HtmlString("target=\"_blank\" rel=\"noopener\"") : HtmlString.Empty)>
+						<span class="product-badge-dot" aria-hidden="true"></span>
+						<span class="product-badge-label">@product.DisplayName</span>
+					</a>
+				}
+			</div>
+		</div>
+	}
+	@if (hasStackVersions)
+	{
+		<div class="metadata-row metadata-row-versions">
+			<span class="metadata-label">Stack versions</span>
+			<div class="metadata-values">
+				@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
+				{
+					AppliesTo = Model.AppliesTo!,
+					Inline = true,
+					VersionsConfig = Model.VersionsConfig,
+					BadgePlacement = ApplicabilityBadgePlacement.StackVersionsRow
+				}))
+			</div>
+		</div>
+	}
+	@if (hasDeployments)
+	{
+		<div class="metadata-row metadata-row-deployments">
+			<span class="metadata-label">Deployments</span>
+			<div class="metadata-values">
+				@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
+				{
+					AppliesTo = Model.AppliesTo!,
+					Inline = true,
+					VersionsConfig = Model.VersionsConfig,
+					BadgePlacement = ApplicabilityBadgePlacement.DeploymentsRow
+				}))
+			</div>
+		</div>
+	}
+	@if (hasOtherProducts)
+	{
+		<div class="metadata-row metadata-row-other-products">
+			<span class="metadata-label">Other products</span>
+			<div class="metadata-values">
+				@await RenderPartialAsync(ApplicableToComponent.Create(new ApplicableToViewModel
+				{
+					AppliesTo = Model.AppliesTo!,
+					Inline = true,
+					VersionsConfig = Model.VersionsConfig,
+					BadgePlacement = ApplicabilityBadgePlacement.OtherProductsRow
+				}))
+			</div>
+		</div>
+	}
+</aside>

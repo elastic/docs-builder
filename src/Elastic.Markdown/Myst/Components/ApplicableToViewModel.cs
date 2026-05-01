@@ -16,7 +16,13 @@ public enum ApplicabilityBadgePlacement
 	/// <summary>Elastic Stack (and generic product) availability next to the setting name.</summary>
 	StackRow,
 	/// <summary>Deployment, serverless, and product-specific agents on a &quot;Supported on&quot; line.</summary>
-	SupportedOnRow
+	SupportedOnRow,
+	/// <summary>Stack versions row of the page-top metadata box: <c>applies_to.stack</c> + <c>applies_to.serverless</c> when no deployment is specified.</summary>
+	StackVersionsRow,
+	/// <summary>Deployments row of the page-top metadata box: <c>applies_to.deployment</c> + <c>applies_to.serverless</c> when a deployment is specified.</summary>
+	DeploymentsRow,
+	/// <summary>Other products row of the page-top metadata box: <c>applies_to.product</c> and per-product applicabilities (agents, EDOT, etc.).</summary>
+	OtherProductsRow
 }
 
 public class ApplicableToViewModel
@@ -79,6 +85,9 @@ public class ApplicableToViewModel
 		{
 			ApplicabilityBadgePlacement.StackRow => CollectStackRowRaw(),
 			ApplicabilityBadgePlacement.SupportedOnRow => CollectSupportedOnRaw(),
+			ApplicabilityBadgePlacement.StackVersionsRow => CollectStackVersionsRowRaw(),
+			ApplicabilityBadgePlacement.DeploymentsRow => CollectDeploymentsRowRaw(),
+			ApplicabilityBadgePlacement.OtherProductsRow => CollectOtherProductsRowRaw(),
 			_ => CollectCombinedRaw()
 		};
 
@@ -152,6 +161,55 @@ public class ApplicableToViewModel
 		return rawItems
 			.Where(i => i.Applicability.Lifecycle != ProductLifecycle.Unavailable)
 			.ToList();
+	}
+
+	private List<RawApplicabilityItem> CollectStackVersionsRowRaw()
+	{
+		var rawItems = new List<RawApplicabilityItem>();
+
+		if (AppliesTo.Stack is not null)
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Stack, ApplicabilityMappings.Stack));
+
+		if (AppliesTo.Deployment is null && AppliesTo.Serverless is not null)
+		{
+			rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
+				? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+				: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
+		}
+
+		return rawItems;
+	}
+
+	private List<RawApplicabilityItem> CollectDeploymentsRowRaw()
+	{
+		var rawItems = new List<RawApplicabilityItem>();
+
+		if (AppliesTo.Deployment is not null)
+		{
+			rawItems.AddRange(CollectFromMappings(AppliesTo.Deployment, DeploymentMappings));
+
+			if (AppliesTo.Serverless is not null)
+			{
+				rawItems.AddRange(AppliesTo.Serverless.AllProjects is not null
+					? CollectFromCollection(AppliesTo.Serverless.AllProjects, ApplicabilityMappings.Serverless)
+					: CollectFromMappings(AppliesTo.Serverless, ServerlessMappings));
+			}
+		}
+
+		return rawItems;
+	}
+
+	private List<RawApplicabilityItem> CollectOtherProductsRowRaw()
+	{
+		var rawItems = new List<RawApplicabilityItem>();
+
+		if (AppliesTo.ProductApplicability is not null)
+			rawItems.AddRange(CollectFromMappings(AppliesTo.ProductApplicability, ProductMappings));
+
+		if (AppliesTo.Product is not null)
+			rawItems.AddRange(CollectFromCollection(AppliesTo.Product, ApplicabilityMappings.Product));
+
+		return rawItems;
 	}
 
 	private static bool IsGenericGa(AppliesCollection collection)
