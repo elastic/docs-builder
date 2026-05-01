@@ -2871,6 +2871,14 @@ nav:
     children:
     - toc: docs-content://release-notes/intro
 
+  # Until hub pages are produced through the V1 navigation/toc chain so the
+  # assembler can resolve them, this section is an external link to the
+  # Kibana gist preview -- the visual reference for the prototype, with its
+  # own island-style nav and stubs already wired up.
+  # https://gist.github.com/florent-leborgne/c9075416b50ec111a09897b7be4462cc
+  - section: Product hubs
+    url: https://htmlpreview.github.io/?https://gist.github.com/florent-leborgne/c9075416b50ec111a09897b7be4462cc/raw/kibana-hub.html
+
   - section: Extension points
     url: /extend/
     isolated: true

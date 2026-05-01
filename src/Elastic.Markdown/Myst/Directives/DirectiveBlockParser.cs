@@ -9,6 +9,7 @@ using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -135,6 +136,24 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
+
+		if (info.IndexOf("{hero}") > 0)
+			return new HeroBlock(this, context);
+
+		if (info.IndexOf("{card-group}") > 0)
+			return new CardGroupBlock(this, context);
+
+		if (info.IndexOf("{link-card}") > 0)
+			return new LinkCardBlock(this, context);
+
+		if (info.IndexOf("{whats-new}") > 0)
+			return new WhatsNewBlock(this, context);
+
+		if (info.IndexOf("{intro}") > 0)
+			return new IntroBlock(this, context);
+
+		if (info.IndexOf("{on-this-page}") > 0)
+			return new OnThisPageBlock(this, context);
 
 		foreach (var admonition in Admonitions)
 		{

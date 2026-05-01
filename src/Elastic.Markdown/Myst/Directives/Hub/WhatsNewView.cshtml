@@ -1,0 +1,75 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.WhatsNewViewModel>
+
+@{
+	var d = Model.Data;
+}
+
+<section class="hub-whats-new" id="@d.Id">
+	<header class="hub-wn-header">
+		@if (!string.IsNullOrWhiteSpace(d.Badge))
+		{
+			<span class="hub-wn-badge">@d.Badge</span>
+		}
+		@if (!string.IsNullOrWhiteSpace(d.Title))
+		{
+			<span class="hub-wn-title">@d.Title</span>
+		}
+		@if (d.ReleaseLinks.Length > 0)
+		{
+			<span class="hub-wn-rn-links">
+				<span class="hub-wn-rn-label">Release notes:</span>
+				@for (var i = 0; i < d.ReleaseLinks.Length; i++)
+				{
+					var link = d.ReleaseLinks[i];
+					if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
+						continue;
+					<a href="@link.Url">@link.Label</a>
+					@if (i < d.ReleaseLinks.Length - 1)
+					{
+						<span class="hub-wn-rn-sep" aria-hidden="true">·</span>
+					}
+				}
+			</span>
+		}
+	</header>
+	@if (d.Items.Length > 0)
+	{
+		<ul class="hub-wn-items">
+			@foreach (var item in d.Items)
+			{
+				if (string.IsNullOrWhiteSpace(item.Title))
+					continue;
+				<li class="hub-wn-item">
+					@if (!string.IsNullOrWhiteSpace(item.Link))
+					{
+						<a href="@item.Link" class="hub-wn-item-link">
+							<strong class="hub-wn-item-title">@item.Title</strong>
+							@if (!string.IsNullOrWhiteSpace(item.Description))
+							{
+								<span class="hub-wn-item-desc">@item.Description</span>
+							}
+							@if (!string.IsNullOrWhiteSpace(item.Meta))
+							{
+								<span class="hub-wn-item-meta">@item.Meta</span>
+							}
+						</a>
+					}
+					else
+					{
+						<div class="hub-wn-item-link">
+							<strong class="hub-wn-item-title">@item.Title</strong>
+							@if (!string.IsNullOrWhiteSpace(item.Description))
+							{
+								<span class="hub-wn-item-desc">@item.Description</span>
+							}
+							@if (!string.IsNullOrWhiteSpace(item.Meta))
+							{
+								<span class="hub-wn-item-meta">@item.Meta</span>
+							}
+						</div>
+					}
+				</li>
+			}
+		</ul>
+	}
+</section>

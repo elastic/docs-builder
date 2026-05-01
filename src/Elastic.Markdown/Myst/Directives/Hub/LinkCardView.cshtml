@@ -1,0 +1,67 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.LinkCardViewModel>
+
+@{
+	var d = Model.Data;
+	var classes = "hub-card";
+	if (!string.IsNullOrWhiteSpace(d.Variant))
+		classes += " hub-card-sol hub-card-sol-" + d.Variant;
+}
+
+<li class="@classes">
+	<div class="hub-card-head">
+		@if (!string.IsNullOrWhiteSpace(Model.IconSvg))
+		{
+			<span class="hub-card-icon">@(new HtmlString(Model.IconSvg))</span>
+		}
+		<h3 class="hub-card-title">
+			@if (!string.IsNullOrWhiteSpace(d.Link))
+			{
+				<a href="@d.Link">@d.Title</a>
+			}
+			else
+			{
+				@d.Title
+			}
+		</h3>
+	</div>
+
+	@if (!string.IsNullOrWhiteSpace(d.Description))
+	{
+		<p class="hub-card-desc">@d.Description</p>
+	}
+
+	@if (d.Links.Length > 0)
+	{
+		<ul class="hub-card-links">
+			@foreach (var link in d.Links)
+			{
+				if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
+					continue;
+				<li><a href="@link.Url">@link.Label</a></li>
+			}
+		</ul>
+	}
+
+	@if (d.Aside is { } aside && aside.Links.Length > 0)
+	{
+		<div class="hub-card-aside">
+			@if (!string.IsNullOrWhiteSpace(aside.Label))
+			{
+				<div class="hub-card-aside-label">@aside.Label</div>
+			}
+			<div class="hub-card-aside-links">
+				@for (var i = 0; i < aside.Links.Length; i++)
+				{
+					var link = aside.Links[i];
+					if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
+						continue;
+					<a href="@link.Url">@link.Label</a>
+					@if (i < aside.Links.Length - 1)
+					{
+						<span class="hub-card-aside-sep" aria-hidden="true">·</span>
+					}
+				}
+			</div>
+		</div>
+	}
+</li>

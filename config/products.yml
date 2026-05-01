@@ -147,6 +147,7 @@ products:
   elasticsearch:
     display: 'Elasticsearch'
     versioning: 'stack'
+    hub: 'testing/products/elasticsearch/9.0'
   elasticsearch-client:
     display: 'Elasticsearch Client'
     versioning: 'stack'
@@ -207,6 +208,7 @@ products:
   kibana:
     display: 'Kibana'
     versioning: 'stack'
+    hub: 'testing/products/kibana/9.0'
   logstash:
     display: 'Logstash'
     versioning: 'stack'

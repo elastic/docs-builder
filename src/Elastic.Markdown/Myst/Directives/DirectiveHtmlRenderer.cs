@@ -15,6 +15,7 @@ using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -120,6 +121,24 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
+				return;
+			case HeroBlock heroBlock:
+				WriteHero(renderer, heroBlock);
+				return;
+			case CardGroupBlock cardGroupBlock:
+				WriteCardGroup(renderer, cardGroupBlock);
+				return;
+			case LinkCardBlock linkCardBlock:
+				WriteLinkCard(renderer, linkCardBlock);
+				return;
+			case WhatsNewBlock whatsNewBlock:
+				WriteWhatsNew(renderer, whatsNewBlock);
+				return;
+			case IntroBlock introBlock:
+				WriteIntro(renderer, introBlock);
+				return;
+			case OnThisPageBlock onThisPageBlock:
+				WriteOnThisPage(renderer, onThisPageBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -330,6 +349,93 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var slice = TabSetView.Create(new TabSetViewModel { DirectiveBlock = block });
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteHero(HtmlRenderer renderer, HeroBlock block)
+	{
+		var releasesHtml = string.IsNullOrWhiteSpace(block.Releases)
+			? null
+			: RenderInlineMarkdown(block.Releases!);
+
+		var descriptionHtml = string.IsNullOrWhiteSpace(block.Description)
+			? null
+			: RenderInlineMarkdown(block.Description!);
+
+		var slice = HeroView.Create(new HeroViewModel
+		{
+			DirectiveBlock = block,
+			IconKey = block.Icon,
+			IconSvg = block.IconSvg,
+			Title = block.Title,
+			DescriptionHtml = descriptionHtml,
+			Version = block.Version,
+			ShowSearch = block.ShowSearch,
+			QuickLinks = block.QuickLinks,
+			OtherVersions = block.OtherVersions,
+			ReleasesHtml = releasesHtml
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteCardGroup(HtmlRenderer renderer, CardGroupBlock block)
+	{
+		var slice = CardGroupView.Create(new CardGroupViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor,
+			Variant = block.Variant
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteLinkCard(HtmlRenderer renderer, LinkCardBlock block)
+	{
+		var slice = LinkCardView.Create(new LinkCardViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data,
+			IconSvg = ProductIcons.Get(block.Data.Icon)
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteWhatsNew(HtmlRenderer renderer, WhatsNewBlock block)
+	{
+		var slice = WhatsNewView.Create(new WhatsNewViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteIntro(HtmlRenderer renderer, IntroBlock block)
+	{
+		var slice = IntroView.Create(new IntroViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteOnThisPage(HtmlRenderer renderer, OnThisPageBlock block)
+	{
+		var slice = OnThisPageView.Create(new OnThisPageViewModel
+		{
+			DirectiveBlock = block,
+			Items = block.CollectItems()
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static string RenderInlineMarkdown(string source)
+	{
+		var html = Markdig.Markdown.ToHtml(source).Trim();
+		// Strip a single wrapping <p>...</p> so the result can drop into a span/p directly.
+		const string open = "<p>";
+		const string close = "</p>";
+		if (html.StartsWith(open, StringComparison.Ordinal) && html.EndsWith(close, StringComparison.Ordinal))
+			html = html[open.Length..^close.Length];
+		return html;
 	}
 
 	private static void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)

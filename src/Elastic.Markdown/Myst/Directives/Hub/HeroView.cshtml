@@ -1,0 +1,101 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.HeroViewModel>
+
+<section class="hub-hero">
+	<div class="hub-hero-inner">
+		<div class="hub-hero-top">
+			@if (!string.IsNullOrWhiteSpace(Model.IconSvg))
+			{
+				<span class="hub-hero-icon hub-hero-icon-svg">
+					@(new HtmlString(Model.IconSvg))
+				</span>
+			}
+			else if (!string.IsNullOrWhiteSpace(Model.IconKey))
+			{
+				<span class="hub-hero-icon" aria-hidden="true">@Elastic.Markdown.Myst.Directives.Hub.ProductIcons.Initials(Model.IconKey)</span>
+			}
+			<div class="hub-hero-title">
+				<h1>@Model.Title</h1>
+				@if (!string.IsNullOrWhiteSpace(Model.DescriptionHtml))
+				{
+					<p>@(new HtmlString(Model.DescriptionHtml))</p>
+				}
+			</div>
+		</div>
+
+		@if (Model.ShowSearch)
+		{
+			var placeholder = string.IsNullOrWhiteSpace(Model.IconKey)
+				? "Search docs..."
+				: $"Search {char.ToUpperInvariant(Model.IconKey![0])}{Model.IconKey.AsSpan(1).ToString()} docs...";
+			<div class="hub-hero-search">
+				<label class="hub-hero-search-box">
+					<svg class="hub-hero-search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M11.271 11.978l3.872 3.873a.502.502 0 00.708-.708l-3.565-3.564c2.38-2.747 2.267-6.923-.342-9.532-2.73-2.73-7.17-2.73-9.898 0-2.728 2.729-2.728 7.17 0 9.9a6.955 6.955 0 004.949 2.05 6.99 6.99 0 004.276-1.5v-.519zM2.752 11.24c-2.342-2.342-2.342-6.152 0-8.494 2.343-2.343 6.152-2.343 8.494 0 2.343 2.342 2.343 6.152 0 8.494-2.342 2.342-6.151 2.342-8.494 0z" fill="currentColor"/>
+					</svg>
+					<input type="text" placeholder="@placeholder" autocomplete="off" aria-label="@placeholder" disabled />
+				</label>
+			</div>
+		}
+
+		<div class="hub-hero-meta">
+			@if (!string.IsNullOrWhiteSpace(Model.Version))
+			{
+				if (Model.OtherVersions.Count > 0)
+				{
+					<details class="hub-hero-version hub-hero-version-dropdown">
+						<summary>
+							<span class="hub-hero-version-dot" aria-hidden="true"></span>
+							<span class="hub-hero-version-text">@Model.Version</span>
+							<span class="hub-hero-version-caret" aria-hidden="true">
+								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M3.5 6L8 10.5L12.5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+							</span>
+						</summary>
+						<ul class="hub-hero-version-menu" role="menu">
+							<li class="hub-hero-version-current" role="menuitem" aria-current="page">
+								<span>@Model.Version</span>
+								<span class="hub-hero-version-tick" aria-hidden="true">✓</span>
+							</li>
+							@foreach (var v in Model.OtherVersions)
+							{
+								if (string.IsNullOrEmpty(v.Url))
+								{
+									<li class="hub-hero-version-disabled" role="menuitem" aria-disabled="true">
+										<span>@v.Label</span>
+										<span class="hub-hero-version-soon">soon</span>
+									</li>
+								}
+								else
+								{
+									<li role="menuitem"><a href="@v.Url">@v.Label</a></li>
+								}
+							}
+						</ul>
+					</details>
+				}
+				else
+				{
+					<span class="hub-hero-version">
+						<span class="hub-hero-version-dot" aria-hidden="true"></span>
+						<span class="hub-hero-version-text">@Model.Version</span>
+					</span>
+				}
+			}
+			@if (Model.QuickLinks.Count > 0)
+			{
+				<ul class="hub-hero-pills">
+					@foreach (var link in Model.QuickLinks)
+					{
+						<li><a href="@link.Url">@link.Label</a></li>
+					}
+				</ul>
+			}
+		</div>
+
+		@if (!string.IsNullOrWhiteSpace(Model.ReleasesHtml))
+		{
+			<p class="hub-hero-releases">@(new HtmlString(Model.ReleasesHtml))</p>
+		}
+	</div>
+</section>
