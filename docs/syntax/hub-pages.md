@@ -1,3 +1,9 @@
+---
+products:
+  - id: elasticsearch
+  - id: kibana
+---
+
 # Hub pages
 
 Hub pages are product-scoped landing pages — a 360° overview of one product across versions, deployment types, and surfaces. They're enabled by setting `layout: hub` in the page's frontmatter and composed from a small set of dedicated directives.

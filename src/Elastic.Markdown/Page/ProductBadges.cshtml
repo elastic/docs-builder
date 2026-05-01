@@ -13,12 +13,16 @@
 }
 @if (withHubs.Count > 0)
 {
-	<ul class="product-badges" aria-label="Related product hubs">
+	<div class="product-badges" role="navigation" aria-label="Product hubs related to this page">
 		@foreach (var product in withHubs)
 		{
-			<li>
-				<a class="product-badge" href="@($"{prefix}/{product.Hub!.Trim('/')}/")">@product.DisplayName</a>
-			</li>
+			<a class="product-badge product-badge-@product.Id" href="@($"{prefix}/{product.Hub!.Trim('/')}/")">
+				<span class="product-badge-dot" aria-hidden="true"></span>
+				<span class="product-badge-label">@product.DisplayName</span>
+				<svg class="product-badge-arrow" width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+					<path d="M5 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</a>
 		}
-	</ul>
+	</div>
 }

@@ -653,24 +653,122 @@
 		border-left-color: #00bfb3;
 	}
 
-	/* Product badges shown above the H1 of a regular page. */
+	/* Page title row -- wraps the H1 and the product badges so they sit
+	   on the same baseline when there's room and stack on narrow screens. */
+	.page-title-row {
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 8px 14px;
+		margin-bottom: 0.5em;
+	}
+	.page-title-row > .heading-wrapper,
+	.page-title-row > h1 {
+		margin-bottom: 0;
+	}
+
+	/* Product badges -- the inline-with-title pills that point at the
+	   matching product hub. Each pill has the product's accent dot, the
+	   product name, and a right-arrow chevron to read as clickable.
+	   The translateY offset lifts the pill so it sits at the H1's
+	   x-height rather than below its baseline. */
 	.product-badges {
-		@apply mb-3 flex list-none flex-wrap gap-2 p-0;
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		align-items: center;
+		margin: 0;
+		padding: 0;
+		transform: translateY(-0.45em);
 	}
-	.product-badges li {
-		@apply m-0 p-0;
-	}
+
 	.product-badge {
-		@apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide no-underline;
-		background: var(--color-grey-10);
-		color: var(--color-ink-light);
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 3px 10px;
+		border-radius: 999px;
+		background: var(--color-white);
 		border: 1px solid var(--color-grey-20);
+		color: var(--color-ink-dark);
+		font-size: 12px;
+		font-weight: 500;
+		text-decoration: none;
+		line-height: 1.2;
+		transition:
+			border-color 0.15s ease,
+			background-color 0.15s ease,
+			color 0.15s ease,
+			box-shadow 0.15s ease,
+			transform 0.15s ease;
 	}
 	.product-badge:hover {
-		background: var(--color-blue-elastic-10);
-		color: var(--color-blue-elastic-100);
-		border-color: var(--color-blue-elastic);
 		text-decoration: none;
+		color: var(--color-ink-dark);
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+		transform: translateY(-1px);
+	}
+	.product-badge:focus-visible {
+		outline: 2px solid var(--color-blue-elastic);
+		outline-offset: 2px;
+	}
+
+	/* Brand-color dot leading the pill. Every product gets its accent
+	   here -- recognizable at any size, no logo distortion. */
+	.product-badge-dot {
+		display: inline-block;
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--color-grey-40);
+		flex-shrink: 0;
+	}
+	.product-badge-label {
+		display: inline-block;
+		white-space: nowrap;
+	}
+	.product-badge-arrow {
+		flex-shrink: 0;
+		color: var(--color-grey-40);
+		transition:
+			transform 0.15s ease,
+			color 0.15s ease;
+		margin-left: 1px;
+	}
+	.product-badge:hover .product-badge-arrow {
+		color: var(--color-ink-light);
+		transform: translateX(2px);
+	}
+
+	/* Per-product accents -- dot color, hover border, hover background tint.
+	   Brand colors mirror the solution-card border-left accents. */
+	.product-badge-elasticsearch .product-badge-dot {
+		background: #fec514;
+	}
+	.product-badge-elasticsearch:hover {
+		border-color: #fec514;
+		background: rgb(254 197 20 / 0.06);
+	}
+	.product-badge-kibana .product-badge-dot {
+		background: #f04e98;
+	}
+	.product-badge-kibana:hover {
+		border-color: #f04e98;
+		background: rgb(240 78 152 / 0.05);
+	}
+	.product-badge-observability .product-badge-dot {
+		background: #0077cc;
+	}
+	.product-badge-observability:hover {
+		border-color: #0077cc;
+		background: rgb(0 119 204 / 0.05);
+	}
+	.product-badge-security .product-badge-dot {
+		background: #00bfb3;
+	}
+	.product-badge-security:hover {
+		border-color: #00bfb3;
+		background: rgb(0 191 179 / 0.06);
 	}
 
 	@media (max-width: 768px) {
