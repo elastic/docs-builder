@@ -147,7 +147,7 @@ products:
   elasticsearch:
     display: 'Elasticsearch'
     versioning: 'stack'
-    hub: 'testing/products/elasticsearch/9.0'
+    hub: 'https://htmlpreview.github.io/?https://gist.github.com/florent-leborgne/b2ddb83d7b849980d1668aef600d0139/raw/elasticsearch-hub.html'
   elasticsearch-client:
     display: 'Elasticsearch Client'
     versioning: 'stack'
@@ -208,7 +208,7 @@ products:
   kibana:
     display: 'Kibana'
     versioning: 'stack'
-    hub: 'testing/products/kibana/9.0'
+    hub: 'https://htmlpreview.github.io/?https://gist.github.com/florent-leborgne/c9075416b50ec111a09897b7be4462cc/raw/kibana-hub.html'
   logstash:
     display: 'Logstash'
     versioning: 'stack'

@@ -92,11 +92,9 @@
 <section id="elastic-docs-v3">
 	@if (Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.Hub)
 	{
-		<div class="page-title-row">
-			@* This way it's correctly rendered as <h1>text</h1> instead of <h1><p>text</p></h1> *@
-			@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
-			@await RenderPartialAsync(ProductBadges.Create(Model))
-		</div>
+		@await RenderPartialAsync(ProductBadges.Create(Model))
+		@* This way it's correctly rendered as <h1>text</h1> instead of <h1><p>text</p></h1> *@
+		@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
 		@if (Model.AppliesTo is not null)
 		{
 			<p class="applies applies-block">

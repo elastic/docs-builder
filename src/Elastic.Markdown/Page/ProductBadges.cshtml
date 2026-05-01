@@ -16,12 +16,28 @@
 	<div class="product-badges" role="navigation" aria-label="Product hubs related to this page">
 		@foreach (var product in withHubs)
 		{
-			<a class="product-badge product-badge-@product.Id" href="@($"{prefix}/{product.Hub!.Trim('/')}/")">
+			var hub = product.Hub!;
+			var isExternal = hub.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+				|| hub.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+			var href = isExternal ? hub : $"{prefix}/{hub.Trim('/')}/";
+			<a class="product-badge product-badge-@product.Id"
+				href="@href"
+				@(isExternal ? new HtmlString("target=\"_blank\" rel=\"noopener\"") : HtmlString.Empty)>
 				<span class="product-badge-dot" aria-hidden="true"></span>
 				<span class="product-badge-label">@product.DisplayName</span>
-				<svg class="product-badge-arrow" width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path d="M5 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
+				@if (isExternal)
+				{
+					<svg class="product-badge-arrow" width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+						<path d="M8.75 1a.75.75 0 0 0 0 1.5h3.69L6.72 8.22a.75.75 0 0 0 1.06 1.06l5.72-5.72v3.69a.75.75 0 0 0 1.5 0v-5.5a.75.75 0 0 0-.75-.75h-5.5Z"/>
+						<path d="M3.5 3A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14h8a1.5 1.5 0 0 0 1.5-1.5V10a.75.75 0 0 0-1.5 0v2.5h-8v-8H6A.75.75 0 0 0 6 3H3.5Z"/>
+					</svg>
+				}
+				else
+				{
+					<svg class="product-badge-arrow" width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M5 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				}
 			</a>
 		}
 	</div>

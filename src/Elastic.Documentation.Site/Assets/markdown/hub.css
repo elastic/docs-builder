@@ -653,33 +653,16 @@
 		border-left-color: #00bfb3;
 	}
 
-	/* Page title row -- wraps the H1 and the product badges so they sit
-	   on the same baseline when there's room and stack on narrow screens. */
-	.page-title-row {
-		display: flex;
-		align-items: baseline;
-		flex-wrap: wrap;
-		gap: 8px 14px;
-		margin-bottom: 0.5em;
-	}
-	.page-title-row > .heading-wrapper,
-	.page-title-row > h1 {
-		margin-bottom: 0;
-	}
-
-	/* Product badges -- the inline-with-title pills that point at the
-	   matching product hub. Each pill has the product's accent dot, the
-	   product name, and a right-arrow chevron to read as clickable.
-	   The translateY offset lifts the pill so it sits at the H1's
-	   x-height rather than below its baseline. */
+	/* Product badges -- shown as a small meta strip between the
+	   breadcrumb and the H1. The negative top margin pulls the strip
+	   up tight against the breadcrumb's bottom padding (py-6 there). */
 	.product-badges {
-		display: inline-flex;
+		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
 		align-items: center;
-		margin: 0;
+		margin: -16px 0 14px 0;
 		padding: 0;
-		transform: translateY(-0.45em);
 	}
 
 	.product-badge {
