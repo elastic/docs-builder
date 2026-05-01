@@ -51,4 +51,23 @@ public class ReleaseNotesSerializationTests
 		yaml.Should().Contain("title: Enable numerical id service");
 		yaml.Should().NotContain("title: \"Enable numerical id service\"");
 	}
+
+	[Fact]
+	public void SerializeEntry_MultilineTitleStartingWithDash_RoundTrips()
+	{
+		var entry = new ChangelogEntry
+		{
+			Title = "- line1\nline2",
+			Type = ChangelogEntryType.Feature,
+			Products =
+			[
+				new ProductReference { ProductId = "kibana", Lifecycle = Lifecycle.Ga }
+			]
+		};
+
+		var yaml = ReleaseNotesSerialization.SerializeEntry(entry);
+
+		var roundTrip = ReleaseNotesSerialization.DeserializeEntry(yaml);
+		roundTrip.Title.Should().Be("- line1\nline2");
+	}
 }

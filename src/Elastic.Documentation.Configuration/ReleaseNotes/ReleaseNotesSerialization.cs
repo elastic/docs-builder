@@ -115,6 +115,10 @@ public static partial class ReleaseNotesSerialization
 			if (valuePart.Length > 0 && (valuePart[0] == '"' || valuePart[0] == '\''))
 				return yaml;
 
+			// Block literals (| / >) span following lines; rewriting only the header orphans continuations.
+			if (valuePart.Length > 0 && (valuePart[0] == '|' || valuePart[0] == '>'))
+				return yaml;
+
 			lines[i] = string.Concat(line.AsSpan(0, colonIdx + 1), " ", ToYamlDoubleQuotedString(title!));
 			break;
 		}
