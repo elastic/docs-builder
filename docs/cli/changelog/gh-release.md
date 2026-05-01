@@ -44,10 +44,11 @@ docs-builder changelog gh-release <repo> [version] [options...] [-h|--help]
 :   If the GitHub release has no published date, falls back to today's date (UTC).
 
 `--strip-title-prefix`
-:   Optional: Remove square brackets and the text within them from the beginning of pull request titles, and also remove a colon if it follows the closing bracket.
-:   For example, `"[Inference API] New embedding model support"` becomes `"New embedding model support"`.
-:   Multiple bracket prefixes are also supported (for example, `"[Discover][ESQL] Fix filtering"` becomes `"Fix filtering"`).
+:   Optional: Remove square brackets and the text within them from the beginning of pull request titles, remove a colon or a single ASCII hyphen if it follows the closing bracket and is followed by whitespace.
+:   Multiple bracket prefixes are also supported (for example, `"[Discover][ESQL] - Fix filtering"` becomes `"Fix filtering"`).
+:   When the title still begins with `-`, `*`, `+`, an en dash, or an em dash, it's surrounded by quotes.
 :   By default, the behavior is determined by the `extract.strip_title_prefix` changelog configuration setting (which defaults to `false`).
+
 `--warn-on-type-mismatch`
 :   Optional: Warn when the type inferred from Release Drafter section headers (for example, "Bug Fixes") doesn't match the type derived from the pull request's labels. Defaults to `true`.
 
@@ -98,10 +99,4 @@ docs-builder changelog gh-release elasticsearch v9.2.0 \
 ```sh
 docs-builder changelog gh-release elasticsearch v9.2.0 \
   --description "Elasticsearch {version} includes new features and fixes. Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
-```
-
-### Strip component prefixes from titles
-
-```sh
-docs-builder changelog gh-release elasticsearch v9.2.0 --strip-title-prefix
 ```
