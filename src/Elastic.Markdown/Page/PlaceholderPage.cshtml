@@ -1,0 +1,9 @@
+@inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
+@implements IUsesLayout<Elastic.Markdown._Layout, Elastic.Markdown.MarkdownLayoutViewModel>
+@functions {
+	public Elastic.Markdown.MarkdownLayoutViewModel LayoutModel => Model;
+}
+<section id="elastic-docs-v3">
+	<h1>@Model.Title</h1>
+	<p class="text-grey-50 text-sm mt-6">This content is coming soon.</p>
+</section>

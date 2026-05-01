@@ -1,0 +1,229 @@
+@using Elastic.Documentation.Navigation
+@using Elastic.Documentation.Navigation.Isolated
+@using Elastic.Documentation.Navigation.Isolated.Leaf
+@using Elastic.Documentation.Navigation.V2
+@using Elastic.Documentation.Site.Navigation
+@inherits RazorSlice<NavigationTreeItem>
+@{
+	var isTopLevel = Model.Level == 0;
+}
+@foreach (var item in Model.SubTree.NavigationItems)
+{
+	if (item.Hidden)
+	{
+		continue;
+	}
+
+	if (item is LabelNavigationNode label)
+	{
+		@* Subsection headers: spacing via CSS (li:has .label--nested:not(:first-child)) so every title matches, not a hardcoded list *@
+		<li class="@(isTopLevel ? "border-t border-[#F6F9FC] first:border-t-0 relative" : "relative")">
+			@if (isTopLevel)
+			{
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--top flex items-center gap-2 px-[10px] py-0 text-sm leading-5 text-[#111C2C]">
+					@if (label.NavigationTitle == "Elasticsearch fundamentals")
+					{
+						@* EUI icon: documentation *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+						</svg>
+					}
+					else if (label.NavigationTitle == "Install, deploy, and administer")
+					{
+						@* EUI icon: storage *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" d="M5 5H3V4h2v1Zm0 2H3V6h2v1Zm-1 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm5-7v3H8V4h1Zm4 3V4h-1v3h1Z"/>
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-1v1h-1v-1H4v1H3v-1H2a1 1 0 0 1-1-1V3Zm5 0H2v9h4V3Zm1 0v9h3V3H7Zm4 0v9h3V3h-3Z"/>
+						</svg>
+					}
+					else if (label.NavigationTitle == "The Elasticsearch Platform")
+					{
+						@* EUI icon: layers *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M1.553 4.106a1 1 0 0 0 0 1.788l6 3a1 1 0 0 0 .894 0l6-3a1 1 0 0 0 0-1.788l-6-3a1 1 0 0 0-.894 0l-6 3ZM14 5 8 8 2 5l6-3 6 3Z"/>
+							<path fill="currentColor" d="m8 11 6.894-3.447S15 7.843 15 8a1 1 0 0 1-.553.895l-6 3a1 1 0 0 1-.894 0l-6-3A1 1 0 0 1 1 8c0-.158.106-.447.106-.447L8 11Z"/>
+							<path fill="currentColor" d="m8 14 6.894-3.447s.106.29.106.447a1 1 0 0 1-.553.895l-6 3a1 1 0 0 1-.894 0l-6-3A1 1 0 0 1 1 11c0-.158.106-.447.106-.447L8 14Z"/>
+						</svg>
+					}
+					else if (label.NavigationTitle == "Solutions and project types")
+					{
+						@* EUI icon: productDashboard *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M12 22C13.1046 22 14 22.8954 14 24V26L13.9902 26.2051C13.8876 27.2133 13.0354 28 12 28H4C2.89543 28 2 27.1046 2 26V24C2 22.8954 2.89543 22 4 22H12ZM4 26H12V24H4V26Z"/>
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M28 14C29.1046 14 30 14.8954 30 16V26C30 27.1046 29.1046 28 28 28H18C16.8954 28 16 27.1046 16 26V16C16 14.8954 16.8954 14 18 14H28ZM18 26H28V16H18V26Z"/>
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M12 14C13.1046 14 14 14.8954 14 16V18L13.9902 18.2051C13.8876 19.2133 13.0354 20 12 20H4C2.89543 20 2 19.1046 2 18V16C2 14.8954 2.89543 14 4 14H12ZM4 18H12V16H4V18Z"/>
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M28 4C29.0354 4 29.8876 4.78666 29.9902 5.79492L30 6V10C30 11.1046 29.1046 12 28 12H4C2.89543 12 2 11.1046 2 10V6C2 4.89543 2.89543 4 4 4H28ZM4 10H28V6H4V10Z"/>
+						</svg>
+					}
+					else
+					{
+						@* Default: EUI documentation *@
+						<svg class="docs-sidebar-nav-v2__label-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+							<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+						</svg>
+					}
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@label.NavigationTitle</span>
+				</span>
+			}
+			else
+			{
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--nested docs-sidebar-nav-v2__nav-text block px-[10px] py-0 text-xs leading-4 uppercase text-[#A2B1C9]">
+					@label.NavigationTitle
+				</span>
+			}
+			@if (label.NavigationItems.Count > 0)
+			{
+				<ul class="w-full">
+					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+					{
+						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+						Level = Model.Level + 1,
+						SubTree = label,
+						RootNavigationId = Model.RootNavigationId,
+						Htmx = Model.Htmx
+					}))
+				</ul>
+			}
+		</li>
+	}
+	else if (item is PlaceholderNavigationLeaf placeholder)
+	{
+		<li class="flex group/li">
+			<a
+				href="@placeholder.Url"
+				@Model.Htmx.GetNavHxAttributes(true, null)
+				class="sidebar-link docs-sidebar-nav-v2__nav-text grow px-[10px] py-[6px] text-grey-40">
+				@placeholder.NavigationTitle
+			</a>
+		</li>
+	}
+	else if (item is PlaceholderNavigationNode placeholderGroup)
+	{
+		var allHidden = placeholderGroup.NavigationItems.All(n => n.Hidden);
+		<li class="flex flex-wrap group-navigation relative">
+			<div class="peer nav-folder-peer grid w-full grid-cols-1">
+				@if (!allHidden)
+				{
+					<input
+						id="@placeholderGroup.Id"
+						type="checkbox"
+						class="sr-only pointer-events-none"
+						tabindex="-1"
+						aria-hidden="true">
+				}
+				<a
+					href="@placeholderGroup.Url"
+					@Model.Htmx.GetNavHxAttributes(true, null)
+					class="sidebar-link flex w-full items-center gap-2 px-[10px] py-[6px] text-grey-40">
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@placeholderGroup.NavigationTitle</span>
+					@if (!allHidden)
+					{
+						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								>
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</span>
+					}
+				</a>
+			</div>
+			@if (placeholderGroup.NavigationItems.Count > 0)
+			{
+				<ul class="docs-sidebar-nav-v2__folder-children w-full relative pl-3">
+					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+					{
+						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+						Level = Model.Level + 1,
+						SubTree = placeholderGroup,
+						RootNavigationId = Model.RootNavigationId,
+						Htmx = Model.Htmx
+					}))
+				</ul>
+			}
+		</li>
+	}
+	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
+	{
+		<li class="flex group/li">
+			<a
+				href="@group.Url"
+				@Model.Htmx.GetNavHxAttributes(true, null)
+				class="sidebar-link docs-sidebar-nav-v2__nav-text px-[10px] py-[6px]"
+			>
+				@group.NavigationTitle
+			</a>
+		</li>
+	}
+	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> folder)
+	{
+		var allHidden = folder.NavigationItems.All(n => n.Hidden);
+		<li class="flex flex-wrap group-navigation relative">
+			<div class="peer nav-folder-peer grid w-full grid-cols-1">
+				@if (!allHidden)
+				{
+					<input
+						id="@folder.Id"
+						type="checkbox"
+						class="sr-only pointer-events-none"
+						tabindex="-1"
+						aria-hidden="true">
+				}
+				<a
+					href="@(folder.Url)"
+					@Model.Htmx.GetNavHxAttributes(true, null)
+					class="sidebar-link flex w-full items-center gap-2 px-[10px] py-[6px]">
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@(folder.NavigationTitle)</span>
+					@if (!allHidden)
+					{
+						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								>
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</span>
+					}
+				</a>
+			</div>
+			@if (folder.NavigationItems.Count > 0)
+			{
+				<ul class="docs-sidebar-nav-v2__folder-children w-full relative pl-3">
+					@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+					{
+						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+						IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+						Level = Model.Level + 1,
+						SubTree = folder,
+						RootNavigationId = Model.RootNavigationId,
+						Htmx = Model.Htmx
+					}))
+				</ul>
+			}
+		</li>
+	}
+	else if (item is ILeafNavigationItem<INavigationModel> leaf)
+	{
+		<li class="flex group/li">
+			<a
+				href="@leaf.Url"
+				@Model.Htmx.GetNavHxAttributes(true, null)
+				class="sidebar-link docs-sidebar-nav-v2__nav-text grow px-[10px] py-[6px]"
+			>
+				@leaf.NavigationTitle
+			</a>
+		</li>
+	}
+}
