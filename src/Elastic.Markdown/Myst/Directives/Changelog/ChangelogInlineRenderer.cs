@@ -489,8 +489,9 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderDetailedEntryFlattened(StringBuilder sb, ChangelogEntry entry, string repo, string owner, bool hideLinks, bool hideEntryDescriptions)
 	{
-		// Start with bullet point and bold title
-		_ = sb.Append($"* **{ChangelogTextUtilities.Beautify(entry.Title)}**");
+		// Start with bullet point and title (no bold, matching regular entries)
+		_ = sb.Append("* ");
+		_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
 
 		// Add PR/Issue links on the same line if available
 		var linksText = GetLinksText(entry, repo, owner, hideLinks);

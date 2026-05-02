@@ -65,9 +65,9 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 		Html.Should().NotContain("<details class=\"dropdown\">");
 		Html.Should().NotContain("dropdown-title__summary-text");
 
-		// Should contain bulleted list format with strong tags
-		Html.Should().Contain("<strong>Breaking API change.</strong>");
-		Html.Should().Contain("<strong>Another breaking change.</strong>");
+		// Should contain bulleted list format without bold titles (matching regular entries)
+		Html.Should().Contain("Breaking API change.");
+		Html.Should().Contain("Another breaking change.");
 	}
 
 	[Fact]
@@ -136,7 +136,7 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Breaking API change.");
 
 		// Should NOT contain bulleted list format
-		Html.Should().NotContain("<li><p><strong>Breaking API change.</strong>");
+		Html.Should().NotContain("<li><p>Breaking API change.");
 	}
 
 	[Fact]
@@ -188,7 +188,7 @@ public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<Chang
 	public void FlattendRenderingHidesDescriptionsButKeepsImpactAction()
 	{
 		// Should render as flattened (no dropdowns by default)
-		Html.Should().Contain("<strong>Breaking API change.</strong>");
+		Html.Should().Contain("Breaking API change.");
 		Html.Should().NotContain("<details class=\"dropdown\">");
 
 		// Description should be hidden due to :description-visibility: hide-descriptions
@@ -238,7 +238,7 @@ public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTes
 		// Should render as dropdown due to explicit :dropdowns:
 		Html.Should().Contain("<details class=\"dropdown\">");
 		Html.Should().Contain("Breaking API change.");
-		Html.Should().NotContain("<li><p><strong>Breaking API change.</strong>");
+		Html.Should().NotContain("<li><p>Breaking API change.");
 
 		// Description should be hidden due to :description-visibility: hide-descriptions
 		Html.Should().NotContain("This description should be hidden.");
@@ -313,10 +313,10 @@ public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<Changelog
 		// Regular types should render as bulleted lists (unchanged behavior)
 		Html.Should().Contain("Feature addition.");  // Regular feature type (in <li> tags)
 
-		// Separated types should render as flattened lists (new behavior)
-		Html.Should().Contain("<strong>Breaking API change.</strong>");
-		Html.Should().Contain("<strong>Known issue with search.</strong>");
-		Html.Should().Contain("<strong>Deprecated API.</strong>");
+		// Separated types should render as flattened lists (new behavior) - no bold titles
+		Html.Should().Contain("Breaking API change.");
+		Html.Should().Contain("Known issue with search.");
+		Html.Should().Contain("Deprecated API.");
 
 		// Should NOT contain dropdown HTML structure for separated types
 		Html.Should().NotContain("<details class=\"dropdown\">");
@@ -383,8 +383,8 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 		Html.Should().Contain("Breaking API change.");
 		Html.Should().Contain("Known issue with search.");
 
-		// Should NOT contain flattened format for separated types
-		Html.Should().NotContain("<strong>Breaking API change.</strong>");
-		Html.Should().NotContain("<strong>Known issue with search.</strong>");
+		// Should NOT contain flattened format for separated types (check they're in dropdown, not flat list)
+		Html.Should().NotContain("<li><p>Breaking API change.");
+		Html.Should().NotContain("<li><p>Known issue with search.");
 	}
 }
