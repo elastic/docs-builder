@@ -91,6 +91,10 @@ public class AddReportOptionTests(ITestOutputHelper output) : CreateChangelogTes
 		var yaml1 = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yaml1.Should().Contain("title: First from report");
 		yaml1.Should().Contain("https://github.com/elastic/elasticsearch/pull/7001");
+
+		var yaml2 = await FileSystem.File.ReadAllTextAsync(files[1], TestContext.Current.CancellationToken);
+		yaml2.Should().Contain("title: Second from report");
+		yaml2.Should().Contain("https://github.com/elastic/elasticsearch/pull/7002");
 	}
 
 	[Fact]
