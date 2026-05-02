@@ -344,6 +344,23 @@ public static partial class ChangelogTextUtilities
 	}
 
 	/// <summary>
+	/// Determines if an entry has any visible (non-empty) formatted PR or issue links.
+	/// This checks the actual formatted output to handle cases where links are sanitized
+	/// with the PRIVATE sentinel prefix.
+	/// </summary>
+	/// <param name="entry">The changelog entry to check</param>
+	/// <param name="repo">The repository name for link formatting</param>
+	/// <param name="hidePrivateLinks">Whether private links should be hidden (commented out)</param>
+	/// <param name="owner">The repository owner (default: "elastic")</param>
+	/// <returns>True if the entry has at least one visible formatted link</returns>
+	public static bool HasVisibleLinks(ChangelogEntry entry, string repo, bool hidePrivateLinks, string owner = "elastic")
+	{
+		var hasPrs = entry.Prs?.Any(pr => !string.IsNullOrEmpty(FormatPrLink(pr, repo, hidePrivateLinks, owner))) == true;
+		var hasIssues = entry.Issues?.Any(issue => !string.IsNullOrEmpty(FormatIssueLink(issue, repo, hidePrivateLinks, owner))) == true;
+		return hasPrs || hasIssues;
+	}
+
+	/// <summary>
 	/// Formats PR link as asciidoc.
 	/// </summary>
 	public static string FormatPrLinkAsciidoc(string pr, string repo, bool hidePrivateLinks)
