@@ -19,6 +19,8 @@ public class ChangelogPrivateLinkBugTests : DirectiveTest<ChangelogBlock>
 		"""
 		:::{changelog}
 		:type: deprecation
+		:dropdowns:
+		:description-visibility: keep-descriptions
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
@@ -77,6 +79,8 @@ public class ChangelogMixedLinkBugTests : DirectiveTest<ChangelogBlock>
 		"""
 		:::{changelog}
 		:type: deprecation
+		:dropdowns:
+		:description-visibility: keep-descriptions
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
@@ -126,6 +130,8 @@ public class ChangelogNoLinksTests : DirectiveTest<ChangelogBlock>
 		"""
 		:::{changelog}
 		:type: deprecation
+		:dropdowns:
+		:description-visibility: keep-descriptions
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml

@@ -38,7 +38,8 @@ public static class ChangelogInlineRenderer
 				block.HideFeatures,
 				typeFilter,
 				block.LinkVisibility,
-				block.DescriptionVisibility);
+				block.DescriptionVisibility,
+				block.DropdownsEnabled);
 			_ = sb.Append(bundleMarkdown);
 
 			isFirst = false;
@@ -55,7 +56,8 @@ public static class ChangelogInlineRenderer
 		HashSet<string> hideFeatures,
 		ChangelogTypeFilter typeFilter,
 		ChangelogLinkVisibility linkVisibility,
-		ChangelogDescriptionVisibility descriptionVisibility)
+		ChangelogDescriptionVisibility descriptionVisibility,
+		bool dropdownsEnabled)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -92,6 +94,7 @@ public static class ChangelogInlineRenderer
 			subsections,
 			hideLinks,
 			hideEntryDescriptions,
+			dropdownsEnabled,
 			typeFilter,
 			publishBlocker,
 			bundle.Data?.Description,
@@ -193,6 +196,7 @@ public static class ChangelogInlineRenderer
 		bool subsections,
 		bool hideLinks,
 		bool hideEntryDescriptions,
+		bool dropdownsEnabled,
 		ChangelogTypeFilter typeFilter,
 		PublishBlocker? publishBlocker,
 		string? description = null,
@@ -249,7 +253,12 @@ public static class ChangelogInlineRenderer
 		if (typeFilter == ChangelogTypeFilter.Highlight)
 		{
 			if (highlights.Count > 0)
-				RenderDetailedEntries(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+			{
+				if (dropdownsEnabled)
+					RenderDetailedEntries(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+				else
+					RenderDetailedEntriesFlattened(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions);
+			}
 			return sb.ToString();
 		}
 
@@ -257,14 +266,20 @@ public static class ChangelogInlineRenderer
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Breaking changes [{repo}-{titleSlug}-breaking-changes]");
-			RenderDetailedEntries(sb, breakingChanges, repo, owner, groupBySubtype: true, hideLinks, hideEntryDescriptions, publishBlocker);
+			if (dropdownsEnabled)
+				RenderDetailedEntries(sb, breakingChanges, repo, owner, groupBySubtype: true, hideLinks, hideEntryDescriptions, publishBlocker);
+			else
+				RenderDetailedEntriesFlattened(sb, breakingChanges, repo, owner, groupBySubtype: true, hideLinks, hideEntryDescriptions);
 		}
 
 		if (highlights.Count > 0 && typeFilter == ChangelogTypeFilter.All)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Highlights [{repo}-{titleSlug}-highlights]");
-			RenderDetailedEntries(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+			if (dropdownsEnabled)
+				RenderDetailedEntries(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+			else
+				RenderDetailedEntriesFlattened(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions);
 		}
 
 		if (security.Count > 0)
@@ -278,14 +293,20 @@ public static class ChangelogInlineRenderer
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Known issues [{repo}-{titleSlug}-known-issues]");
-			RenderDetailedEntries(sb, knownIssues, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+			if (dropdownsEnabled)
+				RenderDetailedEntries(sb, knownIssues, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+			else
+				RenderDetailedEntriesFlattened(sb, knownIssues, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions);
 		}
 
 		if (deprecations.Count > 0)
 		{
 			_ = sb.AppendLine();
 			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Deprecations [{repo}-{titleSlug}-deprecations]");
-			RenderDetailedEntries(sb, deprecations, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+			if (dropdownsEnabled)
+				RenderDetailedEntries(sb, deprecations, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+			else
+				RenderDetailedEntriesFlattened(sb, deprecations, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions);
 		}
 
 		if (features.Count > 0 || enhancements.Count > 0)
@@ -437,6 +458,97 @@ public static class ChangelogInlineRenderer
 			foreach (var entry in group)
 				RenderDetailedEntry(sb, entry, repo, owner, hideLinks, hideEntryDescriptions);
 		}
+	}
+
+	private static void RenderDetailedEntriesFlattened(
+		StringBuilder sb,
+		List<ChangelogEntry> entries,
+		string repo,
+		string owner,
+		bool groupBySubtype,
+		bool hideLinks,
+		bool hideEntryDescriptions)
+	{
+		if (groupBySubtype)
+		{
+			// Group by subtype and sort - same logic as RenderDetailedEntries
+			var groupedBySubtype = entries.GroupBy(e => e.Subtype?.ToStringFast(true) ?? string.Empty).OrderBy(g => g.Key).ToList();
+
+			foreach (var group in groupedBySubtype)
+			{
+				foreach (var entry in group)
+					RenderDetailedEntryFlattened(sb, entry, repo, owner, hideLinks, hideEntryDescriptions);
+			}
+		}
+		else
+		{
+			foreach (var entry in entries)
+				RenderDetailedEntryFlattened(sb, entry, repo, owner, hideLinks, hideEntryDescriptions);
+		}
+	}
+
+	private static void RenderDetailedEntryFlattened(StringBuilder sb, ChangelogEntry entry, string repo, string owner, bool hideLinks, bool hideEntryDescriptions)
+	{
+		// Start with bullet point and bold title
+		_ = sb.Append($"* **{ChangelogTextUtilities.Beautify(entry.Title)}**");
+
+		// Add PR/Issue links on the same line if available
+		var linksText = GetLinksText(entry, repo, owner, hideLinks);
+		if (!string.IsNullOrEmpty(linksText))
+			_ = sb.Append($" {linksText}");
+
+		_ = sb.AppendLine();
+
+		// Add description if not hidden
+		if (!hideEntryDescriptions && !string.IsNullOrWhiteSpace(entry.Description))
+		{
+			_ = sb.AppendLine($"  {entry.Description}");
+			_ = sb.AppendLine();
+		}
+
+		// Add Impact section
+		if (!string.IsNullOrWhiteSpace(entry.Impact))
+		{
+			_ = sb.AppendLine($"  **Impact:** {entry.Impact}");
+			_ = sb.AppendLine();
+		}
+
+		// Add Action section
+		if (!string.IsNullOrWhiteSpace(entry.Action))
+		{
+			_ = sb.AppendLine($"  **Action:** {entry.Action}");
+			_ = sb.AppendLine();
+		}
+	}
+
+	private static string GetLinksText(ChangelogEntry entry, string repo, string owner, bool hideLinks)
+	{
+		if (!ChangelogTextUtilities.HasVisibleLinks(entry, repo, hideLinks, owner))
+			return string.Empty;
+
+		var linksParts = new List<string>();
+
+		if (entry.Prs != null)
+		{
+			foreach (var pr in entry.Prs)
+			{
+				var formatted = ChangelogTextUtilities.FormatPrLink(pr, repo, hideLinks, owner);
+				if (!string.IsNullOrEmpty(formatted) && !formatted.StartsWith('%'))
+					linksParts.Add(formatted);
+			}
+		}
+
+		if (entry.Issues != null)
+		{
+			foreach (var issue in entry.Issues)
+			{
+				var formatted = ChangelogTextUtilities.FormatIssueLink(issue, repo, hideLinks, owner);
+				if (!string.IsNullOrEmpty(formatted) && !formatted.StartsWith('%'))
+					linksParts.Add(formatted);
+			}
+		}
+
+		return linksParts.Count > 0 ? $"[{string.Join(", ", linksParts)}]" : string.Empty;
 	}
 
 	private static void RenderDetailedEntry(StringBuilder sb, ChangelogEntry entry, string repo, string owner, bool hideLinks, bool hideEntryDescriptions)
