@@ -136,4 +136,88 @@ public class ChangelogTextUtilitiesTests
 		var result = ChangelogTextUtilities.GenerateSlug(input);
 		result.Should().Be(expected);
 	}
+
+	[Fact]
+	public void HasVisibleLinks_WithOnlyPrivateLinks_ReturnsFalse()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["# PRIVATE: https://github.com/elastic/cloud/pull/123"],
+			Issues = ["# PRIVATE: https://github.com/elastic/cloud/issues/456"]
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithMixedLinks_ReturnsTrue()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["# PRIVATE: https://github.com/elastic/cloud/pull/123", "456"],
+			Issues = ["# PRIVATE: https://github.com/elastic/cloud/issues/789"]
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithPublicLinks_ReturnsTrue()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["123"],
+			Issues = ["456"]
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithNoLinks_ReturnsFalse()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = null,
+			Issues = null
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithEmptyArrays_ReturnsFalse()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = [],
+			Issues = []
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithHidePrivateLinks_ChecksCommentedFormat()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["123"] // This should format as "% [#123](url)" when hidePrivateLinks=true
+		};
+
+		// When hidePrivateLinks is true, links are commented out but still "visible" (non-empty)
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", true);
+
+		result.Should().BeTrue();
+	}
 }

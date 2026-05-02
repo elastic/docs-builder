@@ -469,19 +469,38 @@ public static class ChangelogInlineRenderer
 
 	private static void RenderDetailedEntryLinks(StringBuilder sb, ChangelogEntry entry, string repo, string owner, bool hideLinks)
 	{
-		var hasPrs = entry.Prs is { Count: > 0 };
-		var hasIssues = entry.Issues is { Count: > 0 };
-
-		if (!hasPrs && !hasIssues)
+		// Check if the entry has any visible links after formatting
+		// This handles cases where all links are sanitized with PRIVATE prefix
+		if (!ChangelogTextUtilities.HasVisibleLinks(entry, repo, hideLinks, owner))
 			return;
 
 		if (hideLinks)
 		{
+			var hasVisibleContent = false;
 			foreach (var pr in entry.Prs ?? [])
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: true, owner));
+			{
+				var formatted = ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: true, owner);
+				if (!string.IsNullOrEmpty(formatted))
+				{
+					_ = sb.AppendLine(formatted);
+					hasVisibleContent = true;
+				}
+			}
 			foreach (var issue in entry.Issues ?? [])
-				_ = sb.AppendLine(ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: true, owner));
-			_ = sb.AppendLine("For more information, check the pull request or issue above.");
+			{
+				var formatted = ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: true, owner);
+				if (!string.IsNullOrEmpty(formatted))
+				{
+					_ = sb.AppendLine(formatted);
+					hasVisibleContent = true;
+				}
+			}
+
+			// Only show the reference text if we actually rendered some links
+			if (hasVisibleContent)
+			{
+				_ = sb.AppendLine("For more information, check the pull request or issue above.");
+			}
 			_ = sb.AppendLine();
 			return;
 		}
@@ -490,17 +509,25 @@ public static class ChangelogInlineRenderer
 		var first = true;
 		foreach (var pr in entry.Prs ?? [])
 		{
-			if (!first)
-				_ = sb.Append(' ');
-			_ = sb.Append(ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: false, owner));
-			first = false;
+			var formatted = ChangelogTextUtilities.FormatPrLink(pr, repo, hidePrivateLinks: false, owner);
+			if (!string.IsNullOrEmpty(formatted))
+			{
+				if (!first)
+					_ = sb.Append(' ');
+				_ = sb.Append(formatted);
+				first = false;
+			}
 		}
 		foreach (var issue in entry.Issues ?? [])
 		{
-			if (!first)
-				_ = sb.Append(' ');
-			_ = sb.Append(ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: false, owner));
-			first = false;
+			var formatted = ChangelogTextUtilities.FormatIssueLink(issue, repo, hidePrivateLinks: false, owner);
+			if (!string.IsNullOrEmpty(formatted))
+			{
+				if (!first)
+					_ = sb.Append(' ');
+				_ = sb.Append(formatted);
+				first = false;
+			}
 		}
 		_ = sb.AppendLine(".");
 		_ = sb.AppendLine();
