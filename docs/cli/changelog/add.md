@@ -30,7 +30,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--no-extract-release-notes`
 :   Optional: Turn off extraction of release notes from PR or issue descriptions.
-:   By default, the behavior is determined by the [extract.release_notes](/contribute/configure-changelogs-ref.md#extract) changelog configuration setting.
+:   By default, the behavior is determined by the [extract.release_notes](/contribute/configure-changelogs-ref.md#extract) changelog configuration setting. Release notes are extracted when using `--prs` or `--report` (and from issues when using `--issues`).
 
 `--feature-id <string?>`
 :   Optional: Feature flag ID
@@ -50,10 +50,11 @@ docs-builder changelog add [options...] [-h|--help]
 :   If `--owner` and `--repo` are provided, issue numbers can be used instead of URLs.
 :   If specified, `--title` can be derived from the issue.
 :   Creates one changelog file per issue.
+:   Mutually exclusive with `--report`.
 
 `--no-extract-issues`
 :   Optional: Turn off extraction of linked references.
-:   When using `--prs`: turns off extraction of linked issues from the PR body (for example, "Fixes #123").
+:   When using `--prs` or `--report`: turns off extraction of linked issues from the PR body (for example, "Fixes #123").
 :   When using `--issues`: turns off extraction of linked PRs from the issue body (for example, "Fixed by #123").
 :   By default, the behavior is determined by the `extract.issues` changelog configuration setting.
 
@@ -61,7 +62,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   Optional: Output directory for the changelog fragment. Falls back to `bundle.directory` in `changelog.yml` when not specified. If that value is also absent, defaults to current directory.
 
 `--owner <string?>`
-:   Optional: GitHub repository owner (used when `--prs` or `--issues` contains just numbers, or when using `--release-version`).
+:   Optional: GitHub repository owner (used when `--prs` or `--issues` contains just numbers, or when using `--release-version`). Not required when `--prs` or `--report` supplies only fully-qualified pull request URLs.
 :   Falls back to `bundle.owner` in `changelog.yml` when not specified. If that value is also absent, defaults to `elastic`.
 
 `--products <List<ProductInfo>>`
@@ -80,19 +81,26 @@ docs-builder changelog add [options...] [-h|--help]
 :   If mappings are configured, `--areas`, `--type`, and `--products` can also be derived from the PR labels.
 :   Creates one changelog file per PR.
 :   If there are `rules.create` definitions in the changelog configuration file and a PR has a blocking label for the resolved products, that PR is skipped and no changelog file is created for it.
+:   Mutually exclusive with `--report`.
 
+`--report <string?>`
+:   Optional: URL or path to a promotion report HTML document (for example a Buildkite promotion report). The command extracts GitHub pull request URLs from the HTML and creates one changelog file per PR, using the same parsing rules as [`changelog bundle --report`](/cli/changelog/bundle.md).
+:   Mutually exclusive with `--prs`, `--issues`, and `--release-version`.
+:   For a plain newline-delimited list of fully-qualified PR URLs, use `--prs` with a file path instead of `--report`.
+:   When the value is an `https://` URL, only hosts allowed by the parser (such as `github.com` and `buildkite.com`) are supported, and the CLI needs network access to fetch the report.
 `--release-version <string?>`
 :   Optional: GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
 :   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and creates one changelog file per PR — without creating a bundle. Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 :   Use `docs-builder changelog gh-release` instead if you also want a bundle.
 :   Requires `--repo` (or `bundle.repo` in `changelog.yml`).
 :   Set to `latest` to use the most recent release.
+:   Mutually exclusive with `--report`, `--prs`, and `--issues`.
 
 `--repo <string?>`
-:   Optional: GitHub repository name (used when `--prs`, `--issues`, or `--release-version` is specified). Falls back to `bundle.repo` in `changelog.yml` when not specified.
+:   Optional: GitHub repository name (used when `--prs`, `--issues`, `--report`, or `--release-version` is specified). Falls back to `bundle.repo` in `changelog.yml` when not specified.
 
 `--strip-title-prefix`
-:   Optional: When used with `--prs`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
+:   Optional: When used with `--prs` or `--report`, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket.
 :   For example, if a PR title is `"[Attack discovery]: Improves Attack discovery hallucination detection"`, the changelog title will be `"Improves Attack discovery hallucination detection"`.
 :   Multiple square bracket prefixes are also supported (for example `"[Discover][ESQL] Fix filtering by multiline string fields"` becomes `"Fix filtering by multiline string fields"`).
 :   This option applies only when the title is derived from the PR (when `--title` is not explicitly provided).
@@ -104,18 +112,18 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--title <string>`
 :    A short, user-facing title (max 80 characters)
-:    Required if neither `--prs` nor `--issues` is specified.
+:    Required if none of `--prs`, `--issues`, or `--report` is specified.
 :    If both `--prs` and `--title` are specified, the latter value is used instead of what exists in the PR.
 :    If the content contains any special characters such as backquotes, you must precede it with a backslash escape character (`\`).
 
 `--type <string>`
-:   Required if neither `--prs` nor `--issues` is specified. Type of change (for example, `feature`, `enhancement`, `bug-fix`, or `breaking-change`).
+:   Required if none of `--prs`, `--issues`, or `--report` is specified. Type of change (for example, `feature`, `enhancement`, `bug-fix`, or `breaking-change`).
 :   If mappings are configured, type can be derived from the PR or issue.
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
 `--use-pr-number`
 :   Optional: Use PR numbers for filenames instead of the configured `filename` strategy.
-:   Requires `--prs` or `--issues`.
+:   Requires `--prs`, `--issues`, or `--report`.
 :   Mutually exclusive with `--use-issue-number`.
 :   Refer to [](#filenames).
 
@@ -152,7 +160,7 @@ docs-builder changelog add \
 ```
 
 :::{important}
-`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. Each requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide or from linked references in the issue or PR body when extraction is enabled.
+`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. `--use-pr-number` requires `--prs`, `--issues`, or `--report`. `--use-issue-number` requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide or from linked references in the issue or PR body when extraction is enabled.
 
 **Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`timestamp`).
 :::
@@ -179,6 +187,8 @@ The `changelog add` command resolves product values in the following order:
 1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
 1. If `products.default` is defined in the changelog configuration file, those default products are used.
 1. If `--repo` is specified (or `bundle.repo` is set in the changelog configuration file), the repository name is matched against known product IDs in `products.yml` and the derived value is used.
+
+The same order applies when using `--report` (after PR URLs are resolved from the promotion report), and when using batch `--prs` with multiple pull requests.
 
 If none of these steps yield at least one product, the command returns an error.
 
