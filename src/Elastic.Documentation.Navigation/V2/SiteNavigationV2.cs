@@ -192,7 +192,10 @@ public class SiteNavigationV2 : SiteNavigation
 	)
 	{
 		if (TryResolvePageSource(page, out var file) || urlToFile.TryGetValue(item.Url, out file))
-			_ = NavigationDocumentationFileLookup.TryAdd(file, item);
+		{
+			_ = NavigationDocumentationFileLookup.Remove(file);
+			NavigationDocumentationFileLookup.Add(file, item);
+		}
 	}
 
 	private bool TryResolvePageSource(Uri page, out IDocumentationFile file)

@@ -381,4 +381,67 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		navigationItem.Should().BeOfType<PageCrossLinkLeaf>();
 		navigationItem.Url.Should().Be("/docs/products/elasticsearch/v9");
 	}
+
+	[Fact]
+	public void SiteNavigationResolvesFilesFromUnseenChildTocs()
+	{
+		var fileSystem = new MockFileSystem();
+		var docsContentDir = "/checkouts/current/docs-content";
+
+		// language=yaml
+		var docsetYaml = """
+		                 project: Docs content
+		                 toc:
+		                   - file: index.md
+		                   - toc: products
+		                 """;
+		fileSystem.AddFile($"{docsContentDir}/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/index.md", new MockFileData("# Docs content"));
+
+		// language=yaml
+		var productsTocYaml = """
+		                      toc:
+		                        - file: index.md
+		                        - toc: elasticsearch
+		                      """;
+		fileSystem.AddFile($"{docsContentDir}/docs/products/toc.yml", new MockFileData(productsTocYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/products/index.md", new MockFileData("# Product hubs"));
+
+		// language=yaml
+		var elasticsearchTocYaml = """
+		                           toc:
+		                             - file: v9.md
+		                           """;
+		fileSystem.AddFile($"{docsContentDir}/docs/products/elasticsearch/toc.yml", new MockFileData(elasticsearchTocYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/products/elasticsearch/v9.md", new MockFileData("# Elasticsearch"));
+
+		// language=yaml
+		var siteNavYaml = """
+		                  toc:
+		                    - toc: products
+		                  """;
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+
+		var docsContentContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, docsContentDir, output);
+		var docset = DocumentationSetFile.LoadAndResolve(
+			docsContentContext.Collector,
+			fileSystem.FileInfo.New($"{docsContentDir}/docs/docset.yml"),
+			FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts")
+		);
+		var docsContentNav = new DocumentationSetNavigation<IDocumentationFile>(
+			docset,
+			docsContentContext,
+			GenericDocumentationFileFactory.Instance
+		);
+
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, docsContentDir, output);
+		var navigation = new SiteNavigation(siteNavFile, siteContext, [docsContentNav], sitePrefix: "docs");
+
+		var elasticsearchToc = navigation.Nodes[new Uri("docs-content://products/elasticsearch")];
+		var elasticsearchFile = elasticsearchToc.Index.Model;
+
+		navigation.NavigationDocumentationFileLookup.TryGetValue(elasticsearchFile, out var navigationItem)
+			.Should().BeTrue("unseen child TOCs can still own files that the assembler processes");
+		navigationItem.Should().BeSameAs(elasticsearchToc);
+	}
 }
