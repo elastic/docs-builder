@@ -20,6 +20,7 @@ public record ChangelogRenderContext
 	public required string Owner { get; init; }
 	public required IReadOnlyDictionary<ChangelogEntryType, IReadOnlyCollection<ChangelogEntry>> EntriesByType { get; init; }
 	public required bool Subsections { get; init; }
+	public required bool Dropdowns { get; init; }
 	public required HashSet<string> FeatureIdsToHide { get; init; }
 	public required Dictionary<ChangelogEntry, HashSet<string>> EntryToBundleProducts { get; init; }
 	public required Dictionary<ChangelogEntry, string> EntryToRepo { get; init; }

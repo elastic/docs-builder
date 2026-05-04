@@ -55,4 +55,16 @@ docs-builder changelog render \
 docs-builder changelog render \
   --input "./public-bundle.yaml|./changelog|elasticsearch|keep-links,./private-bundle.yaml|./private-changelog|internal-repo|hide-links" \
   --output ./release-notes
+
+# Render with subsections and flattened format (default)
+docs-builder changelog render \
+  --input "./docs/changelog/bundles/9.3.0.yaml" \
+  --output ./release-notes \
+  --subsections
+
+### Render with dropdown format
+docs-builder changelog render \
+  --input "./docs/changelog/bundles/9.3.0.yaml" \
+  --output ./release-notes \
+  --dropdowns
 ```

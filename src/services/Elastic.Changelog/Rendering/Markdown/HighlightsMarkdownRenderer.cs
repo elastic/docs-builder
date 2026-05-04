@@ -63,11 +63,34 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 					_ = sb.AppendLine();
 					if (shouldHide)
 						_ = sb.AppendLine("<!--");
-					_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
-					_ = sb.AppendLine(entry.Description ?? "% Describe the highlight");
-					_ = sb.AppendLine();
-					RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
-					_ = sb.AppendLine("::::");
+
+					if (context.Dropdowns)
+					{
+						// Dropdown rendering (current logic)
+						_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
+						_ = sb.AppendLine(entry.Description ?? "% Describe the highlight");
+						_ = sb.AppendLine();
+						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
+						_ = sb.AppendLine("::::");
+					}
+					else
+					{
+						// Flattened rendering
+						_ = sb.Append("* ");
+						_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
+						_ = sb.AppendLine();
+
+						// Description with proper indentation
+						if (!string.IsNullOrWhiteSpace(entry.Description))
+						{
+							_ = sb.AppendLine(ChangelogTextUtilities.Indent(entry.Description));
+							_ = sb.AppendLine();
+						}
+
+						// PR/Issue links with "For more information" pattern
+						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
+					}
+
 					if (shouldHide)
 						_ = sb.AppendLine("-->");
 				}
