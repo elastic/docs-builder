@@ -175,7 +175,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				.FirstOrDefault()?
 				.Title;
 			if (!string.IsNullOrWhiteSpace(heroTitle))
-				Title = heroTitle!;
+				Title = heroTitle;
 		}
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);

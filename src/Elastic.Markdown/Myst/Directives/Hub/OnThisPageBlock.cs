@@ -40,10 +40,10 @@ public class OnThisPageBlock(DirectiveBlockParser parser, ParserContext context)
 			switch (descendant)
 			{
 				case CardGroupBlock g when !string.IsNullOrWhiteSpace(g.Anchor) && !string.IsNullOrWhiteSpace(g.Title):
-					items.Add(new OnThisPageItem(g.Title!, g.Anchor!));
+					items.Add(new OnThisPageItem(g.Title, g.Anchor));
 					break;
 				case WhatsNewBlock w when !string.IsNullOrWhiteSpace(w.Data.Id) && !string.IsNullOrWhiteSpace(w.Data.Title):
-					items.Add(new OnThisPageItem(w.Data.Title!, w.Data.Id!));
+					items.Add(new OnThisPageItem(w.Data.Title, w.Data.Id));
 					break;
 			}
 		}

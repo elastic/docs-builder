@@ -42,7 +42,7 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 
 		if (!string.IsNullOrWhiteSpace(product))
 		{
-			var resolved = LoadFromCentralConfig(product!);
+			var resolved = LoadFromCentralConfig(product);
 			if (resolved is null)
 			{
 				this.EmitError($"{{whats-new}} :product: '{product}' was not found in config/whats-new.yml.");
@@ -94,7 +94,7 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 	}
 
 	public override IEnumerable<string> GeneratedAnchors =>
-		string.IsNullOrWhiteSpace(Data.Id) ? [] : [Data.Id!];
+		string.IsNullOrWhiteSpace(Data.Id) ? [] : [Data.Id];
 }
 
 [YamlSerializable]
