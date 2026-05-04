@@ -73,7 +73,6 @@ shared_configuration:
 ###
 narrative:
   checkout_strategy: full
-  current: hub-pages
 
 ###
 # 'references' defines a map of `elastic/<repository_name> * <repository_config>
