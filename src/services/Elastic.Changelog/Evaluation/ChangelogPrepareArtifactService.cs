@@ -50,10 +50,11 @@ public class ChangelogPrepareArtifactService(
 					_logger.LogInformation("Reusing existing filename {Filename} for stable path on branch", changelogFilename);
 
 				var destYaml = _fileSystem.Path.Combine(input.OutputDir, changelogFilename);
-				// Read YAML, normalize to remove any BOM, then write with UTF-8 no BOM for tooling compatibility
+				// Read YAML, normalize to remove any BOM, then write UTF-8 bytes without BOM (avoids provider-specific WriteAllText preamble behavior).
 				var yamlContent = await _fileSystem.File.ReadAllTextAsync(sourceYaml, ctx);
 				var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
-				await _fileSystem.File.WriteAllTextAsync(destYaml, normalizedContent, Encoding.UTF8, ctx);
+				var utf8Bytes = Encoding.UTF8.GetBytes(normalizedContent);
+				await _fileSystem.File.WriteAllBytesAsync(destYaml, utf8Bytes, ctx);
 				_logger.LogInformation("Normalized and copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
 			}
 			else

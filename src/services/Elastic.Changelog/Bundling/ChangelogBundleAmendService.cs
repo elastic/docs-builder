@@ -259,7 +259,7 @@ public partial class ChangelogBundleAmendService(
 
 			// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
 			var normalizedYaml = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yaml);
-			await _fileSystem.File.WriteAllTextAsync(amendFilePath, normalizedYaml, Encoding.UTF8, ctx);
+			await _fileSystem.File.WriteAllBytesAsync(amendFilePath, Encoding.UTF8.GetBytes(normalizedYaml), ctx);
 			_logger.LogInformation("Created amend file: {AmendFilePath} with {Count} entries", amendFilePath, entries.Count);
 
 			return true;

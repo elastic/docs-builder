@@ -49,6 +49,7 @@ public static partial class ReleaseNotesSerialization
 	/// </summary>
 	public static ChangelogEntry DeserializeEntry(string yaml)
 	{
+		yaml = StripLeadingUtf8BomChar(yaml);
 		var yamlDto = YamlDeserializer.Deserialize<ChangelogEntryDto>(yaml);
 		return ToEntry(yamlDto);
 	}
@@ -70,6 +71,7 @@ public static partial class ReleaseNotesSerialization
 	/// </summary>
 	public static Bundle DeserializeBundle(string yaml)
 	{
+		yaml = StripLeadingUtf8BomChar(yaml);
 		var yamlDto = YamlDeserializer.Deserialize<BundleDto>(yaml);
 		return ToBundle(yamlDto);
 	}
@@ -309,12 +311,20 @@ public static partial class ReleaseNotesSerialization
 	/// <returns>The normalized YAML content.</returns>
 	public static string NormalizeYaml(string yaml)
 	{
+		yaml = StripLeadingUtf8BomChar(yaml);
 		// Skip comment lines
 		var yamlLines = yaml.Split('\n');
 		var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
 
 		// Normalize version to target
 		return VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+	}
+
+	private static string StripLeadingUtf8BomChar(string text)
+	{
+		if (string.IsNullOrEmpty(text))
+			return text;
+		return text[0] == '\uFEFF' ? text[1..] : text;
 	}
 
 	/// <summary>

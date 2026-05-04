@@ -47,10 +47,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var filename = GenerateFilename(collector, input);
 		var filePath = fileSystem.Path.Join(outputDir, filename);
 
-		// Write file with explicit UTF-8 encoding to ensure proper character handling
-		// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
+		// Write UTF-8 bytes without BOM (GetBytes never emits a preamble; avoids provider-specific WriteAllText behavior).
 		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
-		await fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Encoding.UTF8, ctx);
+		await fileSystem.File.WriteAllBytesAsync(filePath, Encoding.UTF8.GetBytes(normalizedContent), ctx);
 		logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
 
 		return true;

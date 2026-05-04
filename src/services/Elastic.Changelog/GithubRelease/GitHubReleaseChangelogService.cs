@@ -7,8 +7,8 @@ using System.IO.Abstractions;
 using System.Text;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Utilities;
 using Elastic.Changelog.GitHub;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -304,7 +304,7 @@ public class GitHubReleaseChangelogService(
 		var filePath = _fileSystem.Path.Join(outputDir, filename);
 		// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
 		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
-		await _fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Encoding.UTF8, ctx);
+		await _fileSystem.File.WriteAllBytesAsync(filePath, Encoding.UTF8.GetBytes(normalizedContent), ctx);
 
 		createdFiles.Add(filename);
 		_logger.LogDebug("Created changelog: {FilePath}", filePath);

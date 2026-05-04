@@ -7,8 +7,8 @@ using System.Text.Json;
 using Actions.Core.Services;
 using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
-using Elastic.Changelog.Utilities;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
@@ -249,6 +249,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	{
 		// Arrange
 		await SetupConfig();
+		FileSystem.Directory.CreateDirectory(StagingDir);
 
 		// Create YAML with BOM prefix
 		const string yamlContent = """
@@ -259,7 +260,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 			    target: 9.1.0
 			    lifecycle: ga
 			""";
-		
+
 		var contentWithBom = ChangelogUtf8Normalization.Utf8BomChar + yamlContent;
 		var stagingYaml = Path.Join(StagingDir, "changelog.yaml");
 		await FileSystem.File.WriteAllTextAsync(stagingYaml, contentWithBom, Encoding.UTF8, CancellationToken.None);

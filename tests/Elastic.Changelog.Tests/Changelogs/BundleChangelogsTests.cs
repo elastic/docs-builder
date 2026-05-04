@@ -6125,7 +6125,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("release-date:", "release date should be auto-populated when bundle.release_dates is true");
 	}
 
-	[Test]
+	[Fact]
 	public async Task BundleChangelogs_WithBomPrefixedInput_ProducesNormalizedOutput()
 	{
 		// Arrange - Create changelog with BOM prefix
@@ -6172,10 +6172,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var outputBytes = await FileSystem.File.ReadAllBytesAsync(outputPath, TestContext.Current.CancellationToken);
 		ChangelogUtf8Normalization.HasUtf8Bom(outputBytes).Should().BeFalse("bundled output should not contain UTF-8 BOM");
 
-		// Verify content is preserved (without BOM)
+		// Verify content refs (bundle uses file refs + checksum unless resolve inlines entries)
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("Test changelog with BOM");
-		bundleContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/123");
+		bundleContent.Should().Contain("changelog-with-bom.yaml");
+		bundleContent.Should().Contain("entries:");
 	}
 
 	private void CreateSampleChangelogs()

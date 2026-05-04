@@ -7,9 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Utilities;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -769,7 +769,7 @@ public partial class ChangelogBundlingService(
 		// Write bundled file with explicit UTF-8 encoding to ensure proper character handling
 		// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
 		var normalizedYaml = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(bundledYaml);
-		await _fileSystem.File.WriteAllTextAsync(outputPath, normalizedYaml, Encoding.UTF8, ctx);
+		await _fileSystem.File.WriteAllBytesAsync(outputPath, Encoding.UTF8.GetBytes(normalizedYaml), ctx);
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
 	}
 

@@ -1,3 +1,7 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
 using System;
 
 namespace Elastic.Changelog.Utilities;
@@ -16,7 +20,7 @@ public static class ChangelogUtf8Normalization
 	/// <summary>
 	/// UTF-8 Byte Order Mark as byte sequence (EF BB BF).
 	/// </summary>
-	public static readonly byte[] Utf8BomBytes = { 0xEF, 0xBB, 0xBF };
+	public static readonly byte[] Utf8BomBytes = [0xEF, 0xBB, 0xBF];
 
 	/// <summary>
 	/// Strips the leading UTF-8 BOM character from a string if present.
@@ -37,11 +41,8 @@ public static class ChangelogUtf8Normalization
 	/// </summary>
 	/// <param name="bytes">The byte span to check</param>
 	/// <returns>True if the span starts with UTF-8 BOM bytes</returns>
-	public static bool HasUtf8Bom(ReadOnlySpan<byte> bytes)
-	{
-		return bytes.Length >= 3 &&
-		       bytes[0] == 0xEF &&
-		       bytes[1] == 0xBB &&
-		       bytes[2] == 0xBF;
-	}
+	public static bool HasUtf8Bom(ReadOnlySpan<byte> bytes) => bytes.Length >= 3 &&
+			   bytes[0] == 0xEF &&
+			   bytes[1] == 0xBB &&
+			   bytes[2] == 0xBF;
 }

@@ -7,8 +7,8 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
-using Elastic.Changelog.Utilities;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
 
@@ -233,33 +233,22 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		writeFs.Directory.GetFiles(tempOutput, "*.yaml").Should().NotBeEmpty();
 	}
 
-	[Test]
+	[Fact]
 	public async Task CreateChangelog_OutputDoesNotContainBom()
 	{
-		// Arrange
-		const string configContents = """
-			types:
-			  - feature
-			  - bug-fix
-			lifecycles:
-			  - ga
-			  - preview
-			  - beta
-			""";
+		await WriteConfig(ConfigWithProductLabels);
+		var tempOutput = Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(tempOutput);
 
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "changelog.yml");
-		await FileSystem.File.WriteAllTextAsync(configPath, configContents, TestContext.Current.CancellationToken);
-
-		var tempOutput = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		
 		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, null);
 		var input = new CreateChangelogArguments
 		{
 			Title = "Test BOM handling",
 			Type = "feature",
-			Products = [new("elasticsearch", "9.1.0", "ga")],
-			Config = configPath,
-			Output = tempOutput
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.1.0", Lifecycle = "ga" }],
+			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			Output = tempOutput,
+			Concise = true
 		};
 
 		// Act
