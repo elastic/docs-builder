@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.ReleaseNotes;
@@ -80,7 +81,8 @@ public static partial class ReleaseNotesSerialization
 	public static string SerializeEntry(ChangelogEntry entry)
 	{
 		var dto = ToDto(entry);
-		return YamlSerializer.Serialize(dto);
+		var yaml = YamlSerializer.Serialize(dto);
+		return ApplyDefensiveTitleQuotingIfNeeded(yaml, entry.Title);
 	}
 
 	/// <summary>
@@ -90,6 +92,59 @@ public static partial class ReleaseNotesSerialization
 	{
 		var dto = ToDto(bundle);
 		return YamlSerializer.Serialize(dto);
+	}
+
+	private static string ApplyDefensiveTitleQuotingIfNeeded(string yaml, string? title)
+	{
+		if (!ChangelogTextUtilities.TitleNeedsDefensiveYamlQuoting(title))
+			return yaml;
+
+		var lines = yaml.Split('\n');
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var line = lines[i];
+			var trimmedStart = line.TrimStart();
+			if (!trimmedStart.StartsWith("title:", StringComparison.Ordinal))
+				continue;
+
+			var colonIdx = line.IndexOf(':');
+			if (colonIdx < 0)
+				continue;
+
+			var valuePart = line[(colonIdx + 1)..].TrimStart();
+			if (valuePart.Length > 0 && (valuePart[0] == '"' || valuePart[0] == '\''))
+				return yaml;
+
+			// Block literals (| / >) span following lines; rewriting only the header orphans continuations.
+			if (valuePart.Length > 0 && (valuePart[0] == '|' || valuePart[0] == '>'))
+				return yaml;
+
+			lines[i] = string.Concat(line.AsSpan(0, colonIdx + 1), " ", ToYamlDoubleQuotedString(title!));
+			break;
+		}
+
+		return string.Join('\n', lines);
+	}
+
+	private static string ToYamlDoubleQuotedString(string s)
+	{
+		var sb = new StringBuilder(s.Length + 2);
+		_ = sb.Append('"');
+		foreach (var c in s)
+		{
+			_ = c switch
+			{
+				'\\' => sb.Append("\\\\"),
+				'"' => sb.Append("\\\""),
+				'\n' => sb.Append("\\n"),
+				'\r' => sb.Append("\\r"),
+				'\t' => sb.Append("\\t"),
+				_ => c < 0x20 ? sb.AppendFormat(CultureInfo.InvariantCulture, "\\u{0:X4}", (int)c) : sb.Append(c),
+			};
+		}
+
+		_ = sb.Append('"');
+		return sb.ToString();
 	}
 
 	#region Manual Mapping Methods

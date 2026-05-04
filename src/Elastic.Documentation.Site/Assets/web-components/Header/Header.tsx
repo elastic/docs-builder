@@ -1,9 +1,10 @@
 import '../../eui-icons-cache'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
-import { DeploymentInfo } from './DeploymentInfo'
+import { DeploymentInfo, headerButtonCss } from './DeploymentInfo'
 import {
     EuiHeader,
     EuiHeaderLogo,
+    EuiIcon,
     EuiProvider,
     useEuiTheme,
 } from '@elastic/eui'
@@ -38,6 +39,7 @@ export const Header = ({
     title,
     logoHref,
     githubRepository,
+    githubLink,
     gitBranch,
     gitCommit,
     githubRef,
@@ -96,13 +98,20 @@ export const Header = ({
             </span>
         )
     ) : (
-        // Default: Elastic-branded logo
+        // Default: Elastic-branded logo (light-mode styling)
         <span ref={containerRef}>
             <EuiHeaderLogo
                 href={logoHref}
                 css={css`
+                    padding-block: 7px;
+                    height: auto;
+                    line-height: normal;
+                    border-radius: ${euiTheme.border.radius.small};
+                    &:hover {
+                        background: rgba(0, 0, 0, 0.06) !important;
+                    }
                     & > span {
-                        color: var(--color-white);
+                        color: ${euiTheme.colors.textInk};
                     }
                 `}
             >
@@ -118,9 +127,22 @@ export const Header = ({
             utilityClasses={false}
         >
             <EuiHeader
-                css={css`
-                    background-color: ${bgColor};
-                `}
+                css={
+                    branded
+                        ? css`
+                              background-color: ${bgColor};
+                          `
+                        : css`
+                              background: linear-gradient(
+                                  to bottom,
+                                  #ffffff 0%,
+                                  #f5f7fa 100%
+                              );
+                              border-bottom: 1px solid
+                                  ${euiTheme.colors.lightShade};
+                              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+                          `
+                }
                 sections={[
                     {
                         items: [logoSection],
@@ -129,6 +151,28 @@ export const Header = ({
                         ? [
                               {
                                   items: [
+                                      ...(githubLink
+                                          ? [
+                                                <a
+                                                    href={githubLink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    css={css`
+                                                        ${headerButtonCss(
+                                                            euiTheme
+                                                        )};
+                                                        margin-inline: ${euiTheme
+                                                            .size.s};
+                                                    `}
+                                                >
+                                                    <EuiIcon
+                                                        type="logoGithub"
+                                                        color="inherit"
+                                                    />
+                                                    GitHub
+                                                </a>,
+                                            ]
+                                          : []),
                                       <DeploymentInfo
                                           gitBranch={gitBranch}
                                           gitCommit={gitCommit}
