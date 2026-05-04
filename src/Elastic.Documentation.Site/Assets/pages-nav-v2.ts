@@ -87,8 +87,11 @@ function linkPathMatchesCurrentPage(anchor: HTMLAnchorElement) {
 }
 
 /**
- * Primary click on a folder row link: same-URL toggles expand/collapse only (preventDefault);
- * navigating to another URL keeps the folder open (checkbox checked) and follows href.
+ * Primary click on a folder row link:
+ * - When the current page matches the folder row href, toggle expand/collapse only (preventDefault).
+ * - When the folder is already expanded but the URL does not match (typical for placeholder
+ *   groups like `/_placeholder/...`), toggle closed so a second click collapses the section.
+ * - Otherwise open the folder and allow navigation to the row href (e.g. section index).
  * Skips modified clicks (new tab, etc.). Collapsed folder ids are stored for expandToCurrentPage.
  */
 function ensureNavV2FolderLinkToggle() {
@@ -135,6 +138,15 @@ function ensureNavV2FolderLinkToggle() {
 
             if (linkPathMatchesCurrentPage(a)) {
                 cb.checked = !cb.checked
+                cb.dispatchEvent(new Event('change', { bubbles: true }))
+                persistFolderCheckboxCollapsedState(cb)
+                e.preventDefault()
+                e.stopPropagation()
+                return
+            }
+
+            if (cb.checked) {
+                cb.checked = false
                 cb.dispatchEvent(new Event('change', { bubbles: true }))
                 persistFolderCheckboxCollapsedState(cb)
                 e.preventDefault()
@@ -276,6 +288,122 @@ function initAccordion(nav: HTMLElement) {
     })
 }
 
+function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
+    const li = peer.parentElement
+    if (!li?.matches('li.group-navigation')) {
+        return
+    }
+
+    const input = li.querySelector<HTMLInputElement>(
+        ':scope > .nav-folder-peer input[type=checkbox]'
+    )
+    if (input?.checked) {
+        return
+    }
+
+    const ul = li.querySelector<HTMLElement>(
+        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__folder-children'
+    )
+    if (ul) {
+        void ul.scrollHeight
+    }
+}
+
+function primeNavV2FolderLayoutsSync(nav: HTMLElement, maxCount: number) {
+    const uls = nav.querySelectorAll<HTMLUListElement>(
+        'ul.docs-sidebar-nav-v2__folder-children'
+    )
+    const n = Math.min(maxCount, uls.length)
+    for (let i = 0; i < n; i++) {
+        const ul = uls[i]
+        const li = ul.closest('li.group-navigation')
+        const input = li?.querySelector<HTMLInputElement>(
+            ':scope > .nav-folder-peer input[type=checkbox]'
+        )
+        if (!input?.checked) {
+            void ul.scrollHeight
+        }
+    }
+}
+
+/**
+ * Spreads first-open layout cost off the interaction path: idle batches measure collapsed
+ * folder lists; pointer events on the folder row warm right before click (see init).
+ */
+function scheduleNavV2CollapsedFolderLayoutWarmup(
+    nav: HTMLElement,
+    startIndex: number
+) {
+    const uls = nav.querySelectorAll<HTMLUListElement>(
+        'ul.docs-sidebar-nav-v2__folder-children'
+    )
+    let index = startIndex
+    const chunkSize = 6
+
+    const schedule = (cb: () => void) => {
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(
+                () => {
+                    cb()
+                },
+                { timeout: 2000 }
+            )
+        } else {
+            setTimeout(cb, 0)
+        }
+    }
+
+    const step = () => {
+        if (!nav.isConnected) {
+            return
+        }
+
+        const end = Math.min(index + chunkSize, uls.length)
+        for (; index < end; index++) {
+            const ul = uls[index]
+            const li = ul.closest('li.group-navigation')
+            const input = li?.querySelector<HTMLInputElement>(
+                ':scope > .nav-folder-peer input[type=checkbox]'
+            )
+            if (!input?.checked) {
+                void ul.scrollHeight
+            }
+        }
+
+        if (index < uls.length) {
+            schedule(step)
+        }
+    }
+
+    schedule(step)
+}
+
+function initNavV2FolderLayoutWarmup(nav: HTMLElement) {
+    primeNavV2FolderLayoutsSync(nav, 14)
+
+    nav.querySelectorAll<HTMLElement>(
+        'li.group-navigation > .nav-folder-peer'
+    ).forEach((peer) => {
+        if (peer.dataset.navV2PointerWarmBound === 'true') {
+            return
+        }
+
+        peer.dataset.navV2PointerWarmBound = 'true'
+        const warm = () => {
+            warmFolderSubtreeLayoutFromPeer(peer)
+        }
+
+        peer.addEventListener('pointerenter', warm, { passive: true })
+        /*
+         * Runs immediately before click (after hover path): pays layout once so the grid
+         * transition is less likely to share a frame with the first full subtree measure.
+         */
+        peer.addEventListener('pointerdown', warm, { passive: true })
+    })
+
+    scheduleNavV2CollapsedFolderLayoutWarmup(nav, 14)
+}
+
 function clearActiveSubtreeHighlight(nav: HTMLElement) {
     nav.querySelectorAll(
         '.nav-v2-active-subtree, .nav-v2-active-leaf, .nav-v2-active-ancestor'
@@ -351,7 +479,9 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
     const folderRowLink = hostLi.querySelector<HTMLAnchorElement>(
         ':scope > .nav-folder-peer > a.sidebar-link'
     )
-    const childUl = hostLi.querySelector(':scope > ul')
+    const childUl = hostLi.querySelector(
+        ':scope > .docs-sidebar-nav-v2__folder-clip .docs-sidebar-nav-v2__folder-children'
+    )
 
     if (
         hostLi.classList.contains('group-navigation') &&
@@ -576,6 +706,7 @@ export function initNavV2(nav: HTMLElement) {
     markCurrentPage(nav)
     expandToCurrentPage(nav)
     applyActiveSubtreeHighlight(nav)
+    initNavV2FolderLayoutWarmup(nav)
     requestAnimationFrame(() => {
         requestAnimationFrame(() => initNavV2TruncationTooltips(nav))
     })

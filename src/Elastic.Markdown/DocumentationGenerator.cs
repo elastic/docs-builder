@@ -294,6 +294,23 @@ public partial class DocumentationGenerator
 		}
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
+
+		// Skip normal HTML generation for intro/outro files that will be rendered via API pipeline
+		if (IsApiMarkdownFile(file.RelativePath))
+		{
+			_logger.LogTrace("Skipping HTML generation for API intro/outro file: {RelativePath}", file.RelativePath);
+
+			// Still allow Myst processing for cross-links and diagnostics, but skip HTML output
+			if (file is MarkdownFile markdown)
+			{
+				// Parse the markdown for cross-link resolution and diagnostics only
+				var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
+				// Cross-links and diagnostics are handled during parsing, so we're done
+			}
+
+			return;
+		}
+
 		var outputFile = OutputFile(file.RelativePath);
 
 		if (outputFile is not null)
@@ -438,6 +455,41 @@ public partial class DocumentationGenerator
 	{
 		await DocumentationSet.ResolveDirectoryTree(ctx);
 		return await HtmlWriter.RenderLayout(markdown, ctx);
+	}
+
+	/// <summary>
+	/// Checks if a file path is registered as an intro/outro file in any API configuration.
+	/// These files should be rendered via the API pipeline rather than normal HTML generation.
+	/// </summary>
+	private bool IsApiMarkdownFile(string relativePath)
+	{
+		var normalized = relativePath.Replace(Path.DirectorySeparatorChar, '/');
+
+		if (Context.Configuration.ApiConfigurations == null)
+			return false;
+
+		foreach (var apiConfig in Context.Configuration.ApiConfigurations.Values)
+		{
+			// Check intro files
+			foreach (var introFile in apiConfig.IntroMarkdownFiles)
+			{
+				var introRelativePath = Path.GetRelativePath(Context.DocumentationSourceDirectory.FullName, introFile.FullName)
+					.Replace(Path.DirectorySeparatorChar, '/');
+				if (string.Equals(normalized, introRelativePath, StringComparison.OrdinalIgnoreCase))
+					return true;
+			}
+
+			// Check outro files
+			foreach (var outroFile in apiConfig.OutroMarkdownFiles)
+			{
+				var outroRelativePath = Path.GetRelativePath(Context.DocumentationSourceDirectory.FullName, outroFile.FullName)
+					.Replace(Path.DirectorySeparatorChar, '/');
+				if (string.Equals(normalized, outroRelativePath, StringComparison.OrdinalIgnoreCase))
+					return true;
+			}
+		}
+
+		return false;
 	}
 
 }

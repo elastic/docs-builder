@@ -33,30 +33,36 @@ public class DocSetConfigurationCrossLinkFetcher(
 		var publicReader = linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous();
 		var useDualRegistry = configuration.Registry != DocSetRegistry.Public && _codexReader is not null;
 
+		// Fetch each registry once up front so per-repository lookups don't trigger N S3 round-trips.
+		var publicRegistry = await TryGetRegistry(publicReader, ctx);
+		var codexRegistry = useDualRegistry ? await TryGetRegistry(_codexReader!, ctx) : null;
+		var hadFetchFailures = false;
+
 		foreach (var entry in configuration.CrossLinkEntries)
 		{
 			_ = declaredRepositories.Add(entry.Repository);
 			var isCodexEntry = useDualRegistry && entry.Registry != DocSetRegistry.Public;
 			var reader = isCodexEntry ? _codexReader! : publicReader;
+			var registry = isCodexEntry ? codexRegistry : publicRegistry;
 
 			if (isCodexEntry)
 				_ = codexRepositories.Add(entry.Repository);
 
 			try
 			{
-				var linkReference = await FetchCrossLinksFromReader(reader, entry.Repository, this, ctx);
-				linkReferences.Add(entry.Repository, linkReference);
-				registryUrlsByRepository[entry.Repository] = reader.RegistryUrl;
+				if (registry is null || !registry.Repositories.TryGetValue(entry.Repository, out var repoBranches))
+					throw new Exception($"Repository {entry.Repository} not found in link index");
 
-				var registry = await reader.GetRegistry(ctx);
-				if (registry.Repositories.TryGetValue(entry.Repository, out var repoBranches))
-				{
-					var linkIndexEntry = GetNextContentSourceLinkIndexEntry(repoBranches, entry.Repository);
-					linkIndexEntries.Add(entry.Repository, linkIndexEntry);
-				}
+				var linkIndexEntry = GetNextContentSourceLinkIndexEntry(repoBranches, entry.Repository);
+				var linkReference = await FetchLinkIndexEntryFromReader(reader, entry.Repository, linkIndexEntry, ctx);
+
+				linkReferences.Add(entry.Repository, linkReference);
+				linkIndexEntries.Add(entry.Repository, linkIndexEntry);
+				registryUrlsByRepository[entry.Repository] = reader.RegistryUrl;
 			}
 			catch (Exception ex)
 			{
+				hadFetchFailures = true;
 				_logger.LogWarning(ex, "Error fetching link data for repository '{Repository}'. Cross-links to this repository may not resolve correctly.", entry.Repository);
 				_ = registryUrlsByRepository.TryAdd(entry.Repository, reader.RegistryUrl);
 
@@ -86,6 +92,24 @@ public class DocSetConfigurationCrossLinkFetcher(
 			LinkIndexEntries = linkIndexEntries.ToFrozenDictionary(),
 			RegistryUrlsByRepository = registryUrlsByRepository.ToFrozenDictionary(),
 			CodexRepositories = codexRepositories.Count > 0 ? codexRepositories.ToFrozenSet() : null,
+			IsComplete = !hadFetchFailures,
 		};
+	}
+
+	private async Task<LinkRegistry?> TryGetRegistry(ILinkIndexReader reader, Cancel ctx)
+	{
+		try
+		{
+			return await reader.GetRegistry(ctx);
+		}
+		catch (OperationCanceledException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			_logger.LogWarning(ex, "Failed to fetch link index registry from {RegistryUrl}", reader.RegistryUrl);
+			return null;
+		}
 	}
 }

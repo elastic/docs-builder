@@ -355,11 +355,11 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var releasesHtml = string.IsNullOrWhiteSpace(block.Releases)
 			? null
-			: RenderInlineMarkdown(block.Releases!);
+			: RenderInlineMarkdown(block.Releases);
 
 		var descriptionHtml = string.IsNullOrWhiteSpace(block.Description)
 			? null
-			: RenderInlineMarkdown(block.Description!);
+			: RenderInlineMarkdown(block.Description);
 
 		var slice = HeroView.Create(new HeroViewModel
 		{

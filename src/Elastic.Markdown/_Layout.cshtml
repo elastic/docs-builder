@@ -33,7 +33,11 @@
 					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
 					<main id="content-container" class="min-w-0 lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-end mx-4 gap-4">
 						@await RenderPartialAsync(_TableOfContents.Create(Model))
-						<div class="mb-9 mt-0 min-w-0">
+						@{
+							var breadcrumbs = Model.Breadcrumbs.ToList();
+							var breadcrumbVisible = breadcrumbs.Count > 0 && (breadcrumbs.Count > 1 || Model.BuildType != BuildType.Isolated);
+						}
+						<div class="mb-9 mt-0 min-w-0 @(breadcrumbVisible ? "" : "pt-6")">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 							<article id="markdown-content" class="markdown-content min-w-0">
 								<input type="checkbox" class="hidden" id="pages-nav-hamburger">

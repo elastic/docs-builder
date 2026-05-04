@@ -27,7 +27,7 @@ You can specify only one of the following filter options:
 - `--release-version`: Bundle changelogs for the pull requests in GitHub release notes. Refer to [Bundle by GitHub release](#changelog-bundle-release-version).
 - `--report`: Include changelogs whose pull requests appear in a promotion report. Accepts a URL or a local file path to an HTML report.
 
-`rules.bundle` in `changelog.yml` is **not** mutually exclusive with these options: it runs as a **second stage** after the primary filter matches entries (for example, `--input-products` gathers changelogs, then global or per-product bundle rules may exclude some). The only mutually exclusive pairing is **profile-based** versus **option-based** invocation. See [bundle rule modes](/contribute/configure-changelogs.md#bundle-rule-modes).
+`rules.bundle` in `changelog.yml` is **not** mutually exclusive with these options: it runs as a **second stage** after the primary filter matches entries (for example, `--input-products` gathers changelogs, then global or per-product bundle rules may exclude some). The only mutually exclusive pairing is **profile-based** versus **option-based** invocation. See [bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
 
 By default, the output file contains only the changelog file names and checksums.
 To change this behavior, set `bundle.resolve` to `true` in the changelog configuration file or use the `--resolve` command option.
@@ -261,7 +261,7 @@ docs-builder changelog bundle \
   --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
 ```
 
-1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/contribute/create-changelogs.md#product-format).
+1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/bundle.md#product-format).
 
 You can use wildcards in any of the three parts:
 
@@ -594,3 +594,4 @@ docs-builder changelog remove --products "elasticsearch 9.3.0 *" --dry-run
 ```
 
 For full option details, go to [](/cli/changelog/remove.md).
+

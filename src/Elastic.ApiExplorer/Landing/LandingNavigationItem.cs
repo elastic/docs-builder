@@ -117,7 +117,7 @@ public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel
 	: ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
 {
 	/// <inheritdoc />
-	public override string NavigationTitle { get; } = tag.Name;
+	public override string NavigationTitle { get; } = tag.DisplayName;
 
 	/// <inheritdoc />
 	public override string Id { get; } = ShortId.Create(tag.Name);
