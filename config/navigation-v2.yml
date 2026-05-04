@@ -368,7 +368,7 @@ nav:
         - page: docs-content://manage-data/ingest/sample-data.md
           title: Sample data
       - toc: docs-content://migrate
-        title: Migrate your data
+        title: Move between ingest tools
       - group: Ingest tools
         page: docs-content://reference/ingestion-tools/index.md
         children:
