@@ -221,7 +221,9 @@ body:has([data-nav-v2]) aside.sidebar {
 	nav[data-nav-v2]
 	li
 	> .docs-sidebar-nav-v2__label--top
-	+ ul.docs-sidebar-nav-v2__subsection:has(> li > .docs-sidebar-nav-v2__label--nested) {
+	+ ul.docs-sidebar-nav-v2__subsection:has(
+		> li > .docs-sidebar-nav-v2__label--nested
+	) {
 	gap: 0.5rem !important;
 }
 
@@ -610,7 +612,6 @@ nav.docs-sidebar-nav-v2
 	svg {
 	transform: rotate(0deg);
 }
-
 
 @layer components {
 	.sidebar-trial-card {
