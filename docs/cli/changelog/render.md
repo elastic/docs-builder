@@ -55,6 +55,13 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 :   Defaults to false.
 :   When enabled, entries are grouped by their area within each section. The first area from each entry's areas list is used for grouping.
 
+`--dropdowns`
+:   Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns.
+:   Defaults to false (flattened bulleted lists).
+:   When enabled, each entry in separated files is rendered as a collapsible dropdown section using MyST syntax (`::::{dropdown}`).
+:   When disabled (default), entries are rendered as flattened bulleted lists with PR/issue links inline and Impact/Action sections indented.
+:   This flag only affects markdown output; AsciiDoc output always uses its standard format.
+
 `--title <string?>`
 :   Optional: The title to use for section headers, directories, and anchors in output files.
 :   Defaults to the version in the first bundle.
@@ -139,5 +146,23 @@ docs-builder changelog render \
 ```sh
 docs-builder changelog render \
   --input "./public-bundle.yaml|./changelog|elasticsearch|keep-links,./private-bundle.yaml|./private-changelog|internal-repo|hide-links" \
+  --output ./release-notes
+```
+
+### Render with dropdown format
+
+```sh
+docs-builder changelog render \
+  --input "./bundles/9.3.0.yaml|./changelog|elasticsearch" \
+  --dropdowns \
+  --output ./release-notes
+```
+
+### Render with subsections and flattened format (default)
+
+```sh
+docs-builder changelog render \
+  --input "./bundles/9.3.0.yaml|./changelog|elasticsearch" \
+  --subsections \
   --output ./release-notes
 ```

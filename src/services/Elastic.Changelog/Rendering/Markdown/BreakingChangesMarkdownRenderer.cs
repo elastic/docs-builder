@@ -63,22 +63,58 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 					_ = sb.AppendLine();
 					if (shouldHide)
 						_ = sb.AppendLine("<!--");
-					_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
-					_ = sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
-					_ = sb.AppendLine();
-					RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
 
-					_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
-						? "**Impact**<br>" + entry.Impact
-						: "% **Impact**<br>_Add a description of the impact_");
+					if (context.Dropdowns)
+					{
+						// Dropdown rendering (current logic)
+						_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
+						_ = sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
+						_ = sb.AppendLine();
+						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
 
-					_ = sb.AppendLine();
+						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
+							? "**Impact**<br>" + entry.Impact
+							: "% **Impact**<br>_Add a description of the impact_");
 
-					_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Action)
-						? "**Action**<br>" + entry.Action
-						: "% **Action**<br>_Add a description of the what action to take_");
+						_ = sb.AppendLine();
 
-					_ = sb.AppendLine("::::");
+						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Action)
+							? "**Action**<br>" + entry.Action
+							: "% **Action**<br>_Add a description of the what action to take_");
+
+						_ = sb.AppendLine("::::");
+					}
+					else
+					{
+						// Flattened rendering
+						_ = sb.Append("* ");
+						_ = sb.Append(ChangelogTextUtilities.Beautify(entry.Title));
+						_ = sb.AppendLine();
+
+						// Description with proper indentation
+						if (!string.IsNullOrWhiteSpace(entry.Description))
+						{
+							_ = sb.AppendLine(ChangelogTextUtilities.Indent(entry.Description));
+							_ = sb.AppendLine();
+						}
+
+						// PR/Issue links with "For more information" pattern
+						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
+
+						// Impact and Action sections
+						if (!string.IsNullOrWhiteSpace(entry.Impact))
+						{
+							_ = sb.AppendLine("**Impact:** " + entry.Impact);
+							_ = sb.AppendLine();
+						}
+
+						if (!string.IsNullOrWhiteSpace(entry.Action))
+						{
+							_ = sb.AppendLine("**Action:** " + entry.Action);
+							_ = sb.AppendLine();
+						}
+					}
+
 					if (shouldHide)
 						_ = sb.AppendLine("-->");
 				}
