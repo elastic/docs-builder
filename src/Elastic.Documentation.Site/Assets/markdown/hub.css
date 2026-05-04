@@ -17,16 +17,9 @@
  */
 
 @layer components {
-	/* Page wrapper: dotted background like the gist, full-width content. */
-	.hub-page {
-		background-color: var(--color-grey-10);
-		background-image: radial-gradient(
-			circle,
-			var(--color-grey-20) 0.75px,
-			transparent 0.75px
-		);
-		background-size: 24px 24px;
-	}
+	/* Page wrapper: full-width content. Stays white so the page reads
+	   consistently whether the user lands via full navigation or via an
+	   htmx-boosted swap from a regular docs page. */
 	.hub-page .hub-content {
 		@apply mb-20 w-full max-w-none p-0;
 	}

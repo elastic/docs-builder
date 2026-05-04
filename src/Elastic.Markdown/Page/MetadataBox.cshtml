@@ -37,7 +37,7 @@
 					var isAbsolute = hub.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
 						|| hub.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 					var href = isAbsolute ? hub : $"{prefix}/{hub.Trim('/')}/";
-					<a class="product-badge product-badge-@product.Id" href="@href" onclick="event.stopPropagation()">
+					<a class="product-badge product-badge-@product.Id" href="@href" hx-boost="false" onclick="event.stopPropagation()">
 						<span class="product-badge-dot" aria-hidden="true"></span>
 						<span class="product-badge-label">@product.DisplayName</span>
 						<span class="product-badge-arrow" aria-hidden="true">&rarr;</span>

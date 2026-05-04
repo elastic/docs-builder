@@ -63,6 +63,8 @@
 							@await RenderBodyAsync()
 						</article>
 					</main>
+					@* Empty TOC slot so htmx hx-select-oob="#toc-nav" swaps don't fail when boosted from a regular page. Hub pages have their own inline {on-this-page} chip. *@
+					<aside id="toc-nav" class="hidden" aria-hidden="true"></aside>
 				</div>
 			</div>
 		</div>
