@@ -7,7 +7,7 @@
 	@{
 		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
 	} 
-	<div class="sticky top-0 z-10 shrink-0 bg-white">
+	<div id="pages-nav-sticky-chrome" class="sticky top-0 z-10 shrink-0 bg-white">
 		@if (Model.BuildType != BuildType.Codex)
 		{
 			<navigation-search></navigation-search>

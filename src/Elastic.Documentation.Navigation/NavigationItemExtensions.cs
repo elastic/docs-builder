@@ -112,7 +112,7 @@ public static class NavigationItemExtensions
 			case ILeafNavigationItem<IDocumentationFile> documentationFileLeaf:
 				_ = navigationDocumentationFileLookup.TryAdd(documentationFileLeaf.Model, documentationFileLeaf);
 				_ = navigationByOrder.TryAdd(documentationFileLeaf.NavigationIndex, documentationFileLeaf);
-				urlToFile.TryAdd(documentationFileLeaf.Url, documentationFileLeaf.Model);
+				_ = urlToFile.TryAdd(documentationFileLeaf.Url, documentationFileLeaf.Model);
 				break;
 			case ILeafNavigationItem<INavigationModel> leaf:
 				_ = navigationByOrder.TryAdd(leaf.NavigationIndex, leaf);
@@ -121,7 +121,7 @@ public static class NavigationItemExtensions
 				_ = navigationDocumentationFileLookup.TryAdd(documentationFileNode.Index.Model, documentationFileNode);
 				_ = navigationByOrder.TryAdd(documentationFileNode.NavigationIndex, documentationFileNode);
 				_ = navigationByOrder.TryAdd(documentationFileNode.Index.NavigationIndex, documentationFileNode.Index);
-				urlToFile.TryAdd(documentationFileNode.Url, documentationFileNode.Index.Model);
+				_ = urlToFile.TryAdd(documentationFileNode.Url, documentationFileNode.Index.Model);
 				foreach (var child in documentationFileNode.NavigationItems)
 					BuildNavigationLookupsRecursive(child, navigationDocumentationFileLookup, navigationByOrder, urlToFile);
 				break;
@@ -150,10 +150,6 @@ public static class NavigationItemExtensions
 					_ = navigationDocumentationFileLookup.TryAdd(file, pageCrossLink);
 				break;
 			case INodeNavigationItem<INavigationModel, INavigationItem> node:
-				foreach (var child in node.NavigationItems)
-					ResolvePageCrossLinksRecursive(child, navigationDocumentationFileLookup, urlToFile);
-				break;
-			case INodeNavigationItem<IDocumentationFile, INavigationItem> node:
 				foreach (var child in node.NavigationItems)
 					ResolvePageCrossLinksRecursive(child, navigationDocumentationFileLookup, urlToFile);
 				break;
