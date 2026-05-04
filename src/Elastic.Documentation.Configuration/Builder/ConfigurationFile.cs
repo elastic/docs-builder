@@ -145,36 +145,58 @@ public record ConfigurationFile
 				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
 				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
 
-				foreach (var (productKey, apiConfig) in docSetFile.Api)
+				foreach (var (productKey, apiSequence) in docSetFile.Api)
 				{
-					if (!apiConfig.IsValid)
+					if (!apiSequence.IsValid)
 					{
 						context.EmitError(
 							context.ConfigurationPath,
-							$"API configuration for '{productKey}' is invalid. Must have at least one spec and cannot specify both 'spec' and 'specs'."
+							$"API configuration for '{productKey}' is invalid. Must have at least one spec and all entries must be valid."
 						);
 						continue;
 					}
 
-					// Resolve template file if specified
-					IFileInfo? templateFile = null;
-					if (!string.IsNullOrEmpty(apiConfig.Template))
+					// Resolve intro markdown files
+					var introMarkdownFiles = new List<IFileInfo>();
+					foreach (var introPath in apiSequence.GetIntroMarkdownFiles())
 					{
-						var templatePath = Path.Join(context.DocumentationSourceDirectory.FullName, apiConfig.Template);
-						templateFile = context.ReadFileSystem.FileInfo.New(templatePath);
-						if (!templateFile.Exists)
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, introPath);
+						var introFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!introFile.Exists)
 						{
 							context.EmitWarning(
 								context.ConfigurationPath,
-								$"Template file '{apiConfig.Template}' for API '{productKey}' does not exist."
+								$"Intro markdown file '{introPath}' for API '{productKey}' does not exist."
 							);
-							templateFile = null;
+						}
+						else
+						{
+							introMarkdownFiles.Add(introFile);
+						}
+					}
+
+					// Resolve outro markdown files
+					var outroMarkdownFiles = new List<IFileInfo>();
+					foreach (var outroPath in apiSequence.GetOutroMarkdownFiles())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, outroPath);
+						var outroFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!outroFile.Exists)
+						{
+							context.EmitWarning(
+								context.ConfigurationPath,
+								$"Outro markdown file '{outroPath}' for API '{productKey}' does not exist."
+							);
+						}
+						else
+						{
+							outroMarkdownFiles.Add(outroFile);
 						}
 					}
 
 					// Resolve specification files
 					var specFiles = new List<IFileInfo>();
-					foreach (var specPath in apiConfig.GetSpecPaths())
+					foreach (var specPath in apiSequence.GetSpecPaths())
 					{
 						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, specPath);
 						var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
@@ -202,8 +224,9 @@ public record ConfigurationFile
 					var resolvedConfig = new ResolvedApiConfiguration
 					{
 						ProductKey = productKey,
-						TemplateFile = templateFile,
-						SpecFiles = specFiles
+						IntroMarkdownFiles = introMarkdownFiles,
+						SpecFiles = specFiles,
+						OutroMarkdownFiles = outroMarkdownFiles
 					};
 
 					apiConfigs[productKey] = resolvedConfig;

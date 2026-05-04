@@ -49,6 +49,9 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 
 	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
 
+	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
+	protected virtual string? LayoutPageTitle => null;
+
 	private string? GetGitHubDocsUrl()
 	{
 		var repo = BuildContext.Git.RepositoryName;
@@ -61,11 +64,18 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 	public ApiLayoutViewModel CreateGlobalLayoutModel()
 	{
 		var rootPath = BuildContext.SiteRootPath ?? GetDefaultRootPath(BuildContext.UrlPathPrefix);
+		var docTitle = Document.Info?.Title ?? "API Documentation";
+		var pageTitle = LayoutPageTitle;
+		var documentTitle = pageTitle is not null
+			? $"{pageTitle} | {docTitle}"
+			: docTitle;
+
 		return new()
 		{
 			DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 			DocSetName = "Api Explorer",
 			Description = "",
+			Title = documentTitle,
 			CurrentNavigationItem = CurrentNavigationItem,
 			Previous = null,
 			Next = null,
@@ -81,7 +91,7 @@ public abstract partial class ApiViewModel(ApiRenderContext context)
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),
 			// Header properties for isolated mode
-			HeaderTitle = Document.Info?.Title ?? "API Documentation",
+			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",
 			GitBranch = BuildContext.Git.Branch != "unavailable" ? BuildContext.Git.Branch : null,
 			GitCommitShort = BuildContext.Git.Ref is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
