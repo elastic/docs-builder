@@ -141,10 +141,6 @@ Controls how the "separated" entry types (`breaking-change`, `deprecation`, `kno
 
 Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release-notes pages where the list itself is the primary content.
 
-:::{note}
-Pages that relied on the previous dropdown rendering for breaking changes, deprecations, known issues, or highlights need to add `:dropdowns:` explicitly to keep that layout. Without it, those sections now render as bullet lists.
-:::
-
 #### `:subsections:`
 
 When enabled, entries are grouped by "area" within each section.

@@ -476,6 +476,15 @@ public static class ChangelogInlineRenderer
 
 			foreach (var group in groupedBySubtype)
 			{
+				// Add subtype header if group has a non-empty key (same logic as RenderDetailedEntries)
+				if (!string.IsNullOrWhiteSpace(group.Key))
+				{
+					var header = ChangelogTextUtilities.FormatSubtypeHeader(group.Key);
+					_ = sb.AppendLine();
+					_ = sb.AppendLine(header);
+					_ = sb.AppendLine();
+				}
+
 				foreach (var entry in group)
 					RenderDetailedEntryFlattened(sb, entry, repo, owner, hideLinks, hideEntryDescriptions);
 			}
@@ -503,21 +512,21 @@ public static class ChangelogInlineRenderer
 		// Add description if not hidden
 		if (!hideEntryDescriptions && !string.IsNullOrWhiteSpace(entry.Description))
 		{
-			_ = sb.AppendLine($"  {entry.Description}");
+			_ = sb.AppendLine(ChangelogTextUtilities.Indent(entry.Description));
 			_ = sb.AppendLine();
 		}
 
 		// Add Impact section
 		if (!string.IsNullOrWhiteSpace(entry.Impact))
 		{
-			_ = sb.AppendLine($"  **Impact:** {entry.Impact}");
+			_ = sb.AppendLine(ChangelogTextUtilities.Indent($"**Impact:** {entry.Impact}"));
 			_ = sb.AppendLine();
 		}
 
 		// Add Action section
 		if (!string.IsNullOrWhiteSpace(entry.Action))
 		{
-			_ = sb.AppendLine($"  **Action:** {entry.Action}");
+			_ = sb.AppendLine(ChangelogTextUtilities.Indent($"**Action:** {entry.Action}"));
 			_ = sb.AppendLine();
 		}
 	}
@@ -534,7 +543,7 @@ public static class ChangelogInlineRenderer
 			foreach (var pr in entry.Prs)
 			{
 				var formatted = ChangelogTextUtilities.FormatPrLink(pr, repo, hideLinks, owner);
-				if (!string.IsNullOrEmpty(formatted) && !formatted.StartsWith('%'))
+				if (!string.IsNullOrEmpty(formatted))
 					linksParts.Add(formatted);
 			}
 		}
@@ -544,7 +553,7 @@ public static class ChangelogInlineRenderer
 			foreach (var issue in entry.Issues)
 			{
 				var formatted = ChangelogTextUtilities.FormatIssueLink(issue, repo, hideLinks, owner);
-				if (!string.IsNullOrEmpty(formatted) && !formatted.StartsWith('%'))
+				if (!string.IsNullOrEmpty(formatted))
 					linksParts.Add(formatted);
 			}
 		}
