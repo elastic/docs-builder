@@ -142,14 +142,19 @@ public static class ElasticsearchEndpointConfigurator
 		if (options.CertificatePath is not null)
 		{
 			if (!fileSystem.File.Exists(options.CertificatePath.FullName))
+			{
 				collector.EmitGlobalError($"'{options.CertificatePath.FullName}' does not exist");
-			var bytes = await fileSystem.File.ReadAllBytesAsync(options.CertificatePath.FullName, ctx);
-			cfg.Certificate = X509CertificateLoader.LoadCertificate(bytes);
+			}
+			else
+			{
+				var bytes = await fileSystem.File.ReadAllBytesAsync(options.CertificatePath.FullName, ctx);
+				cfg.Certificate = X509CertificateLoader.LoadCertificate(bytes);
+			}
 		}
 		if (options.CertificateNotRoot.HasValue)
 			cfg.CertificateIsNotRoot = options.CertificateNotRoot.Value;
 		if (options.BootstrapTimeout.HasValue)
-			cfg.BootstrapTimeout = (int)options.BootstrapTimeout.Value.TotalMinutes;
+			cfg.BootstrapTimeout = options.BootstrapTimeout.Value;
 		if (options.AiEnrichment == false)
 			cfg.EnableAiEnrichment = false;
 		if (options.ForceReindex.HasValue)

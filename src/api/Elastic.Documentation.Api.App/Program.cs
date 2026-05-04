@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 try
 {
 	var builder = WebApplication.CreateSlimBuilder(args);
-	_ = builder.AddDocumentationServiceDefaults(ref args, (s, p) =>
+	_ = builder.AddDocumentationServiceDefaults(configure: (s, p) =>
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 	});

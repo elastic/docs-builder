@@ -15,8 +15,10 @@ internal sealed class CatchExceptionMiddleware(ILogger<CatchExceptionMiddleware>
 
 	public async ValueTask InvokeAsync(CommandContext context, CommandMiddlewareDelegate next)
 	{
-		Console.CancelKeyPress += (_, _) =>
+		Console.CancelKeyPress += (_, args) =>
 		{
+			// Suppress OS termination so the OperationCanceledException path below can run gracefully.
+			args.Cancel = true;
 			logger.LogInformation("Received CTRL+C cancelling");
 			_cancelKeyPressed = true;
 		};

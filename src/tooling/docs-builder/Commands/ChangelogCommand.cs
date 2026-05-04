@@ -85,8 +85,8 @@ internal sealed partial class ChangelogCommands(
 		}
 
 		var configPath = _fileSystem.Path.Join(docsFolder.FullName, "changelog.yml");
-		var changelogPath = changelogDir?.FullName ?? Path.GetFullPath("changelog");
-		var bundlesPath = bundlesDir?.FullName ?? Path.GetFullPath("releases");
+		var changelogPath = changelogDir?.FullName ?? _fileSystem.Path.Join(docsFolder.FullName, "changelog");
+		var bundlesPath = bundlesDir?.FullName ?? _fileSystem.Path.Join(docsFolder.FullName, "releases");
 
 		var useNonDefaultChangelogDir = changelogDir != null;
 		var useNonDefaultBundlesDir = bundlesDir != null;

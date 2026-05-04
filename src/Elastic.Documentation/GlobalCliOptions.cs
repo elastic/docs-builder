@@ -2,10 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation;
 using Microsoft.Extensions.Logging;
 
-namespace Documentation.Builder;
+namespace Elastic.Documentation;
 
 /// <summary>
 /// Global CLI options available to every command via argh's first-parameter injection.

@@ -20,22 +20,15 @@ namespace Elastic.Documentation.ServiceDefaults;
 public static class AppDefaultsExtensions
 {
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
-		=> builder.AddDocumentationServiceDefaults([], null);
+		=> builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), null);
 
-	/// <summary>Backward-compatible overload — <paramref name="args"/> are scanned but no longer modified.</summary>
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, ref string[] args, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
-		where TBuilder : IHostApplicationBuilder
-		=> builder.AddDocumentationServiceDefaults(args, configure);
-
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, string[] args, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, GlobalCliOptions cliOptions, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
 		where TBuilder : IHostApplicationBuilder
 	{
-		var cliArgs = GlobalCli.ScanArgs(args);
-
 		var services = builder.Services;
-		_ = services.AddElasticDocumentationLogging(cliArgs.LogLevel);
+		_ = services.AddElasticDocumentationLogging(cliOptions.LogLevel);
 		_ = services
-			.AddConfigurationFileProvider(cliArgs.SkipPrivateRepositories, cliArgs.ConfigurationSource, (s, p) =>
+			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
 			{
 				var versionConfiguration = p.CreateVersionConfiguration();
 				var products = p.CreateProducts(versionConfiguration);
@@ -46,7 +39,7 @@ public static class AppDefaultsExtensions
 				_ = s.AddSingleton(search);
 				configure?.Invoke(s, p);
 			});
-		_ = services.AddSingleton(cliArgs);
+		_ = services.AddSingleton(cliOptions);
 
 		var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
 		_ = services.AddSingleton(endpoints);

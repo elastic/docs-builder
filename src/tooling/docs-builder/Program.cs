@@ -19,8 +19,9 @@ using Nullean.Argh.Hosting;
 // before the host (and its startup logs) are ever constructed.
 await ArghApp.TryArghIntrinsicCommand(args);
 
+_ = GlobalCliOptions.TryParseArgh(args, out var cliOptions);
 var builder = Host.CreateApplicationBuilder()
-	.AddDocumentationServiceDefaults(args, (s, p) =>
+	.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 	})

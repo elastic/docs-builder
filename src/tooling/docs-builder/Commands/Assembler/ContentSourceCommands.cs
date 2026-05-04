@@ -51,6 +51,8 @@ internal sealed class ContentSourceCommands(
 		serviceInvoker.AddCommand(service, (repository, branchOrTag),
 			static async (s, collector, state, ctx) =>
 			{
+				// ShouldBuild emits GitHub Actions outputs to drive conditional CI steps;
+				// exit code is always 0 — the bool result is communicated via those outputs, not the process exit.
 				_ = await s.ShouldBuild(collector, state.repository, state.branchOrTag, ctx);
 				return true;
 			});

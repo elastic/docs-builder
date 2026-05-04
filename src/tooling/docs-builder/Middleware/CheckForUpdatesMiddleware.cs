@@ -24,11 +24,19 @@ internal sealed class CheckForUpdatesMiddleware(ILogger<CheckForUpdatesMiddlewar
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
 			return;
 
-		var latestVersionUrl = await GetLatestVersion(context.CancellationToken);
-		if (latestVersionUrl is null)
-			_logger.LogWarning("Unable to determine latest version");
-		else
-			CompareWithAssemblyVersion(latestVersionUrl);
+		try
+		{
+			var latestVersionUrl = await GetLatestVersion(context.CancellationToken);
+			if (latestVersionUrl is null)
+				_logger.LogWarning("Unable to determine latest version");
+			else
+				CompareWithAssemblyVersion(latestVersionUrl);
+		}
+		catch (Exception ex)
+		{
+			// Best-effort: a network failure here must never break the command that just succeeded.
+			_logger.LogDebug(ex, "Update check failed");
+		}
 	}
 
 	private void CompareWithAssemblyVersion(Uri latestVersionUrl)
@@ -70,19 +78,15 @@ internal sealed class CheckForUpdatesMiddleware(ILogger<CheckForUpdatesMiddlewar
 				return uri;
 		}
 
-		try
+		using var httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
+		using var response = await httpClient.GetAsync("https://github.com/elastic/docs-builder/releases/latest", ct);
+		var redirectUrl = response.Headers.Location;
+		if (redirectUrl is not null && _stateFile.Directory is not null)
 		{
-			var httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
-			var response = await httpClient.GetAsync("https://github.com/elastic/docs-builder/releases/latest", ct);
-			var redirectUrl = response.Headers.Location;
-			if (redirectUrl is not null && _stateFile.Directory is not null)
-			{
-				if (!Fs.Directory.Exists(_stateFile.Directory.FullName))
-					_ = Fs.Directory.CreateDirectory(_stateFile.Directory.FullName);
-				await Fs.File.WriteAllTextAsync(_stateFile.FullName, redirectUrl.ToString(), ct);
-			}
-			return redirectUrl;
+			if (!Fs.Directory.Exists(_stateFile.Directory.FullName))
+				_ = Fs.Directory.CreateDirectory(_stateFile.Directory.FullName);
+			await Fs.File.WriteAllTextAsync(_stateFile.FullName, redirectUrl.ToString(), ct);
 		}
-		finally { }
+		return redirectUrl;
 	}
 }
