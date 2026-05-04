@@ -364,25 +364,25 @@ function scheduleNavV2CollapsedFolderLayoutWarmup(
 function initNavV2FolderLayoutWarmup(nav: HTMLElement) {
     primeNavV2FolderLayoutsSync(nav, 14)
 
-    nav.querySelectorAll<HTMLElement>('li.group-navigation > .nav-folder-peer').forEach(
-        (peer) => {
-            if (peer.dataset.navV2PointerWarmBound === 'true') {
-                return
-            }
-
-            peer.dataset.navV2PointerWarmBound = 'true'
-            const warm = () => {
-                warmFolderSubtreeLayoutFromPeer(peer)
-            }
-
-            peer.addEventListener('pointerenter', warm, { passive: true })
-            /*
-             * Runs immediately before click (after hover path): pays layout once so the grid
-             * transition is less likely to share a frame with the first full subtree measure.
-             */
-            peer.addEventListener('pointerdown', warm, { passive: true })
+    nav.querySelectorAll<HTMLElement>(
+        'li.group-navigation > .nav-folder-peer'
+    ).forEach((peer) => {
+        if (peer.dataset.navV2PointerWarmBound === 'true') {
+            return
         }
-    )
+
+        peer.dataset.navV2PointerWarmBound = 'true'
+        const warm = () => {
+            warmFolderSubtreeLayoutFromPeer(peer)
+        }
+
+        peer.addEventListener('pointerenter', warm, { passive: true })
+        /*
+         * Runs immediately before click (after hover path): pays layout once so the grid
+         * transition is less likely to share a frame with the first full subtree measure.
+         */
+        peer.addEventListener('pointerdown', warm, { passive: true })
+    })
 
     scheduleNavV2CollapsedFolderLayoutWarmup(nav, 14)
 }
