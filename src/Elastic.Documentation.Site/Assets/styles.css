@@ -422,7 +422,12 @@ math {
 }
 
 /* Heading anchor links — show # on hover */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	position: relative;
 
 	& .headerlink {

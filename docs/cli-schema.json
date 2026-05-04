@@ -3618,6 +3618,87 @@
           "path": [
             "changelog"
           ],
+          "name": "evaluate-artifact",
+          "summary": "(CI) Evaluate downloaded artifact in the resolving workflow.",
+          "notes": "Reads metadata, validates PR state (SHA, labels), and sets GitHub Actions outputs\nfor downstream steps (commit, comment).",
+          "usage": "docs-builder changelog evaluate-artifact --metadata \u003Cstring\u003E --owner \u003Cstring\u003E --repo \u003Cstring\u003E",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "metadata",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "Path to the downloaded metadata.json file"
+            },
+            {
+              "role": "flag",
+              "name": "owner",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "GitHub repository owner"
+            },
+            {
+              "role": "flag",
+              "name": "repo",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "GitHub repository name"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "defaultValue": "information",
+              "aliases": [
+                "log-level"
+              ],
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "aliases": [
+                "config-source"
+              ],
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "shortName": null,
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
           "name": "evaluate-pr",
           "summary": "(CI) Evaluate a pull request for changelog generation eligibility and set GitHub Actions outputs.",
           "notes": "Runs pre-flight checks (body-only edit, bot loop, manual edit), applies label rules from\nchangelog.yml, and resolves the entry type and title. Designed to be called from a\nGitHub Actions workflow step.",
@@ -4045,6 +4126,194 @@
               "type": "string",
               "required": false,
               "summary": "GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin."
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "defaultValue": "information",
+              "aliases": [
+                "log-level"
+              ],
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "aliases": [
+                "config-source"
+              ],
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "shortName": null,
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "changelog"
+          ],
+          "name": "prepare-artifact",
+          "summary": "(CI) Package changelog artifact for cross-workflow transfer.",
+          "notes": "Resolves final status from evaluate-pr \u002B changelog add outcomes, copies generated YAML,\nwrites metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.",
+          "usage": "docs-builder changelog prepare-artifact --staging-dir \u003Cstring\u003E --output-dir \u003Cstring\u003E --evaluate-status \u003Cstring\u003E --generate-outcome \u003Cstring\u003E --pr-number \u003Cint\u003E --head-ref \u003Cstring\u003E --head-sha \u003Cstring\u003E [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "staging-dir",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "Directory where changelog add wrote the generated YAML"
+            },
+            {
+              "role": "flag",
+              "name": "output-dir",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "Directory to write the artifact (metadata.json \u002B YAML)"
+            },
+            {
+              "role": "flag",
+              "name": "evaluate-status",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "Status output from the evaluate-pr step"
+            },
+            {
+              "role": "flag",
+              "name": "generate-outcome",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "Outcome of the changelog add step (success/failure)"
+            },
+            {
+              "role": "flag",
+              "name": "pr-number",
+              "shortName": null,
+              "type": "integer",
+              "required": true,
+              "summary": "Pull request number"
+            },
+            {
+              "role": "flag",
+              "name": "head-ref",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "PR head branch ref"
+            },
+            {
+              "role": "flag",
+              "name": "head-sha",
+              "shortName": null,
+              "type": "string",
+              "required": true,
+              "summary": "PR head commit SHA"
+            },
+            {
+              "role": "flag",
+              "name": "is-fork",
+              "shortName": null,
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the PR is from a fork",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "can-commit",
+              "shortName": null,
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the commit strategy allows committing",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "maintainer-can-modify",
+              "shortName": null,
+              "type": "boolean",
+              "required": false,
+              "summary": "Whether the fork PR allows maintainer edits",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "head-repo",
+              "shortName": null,
+              "type": "string",
+              "required": false,
+              "summary": "Fork repository full name (owner/repo)"
+            },
+            {
+              "role": "flag",
+              "name": "label-table",
+              "shortName": null,
+              "type": "string",
+              "required": false,
+              "summary": "Optional: markdown label table from evaluate-pr"
+            },
+            {
+              "role": "flag",
+              "name": "product-label-table",
+              "shortName": null,
+              "type": "string",
+              "required": false,
+              "summary": "Optional: markdown product label table from evaluate-pr"
+            },
+            {
+              "role": "flag",
+              "name": "skip-labels",
+              "shortName": null,
+              "type": "string",
+              "required": false,
+              "summary": "Optional: comma-separated skip labels from evaluate-pr"
+            },
+            {
+              "role": "flag",
+              "name": "config",
+              "shortName": null,
+              "type": "string",
+              "required": false,
+              "summary": "Optional: path to changelog.yml"
+            },
+            {
+              "role": "flag",
+              "name": "existing-changelog-filename",
+              "shortName": null,
+              "type": "string",
+              "required": false,
+              "summary": "Optional: filename of a previously committed changelog for this PR"
             },
             {
               "role": "flag",
