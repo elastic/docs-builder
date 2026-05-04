@@ -34,10 +34,10 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
         <div
             className="sticky top-0"
             css={css`
-                padding-top: 24px;
-                padding-right: 24px;
-                padding-bottom: 24px;
-                border-bottom: 1px solid var(--color-grey-20, #e5e9f0);
+                padding-top: 18px;
+                padding-right: 18px;
+                padding-bottom: 16px;
+                padding-left: 0;
             `}
         >
             <NavigationSearch placeholder={placeholder} />
