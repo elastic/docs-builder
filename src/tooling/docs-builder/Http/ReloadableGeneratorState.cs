@@ -27,8 +27,9 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly ILoggerFactory _logFactory;
 	private readonly BuildContext _context;
 	private readonly bool _isWatchBuild;
-	private readonly DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
-	private readonly ILinkIndexReader? _codexReader;
+	private DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
+	private ILinkIndexReader? _codexReader;
+	private FetchedCrossLinks? _cachedCrossLinks;
 
 	public ReloadableGeneratorState(ILoggerFactory logFactory,
 		IDirectoryInfo sourcePath,
@@ -66,11 +67,29 @@ public class ReloadableGeneratorState : IDisposable
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
+		// Content-only changes (e.g. .md edits) don't need a full rebuild:
+		// RenderLayout -> ParseFullAsync reads fresh content from disk on each request.
+		if (!reloadConfiguration && _cachedCrossLinks is not null)
+			return;
+
 		SourcePath.Refresh();
 		OutputPath.Refresh();
 		if (reloadConfiguration)
+		{
 			_context.ReloadConfiguration();
-		var crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+			(_codexReader as IDisposable)?.Dispose();
+			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
+				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
+				: null;
+			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
+		}
+		var crossLinks = _cachedCrossLinks;
+		if (crossLinks is null || reloadConfiguration)
+		{
+			crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+			// Only cache successful fetches so transient failures get retried on the next reload.
+			_cachedCrossLinks = crossLinks.IsComplete ? crossLinks : null;
+		}
 		IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
 			: null;
