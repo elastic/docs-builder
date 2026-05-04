@@ -59,6 +59,11 @@ public record ConfigurationFile
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
 	/// <summary>
+	/// Resolved API configurations with template and specification file information.
+	/// </summary>
+	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
+
+	/// <summary>
 	/// Set of diagnostic hint types to suppress for this documentation set.
 	/// </summary>
 	public HashSet<HintType> SuppressDiagnostics { get; } = [];
@@ -134,17 +139,104 @@ public record ConfigurationFile
 			// Read substitutions
 			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
 
-			// Process API specifications
+			// Process API configurations
 			if (docSetFile.Api.Count > 0)
 			{
 				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
-				foreach (var (k, v) in docSetFile.Api)
+				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
+
+				foreach (var (productKey, apiSequence) in docSetFile.Api)
 				{
-					var path = Path.Join(context.DocumentationSourceDirectory.FullName, v);
-					var fi = context.ReadFileSystem.FileInfo.New(path);
-					specs[k] = fi;
+					if (!apiSequence.IsValid)
+					{
+						context.EmitError(
+							context.ConfigurationPath,
+							$"API configuration for '{productKey}' is invalid. Must have at least one spec and all entries must be valid."
+						);
+						continue;
+					}
+
+					// Resolve intro markdown files
+					var introMarkdownFiles = new List<IFileInfo>();
+					foreach (var introPath in apiSequence.GetIntroMarkdownFiles())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, introPath);
+						var introFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!introFile.Exists)
+						{
+							context.EmitWarning(
+								context.ConfigurationPath,
+								$"Intro markdown file '{introPath}' for API '{productKey}' does not exist."
+							);
+						}
+						else
+						{
+							introMarkdownFiles.Add(introFile);
+						}
+					}
+
+					// Resolve outro markdown files
+					var outroMarkdownFiles = new List<IFileInfo>();
+					foreach (var outroPath in apiSequence.GetOutroMarkdownFiles())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, outroPath);
+						var outroFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!outroFile.Exists)
+						{
+							context.EmitWarning(
+								context.ConfigurationPath,
+								$"Outro markdown file '{outroPath}' for API '{productKey}' does not exist."
+							);
+						}
+						else
+						{
+							outroMarkdownFiles.Add(outroFile);
+						}
+					}
+
+					// Resolve specification files
+					var specFiles = new List<IFileInfo>();
+					foreach (var specPath in apiSequence.GetSpecPaths())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, specPath);
+						var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!specFile.Exists)
+						{
+							context.EmitError(
+								context.ConfigurationPath,
+								$"API specification file '{specPath}' for product '{productKey}' does not exist."
+							);
+							continue;
+						}
+						specFiles.Add(specFile);
+					}
+
+					if (specFiles.Count == 0)
+					{
+						context.EmitError(
+							context.ConfigurationPath,
+							$"No valid specification files found for API product '{productKey}'."
+						);
+						continue;
+					}
+
+					// Create resolved configuration
+					var resolvedConfig = new ResolvedApiConfiguration
+					{
+						ProductKey = productKey,
+						IntroMarkdownFiles = introMarkdownFiles,
+						SpecFiles = specFiles,
+						OutroMarkdownFiles = outroMarkdownFiles
+					};
+
+					apiConfigs[productKey] = resolvedConfig;
+
+					// For backward compatibility, populate OpenApiSpecifications with primary spec
+					specs[productKey] = resolvedConfig.PrimarySpecFile;
 				}
-				OpenApiSpecifications = specs;
+
+				OpenApiSpecifications = specs.Count > 0 ? specs : null;
+				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
 			}
 
 			// Process products from docset - resolve ProductLinks to Product objects
@@ -174,8 +266,8 @@ public record ConfigurationFile
 				_substitutions[$"version.{alternativeName}.base"] = system.Base;
 			}
 
-			// Add product substitutions
-			foreach (var product in productsConfig.Products.Values)
+			// Add product substitutions (only for products with public-reference feature)
+			foreach (var product in productsConfig.PublicReferenceProducts.Values)
 			{
 				var alternativeProductId = product.Id.Replace('-', '_');
 				_substitutions[$"product.{product.Id}"] = product.DisplayName;

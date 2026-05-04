@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Versions;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -65,6 +66,9 @@ public record PropertyRenderContext
 
 	/// <summary>How collapsed sections should be expanded by default.</summary>
 	public CollapseMode CollapseMode { get; init; } = CollapseMode.AlwaysCollapsed;
+
+	/// <summary>Versions configuration for rendering availability badges.</summary>
+	public VersionsConfiguration? VersionsConfiguration { get; init; }
 }
 
 /// <summary>
@@ -146,5 +150,8 @@ public record UnionVariantsContext
 
 	/// <summary>Maximum depth for property expansion.</summary>
 	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
+
+	/// <summary>Versions configuration for rendering availability badges.</summary>
+	public VersionsConfiguration? VersionsConfiguration { get; init; }
 }
 

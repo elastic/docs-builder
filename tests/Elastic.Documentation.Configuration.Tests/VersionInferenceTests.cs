@@ -111,6 +111,7 @@ public class VersionInferenceTests
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 	}
@@ -467,13 +468,11 @@ public class VersionInferenceTests
 	}
 
 	[Fact(DisplayName = "VersionlessSentinel constant matches versions.yml value")]
-	public void VersionlessSentinelMatchesConfigValue()
-	{
+	public void VersionlessSentinelMatchesConfigValue() =>
 		// This test ensures the sentinel value matches what's used in config/versions.yml
 		// If this test fails, update VersioningSystem.VersionlessSentinel to match versions.yml
 		VersioningSystem.VersionlessSentinel.Should().Be(99999,
 			"VersionlessSentinel should match the value used in config/versions.yml for 'all' versioning system");
-	}
 
 	/// <summary>
 	/// These are the versioning system IDs that use the 'all' alias in versions.yml,

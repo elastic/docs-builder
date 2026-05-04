@@ -48,7 +48,10 @@ suppress:
 
 api:
    elasticsearch: elasticsearch-openapi.json
-   kibana: kibana-openapi.json
+   kibana:
+     - file: kibana-api-overview.md
+     - spec: kibana-openapi.json
+   dashboard: dashboard-openapi.json
 
 toc:
   - file: index.md
@@ -69,6 +72,13 @@ toc:
       - file: add-repo.md
       - file: release-new-version.md
       - file: changelog.md
+        children:
+          - file: configure-changelogs.md
+            children:
+              - file: configure-changelogs-ref.md
+          - file: create-changelogs.md
+          - file: bundle-changelogs.md
+          - file: publish-changelogs.md
       - hidden: locally.md
       - hidden: on-the-web.md
   - folder: building-blocks

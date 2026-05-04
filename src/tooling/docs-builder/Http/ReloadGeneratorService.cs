@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Westwind.AspNetCore.LiveReload;
@@ -28,13 +29,18 @@ public sealed class ReloadGeneratorService(
 	ILogger<ReloadGeneratorService> logger
 ) : IHostedService, IDisposable
 {
+	private static readonly FrozenSet<string> AssetExtensions = new[]
+	{
+		".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
+		".yml", ".yaml", ".toml"
+	}.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
 	private FileSystemWatcher? _watcher;
 	private CancellationTokenSource? _serviceCts;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
 	private InMemoryBuildState InMemoryBuildState { get; } = inMemoryBuildState;
 	private ILogger Logger { get; } = logger;
 
-	//debounce reload requests due to many file changes
 	private readonly Debouncer _debouncer = new(TimeSpan.FromMilliseconds(200));
 
 	public async Task StartAsync(Cancel cancellationToken)
@@ -78,6 +84,8 @@ public sealed class ReloadGeneratorService(
 		watcher.Filters.Add("docset.yml");
 		watcher.Filters.Add("_docset.yml");
 		watcher.Filters.Add("toc.yml");
+		foreach (var ext in AssetExtensions)
+			watcher.Filters.Add($"*{ext}");
 		watcher.IncludeSubdirectories = true;
 		watcher.EnableRaisingEvents = true;
 		_watcher = watcher;
@@ -88,18 +96,17 @@ public sealed class ReloadGeneratorService(
 		var token = _serviceCts?.Token ?? Cancel.None;
 		_ = _debouncer.ExecuteAsync(async ctx =>
 		{
-			var sourcePath = ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
-
-			// Start in-memory validation build (runs in parallel)
-			var validationTask = InMemoryBuildState.StartBuildAsync(sourcePath, ctx);
-
-			// Wait for live reload to complete, then refresh the browser immediately
 			await ReloadableGenerator.ReloadAsync(ctx, reloadConfiguration);
 			Logger.LogInformation("Reload complete!");
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 
-			// Wait for validation build to complete
-			await validationTask;
+			// Only run the full validation build for structural changes (config/toc edits, file add/delete).
+			// Content-only .md edits are picked up on the next request via ParseFullAsync.
+			if (reloadConfiguration)
+			{
+				var sourcePath = ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
+				await InMemoryBuildState.StartBuildAsync(sourcePath, ctx);
+			}
 		}, token);
 	}
 
@@ -124,6 +131,9 @@ public sealed class ReloadGeneratorService(
 	private static bool IsConfigFile(string path) =>
 		path.EndsWith("docset.yml") || path.EndsWith("toc.yml");
 
+	private static bool IsAssetFile(string path) =>
+		AssetExtensions.Contains(Path.GetExtension(path));
+
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
 		if (e.ChangeType != WatcherChangeTypes.Changed)
@@ -138,6 +148,8 @@ public sealed class ReloadGeneratorService(
 			Reload(reloadConfiguration: true);
 		else if (e.FullPath.EndsWith(".md"))
 			Reload();
+		else if (IsAssetFile(e.FullPath))
+			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 #if DEBUG
 		if (e.FullPath.EndsWith(".cshtml"))
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
@@ -152,6 +164,8 @@ public sealed class ReloadGeneratorService(
 		Logger.LogInformation("Created: {FullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md") || IsConfigFile(e.FullPath))
 			Reload(reloadConfiguration: true);
+		else if (IsAssetFile(e.FullPath))
+			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 	}
 
 	private void OnDeleted(object sender, FileSystemEventArgs e)
@@ -162,6 +176,8 @@ public sealed class ReloadGeneratorService(
 		Logger.LogInformation("Deleted: {FullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md") || IsConfigFile(e.FullPath))
 			Reload(reloadConfiguration: true);
+		else if (IsAssetFile(e.FullPath))
+			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 	}
 
 	private void OnRenamed(object sender, RenamedEventArgs e)
@@ -174,6 +190,8 @@ public sealed class ReloadGeneratorService(
 		Logger.LogInformation("    New: {NewFullPath}", e.FullPath);
 		if (e.FullPath.EndsWith(".md") || e.OldFullPath.EndsWith(".md") || IsConfigFile(e.FullPath) || IsConfigFile(e.OldFullPath))
 			Reload(reloadConfiguration: true);
+		else if (IsAssetFile(e.FullPath) || IsAssetFile(e.OldFullPath))
+			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 #if DEBUG
 		if (e.FullPath.EndsWith(".cshtml"))
 			_ = LiveReloadMiddleware.RefreshWebSocketRequest();

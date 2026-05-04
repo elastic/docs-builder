@@ -296,6 +296,11 @@ internal record BundleConfigurationYaml
 	public string? Owner { get; set; }
 
 	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; set; }
+
+	/// <summary>
 	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels (requires resolve).
 	/// </summary>
 	public YamlLenientList? LinkAllowRepos { get; set; }
@@ -349,6 +354,11 @@ internal record BundleProfileYaml
 	/// Feature IDs to mark as hidden in the bundle output (string or list).
 	/// </summary>
 	public YamlLenientList? HideFeatures { get; set; }
+
+	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; set; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches

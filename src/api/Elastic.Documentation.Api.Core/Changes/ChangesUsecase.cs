@@ -82,7 +82,7 @@ public partial class ChangesUsecase(IChangesGateway changesGateway, ILogger<Chan
 		var buffer = new ArrayBufferWriter<byte>();
 		using var writer = new Utf8JsonWriter(buffer);
 		writer.WriteStartArray();
-		writer.WriteNumberValue(cursor.LastUpdatedEpochMs);
+		writer.WriteNumberValue(cursor.ContentLastUpdatedEpochMs);
 		writer.WriteStringValue(cursor.Url);
 		writer.WriteEndArray();
 		writer.Flush();

@@ -68,6 +68,8 @@ public class LocalChangeTrackingService(
 			var lookupPath = change is RenamedGitChange renamed ? renamed.OldFilePath : change.FilePath;
 			var docSetRelativePath = Path.GetRelativePath(buildContext.DocumentationSourceDirectory.FullName, Path.Join(root.FullName, lookupPath));
 			var rootRelativePath = Path.GetRelativePath(root.FullName, Path.Join(root.FullName, lookupPath));
+			if (buildContext.Configuration.IsExcluded(docSetRelativePath.OptionalWindowsReplace()))
+				continue;
 			if (redirects.ContainsKey(docSetRelativePath))
 				continue;
 			if (redirects.ContainsKey(rootRelativePath))

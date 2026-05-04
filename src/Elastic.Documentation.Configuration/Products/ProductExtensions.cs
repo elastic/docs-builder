@@ -18,13 +18,29 @@ public static class ProductExtensions
 
 		var products = productsDto.Products.ToDictionary(
 			kvp => kvp.Key,
-			kvp => new Product
+			kvp =>
 			{
-				Id = kvp.Key,
-				DisplayName = kvp.Value.Display,
-				VersioningSystem = versionsConfiguration.GetVersioningSystem(VersionsConfigurationExtensions.ToVersioningSystemId(kvp.Value.Versioning ?? kvp.Key)),
-				Repository = kvp.Value.Repository ?? kvp.Key
+				var features = ResolveFeatures(kvp.Key, kvp.Value.Features);
+				var versioningSystem = ResolveVersioningSystem(versionsConfiguration, kvp.Value.Versioning ?? kvp.Key);
+
+				versioningSystem ??= !features.PublicReference
+					? VersioningSystem.None
+					: throw new InvalidOperationException(
+						$"Product '{kvp.Key}' has invalid or missing versioning '{kvp.Value.Versioning ?? kvp.Key}' while 'public-reference' is enabled.");
+
+				return new Product
+				{
+					Id = kvp.Key,
+					DisplayName = kvp.Value.Display,
+					VersioningSystem = versioningSystem,
+					Repository = kvp.Value.Repository ?? kvp.Key,
+					Features = features
+				};
 			});
+
+		var publicReferenceProducts = products
+			.Where(kvp => kvp.Value.Features.PublicReference)
+			.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
 		var productDisplayNames = productsDto.Products.ToDictionary(
 			kvp => kvp.Key,
@@ -33,7 +49,37 @@ public static class ProductExtensions
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = publicReferenceProducts.ToFrozenDictionary(),
 			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
+		};
+	}
+
+	private static VersioningSystem? ResolveVersioningSystem(VersionsConfiguration versionsConfiguration, string id) =>
+		VersioningSystemIdExtensions.TryParse(id, out var versioningSystemId, ignoreCase: true, allowMatchingMetadataAttribute: true)
+			? versionsConfiguration.GetVersioningSystem(versioningSystemId)
+			: null;
+
+	private static ProductFeatures ResolveFeatures(string productId, Dictionary<string, bool>? featuresDto)
+	{
+		if (featuresDto is null)
+			return ProductFeatures.All;
+
+		var unknownKeys = featuresDto.Keys
+			.Where(k => !ProductFeatures.KnownKeys.Contains(k))
+			.ToList();
+
+		if (unknownKeys is { Count: > 0 })
+		{
+			var known = string.Join(", ", ProductFeatures.KnownKeys.Order());
+			throw new InvalidOperationException(
+				$"Product '{productId}' has unknown feature key(s): {string.Join(", ", unknownKeys)}. Known features: {known}."
+			);
+		}
+
+		return new ProductFeatures
+		{
+			PublicReference = featuresDto.GetValueOrDefault("public-reference", true),
+			ReleaseNotes = featuresDto.GetValueOrDefault("release-notes", true)
 		};
 	}
 }
@@ -52,5 +98,9 @@ internal sealed record ProductDto
 
 	[YamlMember(Alias = "versioning")]
 	public string? Versioning { get; set; }
+
 	public string? Repository { get; set; }
+
+	[YamlMember(Alias = "features")]
+	public Dictionary<string, bool>? Features { get; set; }
 }
