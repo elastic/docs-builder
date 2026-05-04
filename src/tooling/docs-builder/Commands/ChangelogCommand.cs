@@ -227,19 +227,20 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
 	/// <param name="impact">Optional: How the user's environment is affected</param>
-	/// <param name="issues">Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue.</param>
+	/// <param name="issues">Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.</param>
 	/// <param name="owner">Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
 	/// <param name="output">Optional: Output directory for the changelog. Falls back to bundle.directory in changelog.yml when not specified. Defaults to current directory.</param>
-	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR.</param>
+	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.</param>
+	/// <param name="report">Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as `changelog bundle --report`). Mutually exclusive with --prs, --issues, and --release-version.</param>
 	/// <param name="repo">Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified.</param>
-	/// <param name="stripTitlePrefix">Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
+	/// <param name="stripTitlePrefix">Optional: When used with --prs or --report, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
-	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if neither --prs nor --issues is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
-	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs nor --issues is specified. If mappings are configured, type can be derived from the PR or issue.</param>
+	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if neither --prs, --issues, nor --report is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
+	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs, --issues, nor --report is specified. If mappings are configured, type can be derived from the PR or issue.</param>
 	/// <param name="concise">Optional: Omit schema reference comments from generated YAML files. Useful in CI to produce compact output.</param>
-	/// <param name="usePrNumber">Optional: Use PR numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires --prs or --issues. Mutually exclusive with --use-issue-number.</param>
+	/// <param name="usePrNumber">Optional: Use PR numbers for filenames instead of timestamp-slug. With --prs, --report, or --issues (where PRs are resolved), each changelog filename will be derived from its PR numbers. Requires --prs, --report, or --issues. Mutually exclusive with --use-issue-number.</param>
 	/// <param name="useIssueNumber">Optional: Use issue numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires --prs or --issues. Mutually exclusive with --use-pr-number.</param>
-	/// <param name="releaseVersion">Optional: GitHub release tag to fetch PRs from (e.g., "v9.2.0" or "latest"). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs and --issues. Does not create a bundle; use 'changelog gh-release' for that.</param>
+	/// <param name="releaseVersion">Optional: GitHub release tag to fetch PRs from (e.g., "v9.2.0" or "latest"). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs, --issues, and --report. Does not create a bundle; use 'changelog gh-release' for that.</param>
 	/// <param name="ctx">Cancellation token</param>
 	[Command("add")]
 	public async Task<int> Create(
@@ -258,6 +259,7 @@ internal sealed partial class ChangelogCommand(
 		string? owner = null,
 		string? output = null,
 		string[]? prs = null,
+		string? report = null,
 		string? releaseVersion = null,
 		string? repo = null,
 		bool stripTitlePrefix = false,
@@ -271,9 +273,40 @@ internal sealed partial class ChangelogCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		// Mutual exclusivity: --release-version cannot be combined with --prs or --issues
+		var hasReport = !string.IsNullOrWhiteSpace(report);
+		if (hasReport)
+		{
+			if (prs is { Length: > 0 })
+			{
+				collector.EmitError(string.Empty, "--report and --prs cannot be specified together.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			if (issues is { Length: > 0 })
+			{
+				collector.EmitError(string.Empty, "--report and --issues cannot be specified together.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+		}
+
+		// Mutual exclusivity: --release-version cannot be combined with --prs, --issues, or --report
 		if (releaseVersion != null)
 		{
+			if (hasReport)
+			{
+				collector.EmitError(string.Empty, "--release-version and --report are mutually exclusive.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
 			if (prs is { Length: > 0 })
 			{
 				collector.EmitError(string.Empty, "--release-version and --prs are mutually exclusive.");
@@ -295,7 +328,7 @@ internal sealed partial class ChangelogCommand(
 
 		// Load changelog config and apply fallbacks for all modes.
 		// Precedence: CLI option > bundle section in changelog.yml > built-in default.
-		// This applies to --prs, --issues, and --release-version alike.
+		// This applies to --prs, --issues, --release-version, and --report alike.
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 			.LoadChangelogConfiguration(collector, config, ctx);
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
@@ -342,9 +375,26 @@ internal sealed partial class ChangelogCommand(
 		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
 		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService, env: SystemEnvironmentVariables.Instance);
 
-		// Parse PRs: handle both comma-separated values and file paths
+		// Parse PRs: promotion report (--report), or comma-separated values and file paths (--prs)
 		string[]? parsedPrs = null;
-		if (prs is { Length: > 0 })
+		if (hasReport)
+		{
+			var reportSource = report!.Trim();
+			if (!reportSource.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+				!reportSource.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+				reportSource = NormalizePath(reportSource);
+
+			var reportParser = new PromotionReportParser(logFactory, null);
+			parsedPrs = await reportParser.ParseReportToPrUrlsAsync(collector, reportSource, ctx);
+			if (parsedPrs == null)
+			{
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+		}
+		else if (prs is { Length: > 0 })
 		{
 			var allPrs = new List<string>();
 			var validPrs = prs.Where(prValue => !string.IsNullOrWhiteSpace(prValue));
@@ -438,7 +488,7 @@ internal sealed partial class ChangelogCommand(
 		// --use-pr-number with --issues is allowed: PRs can be extracted from the issue body (Fixed by #123, etc.)
 		if (usePrNumber && (parsedPrs == null || parsedPrs.Length == 0) && (parsedIssues == null || parsedIssues.Length == 0))
 		{
-			collector.EmitError(string.Empty, "--use-pr-number requires --prs or --issues to be specified.");
+			collector.EmitError(string.Empty, "--use-pr-number requires --prs, --issues, or --report to be specified.");
 			_ = collector.StartAsync(ctx);
 			await collector.WaitForDrain();
 			await collector.StopAsync(ctx);
@@ -880,7 +930,7 @@ internal sealed partial class ChangelogCommand(
 	/// <param name="prs">Filter by pull request URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches the release, parses PR references from the release notes, and removes changelogs whose PR URLs match — equivalent to passing the PR list using --prs.</param>
 	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when --release-version is used. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
-	/// <param name="report">Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, and --issues.</param>
+	/// <param name="report">Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, and --issues.</param>
 	/// <param name="ctx"></param>
 	[Command("remove")]
 	public async Task<int> Remove(
