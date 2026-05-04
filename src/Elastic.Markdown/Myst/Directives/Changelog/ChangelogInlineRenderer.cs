@@ -513,21 +513,20 @@ public static class ChangelogInlineRenderer
 		if (!hideEntryDescriptions && !string.IsNullOrWhiteSpace(entry.Description))
 		{
 			_ = sb.AppendLine(ChangelogTextUtilities.Indent(entry.Description));
-			_ = sb.AppendLine();
 		}
 
 		// Add Impact section
 		if (!string.IsNullOrWhiteSpace(entry.Impact))
 		{
-			_ = sb.AppendLine(ChangelogTextUtilities.Indent($"**Impact:** {entry.Impact}"));
 			_ = sb.AppendLine();
+			_ = sb.AppendLine(ChangelogTextUtilities.Indent($"**Impact:** {entry.Impact}"));
 		}
 
 		// Add Action section
 		if (!string.IsNullOrWhiteSpace(entry.Action))
 		{
-			_ = sb.AppendLine(ChangelogTextUtilities.Indent($"**Action:** {entry.Action}"));
 			_ = sb.AppendLine();
+			_ = sb.AppendLine(ChangelogTextUtilities.Indent($"**Action:** {entry.Action}"));
 		}
 	}
 
