@@ -119,7 +119,7 @@ export const SearchInput = ({
                             ${euiTheme.size.m}
                     );
                     border: 1px solid ${navSearchBorder};
-                    border-radius: ${euiTheme.border.radius.medium};
+                    border-radius: 8px;
                     background: #ffffff;
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
                     line-height: ${euiTheme.base * 1.25}px;
