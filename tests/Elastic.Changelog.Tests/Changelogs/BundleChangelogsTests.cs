@@ -5,6 +5,7 @@
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -6122,6 +6123,59 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
 		bundleContent.Should().Contain("release-date:", "release date should be auto-populated when bundle.release_dates is true");
+	}
+
+	[Test]
+	public async Task BundleChangelogs_WithBomPrefixedInput_ProducesNormalizedOutput()
+	{
+		// Arrange - Create changelog with BOM prefix
+		// language=yaml
+		var changelogContent =
+			"""
+			title: Test changelog with BOM
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/123
+			""";
+
+		// Add UTF-8 BOM to the content
+		var contentWithBom = ChangelogUtf8Normalization.Utf8BomChar + changelogContent;
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "changelog-with-bom.yaml");
+
+		// Write the file with BOM using explicit encoding
+		await FileSystem.File.WriteAllTextAsync(changelogFile, contentWithBom, Encoding.UTF8, TestContext.Current.CancellationToken);
+
+		// Verify the source file has BOM by reading as bytes
+		var sourceBytes = await FileSystem.File.ReadAllBytesAsync(changelogFile, TestContext.Current.CancellationToken);
+		ChangelogUtf8Normalization.HasUtf8Bom(sourceBytes).Should().BeTrue("source file should contain BOM");
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue("bundling should succeed");
+		Collector.Errors.Should().Be(0);
+
+		// Verify output file does not contain BOM
+		var outputBytes = await FileSystem.File.ReadAllBytesAsync(outputPath, TestContext.Current.CancellationToken);
+		ChangelogUtf8Normalization.HasUtf8Bom(outputBytes).Should().BeFalse("bundled output should not contain UTF-8 BOM");
+
+		// Verify content is preserved (without BOM)
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("Test changelog with BOM");
+		bundleContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/123");
 	}
 
 	private void CreateSampleChangelogs()

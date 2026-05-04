@@ -11,6 +11,7 @@ using ConsoleAppFramework;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Utilities;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
@@ -162,6 +163,8 @@ internal sealed partial class ChangelogCommand(
 			try
 			{
 				var content = _fileSystem.File.ReadAllText(configPath);
+				// Strip any leading BOM that might be present after reading
+				content = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(content);
 
 				if (useNonDefaultChangelogDir)
 				{
@@ -175,7 +178,9 @@ internal sealed partial class ChangelogCommand(
 					content = BundleOutputDirectoryRegex().Replace(content, "$1" + outputValue);
 				}
 
-				_fileSystem.File.WriteAllText(configPath, content);
+				// Ensure normalized content is written without BOM
+				var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(content);
+				_fileSystem.File.WriteAllText(configPath, normalizedContent);
 				_logger.LogInformation("Updated bundle paths in changelog configuration: {ConfigPath}", configPath);
 			}
 			catch (IOException ex)

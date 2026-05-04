@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -47,7 +48,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var filePath = fileSystem.Path.Join(outputDir, filename);
 
 		// Write file with explicit UTF-8 encoding to ensure proper character handling
-		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
+		// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
+		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
+		await fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Encoding.UTF8, ctx);
 		logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
 
 		return true;

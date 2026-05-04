@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Changelog;
@@ -256,7 +257,9 @@ public partial class ChangelogBundleAmendService(
 			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
-			await _fileSystem.File.WriteAllTextAsync(amendFilePath, yaml, Encoding.UTF8, ctx);
+			// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
+			var normalizedYaml = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yaml);
+			await _fileSystem.File.WriteAllTextAsync(amendFilePath, normalizedYaml, Encoding.UTF8, ctx);
 			_logger.LogInformation("Created amend file: {AmendFilePath} with {Count} entries", amendFilePath, entries.Count);
 
 			return true;

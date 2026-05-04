@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -48,8 +50,11 @@ public class ChangelogPrepareArtifactService(
 					_logger.LogInformation("Reusing existing filename {Filename} for stable path on branch", changelogFilename);
 
 				var destYaml = _fileSystem.Path.Combine(input.OutputDir, changelogFilename);
-				_fileSystem.File.Copy(sourceYaml, destYaml, overwrite: true);
-				_logger.LogInformation("Copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
+				// Read YAML, normalize to remove any BOM, then write with UTF-8 no BOM for tooling compatibility
+				var yamlContent = await _fileSystem.File.ReadAllTextAsync(sourceYaml, ctx);
+				var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
+				await _fileSystem.File.WriteAllTextAsync(destYaml, normalizedContent, Encoding.UTF8, ctx);
+				_logger.LogInformation("Normalized and copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
 			}
 			else
 			{
