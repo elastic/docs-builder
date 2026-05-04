@@ -25,6 +25,7 @@ The directive supports the following options:
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
 | `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
+| `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
 
 ### Example with options
@@ -34,6 +35,7 @@ The directive supports the following options:
 :type: all
 :subsections:
 :link-visibility: keep-links
+:description-visibility: keep-descriptions
 :::
 ```
 
@@ -113,6 +115,18 @@ Bundles whose repo is listed as private in `assembler.yml` hide links by default
 | `hide-links` | Hide all PR and issue links for this directive block. Refer to [Hiding links](#hide-links). |
 
 This aligns with the `changelog render` command's link visibility controls.
+
+#### `:description-visibility:`
+
+Controls whether the **`description`** text on each **changelog record** appears in output (bullet body text under each item, and the first paragraph inside breaking-change, deprecation, known-issue, and highlight dropdowns). This is **different** from the optional **bundle** `description` field (release intro prose after `_Released:_`), which is always shown when present. See [Rendered output](#rendered-output).
+
+| Value | Behavior |
+|-------|----------|
+| `auto` | When **every** constituent repository in the bundle’s resolved repo identity is **public** (same private-repo detection as `:link-visibility:` from `assembler.yml`, including `repo1+repo2` merged bundles), **omit** record `description` bodies. When **any** constituent is marked **private**, **show** those bodies. In standalone builds without `assembler.yml`, every repo is treated as public ⇒ record descriptions are omitted under `auto`. |
+| `keep-descriptions` | Always render record descriptions when present in the bundle source. Use this on pages such as deprecations or breaking changes when you still want full release-note prose alongside public repos. |
+| `hide-descriptions` | Always omit record `description` bodies (titles, PR/issue links, Impact and Action sections, and bundle-level intros are unaffected). |
+
+**Contrast with `:link-visibility:`:** `:link-visibility: auto` hides **links** when a repo is **private**. `:description-visibility: auto` **shows** richer record **description** prose when **any** source repo is **private**, and hides that prose for bundles that resolve to **only public** repositories.
 
 #### `:subsections:`
 
@@ -253,6 +267,8 @@ Download the release binaries: https://github.com/elastic/elasticsearch/releases
 When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: April 9, 2026_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents. If the `release-date` field is present in a bundle, it is always displayed. To control release dates, set `release_dates: false` at the bundle or profile level in the configuration (see [profile configuration](/cli/changelog/bundle.md)); when false, this prevents the date from being written to the bundle during bundling. Defaults to true when omitted.
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
+
+**Record descriptions:** Each changelog entry may have its own `description` field in YAML (shown as body text under list items or as the introductory paragraph inside dropdowns). Visibility of **these** descriptions is controlled with `:description-visibility:` (defaults to `auto`; see Option details section). Do not confuse bundle `description` (intro prose) with per-record `description` (entry bodies).
 
 ### Section types
 
