@@ -19,8 +19,11 @@ namespace Elastic.Documentation.ServiceDefaults;
 
 public static class AppDefaultsExtensions
 {
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
-		=> builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), null);
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder)
+		where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), null);
+
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, Action<IServiceCollection, ConfigurationFileProvider>? configure)
+		where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), configure);
 
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, GlobalCliOptions cliOptions, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
 		where TBuilder : IHostApplicationBuilder
