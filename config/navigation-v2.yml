@@ -3310,6 +3310,8 @@ nav:
   - section: Product hubs
     url: /products/
     children:
+    - page: docs-content://products/index.md
+      title: Product hubs
     - page: docs-content://products/kibana/v9.md
       title: Kibana
     - page: docs-content://products/elasticsearch/v9.md
