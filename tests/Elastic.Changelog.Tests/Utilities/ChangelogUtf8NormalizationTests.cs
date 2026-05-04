@@ -67,6 +67,33 @@ public class ChangelogUtf8NormalizationTests
 	}
 
 	[Fact]
+	public void StripLeadingUtf8BomChar_StringWithConsecutiveLeadingBoms_RemovesAllLeadingBoms()
+	{
+		const string content = "type: feature\ntitle: Test";
+		// Two consecutive BOM characters at the start
+		var input = ChangelogUtf8Normalization.Utf8BomChar.ToString() +
+					ChangelogUtf8Normalization.Utf8BomChar + content;
+
+		var result = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(input);
+
+		result.Should().Be(content);
+	}
+
+	[Fact]
+	public void StripLeadingUtf8BomChar_StringWithThreeConsecutiveLeadingBoms_RemovesAllLeadingBoms()
+	{
+		const string content = "type: feature\ntitle: Test";
+		// Three consecutive BOM characters at the start (edge case test)
+		var input = ChangelogUtf8Normalization.Utf8BomChar.ToString() +
+					ChangelogUtf8Normalization.Utf8BomChar +
+					ChangelogUtf8Normalization.Utf8BomChar + content;
+
+		var result = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(input);
+
+		result.Should().Be(content);
+	}
+
+	[Fact]
 	public void HasUtf8Bom_EmptySpan_ReturnsFalse()
 	{
 		var bytes = ReadOnlySpan<byte>.Empty;

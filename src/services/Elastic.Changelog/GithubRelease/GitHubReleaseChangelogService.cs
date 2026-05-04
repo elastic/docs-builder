@@ -87,6 +87,11 @@ public class GitHubReleaseChangelogService(
 	ChangelogBundlingService? bundlingService = null
 ) : IService
 {
+	/// <summary>
+	/// UTF-8 encoding without BOM for writing YAML files.
+	/// </summary>
+	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead);
@@ -304,7 +309,7 @@ public class GitHubReleaseChangelogService(
 		var filePath = _fileSystem.Path.Join(outputDir, filename);
 		// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
 		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
-		await _fileSystem.File.WriteAllBytesAsync(filePath, Encoding.UTF8.GetBytes(normalizedContent), ctx);
+		await _fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
 
 		createdFiles.Add(filename);
 		_logger.LogDebug("Created changelog: {FilePath}", filePath);

@@ -23,6 +23,11 @@ public class ChangelogPrepareArtifactService(
 	IFileSystem? fileSystem = null
 ) : IService
 {
+	/// <summary>
+	/// UTF-8 encoding without BOM for writing YAML files.
+	/// </summary>
+	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrepareArtifactService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
@@ -53,8 +58,7 @@ public class ChangelogPrepareArtifactService(
 				// Read YAML, normalize to remove any BOM, then write UTF-8 bytes without BOM (avoids provider-specific WriteAllText preamble behavior).
 				var yamlContent = await _fileSystem.File.ReadAllTextAsync(sourceYaml, ctx);
 				var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
-				var utf8Bytes = Encoding.UTF8.GetBytes(normalizedContent);
-				await _fileSystem.File.WriteAllBytesAsync(destYaml, utf8Bytes, ctx);
+				await _fileSystem.File.WriteAllTextAsync(destYaml, normalizedContent, Utf8NoBom, ctx);
 				_logger.LogInformation("Normalized and copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
 			}
 			else
