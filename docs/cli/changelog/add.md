@@ -30,15 +30,7 @@ docs-builder changelog add [options...] [-h|--help]
 
 `--no-extract-release-notes`
 :   Optional: Turn off extraction of release notes from PR or issue descriptions.
-:   The extractor looks for content in various formats in the PR or issue description:
-:   - `Release Notes: ...`
-:   - `Release-Notes: ...`
-:   - `release notes: ...`
-:   - `Release Note: ...`
-:   - `Release Notes - ...`
-:   - `## Release Note` (as a markdown header)
-:   Matched release note text is used as the changelog description (only if `--description` is not explicitly provided). The changelog title is always taken from `--title` or from the PR or issue title, not from the release note section.
-:   By default, the behavior is determined by the `extract.release_notes` changelog configuration setting.
+:   By default, the behavior is determined by the [extract.release_notes](/contribute/configure-changelogs-ref.md#extract) changelog configuration setting.
 
 `--feature-id <string?>`
 :   Optional: Feature flag ID
@@ -76,8 +68,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   Products affected in format "product target lifecycle, ..." (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
 :   The valid product identifiers are listed in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
 :   The valid lifecycles are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
-:   **Precedence when `--products` is not specified:** products are derived from PR/issue labels via `pivot.products` label mappings (if configured), then from `products.default` in `changelog.yml`, and finally inferred from the current git repository name. An error is raised if no products can be determined by any of these means.
-:   Refer to [Products resolution](#products-resolution) in the how-to guide for full details.
+:   For more information about the valid product and lifecycle values, go to [Product format](#product-format).
 
 `--prs <string[]?>`
 :   Optional: Pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times.
@@ -123,10 +114,90 @@ docs-builder changelog add [options...] [-h|--help]
 :   The valid types are listed in [ChangelogConfiguration.cs](https://github.com/elastic/docs-builder/blob/main/src/services/Elastic.Documentation.Services/Changelog/ChangelogConfiguration.cs).
 
 `--use-pr-number`
-:   Optional: Use PR numbers for filenames instead of the configured `filename` strategy. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires `--prs` or `--issues`. Mutually exclusive with `--use-issue-number`.
+:   Optional: Use PR numbers for filenames instead of the configured `filename` strategy.
+:   Requires `--prs` or `--issues`.
+:   Mutually exclusive with `--use-issue-number`.
+:   Refer to [](#filenames).
 
 `--use-issue-number`
-:   Optional: Use issue numbers for filenames instead of the configured `filename` strategy. With both `--prs` (which creates one changelog per specified PR) and `--issues` (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires `--prs` or `--issues`. Mutually exclusive with `--use-pr-number`.
+:   Optional: Use issue numbers for filenames instead of the configured `filename` strategy.
+:   Requires `--prs` or `--issues`.
+:   Mutually exclusive with `--use-pr-number`.
+:   Refer to [](#filenames).
+
+## Filenames
+
+By default, output files are named according to the `filename` strategy in `changelog.yml`:
+
+| Strategy | Example filename | Description |
+|---|---|---|
+| `timestamp` (default) | `1735689600-fixes-enrich-and-lookup-join-resolution.yaml` | Uses a Unix timestamp with a sanitized title slug. |
+| `pr` | `137431.yaml` | Uses the PR number. |
+| `issue` | `2571.yaml` | Uses the issue number. |
+
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) or [](/contribute/configure-changelogs-ref.md).
+
+You can override those settings with the `--use-pr-number` or `--use-issue-number` CLI flags:
+
+```sh
+docs-builder changelog add \
+  --prs 1234 \
+  --products "elasticsearch 9.2.3" \
+  --use-pr-number
+
+docs-builder changelog add \
+  --issues 4567 \
+  --products "elasticsearch 9.3.0" \
+  --use-issue-number
+```
+
+:::{important}
+`--use-pr-number` and `--use-issue-number` are mutually exclusive; specify only one. Each requires `--prs` or `--issues`. The numbers are extracted from the URLs or identifiers you provide or from linked references in the issue or PR body when extraction is enabled.
+
+**Precedence**: CLI flags (`--use-pr-number` / `--use-issue-number`) > `filename` in `changelog.yml` > default (`timestamp`).
+:::
+
+## Product format and resolution [product-format]
+
+The `--products` command option accepts values with the format `"product target lifecycle, ..."` where:
+
+- `product` is a product ID that exists in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (required)
+- `target` is the target version or date (optional)
+- `lifecycle` exists in [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) (optional)
+
+You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
+
+For example:
+
+- `"kibana 9.2.0 ga"`
+- `"cloud-serverless 2025-08-05"`
+- `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
+
+The `changelog add` command resolves product values in the following order:
+
+1. The `--products` CLI option always takes priority.
+1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
+1. If `products.default` is defined in the changelog configuration file, those default products are used.
+1. If `--repo` is specified (or `bundle.repo` is set in the changelog configuration file), the repository name is matched against known product IDs in `products.yml` and the derived value is used.
+
+If none of these steps yield at least one product, the command returns an error.
+
+## Configuration checks
+
+By default, the command checks the following path for a configuration file: `docs/changelog.yml`.
+You can specify a different path with the `--config` command option.
+
+If a configuration file exists, the command validates its values before generating changelog files:
+
+- If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the values in `ChangelogEntryType.cs`, `ChangelogEntrySubtype.cs`, or `Lifecycle.cs`, validation fails.
+- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails.
+- If the configuration file contains `lifecycles` or `products` values that are a subset of the available values and you try to create a changelog with values outside that subset, validation fails.
+
+In each of these cases where validation fails, a changelog file is not created.
+
+If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
+For more information, refer to [Rules for creation and publishing](/contribute/configure-changelogs.md#rules).
+
 
 ## CI auto-detection [ci-auto-detection]
 
@@ -157,31 +228,3 @@ This allows the CI action to invoke `changelog add` with a minimal command line:
 ```sh
 docs-builder changelog add --config docs/changelog.yml --output /tmp/staging --concise --strip-title-prefix
 ```
-
-## Products resolution [products-resolution]
-
-When you run the `changelog add` command without the `--products` option, it resolves products in the following order:
-
-1. **`--products` CLI option** — always takes priority.
-2. **`pivot.products` label mapping** — if `pivot.products` is configured and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
-3. **`products.default` in `changelog.yml`** — the configured default products are used.
-4. **Repository name inference** — if `--repo` is specified (or `bundle.repo` is set in `changelog.yml`), the repository name is matched against known product IDs in `products.yml`.
-5. **Error** — if none of the above resolves to at least one product, an error is raised.
-
-Product-specific `rules.create` rules are evaluated *after* products are resolved from labels, so label-derived products correctly participate in per-product create rule checks.
-
-## Configuration checks
-
-By default, the command checks the following path for a configuration file: `docs/changelog.yml`.
-You can specify a different path with the `--config` command option.
-
-If a configuration file exists, the command validates its values before generating changelog files:
-
-- If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the values in `ChangelogEntryType.cs`, `ChangelogEntrySubtype.cs`, or `Lifecycle.cs`, validation fails.
-- If the configuration file contains `areas` values and they don't match what you specify in the `--areas` command option, validation fails.
-- If the configuration file contains `lifecycles` or `products` values that are a subset of the available values and you try to create a changelog with values outside that subset, validation fails.
-
-In each of these cases where validation fails, a changelog file is not created.
-
-If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
-For more information, refer to [Rules for creation and publishing](/contribute/configure-changelogs.md#rules).
