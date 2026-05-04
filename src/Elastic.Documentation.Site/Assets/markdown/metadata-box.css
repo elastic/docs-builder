@@ -1,39 +1,184 @@
 /*
- * Page-top product pills + Requirements box. The pills sit just below the
- * H1 (one per `products:` frontmatter entry whose product has `hub:` set);
- * the box sits below the pills and surfaces applies_to-driven metadata in
- * a labeled two-column layout. Hub layout opts out (the partials return
- * early when YamlFrontMatter.Layout is set).
+ * Page-top "Availability" box. Sits below the H1 and consolidates two
+ * page-level metadata systems in a single container:
+ *
+ *   - Product hub pills, in the summary row alongside the "Availability"
+ *     label, for navigation to each product's hub page.
+ *   - applies_to-driven rows (Versions / Deployments) below the summary,
+ *     collapsible via native <details>, expanded by default.
+ *
+ * Hub layout (and any frontmatter Layout) opts out -- the partial returns
+ * early. The box only renders when at least one of pills or rows exists.
  */
 
 @layer components {
-	/*
-	 * Product hub pills below the H1. Brand-color dot + display name.
-	 */
-	/* Thin separator that sits between the H1 and the Requirements box,
-	   carrying the visual weight the old applies-to summary line used to
-	   provide. Keeps the page-top chrome anchored. */
-	.page-meta-divider {
-		height: 0;
-		margin: 18px 0;
-		border: none;
+	.metadata-box {
+		margin: 16px 0 24px 0;
+		padding: 8px 14px;
+		background: var(--color-grey-10);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 6px;
+		font-size: 13px;
+		line-height: 1.4;
+	}
+
+	.metadata-box-heading {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 12px;
+		cursor: pointer;
+		list-style: none;
+		padding: 2px 0 6px 0;
+		user-select: none;
+	}
+	.metadata-box-heading::-webkit-details-marker {
+		display: none;
+	}
+	.metadata-box-heading:focus-visible {
+		outline: 2px solid var(--color-blue-elastic);
+		outline-offset: 2px;
+		border-radius: 3px;
+	}
+
+	.metadata-box-summary-only .metadata-box-heading {
+		cursor: default;
+	}
+
+	/* Title sits one step above the row labels in the visual hierarchy:
+	   slightly larger, heavier weight, full ink color. Row labels stay
+	   smaller and lighter, so the title reads as the box's heading and
+	   the pills next to it become the headlined entries. */
+	.metadata-box-title {
+		flex: 0 0 auto;
+		font-size: 15px;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+	}
+
+	.metadata-box-pills {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		flex: 1 1 auto;
+	}
+
+	.metadata-box-chevron {
+		flex-shrink: 0;
+		margin-left: auto;
+		color: var(--color-grey-60);
+		transition: transform 0.15s ease;
+	}
+	.metadata-box[open] .metadata-box-chevron {
+		transform: rotate(180deg);
+	}
+
+	.metadata-box-rows {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin-top: 6px;
+		padding-top: 10px;
 		border-top: 1px solid var(--color-grey-20);
 	}
 
-	.product-pills {
+	.metadata-row {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 6px;
 		align-items: center;
-		/* Pull tight against the breadcrumb's bottom padding so the pills
-		   read as part of the breadcrumb strip, not a separate row. */
-		margin: -16px 0 14px 0;
+		gap: 6px 10px;
+		min-height: 24px;
 	}
 
-	/* Override `.markdown-content a` (blue + underline) with a more
-	   specific selector. Pills are nav affordances, not body links.
-	   `!important` on color + decoration is a safety net against any
-	   utility-layer rules that beat us on cascade order. */
+	.metadata-label {
+		flex: 0 0 auto;
+		min-width: 100px;
+		font-weight: 600;
+		color: var(--color-grey-80);
+	}
+
+	.metadata-values {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	/*
+	 * Render applies_to entries as plain comma-separated text + a small
+	 * "?" icon that carries the existing popover tooltip. Implemented in
+	 * CSS so we don't touch the popover web component:
+	 *   - Override the global `display: contents` on the popover host so
+	 *     it has its own box (and ::before content can render).
+	 *   - Use ::before with `attr(badge-key)` to print the entry's name.
+	 *   - Reskin the visible `.applicable-info` pill into a 16px "?"
+	 *     circle that still triggers the tooltip on hover/click.
+	 */
+	.metadata-values.applies applies-to-popover {
+		display: inline-flex;
+		align-items: center;
+		color: var(--color-ink-dark);
+	}
+	.metadata-values applies-to-popover::before {
+		content: attr(badge-key);
+	}
+	.metadata-values applies-to-popover:not(:first-child)::before {
+		content: ', ' attr(badge-key);
+	}
+
+	.metadata-values .applicable-info {
+		all: unset;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 14px;
+		height: 14px;
+		margin-left: 4px;
+		border-radius: 999px;
+		background: var(--color-grey-20);
+		color: var(--color-grey-80);
+		font-size: 10px;
+		font-weight: 700;
+		line-height: 1;
+		cursor: help;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease;
+	}
+	.metadata-values .applicable-info::before {
+		content: '?';
+	}
+	.metadata-values .applicable-info > * {
+		display: none;
+	}
+	.metadata-values .applicable-info:hover {
+		background: var(--color-grey-30);
+		color: var(--color-ink-dark);
+	}
+
+	/* Unavailable items (sorted to the end by ApplicableToViewModel) render
+	   dimmed + struck-through to read as "not in scope" rather than as a
+	   peer alternative. */
+	.metadata-values applies-to-popover[lifecycle-class='unavailable']::before {
+		text-decoration: line-through;
+		text-decoration-color: var(--color-ink-light);
+		color: var(--color-ink-light);
+	}
+	.metadata-values
+		applies-to-popover[lifecycle-class='unavailable']
+		.applicable-info {
+		opacity: 0.65;
+	}
+
+	/*
+	 * Product hub pills (used inside the metadata box's summary row).
+	 * Brand-color dot + display name + arrow. Rendered as anchors, so we
+	 * override `.markdown-content a` (blue + underline) explicitly --
+	 * `!important` is the safety net against utility-layer rules that beat
+	 * us on cascade order.
+	 */
 	.markdown-content a.product-badge,
 	a.product-badge {
 		display: inline-flex;
@@ -123,118 +268,6 @@
 	.product-badge-security:hover {
 		border-color: #00bfb3;
 		background: rgb(0 191 179 / 0.06);
-	}
-
-	/*
-	 * Requirements box. Two columns: a heading on the left that titles the
-	 * whole box, and a stack of labeled rows on the right. Hidden when no
-	 * applies_to-driven row would render.
-	 */
-	.metadata-box {
-		margin: 16px 0 24px 0;
-		padding: 8px 14px;
-		background: var(--color-grey-10);
-		border: 1px solid var(--color-grey-20);
-		border-radius: 6px;
-		font-size: 13px;
-		line-height: 1.4;
-	}
-
-	.metadata-box-heading {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		cursor: pointer;
-		list-style: none;
-		padding: 4px 0;
-		font-size: 14px;
-		font-weight: 600;
-		color: var(--color-ink-dark);
-		user-select: none;
-	}
-	.metadata-box-heading::-webkit-details-marker {
-		display: none;
-	}
-	.metadata-box-heading:focus-visible {
-		outline: 2px solid var(--color-blue-elastic);
-		outline-offset: 2px;
-		border-radius: 3px;
-	}
-
-	.metadata-box-chevron {
-		flex-shrink: 0;
-		color: var(--color-grey-60);
-		transition: transform 0.15s ease;
-	}
-	.metadata-box[open] .metadata-box-chevron {
-		transform: rotate(180deg);
-	}
-
-	.metadata-box-rows {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		margin-top: 8px;
-		padding-top: 10px;
-		border-top: 1px solid var(--color-grey-20);
-	}
-
-	.metadata-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 6px 10px;
-		min-height: 24px;
-	}
-
-	.metadata-label {
-		flex: 0 0 auto;
-		min-width: 100px;
-		font-weight: 600;
-		color: var(--color-ink-dark);
-	}
-
-	.metadata-values {
-		display: inline-flex;
-		flex-wrap: wrap;
-		align-items: center;
-		row-gap: 4px;
-		min-width: 0;
-	}
-
-	/*
-	 * When the row has multiple entries, separate them with "or". Override
-	 * the global `.applies applies-to-popover { display: contents }` so the
-	 * popover's ::before generates a real separator inline.
-	 */
-	.metadata-values.applies applies-to-popover {
-		display: inline-flex;
-		align-items: center;
-	}
-	.metadata-values > * + *::before {
-		content: 'or';
-		margin: 0 8px;
-		color: var(--color-ink-light);
-		font-size: 12px;
-		font-style: italic;
-	}
-
-	/*
-	 * Plain pill for placeholder values like the Subscription row, until
-	 * real metadata replaces it. Visually quieter than the applies_to
-	 * popover badges so it reads as informational, not interactive.
-	 */
-	.metadata-pill {
-		display: inline-flex;
-		align-items: center;
-		padding: 2px 10px;
-		border-radius: 999px;
-		background: var(--color-white);
-		border: 1px solid var(--color-grey-20);
-		color: var(--color-ink-dark);
-		font-size: 12px;
-		line-height: 1.3;
 	}
 
 	@media (max-width: 640px) {

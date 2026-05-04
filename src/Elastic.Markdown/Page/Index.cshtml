@@ -92,10 +92,8 @@
 <section id="elastic-docs-v3">
 	@if (Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.Hub)
 	{
-		@await RenderPartialAsync(ProductPills.Create(Model))
 		@* This way it's correctly rendered as <h1>text</h1> instead of <h1><p>text</p></h1> *@
 		@(new HtmlString(Markdown.ToHtml("# " + Model.TitleRaw)))
-		<hr class="page-meta-divider" />
 		@await RenderPartialAsync(MetadataBox.Create(Model))
 	}
 	@(new HtmlString(Model.MarkdownHtml))

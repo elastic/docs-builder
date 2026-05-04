@@ -91,7 +91,24 @@ public class ApplicableToViewModel
 			_ => CollectCombinedRaw()
 		};
 
-		return RenderGroupedItems(rawItems).ToArray();
+		var rendered = RenderGroupedItems(rawItems);
+
+		// In the metadata-box rows, surface Serverless first, then other available
+		// items, then unavailable items at the end. The CSS suppresses the "or"
+		// separator before unavailable items so they read as a distinct group.
+		if (BadgePlacement is ApplicabilityBadgePlacement.StackVersionsRow
+			or ApplicabilityBadgePlacement.DeploymentsRow
+			or ApplicabilityBadgePlacement.OtherProductsRow)
+		{
+			rendered = rendered
+				.Select((item, index) => (item, index))
+				.OrderBy(x => x.item.RenderData.LifecycleClass == "unavailable" ? 1 : 0)
+				.ThenBy(x => x.item.Key.StartsWith("Serverless", StringComparison.Ordinal) ? 0 : 1)
+				.ThenBy(x => x.index)
+				.Select(x => x.item);
+		}
+
+		return rendered.ToArray();
 	}
 
 	private List<RawApplicabilityItem> CollectCombinedRaw()
