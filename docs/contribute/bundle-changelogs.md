@@ -427,7 +427,7 @@ For more details, refer to [PR and issue link allowlist](/cli/changelog/bundle.m
 You must set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained) in order to hide the private links. The bundle's changelog entries are sanitized but the individual changelog files are unchanged.
 :::
 
-If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can also configure link visibiblity in the [changelog directive](/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.
+If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can also configure link visibility in the [changelog directive](/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.
 
 ## Next steps
 
