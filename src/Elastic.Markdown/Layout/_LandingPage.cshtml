@@ -1,300 +1,628 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
-<div hx-select-oob="#main-container" hx-swap="none" class="w-full max-w-[100vw] text-ink relative text-pretty overflow-x-hidden">
-	<section class="w-full bg-grey-10" id="hero">
-		<div class="container mx-auto pt-28 pb-4 min-[1024px]:pb-28 grid min-[1024px]:grid-cols-[auto_420px] min-[1024px]:justify-between items-center gap-6 min-[1024px]:gap-[74px]">
-			<div class="max-w-165">
-				<h1 class="text-6xl font-bold font-sans text-black">Elastic Docs</h1>
-				<p class="mt-4">Welcome to the technical documentation for <span class="whitespace-nowrap">Elastic Stack 9.0.0</span>
-					and later, and <span class="whitespace-nowrap">Elastic Cloud Serverless</span>. Deploy, operate, and scale with step-by-step guides, API references, examples, and best practices.</p>
-				<p class="mt-4"><strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")"
-					class="link">upgrade guide</a> to plan and complete your upgrade. </p>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fafbfc;
+    --surface: #ffffff;
+    --surface-alt: #f3f5f7;
+    --border: #e2e6ea;
+    --border-light: #eef0f3;
+    --text: #1a1f36;
+    --text-secondary: #4a5270;
+    --text-muted: #8891a4;
+    --accent: #0077cc;
+    --accent-hover: #005fa3;
+    --accent-bg: #e8f4fd;
+    --green: #00bfb3;
+    --green-bg: #e6faf8;
+    --orange: #f5a623;
+    --orange-bg: #fef6e8;
+    --purple: #7b61ff;
+    --purple-bg: #f0edff;
+    --pink: #ff4081;
+    --pink-bg: #fff0f5;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.10);
+    --max-w: 1120px;
+    --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
+  a:hover { color: var(--accent-hover); }
 
-				<div class="flex md:inline-flex flex-col gap-6 mt-6">
-					<navigation-search></navigation-search>
-					<div class="flex gap-3">
-						<a href="@Model.Link("/get-started")"
-						   class="grow select-none cursor-pointer text-white text-nowrap bg-blue-elastic hover:bg-blue-elastic-110 focus:ring-4 focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 focus:outline-none h-10 flex items-center justify-center">
-							Elastic Fundamentals
-						</a>
-						<a href="https://cloud.elastic.co/registration?page=docs&placement=docs-body"
-						   class="grow cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center">
-							Start free trial
-						</a>
-					</div>
-				</div>
-				@if (Model.AllVersionsUrl is not null)
-				{
-					<div class="mt-6">
-						<a href="@Model.AllVersionsUrl" class="link">
-							View previous docs versions
-							<svg class="link-arrow"
-							     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-							</svg>
-						</a>
-					</div>
-				}
-			</div>
-			<div class="flex flex-col justify-center w-full mt-14 min-[1024px]:mt-0">
-				<div class="rounded-2xl p-8 bg-white flex flex-col gap-4 items-start"
-				     style="border: 2px solid transparent; background: linear-gradient(white, white) padding-box, linear-gradient(-65deg, #BFDBFF 17%, #E2D3FE 83%) border-box; background-clip: padding-box, border-box; background-origin: padding-box, border-box;">
-					<span class="euiBadge euiBadge--primary inline-flex items-center font-sans font-bold text-xs uppercase tracking-wide shrink-0 rounded-full px-2 py-0.5 bg-[#8144CC] text-white">NEW</span>
-					<div class="flex flex-col">
-						<p class="font-sans font-bold text-xl">Elastic skills for AI agents</p>
-						<p class="mt-2">Install official skills that teach AI coding agents how to work with Elasticsearch, Kibana, Fleet, and the rest of the Elastic stack.</p>
-						<div class="grid grid-cols-1 mt-6 gap-2 text-left">
-							<a href="@Model.Link("/explore-analyze/ai-features/agent-skills")" class="link justify-start">
-								Learn more
-								<svg class="link-arrow"
-								     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-								</svg>
-							</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</section>
+  /* ── Hero / Search ── */
+  .hero {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 48px 24px 0;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  .hero p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+  }
+  .search-wrap {
+    max-width: 640px;
+    margin: 0 auto 16px;
+    position: relative;
+  }
+  .search-wrap svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .search-wrap input {
+    width: 100%;
+    height: 52px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0 16px 0 48px;
+    font-size: 16px;
+    font-family: var(--font);
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .search-wrap input::placeholder { color: var(--text-muted); }
+  .search-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,119,204,0.12);
+  }
 
-	<section class="w-full bg-grey-10">
-		<div class="container mx-auto py-10 pb-28">
-			<div class="heading-wrapper" id="solutions-use-cases">
-				<h2 class="font-bold font-sans text-3xl text-ink-dark">
-					<a href="#solutions-use-cases">Solutions and use cases</a>
-				</h2>
-			</div>
-			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Search logo" src="@Model.Static("elasticsearch-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
-						<p class="font-sans font-bold text-xl">Elasticsearch</p>
-						<p class="mt-2">Build powerful search and RAG applications using Elasticsearch's vector database, AI toolkit, and advanced retrieval capabilities.</p>
-						<div class="grid grid-cols-1 mt-6 gap-2">
-							<a href="@Model.Link("/solutions/search")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold">9.0+ (latest @Model.CurrentVersion) docs</a>
-							<a href="https://www.elastic.co/guide/en/elasticsearch/reference/index.html" class="text-sm text-grey-90 hover:text-grey-110 font-sans font-semibold" hx-disable="true">Previous versions</a>
-						</div>
-					</div>
-				</div>
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Observability logo" src="@Model.Static("observability-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
-						<p class="font-sans font-bold text-xl">Observability</p>
-						<p class="mt-2">Resolve problems with open, flexible, and unified observability powered by advanced machine learning and analytics.</p>
-						<div class="grid grid-cols-1 mt-6 gap-2">
-							<a href="@Model.Link("/solutions/observability")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold">9.0+ (latest @Model.CurrentVersion) docs</a>
-							<a href="https://www.elastic.co/guide/en/observability/index.html" class="text-sm text-grey-90 hover:text-grey-110 font-sans font-semibold" hx-disable="true">Previous versions</a>
-						</div>
-					</div>
-				</div>
-				<div class="rounded-2xl border-1 border-grey-20 p-8 bg-white flex gap-6 items-start">
-					<img loading="lazy" alt="Security logo" src="@Model.Static("security-logo-color-64px.svg")" class="size-8"/>
-					<div class="flex flex-col">
-						<p class="font-sans font-bold text-xl">Security</p>
-						<p class="mt-2">Detect, investigate, and respond to threats with AI-driven security analytics to protect your organization at scale.</p>
-						<div class="grid grid-cols-1 mt-6 gap-2">
-							<a href="@Model.Link("/solutions/security")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold">9.0+ (latest @Model.CurrentVersion) docs</a>
-							<a href="https://www.elastic.co/guide/en/security/index.html" class="text-sm text-grey-90 hover:text-grey-110 font-sans font-semibold" hx-disable="true">Previous versions</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</section>
+  /* ── Quick destinations ── */
+  .section { max-width: var(--max-w); margin: 0 auto; padding: 40px 24px 0; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-header h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .section-header a { font-size: 13px; font-weight: 500; }
 
-	<section class="w-full">
-		<div class="container mx-auto pt-20 pb-10">
-			<div class="heading-wrapper" id="how-to-guides">
-				<h2 class="font-bold font-sans text-3xl text-ink-dark">
-					<a href="#how-to-guides">
-						How-to guides
-					</a>
-				</h2>
-			</div>
-			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
-					<img loading="lazy" alt="Manage data icon" src="@Model.Static("productStreamsWired.svg")" class="size-8"/>
-					<div class="flex flex-col grow">
-						<p class="font-sans font-bold text-xl">Manage data</p>
-						<p class="mt-2 grow">Learn how to ingest, enrich, and manage your data in Elastic.</p>
-						<a href="@Model.Link("/manage-data")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-					</div>
-				</div>
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
-					<img loading="lazy" alt="Explore and analyze icon" src="@Model.Static("productDashboard.svg")" class="size-8"/>
-					<div class="flex flex-col grow">
-						<p class="font-sans font-bold text-xl">Explore and analyze</p>
-						<p class="mt-2 grow">Discover the tools of Elasticsearch and Kibana.</p>
-						<a href="@Model.Link("/explore-analyze")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-					</div>
-				</div>
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
-					<img loading="lazy" alt="Deploy and manage icon" src="@Model.Static("storage.svg")" class="size-8"/>
-					<div class="flex flex-col grow">
-						<p class="font-sans font-bold text-xl">Deploy and manage</p>
-						<p class="mt-2 grow">Learn how to deploy and manage all aspects of your Elastic environment.</p>
-						<a href="@Model.Link("/deploy-manage")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-					</div>
-				</div>
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
-					<img loading="lazy" alt="Manage Cloud account icon" src="@Model.Static("cloud.svg")" class="size-8"/>
-					<div class="flex flex-col grow">
-						<p class="font-sans font-bold text-xl">Manage Cloud account</p>
-						<p class="mt-2 grow">Manage your profile information, preferences, and personal settings.</p>
-						<a href="@Model.Link("/cloud-account")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-					</div>
-				</div>
-			</div>
-		</div>
-	</section>
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .quick-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .quick-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow);
+    color: var(--text);
+  }
+  .quick-card .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+  .quick-card .card-text h3 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .quick-card .card-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+  .quick-card .card-text .meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
-	<section class="w-full">
-		<div class="container mx-auto py-10">
-			<div class="heading-wrapper" id="references">
-				<h2 class="font-bold font-sans text-3xl text-ink-dark">
-					<a href="#references">Reference</a>
-				</h2>
-			</div>
-			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Elastic APIs</p>
-					<p class="mt-2 grow">Browse the API docs for Elasticsearch, Kibana, Elastic Cloud, and more.</p>
-					<a href="https://www.elastic.co/docs/api" target="_blank" rel="noopener noreferrer" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-				</div>
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Elasticsearch clients</p>
-					<p class="mt-2 grow">Browse the Elasticsearch client libraries for Java, .Net, Python, and more.</p>
-					<a href="@Model.Link("/reference/elasticsearch-clients/")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-				</div>
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">OpenTelemetry</p>
-					<p class="mt-2 grow">Browse the docs for the Elastic Distributions of OpenTelemetry (EDOT).</p>
-					<a href="@Model.Link("/reference/opentelemetry/")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-				</div>
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Query languages</p>
-					<p class="mt-2 grow">Browse the docs for Query DSL, <span class="whitespace-nowrap">ES|QL</span>, KQL, and more.</p>
-					<a href="@Model.Link("/reference/query-languages/")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-				</div>
-			</div>
-			<div class="mt-6">
-				<a href="@Model.Link("/reference")" class="link">
-					View all reference docs
-					<svg class="link-arrow"
-					     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-					</svg>
-				</a>
-			</div>
-		</div>
-	</section>
+  /* Icon color variants */
+  .icon-blue { background: var(--accent-bg); color: var(--accent); }
+  .icon-green { background: var(--green-bg); color: var(--green); }
+  .icon-orange { background: var(--orange-bg); color: var(--orange); }
+  .icon-purple { background: var(--purple-bg); color: var(--purple); }
+  .icon-pink { background: var(--pink-bg); color: var(--pink); }
 
-	<section class="w-full">
-		<div class="container mx-auto py-10">
-			<div class="heading-wrapper" id="product-resources">
-				<h2 class="font-bold font-sans text-3xl">
-					<a href="#product-resources">
-						Product resources
-					</a>
-				</h2>
-			</div>
-			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Release notes</p>
-					<p class="mt-2 grow">Explore the latest features and changes in Elastic.</p>
-					<a href="@Model.Link("/release-notes/")" class="link mt-3 justify-start text-white hover:text-grey-20">View release notes
-						<svg class="link-arrow"
-						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-						</svg>
-						</a>
-				</div>
-				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Extend and contribute</p>
-					<p class="mt-2 grow">Learn how to contribute to Elastic products and extend capabilities.</p>
-					<a href="@Model.Link("extend/")" class="link mt-3 justify-start text-white hover:text-grey-20">View extend and contribute docs
-						<svg class="link-arrow"
-						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-						</svg>
-						</a>
-				</div>
-				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Troubleshoot</p>
-					<p class="mt-2 grow">Check troubleshooting guides for common fixes.</p>
-					<a href="@Model.Link("/troubleshoot/")" class="link mt-3 justify-start text-white hover:text-grey-20">View troubleshooting docs
-						<svg class="link-arrow"
-						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-						</svg>
-						</a>
-				</div>
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 bg-white p-8 flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Previous versions</p>
-					<p class="mt-2 grow">Browse the docs for previous Elastic product versions.</p>
-					<a href="https://www.elastic.co/guide?lang=en" target="_blank" rel="noopener noreferrer" class="link mt-3 justify-start text-blue-elastic-100 hover:text-blue-elastic-110" hx-disable="true">View previous versions
-						<svg class="link-arrow"
-						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-						</svg>
-						</a>
-				</div>
-			</div>
-		</div>
-	</section>
-	
-	@* <section class="w-full bg-grey-10"> *@
-	@* 	<div class="container mx-auto py-10"> *@
-	@* 		<h2 class="font-bold text-3xl text-ink-dark">Instant Elasticsearch</h2> *@
-	@* 		<div class="grid lg:grid-cols-2 gap-6 mt-6"> *@
-	@* 			<div class="lg:basis-[50%]"> *@
-	@* 				<p class="mt-2 font-body">For local testing, use Docker to install and run Elasticsearch.</p> *@
-	@* 			</div> *@
-	@* 			<div class="lg:basis-[50%] rounded-xl border-1 border-grey-20 p-6"> *@
-	@* 				<p class="font-body">Try it locally now:</p> *@
-	@* 				<div class="mt-2"> *@
-	@* 					<div class="highlight-bash notranslate"> *@
-	@* 						<div class="highlight"> *@
-	@* 							<pre> *@
-	@* 								<code class="language-yaml hljs" data-highlighted="yes">curl -fsSL https://elastic.co/start-local | sh</code> *@
-	@* 							</pre> *@
-	@* 						</div> *@
-	@* 					</div> *@
-	@* 				</div> *@
-	@* 			</div> *@
-	@* 		</div> *@
-	@* 	</div> *@
-	@* </section> *@
+  /* ── Version banner ── */
+  .version-banner {
+    max-width: var(--max-w);
+    margin: 40px auto 0;
+    padding: 0 24px;
+  }
+  .version-banner-inner {
+    background: linear-gradient(135deg, #f8f9fb 0%, #eef2f7 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .version-banner-inner .vb-text { flex: 1; min-width: 200px; }
+  .version-banner-inner .vb-text h3 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .version-banner-inner .vb-text p { font-size: 13px; color: var(--text-secondary); }
+  .version-banner-inner .vb-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    border: none;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); color: #fff; }
+  .btn-outline { background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
-	<section class="w-full">
-		<div class="container mx-auto py-10">
-			<div class="rounded-xl border-1 border-grey-20 px-12 py-8 grid lg:grid-cols-[1fr_auto] gap-12 items-center text-center lg:text-left">
-				<div>
-					<h2 class="font-semibold font-sans text-3xl text-black leading-[1.2em]">Welcome to our community of developers</h2>
-					<p class="mt-2">Learn from your peers and share code examples.</p>
-				</div>
-				<a href="https://discuss.elastic.co" target="_blank" rel="noopener noreferrer" class="w-full cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-blue-elastic hover:border-blue-elastic-100 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center min-w-40 max-w-md lg:max-w-none justify-self-center lg:justify-self-auto">
-					Join now
-				</a>
-			</div>
-		</div>
-	</section>
+  /* ── Product sections ── */
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @@media (max-width: 800px) {
+    .products-grid { grid-template-columns: 1fr; }
+  }
+  .product-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: box-shadow 0.15s;
+  }
+  .product-card:hover { box-shadow: var(--shadow); }
+  .product-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .product-card h3 .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .product-card > p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
+  .product-card ul { list-style: none; }
+  .product-card ul li { border-top: 1px solid var(--border-light); }
+  .product-card ul li a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    font-size: 14px;
+    color: var(--text);
+    transition: color 0.15s;
+  }
+  .product-card ul li a:hover { color: var(--accent); }
+  .product-card ul li a .arrow { color: var(--text-muted); font-size: 14px; transition: transform 0.15s, color 0.15s; }
+  .product-card ul li a:hover .arrow { transform: translateX(3px); color: var(--accent); }
 
-	<section class="w-full">
-		<div class="container mx-auto pt-10 pb-20">
-			<div class="rounded-2xl overflow-hidden px-12 py-8 bg-blue-elastic bg-no-repeat bg-auto grid lg:grid-cols-[1fr_auto] gap-12 items-center text-center lg:text-left"
-			     style="background-image: url('@Model.Static("elasticon-bg-b.png")'); background-position: center 65%">
-				<div>
-					<h2 class="font-bold font-sans text-3xl text-white">Looking for more?</h2>
-					<p class="mt-2 text-white text-base">We'll show you how to solve toughest challenges with Search AI.
-						Join us at an Elastic{ON} event near you!</p>
-				</div>
-				<a href="https://www.elastic.co/events/elasticon" target="_blank" rel="noopener noreferrer"
-				   class="w-full cursor-pointer text-blue-elastic hover:text-blue-elastic-100 text-nowrap border-2 border-white hover:border-grey-20 bg-white hover:bg-grey-10 focus:ring-4 focus:outline-none focus:ring-blue-elastic-50 font-semibold font-sans rounded-sm px-6 py-2 text-center h-10 flex items-center justify-center min-w-40 max-w-md lg:max-w-none justify-self-center lg:justify-self-auto">
-					Register now
-				</a>
-			</div>
-		</div>
-	</section>
-	
+  /* ── Product index (categorized) ── */
+  .product-index {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @@media (max-width: 800px) {
+    .product-index { grid-template-columns: 1fr; }
+  }
+  .pi-category {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+  .pi-category h4 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .pi-category ul { list-style: none; }
+  .pi-category ul li + li { border-top: 1px solid var(--border-light); }
+  .pi-category ul li a {
+    display: block;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.12s;
+  }
+  .pi-category ul li a:hover { color: var(--accent); }
+
+  /* ── Reference & API strip ── */
+  .ref-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .ref-item {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-decoration: none;
+    color: var(--text);
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .ref-item:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); color: var(--text); }
+  .ref-item h4 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .ref-item p { font-size: 12px; color: var(--text-muted); }
+
+  /* ── Getting started ── */
+  .gs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  @@media (max-width: 800px) {
+    .gs-grid { grid-template-columns: 1fr; }
+  }
+  .gs-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 22px 22px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .gs-card:hover { border-color: var(--accent); box-shadow: var(--shadow); color: var(--text); }
+  .gs-card .gs-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .gs-card h3 { font-size: 15px; font-weight: 700; }
+  .gs-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.45; flex: 1; }
+  .gs-card .gs-cta { font-size: 13px; font-weight: 600; color: var(--accent); }
+
+  /* ── Footer ── */
+  .landing-footer {
+    max-width: var(--max-w);
+    margin: 48px auto 0;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .landing-footer a { color: var(--text-secondary); }
+
+  /* ── What's new ribbon ── */
+  .whats-new {
+    max-width: var(--max-w);
+    margin: 32px auto 0;
+    padding: 0 24px;
+  }
+  .whats-new-inner {
+    background: linear-gradient(135deg, #eef2ff 0%, #f0edff 100%);
+    border: 1px solid #d8d0ff;
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .whats-new-inner .badge {
+    background: var(--purple);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+  }
+  .whats-new-inner a { font-weight: 500; }
+
+  /* ── Responsive ── */
+  @@media (max-width: 680px) {
+    .hero h1 { font-size: 22px; }
+    .quick-grid { grid-template-columns: 1fr; }
+    .version-banner-inner { flex-direction: column; align-items: flex-start; }
+    .gs-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div hx-select-oob="#main-container" hx-swap="none" class="w-full max-w-[100vw] relative overflow-x-hidden">
+
+  <!-- ── Version disambiguation ── -->
+  <div class="version-banner">
+    <div class="version-banner-inner">
+      <div class="vb-text">
+        <h3>You're viewing docs for Elastic Stack 9.0+ (latest @Model.CurrentVersion)</h3>
+        <p>Need docs for an earlier version?</p>
+      </div>
+      <div class="vb-actions">
+        <a href="https://www.elastic.co/guide" class="btn btn-outline" hx-disable="true">8.x docs (elastic.co/guide) →</a>
+        @if (Model.AllVersionsUrl is not null)
+        {
+          <a href="@Model.AllVersionsUrl" class="btn btn-outline">All versions</a>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Hero: Search-first ── -->
+  <div class="hero">
+    <h1>Elastic documentation</h1>
+    <p>Find guides, API references, and tutorials for the Elastic Stack.</p>
+    <div class="search-wrap">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      <navigation-search></navigation-search>
+    </div>
+  </div>
+
+  <!-- ── What's new ── -->
+  <div class="whats-new">
+    <div class="whats-new-inner">
+      <span class="badge">NEW</span>
+      <span>Elasticsearch @Model.CurrentVersion is out — <a href="@Model.Link("/release-notes/")">check out what's new →</a></span>
+    </div>
+  </div>
+
+  <!-- ── Popular destinations ── -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Popular destinations</h2>
+    </div>
+    <div class="quick-grid">
+      <a class="quick-card" href="@Model.Link("/solutions/search")">
+        <div class="icon icon-blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        </div>
+        <div class="card-text">
+          <h3>Elasticsearch</h3>
+          <p>Store, search, and analyze your data</p>
+        </div>
+      </a>
+      <a class="quick-card" href="@Model.Link("/deploy-manage/deploy/self-managed/installing-elasticsearch")">
+        <div class="icon icon-orange">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <div class="card-text">
+          <h3>Install with Docker</h3>
+          <p>Run Elasticsearch in containers</p>
+        </div>
+      </a>
+      <a class="quick-card" href="@Model.Link("/reference/query-languages/")">
+        <div class="icon icon-purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg>
+        </div>
+        <div class="card-text">
+          <h3>Query DSL</h3>
+          <p>Full-text search, filters, and aggregations</p>
+        </div>
+      </a>
+      <a class="quick-card" href="@Model.Link("/get-started")">
+        <div class="icon icon-green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="card-text">
+          <h3>The Elastic Stack</h3>
+          <p>Learn about the open-source tools to search, analyze, and visualize data in real time</p>
+        </div>
+      </a>
+      <a class="quick-card" href="https://www.elastic.co/docs/api" target="_blank" rel="noopener noreferrer" hx-disable="true">
+        <div class="icon icon-pink">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="card-text">
+          <h3>Elasticsearch API</h3>
+          <p>REST endpoints</p>
+        </div>
+      </a>
+      <a class="quick-card" href="@Model.Link("/explore-analyze")">
+        <div class="icon icon-orange">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        </div>
+        <div class="card-text">
+          <h3>Kibana</h3>
+          <p>Visualize your Elasticsearch data</p>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Get started ── -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Get started</h2>
+    </div>
+    <div class="gs-grid">
+      <a class="gs-card" href="@Model.Link("/get-started")">
+        <div class="gs-card-icon icon-green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3>Try locally</h3>
+        <p>One command. Elasticsearch + Kibana on your machine in under two minutes. No account, no credit card.</p>
+        <span class="gs-cta">Run locally →</span>
+      </a>
+      <a class="gs-card" href="https://cloud.elastic.co/registration?page=docs&placement=docs-body" target="_blank" rel="noopener noreferrer" hx-disable="true">
+        <div class="gs-card-icon icon-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
+        </div>
+        <h3>Free cloud trial</h3>
+        <p>Fully managed on AWS, GCP, or Azure. Production-ready in minutes. Search, Observability, and Security all included.</p>
+        <span class="gs-cta">Start free trial →</span>
+      </a>
+      <a class="gs-card" href="@Model.Link("/get-started")">
+        <div class="gs-card-icon icon-purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <h3>Elastic fundamentals</h3>
+        <p>Learn about Elasticsearch concepts and how to get up and running.</p>
+        <span class="gs-cta">Learn the basics →</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Browse by solution ── -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Browse by solution</h2>
+    </div>
+    <div class="products-grid">
+      <div class="product-card">
+        <h3><span class="dot" style="background:#0077cc"></span> Search</h3>
+        <p>Build search experiences powered by Elasticsearch — from full-text search to vector and hybrid retrieval.</p>
+        <ul>
+          <li><a href="@Model.Link("/solutions/search")">Get started with Search <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/search")">Semantic &amp; vector search <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/search")">Search applications <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/search")">Agent Builder <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/search")">AI agent skills <span class="arrow">→</span></a></li>
+        </ul>
+      </div>
+      <div class="product-card">
+        <h3><span class="dot" style="background:#00bfb3"></span> Observability</h3>
+        <p>Logs, metrics, APM, and uptime monitoring in a unified platform.</p>
+        <ul>
+          <li><a href="@Model.Link("/solutions/observability")">Get started with Observability <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/observability")">APM <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/observability")">Log monitoring <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/observability")">Synthetics <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/observability")">Infrastructure monitoring <span class="arrow">→</span></a></li>
+        </ul>
+      </div>
+      <div class="product-card">
+        <h3><span class="dot" style="background:#ff4081"></span> Security</h3>
+        <p>SIEM, endpoint protection, and threat hunting for your organization.</p>
+        <ul>
+          <li><a href="@Model.Link("/solutions/security")">Get started with Security <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/security")">Detection rules <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/security")">Endpoint protection <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/security")">Cases &amp; investigations <span class="arrow">→</span></a></li>
+          <li><a href="@Model.Link("/solutions/security")">Cloud security <span class="arrow">→</span></a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── All products ── -->
+  <div class="section">
+    <div class="section-header">
+      <h2>All products</h2>
+    </div>
+    <div class="product-index">
+      <div class="pi-category">
+        <h4>Elastic Stack</h4>
+        <ul>
+          <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
+          <li><a href="@Model.Link("/explore-analyze")">Kibana</a></li>
+          <li><a href="@Model.Link("/manage-data")">Logstash</a></li>
+          <li><a href="@Model.Link("/manage-data")">Beats</a></li>
+          <li><a href="@Model.Link("/explore-analyze")">Machine Learning</a></li>
+          <li><a href="@Model.Link("/manage-data")">Elasticsearch for Apache Hadoop &amp; Spark</a></li>
+        </ul>
+      </div>
+      <div class="pi-category">
+        <h4>Cloud &amp; orchestration</h4>
+        <ul>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Serverless</a></li>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Hosted</a></li>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud on Kubernetes (ECK)</a></li>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Enterprise (ECE)</a></li>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud control (ecctl)</a></li>
+        </ul>
+      </div>
+      <div class="pi-category">
+        <h4>Ingest tools</h4>
+        <ul>
+          <li><a href="@Model.Link("/manage-data")">Integrations</a></li>
+          <li><a href="@Model.Link("/reference/opentelemetry/")">Elastic Distributions for OpenTelemetry</a></li>
+          <li><a href="@Model.Link("/manage-data")">Fleet &amp; Elastic Agent</a></li>
+          <li><a href="@Model.Link("/solutions/observability")">APM</a></li>
+          <li><a href="@Model.Link("/solutions/security")">Elastic Defend</a></li>
+          <li><a href="@Model.Link("/manage-data")">Elastic Serverless Forwarder for AWS</a></li>
+          <li><a href="@Model.Link("/manage-data")">Connectors</a></li>
+          <li><a href="@Model.Link("/manage-data")">Web crawler</a></li>
+        </ul>
+      </div>
+      <div class="pi-category">
+        <h4>Query languages</h4>
+        <ul>
+          <li><a href="@Model.Link("/reference/query-languages/")">Query DSL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">ES|QL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">KQL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">SQL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">EQL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">Lucene</a></li>
+        </ul>
+      </div>
+      <div class="pi-category">
+        <h4>APM agents</h4>
+        <ul>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Java Agent</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">&#46;NET Agent</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Node.js Agent</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Python Agent</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Ruby Agent</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Go Agent</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">PHP Agent</a></li>
+        </ul>
+      </div>
+      <div class="pi-category">
+        <h4>Developer tools &amp; standards</h4>
+        <ul>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Elasticsearch clients</a></li>
+          <li><a href="@Model.Link("/reference")">Elastic Common Schema (ECS)</a></li>
+          <li><a href="@Model.Link("/reference")">Search UI</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <footer class="landing-footer">
+    <span>© 2026 Elasticsearch B.V.</span>
+    <span><a href="@Model.Link("/contribute-docs")">Edit this page</a> · <a href="@Model.Link("/contribute-docs")">Report a docs issue</a></span>
+  </footer>
+
 </div>
