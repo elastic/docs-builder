@@ -104,12 +104,11 @@ pivot:
 
 For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml).
 
-## Use a changelog configuration file [usage]
+## Next steps [usage]
 
 After you've created a config file, all subsequent changelog commands can use it.
 By default, they look for `changelog.yml` by checking `./changelog.yml` then `./docs/changelog.yml` relative to your current directory.
 Most changelog commands allow you to specify a different path with the `--config` option.
 
-For specific details about the usage and impact of the configuration file, refer to the [changelog commands](/cli/changelog/index.md).
-
-The [changelog directive](/syntax/changelog.md) also uses the changelog configuration file and you can specify a non-default path if necessary.
+1. Start [creating changelog files](/contribute/create-changelogs.md).
+1. You might need to make further changes to your configuration file after you've performed a few tests. Likewise you might need to add bundle settings or profiles when you're ready to [create release bundles](/contribute/bundle-changelogs.md).

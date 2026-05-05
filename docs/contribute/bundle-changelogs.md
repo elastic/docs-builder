@@ -46,11 +46,13 @@ You can:
 
 The latter method is more convenient and consistent for repetitive workflows, therefore it's the recommended method described here.
 
-For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and [](/contribute/configure-changelogs-ref.md).
-
-:::{note}
 You must create profiles that match your chosen source of truth.
+
+:::{tip}
+It is strongly recommended to set `output_products` in your profile so your bundles have a single top-level product entry that provides the context of the release. This context is particularly important if you'll be [applying bundle rules](#rules).
 :::
+
+For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and [](/contribute/configure-changelogs-ref.md).
 
 ### Bundle by report or URL list [profile-url]
 
@@ -108,7 +110,7 @@ bundle:
 ```
 
 1. This profile fetches the PR list from the GitHub release notes for the version tag specified in the command.
-2. For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is inferred from the release tag returned by GitHub (not the argument you pass to the command). For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
+2. For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is inferred from full release tag name. For example, if the release tag is `v1.34.1-preview.1` the lifecycle is `preview`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference) for more details.
 
 ### Bundle by folder or changelog product
 
@@ -173,14 +175,17 @@ For example, if the source of truth for what was shipped in each release is:
 - a list of GitHub pull requests or issues:
 
   ```sh
-  # Bundle changelogs from a PR list buildkite report ({lifecycle} → "ga" inferred from "9.2.0")
+  # Bundle changelogs from a PR list ({lifecycle} → "ga" inferred from "9.2.0")
   docs-builder changelog bundle elasticsearch-release 9.2.0 ./prs.txt
   ```
+
   ... where `prs.txt` is a newline delimited file with PR or issue URLs like this this:
+
   ```txt
   https://github.com/elastic/kibana/pull/123
   https://github.com/elastic/kibana/pull/456
   ```
+
 - a buildkite promotion report:
 
   ```sh
@@ -191,8 +196,8 @@ For example, if the source of truth for what was shipped in each release is:
 - automated release notes for GitHub releases:
 
   ```sh
-  # Bundle changelogs from a specific version of GitHub release notes
-  docs-builder changelog bundle agent-gh-release 1.34.1
+  # Bundle changelogs from the release notes of a specific GitHub tag
+  docs-builder changelog bundle agent-gh-release v1.34.1
 
   # Use "latest" to fetch the most recent release
   docs-builder changelog bundle agent-gh-release latest
@@ -224,19 +229,12 @@ For example, if the source of truth for what was shipped in each release is:
   ```
 
 By default all changelogs that match the chosen source of truth are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add [bundle rules](#rules).
 
-:::{note}
-For profiles that use static patterns (without `{version}` or `{lifecycle}` placeholders), the second argument is still required but serves no functional purpose. You can pass any placeholder value.
-
-```sh
-# Profile with static patterns - second argument unused but required
-docs-builder changelog bundle release-all '*'
-docs-builder changelog bundle release-all 'unused'
-docs-builder changelog bundle release-all 'none'
-```
-
+:::{tip}
+It is strongly recommended to pull all of the content from each changelog into the bundle; otherwise you can't move or remove your changelogs. If your bundle contains only references to the files, add set [bundle.resolve](/contribute/configure-changelogs-ref.md#bundle-basic) to true and re-generate your bundle.
 :::
+
+To apply additional filtering by the changelog type, areas, or products, add [bundle rules](#rules).
 
 If you don't want to use profiles and prefer to specify all the command options every time you run the command, refer to [Option-based examples](/cli/changelog/bundle.md#option-based-examples).
 
@@ -332,15 +330,19 @@ For full option details, go to [](/cli/changelog/remove.md).
 
 ## Examples
 
+The following sections provide more details about optional and advanced steps.
+
 ### Apply bundle rules [rules]
 
-:::{tip}
+:::{important}
 Not everything that was shipped in a release and has a changelog necessarily belongs in the release bundle.
 :::
 
 If you want to automatically include or exclude changelogs from bundles based on their areas, types, or products, you can accomplish this with rules in your changelog configuration file.
+Bundle rules run as a secondary stage after the candidate changelogs are collected (for example, based on a PR list, promotion report, or other valid source of truth).
+
 For example, you might choose to omit `other` or `docs` types of changelogs.
-Or you might choose to omit all changelogs related to specific features (`areas`) from a specific product's release bundles.
+Or you might choose to omit all changelogs related to specific features (`areas`) from a product's release bundles.
 
 You can define rules at the global level (applies to all products) like this:
 
@@ -369,114 +371,64 @@ rules:
 ```
 
 Product-specific rules override the global rules entirely—they do not merge.
-For details, refer to [](/contribute/configure-changelogs-ref.md#rules-bundle) and  [](/contribute/configure-changelogs-ref.md#advanced-rule-examples).
-
-### Bundle descriptions
-
-You can add introductory text to bundles using the `description` field. This text appears at the top of rendered changelogs, after the release heading but before the entry sections.
-
-When using profiles, you can provide this information in:
-
-- `bundle.description`: Default description for all profiles
-- `bundle.profiles.<name>.description`: Profile-specific description (overrides the default)
-
-Bundle descriptions support these `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` substitution variables.
-When using `{version}` or `{lifecycle}`, you must provide the necessary version argument in the command (for example, `bundle profile 9.2.0`) or define `output_products` in your configuration file.
-
-For complex descriptions with multiple paragraphs, lists, and links, use YAML literal block scalars with the `|` (pipe) syntax:
-
-```yaml
-bundle:
-  description: |
-    This release includes significant improvements:
-    
-    - Enhanced performance
-    - Bug fixes and stability improvements
-    - New features for better user experience
-    
-    For security updates, go to [security announcements](https://example.com/docs).
-    
-    Download the release binaries: https://github.com/{owner}/{repo}/releases/tag/v{version}
-```
-
-The `|` (pipe) preserves line breaks and is ideal for Markdown-formatted text. Avoid using `>` (greater than) for descriptions as it folds line breaks into spaces, making lists and paragraphs difficult to format correctly.
-
-### Option-based bundling [changelog-bundle-options]
-
-You can specify only one of the following filter options:
-
-- `--all`: Include all changelogs from the directory.
-- `--input-products`: Include changelogs for the specified products. Refer to [Filter by product](#changelog-bundle-product).
-- `--prs`: Include changelogs for the specified pull request URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/pull/123`. Go to [Filter by pull requests](#changelog-bundle-pr).
-- `--issues`: Include changelogs for the specified issue URLs, or a path to a newline-delimited file. When using a file, every line must be a fully-qualified GitHub URL such as `https://github.com/owner/repo/issues/123`. Go to [Filter by issues](#changelog-bundle-issues).
-- `--release-version`: Bundle changelogs for the pull requests in GitHub release notes. Refer to [Bundle by GitHub release](#changelog-bundle-release-version).
-- `--report`: Include changelogs whose pull requests appear in a promotion report. Accepts a URL or a local file path to an HTML report.
-
-`rules.bundle` in `changelog.yml` is **not** mutually exclusive with these options: it runs as a **second stage** after the primary filter matches entries (for example, `--input-products` gathers changelogs, then global or per-product bundle rules may exclude some). The only mutually exclusive pairing is **profile-based** versus **option-based** invocation. See [bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
-
-By default, the output file contains only the changelog file names and checksums.
-To change this behavior, set `bundle.resolve` to `true` in the changelog configuration file or use the `--resolve` command option.
-
-:::{tip}
-If you plan to use [changelog directives](/contribute/publish-changelogs.md#changelog-directive), it is recommended to pull all of the content from each changelog into the bundle; otherwise you can't delete your changelogs.
-If you likewise want to regenerate your [Asciidoc or Markdown files](/contribute/publish-changelogs.md#render-changelogs) after deleting your changelogs, it's only possible if you have "resolved" bundles.
-:::
-
-<!--
-TBD: This feels like TMI in this context. Remove after confirming it's covered in the CLI reference
-When you do not specify `--directory`, the command reads changelog files from `bundle.directory` in your changelog configuration if it is set, otherwise from the current directory.
-When you do not specify `--output`, the command writes the bundle to `bundle.output_directory` from your changelog configuration (creating `changelog-bundle.yaml` in that directory) if it is set, otherwise to `changelog-bundle.yaml` in the input directory.
-When you do not specify `--repo` or `--owner`, the command falls back to `bundle.repo` and `bundle.owner` in the changelog configuration, so you rarely need to pass these on the command line.
--->
+For details, refer to [](/contribute/configure-changelogs-ref.md#rules-bundle) and [](/contribute/configure-changelogs-ref.md#advanced-rule-examples).
 
 ### Hide features [changelog-bundle-hide-features]
 
-You can use the `--hide-features` option to embed feature IDs that should be hidden when the bundle is rendered. This is useful for features that are not yet ready for public documentation.
-
-```sh
-docs-builder changelog bundle \
-  --input-products "elasticsearch 9.3.0 *" \
-  --hide-features "feature:hidden-api,feature:experimental" \ <1>
-  --output /path/to/bundles/9.3.0.yaml
-```
-
-1. Feature IDs to hide. Changelogs with matching `feature-id` values will be commented out when rendered.
-
-<!--
-TO-DO: Add info about how to do this in bundle.
-:::{tip}
-You can do this with profile-based bundling too. Refer to [](/cli/changelog/bundle.md).
-::: -->
-
-The bundle output will include a `hide-features` field:
+Changelogs have an optional `feature-id` field that you can use to associate the change with a specific feature or project.
+If there are features or projects that are not yet ready for public documentation, you can list those IDs in the [`hide_features`](/contribute/configure-changelogs-ref.md#bundle-profiles) setting:
 
 ```yaml
-products:
-- product: elasticsearch
-  target: 9.3.0
-hide-features:
-  - feature:hidden-api
-  - feature:experimental
-entries:
-- file:
-    name: 1765495972-new-feature.yaml
-    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+bundle:
+  directory: docs/changelog
+  output_directory: docs/releases
+  repo: elasticsearch 
+  owner: elastic
+  resolve: true
+  profiles:
+    serverless-report:
+      output: "serverless/{version}.yaml"
+      output_products: "cloud-serverless {version}"
+      hide_features: <1>
+        - feature-flag-1
+        - feature-flag-2
 ```
 
-When this bundle is rendered (either via the `changelog render` command or the `{changelog}` directive), changelogs with `feature-id` values matching any of the listed features will be commented out in the output.
+1. The feature identifiers to hide.
 
-:::{note}
-The `--hide-features` option on the `render` command and the `hide-features` field in bundles are **combined**. If you specify `--hide-features` on both the `bundle` and `render` commands, all specified features are hidden. The `{changelog}` directive automatically reads `hide-features` from all loaded bundles and applies them.
-:::
+When you use this profile to create a bundle, the list is carried forward into its metadata.
+Any changelogs with matching `feature-id` values are commented out when you publish the bundle.
 
 ### Hide private links
 
-A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
+A changelog can reference multiple pull requests and issues in its `prs` and `issues` fields.
+You can allowlist links to certain repos with the `link_allow_repos` setting:
 
-To comment out links that are not in your allowlist in all changelogs in your bundles, refer to [changelog bundle](/cli/changelog/bundle.md#link-allowlist).
+```yaml
+bundle:
+  directory: docs/changelog
+  output_directory: docs/releases
+  repo: elasticsearch 
+  owner: elastic
+  resolve: true
+  link_allow_repos: <1>
+    - elastic/elasticsearch
+    - elastic/kibana
+    - elastic/roadmap
+```
 
-If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you also have the option to configure link visibiblity in the [changelog directive](/syntax/changelog.md) and [changelog render](/cli/changelog/render.md) command.
+1. Only links to these owner/repo pairs are shown in the release docs. Others are rewritten to `# PRIVATE:` sentinels.
+
+There are no implicit values for this setting. You must list every repo whose links should appear, including the current repo.
+When this setting is omitted entirely, no link filtering is applied.
+For more details, refer to [PR and issue link allowlist](/cli/changelog/bundle.md#link-allowlist).
 
 :::{tip}
-You must run the `docs-builder changelog bundle` command with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained) in order to hide the private links.
+You must set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained) in order to hide the private links. The bundle's changelog entries are sanitized but the individual changelog files are unchanged.
 :::
+
+If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can also configure link visibiblity in the [changelog directive](/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.
+
+## Next steps
+
+After you've created release bundles, you can use them to generate [release docs](/contribute/publish-changelogs.md).

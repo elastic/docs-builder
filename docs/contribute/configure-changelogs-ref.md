@@ -30,6 +30,12 @@ These are the main configuration sections:
 Configures directory paths, GitHub repository defaults, and named profiles for bundle operations.
 These settings are separate from `rules.bundle` filtering.
 
+Refer to:
+
+- [Basic bundle settings](#bundle-basic)
+- [Bundle descriptions](#bundle-descriptions)
+- [Bundle profiles](#bundle-profiles)
+
 ### Basic settings [bundle-basic]
 
 Controls bundle-level behavior.
@@ -40,7 +46,6 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 
 | Setting                   | Description |
 | ------------------------- | ----------- |
-| `bundle.description`      | Default template for bundle descriptions. Supports `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` placeholders. |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. Requires `bundle.resolve: true` |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
@@ -58,6 +63,36 @@ When `bundle.link_allow_repos` is omitted, no link filtering occurs.
 - For public repos, add your `owner/repo` to the list at a minimum.
 :::
 
+### Bundle descriptions [bundle-descriptions]
+
+You can add introductory text to bundles using the `description` field. This text appears at the top of rendered changelogs, after the release heading but before the entry sections.
+
+When using profiles, you can provide this information in:
+
+- `bundle.description`: Default description for all profiles
+- `bundle.profiles.<name>.description`: Profile-specific description (overrides the default)
+
+Bundle descriptions support these `{version}`, `{lifecycle}`, `{owner}`, and `{repo}` substitution variables.
+When using `{version}` or `{lifecycle}`, you must provide the necessary version argument in the command (for example, `bundle profile 9.2.0`) or define `output_products` in your configuration file.
+
+For complex descriptions with multiple paragraphs, lists, and links, use YAML literal block scalars with the `|` (pipe) syntax:
+
+```yaml
+bundle:
+  description: |
+    This release includes significant improvements:
+    
+    - Enhanced performance
+    - Bug fixes and stability improvements
+    - New features for better user experience
+    
+    For security updates, go to [security announcements](https://example.com/docs).
+    
+    Download the release binaries: https://github.com/{owner}/{repo}/releases/tag/v{version}
+```
+
+The `|` (pipe) preserves line breaks and is ideal for Markdown-formatted text. Avoid using `>` (greater than) for descriptions as it folds line breaks into spaces, making lists and paragraphs difficult to format correctly.
+
 ### Bundle profiles [bundle-profiles]
 
 Named profiles enable you to run commands repeatedly with consistent options.
@@ -66,7 +101,7 @@ They work with both `changelog bundle` and `changelog remove` commands.
 These settings are located in the `bundle.profiles.<name>` section of the configuration file:
 
 `description`
-:   Overrides the global [bundle.description](#bundle-basic).
+:   Overrides the global [bundle.description](#bundle-descriptions).
 
 `hide_features`
 :   Feature IDs to mark as hidden in the bundle.

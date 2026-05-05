@@ -174,4 +174,9 @@ The option precedence is: CLI option > `changelog.yml` bundle section > built-in
 :::
 
 You can use the `docs-builder changelog gh-release` command as a one-shot alternative to `changelog add` and `changelog bundle` commands.
-The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
+The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md).
+
+## Next steps
+
+After you've created a changelog files, you can gather them into [release bundles](/contribute/bundle-changelogs.md).
+The release bundles are ultimately used to generate [release docs](/contribute/publish-changelogs.md).
