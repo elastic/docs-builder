@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
@@ -23,6 +24,26 @@ public class RepositoryBuildMatchingService(
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<RepositoryBuildMatchingService>();
+
+	private async Task<LinkRegistry> GetRegistryWithRetry(Aws3LinkIndexReader provider, Cancel ctx)
+	{
+		const int maxAttempts = 3;
+		for (var attempt = 1; attempt <= maxAttempts; attempt++)
+		{
+			try
+			{
+				return await provider.GetRegistry(ctx);
+			}
+			catch (Exception ex) when (attempt < maxAttempts)
+			{
+				var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+				_logger.LogWarning("S3 link registry fetch failed (attempt {Attempt}/{Max}), retrying in {Delay}s: {Message}",
+					attempt, maxAttempts, delay.TotalSeconds, ex.Message);
+				await Task.Delay(delay, ctx);
+			}
+		}
+		return await provider.GetRegistry(ctx);
+	}
 
 	//TODO return contentsourcematch
 	/// <summary>
@@ -43,7 +64,7 @@ public class RepositoryBuildMatchingService(
 
 		// environment does not matter to check the configuration, defaulting to dev
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
-		var linkRegistry = await linkIndexProvider.GetRegistry(ctx);
+		var linkRegistry = await GetRegistryWithRetry(linkIndexProvider, ctx);
 		var alreadyPublishing = linkRegistry.Repositories.ContainsKey(repo);
 		_logger.LogInformation("'{Repository}' publishing to link registry: {PublishState} ", repo, alreadyPublishing);
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);

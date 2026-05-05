@@ -26,6 +26,7 @@ The directive supports the following options:
 | `:subsections:` | Group entries by area/component | false |
 | `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
 | `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
+| `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
 
 ### Example with options
@@ -36,6 +37,7 @@ The directive supports the following options:
 :subsections:
 :link-visibility: keep-links
 :description-visibility: keep-descriptions
+:dropdowns:
 :::
 ```
 
@@ -118,7 +120,7 @@ This aligns with the `changelog render` command's link visibility controls.
 
 #### `:description-visibility:`
 
-Controls whether the **`description`** text on each **changelog record** appears in output (bullet body text under each item, and the first paragraph inside breaking-change, deprecation, known-issue, and highlight dropdowns). This is **different** from the optional **bundle** `description` field (release intro prose after `_Released:_`), which is always shown when present. See [Rendered output](#rendered-output).
+Controls whether the **`description`** text on each **changelog record** appears in output (bullet body text under each item, or the first paragraph inside a breaking-change, deprecation, known-issue, or highlight entry when [`:dropdowns:`](#dropdowns) is enabled). This is **different** from the optional **bundle** `description` field (release intro prose after `_Released:_`), which is always shown when present. See [Rendered output](#rendered-output).
 
 | Value | Behavior |
 |-------|----------|
@@ -127,6 +129,17 @@ Controls whether the **`description`** text on each **changelog record** appears
 | `hide-descriptions` | Always omit record `description` bodies (titles, PR/issue links, Impact and Action sections, and bundle-level intros are unaffected). |
 
 **Contrast with `:link-visibility:`:** `:link-visibility: auto` hides **links** when a repo is **private**. `:description-visibility: auto` **shows** richer record **description** prose when **any** source repo is **private**, and hides that prose for bundles that resolve to **only public** repositories.
+
+#### `:dropdowns:` [dropdowns]
+
+Controls how the "separated" entry types (`breaking-change`, `deprecation`, `known-issue`, and entries flagged `highlight: true`) are rendered. This option only affects these types; features, enhancements, security, bug fixes, documentation, regressions, and other changes are always rendered as flat bulleted lists.
+
+| Mode | Behavior |
+|------|----------|
+| (omitted, default) | Flattened: each entry renders as a bullet with its title, links, and (when present) `Impact:` / `Action:` lines as indented continuation. |
+| `:dropdowns:` | Dropdowns: each entry renders as an expandable `{dropdown}` with the title as the summary and description, links, `**Impact**`, and `**Action**` inside. |
+
+Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release-notes pages where the list itself is the primary content.
 
 #### `:subsections:`
 
@@ -279,10 +292,10 @@ Bundle descriptions are rendered when present in the bundle YAML file. The descr
 | Documentation | `docs` | Grouped by area |
 | Regressions | `regression` | Grouped by area |
 | Other changes | `other` | Grouped by area |
-| Breaking changes | `breaking-change` | Expandable dropdowns |
-| Highlights | Entries with `highlight: true` | Expandable dropdowns |
-| Deprecations | `deprecation` | Expandable dropdowns |
-| Known issues | `known-issue` | Expandable dropdowns |
+| Breaking changes | `breaking-change` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Highlights | Entries with `highlight: true` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Deprecations | `deprecation` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Known issues | `known-issue` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 
 **Note about highlights:**
 - Highlights only appear when using `:type: all` (they are excluded from the default view)
