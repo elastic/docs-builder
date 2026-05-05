@@ -88,6 +88,7 @@ docs-builder changelog add [options...] [-h|--help]
 :   Mutually exclusive with `--prs`, `--issues`, and `--release-version`.
 :   For a plain newline-delimited list of fully-qualified PR URLs, use `--prs` with a file path instead of `--report`.
 :   When the value is an `https://` URL, only hosts allowed by the parser (such as `github.com` and `buildkite.com`) are supported, and the CLI needs network access to fetch the report.
+
 `--release-version <string?>`
 :   Optional: GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
 :   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and creates one changelog file per PR — without creating a bundle. Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
