@@ -47,8 +47,15 @@
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
 	<meta property="og:description" content="@Model.Description"/>
-	<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
-	<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+	@if (Model.Branding is null)
+	{
+		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
+		<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+	}
+	else if (Model.BrandingOgImageStaticPath is { } ogPath)
+	{
+		<meta property="og:image" content="@(Model.CanonicalBaseUrl is not null ? new Uri(Model.CanonicalBaseUrl, ogPath).ToString() : ogPath)"/>
+	}
 	@if (!string.IsNullOrEmpty(Model.CanonicalUrl))
 	{
 		<meta property="og:url" content="@Model.CanonicalUrl" />
