@@ -29,7 +29,7 @@ public static class AppDefaultsExtensions
 		where TBuilder : IHostApplicationBuilder
 	{
 		var services = builder.Services;
-		_ = services.AddElasticDocumentationLogging(cliOptions.LogLevel.GetValueOrDefault(LogLevel.Information));
+		_ = services.AddElasticDocumentationLogging(cliOptions.LogLevel);
 		_ = services
 			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
 			{

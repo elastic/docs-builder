@@ -12,7 +12,7 @@ namespace Elastic.Documentation;
 public class GlobalCliOptions
 {
 	/// <summary>-l,--log-level, Minimum log level. Default: information</summary>
-	public LogLevel? LogLevel { get; set; }
+	public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
 	/// <summary>-c,--config-source, Override the configuration source: local, remote</summary>
 	public ConfigurationSource? ConfigSource { get; set; }
