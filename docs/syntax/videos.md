@@ -3,7 +3,7 @@
 Videos can supplement documentation to demonstrate features, workflows, or complex procedures. Embed videos using standard Markdown link and image syntax.
 
 :::{important}
-Video link URLs must use **lowercase characters only**. Mixed-case URLs cause build failures in integrations documentation.
+For integrations documentation, any **file paths or custom URL slugs** in video links must use lowercase characters only. Mixed-case paths cause build failures. Note that Vidyard video IDs (like `eT92arEbpRddmSM4JeyzdX`) are assigned by the service and are acceptable as-is.
 :::
 
 ## Elastic-hosted videos (recommended)
@@ -50,11 +50,11 @@ Refer to the [Threadpool Rejections video](https://www.youtube.com/watch?v=auZJR
 
 - ✅ Introduce videos with context, such as "The following video demonstrates these steps (click to watch)."
 - ✅ Use descriptive alt text that explains the video content
-- ✅ Use lowercase characters in all video URLs
+- ✅ Use lowercase file paths and custom URL slugs in integrations documentation
 - ✅ Use Elastic-hosted videos on `videos.elastic.co` when available
 
 **DON'T:**
 
-- ❌ Use mixed-case characters in video URLs—this causes build failures for integrations
+- ❌ Use mixed-case file paths or custom URL slugs in integrations documentation—this causes build failures
 - ❌ Rely solely on videos for critical information — always provide text alternatives
 - ❌ Embed videos directly in the page—use clickable thumbnails instead
