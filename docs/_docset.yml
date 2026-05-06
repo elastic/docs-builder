@@ -142,6 +142,7 @@ toc:
       - file: frontmatter.md
       - file: icons.md
       - file: images.md
+      - file: videos.md
       - file: kbd.md
       - file: math.md
       - file: diagrams.md
