@@ -64,7 +64,7 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 
 `--title <string?>`
 :   Optional: The title to use for section headers, directories, and anchors in output files.
-:   Defaults to the version in the first bundle.
+:   Defaults to the version in the first bundle. When omitted, ISO date targets are formatted for display the same way as the `{changelog}` directive (e.g., `2026-05-04` becomes "May 4, 2026", `2026-05` becomes "May 2026"), while directory names and heading anchors continue to use the raw target slug.
 :   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
 
 The `changelog render` command does **not** use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`. For more information, refer to [](/contribute/publish-changelogs.md). For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
