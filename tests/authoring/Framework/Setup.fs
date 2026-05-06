@@ -162,11 +162,11 @@ navigation_title: Stub
             let destPath = Path.Combine(mockDocsRoot, normalized)
 
             // Tests supply their own minimal pages; do not replace them with production content.
-            // Always add a stub for any local redirect target not already present — this covers both
-            // physical pages and synthetic pages (e.g. CLI reference pages generated from a schema).
-            // Actual redirect correctness is validated by the production build, not authoring tests.
             if not (fileSystem.File.Exists destPath) then
-                fileSystem.AddFile(destPath, MockFileData(stubMarkdown)))
+                let sourcePath = Path.Combine(repoRoot, "docs", normalized)
+
+                if File.Exists sourcePath then
+                    fileSystem.AddFile(destPath, MockFileData(stubMarkdown)))
 
 [<AutoOpen>]
 type TestFile =
