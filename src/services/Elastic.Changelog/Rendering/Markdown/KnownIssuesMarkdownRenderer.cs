@@ -95,19 +95,19 @@ public class KnownIssuesMarkdownRenderer(ScopedFileSystem fileSystem) : Markdown
 							_ = sb.AppendLine();
 						}
 
-						// PR/Issue links with "For more information" pattern
-						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
+						// PR/Issue links with "For more information" pattern - indented for list continuation
+						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks, indentForListItem: true);
 
-						// Impact and Action sections
+						// Impact and Action sections - indented for list continuation
 						if (!string.IsNullOrWhiteSpace(entry.Impact))
 						{
-							_ = sb.AppendLine("**Impact:** " + entry.Impact);
+							_ = sb.AppendLine(ChangelogTextUtilities.Indent("**Impact:** " + entry.Impact));
 							_ = sb.AppendLine();
 						}
 
 						if (!string.IsNullOrWhiteSpace(entry.Action))
 						{
-							_ = sb.AppendLine("**Action:** " + entry.Action);
+							_ = sb.AppendLine(ChangelogTextUtilities.Indent("**Action:** " + entry.Action));
 							_ = sb.AppendLine();
 						}
 					}

@@ -155,11 +155,11 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		// Verify flattened format
 		content.Should().Contain("* Deprecated old API");
 		content.Should().Contain("The old API is deprecated");
-		content.Should().Contain("For more information, check");
+		content.Should().Contain("  For more information, check"); // Indented for list continuation
 		content.Should().Contain("#456");
 		content.Should().Contain("#789");
-		content.Should().Contain("**Impact:** API will be removed in future version");
-		content.Should().Contain("**Action:** Migrate to the new API");
+		content.Should().Contain("  **Impact:** API will be removed in future version"); // Indented for list continuation
+		content.Should().Contain("  **Action:** Migrate to the new API"); // Indented for list continuation
 
 		// Should NOT contain dropdown syntax
 		content.Should().NotContain("::::{dropdown}");
@@ -234,10 +234,10 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		// Verify flattened format (default behavior)
 		content.Should().Contain("* Known issue with search");
 		content.Should().Contain("Search results are incomplete under certain conditions");
-		content.Should().Contain("For more information, check");
+		content.Should().Contain("  For more information, check"); // Indented for list continuation
 		content.Should().Contain("#999");
-		content.Should().Contain("**Impact:** Some search results may be missing");
-		content.Should().Contain("**Action:** Use the workaround provided in the documentation");
+		content.Should().Contain("  **Impact:** Some search results may be missing"); // Indented for list continuation
+		content.Should().Contain("  **Action:** Use the workaround provided in the documentation"); // Indented for list continuation
 
 		// Should NOT contain dropdown syntax
 		content.Should().NotContain("::::{dropdown}");
@@ -331,7 +331,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 				// Verify flattened format
 				content.Should().Contain("* Amazing new feature");
 				content.Should().Contain("This feature revolutionizes how you work with data");
-				content.Should().Contain("For more information, check");
+				content.Should().Contain("  For more information, check"); // Indented for list continuation
 				content.Should().Contain("#555");
 
 				// Should NOT contain dropdown syntax
