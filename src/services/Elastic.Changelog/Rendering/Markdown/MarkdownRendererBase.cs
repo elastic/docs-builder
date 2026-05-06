@@ -40,6 +40,12 @@ public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChang
 	/// Renders PR and issue links for dropdown entries
 	/// </summary>
 	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, string entryOwner, bool entryHideLinks)
+		=> RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks, indentForListItem: false);
+
+	/// <summary>
+	/// Renders PR and issue links with optional indentation for flattened list items
+	/// </summary>
+	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, string entryOwner, bool entryHideLinks, bool indentForListItem)
 	{
 		var prParts = new List<string>();
 		foreach (var pr in entry.Prs ?? [])
@@ -63,33 +69,27 @@ public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChang
 		if (entryHideLinks)
 		{
 			foreach (var s in prParts)
-				_ = sb.AppendLine(s);
+			{
+				var line = indentForListItem ? ChangelogTextUtilities.Indent(s) : s;
+				_ = sb.AppendLine(line);
+			}
 			foreach (var s in issueParts)
-				_ = sb.AppendLine(s);
+			{
+				var line = indentForListItem ? ChangelogTextUtilities.Indent(s) : s;
+				_ = sb.AppendLine(line);
+			}
 
-			_ = sb.AppendLine("For more information, check the pull request or issue above.");
+			var infoLine = "For more information, check the pull request or issue above.";
+			_ = sb.AppendLine(indentForListItem ? ChangelogTextUtilities.Indent(infoLine) : infoLine);
 		}
 		else
 		{
-			_ = sb.Append("For more information, check ");
-			var first = true;
-			foreach (var s in prParts)
-			{
-				if (!first)
-					_ = sb.Append(' ');
-				_ = sb.Append(s);
-				first = false;
-			}
+			var lineParts = new List<string> { "For more information, check" };
+			lineParts.AddRange(prParts);
+			lineParts.AddRange(issueParts);
 
-			foreach (var s in issueParts)
-			{
-				if (!first)
-					_ = sb.Append(' ');
-				_ = sb.Append(s);
-				first = false;
-			}
-
-			_ = sb.AppendLine(".");
+			var fullLine = string.Join(" ", lineParts) + ".";
+			_ = sb.AppendLine(indentForListItem ? ChangelogTextUtilities.Indent(fullLine) : fullLine);
 		}
 
 		_ = sb.AppendLine();

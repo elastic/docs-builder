@@ -87,8 +87,8 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 							_ = sb.AppendLine();
 						}
 
-						// PR/Issue links with "For more information" pattern
-						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
+						// PR/Issue links with "For more information" pattern - indented for list continuation
+						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks, indentForListItem: true);
 					}
 
 					if (shouldHide)
