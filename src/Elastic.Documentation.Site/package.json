@@ -74,7 +74,7 @@
     "@types/lodash": "^4.17.24",
     "@types/testing-library__jest-dom": "6.0.0",
     "babel-jest": "30.3.0",
-    "eslint": "10.2.0",
+    "eslint": "10.2.1",
     "globals": "17.5.0",
     "identity-obj-proxy": "3.0.0",
     "jest": "30.2.0",
@@ -91,7 +91,7 @@
     "svgo": "^4.0.1",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.58.1",
+    "typescript-eslint": "8.59.0",
     "wait-on": "9.0.5"
   },
   "browserslist": [
@@ -117,7 +117,7 @@
     "@opentelemetry/sdk-trace-web": "^2.7.0",
     "@opentelemetry/semantic-conventions": "^1.40.0",
     "@r2wc/react-to-web-component": "2.1.1",
-    "@tanstack/react-query": "^5.96.2",
+    "@tanstack/react-query": "^5.97.0",
     "@uidotdev/usehooks": "2.4.1",
     "@theletterf/beautiful-mermaid": "0.1.5",
     "dompurify": "3.4.0",
