@@ -1,8 +1,8 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <style>
   /* ── Reset & Base ── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
+  .landing-page, .landing-page * , .landing-page *::before, .landing-page *::after { box-sizing: border-box; }
+  .landing-page {
     --bg: #fafbfc;
     --surface: #ffffff;
     --surface-alt: #f3f5f7;
@@ -29,10 +29,14 @@
     --shadow-lg: 0 4px 20px rgba(0,0,0,0.10);
     --max-w: 1120px;
     --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
   }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.55; -webkit-font-smoothing: antialiased; }
-  a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
-  a:hover { color: var(--accent-hover); }
+  .landing-page a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
+  .landing-page a:hover { color: var(--accent-hover); }
 
   /* ── Hero / Search ── */
   .hero {
@@ -57,7 +61,7 @@
     margin: 0 auto 16px;
     position: relative;
   }
-  .search-wrap svg {
+  .search-wrap > .search-icon {
     position: absolute;
     left: 16px;
     top: 50%;
@@ -370,7 +374,7 @@
   }
 </style>
 
-<div hx-select-oob="#main-container" hx-swap="none" class="w-full max-w-[100vw] relative overflow-x-hidden">
+<div hx-select-oob="#main-container" hx-swap="none" class="landing-page w-full max-w-[100vw] relative overflow-x-hidden">
 
   <!-- ── Version disambiguation ── -->
   <div class="version-banner">
@@ -394,7 +398,7 @@
     <h1>Elastic documentation</h1>
     <p>Find guides, API references, and tutorials for the Elastic Stack.</p>
     <div class="search-wrap">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
       <navigation-search></navigation-search>
     </div>
   </div>
