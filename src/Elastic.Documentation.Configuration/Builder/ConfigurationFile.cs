@@ -303,7 +303,23 @@ public record ConfigurationFile
 	{
 		branding.Icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
 		branding.OgImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
+		branding.Favicon = ValidateBrandingImage(branding.Favicon, "branding.favicon", context)
+			?? DiscoverBrandingFile(["favicon.ico", "favicon.png", "favicon.svg"], context);
+		branding.AppleTouchIcon = ValidateBrandingImage(branding.AppleTouchIcon, "branding.apple-touch-icon", context)
+			?? DiscoverBrandingFile(["apple-touch-icon.png"], context);
 		return branding;
+	}
+
+	private static string? DiscoverBrandingFile(string[] candidates, IDocumentationSetContext context)
+	{
+		foreach (var name in candidates)
+		{
+			var f = context.ReadFileSystem.FileInfo.New(
+				Path.Join(context.DocumentationSourceDirectory.FullName, name));
+			if (f.Exists && f.LinkTarget is null)
+				return name;
+		}
+		return null;
 	}
 
 	private static string? ValidateBrandingImage(string? imagePath, string fieldName, IDocumentationSetContext context)

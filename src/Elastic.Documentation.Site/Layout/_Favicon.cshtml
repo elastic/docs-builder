@@ -1,4 +1,32 @@
-@* See https://github.com/elastic/elastic-marketing-website/blob/a8e4760249ddc8fe62bfa20efd28fdd85a0576f5/src/components/Seo.js#L200 *@
-<link rel="icon" href="/favicon.ico" sizes="32x32"/> @* for browsers that don't support svg favicon *@
-<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180"/>
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@if (Model.Branding is null)
+{
+	@* See https://github.com/elastic/elastic-marketing-website/blob/a8e4760249ddc8fe62bfa20efd28fdd85a0576f5/src/components/Seo.js#L200 *@
+	<link rel="icon" href="/favicon.ico" sizes="32x32"/> @* for browsers that don't support svg favicon *@
+	<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180"/>
+}
+else
+{
+	@if (Model.BrandingFaviconStaticPath is { } fav)
+	{
+		var mimeType = System.IO.Path.GetExtension(fav).ToLowerInvariant() switch
+		{
+			".ico" => null,
+			".svg" => "image/svg+xml",
+			var e  => $"image/{e.TrimStart('.')}"
+		};
+		@if (mimeType is null)
+		{
+			<link rel="icon" href="@fav" sizes="32x32"/>
+		}
+		else
+		{
+			<link rel="icon" href="@fav" type="@mimeType"/>
+		}
+	}
+	@if (Model.BrandingAppleTouchIconStaticPath is { } touch)
+	{
+		<link rel="apple-touch-icon" href="@touch" sizes="180x180"/>
+	}
+}

@@ -72,7 +72,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			IsGlobalAssemblyBuild = false,
 			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
 			Htmx = htmx,
-			BuildType = context.BuildType
+			BuildType = context.BuildType,
+			Branding = context.Configuration.Branding
 		};
 	}
 
