@@ -121,8 +121,8 @@ public static class ElasticsearchEndpointConfigurator
 			cfg.SearchNumThreads = options.SearchNumThreads.Value;
 		if (options.IndexNumThreads.HasValue)
 			cfg.IndexNumThreads = options.IndexNumThreads.Value;
-		if (options.Eis == false)
-			cfg.NoElasticInferenceService = true;
+		if (options.Eis.HasValue)
+			cfg.NoElasticInferenceService = !options.Eis.Value;
 		if (options.BufferSize.HasValue)
 			cfg.BufferSize = options.BufferSize.Value;
 		if (options.MaxRetries.HasValue)
@@ -155,8 +155,8 @@ public static class ElasticsearchEndpointConfigurator
 			cfg.CertificateIsNotRoot = options.CertificateNotRoot.Value;
 		if (options.BootstrapTimeout.HasValue)
 			cfg.BootstrapTimeout = options.BootstrapTimeout.Value;
-		if (options.AiEnrichment == false)
-			cfg.EnableAiEnrichment = false;
+		if (options.AiEnrichment.HasValue)
+			cfg.EnableAiEnrichment = options.AiEnrichment.Value;
 		if (options.ForceReindex.HasValue)
 			cfg.ForceReindex = options.ForceReindex.Value;
 	}

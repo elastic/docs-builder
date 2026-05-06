@@ -21,6 +21,8 @@ internal sealed class CheckForUpdatesMiddleware(ILogger<CheckForUpdatesMiddlewar
 	public async ValueTask InvokeAsync(CommandContext context, CommandMiddlewareDelegate next)
 	{
 		await next(context);
+		if (context.CancellationToken.IsCancellationRequested || context.ExitCode != 0)
+			return;
 		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")))
 			return;
 
