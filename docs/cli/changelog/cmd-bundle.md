@@ -82,3 +82,57 @@ For most release workflows, use `--resolve`. It makes the bundle self-contained 
 Pass `--plan` to emit GitHub Actions step outputs (`needs_network`, `needs_github_token`, `output_path`) without generating the bundle. Use this in a planning step to decide whether subsequent steps require a GitHub token or network access.
 
 For full configuration reference, see [Bundle changelogs](/contribute/bundle-changelogs.md).
+
+## Product format [product-format]
+
+The `changelog bundle` command has `--input-products` and `--output-products` options that accept values with the format `"product target lifecycle, ..."` where:
+
+- `product` is the product ID from [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (required)
+- `target` is the target version or date (optional)
+- `lifecycle` exists in [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) (optional)
+
+You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
+
+For example:
+
+- `"kibana 9.2.0 ga"`
+- `"cloud-serverless 2025-08-05"`
+- `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
+
+If you use `"* * *"` in the `--input-products` command option or `bundle.profiles.<name>.products` configuration setting, it's equivalent to the `--all` command option.
+
+## Lifecycle inference [lifecycle-inference]
+
+The way that lifecycle values are inferred varies between GitHub release profiles and standard profiles.
+
+### GitHub release profiles
+
+For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is derived from the full release tag name. For example:
+
+| Release tag | `{version}` | `{lifecycle}` |
+|-------------|-------------|---------------|
+| `v1.2.3` | `1.2.3` | `ga` |
+| `v1.2.3-beta.1` | `1.2.3` | `beta` |
+| `v1.2.3-preview.1` | `1.2.3` | `preview` |
+
+### Standard profiles
+
+For standard profiles, `{version}` is copied verbatim from your command argument and `{lifecycle}` is derived from that value. For example:
+
+| Version argument | `{version}` | `{lifecycle}` |
+|------------------|-------------|---------------|
+| `9.2.0` | `9.2.0` | `ga` |
+| `9.2.0-beta.1` | `9.2.0-beta.1` | `beta` |
+| `9.2.0-preview.1` | `9.2.0-preview.1` | `preview` |
+
+For more information about acceptable product and lifecycle values, go to [Product format](#product-format).
+
+## PR and issue link allowlist [link-allowlist]
+
+A changelog in a public repository might contain links to pull requests or issues in repositories that should not appear in published documentation.
+
+Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/repo` strings. When this key is present (including as an empty list), PR and issue references are filtered at bundle time: only links whose resolved repository is in the list are kept; others are rewritten to `# PRIVATE:` sentinel strings in the bundle YAML.
+
+:::{important}
+`bundle.link_allow_repos` requires a **resolved** bundle. Set `bundle.resolve: true` or pass `--resolve`.
+:::
