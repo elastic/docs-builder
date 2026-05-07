@@ -63,10 +63,50 @@ nav:
           - group: Production guidance
             page: docs-content://deploy-manage/production-guidance.md
             children:
-            - page: docs-content://deploy-manage/production-guidance/elasticsearch-in-production-environments.md
-              title: Run Elasticsearch in production
-            - page: docs-content://deploy-manage/production-guidance/kibana-in-production-environments.md
-              title: Run Kibana in production
+            - group: Run Elasticsearch in production
+              page: docs-content://deploy-manage/production-guidance/elasticsearch-in-production-environments.md
+              children:
+              - group: Design for resilience
+                page: docs-content://deploy-manage/production-guidance/availability-and-resilience.md
+                children:
+                - page: docs-content://deploy-manage/production-guidance/availability-and-resilience/resilience-in-small-clusters.md
+                  title: Resilience in small clusters
+                - page: docs-content://deploy-manage/production-guidance/availability-and-resilience/resilience-in-larger-clusters.md
+                  title: Resilience in larger clusters
+                - page: docs-content://deploy-manage/production-guidance/availability-and-resilience/resilience-in-ech.md
+                  title: Resilience in ECH and ECE
+              - page: docs-content://deploy-manage/production-guidance/scaling-considerations.md
+                title: Scaling considerations
+              - group: Performance optimizations
+                page: docs-content://deploy-manage/production-guidance/optimize-performance.md
+                children:
+                - page: docs-content://deploy-manage/production-guidance/general-recommendations.md
+                  title: General recommendations
+                - page: docs-content://deploy-manage/production-guidance/optimize-performance/indexing-speed.md
+                  title: Tune for indexing speed
+                - page: docs-content://deploy-manage/production-guidance/optimize-performance/search-speed.md
+                  title: Tune for search speed
+                - page: docs-content://deploy-manage/production-guidance/optimize-performance/approximate-knn-search.md
+                  title: Tune approximate kNN search
+                - page: docs-content://deploy-manage/production-guidance/optimize-performance/disk-usage.md
+                  title: Tune for disk usage
+                - page: docs-content://deploy-manage/production-guidance/optimize-performance/size-shards.md
+                  title: Size your shards
+            - group: Run Kibana in production
+              page: docs-content://deploy-manage/production-guidance/kibana-in-production-environments.md
+              children:
+              - page: docs-content://deploy-manage/production-guidance/kibana-load-balance-traffic.md
+                title: High availability and load balancing
+              - page: docs-content://deploy-manage/production-guidance/kibana-configure-memory.md
+                title: Configure memory
+              - page: docs-content://deploy-manage/production-guidance/kibana-task-manager-scaling-considerations.md
+                title: Manage background tasks
+              - page: docs-content://deploy-manage/production-guidance/kibana-traffic-scaling-considerations.md
+                title: Traffic scaling considerations
+              - page: docs-content://deploy-manage/production-guidance/kibana-alerting-production-considerations.md
+                title: Optimize alerting performance
+              - page: docs-content://deploy-manage/production-guidance/kibana-reporting-production-considerations.md
+                title: Reporting production considerations
         - group: Install and deploy Elasticsearch
           page: docs-content://deploy-manage/deploy.md
           children:
