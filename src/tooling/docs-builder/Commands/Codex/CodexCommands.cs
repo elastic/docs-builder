@@ -2,13 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using ConsoleAppFramework;
 using Documentation.Builder.Http;
 using Elastic.Codex;
 using Elastic.Codex.Building;
 using Elastic.Codex.Sourcing;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
@@ -16,12 +17,18 @@ using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Codex;
 
-/// <summary>
-/// Commands for building documentation codexes from multiple isolated documentation sets.
-/// </summary>
+/// <summary>Build a documentation portal over multiple independent documentation sets, each with its own navigation.</summary>
+/// <remarks>
+/// <para>
+/// A codex is a portal composed of several documentation sets. Unlike the assembler, each set retains
+/// its own navigation structure — there is no merged global navigation tree. The codex configuration
+/// (<c>codex.yml</c>) lists which repositories to include and how to compose the portal.
+/// </para>
+/// </remarks>
 internal sealed class CodexCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
@@ -30,36 +37,36 @@ internal sealed class CodexCommands(
 	IEnvironmentVariables environmentVariables
 )
 {
-	/// <summary>
-	/// Clone and build a documentation codex in one step.
-	/// </summary>
-	/// <param name="config">Path to the codex.yml configuration file.</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
-	/// <param name="fetchLatest">Fetch the latest commit even if already cloned.</param>
-	/// <param name="assumeCloned">Assume repositories are already cloned.</param>
-	/// <param name="output">Output directory for the built codex.</param>
-	/// <param name="serve">Serve the documentation on port 4000 after build.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	[Command("")]
+	/// <summary>Clone all repositories and build the portal in one step.</summary>
+	/// <remarks>
+	/// </remarks>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
+	/// <param name="strict">Treat warnings as errors.</param>
+	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned ref.</param>
+	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
+	/// <param name="output">Output directory for the built portal. Defaults to <c>.artifacts/codex/</c>.</param>
+	/// <param name="serve">Serve the portal on port 4000 after a successful build.</param>
+	[DefaultCommand]
 	public async Task<int> CloneAndBuild(
-		[Argument] string config,
+		GlobalCliOptions _,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
-		string? output = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? output = null,
 		bool serve = false,
-		Cancel ctx = default)
+		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
 
-		// Load codex configuration
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+
+
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 
@@ -71,7 +78,7 @@ internal sealed class CodexCommands(
 			return 1;
 		}
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output?.FullName);
 
 		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
@@ -84,55 +91,52 @@ internal sealed class CodexCommands(
 				return cloneResult.Checkouts.Count > 0;
 			});
 
-		// Build service
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
 		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
 			async (s, col, state, c) =>
 			{
-				if (cloneResult == null)
+				if (state.cloneResult == null)
 					return false;
-				var result = await s.BuildAll(state.codexContext, cloneResult, state.fs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 
-		var result = await serviceInvoker.InvokeAsync(ctx);
+		var result = await serviceInvoker.InvokeAsync(ct);
 
 		if (serve && result == 0)
 		{
 			var host = new StaticWebHost(4000, codexContext.OutputDirectory.FullName);
-			await host.RunAsync(ctx);
-			await host.StopAsync(ctx);
+			await host.RunAsync(ct);
+			await host.StopAsync(ct);
 		}
 
 		return result;
 	}
 
-	/// <summary>
-	/// Clone all repositories defined in the codex configuration.
-	/// </summary>
-	/// <param name="config">Path to the codex.yml configuration file.</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
-	/// <param name="fetchLatest">Fetch the latest commit even if already cloned.</param>
-	/// <param name="assumeCloned">Assume repositories are already cloned.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	[Command("clone")]
+	/// <summary>Clone all repositories listed in the codex configuration.</summary>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
+	/// <param name="strict">Treat warnings as errors.</param>
+	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned ref.</param>
+	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
+	[NoOptionsInjection]
 	public async Task<int> Clone(
-		[Argument] string config,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
 		bool fetchLatest = false,
 		bool assumeCloned = false,
-		Cancel ctx = default)
+		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
 
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+
+
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 
@@ -155,32 +159,31 @@ internal sealed class CodexCommands(
 				return result.Checkouts.Count > 0;
 			});
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>
-	/// Build all documentation sets from already cloned repositories.
-	/// </summary>
-	/// <param name="config">Path to the codex.yml configuration file.</param>
-	/// <param name="strict">Treat warnings as errors and fail on warnings.</param>
-	/// <param name="output">Output directory for the built codex.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	[Command("build")]
+	/// <summary>Build the portal from previously cloned repositories.</summary>
+	/// <remarks>Run after <c>codex clone</c>.</remarks>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
+	/// <param name="strict">Treat warnings as errors.</param>
+	/// <param name="output">Output directory. Defaults to <c>.artifacts/codex/</c>.</param>
+	[NoOptionsInjection]
 	public async Task<int> Build(
-		[Argument] string config,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		bool strict = false,
-		string? output = null,
-		Cancel ctx = default)
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? output = null,
+		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
 
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+
+
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 
@@ -192,9 +195,8 @@ internal sealed class CodexCommands(
 			return 1;
 		}
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output);
-
-		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ctx);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output?.FullName);
+		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
 		{
@@ -211,30 +213,22 @@ internal sealed class CodexCommands(
 				return result.DocumentationSets.Count > 0;
 			});
 
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 
-	/// <summary>
-	/// Serve the built codex documentation.
-	/// </summary>
-	/// <param name="port">Port to serve on.</param>
-	/// <param name="path">Path to the codex output directory.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	[Command("serve")]
-	public async Task Serve(
-		int port = 4000,
-		string? path = null,
-		Cancel ctx = default)
+	/// <summary>Serve the built portal at <c>http://localhost:4000</c>.</summary>
+	/// <remarks>Run after <c>codex build</c>. Does not rebuild on file changes.</remarks>
+	/// <param name="port">Port to listen on. Default: 4000.</param>
+	/// <param name="path">Path to the portal output. Defaults to <c>.artifacts/codex/docs/</c>.</param>
+	[NoOptionsInjection]
+	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
 	{
 		var fs = FileSystemFactory.RealRead;
-		var servePath = path ?? fs.Path.Join(
-			Environment.CurrentDirectory, ".artifacts", "codex", "docs");
+		var servePath = path?.FullName ?? fs.Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
 		var host = new StaticWebHost(port, servePath);
-		await host.RunAsync(ctx);
-		await host.StopAsync(ctx);
-
-		// Since this command doesn't use ServiceInvoker, stop collector manually
-		await collector.StopAsync(ctx);
+		await host.RunAsync(ct);
+		await host.StopAsync(ct);
+		await collector.StopAsync(ct);
 	}
 }

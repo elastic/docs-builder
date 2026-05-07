@@ -22,7 +22,7 @@ using ModelContextProtocol;
 try
 {
 	var builder = WebApplication.CreateSlimBuilder(args);
-	_ = builder.AddDocumentationServiceDefaults(ref args);
+	_ = builder.AddDocumentationServiceDefaults();
 	_ = builder.AddDefaultHealthChecks();
 	_ = builder.AddDocsApiOpenTelemetry();
 

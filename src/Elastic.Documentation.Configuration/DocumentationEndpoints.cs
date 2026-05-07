@@ -58,7 +58,7 @@ public class ElasticsearchEndpoint
 	public bool DisableSslVerification { get; set; }
 	public X509Certificate? Certificate { get; set; }
 	public bool CertificateIsNotRoot { get; set; }
-	public int? BootstrapTimeout { get; set; }
+	public TimeSpan? BootstrapTimeout { get; set; }
 	public bool ForceReindex { get; set; }
 
 	/// <summary>
