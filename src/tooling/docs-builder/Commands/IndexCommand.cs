@@ -10,6 +10,7 @@ using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands;
 
@@ -28,6 +29,8 @@ internal sealed class IndexCommand(
 	/// Does not write HTML to disk. Requires a running cluster and valid credentials.
 	/// </para>
 	/// </remarks>
+
+	[RequiresAuth]
 	[CommandName("index")]
 	public async Task<int> Index(
 		GlobalCliOptions _,

@@ -235,6 +235,10 @@ public partial class Move(ILoggerFactory logFactory, IFileSystem readFileSystem,
 
 	private async Task ProcessMarkdownFile(ChangeSet changeSet, MarkdownFile value, Cancel ctx)
 	{
+		// Synthetic files (e.g. CLI reference pages generated from a schema) have no physical content.
+		if (!value.SourceFile.Exists)
+			return;
+
 		var source = changeSet.From.FullName;
 		var target = changeSet.To.FullName;
 

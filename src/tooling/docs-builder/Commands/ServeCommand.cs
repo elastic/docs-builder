@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands;
 
@@ -20,10 +21,11 @@ internal sealed class ServeCommand(ILoggerFactory logFactory, IConfigurationCont
 	/// <param name="path">-p, Documentation source directory. Defaults to the <c>cwd/docs</c> folder.</param>
 	/// <param name="port">Port to serve the documentation. Default: 3000</param>
 	/// <param name="watch">Special flag for <c>dotnet watch</c> optimizations during development</param>
+
 	[CommandName("serve")]
 	public async Task Serve(GlobalCliOptions _, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, int port = 3000, bool watch = false, CancellationToken ct = default)
 	{
-		var host = new DocumentationWebHost(logFactory, path?.FullName, port, FileSystemFactory.RealGitRootForPath(path?.FullName), FileSystemFactory.InMemory(), configurationContext, watch);
+		var host = new DocumentationWebHost(logFactory, path?.FullName, port, FileSystemFactory.RealGitRootForPath(path?.FullName), FileSystemFactory.InMemoryForPath(path?.FullName), configurationContext, watch);
 		await host.RunAsync(ct);
 		_logger.LogInformation("Find your documentation at http://localhost:{Port}/{Path}", port,
 			host.GeneratorState.Generator.DocumentationSet.FirstInterestingUrl.TrimStart('/')

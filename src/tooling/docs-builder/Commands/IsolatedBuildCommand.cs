@@ -11,6 +11,7 @@ using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands;
 
@@ -27,6 +28,8 @@ internal sealed class IsolatedBuildCommand(
 	/// Locates the documentation root by searching for a <c>docset.yml</c> file starting at <paramref name="options"/> <c>.Path</c>.
 	/// The output directory is wiped and rebuilt on each run unless incremental build detects no changes.
 	/// </remarks>
+	[CommandIntent(Intent.Idempotent)]
+	[MutationScope(MutationScope.Directory)]
 	[DefaultCommand]
 	[CommandName("build")]
 	public async Task<int> Build(

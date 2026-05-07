@@ -10,6 +10,7 @@ using Elastic.Documentation.Refactor;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands;
 
@@ -24,12 +25,14 @@ internal sealed class RefactorCommands(
 	/// <param name="target">Destination file or folder path.</param>
 	/// <param name="path">-p, Documentation root. Defaults to <c>cwd</c>.</param>
 	/// <param name="dryRun">Print the changes that would be made without applying them.</param>
+	[CommandIntent(Intent.Destructive)]
+	[MutationScope(MutationScope.Directory)]
 	[CommandName("mv")]
 	public async Task<int> Move(
 		GlobalCliOptions _,
 		[Argument] string source,
 		[Argument] string target,
-		bool? dryRun = null,
+		[DryRun] bool? dryRun = null,
 		string? path = null,
 		Cancel ct = default
 	)
@@ -50,6 +53,8 @@ internal sealed class RefactorCommands(
 	/// <param name="path">-p, Documentation root. Defaults to <c>cwd</c>.</param>
 	/// <param name="check">Report files that need formatting without modifying them. Exits 1 when any file is out of format.</param>
 	/// <param name="write">Apply formatting changes in place.</param>
+	[CommandIntent(Intent.Idempotent)]
+	[MutationScope(MutationScope.Directory)]
 	[CommandName("format")]
 	public async Task<int> Format(
 		GlobalCliOptions _,

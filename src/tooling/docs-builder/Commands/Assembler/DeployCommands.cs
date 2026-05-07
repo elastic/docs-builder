@@ -12,6 +12,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands.Assembler;
 
@@ -33,6 +34,8 @@ internal sealed class DeployCommands(
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
 	/// <param name="out">Path to write the plan file. Defaults to <c>stdout</c>.</param>
 	/// <param name="deleteThreshold">Abort if the plan would delete more than this percentage of objects (0–100).</param>
+	[RequiresAuth]
+	[MutationScope(MutationScope.Global)]
 	[NoOptionsInjection]
 	public async Task<int> Plan(string environment, string s3BucketName, [ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null, float? deleteThreshold = null, CancellationToken ct = default)
 	{
@@ -50,6 +53,9 @@ internal sealed class DeployCommands(
 	/// <param name="environment">Named deployment target.</param>
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
 	/// <param name="planFile">Path to the plan file produced by <c>assembler deploy plan</c>.</param>
+	[RequiresAuth]
+	[CommandIntent(Intent.Destructive)]
+	[MutationScope(MutationScope.Global)]
 	[NoOptionsInjection]
 	public async Task<int> Apply(string environment, string s3BucketName, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile, CancellationToken ct = default)
 	{

@@ -68,18 +68,23 @@ public static class FileSystemFactory
 	public static ScopedFileSystem InMemory() => new(new MockFileSystem(), WorkingDirectoryReadOptions);
 
 	/// <summary>
-	/// Creates a new <see cref="ScopedFileSystem"/> wrapping a fresh <see cref="MockFileSystem"/>,
-	/// scoped to the git root of <paramref name="sourcePath"/> so that paths such as
-	/// <c>{sourceRoot}/.artifacts/docs/html</c> are within the allowed write scope.
-	/// Falls back to <see cref="InMemory()"/> when <paramref name="sourcePath"/> is <see langword="null"/>.
+	/// Like <see cref="InMemory"/> but additionally scopes the mock filesystem to <paramref name="path"/>'s
+	/// git root. Use when serving docs from a directory outside the current working tree so that the
+	/// in-memory output path (<c>&lt;source&gt;/.artifacts/docs/html</c>) passes scope validation.
 	/// </summary>
-	public static ScopedFileSystem InMemoryForSourceRoot(string? sourcePath)
+	public static ScopedFileSystem InMemoryForPath(string? path)
 	{
-		if (sourcePath is null)
+		if (path is null)
 			return InMemory();
-		var root = Paths.FindGitRoot(sourcePath);
-		var inner = new MockFileSystem();
-		return new ScopedFileSystem(inner, BuildWriteOptions(inner, root, Paths.ApplicationData.FullName));
+		var root = Paths.FindGitRoot(path);
+		if (root == Paths.WorkingDirectoryRoot.FullName)
+			return InMemory();
+		return new(new MockFileSystem(), new ScopedFileSystemOptions(
+			[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName, root])
+		{
+			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+		});
 	}
 
 	/// <summary>
