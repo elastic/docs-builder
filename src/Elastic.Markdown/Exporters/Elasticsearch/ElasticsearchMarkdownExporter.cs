@@ -38,12 +38,19 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ElasticsearchTypeContext _semanticTypeContext;
 
 	private readonly VersionsConfiguration _versionsConfiguration;
-	private readonly IReadOnlyDictionary<string, string[]> _synonyms;
+	private readonly IReadOnlyList<string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly string _fixedSynonymsHash;
 
 	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
+
+	// Content date tracking - enrich policy + pipeline for content_last_updated
+	private readonly ContentDateEnrichment _contentDateEnrichment;
+
+	// Read aliases resolved during StartAsync, used for post-indexing operations
+	private string _lexicalReadAlias = string.Empty;
+	private string _semanticReadAlias = string.Empty;
 
 	// Per-channel running totals for progress logging
 	private int _primaryIndexed;
@@ -72,14 +79,13 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_transport = ElasticsearchTransportFactory.Create(es);
 		_operations = new ElasticsearchOperations(_transport, _logger, collector);
+		_contentDateEnrichment = new ContentDateEnrichment(_transport, _operations, _logger, endpoints.BuildType, endpoints.Environment);
 
 		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
-		var indexTimeSynonyms = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
-		{
-			var id = synonym.Key;
-			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
-			return acc;
-		}).Where(r => fixedSynonyms.Contains(r.Id)).Select(r => r.Synonyms).ToArray();
+		var indexTimeSynonyms = _synonyms
+			.Where(s => s.Any(t => fixedSynonyms.Contains(t)))
+			.Select(s => string.Join(", ", s))
+			.ToArray();
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
 		var synonymSetName = $"docs-{_buildType}-{_environment}";
@@ -87,13 +93,21 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument
 			.CreateContext(type: _buildType, env: endpoints.Environment) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			IndexSettings = new Dictionary<string, string>
+			{
+				["index.default_pipeline"] = _contentDateEnrichment.PipelineName
+			}
 		};
 
 		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic
 			.CreateContext(type: _buildType, env: endpoints.Environment) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms)
+			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			IndexSettings = new Dictionary<string, string>
+			{
+				["index.final_pipeline"] = _contentDateEnrichment.PipelineName
+			}
 		};
 
 		if (es.EnableAiEnrichment)
@@ -105,10 +119,11 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 				"AI enrichment enabled — pipeline: {Pipeline}, policy: {Policy}, lookup: {Lookup}",
 				infra.PipelineName, infra.EnrichPolicyName, infra.LookupIndexName);
 
-			_semanticTypeContext = _semanticTypeContext with
+			var semanticSettings = new Dictionary<string, string>(_semanticTypeContext.IndexSettings ?? new Dictionary<string, string>())
 			{
-				IndexSettings = new Dictionary<string, string> { ["index.default_pipeline"] = infra.PipelineName }
+				["index.default_pipeline"] = infra.PipelineName
 			};
+			_semanticTypeContext = _semanticTypeContext with { IndexSettings = semanticSettings };
 		}
 		else
 		{
@@ -137,6 +152,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		};
 		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
 		{
+			_logger.LogInformation("Initializing content date enrichment infrastructure...");
+			await _contentDateEnrichment.InitializeAsync(ct);
+			_logger.LogInformation("Content date enrichment infrastructure ready");
+
 			if (_aiEnrichment is not null)
 			{
 				_logger.LogInformation("Initializing AI enrichment infrastructure...");
@@ -193,14 +212,27 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	public async ValueTask StartAsync(Cancel ctx = default)
 	{
 		var orchestratorContext = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
+		_lexicalReadAlias = orchestratorContext.PrimaryReadAlias;
+		_semanticReadAlias = orchestratorContext.SecondaryReadAlias;
+
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
 			orchestratorContext.Strategy, orchestratorContext.PrimaryWriteAlias, orchestratorContext.SecondaryWriteAlias);
 	}
 
 	/// <inheritdoc />
-	public async ValueTask StopAsync(Cancel ctx = default) =>
+	public async ValueTask StopAsync(Cancel ctx = default)
+	{
 		_ = await _orchestrator.CompleteAsync(null, ctx);
+
+		// Resolve content_last_updated for documents where the ingest pipeline didn't fire.
+		// HashedBulkUpdate uses bulk update actions, which skip ingest pipelines.
+		// Use the read alias (-latest) rather than WriteTarget, which is removed after CompleteAsync.
+		await _contentDateEnrichment.ResolveContentDatesAsync(_lexicalReadAlias, ctx);
+		await _contentDateEnrichment.ResolveContentDatesAsync(_semanticReadAlias, ctx);
+
+		await _contentDateEnrichment.SyncLookupIndexAsync(_lexicalReadAlias, ctx);
+	}
 
 	private async Task PostCompleteAsync(OrchestratorContext<DocumentationDocument> context, Cancel ctx)
 	{
@@ -235,12 +267,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var setName = $"docs-{_buildType}-{_environment}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
-		var synonymRules = _synonyms.Aggregate(new List<SynonymRule>(), (acc, synonym) =>
-		{
-			var id = synonym.Key;
-			acc.Add(new SynonymRule { Id = id, Synonyms = string.Join(", ", synonym.Value) });
-			return acc;
-		});
+		var synonymRules = _synonyms
+			.Select(s => new SynonymRule { Id = s[0], Synonyms = string.Join(", ", s) })
+			.ToList();
 
 		var synonymsSet = new SynonymsSet { Synonyms = synonymRules };
 		await PutSynonyms(synonymsSet, setName, ctx);

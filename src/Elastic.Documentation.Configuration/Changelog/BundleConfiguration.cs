@@ -28,6 +28,12 @@ public record BundleConfiguration
 	public bool Resolve { get; init; } = true;
 
 	/// <summary>
+	/// Default bundle description used when no profile-specific description is provided.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
+
+	/// <summary>
 	/// Default GitHub repository name applied to all profiles that do not specify their own.
 	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
 	/// </summary>
@@ -44,6 +50,11 @@ public record BundleConfiguration
 	/// Requires <see cref="Resolve"/>.
 	/// </summary>
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
+
+	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.
@@ -82,6 +93,12 @@ public record BundleProfile
 	public string? OutputProducts { get; init; }
 
 	/// <summary>
+	/// Profile-specific bundle description. When provided, overrides the bundle.description default.
+	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
+	/// </summary>
+	public string? Description { get; init; }
+
+	/// <summary>
 	/// GitHub repository name stored on each product in the bundle output.
 	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
 	/// </summary>
@@ -98,6 +115,11 @@ public record BundleProfile
 	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
 	/// </summary>
 	public IReadOnlyList<string>? HideFeatures { get; init; }
+
+	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches

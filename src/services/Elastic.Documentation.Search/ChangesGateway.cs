@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Search;
 
 /// <summary>
 /// Elasticsearch gateway for the documentation changes feed.
-/// Queries last_updated > since with search_after cursor pagination.
+/// Queries content_last_updated > since with search_after cursor pagination.
 /// Uses a shared Point In Time (PIT) for consistent pagination across requests.
 /// </summary>
 public partial class ChangesGateway(
@@ -67,12 +67,12 @@ public partial class ChangesGateway(
 				.Pit(p => p.Id(pitId).KeepAlive(SharedPointInTimeManager.PitKeepAlive))
 				.Query(q => q.Range(r => r
 					.Date(dr => dr
-						.Field(f => f.LastUpdated)
+						.Field(f => f.ContentLastUpdated)
 						.Gt(request.Since.ToString("O"))
 					)
 				))
 				.Sort(
-					so => so.Field(f => f.LastUpdated, sf => sf.Order(SortOrder.Asc)),
+					so => so.Field(f => f.ContentLastUpdated, sf => sf.Order(SortOrder.Asc)),
 					so => so.Field(f => f.Url, sf => sf.Order(SortOrder.Asc))
 				)
 				.Source(sf => sf
@@ -82,7 +82,7 @@ public partial class ChangesGateway(
 							e => e.Title,
 							e => e.SearchTitle,
 							e => e.Type,
-							e => e.LastUpdated
+							e => e.ContentLastUpdated
 						)
 					)
 				);
@@ -90,7 +90,7 @@ public partial class ChangesGateway(
 			if (request.Cursor is { } cursor)
 			{
 				_ = s.SearchAfter(
-					FieldValue.Long(cursor.LastUpdatedEpochMs),
+					FieldValue.Long(cursor.ContentLastUpdatedEpochMs),
 					FieldValue.String(cursor.Url)
 				);
 			}
@@ -116,7 +116,7 @@ public partial class ChangesGateway(
 				{
 					Url = doc.Url,
 					Title = doc.Title,
-					LastUpdated = doc.LastUpdated
+					LastUpdated = doc.ContentLastUpdated
 				};
 			})
 			.ToList();

@@ -1091,6 +1091,289 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void LoadBundles_DescriptionSerializesAndDeserializesCorrectly()
+	{
+		// Arrange - Test round-trip serialization of description field
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var multilineDescription = """
+			This is a test description with multiple paragraphs.
+
+			It includes:
+			- A bullet list
+			- Multiple lines
+			- And a [link](https://example.com) for testing
+
+			This ensures proper YAML serialization and deserialization.
+			""";
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			Description = multilineDescription,
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+
+		// Normalize line endings for cross-platform compatibility
+		var actualDescription = bundles[0].Data.Description?.Replace("\r\n", "\n").Replace("\r", "\n");
+		var expectedDescription = multilineDescription.Replace("\r\n", "\n").Replace("\r", "\n");
+		actualDescription.Should().Be(expectedDescription);
+
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_DescriptionCanBeNull()
+	{
+		// Arrange - Test that null description is handled correctly
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			Description = null,
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().BeNull();
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_ReleaseDateSerializesAndDeserializesCorrectly()
+	{
+		// Arrange - Test round-trip serialization of release-date field
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "apm-agent-dotnet", Target = "1.34.0" }
+			],
+			ReleaseDate = new DateOnly(2026, 4, 9),
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/1.34.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.ReleaseDate.Should().Be(new DateOnly(2026, 4, 9));
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_ReleaseDateCanBeNull()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		var originalBundle = new Bundle
+		{
+			Products =
+			[
+				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
+			],
+			ReleaseDate = null,
+			Entries =
+			[
+				new BundledEntry
+				{
+					Title = "Test feature",
+					Type = ChangelogEntryType.Feature,
+					File = new BundledFile { Name = "test.yaml", Checksum = "abc123" }
+				}
+			]
+		};
+
+		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.ReleaseDate.Should().BeNull();
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_ReleaseDateFromYaml_ParsedCorrectly()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			release-date: "2026-04-09"
+			entries:
+			  - title: Test feature
+			    type: feature
+			    prs:
+			    - "100"
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/1.34.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.ReleaseDate.Should().Be(new DateOnly(2026, 4, 9));
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void LoadBundles_ReleaseDateInvalidFormat_ParsedAsNull()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var bundleContent =
+			"""
+			products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			release-date: "April 9, 2026"
+			entries:
+			  - title: Test feature
+			    type: feature
+			    prs:
+			    - "100"
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/1.34.0.yaml", bundleContent);
+
+		var service = CreateService();
+
+		// Act
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Assert
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.ReleaseDate.Should().BeNull();
+		_warnings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void MergeBundlesByTarget_ReleaseDatePreserved()
+	{
+		// Arrange - Two bundles with same target, one has release-date
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var bundle1 =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			release-date: "2026-04-09"
+			entries:
+			  - title: Feature from ES
+			    type: feature
+			    prs:
+			    - "100"
+			""";
+
+		// language=yaml
+		var bundle2 =
+			"""
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			entries:
+			  - title: Feature from Kibana
+			    type: feature
+			    prs:
+			    - "200"
+			""";
+
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/elasticsearch-9.3.0.yaml", bundle1);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/kibana-9.3.0.yaml", bundle2);
+
+		var service = CreateService();
+		var loaded = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		// Act
+		var merged = service.MergeBundlesByTarget(loaded);
+
+		// Assert
+		merged.Should().HaveCount(1);
+		merged[0].Data.ReleaseDate.Should().Be(new DateOnly(2026, 4, 9));
+	}
+
+	[Fact]
 	public void LoadedBundle_HideFeatures_ExposedFromBundleData()
 	{
 		// Arrange - Verify that LoadedBundle.HideFeatures properly exposes Data.HideFeatures

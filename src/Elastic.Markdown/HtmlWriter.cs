@@ -47,11 +47,18 @@ public class HtmlWriter(
 	private IPageViewFactory PageViewFactory { get; } = pageViewFactory ?? new DefaultPageViewFactory();
 
 	/// <inheritdoc />
-	public string Render(string markdown, IFileInfo? source)
+	public string Render(string markdown, IFileInfo? source) =>
+		RenderCore(markdown, source, stripFirstHeadingLevel1: true);
+
+	/// <inheritdoc />
+	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
+		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
+
+	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
-		return MarkdownFile.CreateHtml(parsed);
+		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
@@ -88,7 +95,7 @@ public class HtmlWriter(
 		Uri? reportLinkParameter = null;
 		if (DocumentationSet.Context.CanonicalBaseUrl is not null)
 		{
-			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, current.Url));
+			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, current.Url);
 		}
 		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
 
@@ -155,7 +162,7 @@ public class HtmlWriter(
 			SiteRootPath = DocumentationSet.Context.SiteRootPath,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			MarkdownUrl = current.Url.TrimEnd('/') + ".md",
+			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
@@ -195,7 +202,7 @@ public class HtmlWriter(
 		{
 			Position = position++,
 			Name = parent.NavigationTitle,
-			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), UrlPath.JoinUrl(DocumentationSet.Context.UrlPathPrefix ?? string.Empty, parent.Url)).ToString()
+			Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
 		}));
 		// Add current page
 		breadcrumbItems.Add(new BreadcrumbListItem

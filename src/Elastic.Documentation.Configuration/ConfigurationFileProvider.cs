@@ -28,6 +28,7 @@ public partial class ConfigurationFileProvider
 		.WithTypeConverter(new TocItemYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())
 		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
+		.WithTypeConverter(new ApiConfigurationConverter())
 		.Build();
 
 	public static IDeserializer NavV2Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())

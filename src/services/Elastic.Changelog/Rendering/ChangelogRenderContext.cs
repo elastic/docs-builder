@@ -26,4 +26,13 @@ public record ChangelogRenderContext
 	public required Dictionary<ChangelogEntry, string> EntryToOwner { get; init; }
 	public required Dictionary<ChangelogEntry, bool> EntryToHideLinks { get; init; }
 	public ChangelogConfiguration? Configuration { get; init; }
+	/// <summary>
+	/// Optional bundle-level introductory description. Only set when there's a single bundle with a description (MVP approach).
+	/// </summary>
+	public string? BundleDescription { get; init; }
+	/// <summary>
+	/// Optional release date for this bundle. Purely informative for end-users.
+	/// Only set when there's a single unique release date across all bundles (MVP approach).
+	/// </summary>
+	public DateOnly? BundleReleaseDate { get; init; }
 }

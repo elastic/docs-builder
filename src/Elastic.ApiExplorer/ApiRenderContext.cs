@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
@@ -21,4 +22,5 @@ public record ApiRenderContext(
 	public required string NavigationHtml { get; init; }
 	public required INavigationItem CurrentNavigation { get; init; }
 	public required IMarkdownStringRenderer MarkdownRenderer { get; init; }
+
 }

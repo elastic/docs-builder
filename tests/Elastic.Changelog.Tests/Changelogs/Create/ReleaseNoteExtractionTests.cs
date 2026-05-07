@@ -13,7 +13,7 @@ namespace Elastic.Changelog.Tests.Changelogs.Create;
 public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
 {
 	[Fact]
-	public async Task CreateChangelog_WithExtractReleaseNotes_ShortReleaseNote_UsesAsTitle()
+	public async Task CreateChangelog_WithExtractReleaseNotes_ShortReleaseNote_UsesPrTitleAndDescription()
 	{
 		// Arrange
 		var prInfo = new GitHubPrInfo
@@ -70,14 +70,8 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("title: Adds support for new aggregation types");
-		// Description should not be set when release note is used as title
-		if (yamlContent.Contains("description:"))
-		{
-			// If description field exists, it should be empty or commented out
-			var descriptionLine = yamlContent.Split('\n').FirstOrDefault(l => l.Contains("description:"));
-			descriptionLine.Should().MatchRegex(@"description:\s*(#|$)");
-		}
+		yamlContent.Should().Contain("title: Implement new aggregation API");
+		yamlContent.Should().Contain("description: Adds support for new aggregation types");
 	}
 
 	[Fact]
@@ -338,7 +332,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
 		yamlContent.Should().Contain("title: Custom title");
-		yamlContent.Should().NotContain("Adds support for new aggregation types");
+		yamlContent.Should().Contain("description: Adds support for new aggregation types");
 	}
 
 	[Fact]

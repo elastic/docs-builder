@@ -4,6 +4,8 @@
 	var crumbs = targets.ToList();
 }
 
+@if (crumbs.Count > 0 && (crumbs.Count > 1 || Model.BuildType != BuildType.Isolated))
+{
 <ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full py-6">
 	@for (var i = 0; i < crumbs.Count; i++)
 	{
@@ -23,3 +25,4 @@
 		</li>
 	}
 </ol>
+}

@@ -40,7 +40,7 @@ public record CreateChangelogArguments
 	public bool UseIssueNumber { get; init; }
 	public bool? StripTitlePrefix { get; init; }
 	/// <summary>
-	/// Whether to extract release notes from PR/issue descriptions. null = use config default.
+	/// Whether to extract release note text from PR/issue descriptions for the entry description. null = use config default.
 	/// </summary>
 	public bool? ExtractReleaseNotes { get; init; }
 
@@ -74,7 +74,7 @@ IEnvironmentVariables? env = null
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
-	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? FileSystemFactory.RealRead, logFactory.CreateLogger<ChangelogFileWriter>());
+	private readonly ChangelogFileWriter _fileWriter = new(fileSystem ?? FileSystemFactory.RealWrite, logFactory.CreateLogger<ChangelogFileWriter>());
 	private readonly ProductInferService _productInferService = new(
 		configurationContext.ProductsConfiguration);
 
