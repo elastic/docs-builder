@@ -85,7 +85,7 @@ public class HtmlWriter(
 		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
-		if (DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
 		{
 			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
 			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
@@ -141,7 +141,7 @@ public class HtmlWriter(
 		var gitBranch = DocumentationSet.Context.Git.Branch;
 		var gitRef = DocumentationSet.Context.Git.Ref;
 		string? gitHubDocsUrl = null;
-		if (gitHubRepo != "elastic/docs-builder"
+		if (gitHubRepo is not null
 			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable"
 			&& DocumentationSet.Context.DocumentationCheckoutDirectory is { } docsCheckoutDir)
 		{

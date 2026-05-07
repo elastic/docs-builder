@@ -739,4 +739,18 @@ public class BrandingConfiguration
 	/// <summary>Path to the Open Graph image, relative to the docs source directory.</summary>
 	[YamlMember(Alias = "og-image", ApplyNamingConventions = false)]
 	public string? OgImage { get; set; }
+
+	/// <summary>
+	/// Path to the browser favicon, relative to the docs source directory.
+	/// When not set, auto-discovered from well-known filenames (favicon.ico, favicon.png, favicon.svg).
+	/// </summary>
+	[YamlMember(Alias = "favicon", ApplyNamingConventions = false)]
+	public string? Favicon { get; set; }
+
+	/// <summary>
+	/// Path to the Apple touch icon, relative to the docs source directory.
+	/// When not set, auto-discovered from apple-touch-icon.png if present.
+	/// </summary>
+	[YamlMember(Alias = "apple-touch-icon", ApplyNamingConventions = false)]
+	public string? AppleTouchIcon { get; set; }
 }

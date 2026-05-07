@@ -51,7 +51,7 @@ internal sealed class DeployCommands(
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
 	/// <param name="planFile">Path to the plan file produced by <c>assembler deploy plan</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> Apply(string environment, string s3BucketName, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo planFile, CancellationToken ct = default)
+	public async Task<int> Apply(string environment, string s3BucketName, [Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
