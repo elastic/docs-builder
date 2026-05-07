@@ -4275,9 +4275,11 @@ nav:
       - toc: elasticsearch://extend
       - toc: integrations://extend
 
-  - section: Contribute
-    url: /contribute-docs/
-    isolated: true
-    children:
-    - toc: docs-content://contribute-docs
+  # Disabled pending a decision on whether to keep the contribute-docs
+  # content in the public site. Re-enable to resurface ~35 pages.
+  # - section: Contribute
+  #   url: /contribute-docs/
+  #   isolated: true
+  #   children:
+  #   - toc: docs-content://contribute-docs
 
