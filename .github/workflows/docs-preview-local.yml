@@ -328,8 +328,11 @@ jobs:
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
         if: >
-          !cancelled()
+          env.MATCH == 'true'
+          && !cancelled()
           && needs.check.outputs.any_modified != 'false'
+          && steps.internal-docs-build.outputs.skip != 'true'
+          && steps.internal-docs-build.outcome == 'success'
           && steps.internal-validate-path-prefixes.outcome == 'success'
 
       - name: Upload to S3
