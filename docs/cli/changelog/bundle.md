@@ -86,10 +86,14 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 :   - **Profile-based mode**: Requires either a version argument OR `output_products` in the profile configuration
 
 `--hide-features <string[]?>`
-:   Optional: A list of feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs.
+:   Optional: A list of feature IDs (comma-separated) or a path to a newline-delimited file containing feature IDs.
 :   Can be specified multiple times.
 :   Adds a `hide-features` list to the bundle.
 :   When the bundle is rendered (by the `changelog render` command or `{changelog}` directive), changelogs with matching `feature-id` values will be commented out of the documentation.
+
+:::{note}
+The `--hide-features` option on the `render` command and the `hide-features` field in bundles are **combined**. If you specify `--hide-features` on both the `bundle` and `render` commands, all specified features are hidden. The `{changelog}` directive automatically reads `hide-features` from all loaded bundles and applies them.
+:::
 
 `--input-products <List<ProductInfo>?>`
 :   Filter by products in the format "product target lifecycle, ...".
@@ -103,11 +107,12 @@ You must choose one method for determining what's in the bundle (`--all`, `--inp
 - `"* * *"` - match all changelogs (equivalent to `--all`)
 
 :::{note}
-The `--input-products` option determines which changelog files are gathered for consideration. **`rules.bundle` is not disabled** when you use `--input-products` — global `include_products` / `exclude_products`, type/area rules, and (when configured) per-product rules still run **after** matching, unless your configuration is in no-filtering mode per [Bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle). The only “mutually exclusive” pairing on this command is **profile-based** bundling versus **option-based** flags (see [Usage](#usage)), not `--input-products` versus `rules.bundle`.
+The `--input-products` option determines which changelog files are gathered for consideration.
+Bundle rules are not turned off when you use `--input-products`-- they run **after** matching, unless your configuration is in no-filtering mode per [Bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
 :::
 
 `--issues <string[]?>`
-:   Filter by issue URLs (comma-separated), or a path to a newline-delimited file. Can be specified multiple times.
+:   Include changelogs for the specified issue URLs (comma-separated), or a path to a newline-delimited file. Can be specified multiple times.
 :   Each occurrence can be either comma-separated issues ( `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (for example `--issues /path/to/file.txt`).
 :   When using a file, every line must be a fully-qualified GitHub issue URL such as `https://github.com/owner/repo/issues/123`. Bare numbers and short forms are not allowed in files.
 
@@ -123,31 +128,33 @@ The `--input-products` option determines which changelog files are gathered for 
 :   Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...".
 :   This value replaces information that would otherwise be derived from changelogs.
 :   For more information about the valid product and lifecycle values, go to [Product format](#product-format).
-:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also supplies the product IDs used to choose the **rule context product** (first alphabetically) for Mode 3. To use a different product's rules, run a separate bundle with only that product in `--output-products`. For details, refer to [Product-specific bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle-products).
+:   When `rules.bundle.products` per-product overrides are configured, `--output-products` also supplies the product IDs used to determine the **rule context product** (if there are multiple, the first ID alphabetically is used). Refer to [Product-specific bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle-products).
+
+:::{tip}
+Though technically optional, it is strongly recommended to set `--output-products` ( or `output_products` for profiles) so that you have a single clean product entry that reflects the context of the release.
+:::
 
 `--no-release-date`
 :   Optional: Skip auto-population of release date in the bundle.
 :   By default, bundles are created with a `release-date` field set to today's date (UTC) or the GitHub release published date when using `--release-version`.
 :   Mutually exclusive with `--release-date`.
-:   **Not available in profile mode** — use bundle configuration instead.
 
 `--release-date <string?>`
 :   Optional: Explicit release date for the bundle in YYYY-MM-DD format.
 :   Overrides the default auto-population behavior (today's date or GitHub release published date).
 :   Mutually exclusive with `--no-release-date`.
-:   **Not available in profile mode** — use bundle configuration instead.
 
 `--owner <string?>`
 :   Optional: The GitHub repository owner, required when pull requests or issues are specified as numbers.
 :   Precedence: `--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`.
 
 `--prs <string[]?>`
-:   Filter by pull request URLs (comma-separated) or a path to a newline-delimited file. Can be specified multiple times.
+:   Include changelogs for the specified pull request URLs (comma-separated) or a path to a newline-delimited file. Can be specified multiple times.
 :   Each occurrence can be either comma-separated PRs (for example `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (for example `--prs /path/to/file.txt`).
 :   When using a file, every line must be a fully-qualified GitHub PR URL such as `https://github.com/owner/repo/pull/123`. Bare numbers and short forms are not allowed in files.
 
-`--release-version <string?>`
-:   GitHub release tag to use as a source of pull requests (for example, `"v9.2.0"` or `"latest"`).
+`--release-version <tag>`
+:   Bundle changelogs for the pull requests in GitHub release notes. For example, the tag can be `"v9.2.0"` or `"latest"`.
 :   When specified, the command fetches the release from GitHub, parses PR references from the release notes, and uses them as the bundle filter. Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
 :   Requires repo (`--repo` or `bundle.repo` in `changelog.yml`) and owner (`--owner` flag > `bundle.owner` in `changelog.yml` > `elastic`) details.
 :   When `--output-products` is not specified, the products array in the bundle is derived from the matched changelog files' own `products` fields, consistent with all other filter options.
@@ -157,14 +164,22 @@ The `--input-products` option determines which changelog files are gathered for 
 :   Falls back to `bundle.repo` in `changelog.yml` when not specified; if that is also absent, the product ID is used.
 
 `--report <string?>`
-:   Filter by pull requests extracted from a promotion report. Accepts a URL or a local file path.
+:   Include changelogs based on the pull requests in a promotion report. Accepts a URL or a local file path.
 :   The report can be an HTML page from Buildkite or any file containing GitHub PR URLs.
 
 `--resolve`
 :   Optional: Copy the contents of each changelog file into the entries array.
 :   By default, the bundle contains only the file names and checksums.
 
-## Output files
+## File paths and filenames [output-files]
+
+**Input directory** (where changelog YAML files are read from) follows the same fallback for both modes, minus the explicit CLI override that is forbidden in profile mode:
+
+| Priority | Profile-based | Option-based |
+|----------|---------------|--------------|
+| 1 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
+| 2 | Current working directory | `bundle.directory` in `changelog.yml` |
+| 3 | — | Current working directory |
 
 Both modes use the same ordered fallback to determine where to write the bundle. The first value that is set wins:
 
@@ -177,14 +192,6 @@ Both modes use the same ordered fallback to determine where to write the bundle.
 | 3 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
 | 4 | Current working directory | `bundle.directory` in `changelog.yml` |
 | 5 | — | Current working directory |
-
-**Input directory** (where changelog YAML files are read from) follows the same fallback for both modes, minus the explicit CLI override that is forbidden in profile mode:
-
-| Priority | Profile-based | Option-based |
-|----------|---------------|--------------|
-| 1 | `bundle.directory` in `changelog.yml` | `--directory` CLI option |
-| 2 | Current working directory | `bundle.directory` in `changelog.yml` |
-| 3 | — | Current working directory |
 
 **Bundle filename** is determined by the `bundle.profiles.<name>.output` setting (profile-based) or defaults to `changelog-bundle.yaml` (both modes).
 The profile `output` setting can include additional path segments. For example: `"stack/kibana-{version}.yaml"`.
@@ -228,6 +235,8 @@ For example:
 - `"cloud-serverless 2025-08-05"`
 - `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
 
+If you use `"* * *"` in the `--input-products` command option or `bundle.profiles.<name>.products` configuration setting, it's equivalent to the `--all` command option.
+
 ## Repository name in bundles [changelog-bundle-repo]
 
 The repository name is stored in each bundle product entry to ensure that PR and issue links are generated correctly when the bundle is rendered.
@@ -268,57 +277,6 @@ If no `repo` is set at any level, the product ID is used as a fallback for link 
 This may result in broken links if the product ID doesn't match the GitHub repository name (for example, `cloud-serverless` product ID in the `elasticsearch` repo).
 :::
 
-## Rules for filtered bundles [changelog-bundle-rules]
-
-The `rules.bundle` section in the changelog configuration file lets you filter entries during bundling. It applies to both `changelog bundle` and `changelog gh-release`, after entries are matched by the primary filter (`--prs`, `--issues`, `--all`, **`--input-products`**, and so on) and before the bundle is written.
-
-Which `rules.bundle` fields take effect depends on the bundle rule modes (no filtering, global rules against each changelog’s content, or per-product rule context). Input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate. For more information, refer to [bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
-
-The following fields are supported:
-
-`exclude_products`
-:   A product ID or list of product IDs to exclude from the bundle. Cannot be combined with `include_products`.
-
-`include_products`
-:   A product ID or list of product IDs to include in the bundle (all others are excluded). Cannot be combined with `exclude_products`.
-
-`match_products`
-:   Match mode for the product filter (`any`, `all`, or `conjunction`). Inherits from `rules.match` when not specified.
-
-`exclude_types`
-:   A changelog type or list of types to exclude from the bundle.
-
-`include_types`
-:   Only changelogs with these types are kept; all others are excluded.
-
-`exclude_areas`
-:   A changelog area or list of areas to exclude from the bundle.
-
-`include_areas`
-:   Only changelogs with these areas are kept; all others are excluded.
-
-`match_areas`
-:   Match mode for the area filter (`any`, `all`, or `conjunction`). Inherits from `rules.match` when not specified.
-
-`products`
-:   Per-product filter overrides for **all filter types** (product, type, area). Keys are product IDs (or comma-separated lists).
-:   When this map is **non-empty**, the bundler uses **per-product rule context** mode: global `rules.bundle` product/type/area fields are **not** used for filtering (repeat constraints under each product key if you still need them).
-:   For details, refer to [Bundle rules](/contribute/configure-changelogs-ref.md#rules-bundle).
-
-```yaml
-rules:
-  bundle:
-    exclude_products: cloud-enterprise
-    exclude_types: deprecation
-    exclude_areas:
-      - Internal
-    products:
-      cloud-serverless:
-        include_areas:
-          - "Search"
-          - "Monitoring"
-```
-
 ## PR and issue link allowlist [link-allowlist]
 
 A changelog in a public repository might contain links to pull requests or issues in repositories that should not appear in published documentation.
@@ -341,7 +299,171 @@ Sentinel values are omitted from rendered documentation but remain in bundle fil
 
 ## Option-based examples
 
-### Bundle by report or URL list
+### Bundle by GitHub release [changelog-bundle-release-version]
+
+You can use `--release-version` to fetch pull request references directly from GitHub release notes and use them as the bundle filter.
+This is equivalent to building a PR list file manually and passing it with `--prs`, but without any file management.
+
+:::{important}
+Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
+:::
+
+```sh
+docs-builder changelog bundle \
+  --release-version v1.34.0 \ <1>
+  --repo apm-agent-dotnet \ <2>
+  --owner elastic <3>
+  --output-products "apm-agent-dotnet 1.34.0 ga" <4>
+```
+
+1. The tag value that is used in the `GET /repos/{owner}/{repo}/releases/tags/{tag}` releases API.
+2. You must specify `--repo` or set `bundle.repo` in the changelog configuration file.
+3. If you don't specify `--owner`, it uses `bundle.owner` in the changelog configuration or else defaults to `elastic`.
+4. The bundle's product metadata is inferred automatically from the release tag and repository name; you can override that behavior with the `--output-products` option.
+
+:::{note}
+`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+:::
+
+By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+:::{tip}
+If you are not creating changelogs when you create your pull requests, consider the `docs-builder changelog gh-release` command as a one-shot alternative to the `changelog add` and `changelog bundle` commands.
+It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
+:::
+
+### Bundle by issues [changelog-bundle-issues]
+
+You can use the `--issues` option to create a bundle of changelogs that relate to those GitHub issues.
+Issues can be identified by a full URL (such as `https://github.com/owner/repo/issues/123`), a short format (such as `owner/repo#123`), or just a number (in which case `--owner` and `--repo` are required — or set via `bundle.owner` and `bundle.repo` in the configuration).
+
+```sh
+docs-builder changelog bundle --issues "12345,12346" \
+  --repo elasticsearch \
+  --owner elastic \
+  --output-products "elasticsearch 9.2.2 ga"
+```
+
+Alternatively, you can specify a path to a newline-delimited file that contains the issue URLS (for example, `--issues /path/to/file.txt`).
+In this case, you cannot use short URLs or numbers, each line must have a full URL.
+
+By default all changelogs that match issues in the list are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+
+### Bundle by pull requests [changelog-bundle-pr]
+
+You can use the `--prs` option to create a bundle of the changelogs that relate to those pull requests.
+
+Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), or just a number.
+
+```sh
+docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
+  --repo elasticsearch \ <2>
+  --owner elastic \ <3>
+  --output-products "elasticsearch 9.2.2 ga" <4>
+```
+
+1. The comma-separated list of pull request numbers to seek.
+2. The repository in the pull request URLs. Not required when using full PR URLs, or when `bundle.repo` is set in the changelog configuration.
+3. The owner in the pull request URLs. Not required when using full PR URLs, or when `bundle.owner` is set in the changelog configuration.
+4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
+
+Alternatively, you can specify a path to a newline-delimited file that contains the PR URLS (for example, `--prs /path/to/file.txt`).
+In this case, you cannot use short URLs or numbers, each line must have a full URL.
+For example:
+
+```txt
+https://github.com/elastic/elasticsearch/pull/108875
+https://github.com/elastic/elasticsearch/pull/135873
+https://github.com/elastic/elasticsearch/pull/136886
+https://github.com/elastic/elasticsearch/pull/137126
+```
+
+By default all changelogs that match PRs in the list are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+If you have changelog files that reference those pull requests, the command creates a file like this:
+
+```yaml
+products:
+- product: elasticsearch
+  target: 9.2.2
+  lifecycle: ga
+entries:
+- file:
+    name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
+    checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
+- file:
+    name: 1765507798-convert-bytestransportresponse-when-proxying-respo.yaml
+    checksum: c6dbd4730bf34dbbc877c16c042e6578dd108b62
+- file:
+    name: 1765507839-use-ivf_pq-for-gpu-index-build-for-large-datasets.yaml
+    checksum: 451d60283fe5df426f023e824339f82c2900311e
+```
+
+### Bundle by product [changelog-bundle-product]
+
+You can use the `--input-products` option to create a bundle of changelogs that match the product details.
+When using `--input-products`, you must provide all three parts: product, target, and lifecycle.
+Each part can be a wildcard (`*`) to match any value.
+
+:::{tip}
+If you use profile-based bundling, provide this information in the `bundle.profiles.<name>.products` field.
+:::
+
+```sh
+docs-builder changelog bundle \
+  --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
+```
+
+1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/bundle.md#product-format).
+
+You can use wildcards in any of the three parts:
+
+```sh
+# Bundle any changelogs that have exact matches for either of these clauses
+docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 ga, elasticsearch 9.3.0 beta"
+
+# Bundle all elasticsearch changelogs regardless of target or lifecycle
+docs-builder changelog bundle --input-products "elasticsearch * *"
+
+# Bundle all cloud-serverless 2025-12-02 changelogs with any lifecycle
+docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 *"
+
+# Bundle any cloud-serverless changelogs with target starting with "2025-11-" and "ga" lifecycle
+docs-builder changelog bundle --input-products "cloud-serverless 2025-11-* ga"
+
+# Bundle all changelogs (equivalent to --all)
+docs-builder changelog bundle --input-products "* * *"
+```
+
+If you have changelog files that reference those product details, the command creates a file like this:
+
+```yaml
+products: <1>
+- product: cloud-serverless
+  target: 2025-12-02
+- product: cloud-serverless
+  target: 2025-12-06
+entries:
+- file:
+    name: 1765495972-fixes-enrich-and-lookup-join-resolution-based-on-m.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+- file:
+    name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
+    checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
+```
+
+1. By default these values match your `--input-products` (even if the changelogs have more products).
+To specify different product metadata, use the `--output-products` option.
+
+:::{note}
+When a changelog matches multiple `--input-products` filters, it appears only once in the bundle. This deduplication applies even when using `--all` or `--prs`.
+:::
+
+### Bundle by report
 
 You can use `--report` to filter by a promotion report:
 
@@ -354,45 +476,9 @@ docs-builder changelog bundle \
 ```
 
 By default all changelogs that match PRs in the promotion report are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
 
-### Bundle by GitHub release [changelog-bundle-release-version]
-
-You can use `--release-version` to fetch pull request references directly from GitHub release notes and use them as the bundle filter.
-This is equivalent to building a PR list file manually and passing it with `--prs`, but without any file management.
-
-:::{important}
-Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
-:::
-
-```sh
-docs-builder changelog bundle \
-  --release-version v1.34.0 \
-  --repo apm-agent-dotnet \ <1>
-  --owner elastic <2>
-```
-
-1. You must specify `--repo` or set `bundle.repo` in the changelog configuration file.
-2. If you don't specify `--owner`, it uses `bundle.owner` in the changelog configuration or else defaults to `elastic`.
-
-Without `--output-products`, the products array in the bundle is derived from the matched changelog files' own `products` fields — the same behavior as `--prs`, `--issues`, `--report`, and `--all`.
-Use `--output-products` when you need a single, authoritative product entry that reflects the release identity rather than the diverse metadata across individual changelog files.
-For example:
-
-```sh
-docs-builder changelog bundle \
-  --release-version v1.34.0 \
-  --output-products "apm-agent-dotnet 1.34.0 ga"
-```
-
-:::{note}
-`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
-:::
-
-By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).
-
-### Bundle with description
+### Bundle descriptions
 
 You can add a description to bundles using the `--description` option. For simple descriptions, use regular quotes:
 
@@ -419,7 +505,7 @@ docs-builder changelog bundle \
   --description "Elasticsearch {version} includes performance improvements. Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
 ```
 
-### Bundle with release date
+### Bundle release dates
 
 You can add a `release-date` field directly to a bundle YAML file. This field is optional and purely informative for end-users. It is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
 
@@ -440,65 +526,58 @@ When the bundle is rendered (by the `changelog render` command or `{changelog}` 
 
 ## Profile-based examples
 
-When the changelog configuration file defines `bundle.profiles`, you can use those profiles with the `changelog bundle` command.
+When the changelog configuration file defines [bundle.profiles](/contribute/configure-changelogs-ref.md#bundle-profiles), you can use those profiles with the `changelog bundle` command.
 
-### Profile configuration fields [changelog-bundle-profile-config]
+Refer to [](/contribute/bundle-changelogs.md#create-profiles) for examples.
 
-If you're using profile-based commands, they're affected by the following fields in the `bundle.profiles` section of the changelog configuration file:
+### Lifecycle inference [lifecycle-inference]
 
-`source`
-:   Optional. When set to `github_release`, the PR list is fetched automatically from the GitHub release identified by the version argument. Requires `repo` to be set at the profile or `bundle` level. Mutually exclusive with `products`.
-:   Example: `source: github_release`
+The way that lifecycle values are inferred varies between [GitHub release profiles](#lifecycles-github) and [standard profiles](#lifecycles-standard).
 
-`products`
-:   Required when filtering by product metadata (equivalent to the `--input-products` command option).
-:   The value `"* * *"` is equivalent to the `--all` command option.
-:   Not used when the filter comes from a promotion report, URL list file, or `source: github_release` — in those cases the PR or issue list determines what's included and `products` is ignored.
-:   Supports `{version}` and `{lifecycle}` placeholders that are substituted at runtime.
-:   Example: `"elasticsearch {version} {lifecycle}"`
-:   Refer to [](#product-format).
+#### GitHub release profiles [lifecycles-github]
 
-:::{note}
-The `products` field determines which changelog files are gathered for consideration. **`rules.bundle` still applies** afterward (see the note under [`--input-products`](#options)). Input stage and bundle filtering stage are conceptually separate.
-:::
+For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is derived from the full release tag name and `{version}` is the base version extracted from that same tag.
+For example:
 
-`output`
-:   Optional. The output filename pattern for the bundle file. Supports `{version}` and `{lifecycle}` placeholders.
-:   When not set, the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
-:   Setting this is recommended so each profile produces a distinctly named file rather than overwriting the default.
-:   Example: `"elasticsearch-{version}.yaml"`
+| Release tag | `{version}` | `{lifecycle}` |
+|-------------|-------------|---------------|
+| `v1.2.3` | `1.2.3` | `ga` |
+| `v1.2.3-beta.1` | `1.2.3` | `beta` |
+| `v1.2.3-preview.1` | `1.2.3` | `preview` |
 
-`output_products`
-:   Optional. Overrides the products array written to the bundle output. Supports `{version}` and `{lifecycle}` placeholders.
-:   When **not set**, the products array is derived from the individual changelog files matched by the filter. This often produces multiple product entries (one per unique product/target/lifecycle combination across all matched files), which may not reflect a single clean release identity.
-:   When **set**, the products array in the bundle is exactly the value you specify, replacing anything that would be derived from the matched changelogs. Use this to publish a single, authoritative product entry with a specific version and lifecycle.
-:   The `{lifecycle}` placeholder is substituted at runtime with the inferred lifecycle. For `source: github_release` profiles this comes from the release tag suffix. For standard profiles it comes from the version argument. Refer to [](#changelog-bundle-standard-profile-lifecycle) and [](#changelog-bundle-github-release-profile) for details.
-:   If you omit lifecycle from the pattern (for example, `"elasticsearch {version}"`), the lifecycle field is omitted from the products array entirely.
-:   Example: `"elasticsearch {version} {lifecycle}"` or `"elasticsearch {version} ga"` to hardcode GA regardless of tag.
-:   Refer to [](#product-format).
+If the lifecycle you want to advertise cannot be inferred from the tag format — for example, because your team uses clean tags like `v1.34.1` even for pre-releases — hardcode the lifecycle directly in `output_products` instead of using the `{lifecycle}` placeholder:
 
-`repo`
-:   Optional. The GitHub repository name written to each product entry in the bundle. Used by the `{changelog}` directive to generate correct PR/issue links. Only needed when the product ID doesn't match the GitHub repository name. Overrides `bundle.repo` when set. Required when `source: github_release` is used and no `bundle.repo` default is set.
-:   Example: `repo: elasticsearch`.
+```yaml
+# Instead of relying on {lifecycle} inference, hardcode the lifecycle
+gh-release:
+  source: github_release
+  repo: apm-agent-dotnet
+  output: "apm-agent-dotnet-{version}.yaml"
+  output_products: "apm-agent-dotnet {version} preview"
+```
 
-`owner`
-:   Optional. The GitHub owner written to each product entry in the bundle. Overrides `bundle.owner` when set.
-:   Example: `owner: elastic`
+You can invoke the profile with commands like this:
 
-`hide_features`
-:   Optional. Feature IDs to mark as hidden in the bundle output (string or list). When the bundle is rendered, entries with matching `feature-id` values are commented out.
+```sh
+# Bundle changelogs using the PR list from a GitHub release (source: github_release)
+docs-builder changelog bundle gh-release v1.2.3
 
-### Lifecycle inference for standard profiles [changelog-bundle-standard-profile-lifecycle]
+# Use "latest" to fetch the most recent release
+docs-builder changelog bundle gh-release latest
+```
 
-If your configuration file defines a standard profile (that is to say, not a GitHub release profile), the lifecycle is inferred from the version string you pass as the second argument:
+#### Standard profiles [lifecycles-standard]
 
-| Version argument | Inferred lifecycle |
-|------------------|--------------------|
-| `9.2.0` | `ga` |
-| `9.2.0-rc.1` | `ga` |
-| `9.2.0-beta.1` | `beta` |
-| `9.2.0-alpha.1` | `preview` |
-| `9.2.0-preview.1` | `preview` |
+If your configuration file defines a standard profile (that is to say, not a GitHub release profile), the `{version}` is copied verbatim from your command argument and the `{lifecycle}` is derived from that value.
+For example:
+
+| Version argument | `{version}` | `{lifecycle}` |
+|------------------|-------------|---------------|
+| `9.2.0` | `9.2.0` | `ga` |
+| `9.2.0-rc.1` | `9.2.0-rc.1` | `ga` |
+| `9.2.0-beta.1` | `9.2.0-beta.1` | `beta` |
+| `9.2.0-alpha.1` | `9.2.0-alpha.1` | `preview` |
+| `9.2.0-preview.1` | `9.2.0-preview.1` | `preview` |
 
 For more information about acceptable product and lifecycle values, go to [Product format](#product-format).
 
@@ -520,92 +599,9 @@ docs-builder changelog bundle serverless-report 2026-02-13 ./promotion-report.ht
 
 # Same using a URL list file instead of an HTML promotion report
 docs-builder changelog bundle serverless-report 2026-02-13 ./prs.txt
-
-# Bundle changelogs using the PR list from a GitHub release (source: github_release)
-docs-builder changelog bundle elasticsearch-gh-release 9.2.0
-
-# Use "latest" to fetch the most recent release
-docs-builder changelog bundle elasticsearch-gh-release latest
 ```
 
-:::{warning}
-**Placeholder validation**: If your profile uses `{version}` or `{lifecycle}` placeholders in the description, you must ensure predictable substitution values:
-
-```sh
-# ✅ Good: Version provided for placeholder substitution
-docs-builder changelog bundle elasticsearch-release 9.2.0 ./report.html
-
-# ❌ Bad: No version, placeholders will fail unless profile has output_products
-docs-builder changelog bundle elasticsearch-release ./report.html
-```
-
-To fix the second case, either provide a version argument or add an `output_products` pattern to your profile:
-
-```yaml
-bundle:
-  profiles:
-    elasticsearch-release:
-      products: "elasticsearch * *"
-      output_products: "elasticsearch {version}"  # Enables placeholder substitution
-      description: "Download: https://github.com/{owner}/{repo}/releases/tag/v{version}"
-```
-:::
-
-### Bundle by product
-
-You can create profiles that are equivalent to the `--input-products` filter option, that is to say the bundle will contain only changelogs with matching `products`.
-For example:
-
-```yaml
-bundle:
-  # Input directory containing changelog YAML files
-  directory: docs/changelog
-  # Output directory for bundles
-  output_directory: docs/releases
-  # Whether to resolve (copy contents) by default
-  resolve: true
-  repo: elasticsearch <1>
-  owner: elastic
-  profiles:
-    # Collect all changelogs
-    release-all:
-      products: "* * *" <2>
-      output: "all.yaml"
-    # Find changelogs with any lifecycle and a partial date
-    serverless-monthly:
-      products: "cloud-serverless {version}-* *" <3>
-      output: "serverless-{version}.yaml"
-      output_products: "cloud-serverless {version}"
-
-    # Find changelogs with a specific lifecycle
-    elasticsearch-ga-only:
-      products: "elasticsearch {version} ga" <4>
-      output: "elasticsearch-{version}.yaml"
-
-    # Infer the lifecycle from the version
-    elasticsearch-release:
-      hide_features: <5>
-        - feature-flag-1
-        - feature-flag-2
-      products: "elasticsearch {version} {lifecycle}" <6>
-      output: "elasticsearch-{version}.yaml"
-      output_products: "elasticsearch {version}"
-```
-
-1. Bundle-level defaults that apply to all profiles. Individual profiles can override these.
-2. Collects all changelogs from the `directory`. This is equivalent to the `--all` command.
-3. Collects any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command. This is equivalent to the `--input-products` command option's support for wildcards.
-4. Collects any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command.
-5. Adds a `hide-features` array in the bundle. This is equivalent to the `--hide-features` command option.
-6. In this case, the lifecycle is inferred from the version string passed as the second command argument (for example, `9.2.0-beta.1` → `beta`).
-
-`output_products: "elasticsearch {version} {lifecycle}"` produces a single, authoritative product entry in the bundle derived from the release tag — for example, tag `v9.2.0` gives `elasticsearch 9.2.0 ga` and tag `v9.2.0-beta.1` gives `elasticsearch 9.2.0 beta`. Without `output_products`, the bundle products array is instead derived from the matched changelog files' own `products` fields, which is the consistent fallback for all profile types. Set `output_products` when you need a single clean product entry that reflects the release identity rather than the diverse metadata across individual changelog files.
-
-:::{note}
-The `products` field determines which changelog files are gathered for consideration. **`rules.bundle` still applies** afterward (see the note under [`--input-products`](#options)). Input stage and bundle filtering stage are conceptually separate.
-:::
-
-For profiles that use static patterns (without `{version}` or `{lifecycle}` placeholders), the second argument is still required but serves no functional purpose. You can pass any placeholder value. For example:
+For profiles that use static patterns (without `{version}` or `{lifecycle}` placeholders), the second argument is still required but serves no functional purpose. You can pass any placeholder value:
 
 ```sh
 # Profile with static patterns - second argument unused but required
@@ -613,74 +609,3 @@ docs-builder changelog bundle release-all '*'
 docs-builder changelog bundle release-all 'unused'
 docs-builder changelog bundle release-all 'none'
 ```
-
-If you are using the `{version}` placeholder in the `output_products` or `output` fields, you must provide an appropriate value even though it's not used by the `products` filter.
-
-### Bundle by report or URL list [profile-bundle-report-examples]
-
-You can also create profiles that are equivalent to the `--prs`, `--issues`, and `--report` filter options.
-That is to say you can create bundles that contain only changelogs with matching `prs` or `issues`.
-For example:
-
-```yaml
-bundle:
-  repo: elasticsearch <1>
-  owner: elastic
-  profiles:
-    # Find changelogs that match a list of PRs
-    serverless-report: <2>
-      output: "serverless-{version}.yaml"
-      output_products: "cloud-serverless {version}"
-```
-
-1. Bundle-level defaults that apply to all profiles. Individual profiles can override these.
-2. If a profile is intended for use with a promotion report or a newline delimited file that lists the issues or pull requests, it does not need a `products` filter. If the `output` and `output_products` are omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename and product metadata.
-
-By default all changelogs that match PRs or issues in the list or report are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).
-
-### Bundle by GitHub release profiles [changelog-bundle-github-release-profile]
-
-To make bundling by GitHub release more easily repeatable, create a profile with `source: github_release` in your changelog configuration file.
-For example:
-
-```yaml
-bundle:
-  profiles:
-    # Fetch the PR list directly from a GitHub release
-    agent-gh-release:
-      source: github_release <1>
-      repo: apm-agent-dotnet   <2>
-      output: "agent-{version}.yaml"
-      output_products: "apm-agent-dotnet {version} {lifecycle}"
-```
-
-1. Instead of filtering pre-existing changelog files by product, this profile fetches the PR list from the GitHub release notes for the given version. Mutually exclusive with `products`.
-2. The repository to fetch the release from. Overrides `bundle.repo` for this profile.
-
-For `source: github_release` profiles, the `{lifecycle}` placeholder in `output` and `output_products` is inferred from the **release tag** returned by GitHub (not the argument you pass to the command).
-This means the pre-release suffix on the tag drives the lifecycle value:
-
-| Release tag | `{version}` | `{lifecycle}` |
-|-------------|-------------|---------------|
-| `v9.2.0` | `9.2.0` | `ga` |
-| `v9.2.0-beta.1` | `9.2.0` | `beta` |
-| `v9.2.0-preview.1` | `9.2.0` | `preview` |
-| `v1.34.1` | `1.34.1` | `ga` |
-| `v1.34.1-preview.1` | `1.34.1` | `preview` |
-
-This differs from standard profiles, where lifecycle is inferred from the version argument you type. For `source: github_release`, the `{version}` placeholder always uses the clean base version (stripped of any pre-release suffix), while `{lifecycle}` reflects the actual tag format.
-
-If the lifecycle you want to advertise cannot be inferred from the tag format — for example, because your team uses clean tags like `v1.34.1` even for pre-releases — hardcode the lifecycle directly in `output_products` instead of using the `{lifecycle}` placeholder:
-
-```yaml
-# Instead of relying on {lifecycle} inference, hardcode the lifecycle
-gh-release:
-  source: github_release
-  repo: apm-agent-dotnet
-  output: "apm-agent-dotnet-{version}.yaml"
-  output_products: "apm-agent-dotnet {version} preview"
-```
-
-By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add `rules.bundle` [filters](#changelog-bundle-rules).
