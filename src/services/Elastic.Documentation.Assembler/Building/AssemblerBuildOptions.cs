@@ -25,7 +25,7 @@ public record AssemblerBuildOptions
 	/// <summary>
 	/// Comma-separated list of exporters to run.
 	/// </summary>
-	[CollectionSyntax(Separator = ",")]
+	[ArgumentParser(typeof(ExporterParser))]
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 
 	/// <summary>Skip the build step when <c>.artifacts/docs/index.html</c> already exists. Intended for test scenarios only.</summary>
