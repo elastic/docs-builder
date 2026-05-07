@@ -46,9 +46,10 @@ public record CliRootFile : IO.MarkdownFile
 
 	private string BuildMarkdown()
 	{
-		var supplemental = _supplementalDoc?.Exists == true
+		var rawSupplemental = _supplementalDoc?.Exists == true
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
+		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
 		return CliMarkdownGenerator.RootPage(_schema, supplemental);
 	}
 }

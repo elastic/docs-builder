@@ -10,6 +10,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
+using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
@@ -124,6 +125,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
+				return;
+			case CliModifiersBlock cliModifiersBlock:
+				WriteCliModifiers(renderer, cliModifiersBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -249,6 +253,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			ColumnWidths = block.ColumnWidths
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteCliModifiers(HtmlRenderer renderer, CliModifiersBlock block)
+	{
+		if (!block.Destructive && !block.RequiresConfirmation && !block.RequiresAuth
+			&& !block.Idempotent && string.IsNullOrWhiteSpace(block.Scope)
+			&& !block.Streaming && !block.LongRunning)
+			return;
+
+		var slice = CliModifiersView.Create(new CliModifiersViewModel
+		{
+			DirectiveBlock = block,
+			Destructive = block.Destructive,
+			RequiresConfirmation = block.RequiresConfirmation,
+			RequiresAuth = block.RequiresAuth,
+			Idempotent = block.Idempotent,
+			Scope = block.Scope,
+			Streaming = block.Streaming,
+			LongRunning = block.LongRunning,
 		});
 		RenderRazorSlice(slice, renderer);
 	}
