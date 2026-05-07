@@ -63,9 +63,9 @@ public abstract class AsciidocRendererBase
 	/// <summary>
 	/// Renders an entry's description with optional comment handling and list continuation
 	/// </summary>
-	private static void RenderEntryDescription(StringBuilder sb, ChangelogEntry entry, bool shouldHide, bool needsContinuation = true)
+	private static void RenderEntryDescription(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context, bool shouldHide, bool needsContinuation = true)
 	{
-		if (string.IsNullOrWhiteSpace(entry.Description))
+		if (context.HideDescriptions || string.IsNullOrWhiteSpace(entry.Description))
 			return;
 
 		_ = sb.AppendLine();
@@ -113,7 +113,7 @@ public abstract class AsciidocRendererBase
 	{
 		var (entryRepo, _, hideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
-		RenderEntryDescription(sb, entry, shouldHide, needsContinuation: !string.IsNullOrWhiteSpace(entry.Description));
+		RenderEntryDescription(sb, entry, context, shouldHide, needsContinuation: !string.IsNullOrWhiteSpace(entry.Description));
 		_ = sb.AppendLine();
 	}
 
@@ -127,7 +127,7 @@ public abstract class AsciidocRendererBase
 
 		// Description needs continuation when it exists
 		var hasDescription = !string.IsNullOrWhiteSpace(entry.Description);
-		RenderEntryDescription(sb, entry, shouldHide, needsContinuation: hasDescription);
+		RenderEntryDescription(sb, entry, context, shouldHide, needsContinuation: hasDescription);
 
 		RenderImpactAndAction(sb, entry);
 		_ = sb.AppendLine();

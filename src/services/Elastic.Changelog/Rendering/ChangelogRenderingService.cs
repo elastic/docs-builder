@@ -32,6 +32,7 @@ public record RenderChangelogsArguments
 	public string[]? HideFeatures { get; init; }
 	public string? Config { get; init; }
 	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
+	public bool HideDescriptions { get; init; }
 
 }
 
@@ -341,6 +342,7 @@ public class ChangelogRenderingService(
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			Dropdowns = input.Dropdowns,
+			HideDescriptions = input.HideDescriptions,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,
