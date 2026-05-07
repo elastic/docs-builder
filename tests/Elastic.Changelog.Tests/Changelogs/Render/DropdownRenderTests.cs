@@ -418,8 +418,8 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 
 			// AsciiDoc should always use bullet format regardless of dropdowns flag
 			content.Should().Contain("* Breaking API change");
-			content.Should().Contain("**Impact:** Existing API calls will fail");
-			content.Should().Contain("**Action:** Update your code");
+			content.Should().Contain("*Impact:* Existing API calls will fail");
+			content.Should().Contain("*Action:* Update your code");
 
 			// Should never contain MyST dropdown syntax
 			content.Should().NotContain("::::{dropdown}");

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Text;
 using Elastic.Documentation;
 using Elastic.Documentation.ReleaseNotes;
@@ -30,8 +31,17 @@ public class BreakingChangesAsciidocRenderer(StringBuilder sb) : AsciidocRendere
 			if (context.Subsections && !string.IsNullOrWhiteSpace(group.Key))
 			{
 				var header = ChangelogTextUtilities.FormatSubtypeHeader(group.Key);
-				var headerLine = allEntriesHidden ? $"// **{header}**" : $"**{header}**";
-				_ = sb.AppendLine(headerLine);
+
+				if (allEntriesHidden)
+				{
+					_ = sb.AppendLine("// [float]");
+					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"// ==== {header}");
+				}
+				else
+				{
+					_ = sb.AppendLine("[float]");
+					_ = sb.AppendLine(CultureInfo.InvariantCulture, $"==== {header}");
+				}
 				_ = sb.AppendLine();
 			}
 

@@ -11,6 +11,17 @@ using Nullean.ScopedFileSystem;
 namespace Elastic.Changelog.Rendering.Markdown;
 
 /// <summary>
+/// Options for rendering PR and issue links
+/// </summary>
+public record PrIssueLinkOptions(
+	ChangelogEntry Entry,
+	string Repo,
+	string Owner,
+	bool HideLinks,
+	bool IndentForListItem = false
+);
+
+/// <summary>
 /// Abstract base class for changelog markdown renderers
 /// </summary>
 public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChangelogMarkdownRenderer
@@ -37,28 +48,22 @@ public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChang
 	}
 
 	/// <summary>
-	/// Renders PR and issue links for dropdown entries
+	/// Renders PR and issue links with configurable formatting options
 	/// </summary>
-	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, string entryOwner, bool entryHideLinks)
-		=> RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks, indentForListItem: false);
-
-	/// <summary>
-	/// Renders PR and issue links with optional indentation for flattened list items
-	/// </summary>
-	protected static void RenderPrIssueLinks(StringBuilder sb, ChangelogEntry entry, string entryRepo, string entryOwner, bool entryHideLinks, bool indentForListItem)
+	protected static void RenderPrIssueLinks(StringBuilder sb, PrIssueLinkOptions options)
 	{
 		var prParts = new List<string>();
-		foreach (var pr in entry.Prs ?? [])
+		foreach (var pr in options.Entry.Prs ?? [])
 		{
-			var s = ChangelogTextUtilities.FormatPrLink(pr, entryRepo, entryHideLinks, entryOwner);
+			var s = ChangelogTextUtilities.FormatPrLink(pr, options.Repo, options.HideLinks, options.Owner);
 			if (!string.IsNullOrEmpty(s))
 				prParts.Add(s);
 		}
 
 		var issueParts = new List<string>();
-		foreach (var issue in entry.Issues ?? [])
+		foreach (var issue in options.Entry.Issues ?? [])
 		{
-			var s = ChangelogTextUtilities.FormatIssueLink(issue, entryRepo, entryHideLinks, entryOwner);
+			var s = ChangelogTextUtilities.FormatIssueLink(issue, options.Repo, options.HideLinks, options.Owner);
 			if (!string.IsNullOrEmpty(s))
 				issueParts.Add(s);
 		}
@@ -66,21 +71,21 @@ public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChang
 		if (prParts.Count == 0 && issueParts.Count == 0)
 			return;
 
-		if (entryHideLinks)
+		if (options.HideLinks)
 		{
 			foreach (var s in prParts)
 			{
-				var line = indentForListItem ? ChangelogTextUtilities.Indent(s) : s;
+				var line = options.IndentForListItem ? ChangelogTextUtilities.Indent(s) : s;
 				_ = sb.AppendLine(line);
 			}
 			foreach (var s in issueParts)
 			{
-				var line = indentForListItem ? ChangelogTextUtilities.Indent(s) : s;
+				var line = options.IndentForListItem ? ChangelogTextUtilities.Indent(s) : s;
 				_ = sb.AppendLine(line);
 			}
 
 			var infoLine = "For more information, check the pull request or issue above.";
-			_ = sb.AppendLine(indentForListItem ? ChangelogTextUtilities.Indent(infoLine) : infoLine);
+			_ = sb.AppendLine(options.IndentForListItem ? ChangelogTextUtilities.Indent(infoLine) : infoLine);
 		}
 		else
 		{
@@ -89,7 +94,7 @@ public abstract class MarkdownRendererBase(ScopedFileSystem fileSystem) : IChang
 			lineParts.AddRange(issueParts);
 
 			var fullLine = string.Join(" ", lineParts) + ".";
-			_ = sb.AppendLine(indentForListItem ? ChangelogTextUtilities.Indent(fullLine) : fullLine);
+			_ = sb.AppendLine(options.IndentForListItem ? ChangelogTextUtilities.Indent(fullLine) : fullLine);
 		}
 
 		_ = sb.AppendLine();
