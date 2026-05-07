@@ -12,9 +12,14 @@ else
 	{
 		var mimeType = System.IO.Path.GetExtension(fav).ToLowerInvariant() switch
 		{
-			".ico" => null,
-			".svg" => "image/svg+xml",
-			var e  => $"image/{e.TrimStart('.')}"
+			".ico"  => null,
+			".svg"  => "image/svg+xml",
+			".png"  => "image/png",
+			".jpg"  => "image/jpeg",
+			".jpeg" => "image/jpeg",
+			".gif"  => "image/gif",
+			".webp" => "image/webp",
+			var e   => $"image/{e.TrimStart('.')}"
 		};
 		@if (mimeType is null)
 		{

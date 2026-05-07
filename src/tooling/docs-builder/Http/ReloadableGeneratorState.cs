@@ -99,7 +99,7 @@ public class ReloadableGeneratorState : IDisposable
 		// Add LLM markdown export for dev server
 		var markdownExporters = new List<IMarkdownExporter>();
 		if (!_isWatchBuild)
-			markdownExporters.AddLlmMarkdownExport(_context.Configuration.Branding is not null); // Consistent LLM-optimized output
+			markdownExporters.AddLlmMarkdownExport(branded: _context.Configuration.Branding is not null); // Consistent LLM-optimized output
 
 		var generator = new DocumentationGenerator(docSet, _logFactory, markdownExporters: markdownExporters.ToArray());
 		await generator.ResolveDirectoryTree(ctx);

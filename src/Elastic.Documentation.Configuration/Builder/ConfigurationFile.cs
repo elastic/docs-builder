@@ -303,10 +303,12 @@ public record ConfigurationFile
 	{
 		branding.Icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
 		branding.OgImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
-		branding.Favicon = ValidateBrandingImage(branding.Favicon, "branding.favicon", context)
-			?? DiscoverBrandingFile(["favicon.ico", "favicon.png", "favicon.svg"], context);
-		branding.AppleTouchIcon = ValidateBrandingImage(branding.AppleTouchIcon, "branding.apple-touch-icon", context)
-			?? DiscoverBrandingFile(["apple-touch-icon.png"], context);
+		branding.Favicon = string.IsNullOrEmpty(branding.Favicon)
+			? DiscoverBrandingFile(["favicon.ico", "favicon.png", "favicon.svg"], context)
+			: ValidateBrandingImage(branding.Favicon, "branding.favicon", context);
+		branding.AppleTouchIcon = string.IsNullOrEmpty(branding.AppleTouchIcon)
+			? DiscoverBrandingFile(["apple-touch-icon.png"], context)
+			: ValidateBrandingImage(branding.AppleTouchIcon, "branding.apple-touch-icon", context);
 		return branding;
 	}
 
