@@ -32,16 +32,40 @@ nav:
         - group: Distributed architecture
           page: docs-content://deploy-manage/distributed-architecture.md
           children:
-          - page: docs-content://deploy-manage/distributed-architecture/clusters-nodes-shards.md
-            title: Clusters, nodes, and shards
+          - group: Clusters, nodes, and shards
+            page: docs-content://deploy-manage/distributed-architecture/clusters-nodes-shards.md
+            children:
+            - page: docs-content://deploy-manage/distributed-architecture/clusters-nodes-shards/node-roles.md
+              title: Node roles
           - page: docs-content://deploy-manage/distributed-architecture/reading-and-writing-documents.md
             title: Reading and writing documents
-          - page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery.md
-            title: Shard allocation, relocation, and recovery
+          - group: Shard allocation, relocation, and recovery
+            page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery.md
+            children:
+            - page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/shard-allocation-awareness.md
+              title: Shard allocation awareness
+            - group: Index-level shard allocation filtering
+              page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/index-level-shard-allocation.md
+              children:
+              - page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/delaying-allocation-when-node-leaves.md
+                title: Delaying allocation when a node leaves
           - page: docs-content://deploy-manage/distributed-architecture/shard-request-cache.md
             title: The shard request cache
-          - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation.md
-            title: Discovery and cluster formation
+          - group: Discovery and cluster formation
+            page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation.md
+            children:
+            - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/discovery-hosts-providers.md
+              title: Discovery hosts providers
+            - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/modules-discovery-quorums.md
+              title: Quorum-based decision making
+            - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/modules-discovery-voting.md
+              title: Voting configurations
+            - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/modules-discovery-bootstrap-cluster.md
+              title: Bootstrapping a cluster
+            - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/cluster-state-overview.md
+              title: Cluster state
+            - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/cluster-fault-detection.md
+              title: Cluster fault detection
           - page: docs-content://deploy-manage/distributed-architecture/kibana-tasks-management.md
             title: Kibana task management
         - group: Plan your install
@@ -181,6 +205,8 @@ nav:
             children:
             - page: docs-content://deploy-manage/deploy/cloud-enterprise/ece-architecture.md
               title: Service-oriented architecture
+            - page: docs-content://deploy-manage/deploy/cloud-enterprise/deploy-an-orchestrator.md
+              title: Deploy an orchestrator
             - group: Prepare your environment
               page: docs-content://deploy-manage/deploy/cloud-enterprise/prepare-environment.md
               children:
@@ -262,8 +288,10 @@ nav:
             page: docs-content://deploy-manage/deploy/cloud-on-k8s.md
             children:
             - group: Deploy an orchestrator
-              page: docs-content://deploy-manage/deploy/cloud-on-k8s/install.md
+              page: docs-content://deploy-manage/deploy/cloud-on-k8s/deploy-an-orchestrator.md
               children:
+              - page: docs-content://deploy-manage/deploy/cloud-on-k8s/install.md
+                title: Install ECK
               - page: docs-content://deploy-manage/deploy/cloud-on-k8s/install-using-yaml-manifest-quickstart.md
                 title: YAML manifests
               - page: docs-content://deploy-manage/deploy/cloud-on-k8s/install-using-helm-chart.md
@@ -1426,9 +1454,47 @@ nav:
           children:
           - page: docs-content://manage-data/ingest.md
             title: Choose/Plan your ingest method
-          - page: docs-content://manage-data/ingest/ingest-reference-architectures.md
-            title: Ingest architectures
+          - group: Ingest architectures
+            page: docs-content://manage-data/ingest/ingest-reference-architectures.md
+            children:
+            - group: Agent to Elasticsearch
+              page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-to-es.md
+              children:
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-installed.md
+                title: Elastic Agent (installed)
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-apis.md
+                title: Elastic Agent via APIs
+            - group: Agent with Logstash
+              page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-ls.md
+              children:
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/ls-enrich.md
+                title: Logstash for enrichment
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/lspq.md
+                title: Logstash persistent queue
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/ls-networkbridge.md
+                title: Logstash as a network bridge
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/ls-multi.md
+                title: Logstash for multiple destinations
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-proxy.md
+              title: Agent through a proxy
+            - group: Agent with Kafka
+              page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-kafka-es.md
+              children:
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-kafka-ls.md
+                title: Agent to Kafka via Logstash
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-kafka-essink.md
+                title: Agent to Kafka with Elasticsearch sink
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/ls-for-input.md
+              title: Logstash as input
+            - group: Air-gapped environments
+              page: docs-content://manage-data/ingest/ingest-reference-architectures/airgapped-env.md
+              children:
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-es-airgapped.md
+                title: Agent to Elasticsearch (air-gapped)
+              - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-ls-airgapped.md
+                title: Agent with Logstash (air-gapped)
           - group: Ingest by solution
+            page: docs-content://manage-data/ingest/ingesting-data-for-elastic-solutions.md
             children:
             - page: docs-content://solutions/search/ingest-for-search.md
               title: Ingesting data for search use cases
@@ -1507,6 +1573,8 @@ nav:
             - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-logs-from-nodejs-web-application-using-filebeat.md
               title: Ingest logs from a Node.js web application using Filebeat
           - title: Ingest data using the API
+          - page: docs-content://manage-data/ingest/tools.md
+            title: Ingest tools overview
           - page: docs-content://manage-data/ingest/upload-data-files.md
             title: Upload data files
           - page: docs-content://manage-data/ingest/sample-data.md
@@ -4206,4 +4274,10 @@ nav:
       - toc: beats://extend
       - toc: elasticsearch://extend
       - toc: integrations://extend
+
+  - section: Contribute
+    url: /contribute-docs/
+    isolated: true
+    children:
+    - toc: docs-content://contribute-docs
 
