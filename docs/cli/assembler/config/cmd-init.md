@@ -8,4 +8,4 @@ By default, the configuration is placed in a platform-specific application suppo
 
 Use the `--local` flag to save the configuration in the current working directory instead. This is the recommended approach when building a local workspace for testing.
 
-See [using a local workspace for assembler builds](../cmd-assemble.md#using-a-local-workspace) for more information.
+See [using a local workspace for assembler builds](../../assemble.md#using-a-local-workspace) for more information.

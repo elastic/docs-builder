@@ -5,7 +5,7 @@ Generate markdown or asciidoc files from changelog bundle files.
 To create bundle files, use [](/cli/changelog/bundle.md).
 For details and examples, go to [](/contribute/publish-changelogs.md).
 
-The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information, go to [](cmd-bundle-amend.md).
+The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information, go to [](bundle-amend.md).
 
 The `changelog render` command does **not** use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`. For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
 

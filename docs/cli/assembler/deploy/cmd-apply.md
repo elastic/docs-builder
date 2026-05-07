@@ -1,1 +1,1 @@
-Applies an incremental synchronization plan created by [`docs-builder assembler deploy plan`](./cmd-plan.md).
+Applies an incremental synchronization plan created by [`docs-builder assembler deploy plan`](./plan.md).
