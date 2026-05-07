@@ -151,7 +151,8 @@ public class IsolatedBuildService(
 			context.LegacyUrlMappings,
 			set.Configuration,
 			context.Git);
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context,
+			branded: context.Configuration.Branding is not null);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);

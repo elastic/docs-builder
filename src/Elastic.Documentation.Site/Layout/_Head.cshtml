@@ -41,7 +41,7 @@
 			})(window,document,'script','dataLayer','@Model.GoogleTagManager.Id');
 		</script>
 	}
-	@await RenderPartialAsync(_Favicon.Create())
+	@await RenderPartialAsync(_Favicon.Create(Model))
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
 	<meta name="htmx-config" content='{"selfRequestsOnly": true}'>
 	<meta property="og:type" content="website"/>

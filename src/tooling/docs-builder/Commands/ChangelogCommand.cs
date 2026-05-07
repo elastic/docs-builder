@@ -18,12 +18,14 @@ using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands;
 
@@ -155,6 +157,8 @@ internal sealed partial class ChangelogCommands(
 			try
 			{
 				var content = _fileSystem.File.ReadAllText(configPath);
+				// Strip any leading BOM that might be present after reading
+				content = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(content);
 
 				if (useNonDefaultChangelogDir)
 				{
@@ -168,7 +172,9 @@ internal sealed partial class ChangelogCommands(
 					content = BundleOutputDirectoryRegex().Replace(content, "$1" + outputValue);
 				}
 
-				_fileSystem.File.WriteAllText(configPath, content);
+				// Ensure normalized content is written without BOM
+				var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(content);
+				_fileSystem.File.WriteAllText(configPath, normalizedContent);
 				_logger.LogInformation("Updated bundle paths in changelog configuration: {ConfigPath}", configPath);
 			}
 			catch (IOException ex)
@@ -924,6 +930,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when --release-version is used. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
 	/// <param name="report">Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, and --issues.</param>
 	/// <param name="ctx"></param>
+	[CommandIntent(Intent.Destructive | Intent.RequiresConfirmation)]
+	[MutationScope(MutationScope.Directory)]
 	[NoOptionsInjection]
 	public async Task<int> Remove(
 		[Argument] string? profile = null,
@@ -933,8 +941,8 @@ internal sealed partial class ChangelogCommands(
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null,
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
-		bool dryRun = false,
-		bool force = false,
+		[DryRun] bool dryRun = false,
+		[ConfirmationSkip] bool force = false,
 		string[]? issues = null,
 		string? owner = null,
 		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? products = null,

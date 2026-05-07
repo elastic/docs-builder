@@ -158,6 +158,13 @@ jobs:
       - name: Compile
         run: dotnet run --project build -c release -- compile
 
+      - name: Check CLI schema is up to date
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          dotnet run --project src/tooling/docs-builder -c release --no-build -- __schema > docs/cli-schema.json.tmp
+          diff docs/cli-schema.json docs/cli-schema.json.tmp || (echo "docs/cli-schema.json is out of date — run: dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json" && exit 1)
+          rm docs/cli-schema.json.tmp
+
       - name: Test
         run: dotnet run --project build -c release -- unit-test
 

@@ -14,6 +14,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands.Assembler;
 
@@ -109,6 +110,7 @@ internal sealed class AssemblerCommands(
 	/// <param name="environment">Named deployment target. Determines which repositories and branches are cloned.</param>
 	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned link-registry ref.</param>
 	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
+	[CommandIntent(Intent.Idempotent)]
 	[NoOptionsInjection]
 	public async Task<int> Clone(
 		bool? strict = null,
@@ -136,6 +138,7 @@ internal sealed class AssemblerCommands(
 	/// Run after <c>assembler clone</c>. Reads every cloned repository, applies the shared <c>navigation.yml</c>,
 	/// and writes the unified site to <c>.artifacts/docs/</c>.
 	/// </remarks>
+	[CommandIntent(Intent.Idempotent)]
 	[NoOptionsInjection]
 	public async Task<int> Build(
 		[AsParameters] AssemblerBuildOptions options,
@@ -156,6 +159,7 @@ internal sealed class AssemblerCommands(
 	/// <remarks>Run after <c>assembler build</c>. Does not watch for file changes.</remarks>
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="path">Path to the built site. Defaults to <c>.artifacts/docs/</c>.</param>
+
 	[NoOptionsInjection]
 	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
 	{

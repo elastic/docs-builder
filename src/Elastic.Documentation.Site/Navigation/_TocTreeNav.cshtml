@@ -6,6 +6,20 @@
 @{
 	var isTopLevel = Model.Level == 0;
 }
+@functions {
+	static (string? badge, string label) ParseNavTitle(string raw)
+	{
+		if (raw.StartsWith("[ns]", StringComparison.Ordinal)) return ("ns", raw[4..]);
+		if (raw.StartsWith("[cmd]", StringComparison.Ordinal)) return ("cmd", raw[5..]);
+		return (null, raw);
+	}
+
+	// Inline styles to avoid Tailwind purge — very muted tints, subtle border for definition
+	const string NsStyle  = "background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;";
+	const string CmdStyle = "background:#fffbeb;color:#b45309;border:1px solid #fde68a;";
+
+	static string BadgeStyle(string? badge) => badge == "ns" ? NsStyle : badge == "cmd" ? CmdStyle : "";
+}
 @if (isTopLevel && !Model.IsGlobalAssemblyBuild && !Model.IsPrimaryNavEnabled && !Model.SubTree.Index.Hidden)
 {
 	var idx = Model.SubTree.Index;
@@ -32,13 +46,16 @@
 	}
 	if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
 	{
+		var (groupBadge, groupLabel) = ParseNavTitle(group.NavigationTitle);
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@group.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link group-[.current]/li:text-blue-elastic!"
+				class="sidebar-link group-[.current]/li:text-blue-elastic! flex items-center w-full"
 			>
-				@group.NavigationTitle
+				<span>@groupLabel</span>
+				@if (groupBadge == "ns") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@NsStyle">ns</span> }
+				else if (groupBadge == "cmd") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@CmdStyle">cmd</span> }
 			</a>
 		</li>
 	}
@@ -46,13 +63,16 @@
 	{
 		var g = folder;
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
+		var (folderBadge, folderLabel) = ParseNavTitle(g.NavigationTitle);
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
 				<a
 					href="@(g.Url)"
 					@Model.Htmx.GetNavHxAttributes(true)
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
-					@(g.NavigationTitle)
+					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic! flex items-center gap-1">
+					<span>@folderLabel</span>
+					@if (folderBadge == "ns") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@NsStyle">ns</span> }
+					else if (folderBadge == "cmd") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@CmdStyle">cmd</span> }
 				</a>
 				@if (!allHidden)
 				{
@@ -95,13 +115,16 @@
 	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
 		var hasSameTopLevelGroup = true;
+		var (leafBadge, leafLabel) = ParseNavTitle(leaf.NavigationTitle);
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
 				href="@leaf.Url"
 				@Model.Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
-				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
+				class="sidebar-link grow group-[.current]/li:text-blue-elastic! flex items-center w-full"
 			>
-				@leaf.NavigationTitle
+				<span>@leafLabel</span>
+				@if (leafBadge == "ns") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@NsStyle">ns</span> }
+				else if (leafBadge == "cmd") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@CmdStyle">cmd</span> }
 			</a>
 		</li>
 	}

@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Text;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -50,6 +51,7 @@ public static partial class ReleaseNotesSerialization
 	/// </summary>
 	public static ChangelogEntry DeserializeEntry(string yaml)
 	{
+		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
 		var yamlDto = YamlDeserializer.Deserialize<ChangelogEntryDto>(yaml);
 		return ToEntry(yamlDto);
 	}
@@ -71,6 +73,7 @@ public static partial class ReleaseNotesSerialization
 	/// </summary>
 	public static Bundle DeserializeBundle(string yaml)
 	{
+		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
 		var yamlDto = YamlDeserializer.Deserialize<BundleDto>(yaml);
 		return ToBundle(yamlDto);
 	}
@@ -364,6 +367,7 @@ public static partial class ReleaseNotesSerialization
 	/// <returns>The normalized YAML content.</returns>
 	public static string NormalizeYaml(string yaml)
 	{
+		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
 		// Skip comment lines
 		var yamlLines = yaml.Split('\n');
 		var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
