@@ -10,14 +10,11 @@
     <UserSecretsId>72f50f33-6fb9-4d08-bff3-39568fe370b3</UserSecretsId>
     <IsTestProject>false</IsTestProject>
     <RootNamespace>Elastic.Documentation.Aspire</RootNamespace>
-    <NoWarn>IDE0350</NoWarn>
+    <NoWarn>IDE0350;IDE0060</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Nullean.Argh" />
     <PackageReference Include="Aspire.Hosting.AppHost"/>
     <PackageReference Include="Elastic.Aspire.Hosting.Elasticsearch"/>
   </ItemGroup>

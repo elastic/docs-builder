@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using static Elastic.Documentation.Configuration.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -348,10 +349,11 @@ public record ConfigurationFile
 			return null;
 		}
 
-		if (resolved.LinkTarget is not null)
+		var symlinkError = ValidateFileAccess(resolved, context.DocumentationSourceDirectory);
+		if (symlinkError is not null)
 		{
 			context.EmitError(context.ConfigurationPath,
-				$"'{fieldName}' path '{imagePath}' is a symbolic link, which is not allowed for branding images.");
+				$"'{fieldName}' path '{imagePath}' is unsafe: {symlinkError}");
 			return null;
 		}
 
