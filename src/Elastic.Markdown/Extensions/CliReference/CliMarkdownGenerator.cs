@@ -10,7 +10,7 @@ namespace Elastic.Markdown.Extensions.CliReference;
 
 internal static partial class CliMarkdownGenerator
 {
-	public static string RootPage(ArghCliSchema schema, string? supplementalContent)
+	public static string RootPage(CliSchema schema, string? supplementalContent)
 	{
 		var sb = new StringBuilder();
 		_ = sb.AppendLine($"# {schema.Name}");
@@ -47,6 +47,37 @@ internal static partial class CliMarkdownGenerator
 				AppendPageCard(sb, ns.Segment, $"./{ns.Segment}/index.md", ns.Summary);
 		}
 
+		if (schema.Environment?.Variables is { Count: > 0 } envVars)
+		{
+			_ = sb.AppendLine("## Environment Variables");
+			_ = sb.AppendLine();
+			foreach (var v in envVars)
+			{
+				var required = v.Required ? " **required**" : string.Empty;
+				_ = sb.AppendLine($"`{v.Name}`{required}");
+				_ = sb.AppendLine($":   {v.Description?.Trim() ?? string.Empty}");
+				if (!string.IsNullOrWhiteSpace(v.DefaultValue))
+				{
+					_ = sb.AppendLine();
+					_ = sb.AppendLine($"    **Default:** `{v.DefaultValue.Trim()}`");
+				}
+				_ = sb.AppendLine();
+			}
+		}
+
+		if (schema.Environment?.ConfigFiles is { Count: > 0 } configFiles)
+		{
+			_ = sb.AppendLine("## Configuration Files");
+			_ = sb.AppendLine();
+			foreach (var f in configFiles)
+			{
+				var required = f.Required ? " **required**" : string.Empty;
+				_ = sb.AppendLine($"`{f.Path}`{required}");
+				_ = sb.AppendLine($":   {f.Description?.Trim() ?? string.Empty}");
+				_ = sb.AppendLine();
+			}
+		}
+
 		return sb.ToString();
 	}
 
@@ -69,6 +100,9 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine(ns.Summary.Trim());
 
 		_ = sb.AppendLine();
+
+		if (ns.DefaultCommand is { Hidden: false } defaultCmd)
+			AppendDefaultCommand(sb, defaultCmd, fullPath, binaryName);
 
 		var visibleCmds = ns.Commands.Where(c => !c.Hidden).ToList();
 		if (visibleCmds.Count > 0)
@@ -94,6 +128,14 @@ internal static partial class CliMarkdownGenerator
 			AppendParameters(sb, ns.Options);
 		}
 
+		if (!string.IsNullOrWhiteSpace(ns.Notes))
+		{
+			_ = sb.AppendLine("## Notes");
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(ns.Notes.Trim());
+			_ = sb.AppendLine();
+		}
+
 		return sb.ToString();
 	}
 
@@ -112,6 +154,8 @@ internal static partial class CliMarkdownGenerator
 		_ = sb.AppendLine(FormatUsage(usage));
 		_ = sb.AppendLine("```");
 		_ = sb.AppendLine();
+
+		AppendCommandCallouts(sb, cmd);
 
 		if (supplementalContent is not null)
 			_ = sb.AppendLine(supplementalContent.Trim());
@@ -166,6 +210,126 @@ internal static partial class CliMarkdownGenerator
 		return sb.ToString();
 	}
 
+	private static void AppendCommandCallouts(StringBuilder sb, CliCommandSchema cmd)
+	{
+		if (cmd.Deprecated is not null)
+		{
+			var parts = new List<string> { "**Deprecated**" };
+			if (!string.IsNullOrWhiteSpace(cmd.Deprecated.Since))
+				parts.Add($"since {cmd.Deprecated.Since}");
+			if (!string.IsNullOrWhiteSpace(cmd.Deprecated.Message))
+				parts.Add(cmd.Deprecated.Message.Trim().TrimEnd('.'));
+			if (!string.IsNullOrWhiteSpace(cmd.Deprecated.RemovedIn))
+				parts.Add($"Removed in: {cmd.Deprecated.RemovedIn}");
+			_ = sb.AppendLine(":::{warning}");
+			_ = sb.AppendLine(string.Join(". ", parts) + ".");
+			_ = sb.AppendLine(":::");
+			_ = sb.AppendLine();
+		}
+
+		if (cmd.Intent?.Destructive == true)
+		{
+			_ = sb.AppendLine(":::{danger}");
+			_ = sb.AppendLine("This command is **destructive** — changes cannot be undone.");
+			_ = sb.AppendLine(":::");
+			_ = sb.AppendLine();
+		}
+
+		var notes = new List<string>();
+		if (cmd.LongRunning)
+			notes.Add("This command may take a long time to complete.");
+		if (cmd.Streaming)
+			notes.Add("This command streams output continuously until stopped.");
+		if (cmd.Intent?.RequiresAuth == true)
+			notes.Add("Authentication is required.");
+		if (cmd.Intent?.RequiresConfirmation == true)
+			notes.Add("This command prompts for confirmation before proceeding.");
+		if (!string.IsNullOrWhiteSpace(cmd.Intent?.Scope))
+			notes.Add($"Scope: `{cmd.Intent.Scope}`.");
+
+		foreach (var note in notes)
+		{
+			_ = sb.AppendLine($"> {note}");
+			_ = sb.AppendLine();
+		}
+
+		if (cmd.Output?.Formats is { Length: > 0 } formats)
+		{
+			_ = sb.AppendLine($"**Output formats:** {string.Join(", ", formats)}");
+			_ = sb.AppendLine();
+		}
+	}
+
+	private static void AppendDefaultCommand(StringBuilder sb, CliDefaultSchema defaultCmd, string[]? fullPath, string? binaryName)
+	{
+		_ = sb.AppendLine("## Running without a subcommand");
+		_ = sb.AppendLine();
+
+		if (!string.IsNullOrWhiteSpace(defaultCmd.Summary))
+		{
+			_ = sb.AppendLine(defaultCmd.Summary.Trim());
+			_ = sb.AppendLine();
+		}
+
+		var usageParts = new List<string>();
+		if (!string.IsNullOrWhiteSpace(binaryName))
+			usageParts.Add(binaryName);
+		if (fullPath is { Length: > 0 })
+			usageParts.AddRange(fullPath);
+
+		var usageLine = !string.IsNullOrWhiteSpace(defaultCmd.Usage)
+			? defaultCmd.Usage
+			: string.Join(" ", usageParts) + " [options]";
+
+		_ = sb.AppendLine("```bash");
+		_ = sb.AppendLine(FormatUsage(usageLine));
+		_ = sb.AppendLine("```");
+		_ = sb.AppendLine();
+
+		if (defaultCmd.Parameters.Count > 0)
+		{
+			var positionals = defaultCmd.Parameters.Where(p => p.Role == "positional").ToList();
+			var flags = defaultCmd.Parameters.Where(p => p.Role != "positional").ToList();
+
+			if (positionals.Count > 0)
+			{
+				_ = sb.AppendLine("### Arguments");
+				_ = sb.AppendLine();
+				AppendParameters(sb, positionals);
+			}
+
+			if (flags.Count > 0)
+			{
+				_ = sb.AppendLine("### Options");
+				_ = sb.AppendLine();
+				AppendParameters(sb, flags);
+			}
+		}
+
+		if (defaultCmd.Examples is { Length: > 0 })
+		{
+			_ = sb.AppendLine("### Examples");
+			_ = sb.AppendLine();
+			foreach (var example in defaultCmd.Examples)
+			{
+				if (string.IsNullOrWhiteSpace(example))
+					continue;
+				_ = sb.AppendLine("```");
+				_ = sb.AppendLine(example.Trim());
+				_ = sb.AppendLine("```");
+				_ = sb.AppendLine();
+			}
+		}
+
+		if (!string.IsNullOrWhiteSpace(defaultCmd.Notes))
+		{
+			_ = sb.AppendLine("### Notes");
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(defaultCmd.Notes.Trim());
+			_ = sb.AppendLine();
+		}
+	}
+
 	// Commands named "index" keep cmd- prefix to avoid collision with namespace index.md pages
 	private static string CommandPath(string name) =>
 		name.Equals("index", StringComparison.OrdinalIgnoreCase) ? $"cmd-{name}" : name;
@@ -195,7 +359,33 @@ internal static partial class CliMarkdownGenerator
 			// prefer dedicated fields (EnumValues, DefaultValue) when present.
 			var (description, legacyValues, legacySummaryDefault) = CleanSummary(p.Summary);
 
-			_ = sb.AppendLine($":   {description.Trim()}");
+			var descLine = description.Trim();
+
+			// Annotate special roles inline
+			if (p.Role == "confirmationSkip")
+				descLine = string.IsNullOrEmpty(descLine)
+					? "Pass to skip the confirmation prompt."
+					: descLine + " (pass to skip the confirmation prompt)";
+			else if (p.Role == "dryRun")
+				descLine = string.IsNullOrEmpty(descLine)
+					? "Preview changes without applying them."
+					: descLine + " (preview changes without applying them)";
+
+			_ = sb.AppendLine($":   {descLine}");
+
+			// Deprecated parameter
+			if (p.Deprecated is not null)
+			{
+				var parts = new List<string> { "**Deprecated**" };
+				if (!string.IsNullOrWhiteSpace(p.Deprecated.Since))
+					parts.Add($"since {p.Deprecated.Since}");
+				if (!string.IsNullOrWhiteSpace(p.Deprecated.Message))
+					parts.Add(p.Deprecated.Message.Trim().TrimEnd('.'));
+				if (!string.IsNullOrWhiteSpace(p.Deprecated.RemovedIn))
+					parts.Add($"Removed in: {p.Deprecated.RemovedIn}");
+				_ = sb.AppendLine();
+				_ = sb.AppendLine($"    {string.Join(". ", parts)}.");
+			}
 
 			// Enum values: prefer schema EnumValues, fall back to legacy embedded text
 			var values = p.EnumValues is { Length: > 0 }
@@ -219,8 +409,61 @@ internal static partial class CliMarkdownGenerator
 				_ = sb.AppendLine($"    **Default:** `{defaultValue.Trim()}`");
 			}
 
+			// Constraints from validations
+			var constraints = FormatConstraints(p.Validations);
+			if (!string.IsNullOrEmpty(constraints))
+			{
+				_ = sb.AppendLine();
+				_ = sb.AppendLine($"    **Constraints:** {constraints}");
+			}
+
+			// Repeatable / variadic hints
+			if (p.Repeatable)
+			{
+				_ = sb.AppendLine();
+				_ = sb.AppendLine($"    **Repeatable:** pass `--{p.Name}` multiple times to supply more than one value");
+			}
+			else if (p.Variadic)
+			{
+				_ = sb.AppendLine();
+				_ = sb.AppendLine("    **Variadic:** accepts multiple values");
+			}
+
 			_ = sb.AppendLine();
 		}
+	}
+
+	private static string FormatConstraints(List<CliValidationSchema>? validations)
+	{
+		if (validations is not { Count: > 0 })
+			return string.Empty;
+
+		var parts = new List<string>();
+		foreach (var v in validations)
+		{
+			var phrase = v.Kind.ToLowerInvariant() switch
+			{
+				"existing" => "must exist",
+				"rejectsymboliclinks" => "symbolic links not allowed",
+				"expanduserprofile" => "supports `~` home expansion",
+				"urischeme" when v.Values is { Length: > 0 } =>
+					$"must be a {string.Join(" or ", v.Values)} URI",
+				"range" when v.Min is not null && v.Max is not null =>
+					$"between {v.Min} and {v.Max}",
+				"range" when v.Min is not null => $"minimum {v.Min}",
+				"range" when v.Max is not null => $"maximum {v.Max}",
+				"timespanrange" when v.Min is not null && v.Max is not null =>
+					$"duration between {v.Min} and {v.Max}",
+				"fileextensions" when v.Values is { Length: > 0 } =>
+					$"extensions: {string.Join(", ", v.Values)}",
+				"pattern" when v.Pattern is not null => $"must match `{v.Pattern}`",
+				_ => null
+			};
+			if (phrase is not null)
+				parts.Add(phrase);
+		}
+
+		return parts.Count > 0 ? string.Join(", ", parts) : string.Empty;
 	}
 
 	private static string GenerateUsage(CliCommandSchema cmd, string[]? fullPath, string? binaryName)

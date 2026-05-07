@@ -14,8 +14,8 @@ using Elastic.Markdown.Myst;
 namespace Elastic.Markdown.Extensions.CliReference;
 
 internal sealed record CliEntityInfo(
-	ArghCliSchema Schema,
-	object Entity, // ArghCliSchema | CliNamespaceSchema | CliCommandSchema
+	CliSchema Schema,
+	object Entity, // CliSchema | CliNamespaceSchema | CliCommandSchema
 	IFileInfo? SupplementalDoc,
 	/// <summary>The clean synthetic file (no cmd- prefix) — used as the MarkdownFile source for correct URL generation.</summary>
 	IFileInfo? CleanSyntheticFile = null,
@@ -109,7 +109,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 	private MarkdownFile? CreateCliFileFromInfo(IFileInfo sourceFile, MarkdownParser markdownParser, CliEntityInfo info) =>
 		info.Entity switch
 		{
-			ArghCliSchema schema => new CliRootFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
+			CliSchema schema => new CliRootFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
 			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc, info.FullPath ?? [ns.Segment], info.Schema.Name),
 			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc, info.FullPath ?? [cmd.Name], info.Schema.Name),
 			_ => null
@@ -159,10 +159,10 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 			if (!schemaFileInfo.Exists)
 				continue;
 
-			ArghCliSchema schema;
+			CliSchema schema;
 			try
 			{
-				schema = ArghCliSchema.Load(schemaFileInfo);
+				schema = CliSchema.Load(schemaFileInfo);
 			}
 			catch (Exception ex)
 			{
@@ -219,7 +219,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		string[] nsPath,
 		HashSet<string> matched,
 		List<IFileInfo> fileInfos,
-		ArghCliSchema schema)
+		CliSchema schema)
 	{
 		foreach (var ns in namespaces)
 		{

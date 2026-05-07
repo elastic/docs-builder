@@ -367,7 +367,11 @@
           "required": false,
           "summary": "Skip cloning private repositories"
         }
-      ]
+      ],
+      "intent": {
+        "idempotent": true,
+        "scope": "directory"
+      }
     },
     {
       "path": [],
@@ -497,7 +501,11 @@
           "required": false,
           "summary": "Skip cloning private repositories"
         }
-      ]
+      ],
+      "intent": {
+        "idempotent": true,
+        "scope": "directory"
+      }
     },
     {
       "path": [],
@@ -817,7 +825,10 @@
           "required": false,
           "summary": "Skip cloning private repositories"
         }
-      ]
+      ],
+      "intent": {
+        "requiresAuth": true
+      }
     },
     {
       "path": [],
@@ -844,7 +855,7 @@
           "summary": "Destination file or folder path."
         },
         {
-          "role": "flag",
+          "role": "dryRun",
           "name": "dry-run",
           "shortName": null,
           "type": "boolean",
@@ -898,7 +909,11 @@
           "required": false,
           "summary": "Skip cloning private repositories"
         }
-      ]
+      ],
+      "intent": {
+        "destructive": true,
+        "scope": "directory"
+      }
     },
     {
       "path": [],
@@ -1102,7 +1117,10 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ]
+          ],
+          "intent": {
+            "idempotent": true
+          }
         },
         {
           "path": [
@@ -1187,7 +1205,10 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ]
+          ],
+          "intent": {
+            "idempotent": true
+          }
         },
         {
           "path": [
@@ -2395,7 +2416,12 @@
                   "required": false,
                   "summary": "Skip cloning private repositories"
                 }
-              ]
+              ],
+              "intent": {
+                "destructive": true,
+                "scope": "global",
+                "requiresAuth": true
+              }
             },
             {
               "path": [
@@ -2495,7 +2521,11 @@
                   "required": false,
                   "summary": "Skip cloning private repositories"
                 }
-              ]
+              ],
+              "intent": {
+                "scope": "global",
+                "requiresAuth": true
+              }
             },
             {
               "path": [
@@ -4281,7 +4311,7 @@
               ]
             },
             {
-              "role": "flag",
+              "role": "dryRun",
               "name": "dry-run",
               "shortName": null,
               "type": "boolean",
@@ -4290,7 +4320,7 @@
               "defaultValue": "false"
             },
             {
-              "role": "flag",
+              "role": "confirmationSkip",
               "name": "force",
               "shortName": null,
               "type": "boolean",
@@ -4396,7 +4426,12 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ]
+          ],
+          "intent": {
+            "destructive": true,
+            "scope": "directory",
+            "requiresConfirmation": true
+          }
         },
         {
           "path": [
@@ -4961,7 +4996,10 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ]
+          ],
+          "intent": {
+            "idempotent": true
+          }
         },
         {
           "path": [
@@ -5079,7 +5117,10 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ]
+          ],
+          "intent": {
+            "idempotent": true
+          }
         },
         {
           "path": [
@@ -5434,7 +5475,10 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ]
+          ],
+          "intent": {
+            "requiresAuth": true
+          }
         },
         {
           "path": [

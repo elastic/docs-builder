@@ -452,10 +452,10 @@ public class DocumentationSetNavigation<TModel>
 		var schemaFileInfo = context.ReadFileSystem.FileInfo.New(
 			context.ReadFileSystem.Path.Join(context.DocumentationSourceDirectory.FullName, cliRef.SchemaPath));
 
-		ArghCliSchema schema;
+		CliSchema schema;
 		try
 		{
-			schema = ArghCliSchema.Load(schemaFileInfo);
+			schema = CliSchema.Load(schemaFileInfo);
 		}
 		catch (Exception ex)
 		{

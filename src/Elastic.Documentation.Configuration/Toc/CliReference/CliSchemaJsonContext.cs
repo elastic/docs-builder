@@ -7,5 +7,5 @@ using System.Text.Json.Serialization;
 namespace Elastic.Documentation.Configuration.Toc.CliReference;
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(ArghCliSchema))]
-internal sealed partial class ArghSchemaJsonContext : JsonSerializerContext;
+[JsonSerializable(typeof(CliSchema))]
+internal sealed partial class CliSchemaJsonContext : JsonSerializerContext;

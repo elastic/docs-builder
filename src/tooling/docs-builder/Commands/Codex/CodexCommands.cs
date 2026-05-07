@@ -18,6 +18,7 @@ using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands.Codex;
 
@@ -119,6 +120,7 @@ internal sealed class CodexCommands(
 	/// <param name="strict">Treat warnings as errors.</param>
 	/// <param name="fetchLatest">Fetch the HEAD of each branch instead of the pinned ref.</param>
 	/// <param name="assumeCloned">Skip cloning; assume repositories are already on disk.</param>
+	[CommandIntent(Intent.Idempotent)]
 	[NoOptionsInjection]
 	public async Task<int> Clone(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
@@ -167,6 +169,7 @@ internal sealed class CodexCommands(
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	/// <param name="strict">Treat warnings as errors.</param>
 	/// <param name="output">Output directory. Defaults to <c>.artifacts/codex/</c>.</param>
+	[CommandIntent(Intent.Idempotent)]
 	[NoOptionsInjection]
 	public async Task<int> Build(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
@@ -220,6 +223,7 @@ internal sealed class CodexCommands(
 	/// <remarks>Run after <c>codex build</c>. Does not rebuild on file changes.</remarks>
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="path">Path to the portal output. Defaults to <c>.artifacts/codex/docs/</c>.</param>
+
 	[NoOptionsInjection]
 	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
 	{

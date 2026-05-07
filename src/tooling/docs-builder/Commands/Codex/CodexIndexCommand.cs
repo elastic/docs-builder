@@ -18,6 +18,7 @@ using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands.Codex;
 
@@ -35,6 +36,8 @@ internal sealed class CodexIndexCommand(
 	/// <para>Run after <c>codex build</c>. Streams documents from all included documentation sets to the cluster.</para>
 	/// </remarks>
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
+
+	[RequiresAuth]
 	public async Task<int> Index(
 		GlobalCliOptions _,
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,

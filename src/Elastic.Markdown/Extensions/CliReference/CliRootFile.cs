@@ -12,7 +12,7 @@ namespace Elastic.Markdown.Extensions.CliReference;
 
 public record CliRootFile : IO.MarkdownFile
 {
-	private readonly ArghCliSchema _schema;
+	private readonly CliSchema _schema;
 	private readonly IFileInfo? _supplementalDoc;
 
 	public CliRootFile(
@@ -20,7 +20,7 @@ public record CliRootFile : IO.MarkdownFile
 		IDirectoryInfo rootPath,
 		MarkdownParser parser,
 		BuildContext build,
-		ArghCliSchema schema,
+		CliSchema schema,
 		IFileInfo? supplementalDoc
 	) : base(sourceFile, rootPath, parser, build)
 	{
