@@ -35,7 +35,6 @@ public record IsolatedBuildOptions
 
 	/// <summary>
 	/// Comma-separated list of exporters to run.
-	/// Default: html, configuration, linkmetadata, documentationState, dedirects.
 	/// </summary>
 	[ArgumentParser(typeof(ExporterParser))]
 	public IReadOnlySet<Exporter>? Exporters { get; init; }

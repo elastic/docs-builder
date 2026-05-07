@@ -24,8 +24,6 @@ public record AssemblerBuildOptions
 
 	/// <summary>
 	/// Comma-separated list of exporters to run.
-	/// Values: Html, Elasticsearch, Configuration, LinkMetadata, DocumentationState, LLMText, Redirects.
-	/// Default: Html, Configuration, LinkMetadata, DocumentationState, Redirects.
 	/// </summary>
 	[ArgumentParser(typeof(ExporterParser))]
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
