@@ -81,6 +81,14 @@ public record GlobalLayoutViewModel
 	public string? BrandingOgImageStaticPath =>
 		Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
 
+	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
+	public string? BrandingFaviconStaticPath =>
+		Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;
+
+	/// <summary>Static URL of the Apple touch icon, if configured or auto-discovered.</summary>
+	public string? BrandingAppleTouchIconStaticPath =>
+		Branding?.AppleTouchIcon is { } a ? Static(Path.GetFileName(a)) : null;
+
 	/// <summary>Root path for static assets. For codex builds, strips the /r/repoName segment from the URL path prefix.</summary>
 	public string StaticPathPrefix => GetStaticPathPrefix();
 

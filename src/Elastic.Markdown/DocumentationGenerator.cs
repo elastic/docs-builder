@@ -212,7 +212,7 @@ public partial class DocumentationGenerator
 
 		// Track destination basenames to catch collisions between icon and og-image
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (var imagePath in new[] { branding.Icon, branding.OgImage })
+		foreach (var imagePath in new[] { branding.Icon, branding.OgImage, branding.Favicon, branding.AppleTouchIcon })
 		{
 			if (string.IsNullOrEmpty(imagePath))
 				continue;
