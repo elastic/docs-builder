@@ -91,7 +91,7 @@ versioning_systems:
     current: 1.11.0
   edot-node:
     base: 1.0
-    current: 1.12.0
+    current: 1.13.0
   edot-php:
     base: 1.0
     current: 1.4.0
@@ -155,19 +155,19 @@ versioning_systems:
     current: 9.4.0
   elasticsearch-client-javascript:
     base: 9.0
-    current: 9.3.4
+    current: 9.4.0
   elasticsearch-client-dotnet:
     base: 9.0
-    current: 9.3.6
+    current: 9.4.0
   elasticsearch-client-php:
     base: 9.0
-    current: 9.3.0
+    current: 9.4.0
   elasticsearch-client-python:
     base: 9.0
-    current: 9.3.0
+    current: 9.4.0
   elasticsearch-client-ruby:
     base: 9.0
-    current: 9.3.1
+    current: 9.4.0
   elasticsearch-client-rust:
     base: 9.0
     current: 9.1.0-alpha.1

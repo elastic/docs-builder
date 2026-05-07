@@ -229,8 +229,8 @@ internal static partial class CliMarkdownGenerator
 
 		if (cmd.Intent?.Destructive == true)
 		{
-			_ = sb.AppendLine(":::{danger}");
-			_ = sb.AppendLine("This command is **destructive** — changes cannot be undone.");
+			_ = sb.AppendLine(":::{warning}");
+			_ = sb.AppendLine("**Destructive operation** — changes made by this command cannot be undone.");
 			_ = sb.AppendLine(":::");
 			_ = sb.AppendLine();
 		}
