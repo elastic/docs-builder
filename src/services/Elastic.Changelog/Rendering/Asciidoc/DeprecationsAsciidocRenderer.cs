@@ -17,6 +17,8 @@ public class DeprecationsAsciidocRenderer(StringBuilder sb) : AsciidocRendererBa
 	public override void Render(IReadOnlyCollection<ChangelogEntry> entries, ChangelogRenderContext context)
 	{
 		// Group by area if subsections is enabled, otherwise use single group
+		if (entries.Count == 0)
+			return;
 		var groupedEntries = context.Subsections
 			? entries.GroupBy(e => ChangelogRenderUtilities.GetComponent(e, context)).OrderBy(g => g.Key).ToList()
 			: [entries.GroupBy(_ => string.Empty).First()];
