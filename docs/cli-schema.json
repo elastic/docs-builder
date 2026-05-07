@@ -94,11 +94,9 @@
           "role": "flag",
           "name": "exporters",
           "shortName": null,
-          "type": "array",
+          "type": "string",
           "required": false,
-          "summary": "Comma-separated list of exporters to run.\n            Values: Html, Elasticsearch, Configuration, LinkMetadata, DocumentationState, LLMText, Redirects.\n            Default: Html, Configuration, LinkMetadata, DocumentationState, Redirects.",
-          "separator": ",",
-          "elementType": "enum"
+          "summary": "Comma-separated list of exporters to run."
         },
         {
           "role": "flag",
@@ -282,11 +280,9 @@
           "role": "flag",
           "name": "exporters",
           "shortName": null,
-          "type": "array",
+          "type": "string",
           "required": false,
-          "summary": "Comma-separated list of exporters to run.\n            Default: html, configuration, linkmetadata, documentationState, dedirects.",
-          "separator": ",",
-          "elementType": "enum"
+          "summary": "Comma-separated list of exporters to run."
         },
         {
           "role": "flag",
@@ -1056,11 +1052,9 @@
               "role": "flag",
               "name": "exporters",
               "shortName": null,
-              "type": "array",
+              "type": "string",
               "required": false,
-              "summary": "Comma-separated list of exporters to run.\n            Values: Html, Elasticsearch, Configuration, LinkMetadata, DocumentationState, LLMText, Redirects.\n            Default: Html, Configuration, LinkMetadata, DocumentationState, Redirects.",
-              "separator": ",",
-              "elementType": "enum"
+              "summary": "Comma-separated list of exporters to run."
             },
             {
               "role": "flag",
@@ -2350,7 +2344,8 @@
                       "max": null,
                       "pattern": null,
                       "values": [
-                        "json"
+                        "json",
+                        "plan"
                       ]
                     },
                     {

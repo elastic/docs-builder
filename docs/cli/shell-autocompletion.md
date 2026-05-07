@@ -22,7 +22,7 @@ source <(docs-builder __completion zsh)
 
 ## Fish
 
-```fish
+```shell
 mkdir -p ~/.config/fish/completions
 docs-builder __completion fish > ~/.config/fish/completions/docs-builder.fish
 ```
