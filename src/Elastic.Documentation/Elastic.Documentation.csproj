@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
+    <PackageReference Include="Nullean.Argh.Interfaces" />
     <PackageReference Include="Proc" />
     <PackageReference Include="SoftCircuits.IniFileParser" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
