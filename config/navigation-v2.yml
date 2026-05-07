@@ -3297,15 +3297,15 @@ nav:
     - island: Logstash versioned plugins
       toc: logstash-docs-md://vpr
 
-  - section: Troubleshoot
-    url: /troubleshoot/
-    children:
-    - toc: docs-content://troubleshoot
-
   - section: Release notes
     url: /release-notes/
     children:
     - toc: docs-content://release-notes/intro
+
+  - section: Troubleshoot
+    url: /troubleshoot/
+    children:
+    - toc: docs-content://troubleshoot
 
   - section: Extension points
     url: /extend/
