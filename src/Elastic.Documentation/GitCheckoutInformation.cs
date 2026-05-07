@@ -42,12 +42,12 @@ public partial record GitCheckoutInformation
 
 	/// <summary>
 	/// The GitHub repository in <c>org/repo</c> format, derived from the git remote URL.
-	/// Falls back to <c>elastic/docs-builder</c> when either <see cref="Remote"/> or <see cref="RepositoryName"/> is unavailable,
-	/// or when the remote does not resolve to a valid GitHub <c>org/repo</c> path,
-	/// to avoid silently linking to an arbitrary repository.
+	/// Returns <see langword="null"/> when the remote is unavailable or cannot be resolved
+	/// to a valid GitHub <c>org/repo</c> path. Callers should skip GitHub links when null.
 	/// </summary>
 	[JsonIgnore]
-	public string GitHubRepository => ExtractGitHubOrgRepo(Remote) ?? "elastic/docs-builder";
+	public string? GitHubRepository =>
+		Remote is "elastic/docs-builder-unknown" ? null : ExtractGitHubOrgRepo(Remote);
 
 	/// <summary>Extracts a validated <c>org/repo</c> path from a GitHub remote URL, or returns <c>null</c>.</summary>
 	/// <remarks>

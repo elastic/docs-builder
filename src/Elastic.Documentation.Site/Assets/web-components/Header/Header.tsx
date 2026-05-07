@@ -52,50 +52,45 @@ export const Header = ({
     const containerRef = useRef<HTMLSpanElement>(null)
     useHtmxContainer(containerRef)
 
-    const bgColor = branded ? headerBg || '#000000' : euiTheme.colors.primary
-
     const logoSection = branded ? (
         iconSrc ? (
-            <span ref={containerRef}>
-                <a
-                    href={logoHref}
+            // Branded with icon — plain <a>, no HTMX (no containerRef)
+            <a
+                href={logoHref}
+                css={css`
+                    display: inline-flex;
+                    align-items: center;
+                    gap: ${euiTheme.size.s};
+                    color: var(--color-white);
+                    text-decoration: none;
+                    padding: ${euiTheme.size.s};
+                `}
+            >
+                <img
+                    src={iconSrc}
+                    alt={title}
                     css={css`
-                        display: inline-flex;
-                        align-items: center;
-                        gap: ${euiTheme.size.s};
-                        color: var(--color-white);
-                        text-decoration: none;
-                        padding: ${euiTheme.size.s};
+                        height: 32px;
+                        width: auto;
                     `}
-                >
-                    <img
-                        src={iconSrc}
-                        alt={title}
-                        css={css`
-                            height: 24px;
-                            width: auto;
-                        `}
-                    />
-                    {title}
-                </a>
-            </span>
+                />
+                {title}
+            </a>
         ) : (
-            // Branding configured but no icon — title text only, no Elastic logo
-            <span ref={containerRef}>
-                <a
-                    href={logoHref}
-                    css={css`
-                        display: inline-flex;
-                        align-items: center;
-                        color: var(--color-white);
-                        text-decoration: none;
-                        padding: ${euiTheme.size.s};
-                        font-weight: ${euiTheme.font.weight.bold};
-                    `}
-                >
-                    {title}
-                </a>
-            </span>
+            // Branded without icon — title text only, no HTMX
+            <a
+                href={logoHref}
+                css={css`
+                    display: inline-flex;
+                    align-items: center;
+                    color: var(--color-white);
+                    text-decoration: none;
+                    padding: ${euiTheme.size.s};
+                    font-weight: ${euiTheme.font.weight.bold};
+                `}
+            >
+                {title}
+            </a>
         )
     ) : (
         // Default: Elastic-branded logo (light-mode styling)
@@ -120,6 +115,21 @@ export const Header = ({
         </span>
     )
 
+    const headerCss =
+        branded && headerBg
+            ? css`
+                  background-color: ${headerBg};
+              `
+            : css`
+                  background: linear-gradient(
+                      to bottom,
+                      #ffffff 0%,
+                      #f5f7fa 100%
+                  );
+                  border-bottom: 1px solid ${euiTheme.colors.lightShade};
+                  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+              `
+
     return (
         <EuiProvider
             colorMode="light"
@@ -127,22 +137,7 @@ export const Header = ({
             utilityClasses={false}
         >
             <EuiHeader
-                css={
-                    branded
-                        ? css`
-                              background-color: ${bgColor};
-                          `
-                        : css`
-                              background: linear-gradient(
-                                  to bottom,
-                                  #ffffff 0%,
-                                  #f5f7fa 100%
-                              );
-                              border-bottom: 1px solid
-                                  ${euiTheme.colors.lightShade};
-                              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
-                          `
-                }
+                css={headerCss}
                 sections={[
                     {
                         items: [logoSection],
