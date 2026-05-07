@@ -98,6 +98,12 @@ When `--file-type asciidoc` is specified, the command generates a single asciido
 
 The asciidoc output uses attribute references for links (for example, `{repo-pull}NUMBER[#NUMBER]`).
 
+AsciiDoc output ignores the `--dropdowns` flag and always uses a standardized format with the following characteristics:
+
+- Multi-block entries (containing description, Impact, and Action sections) use proper list continuation markers (`+`) to maintain list structure
+- Strong text formatting uses idiomatic single asterisk syntax (`*Impact:*`, `*Action:*`) following AsciiDoc best practices
+- All content blocks are properly attached to their parent list items for correct rendering
+
 ### Multiple PR and issue links
 
 Changelog entries can reference multiple pull requests and issues using the `prs` and `issues` array fields. When an entry has multiple links, all of them are rendered inline for that entry:
