@@ -3285,6 +3285,16 @@ nav:
   #      - page: docs-content://troubleshoot/ingest/opentelemetry/index.md
   #        title: Troubleshoot EDOT
 
+  - section: Products
+    url: /products/
+    children:
+    - page: docs-content://products/index.md
+      title: Product hubs
+    - page: docs-content://products/kibana/v9.md
+      title: Kibana
+    - page: docs-content://products/elasticsearch/v9.md
+      title: Elasticsearch
+
   - section: APIs
     url: https://www.elastic.co/docs/api
 
@@ -3297,25 +3307,15 @@ nav:
     - island: Logstash versioned plugins
       toc: logstash-docs-md://vpr
 
-  - section: Troubleshoot
-    url: /troubleshoot/
-    children:
-    - toc: docs-content://troubleshoot
-
   - section: Release notes
     url: /release-notes/
     children:
     - toc: docs-content://release-notes/intro
 
-  - section: Product hubs
-    url: /products/
+  - section: Troubleshoot
+    url: /troubleshoot/
     children:
-    - page: docs-content://products/index.md
-      title: Product hubs
-    - page: docs-content://products/kibana/v9.md
-      title: Kibana
-    - page: docs-content://products/elasticsearch/v9.md
-      title: Elasticsearch
+    - toc: docs-content://troubleshoot
 
   - section: Extension points
     url: /extend/
