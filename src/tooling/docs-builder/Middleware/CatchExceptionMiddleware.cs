@@ -31,6 +31,7 @@ internal sealed class CatchExceptionMiddleware(ILogger<CatchExceptionMiddleware>
 			if (ex is OperationCanceledException && context.CancellationToken.IsCancellationRequested && _cancelKeyPressed)
 			{
 				logger.LogInformation("Cancellation requested, exiting.");
+				context.ExitCode = 1;
 				return;
 			}
 			_ = collector.StartAsync(context.CancellationToken);

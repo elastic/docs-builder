@@ -36,7 +36,7 @@ public record IsolatedBuildOptions
 	/// <summary>
 	/// Comma-separated list of exporters to run.
 	/// </summary>
-	[CollectionSyntax(Separator = ",")]
+	[ArgumentParser(typeof(ExporterParser))]
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 
 	/// <summary>Base URL written into <c>&lt;link rel=canonical&gt;</c> tags.</summary>
