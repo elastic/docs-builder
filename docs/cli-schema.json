@@ -16,10 +16,6 @@
       "type": "enum",
       "required": false,
       "summary": "Minimum log level. Default: information",
-      "defaultValue": "information",
-      "aliases": [
-        "log-level"
-      ],
       "enumValues": [
         "trace",
         "debug",
@@ -37,9 +33,6 @@
       "type": "enum",
       "required": false,
       "summary": "Override the configuration source: local, remote",
-      "aliases": [
-        "config-source"
-      ],
       "enumValues": [
         "local",
         "remote",
@@ -149,10 +142,6 @@
           "type": "enum",
           "required": false,
           "summary": "Minimum log level. Default: information",
-          "defaultValue": "information",
-          "aliases": [
-            "log-level"
-          ],
           "enumValues": [
             "trace",
             "debug",
@@ -170,9 +159,6 @@
           "type": "enum",
           "required": false,
           "summary": "Override the configuration source: local, remote",
-          "aliases": [
-            "config-source"
-          ],
           "enumValues": [
             "local",
             "remote",
@@ -354,10 +340,6 @@
           "type": "enum",
           "required": false,
           "summary": "Minimum log level. Default: information",
-          "defaultValue": "information",
-          "aliases": [
-            "log-level"
-          ],
           "enumValues": [
             "trace",
             "debug",
@@ -375,9 +357,6 @@
           "type": "enum",
           "required": false,
           "summary": "Override the configuration source: local, remote",
-          "aliases": [
-            "config-source"
-          ],
           "enumValues": [
             "local",
             "remote",
@@ -417,10 +396,6 @@
           "type": "enum",
           "required": false,
           "summary": "Minimum log level. Default: information",
-          "defaultValue": "information",
-          "aliases": [
-            "log-level"
-          ],
           "enumValues": [
             "trace",
             "debug",
@@ -438,9 +413,6 @@
           "type": "enum",
           "required": false,
           "summary": "Override the configuration source: local, remote",
-          "aliases": [
-            "config-source"
-          ],
           "enumValues": [
             "local",
             "remote",
@@ -498,10 +470,6 @@
           "type": "enum",
           "required": false,
           "summary": "Minimum log level. Default: information",
-          "defaultValue": "information",
-          "aliases": [
-            "log-level"
-          ],
           "enumValues": [
             "trace",
             "debug",
@@ -519,9 +487,6 @@
           "type": "enum",
           "required": false,
           "summary": "Override the configuration source: local, remote",
-          "aliases": [
-            "config-source"
-          ],
           "enumValues": [
             "local",
             "remote",
@@ -825,10 +790,6 @@
           "type": "enum",
           "required": false,
           "summary": "Minimum log level. Default: information",
-          "defaultValue": "information",
-          "aliases": [
-            "log-level"
-          ],
           "enumValues": [
             "trace",
             "debug",
@@ -846,9 +807,6 @@
           "type": "enum",
           "required": false,
           "summary": "Override the configuration source: local, remote",
-          "aliases": [
-            "config-source"
-          ],
           "enumValues": [
             "local",
             "remote",
@@ -913,10 +871,6 @@
           "type": "enum",
           "required": false,
           "summary": "Minimum log level. Default: information",
-          "defaultValue": "information",
-          "aliases": [
-            "log-level"
-          ],
           "enumValues": [
             "trace",
             "debug",
@@ -934,9 +888,6 @@
           "type": "enum",
           "required": false,
           "summary": "Override the configuration source: local, remote",
-          "aliases": [
-            "config-source"
-          ],
           "enumValues": [
             "local",
             "remote",
@@ -1017,10 +968,6 @@
           "type": "enum",
           "required": false,
           "summary": "Minimum log level. Default: information",
-          "defaultValue": "information",
-          "aliases": [
-            "log-level"
-          ],
           "enumValues": [
             "trace",
             "debug",
@@ -1038,9 +985,6 @@
           "type": "enum",
           "required": false,
           "summary": "Override the configuration source: local, remote",
-          "aliases": [
-            "config-source"
-          ],
           "enumValues": [
             "local",
             "remote",
@@ -1133,10 +1077,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -1154,9 +1094,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -1225,10 +1162,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -1246,9 +1179,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -1554,10 +1484,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -1575,9 +1501,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -1651,10 +1574,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -1672,9 +1591,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -1980,10 +1896,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -2001,9 +1913,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -2078,10 +1987,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2099,9 +2004,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2144,10 +2046,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2165,9 +2063,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2229,10 +2124,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2250,9 +2141,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2313,10 +2201,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2334,9 +2218,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2371,10 +2252,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2392,9 +2269,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2495,10 +2369,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2516,9 +2386,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2602,10 +2469,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2623,9 +2486,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2708,10 +2568,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2729,9 +2585,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2776,10 +2629,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2797,9 +2646,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -2874,10 +2720,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Minimum log level. Default: information",
-                  "defaultValue": "information",
-                  "aliases": [
-                    "log-level"
-                  ],
                   "enumValues": [
                     "trace",
                     "debug",
@@ -2895,9 +2737,6 @@
                   "type": "enum",
                   "required": false,
                   "summary": "Override the configuration source: local, remote",
-                  "aliases": [
-                    "config-source"
-                  ],
                   "enumValues": [
                     "local",
                     "remote",
@@ -3069,7 +2908,7 @@
               "shortName": null,
               "type": "array",
               "required": false,
-              "summary": "Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., \u0060--issues \u0022https://github.com/owner/repo/issues/123,456\u0022\u0060) or a file path (e.g., \u0060--issues /path/to/file.txt\u0060). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue.",
+              "summary": "Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., \u0060--issues \u0022https://github.com/owner/repo/issues/123,456\u0022\u0060) or a file path (e.g., \u0060--issues /path/to/file.txt\u0060). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3095,9 +2934,17 @@
               "shortName": null,
               "type": "array",
               "required": false,
-              "summary": "Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., \u0060--prs \u0022https://github.com/owner/repo/pull/123,6789\u0022\u0060) or a file path (e.g., \u0060--prs /path/to/file.txt\u0060). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR.",
+              "summary": "Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., \u0060--prs \u0022https://github.com/owner/repo/pull/123,6789\u0022\u0060) or a file path (e.g., \u0060--prs /path/to/file.txt\u0060). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.",
               "repeatable": true,
               "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "report",
+              "shortName": null,
+              "type": "string",
+              "required": false,
+              "summary": "Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as \u0060changelog bundle --report\u0060). Mutually exclusive with --prs, --issues, and --release-version."
             },
             {
               "role": "flag",
@@ -3105,7 +2952,7 @@
               "shortName": null,
               "type": "string",
               "required": false,
-              "summary": "Optional: GitHub release tag to fetch PRs from (e.g., \u0022v9.2.0\u0022 or \u0022latest\u0022). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs and --issues. Does not create a bundle; use \u0027changelog gh-release\u0027 for that."
+              "summary": "Optional: GitHub release tag to fetch PRs from (e.g., \u0022v9.2.0\u0022 or \u0022latest\u0022). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs, --issues, and --report. Does not create a bundle; use \u0027changelog gh-release\u0027 for that."
             },
             {
               "role": "flag",
@@ -3121,7 +2968,7 @@
               "shortName": null,
               "type": "boolean",
               "required": false,
-              "summary": "Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., \u0022[Inference API] Title\u0022 becomes \u0022Title\u0022, \u0022[ES|QL]: Title\u0022 becomes \u0022Title\u0022, \u0022[Discover][ESQL] Title\u0022 becomes \u0022Title\u0022)",
+              "summary": "Optional: When used with --prs or --report, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., \u0022[Inference API] Title\u0022 becomes \u0022Title\u0022, \u0022[ES|QL]: Title\u0022 becomes \u0022Title\u0022, \u0022[Discover][ESQL] Title\u0022 becomes \u0022Title\u0022)",
               "defaultValue": "false"
             },
             {
@@ -3138,7 +2985,7 @@
               "shortName": null,
               "type": "string",
               "required": false,
-              "summary": "Optional: A short, user-facing title (max 80 characters). Required if neither --prs nor --issues is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR."
+              "summary": "Optional: A short, user-facing title (max 80 characters). Required if neither --prs, --issues, nor --report is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR."
             },
             {
               "role": "flag",
@@ -3146,7 +2993,7 @@
               "shortName": null,
               "type": "string",
               "required": false,
-              "summary": "Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs nor --issues is specified. If mappings are configured, type can be derived from the PR or issue."
+              "summary": "Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs, --issues, nor --report is specified. If mappings are configured, type can be derived from the PR or issue."
             },
             {
               "role": "flag",
@@ -3154,7 +3001,7 @@
               "shortName": null,
               "type": "boolean",
               "required": false,
-              "summary": "Optional: Use PR numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its PR numbers. Requires --prs or --issues. Mutually exclusive with --use-issue-number.",
+              "summary": "Optional: Use PR numbers for filenames instead of timestamp-slug. With --prs, --report, or --issues (where PRs are resolved), each changelog filename will be derived from its PR numbers. Requires --prs, --report, or --issues. Mutually exclusive with --use-issue-number.",
               "defaultValue": "false"
             },
             {
@@ -3173,10 +3020,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -3194,9 +3037,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -3457,10 +3297,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -3478,9 +3314,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -3574,10 +3407,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -3595,9 +3424,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -3655,10 +3481,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -3676,9 +3498,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -3832,10 +3651,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -3853,9 +3668,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -3989,10 +3801,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -4010,9 +3818,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -4134,10 +3939,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -4155,9 +3956,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -4322,10 +4120,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -4343,9 +4137,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -4570,7 +4361,7 @@
               "shortName": null,
               "type": "string",
               "required": false,
-              "summary": "Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, and --issues."
+              "summary": "Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, and --issues."
             },
             {
               "role": "flag",
@@ -4579,10 +4370,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -4600,9 +4387,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -4731,10 +4515,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -4752,9 +4532,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -4877,10 +4654,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -4898,9 +4671,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -5040,10 +4810,6 @@
             "type": "enum",
             "required": false,
             "summary": "Minimum log level. Default: information",
-            "defaultValue": "information",
-            "aliases": [
-              "log-level"
-            ],
             "enumValues": [
               "trace",
               "debug",
@@ -5061,9 +4827,6 @@
             "type": "enum",
             "required": false,
             "summary": "Override the configuration source: local, remote",
-            "aliases": [
-              "config-source"
-            ],
             "enumValues": [
               "local",
               "remote",
@@ -5172,10 +4935,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -5193,9 +4952,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -5297,10 +5053,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -5318,9 +5070,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -5659,10 +5408,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -5680,9 +5425,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -5756,10 +5498,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -5777,9 +5515,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -5902,10 +5637,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -5923,9 +5654,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -5985,10 +5713,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -6006,9 +5730,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -6042,10 +5763,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -6063,9 +5780,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
@@ -6147,10 +5861,6 @@
               "type": "enum",
               "required": false,
               "summary": "Minimum log level. Default: information",
-              "defaultValue": "information",
-              "aliases": [
-                "log-level"
-              ],
               "enumValues": [
                 "trace",
                 "debug",
@@ -6168,9 +5878,6 @@
               "type": "enum",
               "required": false,
               "summary": "Override the configuration source: local, remote",
-              "aliases": [
-                "config-source"
-              ],
               "enumValues": [
                 "local",
                 "remote",
