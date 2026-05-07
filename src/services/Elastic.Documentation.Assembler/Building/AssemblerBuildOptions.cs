@@ -24,7 +24,7 @@ public record AssemblerBuildOptions
 
 	/// <summary>
 	/// Comma-separated list of exporters to run.
-	/// Values: Html, Elasticsearch, Configuration, LinkMetadata, DocumentationState, LLMText, Redirects.
+	/// Values: Html, Elasticsearch, Configuration, LinkMetadata, DocumentationState, llm, Redirects.
 	/// Default: Html, Configuration, LinkMetadata, DocumentationState, Redirects.
 	/// </summary>
 	[CollectionSyntax(Separator = ",")]
