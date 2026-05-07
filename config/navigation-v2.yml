@@ -2770,6 +2770,8 @@ nav:
                 title: Upgrade
               - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/customization.md
                 title: Customization
+            - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/llms/index.md
+              title: LLM observability
           - group: Other Observability tutorials
             page: docs-content://solutions/observability/get-started/other-tutorials/index.md
             children:
@@ -2871,6 +2873,8 @@ nav:
                   title: Infrastructure
                 - page: docs-content://solutions/observability/apm/logs.md
                   title: Logs
+              - page: docs-content://solutions/observability/apm/discover-traces.md
+                title: Discover traces
               - group: Filter and search data
                 page: docs-content://solutions/observability/apm/filter-search-data.md
                 children:
@@ -3386,8 +3390,24 @@ nav:
             title: Rename processor
           - page: docs-content://solutions/observability/streams/management/extract/append.md
             title: Append processor
+          - page: docs-content://solutions/observability/streams/management/extract/concat.md
+            title: Concat processor
+          - page: docs-content://solutions/observability/streams/management/extract/join.md
+            title: Join processor
+          - page: docs-content://solutions/observability/streams/management/extract/lowercase.md
+            title: Lowercase processor
+          - page: docs-content://solutions/observability/streams/management/extract/uppercase.md
+            title: Uppercase processor
+          - page: docs-content://solutions/observability/streams/management/extract/trim.md
+            title: Trim processor
+          - page: docs-content://solutions/observability/streams/management/extract/redact.md
+            title: Redact processor
+          - page: docs-content://solutions/observability/streams/management/extract/network-direction.md
+            title: Network direction processor
           - page: docs-content://solutions/observability/streams/management/extract/manual-pipeline-configuration.md
             title: Manual pipeline configuration
+        - page: docs-content://solutions/observability/streams/management/streamlang.md
+          title: Streamlang
         - page: docs-content://solutions/observability/streams/management/partitioning.md
           title: Partition data into child streams
         - page: docs-content://solutions/observability/streams/management/schema.md
