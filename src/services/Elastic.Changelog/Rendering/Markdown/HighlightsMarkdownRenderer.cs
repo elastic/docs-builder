@@ -70,7 +70,7 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 						_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
 						_ = sb.AppendLine(entry.Description ?? "% Describe the highlight");
 						_ = sb.AppendLine();
-						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
+						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 						_ = sb.AppendLine("::::");
 					}
 					else
@@ -88,7 +88,7 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 						}
 
 						// PR/Issue links with "For more information" pattern - indented for list continuation
-						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks, indentForListItem: true);
+						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true));
 					}
 
 					if (shouldHide)

@@ -67,7 +67,7 @@ public class KnownIssuesMarkdownRenderer(ScopedFileSystem fileSystem) : Markdown
 						_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
 						_ = sb.AppendLine(entry.Description ?? "% Describe the known issue");
 						_ = sb.AppendLine();
-						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
+						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 
 						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
 							? "**Impact**<br>" + entry.Impact
@@ -96,7 +96,7 @@ public class KnownIssuesMarkdownRenderer(ScopedFileSystem fileSystem) : Markdown
 						}
 
 						// PR/Issue links with "For more information" pattern - indented for list continuation
-						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks, indentForListItem: true);
+						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true));
 
 						// Impact and Action sections - indented for list continuation
 						if (!string.IsNullOrWhiteSpace(entry.Impact))

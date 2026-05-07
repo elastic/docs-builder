@@ -70,7 +70,7 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 						_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
 						_ = sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
 						_ = sb.AppendLine();
-						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks);
+						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 
 						_ = sb.AppendLine(!string.IsNullOrWhiteSpace(entry.Impact)
 							? "**Impact**<br>" + entry.Impact
@@ -99,7 +99,7 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 						}
 
 						// PR/Issue links with "For more information" pattern - indented for list continuation
-						RenderPrIssueLinks(sb, entry, entryRepo, entryOwner, entryHideLinks, indentForListItem: true);
+						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks, IndentForListItem: true));
 
 						// Impact and Action sections - indented for list continuation
 						if (!string.IsNullOrWhiteSpace(entry.Impact))
