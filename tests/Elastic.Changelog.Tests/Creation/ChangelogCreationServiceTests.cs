@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
 
@@ -229,5 +231,44 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		Collector.Errors.Should().Be(0);
 		writeFs.Directory.Exists(tempOutput).Should().BeTrue();
 		writeFs.Directory.GetFiles(tempOutput, "*.yaml").Should().NotBeEmpty();
+	}
+
+	[Fact]
+	public async Task CreateChangelog_OutputDoesNotContainBom()
+	{
+		await WriteConfig(ConfigWithProductLabels);
+		var tempOutput = Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(tempOutput);
+
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, null);
+		var input = new CreateChangelogArguments
+		{
+			Title = "Test BOM handling",
+			Type = "feature",
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.1.0", Lifecycle = "ga" }],
+			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			Output = tempOutput,
+			Concise = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue("changelog creation should succeed");
+		Collector.Errors.Should().Be(0);
+
+		// Verify created file does not contain BOM
+		var yamlFiles = FileSystem.Directory.GetFiles(tempOutput, "*.yaml");
+		yamlFiles.Should().NotBeEmpty("should create a YAML file");
+
+		var yamlFile = yamlFiles[0];
+		var bytes = await FileSystem.File.ReadAllBytesAsync(yamlFile, TestContext.Current.CancellationToken);
+		ChangelogUtf8Normalization.HasUtf8Bom(bytes).Should().BeFalse("created changelog should not contain UTF-8 BOM");
+
+		// Verify content is correct
+		var content = await FileSystem.File.ReadAllTextAsync(yamlFile, TestContext.Current.CancellationToken);
+		content.Should().Contain("Test BOM handling");
+		content.Should().Contain("type: feature");
 	}
 }
