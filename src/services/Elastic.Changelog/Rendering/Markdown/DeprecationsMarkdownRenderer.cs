@@ -65,7 +65,8 @@ public class DeprecationsMarkdownRenderer(ScopedFileSystem fileSystem) : Markdow
 					{
 						// Dropdown rendering (current logic)
 						_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
-						_ = sb.AppendLine(entry.Description ?? "% Describe the functionality that was deprecated");
+						if (!context.HideDescriptions)
+							_ = sb.AppendLine(entry.Description ?? "% Describe the functionality that was deprecated");
 						_ = sb.AppendLine();
 						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 
@@ -89,7 +90,7 @@ public class DeprecationsMarkdownRenderer(ScopedFileSystem fileSystem) : Markdow
 						_ = sb.AppendLine();
 
 						// Description with proper indentation
-						if (!string.IsNullOrWhiteSpace(entry.Description))
+						if (!context.HideDescriptions && !string.IsNullOrWhiteSpace(entry.Description))
 						{
 							_ = sb.AppendLine(ChangelogTextUtilities.Indent(entry.Description));
 							_ = sb.AppendLine();

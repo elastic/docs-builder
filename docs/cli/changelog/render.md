@@ -1,0 +1,181 @@
+# changelog render
+
+Generate markdown or asciidoc files from changelog bundle files.
+
+To create the bundle files, use [](/cli/changelog/bundle.md).
+For details and examples, go to [](/contribute/publish-changelogs.md).
+
+## Usage
+
+```sh
+docs-builder changelog render [options...] [-h|--help]
+```
+
+## Options
+
+`--config <string?>`
+:   Optional: Path to the changelog.yml configuration file.
+:   Defaults to `docs/changelog.yml`.
+:   Note: The `changelog render` command does not use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`.
+
+`--hide-features <string[]?>`
+:   Optional: Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times.
+:   Each occurrence can be either comma-separated feature IDs (e.g., `--hide-features "feature:new-search-api,feature:enhanced-analytics"`) or a file path (e.g., `--hide-features /path/to/file.txt`).
+:   When specifying feature IDs directly, provide comma-separated values.
+:   When specifying a file path, provide a single value that points to a newline-delimited file. The file should contain one feature ID per line.
+:   Entries with matching `feature-id` values will be commented out in the output and a warning will be emitted.
+:   If the bundle contains `hide-features` values (that is to say, it was created with the `--hide-features` option), those values are merged with this list and are also hidden.
+
+`--input <string[]>`
+:   One or more bundle input files.
+:   Each bundle is specified as "bundle-file-path|changelog-file-path|repo|link-visibility" using pipe (`|`) as delimiter.
+:   To merge multiple bundles, separate them with commas: `--input "bundle1|dir1|repo1|keep-links,bundle2|dir2|repo2|hide-links"`.
+:   For example, `--input "/path/to/changelog-bundle.yaml|/path/to/changelogs|elasticsearch|keep-links"`.
+:   Only `bundle-file-path` is required for each bundle.
+:   Use `repo` if your changelogs do not contain full URLs for the pull requests or issues; otherwise they will be incorrectly derived with "elastic/elastic" in the URL by default.
+:   Use `link-visibility` to control whether PR/issue links are shown or hidden for entries from this bundle. Valid values are `keep-links` (default) or `hide-links`. Use `hide-links` for bundles from private repositories. When `hide-links` is set, all links are hidden for each affected entry — changelog entries can contain multiple PR links (`prs`) and issue links (`issues`), and all of them are hidden or shown together.
+:   Paths support tilde (`~`) expansion and relative paths.
+
+:::{note}
+The `render` command automatically discovers and merges `.amend-*.yaml` files with their parent bundle. For more information about amended bundles, go to [](bundle-amend.md).
+:::
+
+`--file-type <string>`
+:   Optional: Output file type. Valid values: `"markdown"` or `"asciidoc"`.
+:   Defaults to `"markdown"`.
+:   When `"markdown"` is specified, the command generates multiple markdown files (index.md, breaking-changes.md, deprecations.md, known-issues.md).
+:   When `"asciidoc"` is specified, the command generates a single asciidoc file with all sections.
+
+`--output <string?>`
+:   Optional: The output directory for rendered files.
+:   Defaults to current directory.
+
+`--subsections`
+:   Optional: Group entries by area in subsections.
+:   Defaults to false.
+:   When enabled, entries are grouped by their area within each section. The first area from each entry's areas list is used for grouping.
+
+`--dropdowns`
+:   Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns.
+:   Defaults to false (flattened bulleted lists).
+:   When enabled, each entry in separated files is rendered as a collapsible dropdown section using MyST syntax (`::::{dropdown}`).
+:   When disabled (default), entries are rendered as flattened bulleted lists with PR/issue links inline and Impact/Action sections indented.
+:   This flag only affects markdown output; AsciiDoc output always uses its standard format.
+
+`--no-descriptions`
+:   Optional: Hide changelog record descriptions from output.
+:   Defaults to false (descriptions are shown).
+:   When enabled, entry titles, PR/issue links, Impact and Action sections remain visible.
+:   Bundle-level descriptions (release intro text) are unaffected.
+:   Works with both markdown and asciidoc output formats.
+
+`--title <string?>`
+:   Optional: The title to use for section headers, directories, and anchors in output files.
+:   Defaults to the version in the first bundle. When omitted, ISO date targets are formatted for display the same way as the `{changelog}` directive (e.g., `2026-05-04` becomes "May 4, 2026", `2026-05` becomes "May 2026"), while directory names and heading anchors continue to use the raw target slug.
+:   If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
+
+The `changelog render` command does **not** use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`. For more information, refer to [](/contribute/publish-changelogs.md). For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
+
+## Output formats
+
+### Markdown format
+
+When `--file-type markdown` is specified (the default), the command generates multiple markdown files:
+
+- `index.md` - Contains features, enhancements, bug fixes, security updates, documentation changes, regressions, and other changes
+- `breaking-changes.md` - Contains breaking changes
+- `deprecations.md` - Contains deprecations
+- `known-issues.md` - Contains known issues
+- `highlights.md` - Contains highlighted entries (only created when at least one entry has `highlight: true`)
+
+### Asciidoc format
+
+When `--file-type asciidoc` is specified, the command generates a single asciidoc file with all sections:
+
+- Security updates
+- Bug fixes
+- Highlights (only included when at least one entry has `highlight: true`)
+- New features and enhancements
+- Breaking changes
+- Deprecations
+- Known issues
+- Documentation
+- Regressions
+- Other changes
+
+The asciidoc output uses attribute references for links (for example, `{repo-pull}NUMBER[#NUMBER]`).
+
+AsciiDoc output ignores the `--dropdowns` flag and always uses a standardized format with the following characteristics:
+
+- Multi-block entries (containing description, Impact, and Action sections) use proper list continuation markers (`+`) to maintain list structure
+- Strong text formatting uses idiomatic single asterisk syntax (`*Impact:*`, `*Action:*`) following AsciiDoc best practices
+- All content blocks are properly attached to their parent list items for correct rendering
+
+### Multiple PR and issue links
+
+Changelog entries can reference multiple pull requests and issues using the `prs` and `issues` array fields. When an entry has multiple links, all of them are rendered inline for that entry:
+
+```md
+* Fix ML calendar event update scalability issues. [#136886](https://github.com/elastic/elastic/pull/136886) [#136900](https://github.com/elastic/elastic/pull/136900)
+```
+
+## Examples
+
+### Render a single bundle
+
+```sh
+docs-builder changelog render \
+  --input "./docs/changelog/bundles/9.3.0.yaml" \
+  --output ./release-notes
+```
+
+### Render with tilde expansion
+
+```sh
+docs-builder changelog render \
+  --input "~/docs/changelog/bundles/9.3.0.yaml|~/docs/changelog|elasticsearch" \
+  --output ~/release-notes
+```
+
+### Render with relative paths
+
+```sh
+docs-builder changelog render \
+  --input "./bundles/9.3.0.yaml|./changelog|elasticsearch|keep-links" \
+  --file-type markdown \
+  --output ./output
+```
+
+### Merge multiple bundles
+
+```sh
+docs-builder changelog render \
+  --input "./bundles/elasticsearch-9.3.0.yaml|./changelog|elasticsearch,./bundles/kibana-9.3.0.yaml|./changelog|kibana" \
+  --output ./merged-release-notes
+```
+
+### Hide links from private repository bundles
+
+```sh
+docs-builder changelog render \
+  --input "./public-bundle.yaml|./changelog|elasticsearch|keep-links,./private-bundle.yaml|./private-changelog|internal-repo|hide-links" \
+  --output ./release-notes
+```
+
+### Render with dropdown format
+
+```sh
+docs-builder changelog render \
+  --input "./bundles/9.3.0.yaml|./changelog|elasticsearch" \
+  --dropdowns \
+  --output ./release-notes
+```
+
+### Render with subsections and flattened format (default)
+
+```sh
+docs-builder changelog render \
+  --input "./bundles/9.3.0.yaml|./changelog|elasticsearch" \
+  --subsections \
+  --output ./release-notes
+```

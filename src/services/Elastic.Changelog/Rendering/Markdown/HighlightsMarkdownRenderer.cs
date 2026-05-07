@@ -68,7 +68,8 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 					{
 						// Dropdown rendering (current logic)
 						_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
-						_ = sb.AppendLine(entry.Description ?? "% Describe the highlight");
+						if (!context.HideDescriptions)
+							_ = sb.AppendLine(entry.Description ?? "% Describe the highlight");
 						_ = sb.AppendLine();
 						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 						_ = sb.AppendLine("::::");
@@ -81,7 +82,7 @@ public class HighlightsMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownR
 						_ = sb.AppendLine();
 
 						// Description with proper indentation
-						if (!string.IsNullOrWhiteSpace(entry.Description))
+						if (!context.HideDescriptions && !string.IsNullOrWhiteSpace(entry.Description))
 						{
 							_ = sb.AppendLine(ChangelogTextUtilities.Indent(entry.Description));
 							_ = sb.AppendLine();
