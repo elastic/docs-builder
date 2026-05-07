@@ -86,7 +86,7 @@ public class SiteNavigationV2 : SiteNavigation
 	private static IReadOnlyList<NavigationSection> BuildSections(IReadOnlyList<INavigationItem> items) =>
 		items
 			.OfType<SectionNavigationNode>()
-			.Select(s => new NavigationSection(s.Id, s.NavigationTitle, s.Url, s.Isolated, [.. s.NavigationItems]))
+			.Select(s => new NavigationSection(s.Id, s.NavigationTitle, s.Url, s.Isolated, s.Dropdown, [.. s.NavigationItems]))
 			.ToList();
 
 	private static IReadOnlyList<NavigationIsland> BuildIslands(IReadOnlyList<NavigationSection> sections)
@@ -402,9 +402,9 @@ public class SiteNavigationV2 : SiteNavigation
 		string sitePrefix
 	)
 	{
-		var placeholder = new SectionNavigationNode(section.Label, section.Url, section.Isolated, [], parent);
+		var placeholder = new SectionNavigationNode(section.Label, section.Url, section.Isolated, section.Dropdown, [], parent);
 		var children = BuildV2Items(section.Children, nodes, placeholder, sitePrefix);
-		return new SectionNavigationNode(section.Label, section.Url, section.Isolated, children, parent);
+		return new SectionNavigationNode(section.Label, section.Url, section.Isolated, section.Dropdown, children, parent);
 	}
 
 	private static INavigationItem? CreateIsland(
