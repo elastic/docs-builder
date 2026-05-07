@@ -60,11 +60,14 @@ public enum ChangelogFileType
 	Markdown,
 	[Display(Name = "asciidoc")]
 	[JsonStringEnumMemberName("asciidoc")]
-	Asciidoc
+	Asciidoc,
+	[Display(Name = "gfm")]
+	[JsonStringEnumMemberName("gfm")]
+	Gfm
 }
 
 /// <summary>
-/// Service for rendering changelog output (markdown or asciidoc)
+/// Service for rendering changelog output (markdown, asciidoc, or gfm)
 /// </summary>
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
