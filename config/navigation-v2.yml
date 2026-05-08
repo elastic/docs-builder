@@ -4287,7 +4287,6 @@ nav:
     url: /products/
     dropdown: true
     children:
-    - title: Product hubs
     - label: Stack products
       children:
       - page: docs-content://products/elasticsearch/v9.md
