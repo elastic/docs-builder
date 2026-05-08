@@ -319,15 +319,9 @@ body:has([data-nav-v2]) aside.sidebar {
 	padding-top: 12px;
 }
 
-/* Search / dropdown already add top chrome; drop extra padding on first tree row. */
+/* Search already adds top chrome; drop extra padding on first tree row. */
 #pages-nav
 	#pages-nav-sticky-chrome:has(navigation-search)
-	+ .pages-nav-menu
-	nav[data-nav-v2]
-	ul.docs-sidebar-nav-v2__tree
-	> li:first-child:has(> .docs-sidebar-nav-v2__label--top),
-#pages-nav
-	#pages-nav-sticky-chrome:has(#pages-dropdown)
 	+ .pages-nav-menu
 	nav[data-nav-v2]
 	ul.docs-sidebar-nav-v2__tree
