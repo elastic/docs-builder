@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -86,9 +87,12 @@ public class PhysicalDocsetTests
 		folderNames.Should().Contain("building-blocks");
 		folderNames.Should().Contain("configure");
 		folderNames.Should().Contain("syntax");
-		folderNames.Should().Contain("cli");
 		folderNames.Should().Contain("migration");
 		folderNames.Should().Contain("testing");
+
+		// cli is a CliReferenceRef (schema-driven), not a FolderRef
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
+		cliRef.Should().NotBeNull();
 	}
 
 	[Fact]
@@ -108,12 +112,9 @@ public class PhysicalDocsetTests
 		nestedFolders.Should().Contain("site");
 		nestedFolders.Should().Contain("content-set");
 
-		// Test the cli folder has nested folders
-		var cliFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "cli");
-		var cliNestedFolders = cliFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
-		cliNestedFolders.Should().Contain("docset");
-		cliNestedFolders.Should().Contain("assembler");
-		cliNestedFolders.Should().Contain("links");
+		// cli is a CliReferenceRef (schema-driven), not a FolderRef — verify it has children
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().First();
+		cliRef.Children.Should().NotBeEmpty();
 	}
 
 	[Fact]

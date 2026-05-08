@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
@@ -136,6 +137,11 @@ public partial class ChangelogBundlingService(
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
 		: null;
+
+	/// <summary>
+	/// UTF-8 encoding without BOM for writing YAML files.
+	/// </summary>
+	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	internal static partial Regex VersionToTargetRegex();
@@ -766,7 +772,9 @@ public partial class ChangelogBundlingService(
 		}
 
 		// Write bundled file with explicit UTF-8 encoding to ensure proper character handling
-		await _fileSystem.File.WriteAllTextAsync(outputPath, bundledYaml, Encoding.UTF8, ctx);
+		// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
+		var normalizedYaml = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(bundledYaml);
+		await _fileSystem.File.WriteAllTextAsync(outputPath, normalizedYaml, Utf8NoBom, ctx);
 		_logger.LogInformation("Created bundled changelog: {OutputPath}", outputPath);
 	}
 

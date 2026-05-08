@@ -20,7 +20,7 @@ namespace Elastic.Markdown.Exporters;
 /// <summary>
 /// Exports markdown files as LLM-optimized CommonMark using custom renderers
 /// </summary>
-public class LlmMarkdownExporter : IMarkdownExporter
+public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
 {
 
 	private const string LlmsTxtTemplate = """
@@ -57,9 +57,9 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		var outputDirectory = outputFolder.FullName;
 		var zipPath = Path.Join(outputDirectory, "llm.zip");
 
-		// Create the llms.txt file with boilerplate content
+		// Create the llms.txt file; omit Elastic boilerplate for branded builds
 		var llmsTxt = Path.Join(outputDirectory, "llms.txt");
-		await outputFolder.FileSystem.File.WriteAllTextAsync(llmsTxt, LlmsTxtTemplate, ctx);
+		await outputFolder.FileSystem.File.WriteAllTextAsync(llmsTxt, branded ? string.Empty : LlmsTxtTemplate, ctx);
 
 		using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
 		var llmsTxtRelativePath = Path.GetRelativePath(outputDirectory, llmsTxt);
@@ -83,7 +83,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
-		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
+		var content = !branded && IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
 
 		await fs.File.WriteAllTextAsync(
 			outputFile.FullName,
@@ -224,6 +224,6 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 public static class LlmMarkdownExporterExtensions
 {
-	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) =>
-		exporters.Add(new LlmMarkdownExporter());
+	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters, bool branded = false) =>
+		exporters.Add(new LlmMarkdownExporter(branded));
 }

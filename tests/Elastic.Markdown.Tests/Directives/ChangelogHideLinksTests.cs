@@ -216,6 +216,8 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		"""
 		:::{changelog}
 		:type: all
+		:dropdowns:
+		:description-visibility: keep-descriptions
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml

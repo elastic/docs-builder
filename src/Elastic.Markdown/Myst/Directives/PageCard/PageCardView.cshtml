@@ -1,0 +1,23 @@
+@using Elastic.Documentation.Site
+@using Elastic.Markdown.Myst.Directives.PageCard
+@inherits RazorSlice<PageCardViewModel>
+<a href="@Model.Url" style="text-decoration:none;"
+   hx-select-oob="@Htmx.GetHxSelectOob(true)"
+   preload="@Htmx.Preload"
+   class="page-card flex items-center justify-between w-full border border-grey-20 rounded-lg px-6 py-4 mt-2 hover:border-grey-80 hover:bg-grey-5 group"
+>
+	<div class="min-w-0">
+		<div class="font-semibold text-blue-elastic group-hover:underline">@Model.Title</div>
+		@{
+			var description = Model.RenderBlock();
+		}
+		@if (!string.IsNullOrWhiteSpace(description.Value))
+		{
+			<div class="text-sm text-ink-light mt-0.5 font-normal" style="text-decoration:none;">@description</div>
+		}
+	</div>
+	<svg class="size-5 shrink-0 ml-4 text-ink-light" xmlns="http://www.w3.org/2000/svg"
+		 fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+		<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+	</svg>
+</a>

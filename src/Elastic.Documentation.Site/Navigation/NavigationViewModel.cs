@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 
@@ -23,6 +24,8 @@ public class NavigationViewModel
 	public required IHtmxAttributeProvider Htmx { get; init; }
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
+
+	public BrandingConfiguration? Branding { get; init; }
 
 	/// <summary>When true, the sidebar renders using the V2 nav partial with accordion behaviour.</summary>
 	public bool IsNavV2 { get; init; }
