@@ -150,6 +150,17 @@ body {
 			display: block;
 			width: 100%;
 			box-sizing: border-box;
+			color: #516381;
+		}
+
+		& #toc-nav .toc-progress-container a.sidebar-link:hover,
+		& #toc-nav .toc-progress-container a.sidebar-link.current,
+		& #toc-nav .toc-progress-container a.sidebar-link.current:hover {
+			color: #516381;
+		}
+
+		& #toc-nav .toc-progress-container li:hover {
+			border-left-color: #516381 !important;
 		}
 	}
 }
@@ -296,6 +307,13 @@ body:has([data-nav-v2]) aside.sidebar {
 	padding: 0 0 24px 0;
 }
 
+#pages-nav
+	nav[data-nav-v2]
+	ul.docs-sidebar-nav-v2__tree
+	> li:has(> .docs-sidebar-nav-v2__label--top):last-child {
+	padding: 0 0 22px 0;
+}
+
 /* Breathing room when sticky chrome is empty (no search, no product dropdown). */
 #pages-nav
 	nav[data-nav-v2]
@@ -326,10 +344,20 @@ nav.docs-sidebar-nav-v2 {
 	overflow: hidden;
 }
 
+#pages-nav
+	nav.docs-sidebar-nav-v2:has(> ul > li:first-child):not(
+		:has(> ul > li:first-child > .docs-sidebar-nav-v2__label)
+	) {
+	padding: 0 0 22px 0;
+}
+
 /* Nav V2: top-level section titles (with icon) — inherit body font stack */
 nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
-	font-weight: 600;
-	margin: 12px 0 16px 0;
+	font-weight: 700;
+	font-size: 16px;
+	line-height: 24px;
+	color: #343741;
+	margin: 10px 0 10px;
 }
 
 /*
@@ -340,7 +368,7 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
 #pages-nav
 	nav[data-nav-v2]
 	.docs-sidebar-nav-v2__label--top:has(+ ul.docs-sidebar-nav-v2__subsection) {
-	margin: 12px 0 8px 0;
+	margin: 12px 0 6px;
 }
 
 /* Nav V2: nested subgroup section titles (non-clickable; color never overridden by active path) */
@@ -427,24 +455,22 @@ nav.docs-sidebar-nav-v2
 	position: relative;
 	color: #0b64dd !important;
 	font-weight: 600 !important;
-	background-color: #f6f9fc !important;
+	background-color: #ecf1f9 !important;
 }
 
 #pages-nav nav[data-nav-v2] a.sidebar-link.current:hover {
 	color: #0b64dd;
-	background-color: #f6f9fc !important;
+	background-color: #ecf1f9 !important;
 }
 
 /* Vertical accent on the active page row (blue bar + blue title; chevron uses parent-path ink). */
 #pages-nav nav[data-nav-v2] a.sidebar-link.current::before {
 	content: '';
 	position: absolute;
-	inset-inline-start: 1px;
-	top: 50%;
-	transform: translateY(-50%);
+	inset-inline-start: 3px;
+	top: 6px;
+	bottom: 6px;
 	width: 3px;
-	height: 1.125rem;
-	max-height: calc(100% - 10px);
 	border-radius: 9999px;
 	background-color: var(--color-blue-elastic);
 	pointer-events: none;
@@ -453,7 +479,7 @@ nav.docs-sidebar-nav-v2
 
 /* Nav V2: active section background — subtree vs leaf driven by pages-nav-v2.ts */
 #pages-nav nav[data-nav-v2] li.nav-v2-active-subtree {
-	background-color: transparent;
+	background-color: #f6f9fc;
 	border-radius: 8px;
 }
 
@@ -471,7 +497,7 @@ nav.docs-sidebar-nav-v2
 	nav[data-nav-v2]
 	li.nav-v2-active-subtree
 	a.sidebar-link:not(.current):hover {
-	background-color: #f6f9fc !important;
+	background-color: #ecf1f9 !important;
 }
 
 #pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link.current,
@@ -479,14 +505,14 @@ nav.docs-sidebar-nav-v2
 	nav[data-nav-v2]
 	li.nav-v2-active-subtree
 	a.sidebar-link.current:hover {
-	background-color: #f6f9fc !important;
+	background-color: #ecf1f9 !important;
 }
 
 #pages-nav
 	nav[data-nav-v2]
 	li.nav-v2-active-leaf
 	> a.sidebar-link:not(.current):hover {
-	background-color: #f6f9fc !important;
+	background-color: #ecf1f9 !important;
 }
 
 #pages-nav nav[data-nav-v2] li.nav-v2-active-leaf > a.sidebar-link.current,
@@ -494,7 +520,7 @@ nav.docs-sidebar-nav-v2
 	nav[data-nav-v2]
 	li.nav-v2-active-leaf
 	> a.sidebar-link.current:hover {
-	background-color: #f6f9fc !important;
+	background-color: #ecf1f9 !important;
 }
 
 /*
@@ -508,6 +534,11 @@ nav.docs-sidebar-nav-v2
 	> a.sidebar-link {
 	color: #1d2a3e !important;
 	font-weight: 600 !important;
+}
+
+#pages-nav nav[data-nav-v2] li.nav-v2-active-parent {
+	background-color: #f6f9fc;
+	border-radius: 8px;
 }
 
 #pages-nav
@@ -540,10 +571,17 @@ nav.docs-sidebar-nav-v2
 
 #pages-nav
 	nav[data-nav-v2]
-	li.nav-v2-active-ancestor
+	li.nav-v2-active-parent
+	a.sidebar-link:not(.current):hover {
+	background-color: #ecf1f9 !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-parent
 	> .nav-folder-peer
 	> a.sidebar-link:not(.current):hover {
-	background-color: #f6f9fc;
+	background-color: #ecf1f9;
 }
 
 #pages-nav
@@ -558,7 +596,7 @@ nav.docs-sidebar-nav-v2
 	min-width: 0;
 }
 
-/* Chevrons: muted by default; active folder row keeps parent-path ink on the icon, not link blue. */
+/* Chevrons: muted by default; active folder row icon follows active blue. */
 #pages-nav nav[data-nav-v2] .nav-folder-chevron {
 	color: #a2b1c9;
 }
@@ -568,7 +606,7 @@ nav.docs-sidebar-nav-v2
 	.nav-folder-peer
 	> a.sidebar-link.current
 	.nav-folder-chevron {
-	color: #1d2a3e;
+	color: #0b64dd;
 }
 
 #pages-nav
