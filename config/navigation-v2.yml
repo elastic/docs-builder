@@ -3275,7 +3275,7 @@ nav:
                 title: Reduce storage
               - page: docs-content://solutions/observability/apm/explore-data-in-elasticsearch.md
                 title: Explore data in Elasticsearch
-            - group: "Work with {{apm-server}}"
+            - group: "Work with APM Server"
               page: docs-content://solutions/observability/apm/apm-server/index.md
               children:
               - group: Set up
@@ -3366,7 +3366,7 @@ nav:
               children:
               - page: docs-content://solutions/observability/apm/apm-ui-api.md
                 title: APM UI API
-              - group: "{{apm-server}} API"
+              - group: "APM Server API"
                 page: docs-content://solutions/observability/apm/apm-server/api.md
                 children:
                 - page: docs-content://solutions/observability/apm/apm-server/information-api.md
@@ -3497,7 +3497,7 @@ nav:
             children:
             - page: docs-content://solutions/observability/cloud/ingestion-options.md
               title: Ingestion options
-            - group: "Monitor {{aws}} with Elastic Agent"
+            - group: "Monitor AWS with Elastic Agent"
               page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-elastic-agent.md
               children:
               - page: docs-content://solutions/observability/cloud/monitor-amazon-cloud-compute-ec2.md
@@ -3510,7 +3510,7 @@ nav:
                 title: SQS
             - page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-beats.md
               title: "Monitor AWS with Beats"
-            - group: "Monitor {{aws}} with Amazon Data Firehose"
+            - group: "Monitor AWS with Amazon Data Firehose"
               page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-amazon-data-firehose.md
               children:
               - page: docs-content://solutions/observability/cloud/monitor-virtual-private-cloud-vpc-flow-logs.md
@@ -3985,12 +3985,12 @@ nav:
               title: View detection alert details
             - page: docs-content://solutions/security/detect-and-alert/query-alert-indices.md
               title: Query alert indices
-        - group: "Configure endpoint protection with {{elastic-defend}}"
+        - group: "Configure endpoint protection with Elastic Defend"
           page: docs-content://solutions/security/configure-elastic-defend.md
           children:
           - page: docs-content://solutions/security/configure-elastic-defend/elastic-defend-requirements.md
             title: "Elastic Defend requirements"
-          - group: "Install {{elastic-defend}}"
+          - group: "Install Elastic Defend"
             page: docs-content://solutions/security/configure-elastic-defend/install-elastic-defend.md
             children:
             - page: docs-content://solutions/security/configure-elastic-defend/enable-access-for-macos.md
@@ -4001,7 +4001,7 @@ nav:
               title: Prevent Elastic Agent uninstallation
           - page: docs-content://solutions/security/configure-elastic-defend/elastic-defend-feature-privileges.md
             title: "Elastic Defend feature privileges"
-          - group: "Configure an integration policy for {{elastic-defend}}"
+          - group: "Configure an integration policy for Elastic Defend"
             page: docs-content://solutions/security/configure-elastic-defend/configure-an-integration-policy-for-elastic-defend.md
             children:
             - page: docs-content://solutions/security/configure-elastic-defend/configure-updates-for-protection-artifacts.md
@@ -4020,7 +4020,7 @@ nav:
             title: Configure offline endpoints and air-gapped environments
           - page: docs-content://solutions/security/configure-elastic-defend/uninstall-elastic-agent.md
             title: Uninstall Elastic Agent
-        - group: "Manage {{elastic-defend}}"
+        - group: "Manage Elastic Defend"
           page: docs-content://solutions/security/manage-elastic-defend.md
           children:
           - page: docs-content://solutions/security/manage-elastic-defend/endpoints.md
