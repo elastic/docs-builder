@@ -383,6 +383,82 @@ public class SiteNavigationTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void SiteNavigationV2PageEntriesUseV2OrderForPrevNext()
+	{
+		var fileSystem = new MockFileSystem();
+		var docsContentDir = "/checkouts/current/docs-content";
+
+		// language=yaml
+		var docsetYaml = """
+		                 project: Docs content
+		                 toc:
+		                   - file: index.md
+		                   - file: archive.md
+		                   - file: first.md
+		                   - file: second.md
+		                 """;
+		fileSystem.AddFile($"{docsContentDir}/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/index.md", new MockFileData("# Docs content"));
+		fileSystem.AddFile($"{docsContentDir}/docs/archive.md", new MockFileData("# Documentation archive"));
+		fileSystem.AddFile($"{docsContentDir}/docs/first.md", new MockFileData("# First page"));
+		fileSystem.AddFile($"{docsContentDir}/docs/second.md", new MockFileData("# Second page"));
+
+		// language=yaml
+		var siteNavYaml = """
+		                  toc:
+		                    - toc: docs-content://
+		                      path_prefix: /
+		                  """;
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+
+		// language=yaml
+		var v2NavYaml = """
+		                nav:
+		                  - section: Guides
+		                    url: /
+		                    children:
+		                      - page: docs-content://first.md
+		                        title: First page
+		                      - page: docs-content://second.md
+		                        title: Second page
+		                """;
+		var v2File = NavigationV2File.Deserialize(v2NavYaml);
+
+		var docsContentContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, docsContentDir, output);
+		var docset = DocumentationSetFile.LoadAndResolve(
+			docsContentContext.Collector,
+			fileSystem.FileInfo.New($"{docsContentDir}/docs/docset.yml"),
+			FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts")
+		);
+		var docsContentNav = new DocumentationSetNavigation<IDocumentationFile>(
+			docset,
+			docsContentContext,
+			GenericDocumentationFileFactory.Instance
+		);
+
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, docsContentDir, output);
+		var navigation = new SiteNavigationV2(v2File, siteNavFile, siteContext, [docsContentNav], sitePrefix: "docs");
+		var docsContentRoot = navigation.Nodes[new Uri("docs-content://")];
+		var v1Pages = docsContentRoot.NavigationItems
+			.OfType<ILeafNavigationItem<IDocumentationFile>>()
+			.ToArray();
+		var firstFile = v1Pages.Single(i => i.Model.NavigationTitle == "First page").Model;
+		var secondFile = v1Pages.Single(i => i.Model.NavigationTitle == "Second page").Model;
+
+		var next = ((INavigationTraversable)navigation).GetNext(firstFile);
+		var previous = ((INavigationTraversable)navigation).GetPrevious(secondFile);
+
+		next.Should().NotBeNull();
+		var nextItem = next ?? throw new InvalidOperationException("Expected a V2 next navigation item.");
+		nextItem.NavigationTitle.Should().Be("Second page");
+		nextItem.Url.Should().Be("/docs/second");
+		previous.Should().NotBeNull();
+		var previousItem = previous ?? throw new InvalidOperationException("Expected a V2 previous navigation item.");
+		previousItem.NavigationTitle.Should().Be("First page");
+		previousItem.Url.Should().Be("/docs/first");
+	}
+
+	[Fact]
 	public void SiteNavigationResolvesFilesFromUnseenChildTocs()
 	{
 		var fileSystem = new MockFileSystem();

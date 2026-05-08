@@ -19,10 +19,12 @@ namespace Elastic.Documentation.Navigation.V2;
 /// Sections marked <c>isolated: true</c> do not appear in the top bar and render with a back arrow.
 /// </para>
 /// </summary>
-public class SiteNavigationV2 : SiteNavigation
+public class SiteNavigationV2 : SiteNavigation, INavigationTraversable
 {
 	private readonly Dictionary<string, NavigationSection> _urlToSection = new(StringComparer.OrdinalIgnoreCase);
 	private readonly Dictionary<string, NavigationIsland> _tocRootToIsland = new(StringComparer.Ordinal);
+	private readonly Dictionary<int, INavigationItem> _v2NavigationIndexedByOrder;
+	private readonly Dictionary<INavigationItem, int> _v2NavigationIndexByItem;
 
 	public SiteNavigationV2(
 		NavigationV2File v2File,
@@ -34,6 +36,7 @@ public class SiteNavigationV2 : SiteNavigation
 	{
 		var prefix = sitePrefix ?? string.Empty;
 		V2NavigationItems = BuildV2Items(v2File.Nav, Nodes, this, prefix);
+		(_v2NavigationIndexedByOrder, _v2NavigationIndexByItem) = BuildV2NavigationOrder(V2NavigationItems);
 		RegisterV2PageLookups();
 		Sections = BuildSections(V2NavigationItems);
 		Islands = BuildIslands(Sections);
@@ -66,6 +69,18 @@ public class SiteNavigationV2 : SiteNavigation
 	public NavigationIsland? GetIslandForTocRoot(IRootNavigationItem<INavigationModel, INavigationItem> tocRoot) =>
 		_tocRootToIsland.GetValueOrDefault(tocRoot.Id);
 
+	INavigationItem? INavigationTraversable.GetPrevious(IDocumentationFile current)
+	{
+		var currentNavigation = GetNavigationForFile(current);
+		return GetAdjacent(currentNavigation, direction: -1);
+	}
+
+	INavigationItem? INavigationTraversable.GetNext(IDocumentationFile current)
+	{
+		var currentNavigation = GetNavigationForFile(current);
+		return GetAdjacent(currentNavigation, direction: 1);
+	}
+
 	/// <summary>
 	/// Resolves which section a page belongs to by its URL.
 	/// Returns the first non-isolated section as fallback for unresolved URLs.
@@ -81,6 +96,65 @@ public class SiteNavigationV2 : SiteNavigation
 				return section;
 		}
 		return Sections.FirstOrDefault(s => !s.Isolated);
+	}
+
+	private INavigationItem GetNavigationForFile(IDocumentationFile file) =>
+		NavigationDocumentationFileLookup.TryGetValue(file, out var navigation)
+			? navigation : throw new InvalidOperationException($"Could not find {file.NavigationTitle} in navigation");
+
+	private INavigationItem? GetAdjacent(INavigationItem currentNavigation, int direction)
+	{
+		var order = GetNavigationOrder(currentNavigation, out var index);
+		for (var nextIndex = index + direction; nextIndex >= 0 && nextIndex <= order.Count - 1; nextIndex += direction)
+		{
+			if (order.TryGetValue(nextIndex, out var adjacent) && IsNavigableAdjacent(adjacent, currentNavigation))
+				return adjacent;
+		}
+
+		return null;
+	}
+
+	private IReadOnlyDictionary<int, INavigationItem> GetNavigationOrder(INavigationItem currentNavigation, out int index)
+	{
+		if (_v2NavigationIndexByItem.TryGetValue(currentNavigation, out index))
+			return _v2NavigationIndexedByOrder;
+
+		index = currentNavigation.NavigationIndex;
+		return NavigationIndexedByOrder;
+	}
+
+	private static bool IsNavigableAdjacent(INavigationItem adjacent, INavigationItem current) =>
+		!adjacent.Hidden && !string.IsNullOrEmpty(adjacent.Url) && adjacent.Url != current.Url;
+
+	private static (Dictionary<int, INavigationItem> ByOrder, Dictionary<INavigationItem, int> ByItem) BuildV2NavigationOrder(IReadOnlyList<INavigationItem> items)
+	{
+		var byOrder = new Dictionary<int, INavigationItem>();
+		var byItem = new Dictionary<INavigationItem, int>(ReferenceEqualityComparer.Instance);
+		var index = -1;
+
+		foreach (var item in items)
+			AddItem(item);
+
+		return (byOrder, byItem);
+
+		void AddItem(INavigationItem item)
+		{
+			var currentIndex = ++index;
+			byOrder.Add(currentIndex, item);
+			_ = byItem.TryAdd(item, currentIndex);
+
+			switch (item)
+			{
+				case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationNode:
+					foreach (var child in documentationNode.NavigationItems)
+						AddItem(child);
+					break;
+				case INodeNavigationItem<INavigationModel, INavigationItem> node:
+					foreach (var child in node.NavigationItems)
+						AddItem(child);
+					break;
+			}
+		}
 	}
 
 	private static IReadOnlyList<NavigationSection> BuildSections(IReadOnlyList<INavigationItem> items) =>
