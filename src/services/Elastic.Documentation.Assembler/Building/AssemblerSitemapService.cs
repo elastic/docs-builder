@@ -27,19 +27,8 @@ public class AssemblerSitemapService(
 	public async Task<bool> GenerateSitemapAsync(
 		IDiagnosticsCollector collector,
 		ScopedFileSystem fileSystem,
-		string? endpoint = null,
+		ElasticsearchIndexOptions es,
 		string? environment = null,
-		string? apiKey = null,
-		string? username = null,
-		string? password = null,
-		bool? debugMode = null,
-		string? proxyAddress = null,
-		string? proxyPassword = null,
-		string? proxyUsername = null,
-		bool? disableSslVerification = null,
-		string? certificateFingerprint = null,
-		string? certificatePath = null,
-		bool? certificateNotRoot = null,
 		Cancel ctx = default
 	)
 	{
@@ -54,22 +43,7 @@ public class AssemblerSitemapService(
 		);
 
 		var cfg = configurationContext.Endpoints.Elasticsearch;
-		var options = new ElasticsearchIndexOptions
-		{
-			Endpoint = endpoint,
-			ApiKey = apiKey,
-			Username = username,
-			Password = password,
-			DebugMode = debugMode,
-			ProxyAddress = proxyAddress,
-			ProxyPassword = proxyPassword,
-			ProxyUsername = proxyUsername,
-			DisableSslVerification = disableSslVerification,
-			CertificateFingerprint = certificateFingerprint,
-			CertificatePath = certificatePath,
-			CertificateNotRoot = certificateNotRoot
-		};
-		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, options, collector, fileSystem, ctx);
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
 
 		if (collector.Errors > 0)
 			return false;

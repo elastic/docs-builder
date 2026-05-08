@@ -64,15 +64,8 @@ Through various means $$$including-this-inline-syntax$$$
          },
          "url_path_prefix": "",
          "links": {
-           "cli/changelog/add.md": {},
-           "cli/changelog/bundle-amend.md": {},
-           "cli/changelog/bundle.md": {},
-           "cli/changelog/evaluate-pr.md": {},
-           "cli/changelog/gh-release.md": {},
            "cli/changelog/index.md": {},
-           "cli/changelog/init.md": {},
-           "cli/changelog/remove.md": {},
-           "cli/changelog/render.md": {},
+           "cli/installation.md": {},
            "file.md": {},
            "index.md": {
              "anchors": [
@@ -102,42 +95,42 @@ Through various means $$$including-this-inline-syntax$$$
            "migration/freeze/index.md": {
              "to": "index.md"
            },
-           "cli/mcp.md": {
-             "to": "index.md"
-           },
-           "cli/release/changelog-add.md": {
-             "to": "cli/changelog/add.md"
-           },
-           "cli/release/changelog-evaluate-artifact.md": {
-             "to": "index.md"
-           },
-           "cli/release/changelog-evaluate-pr.md": {
-             "to": "cli/changelog/evaluate-pr.md"
-           },
-           "cli/release/changelog-bundle.md": {
-             "to": "cli/changelog/bundle.md"
-           },
-           "cli/release/changelog-bundle-amend.md": {
-             "to": "cli/changelog/bundle-amend.md"
-           },
-           "cli/release/changelog-gh-release.md": {
-             "to": "cli/changelog/gh-release.md"
-           },
-           "cli/release/changelog-init.md": {
-             "to": "cli/changelog/init.md"
-           },
-           "cli/release/changelog-prepare-artifact.md": {
-             "to": "index.md"
-           },
-           "cli/release/changelog-remove.md": {
-             "to": "cli/changelog/remove.md"
-           },
-           "cli/release/changelog-render.md": {
-             "to": "cli/changelog/render.md"
-           },
-           "cli/release/index.md": {
-             "to": "cli/changelog/index.md"
-           },
+           "cli/index.md": { "to": "cli/installation.md" },
+           "cli/assembler/index.md": { "to": "cli/installation.md" },
+           "cli/changelog/add.md": { "to": "cli/changelog/index.md" },
+           "cli/changelog/bundle-amend.md": { "to": "cli/changelog/index.md" },
+           "cli/changelog/bundle.md": { "to": "cli/changelog/index.md" },
+           "cli/changelog/evaluate-pr.md": { "to": "cli/changelog/index.md" },
+           "cli/changelog/gh-release.md": { "to": "cli/changelog/index.md" },
+           "cli/changelog/init.md": { "to": "cli/changelog/index.md" },
+           "cli/changelog/remove.md": { "to": "cli/changelog/index.md" },
+           "cli/changelog/render.md": { "to": "cli/changelog/index.md" },
+           "cli/assembler/assemble.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-bloom-filter-create.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-bloom-filter-lookup.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-build.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-clone.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-config-init.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-content-source-match.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-content-source-validate.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-deploy-apply.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-deploy-plan.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-deploy-update-redirects.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-index.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-navigation-validate-link-reference.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-navigation-validate.md": { "to": "cli/installation.md" },
+           "cli/assembler/assembler-serve.md": { "to": "cli/installation.md" },
+           "cli/docset/index.md": { "to": "cli/installation.md" },
+           "cli/docset/build.md": { "to": "cli/installation.md" },
+           "cli/docset/diff-validate.md": { "to": "cli/installation.md" },
+           "cli/docset/format.md": { "to": "cli/installation.md" },
+           "cli/docset/index-command.md": { "to": "cli/installation.md" },
+           "cli/docset/mv.md": { "to": "cli/installation.md" },
+           "cli/docset/serve.md": { "to": "cli/installation.md" },
+           "cli/links/index.md": { "to": "cli/installation.md" },
+           "cli/links/inbound-links-validate.md": { "to": "cli/installation.md" },
+           "cli/links/inbound-links-validate-all.md": { "to": "cli/installation.md" },
+           "cli/links/inbound-links-validate-link-reference.md": { "to": "cli/installation.md" },
            "testing/redirects/4th-page.md": {
              "to": "testing/redirects/5th-page.md"
            },

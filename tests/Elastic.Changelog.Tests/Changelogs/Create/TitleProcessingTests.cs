@@ -197,6 +197,63 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 	}
 
 	[Fact]
+	public async Task CreateChangelog_WithStripTitlePrefix_StripsKibanaStyleTeamHyphenSeparator()
+	{
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "[Cases] - Enable cases numerical id service",
+			Labels = ["type:feature"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/kibana/pull/238555",
+				null,
+				null,
+				A<CancellationToken>._))
+			.Returns(prInfo);
+
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/238555"],
+			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			StripTitlePrefix = true
+		};
+
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		files.Should().HaveCount(1);
+
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		yamlContent.Should().Contain("title: Enable cases numerical id service");
+		yamlContent.Should().NotContain("title: '- Enable");
+	}
+
+	[Fact]
 	public async Task CreateChangelog_WithExplicitTitle_OverridesPrTitle()
 	{
 		// Arrange

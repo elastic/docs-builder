@@ -89,9 +89,9 @@ function linkPathMatchesCurrentPage(anchor: HTMLAnchorElement) {
 /**
  * Primary click on a folder row link:
  * - When the current page matches the folder row href, toggle expand/collapse only (preventDefault).
- * - When the folder is already expanded but the URL does not match (typical for placeholder
- *   groups like `/_placeholder/...`), toggle closed so a second click collapses the section.
- * - Otherwise open the folder and allow navigation to the row href (e.g. section index).
+ * - Otherwise, ensure the folder is expanded and allow navigation to the row href (e.g. section index).
+ *   This keeps re-activation single-click after a manual collapse; collapsing comes on the next click
+ *   once the folder row becomes current.
  * Skips modified clicks (new tab, etc.). Collapsed folder ids are stored for expandToCurrentPage.
  */
 function ensureNavV2FolderLinkToggle() {
@@ -145,18 +145,11 @@ function ensureNavV2FolderLinkToggle() {
                 return
             }
 
-            if (cb.checked) {
-                cb.checked = false
+            if (!cb.checked) {
+                cb.checked = true
                 cb.dispatchEvent(new Event('change', { bubbles: true }))
                 persistFolderCheckboxCollapsedState(cb)
-                e.preventDefault()
-                e.stopPropagation()
-                return
             }
-
-            cb.checked = true
-            cb.dispatchEvent(new Event('change', { bubbles: true }))
-            persistFolderCheckboxCollapsedState(cb)
         },
         true
     )
@@ -406,12 +399,13 @@ function initNavV2FolderLayoutWarmup(nav: HTMLElement) {
 
 function clearActiveSubtreeHighlight(nav: HTMLElement) {
     nav.querySelectorAll(
-        '.nav-v2-active-subtree, .nav-v2-active-leaf, .nav-v2-active-ancestor'
+        '.nav-v2-active-subtree, .nav-v2-active-leaf, .nav-v2-active-ancestor, .nav-v2-active-parent'
     ).forEach((el) => {
         el.classList.remove(
             'nav-v2-active-subtree',
             'nav-v2-active-leaf',
-            'nav-v2-active-ancestor'
+            'nav-v2-active-ancestor',
+            'nav-v2-active-parent'
         )
     })
 }
@@ -495,10 +489,11 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
     }
 
     /*
-     * Walk DOM ancestors: folder rows (li.group-navigation) whose own link is not .current
-     * get nav-v2-active-ancestor (CSS: semibold + #1D2A3E on clickable rows only).
+     * Keep ancestor-state styling across the full chain, but mark only the nearest parent
+     * with nav-v2-active-parent so background treatment can stay scoped to one level.
      */
     let walk: Element | null = hostLi
+    let markedImmediateParent = false
     while (walk && walk !== nav) {
         if (walk.matches('li.group-navigation')) {
             const ancestorRow = walk.querySelector<HTMLAnchorElement>(
@@ -506,6 +501,10 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
             )
             if (ancestorRow && ancestorRow !== current) {
                 walk.classList.add('nav-v2-active-ancestor')
+                if (!markedImmediateParent) {
+                    walk.classList.add('nav-v2-active-parent')
+                    markedImmediateParent = true
+                }
             }
         }
 
