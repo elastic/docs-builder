@@ -33,9 +33,8 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 	{
 		//Skipping on CI since this relies on checking out private repositories
 		Assert.SkipWhen(!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CI")), "Skipping in CI");
-		string[] args = [];
 		var builder = Host.CreateApplicationBuilder()
-			.AddDocumentationServiceDefaults(ref args, (s, p) =>
+			.AddDocumentationServiceDefaults((s, p) =>
 			{
 				_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 			})

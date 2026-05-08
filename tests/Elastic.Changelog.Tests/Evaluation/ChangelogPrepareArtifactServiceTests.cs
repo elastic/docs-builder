@@ -2,11 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text;
 using System.Text.Json;
 using Actions.Core.Services;
 using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
@@ -240,6 +242,59 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 
 		var metadata = ReadMetadata();
 		metadata.Status.Should().Be("error");
+	}
+
+	[Fact]
+	public async Task PrepareArtifact_WithBomPrefixedYaml_NormalizesOutput()
+	{
+		// Arrange
+		await SetupConfig();
+		FileSystem.Directory.CreateDirectory(StagingDir);
+
+		// Create YAML with BOM prefix
+		const string yamlContent = """
+			title: Test changelog
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.1.0
+			    lifecycle: ga
+			""";
+
+		var contentWithBom = ChangelogUtf8Normalization.Utf8BomChar + yamlContent;
+		var stagingYaml = Path.Join(StagingDir, "changelog.yaml");
+		await FileSystem.File.WriteAllTextAsync(stagingYaml, contentWithBom, Encoding.UTF8, CancellationToken.None);
+
+		// Verify staging file has BOM
+		var stagingBytes = await FileSystem.File.ReadAllBytesAsync(stagingYaml, CancellationToken.None);
+		ChangelogUtf8Normalization.HasUtf8Bom(stagingBytes).Should().BeTrue("staging file should contain BOM");
+
+		var service = CreateService();
+		var args = DefaultArgs() with
+		{
+			EvaluateStatus = "proceed",
+			GenerateOutcome = "success"
+		};
+
+		// Act
+		await service.PrepareArtifact(Collector, args, CancellationToken.None);
+
+		// Assert
+		var outputYaml = Path.Join(OutputDir, "changelog.yaml");
+		FileSystem.File.Exists(outputYaml).Should().BeTrue("output YAML file should exist");
+
+		// Verify output file does not contain BOM
+		var outputBytes = await FileSystem.File.ReadAllBytesAsync(outputYaml, CancellationToken.None);
+		ChangelogUtf8Normalization.HasUtf8Bom(outputBytes).Should().BeFalse("output file should not contain UTF-8 BOM");
+
+		// Verify content is preserved
+		var outputContent = await FileSystem.File.ReadAllTextAsync(outputYaml, CancellationToken.None);
+		outputContent.Should().Contain("Test changelog");
+		outputContent.Should().Contain("type: feature");
+
+		var metadata = ReadMetadata();
+		metadata.Status.Should().Be("success");
+		metadata.ChangelogFilename.Should().Be("changelog.yaml");
 	}
 
 	[Theory]

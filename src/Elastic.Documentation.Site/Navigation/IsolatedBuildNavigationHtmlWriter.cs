@@ -74,7 +74,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			Htmx = htmx,
 			BuildType = context.BuildType,
 			// Isolated serve (e.g. port 3000): reuse V2 sidebar markup/CSS/JS for local styling; tree is still docset TOC only.
-			IsNavV2 = context.BuildType == BuildType.Isolated
+			IsNavV2 = context.BuildType == BuildType.Isolated,
+			Branding = context.Configuration.Branding
 		};
 	}
 

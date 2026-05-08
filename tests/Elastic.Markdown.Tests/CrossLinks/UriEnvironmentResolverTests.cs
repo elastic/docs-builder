@@ -4,6 +4,9 @@
 
 using System.Collections.Frozen;
 using AwesomeAssertions;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 
 namespace Elastic.Markdown.Tests.CrossLinks;
@@ -221,5 +224,82 @@ public class CodexCrossRepoRedirectTests
 		resolvedUri.Should().NotBeNull();
 		resolvedUri.IsAbsoluteUri.Should().BeFalse();
 		resolvedUri.ToString().Should().Be("/r/kibana/get-started");
+	}
+}
+
+public class CrossLinkResolverFallbackUrlTests
+{
+	private static FetchedCrossLinks BuildFallbackOnlyCrossLinks(string repository, string registryUrl, DocSetRegistry registry)
+	{
+		var emptyRepositoryLinks = new RepositoryLinks
+		{
+			Links = [],
+			Origin = new GitCheckoutInformation
+			{
+				Branch = "main",
+				RepositoryName = repository,
+				Remote = "origin",
+				Ref = "refs/heads/main"
+			},
+			UrlPathPrefix = "",
+			CrossLinks = []
+		};
+		return new FetchedCrossLinks
+		{
+			DeclaredRepositories = [repository],
+			LinkReferences = new Dictionary<string, RepositoryLinks> { [repository] = emptyRepositoryLinks }.ToFrozenDictionary(),
+			LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
+			RegistryUrlsByRepository = new Dictionary<string, string> { [repository] = registryUrl }.ToFrozenDictionary(),
+			RegistryByRepository = new Dictionary<string, DocSetRegistry> { [repository] = registry }.ToFrozenDictionary()
+		};
+	}
+
+	[Fact]
+	public void InternalRegistry_NoIndexEntry_UsesCodexInternalPath()
+	{
+		var crossLinks = BuildFallbackOnlyCrossLinks(
+			"platform-observability-team",
+			"https://github.com/elastic/codex-link-index",
+			DocSetRegistry.Internal
+		);
+
+		string? emittedError = null;
+		var resolver = new IsolatedBuildEnvironmentUriResolver();
+		var success = CrossLinkResolver.TryResolve(
+			s => emittedError = s,
+			crossLinks,
+			resolver,
+			new Uri("platform-observability-team://index.md", UriKind.Absolute),
+			out _
+		);
+
+		success.Should().BeFalse();
+		emittedError.Should().NotBeNull();
+		emittedError.Should().Contain("https://github.com/elastic/codex-link-index/blob/main/internal/elastic/platform-observability-team/links.json");
+		emittedError.Should().NotContain("/main/links.json");
+	}
+
+	[Fact]
+	public void PublicRegistry_NoIndexEntry_UsesPublicS3Path()
+	{
+		var crossLinks = BuildFallbackOnlyCrossLinks(
+			"docs-content",
+			"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com",
+			DocSetRegistry.Public
+		);
+
+		string? emittedError = null;
+		var resolver = new IsolatedBuildEnvironmentUriResolver();
+		var success = CrossLinkResolver.TryResolve(
+			s => emittedError = s,
+			crossLinks,
+			resolver,
+			new Uri("docs-content://index.md", UriKind.Absolute),
+			out _
+		);
+
+		success.Should().BeFalse();
+		emittedError.Should().NotBeNull();
+		emittedError.Should().Contain("https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/docs-content/main/links.json");
 	}
 }

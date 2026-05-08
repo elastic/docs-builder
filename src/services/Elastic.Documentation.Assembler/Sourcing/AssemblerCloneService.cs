@@ -19,18 +19,18 @@ public class AssemblerCloneService(
 	ICoreService githubActionsService
 ) : IService
 {
-	public async Task<bool> CloneAll(IDiagnosticsCollector collector, bool? strict, string? environment, bool? fetchLatest, bool? assumeCloned, Cancel ctx)
+	public async Task<bool> CloneAll(IDiagnosticsCollector collector, AssemblerCloneOptions options, Cancel ctx)
 	{
-		strict ??= false;
+		var strict = options.Strict ?? false;
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
-		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
+		var environment = options.Environment ?? (!string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev");
 
 		var fs = FileSystemFactory.RealRead;
 		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fs, fs, null, null);
 		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
 
-		_ = await cloner.CloneAll(fetchLatest ?? false, assumeCloned ?? false, ctx);
+		_ = await cloner.CloneAll(options.FetchLatest ?? false, options.AssumeCloned ?? false, ctx);
 
-		return strict.Value ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
+		return strict ? collector.Errors + collector.Warnings == 0 : collector.Errors == 0;
 	}
 }

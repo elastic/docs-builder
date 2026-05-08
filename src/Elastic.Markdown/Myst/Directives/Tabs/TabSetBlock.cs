@@ -47,7 +47,7 @@ public class TabItemBlock(DirectiveBlockParser parser, ParserContext context)
 			this.EmitError("{tab-item} requires an argument to name the tab.");
 
 		Title = (Arguments ?? "{undefined}").ReplaceSubstitutions(context);
-		Index = Parent!.IndexOf(this);
+		Index = Parent!.OfType<TabItemBlock>().ToList().IndexOf(this);
 
 		var tabSet = Parent as TabSetBlock;
 
