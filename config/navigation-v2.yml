@@ -4285,13 +4285,23 @@ nav:
 
   - section: Products
     url: /products/
+    dropdown: true
     children:
     - page: docs-content://products/index.md
       title: Product hubs
-    - page: docs-content://products/kibana/v9.md
-      title: Kibana
-    - page: docs-content://products/elasticsearch/v9.md
-      title: Elasticsearch
+    - label: Stack products
+      children:
+      - page: docs-content://products/elasticsearch/v9.md
+        title: Elasticsearch
+      - page: docs-content://products/kibana/v9.md
+        title: Kibana
+      - title: Logstash (soon)
+      - title: Beats (soon)
+    - label: Deployment runbooks
+      children:
+      - title: Elastic Cloud Hosted (soon)
+      - title: Elastic Cloud Serverless (soon)
+      - title: Self-managed (soon)
 
   - section: APIs
     url: https://www.elastic.co/docs/api
