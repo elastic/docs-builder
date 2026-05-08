@@ -29,16 +29,40 @@ nav:
       - group: Distributed architecture
         page: docs-content://deploy-manage/distributed-architecture.md
         children:
-        - page: docs-content://deploy-manage/distributed-architecture/clusters-nodes-shards.md
-          title: Clusters, nodes, and shards
+        - group: Clusters, nodes, and shards
+          page: docs-content://deploy-manage/distributed-architecture/clusters-nodes-shards.md
+          children:
+          - page: docs-content://deploy-manage/distributed-architecture/clusters-nodes-shards/node-roles.md
+            title: Node roles
         - page: docs-content://deploy-manage/distributed-architecture/reading-and-writing-documents.md
           title: Reading and writing documents
-        - page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery.md
-          title: Shard allocation, relocation, and recovery
+        - group: Shard allocation, relocation, and recovery
+          page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery.md
+          children:
+          - page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/shard-allocation-awareness.md
+            title: Shard allocation awareness
+          - group: Index-level shard allocation filtering
+            page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/index-level-shard-allocation.md
+            children:
+            - page: docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/delaying-allocation-when-node-leaves.md
+              title: Delaying allocation when a node leaves
         - page: docs-content://deploy-manage/distributed-architecture/shard-request-cache.md
           title: The shard request cache
-        - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation.md
-          title: Discovery and cluster formation
+        - group: Discovery and cluster formation
+          page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation.md
+          children:
+          - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/discovery-hosts-providers.md
+            title: Discovery hosts providers
+          - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/modules-discovery-quorums.md
+            title: Quorum-based decision making
+          - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/modules-discovery-voting.md
+            title: Voting configurations
+          - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/modules-discovery-bootstrap-cluster.md
+            title: Bootstrapping a cluster
+          - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/cluster-state-overview.md
+            title: Cluster state
+          - page: docs-content://deploy-manage/distributed-architecture/discovery-cluster-formation/cluster-fault-detection.md
+            title: Cluster fault detection
         - page: docs-content://deploy-manage/distributed-architecture/kibana-tasks-management.md
           title: Kibana task management
       - group: Plan your install
@@ -60,10 +84,50 @@ nav:
         - group: Production guidance
           page: docs-content://deploy-manage/production-guidance.md
           children:
-          - page: docs-content://deploy-manage/production-guidance/elasticsearch-in-production-environments.md
-            title: Run Elasticsearch in production
-          - page: docs-content://deploy-manage/production-guidance/kibana-in-production-environments.md
-            title: Run Kibana in production
+          - group: Run Elasticsearch in production
+            page: docs-content://deploy-manage/production-guidance/elasticsearch-in-production-environments.md
+            children:
+            - group: Design for resilience
+              page: docs-content://deploy-manage/production-guidance/availability-and-resilience.md
+              children:
+              - page: docs-content://deploy-manage/production-guidance/availability-and-resilience/resilience-in-small-clusters.md
+                title: Resilience in small clusters
+              - page: docs-content://deploy-manage/production-guidance/availability-and-resilience/resilience-in-larger-clusters.md
+                title: Resilience in larger clusters
+              - page: docs-content://deploy-manage/production-guidance/availability-and-resilience/resilience-in-ech.md
+                title: Resilience in ECH and ECE
+            - page: docs-content://deploy-manage/production-guidance/scaling-considerations.md
+              title: Scaling considerations
+            - group: Performance optimizations
+              page: docs-content://deploy-manage/production-guidance/optimize-performance.md
+              children:
+              - page: docs-content://deploy-manage/production-guidance/general-recommendations.md
+                title: General recommendations
+              - page: docs-content://deploy-manage/production-guidance/optimize-performance/indexing-speed.md
+                title: Tune for indexing speed
+              - page: docs-content://deploy-manage/production-guidance/optimize-performance/search-speed.md
+                title: Tune for search speed
+              - page: docs-content://deploy-manage/production-guidance/optimize-performance/approximate-knn-search.md
+                title: Tune approximate kNN search
+              - page: docs-content://deploy-manage/production-guidance/optimize-performance/disk-usage.md
+                title: Tune for disk usage
+              - page: docs-content://deploy-manage/production-guidance/optimize-performance/size-shards.md
+                title: Size your shards
+          - group: Run Kibana in production
+            page: docs-content://deploy-manage/production-guidance/kibana-in-production-environments.md
+            children:
+            - page: docs-content://deploy-manage/production-guidance/kibana-load-balance-traffic.md
+              title: High availability and load balancing
+            - page: docs-content://deploy-manage/production-guidance/kibana-configure-memory.md
+              title: Configure memory
+            - page: docs-content://deploy-manage/production-guidance/kibana-task-manager-scaling-considerations.md
+              title: Manage background tasks
+            - page: docs-content://deploy-manage/production-guidance/kibana-traffic-scaling-considerations.md
+              title: Traffic scaling considerations
+            - page: docs-content://deploy-manage/production-guidance/kibana-alerting-production-considerations.md
+              title: Optimize alerting performance
+            - page: docs-content://deploy-manage/production-guidance/kibana-reporting-production-considerations.md
+              title: Reporting production considerations
       - group: Install and deploy Elasticsearch
         page: docs-content://deploy-manage/deploy.md
         children:
@@ -694,26 +758,561 @@ nav:
         - label: ───
         - group: Security and encryption
           page: docs-content://deploy-manage/security.md
+          children:
+          - page: docs-content://deploy-manage/security/secure-hosting-environment.md
+            children:
+            - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation.md
+              title: "Elastic Cloud Enterprise"
+              children:
+              - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation/manage-security-certificates.md
+              - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation/allow-x509-certificates-signed-with-sha-1.md
+              - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation/configure-tls-version.md
+              - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation/migrate-ece-on-podman-hosts-to-selinux-enforce.md
+            - page: docs-content://deploy-manage/security/secure-your-eck-installation.md
+              title: "Elastic Cloud on Kubernetes"
+          - page: docs-content://deploy-manage/security/secure-your-cluster-deployment.md
+            children:
+            - page: docs-content://deploy-manage/security/self-setup.md
+              title: "Self-managed security setup"
+              children:
+              - page: docs-content://deploy-manage/security/self-auto-setup.md
+                title: "Automatic security setup"
+              - page: docs-content://deploy-manage/security/set-up-minimal-security.md
+                title: "Minimal security setup"
+              - page: docs-content://deploy-manage/security/set-up-basic-security.md
+                title: "Set up transport TLS"
+              - page: docs-content://deploy-manage/security/set-up-basic-security-plus-https.md
+                title: "Set up HTTPS"
+              - page: docs-content://deploy-manage/security/using-kibana-with-security.md
+            - page: docs-content://deploy-manage/security/secure-cluster-communications.md
+              title: "Manage TLS encryption"
+              children:
+              - page: docs-content://deploy-manage/security/self-tls.md
+                title: "Self-managed"
+                children:
+                - page: docs-content://deploy-manage/security/updating-certificates.md
+                  title: "Update TLS certificates"
+                  children:
+                  - page: docs-content://deploy-manage/security/same-ca.md
+                    title: "With the same CA"
+                  - page: docs-content://deploy-manage/security/different-ca.md
+                    title: "With a different CA"
+                - page: docs-content://deploy-manage/security/kibana-es-mutual-tls.md
+                  title: "Mutual authentication"
+                - page: docs-content://deploy-manage/security/supported-ssltls-versions-by-jdk-version.md
+                - page: docs-content://deploy-manage/security/enabling-cipher-suites-for-stronger-encryption.md
+              - page: docs-content://deploy-manage/security/eck-tls.md
+                title: "ECK"
+                children:
+                - page: docs-content://deploy-manage/security/k8s-https-settings.md
+                - page: docs-content://deploy-manage/security/k8s-transport-settings.md
+              - page: docs-content://deploy-manage/security/external-ca-transport.md
+                title: "External CA for TLS"
+            - page: docs-content://deploy-manage/security/network-security.md
+              title: "Network security"
+              children:
+              - page: docs-content://deploy-manage/security/network-security-policies.md
+                title: "How network security policies work in Cloud"
+              - page: docs-content://deploy-manage/security/ece-filter-rules.md
+                title: "How IP filtering rules work in ECE"
+              - page: docs-content://deploy-manage/security/ip-filtering.md
+                title: "Add IP filters"
+                children:
+                - page: docs-content://deploy-manage/security/ip-filtering-cloud.md
+                  title: "In ECH or Serverless"
+                - page: docs-content://deploy-manage/security/ip-filtering-ece.md
+                  title: "In ECE"
+                - page: docs-content://deploy-manage/security/ip-filtering-basic.md
+                  title: "In ECK and Self Managed"
+              - page: docs-content://deploy-manage/security/remote-cluster-filtering.md
+                title: "Remote cluster filters"
+              - page: docs-content://deploy-manage/security/private-connectivity.md
+                children:
+                - page: docs-content://deploy-manage/security/private-connectivity-aws.md
+                  title: "AWS PrivateLink"
+                - page: docs-content://deploy-manage/security/private-connectivity-azure.md
+                  title: "Azure Private Link"
+                - page: docs-content://deploy-manage/security/private-connectivity-gcp.md
+                  title: "GCP Private Service Connect"
+                - page: docs-content://deploy-manage/security/claim-private-connection-api.md
+              - page: docs-content://deploy-manage/security/network-security-api.md
+                title: "Through the API"
+              - page: docs-content://deploy-manage/security/k8s-network-policies.md
+            - page: docs-content://deploy-manage/security/elastic-cloud-static-ips.md
+            - page: docs-content://deploy-manage/security/kibana-session-management.md
+            - page: docs-content://deploy-manage/security/data-security.md
+              children:
+              - page: docs-content://deploy-manage/security/encrypt-deployment-with-customer-managed-encryption-key.md
+            - page: docs-content://deploy-manage/security/secure-settings.md
+              children:
+              - page: docs-content://deploy-manage/security/k8s-secure-settings.md
+            - page: docs-content://deploy-manage/security/secure-saved-objects.md
+            - page: docs-content://deploy-manage/security/logging-configuration/security-event-audit-logging.md
+              children:
+              - page: docs-content://deploy-manage/security/logging-configuration/enabling-audit-logs.md
+              - page: docs-content://deploy-manage/security/logging-configuration/configuring-audit-logs.md
+                children:
+                - page: docs-content://deploy-manage/security/logging-configuration/logfile-audit-events-ignore-policies.md
+                  title: "Elasticsearch audit events ignore policies"
+                - page: docs-content://deploy-manage/security/logging-configuration/logfile-audit-output.md
+                  title: "Elasticsearch logfile output"
+              - page: docs-content://deploy-manage/security/logging-configuration/auditing-search-queries.md
+              - page: docs-content://deploy-manage/security/logging-configuration/correlating-kibana-elasticsearch-audit-logs.md
+                title: "Correlate audit events"
+          - page: docs-content://deploy-manage/security/secure-clients-integrations.md
+          - page: docs-content://deploy-manage/security/httprest-clients-security.md
+          - page: docs-content://deploy-manage/security/limitations.md
+            title: "Limitations"
+          - page: docs-content://deploy-manage/security/fips.md
+            children:
+            - page: docs-content://deploy-manage/security/fips-es.md
+            - page: docs-content://deploy-manage/security/fips-kib.md
+            - page: docs-content://deploy-manage/security/fips-ingest.md
         - group: Authentication and authorization
           page: docs-content://deploy-manage/users-roles.md
+          children:
+          - page: docs-content://deploy-manage/users-roles/cloud-organization.md
+            title: "Cloud organization"
+            children:
+            - page: docs-content://deploy-manage/users-roles/cloud-organization/manage-users.md
+            - page: docs-content://deploy-manage/users-roles/cloud-organization/user-roles.md
+            - page: docs-content://deploy-manage/users-roles/cloud-organization/configure-saml-authentication.md
+              title: "Configure SAML SSO"
+              children:
+              - page: docs-content://deploy-manage/users-roles/cloud-organization/register-elastic-cloud-saml-in-okta.md
+                title: "Okta"
+              - page: docs-content://deploy-manage/users-roles/cloud-organization/register-elastic-cloud-saml-in-microsoft-entra-id.md
+                title: "Microsoft Entra ID"
+          - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator.md
+            title: "ECE orchestrator"
+            children:
+            - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/manage-system-passwords.md
+            - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/manage-users-roles.md
+              children:
+              - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/native-user-authentication.md
+              - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/active-directory.md
+              - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/ldap.md
+              - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/saml.md
+            - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/configure-sso-for-deployments.md
+          - page: docs-content://deploy-manage/users-roles/serverless-custom-roles.md
+          - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth.md
+            title: "Cluster or deployment"
+            children:
+            - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/quickstart.md
+              title: "Quickstart"
+            - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/user-authentication.md
+              children:
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/authentication-realms.md
+                children:
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/realm-chains.md
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/security-domains.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/internal-authentication.md
+                children:
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/native.md
+                  title: "Native"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/file-based.md
+                  title: "File-based"
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/external-authentication.md
+                children:
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/active-directory.md
+                  title: "Active Directory"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/jwt.md
+                  title: "JWT"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/kerberos.md
+                  title: "Kerberos"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/ldap.md
+                  title: "LDAP"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/openid-connect.md
+                  title: "OpenID Connect"
+                  children:
+                  - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/oidc-examples.md
+                    title: "With Azure, Google, or Okta"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/saml.md
+                  title: "SAML"
+                  children:
+                  - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/saml-entra.md
+                    title: "With Microsoft Entra ID"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/pki.md
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/custom.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/built-in-users.md
+                title: "Built-in users"
+                children:
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/built-in-sm.md
+                  title: "Change passwords"
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/orchestrator-managed-users-overview.md
+                title: "Orchestrator-managed users"
+                children:
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/manage-elastic-user-cloud.md
+                  title: "ECH and ECE"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/managed-credentials-eck.md
+                  title: "ECK managed credentials"
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/kibana-authentication.md
+                title: "Kibana authentication"
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/access-agreement.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/anonymous-access.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/token-based-authentication-services.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/service-accounts.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/internal-users.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/operator-privileges.md
+                children:
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/configure-operator-privileges.md
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/operator-only-functionality.md
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/operator-privileges-for-snapshot-restore.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/user-profiles.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/looking-up-users-without-authentication.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/controlling-user-cache.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/manage-authentication-for-multiple-clusters.md
+            - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/user-roles.md
+              children:
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/defining-roles.md
+                children:
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/role-structure.md
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/granting-privileges-for-data-streams-aliases.md
+                  title: "For data streams and aliases"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/kibana-role-management.md
+                  title: "Using Kibana"
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/role-restriction.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/kibana-privileges.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/mapping-users-groups-to-roles.md
+                title: "Map users and groups to roles"
+                children:
+                - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/role-mapping-resources.md
+                  title: "Role mapping properties"
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/authorization-delegation.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/authorization-plugins.md
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/controlling-access-at-document-field-level.md
+                title: "Control access at the document and field level"
+              - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/submitting-requests-on-behalf-of-other-users.md
+                title: "Submit requests on behalf of other users"
         - group: API keys
           page: docs-content://deploy-manage/api-keys.md
+          children:
+          - page: docs-content://deploy-manage/api-keys/elasticsearch-api-keys.md
+          - page: docs-content://deploy-manage/api-keys/serverless-project-api-keys.md
+          - page: docs-content://deploy-manage/api-keys/elastic-cloud-api-keys.md
+          - page: docs-content://deploy-manage/api-keys/elastic-cloud-enterprise-api-keys.md
         - group: Spaces
           page: docs-content://deploy-manage/manage-spaces.md
         - group: Monitoring
           page: docs-content://deploy-manage/monitor.md
+          children:
+          - page: docs-content://deploy-manage/monitor/autoops.md
+            children:
+            - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-how-to-access.md
+              title: "For Elastic Cloud Hosted"
+            - page: docs-content://deploy-manage/monitor/autoops/autoops-for-serverless.md
+              title: "For Elastic Cloud Serverless"
+              children:
+              - page: docs-content://deploy-manage/monitor/autoops/access-autoops-for-serverless.md
+                title: "Access AutoOps in your project"
+              - page: docs-content://deploy-manage/monitor/autoops/search-tier-view-autoops-serverless.md
+                title: "Search Tier view"
+              - page: docs-content://deploy-manage/monitor/autoops/indexing-tier-view-autoops-serverless.md
+                title: "Indexing Tier view"
+              - page: docs-content://deploy-manage/monitor/autoops/search-ai-lake-view-autoops-serverless.md
+                title: "Search AI Lake view"
+            - page: docs-content://deploy-manage/monitor/autoops/cc-autoops-as-cloud-connected.md
+              title: "For ECE, ECK, and self-managed clusters"
+              children:
+              - page: docs-content://deploy-manage/monitor/autoops/cc-connect-self-managed-to-autoops.md
+                title: "Connect your cluster"
+              - page: docs-content://deploy-manage/monitor/autoops/cc-connect-local-dev-to-autoops.md
+                title: "Connect your local development cluster"
+              - page: docs-content://deploy-manage/monitor/autoops/autoops-sm-custom-certification.md
+                title: "Configure Elastic agent with custom certificate"
+              - page: docs-content://deploy-manage/monitor/autoops/autoops-disable-metrics-collection.md
+                title: "Disable certain types of data collection"
+              - page: docs-content://deploy-manage/monitor/autoops/cc-manage-users.md
+                title: "Manage connected cluster users"
+              - page: docs-content://deploy-manage/monitor/autoops/cc-cloud-connect-autoops-troubleshooting.md
+                title: "Troubleshooting"
+                children:
+                - page: docs-content://deploy-manage/monitor/autoops/autoops-connectivity-check.md
+                  title: "Run the Connectivity Check"
+                - page: docs-content://deploy-manage/monitor/autoops/autoops-sm-troubleshoot-firewalls.md
+                  title: "Firewalls blocking Elastic Agent"
+                - page: docs-content://deploy-manage/monitor/autoops/autoops-sm-troubleshoot-eck-no-clusters.md
+                  title: "Connected clusters not appearing with ECK"
+            - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-regions.md
+              title: "Regions"
+            - page: docs-content://deploy-manage/monitor/autoops/views.md
+              title: "Views"
+              children:
+              - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-overview-view.md
+                title: "Overview"
+              - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-deployment-view.md
+                title: "Deployment or Cluster"
+              - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-nodes-view.md
+                title: "Nodes"
+              - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-index-view.md
+                title: "Indices"
+              - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-shards-view.md
+                title: "Shards"
+              - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-template-optimizer.md
+                title: "Template Optimizer"
+            - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-events.md
+              title: "Events"
+              children:
+              - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-event-settings.md
+              - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-notifications-settings.md
+            - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-faq.md
+              title: "FAQ"
+          - page: docs-content://deploy-manage/monitor/stack-monitoring.md
+            children:
+            - page: docs-content://deploy-manage/monitor/stack-monitoring/ece-ech-stack-monitoring.md
+              title: "Enable on ECH and ECE"
+            - page: docs-content://deploy-manage/monitor/stack-monitoring/eck-stack-monitoring.md
+              title: "Enable on ECK"
+            - page: docs-content://deploy-manage/monitor/stack-monitoring/elasticsearch-monitoring-self-managed.md
+              title: "Self-managed: Elasticsearch"
+              children:
+              - page: docs-content://deploy-manage/monitor/stack-monitoring/collecting-monitoring-data-with-elastic-agent.md
+                title: "Collecting monitoring data with Elastic Agent"
+              - page: docs-content://deploy-manage/monitor/stack-monitoring/collecting-monitoring-data-with-metricbeat.md
+                title: "Collecting monitoring data with Metricbeat"
+              - page: docs-content://deploy-manage/monitor/stack-monitoring/collecting-log-data-with-filebeat.md
+                title: "Collecting log data with Filebeat"
+              - page: docs-content://deploy-manage/monitor/stack-monitoring/es-self-monitoring-prod.md
+              - page: docs-content://deploy-manage/monitor/stack-monitoring/es-legacy-collection-methods.md
+                title: "Legacy collection methods"
+                children:
+                - page: docs-content://deploy-manage/monitor/stack-monitoring/es-monitoring-collectors.md
+                - page: docs-content://deploy-manage/monitor/stack-monitoring/es-monitoring-exporters.md
+                - page: docs-content://deploy-manage/monitor/stack-monitoring/es-local-exporter.md
+                - page: docs-content://deploy-manage/monitor/stack-monitoring/es-http-exporter.md
+                - page: docs-content://deploy-manage/monitor/stack-monitoring/es-pause-export.md
+            - page: docs-content://deploy-manage/monitor/stack-monitoring/kibana-monitoring-self-managed.md
+              title: "Self-managed: Kibana"
+              children:
+              - page: docs-content://deploy-manage/monitor/stack-monitoring/kibana-monitoring-elastic-agent.md
+                title: "Collect monitoring data with Elastic Agent"
+              - page: docs-content://deploy-manage/monitor/stack-monitoring/kibana-monitoring-metricbeat.md
+                title: "Collect monitoring data with Metricbeat"
+              - page: docs-content://deploy-manage/monitor/stack-monitoring/kibana-monitoring-legacy.md
+                title: "Legacy collection methods"
+            - page: docs-content://deploy-manage/monitor/stack-monitoring/kibana-monitoring-data.md
+            - page: docs-content://deploy-manage/monitor/monitoring-data/visualizing-monitoring-data.md
+              children:
+              - page: docs-content://deploy-manage/monitor/monitoring-data/beats-page.md
+              - page: docs-content://deploy-manage/monitor/monitoring-data/elasticsearch-metrics.md
+              - page: docs-content://deploy-manage/monitor/monitoring-data/kibana-page.md
+              - page: docs-content://deploy-manage/monitor/monitoring-data/integrations-server-page.md
+              - page: docs-content://deploy-manage/monitor/monitoring-data/logstash-page.md
+              - page: docs-content://deploy-manage/monitor/monitoring-data/monitor-troubleshooting.md
+                title: "Troubleshooting"
+            - page: docs-content://deploy-manage/monitor/monitoring-data/configure-stack-monitoring-alerts.md
+            - page: docs-content://deploy-manage/monitor/monitoring-data/configuring-data-streamsindices-for-monitoring.md
+              children:
+              - page: docs-content://deploy-manage/monitor/monitoring-data/config-monitoring-data-streams-elastic-agent.md
+              - page: docs-content://deploy-manage/monitor/monitoring-data/config-monitoring-data-streams-metricbeat-8.md
+              - page: docs-content://deploy-manage/monitor/monitoring-data/config-monitoring-indices-metricbeat-7-internal-collection.md
+          - page: docs-content://deploy-manage/monitor/autoops-vs-stack-monitoring.md
+            title: "AutoOps vs. Stack Monitoring"
+          - page: docs-content://deploy-manage/monitor/cloud-health-perf.md
+            title: "Cloud deployment health"
+            children:
+            - page: docs-content://deploy-manage/monitor/access-performance-metrics-on-elastic-cloud.md
+            - page: docs-content://deploy-manage/monitor/ec-memory-pressure.md
+          - page: docs-content://deploy-manage/monitor/kibana-task-manager-health-monitoring.md
+            title: "Kibana task manager monitoring"
+          - page: docs-content://deploy-manage/monitor/orchestrators.md
+            children:
+            - page: docs-content://deploy-manage/monitor/orchestrators/eck-metrics-configuration.md
+              children:
+              - page: docs-content://deploy-manage/monitor/orchestrators/k8s-enabling-metrics-endpoint.md
+              - page: docs-content://deploy-manage/monitor/orchestrators/k8s-securing-metrics-endpoint.md
+              - page: docs-content://deploy-manage/monitor/orchestrators/k8s-prometheus-requirements.md
+            - page: docs-content://deploy-manage/monitor/orchestrators/ece-platform-monitoring.md
+              children:
+              - page: docs-content://deploy-manage/monitor/orchestrators/ece-monitoring-ece-access.md
+              - page: docs-content://deploy-manage/monitor/orchestrators/ece-proxy-log-fields.md
+              - page: docs-content://deploy-manage/monitor/orchestrators/ece-monitoring-ece-set-retention.md
+          - page: docs-content://deploy-manage/monitor/logging-configuration.md
+            children:
+            - page: docs-content://deploy-manage/monitor/logging-configuration/elasticsearch-log4j-configuration-self-managed.md
+            - page: docs-content://deploy-manage/monitor/logging-configuration/update-elasticsearch-logging-levels.md
+            - page: docs-content://deploy-manage/monitor/logging-configuration/elasticsearch-deprecation-logs.md
+            - page: docs-content://deploy-manage/monitor/logging-configuration/slow-logs.md
+            - page: docs-content://deploy-manage/monitor/logging-configuration/kibana-logging.md
+              children:
+              - page: docs-content://deploy-manage/monitor/logging-configuration/kibana-log-levels.md
+              - page: docs-content://deploy-manage/monitor/logging-configuration/kib-advanced-logging.md
+                children:
+                - page: docs-content://deploy-manage/monitor/logging-configuration/kibana-log-settings-examples.md
+                  title: "Examples"
         - page: docs-content://deploy-manage/kibana-reporting-configuration.md
           title: Configure Kibana reporting
         - group: Backup, high availability, and resilience tools
           page: docs-content://deploy-manage/tools.md
+          children:
+          - page: docs-content://deploy-manage/tools/snapshot-and-restore.md
+            children:
+            - page: docs-content://deploy-manage/tools/snapshot-and-restore/manage-snapshot-repositories.md
+              children:
+              - page: docs-content://deploy-manage/tools/snapshot-and-restore/self-managed.md
+                title: "Self-managed"
+                children:
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/azure-repository.md
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/google-cloud-storage-repository.md
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/s3-repository.md
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/shared-file-system-repository.md
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/read-only-url-repository.md
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/source-only-repository.md
+              - page: docs-content://deploy-manage/tools/snapshot-and-restore/elastic-cloud-hosted.md
+                title: "Elastic Cloud Hosted"
+                children:
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/ec-aws-custom-repository.md
+                  title: "AWS S3"
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/ec-gcs-snapshotting.md
+                  title: "Google Cloud Storage"
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/ec-azure-snapshotting.md
+                  title: "Azure Blob Storage"
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/access-isolation-for-found-snapshots-repository.md
+                  children:
+                  - page: docs-content://deploy-manage/tools/snapshot-and-restore/repository-isolation-on-azure.md
+                    title: "Azure"
+                  - page: docs-content://deploy-manage/tools/snapshot-and-restore/repository-isolation-on-aws-gcp.md
+                    title: "AWS and GCP"
+              - page: docs-content://deploy-manage/tools/snapshot-and-restore/cloud-enterprise.md
+                title: "Elastic Cloud Enterprise"
+                children:
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-aws-custom-repository.md
+                  title: "AWS S3"
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/google-cloud-storage-gcs-repository.md
+                  title: "Google Cloud Storage"
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/azure-storage-repository.md
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/minio-on-premise-repository.md
+              - page: docs-content://deploy-manage/tools/snapshot-and-restore/cloud-on-k8s.md
+                title: "Elastic Cloud on Kubernetes"
+            - page: docs-content://deploy-manage/tools/snapshot-and-restore/create-snapshots.md
+            - page: docs-content://deploy-manage/tools/snapshot-and-restore/restore-snapshot.md
+              children:
+              - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-restore-across-clusters.md
+                children:
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-restore-snapshots-into-new-deployment.md
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-restore-snapshots-into-existing-deployment.md
+                - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-restore-snapshots-containing-searchable-snapshots-indices-across-clusters.md
+            - page: docs-content://deploy-manage/tools/snapshot-and-restore/searchable-snapshots.md
+          - page: docs-content://deploy-manage/tools/cross-cluster-replication.md
+            children:
+            - page: docs-content://deploy-manage/tools/cross-cluster-replication/set-up-cross-cluster-replication.md
+              title: "Set up cross-cluster replication"
+              children:
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-getting-started-prerequisites.md
+                title: "Prerequisites"
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/_connect_to_a_remote_cluster.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/_configure_privileges_for_cross_cluster_replication_2.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-getting-started-follower-index.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-getting-started-auto-follow.md
+            - page: docs-content://deploy-manage/tools/cross-cluster-replication/manage-cross-cluster-replication.md
+              children:
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-inspect-progress.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-pause-replication.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-recreate-follower-index.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-terminate-replication.md
+            - page: docs-content://deploy-manage/tools/cross-cluster-replication/manage-auto-follow-patterns.md
+              children:
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-auto-follow-create.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-auto-follow-retrieve.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-auto-follow-pause.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-auto-follow-delete.md
+            - page: docs-content://deploy-manage/tools/cross-cluster-replication/upgrading-clusters.md
+              title: "Upgrading clusters"
+              children:
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-uni-directional-upgrade.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-bi-directional-upgrade.md
+            - page: docs-content://deploy-manage/tools/cross-cluster-replication/uni-directional-disaster-recovery.md
+              title: "Uni-directional disaster recovery"
+              children:
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/_prerequisites_14.md
+                title: "Prerequisites"
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/_failover_when_clustera_is_down.md
+                title: "Failover when clusterA is down"
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/_failback_when_clustera_comes_back.md
+                title: "Failback when clusterA comes back"
+            - page: docs-content://deploy-manage/tools/cross-cluster-replication/bi-directional-disaster-recovery.md
+              title: "Bi-directional disaster recovery"
+              children:
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-tutorial-initial-setup.md
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/_failover_when_clustera_is_down_2.md
+                title: "Failover when clusterA is down"
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/_failback_when_clustera_comes_back_2.md
+                title: "Failback when clusterA comes back"
+              - page: docs-content://deploy-manage/tools/cross-cluster-replication/_perform_update_or_delete_by_query.md
         - group: Autoscaling
           page: docs-content://deploy-manage/autoscaling.md
+          children:
+          - page: docs-content://deploy-manage/autoscaling/autoscaling-in-ece-and-ech.md
+            title: "In ECE and ECH"
+          - page: docs-content://deploy-manage/autoscaling/autoscaling-in-eck.md
+            title: "In ECK"
+          - page: docs-content://deploy-manage/autoscaling/autoscaling-deciders.md
+          - page: docs-content://deploy-manage/autoscaling/trained-model-autoscaling.md
         - page: docs-content://deploy-manage/stack-settings.md
           title: Stack settings
         - page: docs-content://deploy-manage/manage-connectors.md
           title: Connectors
         - group: Remote clusters
           page: docs-content://deploy-manage/remote-clusters.md
+          children:
+          - page: docs-content://deploy-manage/remote-clusters/security-models.md
+            title: "Security models"
+          - page: docs-content://deploy-manage/remote-clusters/connection-modes.md
+            title: "Connection modes"
+          - page: docs-content://deploy-manage/remote-clusters/ec-enable-ccs.md
+            title: "On Elastic Cloud Hosted"
+            children:
+            - page: docs-content://deploy-manage/remote-clusters/ec-remote-cluster-same-ess.md
+              title: "To the same Elastic Cloud organization"
+            - page: docs-content://deploy-manage/remote-clusters/ec-remote-cluster-other-ess.md
+              title: "To a different Elastic Cloud organization"
+            - page: docs-content://deploy-manage/remote-clusters/ec-remote-cluster-ece.md
+              title: "To Elastic Cloud Enterprise"
+            - page: docs-content://deploy-manage/remote-clusters/ec-remote-cluster-self-managed.md
+              title: "To a self-managed cluster"
+            - page: docs-content://deploy-manage/remote-clusters/ec-enable-ccs-for-eck.md
+              title: "To Elastic Cloud on Kubernetes"
+            - page: docs-content://deploy-manage/remote-clusters/ec-remote-cluster-strong-identity.md
+              title: "Strong identity verification"
+            - page: docs-content://deploy-manage/remote-clusters/ec-edit-remove-trusted-environment.md
+              title: "Manage trusted environments"
+            - page: docs-content://deploy-manage/remote-clusters/ec-migrate-ccs.md
+              title: "Migrate from the CCS deployment template"
+          - page: docs-content://deploy-manage/remote-clusters/ece-enable-ccs.md
+            title: "On Elastic Cloud Enterprise"
+            children:
+            - page: docs-content://deploy-manage/remote-clusters/ece-remote-cluster-same-ece.md
+              title: "To the same ECE environment"
+            - page: docs-content://deploy-manage/remote-clusters/ece-remote-cluster-other-ece.md
+              title: "To a different ECE environment"
+            - page: docs-content://deploy-manage/remote-clusters/ece-remote-cluster-ece-ess.md
+              title: "To Elastic Cloud"
+            - page: docs-content://deploy-manage/remote-clusters/ece-remote-cluster-self-managed.md
+              title: "To a self-managed cluster"
+            - page: docs-content://deploy-manage/remote-clusters/ece-enable-ccs-for-eck.md
+              title: "To Elastic Cloud on Kubernetes"
+            - page: docs-content://deploy-manage/remote-clusters/ece-edit-remove-trusted-environment.md
+              title: "Manage trusted environments"
+            - page: docs-content://deploy-manage/remote-clusters/ece-migrate-ccs.md
+              title: "Migrate from the CCS deployment template"
+          - page: docs-content://deploy-manage/remote-clusters/remote-clusters-self-managed.md
+            title: "On self-managed Elastic Stack"
+            children:
+            - page: docs-content://deploy-manage/remote-clusters/remote-clusters-api-key.md
+            - page: docs-content://deploy-manage/remote-clusters/remote-clusters-cert.md
+            - page: docs-content://deploy-manage/remote-clusters/self-remote-cluster-eck.md
+              title: "To Elastic Cloud on Kubernetes"
+            - page: docs-content://deploy-manage/remote-clusters/remote-clusters-migrate.md
+              title: "Migrate from certificate to API key authentication"
+          - page: docs-content://deploy-manage/remote-clusters/eck-remote-clusters-landing.md
+            title: "On Elastic Cloud on Kubernetes"
+            children:
+            - page: docs-content://deploy-manage/remote-clusters/eck-remote-clusters.md
+              title: "To the same ECK environment"
+            - page: docs-content://deploy-manage/remote-clusters/eck-remote-clusters-to-other-eck.md
+              title: "To a different ECK environment"
+            - page: docs-content://deploy-manage/remote-clusters/eck-remote-clusters-to-external.md
+              title: "To an external cluster or deployment"
         - group: Cross-project search
           page: docs-content://deploy-manage/cross-project-search-config.md
           children:
@@ -726,14 +1325,115 @@ nav:
         - label: ───
         - group: Maintenance
           page: docs-content://deploy-manage/maintenance.md
+          children:
+          - page: docs-content://deploy-manage/maintenance/ece.md
+            children:
+            - page: docs-content://deploy-manage/maintenance/ece/deployments-maintenance.md
+              children:
+              - page: docs-content://deploy-manage/maintenance/ece/pause-instance.md
+            - page: docs-content://deploy-manage/maintenance/ece/maintenance-activities.md
+              children:
+              - page: docs-content://deploy-manage/maintenance/ece/enable-maintenance-mode.md
+              - page: docs-content://deploy-manage/maintenance/ece/scale-out-installation.md
+              - page: docs-content://deploy-manage/maintenance/ece/move-nodes-instances-from-allocators.md
+              - page: docs-content://deploy-manage/maintenance/ece/perform-ece-hosts-maintenance.md
+              - page: docs-content://deploy-manage/maintenance/ece/delete-ece-hosts.md
+          - page: docs-content://deploy-manage/maintenance/start-stop-services.md
+            children:
+            - page: docs-content://deploy-manage/maintenance/start-stop-services/start-stop-elasticsearch.md
+            - page: docs-content://deploy-manage/maintenance/start-stop-services/start-stop-kibana.md
+            - page: docs-content://deploy-manage/maintenance/start-stop-services/restart-cloud-hosted-deployment.md
+            - page: docs-content://deploy-manage/maintenance/start-stop-services/restart-an-ece-deployment.md
+            - page: docs-content://deploy-manage/maintenance/start-stop-services/full-cluster-restart-rolling-restart-procedures.md
+          - page: docs-content://deploy-manage/maintenance/start-stop-routing-requests.md
+          - page: docs-content://deploy-manage/maintenance/add-and-remove-elasticsearch-nodes.md
         - group: Upgrade
           page: docs-content://deploy-manage/upgrade.md
+          children:
+          - page: docs-content://deploy-manage/upgrade/plan-upgrade.md
+          - page: docs-content://deploy-manage/upgrade/prepare-to-upgrade.md
+            title: "Preparation steps"
+            children:
+            - page: docs-content://deploy-manage/upgrade/prepare-to-upgrade/upgrade-assistant.md
+          - page: docs-content://deploy-manage/upgrade/deployment-or-cluster.md
+            children:
+            - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-717.md
+            - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-on-ech.md
+              title: "Upgrade on Elastic Cloud Hosted"
+            - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-on-ece.md
+              title: "Upgrade on Elastic Cloud Enterprise"
+            - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-on-eck.md
+              title: "Upgrade on Elastic Cloud on Kubernetes"
+            - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/self-managed.md
+              title: "Upgrade Elastic on a self-managed cluster"
+              children:
+              - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/elasticsearch.md
+              - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-elasticsearch-docker.md
+                title: "Upgrade Elasticsearch running on Docker"
+              - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/kibana.md
+                children:
+                - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/saved-object-migrations.md
+                - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/kibana-roll-back.md
+                  title: "Roll back to a previous version"
+            - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/archived-settings.md
+              title: "Archived settings"
+            - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/reading-indices-from-older-elasticsearch-versions.md
+              title: "Reading indices from older versions"
+            - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/enterprise-search.md
+          - page: docs-content://deploy-manage/upgrade/ingest-components.md
+          - page: docs-content://deploy-manage/upgrade/orchestrator.md
+            title: "Upgrade your ECE or ECK orchestrator"
+            children:
+            - page: docs-content://deploy-manage/upgrade/orchestrator/upgrade-cloud-enterprise.md
+              children:
+              - page: docs-content://deploy-manage/upgrade/orchestrator/re-running-the-ece-upgrade.md
+            - page: docs-content://deploy-manage/upgrade/orchestrator/upgrade-cloud-on-k8s.md
         - group: Uninstall
           page: docs-content://deploy-manage/uninstall.md
+          children:
+          - page: docs-content://deploy-manage/uninstall/uninstall-elastic-cloud-enterprise.md
+          - page: docs-content://deploy-manage/uninstall/uninstall-elastic-cloud-on-kubernetes.md
+          - page: docs-content://deploy-manage/uninstall/delete-a-cloud-deployment.md
+            title: "Delete an orchestrated deployment"
         - group: Licenses and subscriptions
           page: docs-content://deploy-manage/license.md
+          children:
+          - page: docs-content://deploy-manage/license/manage-your-license-in-ece.md
+            title: "Elastic Cloud Enterprise"
+          - page: docs-content://deploy-manage/license/manage-your-license-in-eck.md
+            title: "Elastic Cloud on Kubernetes"
+          - page: docs-content://deploy-manage/license/manage-your-license-in-self-managed-cluster.md
+            title: "Self-managed cluster"
         - group: Manage your Cloud organization
           page: docs-content://deploy-manage/cloud-organization.md
+          children:
+          - page: docs-content://deploy-manage/cloud-organization/billing.md
+            children:
+            - page: docs-content://deploy-manage/cloud-organization/billing/cloud-hosted-deployment-billing-dimensions.md
+              title: "Hosted billing dimensions"
+            - page: docs-content://deploy-manage/cloud-organization/billing/serverless-project-billing-dimensions.md
+              title: "Serverless billing dimensions"
+              children:
+              - page: docs-content://deploy-manage/cloud-organization/billing/elasticsearch-billing-dimensions.md
+                title: "Elasticsearch projects"
+              - page: docs-content://deploy-manage/cloud-organization/billing/elastic-observability-billing-dimensions.md
+                title: "Observability projects"
+              - page: docs-content://deploy-manage/cloud-organization/billing/security-billing-dimensions.md
+                title: "Security projects"
+            - page: docs-content://deploy-manage/cloud-organization/billing/billing-models.md
+            - page: docs-content://deploy-manage/cloud-organization/billing/add-billing-details.md
+            - page: docs-content://deploy-manage/cloud-organization/billing/view-billing-history.md
+            - page: docs-content://deploy-manage/cloud-organization/billing/manage-billing-notifications.md
+              title: "Manage notifications"
+            - page: docs-content://deploy-manage/cloud-organization/billing/manage-subscription.md
+            - page: docs-content://deploy-manage/cloud-organization/billing/monitor-analyze-usage.md
+            - page: docs-content://deploy-manage/cloud-organization/billing/ecu.md
+            - page: docs-content://deploy-manage/cloud-organization/billing/billing-faq.md
+          - page: docs-content://deploy-manage/cloud-organization/operational-emails.md
+          - page: docs-content://deploy-manage/cloud-organization/billing/update-billing-operational-contacts.md
+          - page: docs-content://deploy-manage/cloud-organization/service-status.md
+          - page: docs-content://deploy-manage/cloud-organization/tools-and-apis.md
+            title: "Tools and APIs"
       - group: Deployment and administration tools
         children:
         - toc: ecctl://reference
@@ -747,9 +1447,47 @@ nav:
         children:
         - page: docs-content://manage-data/ingest.md
           title: Choose/Plan your ingest method
-        - page: docs-content://manage-data/ingest/ingest-reference-architectures.md
-          title: Ingest architectures
+        - group: Ingest architectures
+          page: docs-content://manage-data/ingest/ingest-reference-architectures.md
+          children:
+          - group: Agent to Elasticsearch
+            page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-to-es.md
+            children:
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-installed.md
+              title: Elastic Agent (installed)
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-apis.md
+              title: Elastic Agent via APIs
+          - group: Agent with Logstash
+            page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-ls.md
+            children:
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/ls-enrich.md
+              title: Logstash for enrichment
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/lspq.md
+              title: Logstash persistent queue
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/ls-networkbridge.md
+              title: Logstash as a network bridge
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/ls-multi.md
+              title: Logstash for multiple destinations
+          - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-proxy.md
+            title: Agent through a proxy
+          - group: Agent with Kafka
+            page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-kafka-es.md
+            children:
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-kafka-ls.md
+              title: Agent to Kafka via Logstash
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-kafka-essink.md
+              title: Agent to Kafka with Elasticsearch sink
+          - page: docs-content://manage-data/ingest/ingest-reference-architectures/ls-for-input.md
+            title: Logstash as input
+          - group: Air-gapped environments
+            page: docs-content://manage-data/ingest/ingest-reference-architectures/airgapped-env.md
+            children:
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-es-airgapped.md
+              title: Agent to Elasticsearch (air-gapped)
+            - page: docs-content://manage-data/ingest/ingest-reference-architectures/agent-ls-airgapped.md
+              title: Agent with Logstash (air-gapped)
         - group: Ingest by solution
+          page: docs-content://manage-data/ingest/ingesting-data-for-elastic-solutions.md
           children:
           - page: docs-content://solutions/search/ingest-for-search.md
             title: Ingesting data for search use cases
@@ -828,6 +1566,8 @@ nav:
           - page: docs-content://manage-data/ingest/ingesting-data-from-applications/ingest-logs-from-nodejs-web-application-using-filebeat.md
             title: Ingest logs from a Node.js web application using Filebeat
         - title: Ingest data using the API
+        - page: docs-content://manage-data/ingest/tools.md
+          title: Ingest tools overview
         - page: docs-content://manage-data/ingest/upload-data-files.md
           title: Upload data files
         - page: docs-content://manage-data/ingest/sample-data.md
@@ -2149,7 +2889,7 @@ nav:
               title: Reduce storage
             - page: docs-content://solutions/observability/apm/explore-data-in-elasticsearch.md
               title: Explore data in Elasticsearch
-          - group: "Work with {{apm-server}}"
+          - group: "Work with APM Server"
             page: docs-content://solutions/observability/apm/apm-server/index.md
             children:
             - group: Set up
@@ -2184,7 +2924,7 @@ nav:
                 - page: docs-content://solutions/observability/apm/apm-server/configure-elasticsearch-output.md
                   title: Elasticsearch
                 - page: docs-content://solutions/observability/apm/apm-server/configure-logstash-output.md
-                  title: "{{ls}}"
+                  title: "Logstash"
                 - page: docs-content://solutions/observability/apm/apm-server/configure-kafka-output.md
                   title: Kafka
                 - page: docs-content://solutions/observability/apm/apm-server/configure-redis-output.md
@@ -2232,7 +2972,7 @@ nav:
                 - page: docs-content://solutions/observability/apm/apm-server/use-internal-collection-to-send-monitoring-data.md
                   title: Use internal collection
                 - page: docs-content://solutions/observability/apm/apm-server/use-metricbeat-to-send-monitoring-data.md
-                  title: "Use {{metricbeat}} collection"
+                  title: "Use Metricbeat collection"
                 - page: docs-content://solutions/observability/apm/apm-server/use-select-metrics-emitted-directly-to-monitoring-cluster.md
                   title: Use local collection
           - group: APM APIs
@@ -2240,7 +2980,7 @@ nav:
             children:
             - page: docs-content://solutions/observability/apm/apm-ui-api.md
               title: APM UI API
-            - group: "{{apm-server}} API"
+            - group: "APM Server API"
               page: docs-content://solutions/observability/apm/apm-server/api.md
               children:
               - page: docs-content://solutions/observability/apm/apm-server/information-api.md
@@ -2268,16 +3008,16 @@ nav:
               - page: docs-content://solutions/observability/apm/upgrade-self-installation-of-apm-integration-to-9.md
                 title: Self-installation APM integration
               - page: docs-content://solutions/observability/apm/upgrade-elastic-cloud-apm-server-standalone-to-9.md
-                title: "{{ecloud}} standalone"
+                title: "Elastic Cloud standalone"
               - page: docs-content://solutions/observability/apm/upgrade-elastic-cloud-with-apm-integration-to-9.md
-                title: "{{ecloud}} APM integration"
+                title: "Elastic Cloud APM integration"
             - group: Switch to the Elastic APM integration
               page: docs-content://solutions/observability/apm/switch-to-elastic-apm-integration.md
               children:
               - page: docs-content://solutions/observability/apm/switch-self-installation-to-apm-integration.md
                 title: Switch a self-installation
               - page: docs-content://solutions/observability/apm/switch-an-elastic-cloud-cluster-to-apm-integration.md
-                title: "Switch an {{ecloud}} cluster"
+                title: "Switch an Elastic Cloud cluster"
         - group: Synthetic monitoring
           page: docs-content://solutions/observability/synthetics/index.md
           children:
@@ -2371,7 +3111,7 @@ nav:
           children:
           - page: docs-content://solutions/observability/cloud/ingestion-options.md
             title: Ingestion options
-          - group: "Monitor {{aws}} with Elastic Agent"
+          - group: "Monitor AWS with Elastic Agent"
             page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-elastic-agent.md
             children:
             - page: docs-content://solutions/observability/cloud/monitor-amazon-cloud-compute-ec2.md
@@ -2383,8 +3123,8 @@ nav:
             - page: docs-content://solutions/observability/cloud/monitor-amazon-simple-queue-service-sqs.md
               title: SQS
           - page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-beats.md
-            title: "Monitor {{aws}} with {{beats}}"
-          - group: "Monitor {{aws}} with Amazon Data Firehose"
+            title: "Monitor AWS with Beats"
+          - group: "Monitor AWS with Amazon Data Firehose"
             page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-amazon-data-firehose.md
             children:
             - page: docs-content://solutions/observability/cloud/monitor-virtual-private-cloud-vpc-flow-logs.md
@@ -2398,7 +3138,7 @@ nav:
             - page: docs-content://solutions/observability/cloud/monitor-cloudwatch-logs.md
               title: CloudWatch logs
           - page: docs-content://solutions/observability/cloud/monitor-amazon-web-services-aws-with-elastic-serverless-forwarder.md
-            title: "Monitor {{aws}} with Elastic Serverless Forwarder"
+            title: "Monitor AWS with Elastic Serverless Forwarder"
         - group: Azure
           page: docs-content://solutions/observability/cloud/azure-monitoring.md
           children:
@@ -2694,9 +3434,9 @@ nav:
           page: docs-content://solutions/security/get-started/spaces-elastic-security.md
           children:
           - page: docs-content://solutions/security/get-started/spaces-defend-faq.md
-            title: "Spaces and {{elastic-defend}} FAQ"
+            title: "Spaces and Elastic Defend FAQ"
         - page: docs-content://solutions/security/get-started/data-views-elastic-security.md
-          title: "{{data-sources-cap}} and Elastic Security"
+          title: "Data views and Elastic Security"
         - page: docs-content://solutions/security/get-started/create-runtime-fields-in-elastic-security.md
           title: Create runtime fields in Elastic Security
         - page: docs-content://solutions/security/get-started/configure-advanced-settings.md
@@ -2796,7 +3536,7 @@ nav:
             - page: docs-content://solutions/security/detect-and-alert/threshold.md
               title: Threshold rules
             - page: docs-content://solutions/security/detect-and-alert/machine-learning.md
-              title: "{{ml-cap}} rules"
+              title: "Machine learning rules"
             - page: docs-content://solutions/security/detect-and-alert/new-terms.md
               title: New terms rules
           - page: docs-content://solutions/security/detect-and-alert/using-the-rule-ui.md
@@ -2843,12 +3583,12 @@ nav:
             title: View detection alert details
           - page: docs-content://solutions/security/detect-and-alert/query-alert-indices.md
             title: Query alert indices
-      - group: "Configure endpoint protection with {{elastic-defend}}"
+      - group: "Configure endpoint protection with Elastic Defend"
         page: docs-content://solutions/security/configure-elastic-defend.md
         children:
         - page: docs-content://solutions/security/configure-elastic-defend/elastic-defend-requirements.md
-          title: "{{elastic-defend}} requirements"
-        - group: "Install {{elastic-defend}}"
+          title: "Elastic Defend requirements"
+        - group: "Install Elastic Defend"
           page: docs-content://solutions/security/configure-elastic-defend/install-elastic-defend.md
           children:
           - page: docs-content://solutions/security/configure-elastic-defend/enable-access-for-macos.md
@@ -2858,14 +3598,14 @@ nav:
           - page: docs-content://solutions/security/configure-elastic-defend/prevent-elastic-agent-uninstallation.md
             title: Prevent Elastic Agent uninstallation
         - page: docs-content://solutions/security/configure-elastic-defend/elastic-defend-feature-privileges.md
-          title: "{{elastic-defend}} feature privileges"
-        - group: "Configure an integration policy for {{elastic-defend}}"
+          title: "Elastic Defend feature privileges"
+        - group: "Configure an integration policy for Elastic Defend"
           page: docs-content://solutions/security/configure-elastic-defend/configure-an-integration-policy-for-elastic-defend.md
           children:
           - page: docs-content://solutions/security/configure-elastic-defend/configure-updates-for-protection-artifacts.md
             title: Configure updates for protection artifacts
           - page: docs-content://solutions/security/configure-elastic-defend/turn-off-diagnostic-data-for-elastic-defend.md
-            title: "Turn off diagnostic data for {{elastic-defend}}"
+            title: "Turn off diagnostic data for Elastic Defend"
           - page: docs-content://solutions/security/configure-elastic-defend/configure-self-healing-rollback-for-windows-endpoints.md
             title: Configure self-healing rollback for Windows endpoints
           - page: docs-content://solutions/security/configure-elastic-defend/configure-linux-file-system-monitoring.md
@@ -2878,7 +3618,7 @@ nav:
           title: Configure offline endpoints and air-gapped environments
         - page: docs-content://solutions/security/configure-elastic-defend/uninstall-elastic-agent.md
           title: Uninstall Elastic Agent
-      - group: "Manage {{elastic-defend}}"
+      - group: "Manage Elastic Defend"
         page: docs-content://solutions/security/manage-elastic-defend.md
         children:
         - page: docs-content://solutions/security/manage-elastic-defend/endpoints.md
@@ -2896,17 +3636,17 @@ nav:
         - page: docs-content://solutions/security/manage-elastic-defend/blocklist.md
           title: Blocklist
         - page: docs-content://solutions/security/manage-elastic-defend/optimize-elastic-defend.md
-          title: "Optimize {{elastic-defend}}"
+          title: "Optimize Elastic Defend"
         - page: docs-content://solutions/security/manage-elastic-defend/event-capture-elastic-defend.md
-          title: "Event capture and {{elastic-defend}}"
+          title: "Event capture and Elastic Defend"
         - page: docs-content://solutions/security/manage-elastic-defend/endpoint-protection-rules.md
           title: Endpoint protection rules
         - page: docs-content://solutions/security/manage-elastic-defend/automatic-troubleshooting.md
           title: Automatic troubleshooting
         - page: docs-content://solutions/security/manage-elastic-defend/allowlist-elastic-endpoint-in-third-party-antivirus-apps.md
-          title: "Allowlist {{elastic-endpoint}} in third-party antivirus apps"
+          title: "Allowlist Elastic Endpoint in third-party antivirus apps"
         - page: docs-content://solutions/security/manage-elastic-defend/elastic-endpoint-self-protection-features.md
-          title: "{{elastic-endpoint}} self-protection features"
+          title: "Elastic Endpoint self-protection features"
       - group: Endpoint response actions
         page: docs-content://solutions/security/endpoint-response-actions.md
         children:
@@ -2926,7 +3666,7 @@ nav:
         - page: docs-content://solutions/security/cloud/security-posture-management-overview.md
           title: Security posture management overview
         - page: docs-content://solutions/security/cloud/enable-cloud-security-features.md
-          title: "Enable cloud security features in {{serverless-short}}"
+          title: "Enable cloud security features in Serverless"
         - group: Cloud security posture management
           page: docs-content://solutions/security/cloud/cloud-security-posture-management.md
           children:
@@ -3140,144 +3880,156 @@ nav:
         title: Serverless feature tiers
       - page: docs-content://solutions/security/apis.md
         title: APIs
-#  - label: Reference
-#    children:
-#    - toc: elasticsearch://reference/elasticsearch
-#    - toc: kibana://reference
-#    - group: Cloud
-#      children:
-#      - toc: cloud://reference
-#      - toc: cloud-on-k8s://reference
-#    - toc: docs-content://reference/security
-#    - toc: docs-content://reference/observability
-#    - toc: ecs://reference
-#    - toc: docs-content://reference/machine-learning
-#    - toc: search-ui://reference
-#    - toc: elasticsearch://reference/aggregations
-#    - toc: ecctl://reference
-#    - toc: docs-content://reference/elasticsearch-clients
-#    - toc: elasticsearch://reference/enrich-processor
-#    - toc: elasticsearch://reference/query-languages
-#    - toc: elasticsearch://reference/scripting-languages
-#    - page: docs-content://explore-analyze/numeral-formatting.md
-#      title: Numeral formatting
-#    - toc: elasticsearch://reference/text-analysis
-#    - toc: docs-content://reference/glossary
-#  - label: Troubleshooting
-#    children:
-#    - group: Troubleshoot Elasticsearch
-#      children:
-#      - page: docs-content://troubleshoot/elasticsearch/add-repository.md
-#        title: Troubleshoot broken repositories
-#      - page: docs-content://troubleshoot/elasticsearch/add-tier.md
-#        title: Add a preferred data tier
-#      - page: docs-content://troubleshoot/elasticsearch/allow-all-cluster-allocation.md
-#        title: Allow cluster-wide shard allocation
-#      - page: docs-content://troubleshoot/elasticsearch/allow-all-index-allocation.md
-#        title: Allow index shard allocation
-#      - page: docs-content://troubleshoot/elasticsearch/cluster-allocation-api-examples.md
-#        title: Using the cluster allocation API
-#      - page: docs-content://troubleshoot/elasticsearch/corruption-troubleshooting.md
-#        title: Troubleshoot data corruption
-#      - page: docs-content://troubleshoot/elasticsearch/discovery-troubleshooting.md
-#        title: Troubleshoot discovery
-#      - page: docs-content://troubleshoot/elasticsearch/file-based-recovery.md
-#        title: File-based access recovery
-#      - page: docs-content://troubleshoot/elasticsearch/fix-common-cluster-issues.md
-#        title: Fix common cluster issues
-#      - page: docs-content://troubleshoot/elasticsearch/fix-data-node-out-of-disk.md
-#        title: Fix data nodes out of disk
-#      - page: docs-content://troubleshoot/elasticsearch/fix-master-node-out-of-disk.md
-#        title: Fix master nodes out of disk
-#      - page: docs-content://troubleshoot/elasticsearch/fix-other-node-out-of-disk.md
-#        title: Fix other role nodes out of disk
-#      - page: docs-content://troubleshoot/elasticsearch/fix-watermark-errors.md
-#        title: Watermark errors
-#      - page: docs-content://troubleshoot/elasticsearch/increase-cluster-shard-limit.md
-#        title: Total shards per node has been reached
-#      - page: docs-content://troubleshoot/elasticsearch/increase-shard-limit.md
-#        title: Total shards for an index exceeded
-#      - page: docs-content://troubleshoot/elasticsearch/diagnose-unassigned-shards.md
-#        title: Not enough nodes to allocate shard replicas
-#      - page: docs-content://troubleshoot/elasticsearch/index-lifecycle-management-errors.md
-#        title: Fix index lifecycle management errors
-#      - page: docs-content://troubleshoot/elasticsearch/monitoring-troubleshooting.md
-#        title: Troubleshoot monitoring
-#      - page: docs-content://troubleshoot/elasticsearch/remote-clusters.md
-#        title: Troubleshoot remote clusters
-#      - page: docs-content://troubleshoot/elasticsearch/repeated-snapshot-failures.md
-#        title: Fix repeated snapshot policy failures
-#      - page: docs-content://troubleshoot/elasticsearch/restore-from-snapshot.md
-#        title: Restore from snapshot
-#      - page: docs-content://troubleshoot/elasticsearch/start-ilm.md
-#        title: Troubleshoot snapshot and ILM
-#      - page: docs-content://troubleshoot/elasticsearch/transform-troubleshooting.md
-#        title: Troubleshoot transforms
-#      - page: docs-content://troubleshoot/elasticsearch/troubleshoot-ingest-pipelines.md
-#        title: Troubleshoot ingest pipelines
-#      - page: docs-content://troubleshoot/elasticsearch/troubleshoot-migrate-to-tiers.md
-#        title: Troubleshoot incomplete migration to data tiers
-#      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-searches.md
-#        title: Troubleshoot searches
-#      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-shards-capacity-issues.md
-#        title: Troubleshoot shard capacity health issues
-#      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-unbalanced-cluster.md
-#        title: Troubleshoot an unbalanced cluster
-#      - page: docs-content://troubleshoot/elasticsearch/troubleshooting-unstable-cluster.md
-#        title: Troubleshoot an unstable cluster
-#      - page: docs-content://troubleshoot/elasticsearch/watcher-troubleshooting.md
-#        title: Troubleshoot Watcher
-#    - group: Troubleshoot Kibana
-#      children:
-#      - page: docs-content://troubleshoot/kibana/access.md
-#        title: Check Kibana server status
-#      - page: docs-content://troubleshoot/kibana/alerts.md
-#        title: Troubleshoot Kibana alerts
-#      - page: docs-content://troubleshoot/kibana/capturing-diagnostics.md
-#        title: Capture Kibana diagnostics
-#      - page: docs-content://troubleshoot/kibana/error-server-not-ready.md
-#        title: "Error: Kibana server is not ready yet"
-#      - page: docs-content://troubleshoot/kibana/graph.md
-#        title: Troubleshoot graph analytics
-#      - page: docs-content://troubleshoot/kibana/maps.md
-#        title: Troubleshoot Kibana Maps
-#      - page: docs-content://troubleshoot/kibana/migration-failures.md
-#        title: Troubleshoot Kibana migration and upgrades
-#      - page: docs-content://troubleshoot/kibana/monitoring.md
-#        title: Troubleshoot Kibana monitoring
-#      - page: docs-content://troubleshoot/kibana/reporting.md
-#        title: Troubleshoot Kibana reporting
-#      - page: docs-content://troubleshoot/kibana/task-manager.md
-#        title: Troubleshoot Kibana Task Manager
-#      - page: docs-content://troubleshoot/kibana/trace-elasticsearch-query-to-the-origin-in-kibana.md
-#        title: Trace an Elasticsearch query in Kibana
-#      - page: docs-content://troubleshoot/kibana/using-kibana-server-logs.md
-#        title: Using Kibana server logs
-#    - group: Troubleshoot Observability
-#      children:
-#      - page: docs-content://troubleshoot/observability/explore-data.md
-#        title: Explore data
-#      - page: docs-content://troubleshoot/observability/inspect.md
-#        title: Inspect
-#    - group: Troubleshoot Security
-#      children:
-#      - page: docs-content://troubleshoot/security/agentless-integrations.md
-#        title: Troubleshoot agentless integrations
-#      - page: docs-content://troubleshoot/security/detection-rules.md
-#        title: Troubleshoot detection rules
-#      - page: docs-content://troubleshoot/security/elastic-defend.md
-#        title: Troubleshoot Elastic Defend
-#      - page: docs-content://troubleshoot/security/indicators-of-compromise.md
-#        title: Troubleshoot indicators of compromise
-#    - group: Troubleshoot ingestion tools
-#      children:
-#      - page: docs-content://troubleshoot/ingest/beats-loggingplugin/elastic-logging-plugin-for-docker.md
-#        title: Beats logging plugin
-#      - page: docs-content://troubleshoot/ingest/elastic-serverless-forwarder.md
-#        title: Troubleshoot Elastic Serverless Forwarder
-#      - page: docs-content://troubleshoot/ingest/fleet/fleet-elastic-agent.md
-#        title: Troubleshoot Fleet
-#      - page: docs-content://troubleshoot/ingest/logstash.md
-#        title: Troubleshoot Logstash
-#      - page: docs-content://troubleshoot/ingest/opentelemetry/index.md
-#        title: Troubleshoot EDOT
+  - label: Reference
+    children:
+    - toc: docs-content://reference
+    - toc: elasticsearch://reference/elasticsearch
+    - toc: elasticsearch://reference/elasticsearch-plugins
+    - toc: elasticsearch://reference/community-contributed
+    - toc: kibana://reference
+    - group: Cloud
+      children:
+      - toc: cloud://reference
+      - toc: cloud-on-k8s://reference
+    - group: Elasticsearch clients
+      children:
+      - toc: elasticsearch-java://reference
+      - toc: elasticsearch-js://reference
+      - toc: elasticsearch-dsl-js://reference
+      - toc: elasticsearch-net://reference
+      - toc: elasticsearch-php://reference
+      - toc: elasticsearch-py://reference
+      - toc: elasticsearch-ruby://reference
+      - toc: elasticsearch-rs://reference
+      - toc: eland://reference
+      - toc: go-elasticsearch://reference
+      - toc: curator://reference
+    - group: APM
+      children:
+      - toc: apm-k8s-attacher://reference
+      - toc: apm-aws-lambda://reference
+      - toc: apm-agent-dotnet://reference
+      - toc: apm-agent-go://reference
+      - toc: apm-agent-java://reference
+      - toc: apm-agent-nodejs://reference
+      - toc: apm-agent-php://reference
+      - toc: apm-agent-python://reference
+      - toc: apm-agent-ruby://reference
+      - toc: apm-agent-rum-js://reference
+    - group: OpenTelemetry
+      children:
+      - toc: opentelemetry://reference
+        children:
+        - toc: opentelemetry://reference/motlp
+        - toc: opentelemetry://reference/edot-cloud-forwarder
+          children:
+          - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
+          - toc: edot-cloud-forwarder-azure://reference/edot-cf-azure
+          - toc: opentelemetry://reference/edot-cloud-forwarder/gcp
+      - toc: elastic-agent://reference/edot-collector
+      - toc: apm-agent-android://reference/edot-android
+      - toc: elastic-otel-dotnet://reference/edot-dotnet
+      - toc: apm-agent-ios://reference/edot-ios
+      - toc: elastic-otel-java://reference/edot-java
+      - toc: elastic-otel-node://reference/edot-node
+      - toc: elastic-otel-php://reference/edot-php
+      - toc: elastic-otel-python://reference/edot-python
+      - toc: elastic-otel-rum-js://reference/edot-browser
+    - group: ECS Logging
+      children:
+      - toc: ecs-logging://reference
+        children:
+        - toc: ecs-dotnet://reference
+        - toc: ecs-logging-go-logrus://reference
+        - toc: ecs-logging-go-zap://reference
+        - toc: ecs-logging-go-zerolog://reference
+        - toc: ecs-logging-java://reference
+        - toc: ecs-logging-nodejs://reference
+        - toc: ecs-logging-php://reference
+        - toc: ecs-logging-python://reference
+        - toc: ecs-logging-ruby://reference
+    - toc: beats://reference
+    - toc: logstash://reference
+    - toc: integration-docs://reference
+    - toc: elasticsearch-hadoop://reference
+    - toc: elastic-serverless-forwarder://reference
+    - toc: ecs://reference
+    - toc: search-ui://reference
+    - toc: elasticsearch://reference/aggregations
+    - toc: ecctl://reference
+    - toc: elasticsearch://reference/enrich-processor
+    - toc: elasticsearch://reference/query-languages
+    - toc: elasticsearch://reference/scripting-languages
+    - page: docs-content://explore-analyze/numeral-formatting.md
+      title: Numeral formatting
+    - toc: elasticsearch://reference/text-analysis
+  - label: Release notes
+    children:
+    - toc: docs-content://release-notes/intro
+      children:
+        # Elasticsearch
+        - toc: elasticsearch://release-notes
+          children:
+            # Elasticsearch Clients
+            - toc: elasticsearch-java://release-notes
+            - toc: elasticsearch-js://release-notes
+            - toc: elasticsearch-net://release-notes
+            - toc: elasticsearch-php://release-notes
+            - toc: elasticsearch-py://release-notes
+            - toc: elasticsearch-ruby://release-notes
+            # Elasticsearch Hadoop
+            - toc: elasticsearch-hadoop://release-notes
+        # Kibana
+        - toc: kibana://release-notes
+        # Elastic Agent
+        - toc: elastic-agent://release-notes
+        # Fleet Server
+        - toc: fleet-server://release-notes
+        # Logstash
+        - toc: logstash://release-notes
+        # Beats
+        - toc: beats://release-notes
+        # Serverless
+        - toc: docs-content://release-notes/elastic-cloud-serverless
+        # Cloud Hosted
+        - toc: cloud://release-notes/cloud-hosted
+        # Cloud Enterprise
+        - toc: cloud://release-notes/cloud-enterprise
+        # Cloud on Kubernetes
+        - toc: cloud-on-k8s://release-notes
+        # Observability
+        - toc: docs-content://release-notes/elastic-observability
+          children:
+            # EDOT SDKs
+            - toc: apm-agent-android://release-notes
+            - toc: edot-cloud-forwarder-aws://release-notes
+            - toc: apm-agent-ios://release-notes
+            - toc: elastic-otel-java://release-notes
+            - toc: elastic-otel-dotnet://release-notes
+            - toc: elastic-otel-node://release-notes
+            - toc: elastic-otel-python://release-notes
+            - toc: elastic-otel-php://release-notes
+            - toc: elastic-otel-rum-js://release-notes
+            # APM
+            - toc: apm-server://release-notes
+            # APM agents
+            - toc: apm-agent-dotnet://release-notes
+            - toc: apm-agent-go://release-notes
+            - toc: apm-agent-java://release-notes
+            - toc: apm-agent-nodejs://release-notes
+            - toc: apm-agent-php://release-notes
+            - toc: apm-agent-python://release-notes
+            - toc: apm-agent-ruby://release-notes
+            - toc: apm-agent-rum-js://release-notes
+            # APM AWS Lambda Extension
+            - toc: apm-aws-lambda://release-notes
+        # Security
+        - toc: docs-content://release-notes/elastic-security
+        # ECS
+        - toc: ecs://release-notes
+        # ECCTL
+        - toc: ecctl://release-notes
+
+  - label: Troubleshoot
+    children:
+    - toc: docs-content://troubleshoot
