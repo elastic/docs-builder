@@ -46,11 +46,9 @@
 
 	.secondary-nav-dropdown-group-label {
 		padding: 8px 14px 4px 14px;
-		font-size: 11px;
+		font-size: 12px;
 		font-weight: 700;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--color-grey-70);
+		color: var(--color-grey-80);
 		user-select: none;
 	}
 	.secondary-nav-dropdown-group-label:not(:first-child) {
