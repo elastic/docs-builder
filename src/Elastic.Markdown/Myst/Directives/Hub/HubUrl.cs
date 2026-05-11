@@ -25,19 +25,32 @@ internal static class HubUrl
 	{
 		if (string.IsNullOrEmpty(url))
 			return url;
-		if (string.IsNullOrEmpty(sitePathPrefix))
-			return url;
 		if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
 			|| url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
 			|| url.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
 			|| url.StartsWith('#'))
 			return url;
 
+		// Convert markdown file paths to URL paths so authors can write
+		// e.g. /deploy-manage/...md and we render /deploy-manage/... .
+		// Anchor is preserved.
+		var clean = url;
+		var hash = clean.IndexOf('#');
+		var anchor = hash >= 0 ? clean[hash..] : string.Empty;
+		if (hash >= 0)
+			clean = clean[..hash];
+		if (clean.EndsWith("/index.md", StringComparison.OrdinalIgnoreCase))
+			clean = clean[..^"/index.md".Length];
+		else if (clean.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+			clean = clean[..^".md".Length];
+
+		if (string.IsNullOrEmpty(sitePathPrefix))
+			return clean + anchor;
 		var prefix = "/" + sitePathPrefix.Trim('/');
-		if (url == prefix || url.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
-			return url;
-		if (!url.StartsWith('/'))
-			return url;
-		return prefix + url;
+		if (clean == prefix || clean.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
+			return clean + anchor;
+		if (!clean.StartsWith('/'))
+			return clean + anchor;
+		return prefix + clean + anchor;
 	}
 }
