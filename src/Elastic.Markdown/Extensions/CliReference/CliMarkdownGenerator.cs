@@ -215,18 +215,23 @@ internal static partial class CliMarkdownGenerator
 			}
 		}
 
-		// Validate supplemental overrides reference real parameters
+		// Validate supplemental overrides reference real parameters in the matching role
 		if (supplemental is not null && emitError is not null)
 		{
-			var allNames = new HashSet<string>(cmd.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+			var flagNames = new HashSet<string>(
+				cmd.Parameters.Where(p => p.Role != "positional").Select(p => p.Name),
+				StringComparer.OrdinalIgnoreCase);
+			var positionalNames = new HashSet<string>(
+				cmd.Parameters.Where(p => p.Role == "positional").Select(p => p.Name),
+				StringComparer.OrdinalIgnoreCase);
 			foreach (var key in supplemental.OptionOverrides.Keys)
 			{
-				if (!allNames.Contains(key))
+				if (!flagNames.Contains(key))
 					emitError($"CLI supplemental: Option '--{key}' not found in command '{cmd.Name}'");
 			}
 			foreach (var key in supplemental.ArgumentOverrides.Keys)
 			{
-				if (!allNames.Contains(key))
+				if (!positionalNames.Contains(key))
 					emitError($"CLI supplemental: Argument '<{key}>' not found in command '{cmd.Name}'");
 			}
 		}
@@ -280,26 +285,26 @@ internal static partial class CliMarkdownGenerator
 			|| cmd.Streaming
 			|| cmd.LongRunning;
 
-		if (!hasModifiers)
-			return;
-
-		_ = sb.AppendLine(":::{cli-modifiers}");
-		if (cmd.Intent?.Destructive == true)
-			_ = sb.AppendLine(":destructive:");
-		if (cmd.Intent?.RequiresConfirmation == true)
-			_ = sb.AppendLine(":requires-confirmation:");
-		if (cmd.Intent?.RequiresAuth == true)
-			_ = sb.AppendLine(":requires-auth:");
-		if (cmd.Intent?.Idempotent == true)
-			_ = sb.AppendLine(":idempotent:");
-		if (!string.IsNullOrWhiteSpace(cmd.Intent?.Scope))
-			_ = sb.AppendLine($":scope: {cmd.Intent.Scope}");
-		if (cmd.Streaming)
-			_ = sb.AppendLine(":streaming:");
-		if (cmd.LongRunning)
-			_ = sb.AppendLine(":long-running:");
-		_ = sb.AppendLine(":::");
-		_ = sb.AppendLine();
+		if (hasModifiers)
+		{
+			_ = sb.AppendLine(":::{cli-modifiers}");
+			if (cmd.Intent?.Destructive == true)
+				_ = sb.AppendLine(":destructive:");
+			if (cmd.Intent?.RequiresConfirmation == true)
+				_ = sb.AppendLine(":requires-confirmation:");
+			if (cmd.Intent?.RequiresAuth == true)
+				_ = sb.AppendLine(":requires-auth:");
+			if (cmd.Intent?.Idempotent == true)
+				_ = sb.AppendLine(":idempotent:");
+			if (!string.IsNullOrWhiteSpace(cmd.Intent?.Scope))
+				_ = sb.AppendLine($":scope: {cmd.Intent.Scope}");
+			if (cmd.Streaming)
+				_ = sb.AppendLine(":streaming:");
+			if (cmd.LongRunning)
+				_ = sb.AppendLine(":long-running:");
+			_ = sb.AppendLine(":::");
+			_ = sb.AppendLine();
+		}
 
 		if (cmd.Output?.Formats is { Length: > 0 } formats)
 		{
