@@ -387,7 +387,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			ShowSearch = block.ShowSearch,
 			QuickLinks = block.QuickLinks,
 			OtherVersions = block.OtherVersions,
-			ReleasesHtml = releasesHtml
+			ReleasesHtml = releasesHtml,
+			SitePathPrefix = block.Build.UrlPathPrefix
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -411,7 +412,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Data = block.Data,
-			IconSvg = ProductIcons.Get(block.Data.Icon)
+			IconSvg = ProductIcons.Get(block.Data.Icon),
+			SitePathPrefix = block.Build.UrlPathPrefix
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -421,7 +423,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = WhatsNewView.Create(new WhatsNewViewModel
 		{
 			DirectiveBlock = block,
-			Data = block.Data
+			Data = block.Data,
+			SitePathPrefix = block.Build.UrlPathPrefix
 		});
 		RenderRazorSlice(slice, renderer);
 	}

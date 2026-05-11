@@ -15,4 +15,6 @@ public class HeroViewModel : DirectiveViewModel
 	public required IReadOnlyList<HeroQuickLink> QuickLinks { get; init; }
 	public required IReadOnlyList<HeroVersion> OtherVersions { get; init; }
 	public required string? ReleasesHtml { get; init; }
+	public required string? SitePathPrefix { get; init; }
+	public string? PrefixUrl(string? url) => HubUrl.Prefix(url, SitePathPrefix);
 }

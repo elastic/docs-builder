@@ -23,7 +23,7 @@
 					var link = d.ReleaseLinks[i];
 					if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
 						continue;
-					<a href="@link.Url">@link.Label</a>
+					<a href="@Model.PrefixUrl(link.Url)">@link.Label</a>
 					@if (i < d.ReleaseLinks.Length - 1)
 					{
 						<span class="hub-wn-rn-sep" aria-hidden="true">·</span>
@@ -42,7 +42,7 @@
 				<li class="hub-wn-item">
 					@if (!string.IsNullOrWhiteSpace(item.Link))
 					{
-						<a href="@item.Link" class="hub-wn-item-link">
+						<a href="@Model.PrefixUrl(item.Link)" class="hub-wn-item-link">
 							<strong class="hub-wn-item-title">@item.Title</strong>
 							@if (!string.IsNullOrWhiteSpace(item.Description))
 							{

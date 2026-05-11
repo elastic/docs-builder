@@ -16,7 +16,7 @@
 		<h3 class="hub-card-title">
 			@if (!string.IsNullOrWhiteSpace(d.Link))
 			{
-				<a href="@d.Link">@d.Title</a>
+				<a href="@Model.PrefixUrl(d.Link)">@d.Title</a>
 			}
 			else
 			{
@@ -37,7 +37,7 @@
 			{
 				if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
 					continue;
-				<li><a href="@link.Url">@link.Label</a></li>
+				<li><a href="@Model.PrefixUrl(link.Url)">@link.Label</a></li>
 			}
 		</ul>
 	}
@@ -55,7 +55,7 @@
 					var link = aside.Links[i];
 					if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
 						continue;
-					<a href="@link.Url">@link.Label</a>
+					<a href="@Model.PrefixUrl(link.Url)">@link.Label</a>
 					@if (i < aside.Links.Length - 1)
 					{
 						<span class="hub-card-aside-sep" aria-hidden="true">·</span>

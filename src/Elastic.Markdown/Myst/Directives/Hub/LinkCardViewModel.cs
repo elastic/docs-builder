@@ -8,4 +8,6 @@ public class LinkCardViewModel : DirectiveViewModel
 {
 	public required LinkCardData Data { get; init; }
 	public required string? IconSvg { get; init; }
+	public required string? SitePathPrefix { get; init; }
+	public string? PrefixUrl(string? url) => HubUrl.Prefix(url, SitePathPrefix);
 }
