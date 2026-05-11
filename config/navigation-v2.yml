@@ -1847,7 +1847,7 @@ nav:
           title: Index mapping and text analysis
         - page: docs-content://manage-data/ingest/transform-enrich/ingest-lag.md
           title: Calculate ingest lag metadata
-    - label: Search, visualize and analyze
+    - label: Search, visualize, and analyze
       children:
       - group: Search and query
         children:
