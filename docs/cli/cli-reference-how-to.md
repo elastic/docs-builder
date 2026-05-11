@@ -77,37 +77,9 @@ toc:
 
 ::::{step} Write supplemental content for namespaces and commands
 
-The supplemental folder lets you replace the auto-generated summary on any namespace or command page with your own prose. The parameter table, usage synopsis, and examples are always appended from the schema — you're only replacing the introductory description.
+Drop a supplemental file into the folder for any namespace or command page where you want to add context, usage examples, or richer parameter descriptions. The generated parameter table and usage synopsis are always present — supplemental files let you add to them.
 
-**Files are discovered automatically** — drop a file into the folder following the naming convention and it is picked up on the next build with no configuration needed.
-
-**Validation is strict** — any supplemental file whose name doesn't match a known namespace or command in the schema produces a build error. This means renamed or removed commands can't leave orphaned docs behind silently; your CI catches it immediately.
-
-Two naming conventions are supported. Both can coexist in the same folder.
-
-**Hierarchy style** — mirrors the CLI namespace structure, works well alongside the `index.md` convention already common in documentation repos:
-
-```
-cli-reference/
-  database/
-    index.md          ← intro for the database namespace
-    migrate.md    ← intro for database migrate command
-  deploy.md       ← intro for the root deploy command
-```
-
-**Flat prefix style** — all files at the folder root, full path encoded in the name:
-
-```
-cli-reference/
-  ns-database.md             ← intro for the database namespace
-  database-migrate.md    ← intro for database migrate command
-  deploy.md              ← intro for the root deploy command
-```
-
-For a live example, see how `docs-builder` uses both files in its own `cli/changelog/` folder:
-
-- [changelog namespace intro](/cli/changelog/index.md) — `docs/cli/changelog/index.md` introduces the changelog workflow before the auto-generated commands list
-- [changelog bundle command](/cli/changelog/bundle.md) — `docs/cli/changelog/bundle.md` explains the two bundling modes; the generated parameter table follows underneath
+See [Writing supplemental content](./cli-supplemental-docs.md) for the full rules on file naming and heading conventions.
 
 ::::
 
@@ -130,12 +102,3 @@ Your CLI reference section is live. As your CLI evolves, regenerate the schema a
 | `cli: <path>` | Path to the schema JSON, relative to `docset.yml` |
 | `folder: <path>` | Supplemental docs folder; also sets the URL prefix |
 | `children:` | Regular toc items prepended before generated pages |
-
-| Supplemental file | Matches |
-|---|---|
-| `ns-root.md` | Root CLI overview page |
-| `<ns>/index.md` | Namespace `<ns>` (hierarchy style) |
-| `ns-<ns>.md` | Namespace `<ns>` (flat style) |
-| `<ns>/<cmd>.md` | Command `<cmd>` inside namespace `<ns>` |
-| `<ns>-<cmd>.md` | Same, flat style |
-| `<cmd>.md` | Root-level command `<cmd>` |
