@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 
@@ -35,4 +36,6 @@ public class NavigationViewModel
 
 	/// <summary>Back arrow URL for islands — points to the parent section's landing page.</summary>
 	public string? BackArrowUrl { get; init; }
+
+	public BrandingConfiguration? Branding { get; init; }
 }

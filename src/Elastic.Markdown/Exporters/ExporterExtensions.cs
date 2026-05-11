@@ -14,12 +14,13 @@ public static class ExporterExtensions
 	public static IReadOnlyCollection<IMarkdownExporter> CreateMarkdownExporters(
 		this IReadOnlySet<Exporter> exportOptions,
 		ILoggerFactory logFactory,
-		IDocumentationConfigurationContext context
+		IDocumentationConfigurationContext context,
+		bool branded = false
 	)
 	{
 		var markdownExporters = new List<IMarkdownExporter>(4);
 		if (exportOptions.Contains(Exporter.LLMText))
-			markdownExporters.Add(new LlmMarkdownExporter());
+			markdownExporters.Add(new LlmMarkdownExporter(branded));
 		if (exportOptions.Contains(Exporter.Configuration))
 			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
 		if (exportOptions.Contains(Exporter.Elasticsearch))

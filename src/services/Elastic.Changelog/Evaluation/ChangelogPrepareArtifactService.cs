@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.Changelog.Configuration;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
@@ -21,6 +23,11 @@ public class ChangelogPrepareArtifactService(
 	IFileSystem? fileSystem = null
 ) : IService
 {
+	/// <summary>
+	/// UTF-8 encoding without BOM for writing YAML files.
+	/// </summary>
+	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrepareArtifactService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
@@ -48,8 +55,11 @@ public class ChangelogPrepareArtifactService(
 					_logger.LogInformation("Reusing existing filename {Filename} for stable path on branch", changelogFilename);
 
 				var destYaml = _fileSystem.Path.Combine(input.OutputDir, changelogFilename);
-				_fileSystem.File.Copy(sourceYaml, destYaml, overwrite: true);
-				_logger.LogInformation("Copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
+				// Read YAML, normalize to remove any BOM, then write UTF-8 bytes without BOM (avoids provider-specific WriteAllText preamble behavior).
+				var yamlContent = await _fileSystem.File.ReadAllTextAsync(sourceYaml, ctx);
+				var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
+				await _fileSystem.File.WriteAllTextAsync(destYaml, normalizedContent, Utf8NoBom, ctx);
+				_logger.LogInformation("Normalized and copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
 			}
 			else
 			{

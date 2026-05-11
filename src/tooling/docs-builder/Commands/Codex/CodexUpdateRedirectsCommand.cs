@@ -2,46 +2,45 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
-using ConsoleAppFramework;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands.Codex;
 
-/// <summary>
-/// Command for updating CloudFront KeyValueStore redirects for codex.
-/// </summary>
+/// <summary>Update CloudFront KeyValueStore redirects for a codex deployment.</summary>
 internal sealed class CodexUpdateRedirectsCommand(
 	IDiagnosticsCollector collector,
 	ILoggerFactory logFactory
 )
 {
-	/// <summary>Refreshes the redirects mapping in CloudFront's KeyValueStore for codex.</summary>
-	/// <param name="config">Path to the codex configuration file (used to resolve environment).</param>
-	/// <param name="environment">The environment to deploy to. Defaults to config or ENVIRONMENT env var.</param>
-	/// <param name="redirectsFile">Path to the redirects mapping. Defaults to .artifacts/codex/docs/redirects.json.</param>
-	/// <param name="ctx"></param>
-	[Command("")]
-	public async Task<int> Run(
-		[Argument] string config,
+	/// <summary>Push the codex redirects mapping to CloudFront's KeyValueStore.</summary>
+	/// <remarks>Run after <c>codex build</c> produces a <c>redirects.json</c>.</remarks>
+	/// <param name="config">Path to the <c>codex.yml</c> configuration file (used to resolve the environment).</param>
+	/// <param name="environment">Named deployment target. Defaults to the value in <c>codex.yml</c> or the <c>ENVIRONMENT</c> env var.</param>
+	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/codex/docs/redirects.json</c>.</param>
+	public async Task<int> UpdateRedirects(
+		GlobalCliOptions _,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string? environment = null,
-		string? redirectsFile = null,
-		Cancel ctx = default)
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null,
+		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = FileSystemFactory.RealRead;
-		var configPath = fs.Path.GetFullPath(config);
-		var configFile = fs.FileInfo.New(configPath);
+		var configFile = fs.FileInfo.New(config.FullName);
 
 		if (!configFile.Exists)
 		{
-			collector.EmitGlobalError($"Codex configuration file not found: {configPath}");
+			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
 			return 1;
 		}
 
@@ -53,8 +52,8 @@ internal sealed class CodexUpdateRedirectsCommand(
 
 		var service = new DeployUpdateRedirectsService(logFactory, fs);
 		serviceInvoker.AddCommand(service, (environment: resolvedEnvironment, redirectsFile, kvsNamePrefix: "codex", defaultRedirectsFile: ".artifacts/codex/docs/redirects.json"),
-			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile, state.kvsNamePrefix, state.defaultRedirectsFile, c)
+			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile?.FullName, state.kvsNamePrefix, state.defaultRedirectsFile, c)
 		);
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
 }

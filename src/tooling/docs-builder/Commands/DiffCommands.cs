@@ -3,28 +3,31 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using ConsoleAppFramework;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Refactor.Tracking;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 
 namespace Documentation.Builder.Commands;
 
-internal sealed class DiffCommands(
+internal sealed class DiffCommand(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
 	IConfigurationContext configurationContext
 )
 {
-	/// <summary>
-	/// Validates redirect updates in the current branch using the redirect file against changes reported by git.
-	/// </summary>
-	/// <param name="path"> -p, Defaults to the`{pwd}/docs` folder</param>
-	/// <param name="ctx"></param>
-	[Command("validate")]
-	public async Task<int> ValidateRedirects(string? path = null, Cancel ctx = default)
+	/// <summary>Verify every renamed or removed page in the current branch has a redirect entry.</summary>
+	/// <remarks>
+	/// Compares the git diff of the working branch against the redirect file. Exits 1 if any moved
+	/// or deleted page is missing a redirect entry. Run before merging to catch broken links early.
+	/// </remarks>
+	/// <param name="path">-p, Root of the documentation source. Defaults to <c>cwd/docs</c>.</param>
+	[NoOptionsInjection]
+	[CommandName("diff")]
+	public async Task<int> Validate(string? path = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
@@ -32,9 +35,8 @@ internal sealed class DiffCommands(
 		var fs = FileSystemFactory.RealGitRootForPath(path);
 
 		serviceInvoker.AddCommand(service, (path, fs),
-				async static (s, collector, state, _) => await s.ValidateRedirects(collector, state.path, state.fs)
+			async static (s, collector, state, _) => await s.ValidateRedirects(collector, state.path, state.fs)
 		);
-		return await serviceInvoker.InvokeAsync(ctx);
+		return await serviceInvoker.InvokeAsync(ct);
 	}
-
 }
