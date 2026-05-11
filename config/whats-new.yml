@@ -1,0 +1,72 @@
+###
+# Centralized "What's new" feed used by the {whats-new} directive.
+#
+# Any page can render a product's recent highlights with:
+#
+#   :::{whats-new}
+#   :product: kibana
+#   :::
+#
+# The {whats-new} directive looks the product up in this file and renders the
+# full panel (header + items). Authors only edit this file; the directive
+# stays trivial in markdown.
+#
+# An optional `id` and `badge` per product control the section anchor and the
+# small badge shown to the left of the title; default badge is "New".
+###
+
+products:
+
+  kibana:
+    title: What's new in Kibana
+    id: whats-new
+    badge: New
+    release-links:
+      - label: '9.4'
+        url: https://www.elastic.co/docs/release-notes/kibana
+      - label: Serverless
+        url: https://www.elastic.co/docs/release-notes/serverless
+    items:
+      - title: Dashboards and visualizations APIs
+        description: Programmatically create and manage dashboards and visualizations
+        link: https://www.elastic.co/docs/api/doc/kibana
+        meta: 9.4 preview
+      - title: AI agent skills
+        description: Teach AI coding agents to work with the Elastic stack
+        link: https://www.elastic.co/docs/explore-analyze/ai-features/agent-skills
+        meta: Mar 2026
+      - title: Agent Builder
+        description: Build custom AI agents that reason over your data
+        link: https://www.elastic.co/docs/explore-analyze/ai-features/elastic-agent-builder
+        meta: 9.3 GA
+      - title: Workflows
+        description: Automate tasks with Kibana actions, HTTP calls, and AI agents
+        link: https://www.elastic.co/docs/explore-analyze/workflows
+        meta: 9.3 preview
+
+  elasticsearch:
+    title: What's new in Elasticsearch
+    id: whats-new
+    badge: New
+    release-links:
+      - label: '9.4'
+        url: https://www.elastic.co/docs/release-notes/elasticsearch
+      - label: Serverless
+        url: https://www.elastic.co/docs/release-notes/serverless
+    items:
+      - title: semantic_text field type
+        description: Simplify semantic search — no pipeline setup needed, just define the field and start querying
+        link: https://www.elastic.co/docs/solutions/search/semantic-search/semantic-search-semantic-text
+        meta: 9.4 GA
+      - title: ES|QL improvements
+        description: New functions, cross-cluster support, and dense vector operations directly in ES|QL queries
+        link: https://www.elastic.co/docs/reference/query-languages/esql/esql-getting-started
+        meta: '9.4'
+      - title: Inference API expansion
+        description: Connect to external AI models (OpenAI, Cohere, Anthropic, Hugging Face, Azure, Google) for embeddings and reranking
+        link: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-inference-put
+        meta: '9.4'
+      - title: Breaking changes in 9.x
+        description: Review removed settings, deprecated APIs, and behavioral changes before upgrading from 8.x
+        link: https://www.elastic.co/docs/release-notes/elasticsearch/breaking-changes
+        meta: Upgrade guide
