@@ -8,12 +8,10 @@
     --elastic-teal: #00BFB3;
     --elastic-teal-light: #E6FAF8;
     --elastic-pink: #F04E98;
-    --elastic-pink-light: #FDE8F2;
     --elastic-yellow: #FEC514;
     --elastic-green: #00B3A4;
     --bg: #ffffff;
     --bg-alt: #F5F7FA;
-    --bg-warm: #FAFBFC;
     --bg-dark: #1B2638;
     --text-primary: #1B2638;
     --text-secondary: #506477;
@@ -176,13 +174,8 @@
   .quickstart h2 {
     font-size: 18px;
     font-weight: 700;
-    margin-bottom: 4px;
-    letter-spacing: -0.2px;
-  }
-  .quickstart > p {
-    font-size: 14px;
-    color: var(--text-secondary);
     margin-bottom: 16px;
+    letter-spacing: -0.2px;
   }
   .qs-grid {
     display: grid;
@@ -203,7 +196,7 @@
     box-shadow: var(--shadow-sm);
     border-color: var(--elastic-blue);
   }
-  .qs-card h4 {
+  .qs-card h3 {
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 8px;
@@ -253,6 +246,7 @@
   }
   .news-card:hover { border-color: var(--elastic-blue); }
   .news-date {
+    display: block;
     font-size: 11px;
     color: var(--text-tertiary);
     font-weight: 500;
@@ -260,7 +254,7 @@
     letter-spacing: 0.3px;
     margin-bottom: 6px;
   }
-  .news-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .news-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
   .news-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
 
   /* ── All products ── */
@@ -270,7 +264,7 @@
     gap: 32px 24px;
     margin-bottom: 52px;
   }
-  .product-column h4 {
+  .product-column h3 {
     font-size: 13px;
     font-weight: 700;
     color: var(--text-primary);
@@ -294,12 +288,13 @@
     border-radius: var(--radius-md);
     padding: 32px 36px;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr;
     gap: 24px;
     margin-bottom: 24px;
+    max-width: 480px;
     border: 1px solid var(--border-light);
   }
-  .help-item h4 {
+  .help-item h3 {
     font-size: 13px;
     font-weight: 600;
     margin-bottom: 4px;
@@ -310,32 +305,11 @@
   }
   .help-item p { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
 
-  /* ── Footer ── */
-  .landing-footer {
-    background: var(--bg-dark);
-    padding: 44px 40px;
-    color: rgba(255,255,255,0.6);
-    font-family: var(--font);
-  }
-  .landing-footer-inner {
-    max-width: var(--max-w);
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    font-size: 13px;
-  }
-  .landing-footer a { color: rgba(255,255,255,0.5); transition: color 0.15s; }
-  .landing-footer a:hover { color: rgba(255,255,255,0.85); }
-
   /* ── Responsive ── */
   @@media (max-width: 900px) {
     .hero-cards { grid-template-columns: 1fr; }
     .all-products-grid { grid-template-columns: repeat(2, 1fr); }
     .news-grid { grid-template-columns: 1fr; }
-    .help-strip { grid-template-columns: 1fr; }
   }
   @@media (max-width: 640px) {
     .landing-hero { padding: 36px 20px 0; }
@@ -349,208 +323,192 @@
 <div hx-select-oob="#main-container" hx-swap="none" class="landing-page w-full max-w-[100vw] relative overflow-x-hidden">
 
   <!-- ── Hero ── -->
-  <section class="landing-hero">
+  <header class="landing-hero" role="banner">
     <div class="landing-hero-inner">
 
       <div class="hero-welcome">
         <h1>Elastic documentation</h1>
-        <p>Official docs for the Elastic Stack, Elastic Cloud, and Elastic solutions.</p>
+        <p>Official docs for the Elastic Stack, Elastic Cloud, and Elastic solutions. Open source, built by Elastic.</p>
       </div>
 
-      <div class="hero-search-wrap">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C9BAB" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <navigation-search></navigation-search>
-      </div>
+      <search role="search" aria-label="Search documentation">
+        <div class="hero-search-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C9BAB" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <navigation-search></navigation-search>
+        </div>
+      </search>
 
-      <div class="hero-cards">
-        <div class="hero-card primary">
+      <section class="hero-cards" aria-label="Popular documentation">
+        <article class="hero-card primary">
           <h2>Learn how to use Elastic</h2>
           <p class="desc">Get started with an overview of Elasticsearch, Kibana, and the rest of the Elastic Stack.</p>
-          <div class="card-links">
+          <nav class="card-links" aria-label="Fundamentals quick links">
             <a href="@Model.Link("/get-started")">What is Elasticsearch?</a>
             <a href="@Model.Link("/get-started")">The Elastic Stack</a>
             <a href="@Model.Link("/manage-data")">Ingest data</a>
             <a href="@Model.Link("/manage-data")">Index basics</a>
-          </div>
+          </nav>
           <a href="@Model.Link("/get-started")" class="card-cta">
             Get started
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
-        </div>
-        <div class="hero-card">
+        </article>
+        <article class="hero-card">
           <h2>Elasticsearch</h2>
           <p class="desc">Store, search, and analyze your data with full-text search, vector search, AI search, and more.</p>
-          <div class="card-links">
+          <nav class="card-links" aria-label="Elasticsearch quick links">
             <a href="@Model.Link("/deploy-manage/deploy/self-managed/installing-elasticsearch")">Install</a>
             <a href="https://www.elastic.co/docs/api" target="_blank" rel="noopener noreferrer" hx-disable="true">REST API reference</a>
             <a href="@Model.Link("/reference/query-languages/")">Query DSL</a>
             <a href="@Model.Link("/release-notes/")">Release notes</a>
-          </div>
+          </nav>
           <a href="@Model.Link("/solutions/search")" class="card-cta">
             Elasticsearch docs
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
-        </div>
-      </div>
+        </article>
+      </section>
 
     </div>
-  </section>
+  </header>
 
   <!-- ── Main content ── -->
-  <div class="landing-main">
+  <main class="landing-main">
 
     <!-- Quick start -->
-    <div class="quickstart">
+    <section class="quickstart" aria-label="Getting started">
       <h2>New to Elastic? Give it a try.</h2>
       <div class="qs-grid">
-        <div class="qs-card">
-          <h4>Try locally</h4>
+        <article class="qs-card">
+          <h3>Try locally</h3>
           <p>Use Docker to install and run Elasticsearch and Kibana on your local machine.</p>
           <a href="@Model.Link("/get-started")" class="qs-cta">Local installation docs →</a>
-        </div>
-        <div class="qs-card">
-          <h4>Start free Cloud trial</h4>
+        </article>
+        <article class="qs-card">
+          <h3>Start free Cloud trial</h3>
           <p>Evaluate Elastic with a production-ready trial, using real data and use cases.</p>
           <a href="https://cloud.elastic.co/registration?page=docs&placement=docs-body" target="_blank" rel="noopener noreferrer" hx-disable="true" class="qs-cta">Start free trial →</a>
-        </div>
+        </article>
       </div>
-    </div>
+    </section>
 
     <!-- What's new -->
-    <div class="landing-section-header">
-      <h2>What's new</h2>
-      <a href="@Model.Link("/release-notes/")">All release notes →</a>
-    </div>
-    <div class="news-grid">
-      <div class="news-card">
-        <div class="news-date">April 2026</div>
-        <h4>Elasticsearch @Model.CurrentVersion</h4>
-        <p>Improved authentication and upgraded security features.</p>
+    <section aria-label="What's new">
+      <div class="landing-section-header">
+        <h2>What's new</h2>
+        <a href="@Model.Link("/release-notes/")">All release notes →</a>
       </div>
-      <div class="news-card">
-        <div class="news-date">April 2026</div>
-        <h4>Elastic AI Assistant is GA</h4>
-        <p>Ask questions about your data in plain English across Observability and Security.</p>
+      <div class="news-grid">
+        <article class="news-card">
+          <time class="news-date" datetime="2026-04">April 2026</time>
+          <h3>Elasticsearch @Model.CurrentVersion</h3>
+          <p>Improved authentication and upgraded security features.</p>
+        </article>
+        <article class="news-card">
+          <time class="news-date" datetime="2026-04">April 2026</time>
+          <h3>Elastic AI Assistant is GA</h3>
+          <p>Ask questions about your data in plain English across Observability and Security.</p>
+        </article>
+        <article class="news-card">
+          <time class="news-date" datetime="2026-03">March 2026</time>
+          <h3>New Serverless features</h3>
+          <p>Run Elasticsearch without managing infrastructure. New capabilities for search workloads.</p>
+        </article>
       </div>
-      <div class="news-card">
-        <div class="news-date">March 2026</div>
-        <h4>New Serverless features</h4>
-        <p>Run Elasticsearch without managing infrastructure. New capabilities for search workloads.</p>
-      </div>
-    </div>
+    </section>
 
     <!-- All products -->
-    <div class="landing-section-header">
-      <h2>All products</h2>
-    </div>
-    <div class="all-products-grid">
-      <div class="product-column">
-        <h4>Platform</h4>
-        <ul>
-          <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
-          <li><a href="@Model.Link("/explore-analyze")">Kibana</a></li>
-          <li><a href="@Model.Link("/manage-data")">Logstash</a></li>
-          <li><a href="@Model.Link("/manage-data")">Beats</a></li>
-          <li><a href="@Model.Link("/explore-analyze")">Machine Learning</a></li>
-        </ul>
+    <nav aria-label="Product documentation">
+      <div class="landing-section-header">
+        <h2>All products</h2>
       </div>
-      <div class="product-column">
-        <h4>Solutions</h4>
-        <ul>
-          <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
-          <li><a href="@Model.Link("/solutions/observability")">Elastic Observability</a></li>
-          <li><a href="@Model.Link("/solutions/security")">Elastic Security</a></li>
-        </ul>
+      <div class="all-products-grid">
+        <div class="product-column">
+          <h3>Platform</h3>
+          <ul>
+            <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
+            <li><a href="@Model.Link("/explore-analyze")">Kibana</a></li>
+            <li><a href="@Model.Link("/manage-data")">Logstash</a></li>
+            <li><a href="@Model.Link("/manage-data")">Beats</a></li>
+            <li><a href="@Model.Link("/explore-analyze")">Machine Learning</a></li>
+          </ul>
+        </div>
+        <div class="product-column">
+          <h3>Solutions</h3>
+          <ul>
+            <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
+            <li><a href="@Model.Link("/solutions/observability")">Elastic Observability</a></li>
+            <li><a href="@Model.Link("/solutions/security")">Elastic Security</a></li>
+          </ul>
+        </div>
+        <div class="product-column">
+          <h3>Deploy</h3>
+          <ul>
+            <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Serverless</a></li>
+            <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Hosted</a></li>
+            <li><a href="@Model.Link("/deploy-manage")">Self-managed</a></li>
+            <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Enterprise (ECE)</a></li>
+            <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud on Kubernetes (ECK)</a></li>
+          </ul>
+        </div>
+        <div class="product-column">
+          <h3>Ingest tools</h3>
+          <ul>
+            <li><a href="@Model.Link("/manage-data")">Integrations</a></li>
+            <li><a href="@Model.Link("/reference/opentelemetry/")">Elastic Distributions for OpenTelemetry</a></li>
+            <li><a href="@Model.Link("/manage-data")">Fleet &amp; Elastic Agent</a></li>
+            <li><a href="@Model.Link("/solutions/observability")">APM</a></li>
+            <li><a href="@Model.Link("/solutions/security")">Elastic Defend</a></li>
+            <li><a href="@Model.Link("/manage-data")">Elastic Serverless Forwarder for AWS</a></li>
+            <li><a href="@Model.Link("/manage-data")">Connectors</a></li>
+            <li><a href="@Model.Link("/manage-data")">Web crawler</a></li>
+          </ul>
+        </div>
+        <div class="product-column">
+          <h3>Query languages</h3>
+          <ul>
+            <li><a href="@Model.Link("/reference/query-languages/")">Query DSL</a></li>
+            <li><a href="@Model.Link("/reference/query-languages/")">ES|QL</a></li>
+            <li><a href="@Model.Link("/reference/query-languages/")">KQL</a></li>
+            <li><a href="@Model.Link("/reference/query-languages/")">SQL</a></li>
+            <li><a href="@Model.Link("/reference/query-languages/")">EQL</a></li>
+            <li><a href="@Model.Link("/reference/query-languages/")">Lucene</a></li>
+          </ul>
+        </div>
+        <div class="product-column">
+          <h3>APM agents</h3>
+          <ul>
+            <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Java</a></li>
+            <li><a href="@Model.Link("/reference/elasticsearch-clients/")">&#46;NET</a></li>
+            <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Node.js</a></li>
+            <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Python</a></li>
+            <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Ruby</a></li>
+            <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Go</a></li>
+            <li><a href="@Model.Link("/reference/elasticsearch-clients/")">PHP</a></li>
+          </ul>
+        </div>
+        <div class="product-column">
+          <h3>Developer tools &amp; standards</h3>
+          <ul>
+            <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Elasticsearch clients</a></li>
+            <li><a href="@Model.Link("/reference")">Elastic Common Schema (ECS)</a></li>
+            <li><a href="@Model.Link("/reference")">Search UI</a></li>
+          </ul>
+        </div>
       </div>
-      <div class="product-column">
-        <h4>Deploy</h4>
-        <ul>
-          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Serverless</a></li>
-          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Hosted</a></li>
-          <li><a href="@Model.Link("/deploy-manage")">Self-managed</a></li>
-          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Enterprise (ECE)</a></li>
-          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud on Kubernetes (ECK)</a></li>
-        </ul>
-      </div>
-      <div class="product-column">
-        <h4>Ingest tools</h4>
-        <ul>
-          <li><a href="@Model.Link("/manage-data")">Integrations</a></li>
-          <li><a href="@Model.Link("/reference/opentelemetry/")">Elastic Distributions for OpenTelemetry</a></li>
-          <li><a href="@Model.Link("/manage-data")">Fleet &amp; Elastic Agent</a></li>
-          <li><a href="@Model.Link("/solutions/observability")">APM</a></li>
-          <li><a href="@Model.Link("/solutions/security")">Elastic Defend</a></li>
-          <li><a href="@Model.Link("/manage-data")">Elastic Serverless Forwarder for AWS</a></li>
-          <li><a href="@Model.Link("/manage-data")">Connectors</a></li>
-          <li><a href="@Model.Link("/manage-data")">Web crawler</a></li>
-        </ul>
-      </div>
-      <div class="product-column">
-        <h4>Query languages</h4>
-        <ul>
-          <li><a href="@Model.Link("/reference/query-languages/")">Query DSL</a></li>
-          <li><a href="@Model.Link("/reference/query-languages/")">ES|QL</a></li>
-          <li><a href="@Model.Link("/reference/query-languages/")">KQL</a></li>
-          <li><a href="@Model.Link("/reference/query-languages/")">SQL</a></li>
-          <li><a href="@Model.Link("/reference/query-languages/")">EQL</a></li>
-          <li><a href="@Model.Link("/reference/query-languages/")">Lucene</a></li>
-        </ul>
-      </div>
-      <div class="product-column">
-        <h4>APM agents</h4>
-        <ul>
-          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Java</a></li>
-          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">&#46;NET</a></li>
-          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Node.js</a></li>
-          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Python</a></li>
-          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Ruby</a></li>
-          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Go</a></li>
-          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">PHP</a></li>
-        </ul>
-      </div>
-      <div class="product-column">
-        <h4>Developer tools &amp; standards</h4>
-        <ul>
-          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Elasticsearch clients</a></li>
-          <li><a href="@Model.Link("/reference")">Elastic Common Schema (ECS)</a></li>
-          <li><a href="@Model.Link("/reference")">Search UI</a></li>
-        </ul>
-      </div>
-    </div>
+    </nav>
 
-    <!-- Help strip -->
-    <div class="help-strip">
+    <!-- Help -->
+    <section class="help-strip" aria-label="Help and community resources">
       <div class="help-item">
-        <h4>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          Community forums
-        </h4>
-        <p>Ask questions and get help from other Elastic users and engineers.</p>
-      </div>
-      <div class="help-item">
-        <h4>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-          Training &amp; certification
-        </h4>
-        <p>Free courses and hands-on labs to build your Elastic skills.</p>
-      </div>
-      <div class="help-item">
-        <h4>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+        <h3>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
           Report a docs issue
-        </h4>
-        <p>Found something wrong or confusing? Let us know on GitHub.</p>
+        </h3>
+        <p>Found something wrong or confusing? <a href="@Model.Link("/contribute-docs")">Let us know on GitHub.</a></p>
       </div>
-    </div>
+    </section>
 
-  </div><!-- /.landing-main -->
-
-  <!-- ── Footer ── -->
-  <footer class="landing-footer">
-    <div class="landing-footer-inner">
-      <span>© 2026 Elasticsearch B.V.</span>
-      <span><a href="@Model.Link("/contribute-docs")">Edit this page</a> · <a href="@Model.Link("/contribute-docs")">Report a docs issue</a></span>
-    </div>
-  </footer>
+  </main>
 
 </div>
