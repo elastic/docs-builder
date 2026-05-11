@@ -41,10 +41,11 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 :::
 
 `--file-type <string>`
-:   Optional: Output file type. Valid values: `"markdown"` or `"asciidoc"`.
+:   Optional: Output file type. Valid values: `"markdown"`, `"asciidoc"`, or `"gfm"`.
 :   Defaults to `"markdown"`.
 :   When `"markdown"` is specified, the command generates multiple markdown files (index.md, breaking-changes.md, deprecations.md, known-issues.md).
 :   When `"asciidoc"` is specified, the command generates a single asciidoc file with all sections.
+:   When `"gfm"` is specified, the command generates a single changelog.md file optimized for GitHub releases with clean headings and no anchor links.
 
 `--output <string?>`
 :   Optional: The output directory for rendered files.
@@ -104,6 +105,27 @@ When `--file-type asciidoc` is specified, the command generates a single asciido
 - Other changes
 
 The asciidoc output uses attribute references for links (for example, `{repo-pull}NUMBER[#NUMBER]`).
+
+### GFM format
+
+When `--file-type gfm` is specified, the command generates a single GitHub Flavored Markdown file optimized for GitHub releases:
+
+- `changelog.md` - Contains all sections in a single file with clean headings
+- Clean section headings without anchor links (e.g., `### Features and enhancements`)
+- Simplified structure focused on readability
+- Suitable for copy/pasting into GitHub releases
+
+The GFM output includes the following sections in order when entries are present:
+
+- Highlights (only included when at least one entry has `highlight: true`)
+- Features and enhancements
+- Breaking changes
+- Deprecations
+- Bug fixes (includes security updates)
+- Known issues
+- Documentation
+- Regressions
+- Other changes
 
 AsciiDoc output ignores the `--dropdowns` flag and always uses a standardized format with the following characteristics:
 
@@ -178,4 +200,13 @@ docs-builder changelog render \
   --input "./bundles/9.3.0.yaml|./changelog|elasticsearch" \
   --subsections \
   --output ./release-notes
+```
+
+### Render as GitHub Flavored Markdown for releases
+
+```sh
+docs-builder changelog render \
+  --input "./bundles/9.3.0.yaml|./changelog|elasticsearch" \
+  --file-type gfm \
+  --output ./github-release
 ```
