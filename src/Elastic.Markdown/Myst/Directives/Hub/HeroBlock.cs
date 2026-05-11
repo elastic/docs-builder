@@ -48,9 +48,11 @@ public class HeroBlock(DirectiveBlockParser parser, ParserContext context)
 		// search defaults to true; explicit ":search: false" hides it
 		ShowSearch = TryPropBool("search") ?? true;
 		QuickLinks = ParsePairs(Prop("quick-links"), allowEmptyUrl: false)
-			.Select(p => new HeroQuickLink(p.Label, p.Url!)).ToList();
+			.Select(p => new HeroQuickLink(p.Label, HubLinkValidator.ValidateAndResolve(p.Url, this, context) ?? p.Url!))
+			.ToList();
 		OtherVersions = ParsePairs(Prop("versions"), allowEmptyUrl: true)
-			.Select(p => new HeroVersion(p.Label, p.Url)).ToList();
+			.Select(p => new HeroVersion(p.Label, HubLinkValidator.ValidateAndResolve(p.Url, this, context)))
+			.ToList();
 		Releases = Prop("releases");
 
 		if (string.IsNullOrWhiteSpace(Title))
