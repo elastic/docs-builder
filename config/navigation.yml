@@ -236,9 +236,9 @@ toc:
             path_prefix: reference/aggregations
 
           # Processor reference
-          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/enrich-processor/toc.yml
-          - toc: elasticsearch://reference/enrich-processor
-            path_prefix: reference/enrich-processor
+          # https://github.com/elastic/elasticsearch/blob/main/docs/reference/ingest-processor/toc.yml
+          - toc: elasticsearch://reference/ingest-processor
+            path_prefix: reference/ingest-processor
 
           # Curator
           # https://github.com/elastic/curator/blob/master/docs/reference/toc.yml
