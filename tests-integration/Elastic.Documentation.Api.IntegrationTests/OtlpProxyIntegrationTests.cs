@@ -8,27 +8,24 @@ using AwesomeAssertions;
 using Elastic.Documentation.Api.Infrastructure.Adapters.Telemetry;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using FakeItEasy;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Elastic.Documentation.Api.IntegrationTests;
 
-public class OtlpProxyIntegrationTests : IAsyncLifetime
+public class OtlpProxyIntegrationTests
 {
 	private const string OtlpEndpoint = "http://localhost:4318";
 
-	public ValueTask InitializeAsync()
-	{
-		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", OtlpEndpoint);
-		return ValueTask.CompletedTask;
-	}
-
-	public ValueTask DisposeAsync()
-	{
-		GC.SuppressFinalize(this);
-		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", null);
-		return ValueTask.CompletedTask;
-	}
+	/// <summary>
+	/// Ensure OTLP routes are mapped by wiring the endpoint into host configuration (same key Program.cs reads).
+	/// Relying only on IAsyncLifetime + env vars is flaky under parallel test execution on CI.
+	/// </summary>
+	private static WebApplicationFactory<Program> WithOtlpConfigured(WebApplicationFactory<Program> factory) =>
+		factory.WithWebHostBuilder(builder =>
+			builder.UseSetting("OTEL_EXPORTER_OTLP_ENDPOINT", OtlpEndpoint));
 
 	[Fact]
 	public async Task OtlpProxyTracesEndpointForwardsToCorrectUrl()
@@ -49,12 +46,12 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
 			.Returns(Task.FromResult(mockResponse));
 
-		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		using var factory = WithOtlpConfigured(ApiWebApplicationFactory.WithMockedServices(services =>
 		{
 			// Replace the named HttpClient with our mock
 			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}));
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -114,11 +111,11 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
 			.Returns(Task.FromResult(mockResponse));
 
-		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		using var factory = WithOtlpConfigured(ApiWebApplicationFactory.WithMockedServices(services =>
 		{
 			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}));
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -171,11 +168,11 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 			.Invokes((HttpRequestMessage req, CancellationToken ct) => capturedRequest = req)
 			.Returns(Task.FromResult(mockResponse));
 
-		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		using var factory = WithOtlpConfigured(ApiWebApplicationFactory.WithMockedServices(services =>
 		{
 			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}));
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -222,14 +219,14 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Returns(Task.FromResult(mockResponse));
 
-		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		using var factory = WithOtlpConfigured(ApiWebApplicationFactory.WithMockedServices(services =>
 		{
 #pragma warning disable EXTEXP0001 // Experimental API - needed for test to bypass resilience handlers
 			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler)
 				.RemoveAllResilienceHandlers();
 #pragma warning restore EXTEXP0001
-		});
+		}));
 
 		var client = factory.CreateClient();
 		using var content = new StringContent("{}", Encoding.UTF8, "application/json");
@@ -250,7 +247,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 	public async Task OtlpProxyInvalidSignalTypeReturns404()
 	{
 		// Arrange
-		using var factory = new ApiWebApplicationFactory();
+		using var factory = WithOtlpConfigured(new ApiWebApplicationFactory());
 		using var client = factory.CreateClient();
 		using var content = new StringContent("{}", Encoding.UTF8, "application/json");
 
