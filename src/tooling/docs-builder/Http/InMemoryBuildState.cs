@@ -315,18 +315,6 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		Diagnostics: GetStoredDiagnostics()
 	);
 
-	private ScopedFileSystem GetOrCreateWriteFs(string sourcePath)
-	{
-		if (_writeFs is not null)
-			return _writeFs;
-		lock (_writeFsLock)
-		{
-			if (_writeFs is not null)
-				return _writeFs;
-			_writeFs = FileSystemFactory.InMemoryForSourceRoot(sourcePath);
-			return _writeFs;
-		}
-	}
 
 	public void Dispose()
 	{
