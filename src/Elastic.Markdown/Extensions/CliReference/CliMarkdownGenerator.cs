@@ -87,7 +87,13 @@ internal static partial class CliMarkdownGenerator
 		return sb.ToString();
 	}
 
-	public static string NamespacePage(CliNamespaceSchema ns, CliSupplementalDoc? supplemental, string[]? fullPath = null, string? binaryName = null, string[]? reservedMetaCommands = null)
+	public static string NamespacePage(
+		CliNamespaceSchema ns,
+		CliSupplementalDoc? supplemental,
+		string[]? fullPath = null,
+		string? binaryName = null,
+		string[]? reservedMetaCommands = null,
+		Action<string>? emitError = null)
 	{
 		var sb = new StringBuilder();
 		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : ns.Segment;
@@ -130,7 +136,17 @@ internal static partial class CliMarkdownGenerator
 		{
 			_ = sb.AppendLine("## Namespace Flags");
 			_ = sb.AppendLine();
-			AppendParameters(sb, ns.Options, null);
+			AppendParameters(sb, ns.Options, supplemental?.OptionOverrides);
+		}
+
+		if (supplemental is not null && emitError is not null)
+		{
+			var nsOptionNames = new HashSet<string>(ns.Options.Select(o => o.Name), StringComparer.OrdinalIgnoreCase);
+			foreach (var key in supplemental.OptionOverrides.Keys)
+			{
+				if (!nsOptionNames.Contains(key))
+					emitError($"CLI supplemental: Option '--{key}' not found in namespace '{ns.Segment}'");
+			}
 		}
 
 		if (!string.IsNullOrWhiteSpace(supplemental?.PostContent))

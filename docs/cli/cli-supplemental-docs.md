@@ -16,7 +16,7 @@ Two naming styles are supported and can coexist in the same folder.
 
 **Hierarchy style** mirrors the CLI namespace structure:
 
-```
+```text
 cli/
   assembler/
     index.md              ← assembler namespace
@@ -28,7 +28,7 @@ cli/
 
 **Flat prefix style** places all files at the folder root with the full path encoded in the name:
 
-```
+```text
 cli/
   ns-assembler.md             ← assembler namespace
   cmd-assembler-build.md      ← assembler build command

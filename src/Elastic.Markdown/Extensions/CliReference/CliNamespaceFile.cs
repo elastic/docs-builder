@@ -59,6 +59,7 @@ public record CliNamespaceFile : IO.MarkdownFile
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
 		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
-		return CliMarkdownGenerator.NamespacePage(_namespace, supplemental, _fullPath, _binaryName, _reservedMetaCommands);
+		return CliMarkdownGenerator.NamespacePage(_namespace, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
+			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error));
 	}
 }
