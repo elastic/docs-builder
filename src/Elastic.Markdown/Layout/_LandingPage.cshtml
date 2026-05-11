@@ -1,530 +1,556 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <style>
   /* ── Reset & Base ── */
-  .landing-page, .landing-page * , .landing-page *::before, .landing-page *::after { box-sizing: border-box; }
+  .landing-page, .landing-page *, .landing-page *::before, .landing-page *::after { box-sizing: border-box; }
   .landing-page {
-    --bg: #fafbfc;
-    --surface: #ffffff;
-    --surface-alt: #f3f5f7;
-    --border: #e2e6ea;
-    --border-light: #eef0f3;
-    --text: #1a1f36;
-    --text-secondary: #4a5270;
-    --text-muted: #8891a4;
-    --accent: #0077cc;
-    --accent-hover: #005fa3;
-    --accent-bg: #e8f4fd;
-    --green: #00bfb3;
-    --green-bg: #e6faf8;
-    --orange: #f5a623;
-    --orange-bg: #fef6e8;
-    --purple: #7b61ff;
-    --purple-bg: #f0edff;
-    --pink: #ff4081;
-    --pink-bg: #fff0f5;
-    --radius: 10px;
-    --radius-sm: 6px;
+    --elastic-blue: #0077CC;
+    --elastic-blue-light: #E8F4FD;
+    --elastic-teal: #00BFB3;
+    --elastic-teal-light: #E6FAF8;
+    --elastic-pink: #F04E98;
+    --elastic-pink-light: #FDE8F2;
+    --elastic-yellow: #FEC514;
+    --elastic-green: #00B3A4;
+    --bg: #ffffff;
+    --bg-alt: #F5F7FA;
+    --bg-warm: #FAFBFC;
+    --bg-dark: #1B2638;
+    --text-primary: #1B2638;
+    --text-secondary: #506477;
+    --text-tertiary: #8C9BAB;
+    --border: #E1E7EE;
+    --border-light: #EEF2F7;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-    --shadow: 0 2px 8px rgba(0,0,0,0.08);
-    --shadow-lg: 0 4px 20px rgba(0,0,0,0.10);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.1);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
     --max-w: 1120px;
-    --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-family: var(--font);
     background: var(--bg);
-    color: var(--text);
-    line-height: 1.55;
+    color: var(--text-primary);
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
-  .landing-page a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
-  .landing-page a:hover { color: var(--accent-hover); }
+  .landing-page a { color: var(--elastic-blue); text-decoration: none; transition: color 0.15s; }
+  .landing-page a:hover { color: #005fa3; }
 
-  /* ── Hero / Search ── */
-  .hero {
+  /* ── Hero ── */
+  .landing-hero {
+    background: linear-gradient(180deg, #EEF4FF 0%, #F7FAFF 60%, #FFFFFF 100%);
+    padding: 52px 40px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .landing-hero-inner {
     max-width: var(--max-w);
     margin: 0 auto;
-    padding: 48px 24px 0;
-    text-align: center;
   }
-  .hero h1 {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin-bottom: 10px;
+  .hero-welcome {
+    max-width: 620px;
+    margin-bottom: 36px;
   }
-  .search-wrap {
-    max-width: 640px;
-    margin: 0 auto 16px;
-    position: relative;
+  .hero-welcome h1 {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    letter-spacing: -0.7px;
+    line-height: 1.15;
   }
-  .search-wrap > .search-icon {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    pointer-events: none;
+  .hero-welcome p {
+    font-size: 17px;
+    color: var(--text-secondary);
+    line-height: 1.6;
   }
 
-  /* ── Section layout ── */
-  .section { max-width: var(--max-w); margin: 0 auto; padding: 40px 24px 0; }
-  .section-header {
+  /* Hero search */
+  .hero-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    max-width: 640px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .hero-search-wrap:focus-within {
+    border-color: var(--elastic-blue);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Hero cards */
+  .hero-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding-bottom: 48px;
+  }
+  .hero-card {
+    background: #fff;
+    border-radius: var(--radius-md);
+    padding: 28px 28px 24px;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--elastic-blue);
+    transform: translateY(-2px);
+  }
+  .hero-card.primary {
+    border-color: var(--elastic-blue);
+    box-shadow: var(--shadow-md), 0 0 0 1px rgba(0,119,204,0.08);
+  }
+  .hero-card.primary::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--elastic-blue), var(--elastic-teal));
+  }
+  .hero-card h2 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+  }
+  .hero-card .desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .card-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .card-links a {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--elastic-blue);
+    padding: 4px 10px;
+    background: rgba(0,119,204,0.04);
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .card-links a:hover { background: rgba(0,119,204,0.1); }
+  .card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--elastic-blue);
+    text-decoration: none;
+    margin-top: 12px;
+  }
+  .card-cta svg { transition: transform 0.15s; }
+  .hero-card:hover .card-cta svg { transform: translateX(3px); }
+
+  /* ── Main content ── */
+  .landing-main {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 40px 80px;
+  }
+
+  /* ── Quick start ── */
+  .quickstart {
+    background: var(--bg-alt);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    margin: 40px 0;
+    border: 1px solid var(--border-light);
+  }
+  .quickstart h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.2px;
+  }
+  .quickstart > p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+  }
+  .qs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .qs-card {
+    background: #fff;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+  }
+  .qs-card:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--elastic-blue);
+  }
+  .qs-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .qs-card > p {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    flex: 1;
+  }
+  .qs-cta {
+    font-size: 12px;
+    margin-top: 12px;
+    color: var(--elastic-blue);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+  }
+
+  /* ── Section header ── */
+  .landing-section-header {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .section-header h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
-  .section-header a { font-size: 13px; font-weight: 500; }
-
-  /* Icon color variants */
-  .icon-blue { background: var(--accent-bg); color: var(--accent); }
-  .icon-green { background: var(--green-bg); color: var(--green); }
-  .icon-orange { background: var(--orange-bg); color: var(--orange); }
-  .icon-purple { background: var(--purple-bg); color: var(--purple); }
-  .icon-pink { background: var(--pink-bg); color: var(--pink); }
-
-  /* ── Tabbed products ── */
-  .tabs-nav {
-    display: flex;
-    gap: 0;
-    border-bottom: 2px solid var(--border);
     margin-bottom: 20px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
   }
-  .tabs-nav button {
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    padding: 10px 18px;
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .tabs-nav button:hover { color: var(--text-secondary); }
-  .tabs-nav button.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: flex; flex-wrap: wrap; gap: 10px; }
+  .landing-section-header h2 { font-size: 18px; font-weight: 700; }
+  .landing-section-header a { font-size: 13px; font-weight: 500; }
 
-  /* Tab cards */
-  .tab-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
-    width: 100%;
-  }
-  .tab-card {
-    background: var(--surface);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius);
-    padding: 20px;
-    transition: box-shadow 0.15s, border-color 0.15s;
-  }
-  .tab-card:hover { border-color: var(--border); box-shadow: var(--shadow-sm); }
-  .tab-card h4 {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 10px;
-  }
-  .tab-card ul { list-style: none; }
-  .tab-card ul li + li { border-top: 1px solid var(--border-light); }
-  .tab-card ul li a {
-    display: block;
-    padding: 7px 0;
-    font-size: 13px;
-    color: var(--accent);
-    text-decoration: none;
-    transition: color 0.12s;
-  }
-  .tab-card ul li a:hover { color: var(--accent-hover); }
-
-  /* ── Top tabs (below search) ── */
-  .top-tabs {
-    max-width: var(--max-w);
-    margin: 0 auto;
-    padding: 0 24px 8px;
-  }
-  .top-tabs .tabs-nav { margin-bottom: 20px; justify-content: center; }
-
-  /* ── Page layout ── */
-  .page-layout {
-    max-width: var(--max-w);
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-  .page-main .section { padding: 40px 0 0; max-width: none; margin: 0; }
-
-  /* ── Getting started ── */
-  .gs-grid {
+  /* ── What's new ── */
+  .news-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+    gap: 16px;
+    margin-bottom: 52px;
   }
-  @@media (max-width: 800px) {
-    .gs-grid { grid-template-columns: 1fr; }
-  }
-  .gs-card {
-    background: var(--surface);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius);
-    padding: 22px 22px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    text-decoration: none;
-    color: var(--text);
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  .gs-card:hover { border-color: var(--accent); box-shadow: var(--shadow); color: var(--text); }
-  .gs-card .gs-card-icon {
-    width: 36px;
-    height: 36px;
+  .news-card {
+    padding: 18px 20px;
+    background: #fff;
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
+    transition: border-color 0.15s;
   }
-  .gs-card h3 { font-size: 15px; font-weight: 700; }
+  .news-card:hover { border-color: var(--elastic-blue); }
+  .news-date {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 6px;
+  }
+  .news-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .news-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
 
-  /* ── All products (categorized list) ── */
+  /* ── All products ── */
   .all-products-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 28px 40px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px 24px;
+    margin-bottom: 52px;
   }
-  .all-products-grid .cat-heading {
-    font-size: 12px;
+  .product-column h4 {
+    font-size: 13px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
+    color: var(--text-primary);
     margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
   }
-  .all-products-grid .cat-list { list-style: none; }
-  .all-products-grid .cat-list li + li { margin-top: 2px; }
-  .all-products-grid .cat-list a {
-    display: block;
-    padding: 5px 0;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
+  .product-column ul { list-style: none; }
+  .product-column li { margin-bottom: 6px; }
+  .product-column a {
+    font-size: 13px;
+    color: var(--elastic-blue);
     text-decoration: none;
     transition: color 0.15s;
   }
-  .all-products-grid .cat-list a:hover { color: var(--accent); }
+  .product-column a:hover { color: #005fa3; text-decoration: underline; }
+
+  /* ── Help strip ── */
+  .help-strip {
+    background: var(--bg-alt);
+    border-radius: var(--radius-md);
+    padding: 32px 36px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-light);
+  }
+  .help-item h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .help-item p { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
 
   /* ── Footer ── */
   .landing-footer {
+    background: var(--bg-dark);
+    padding: 44px 40px;
+    color: rgba(255,255,255,0.6);
+    font-family: var(--font);
+  }
+  .landing-footer-inner {
     max-width: var(--max-w);
-    margin: 48px auto 0;
-    padding: 40px 24px;
-    border-top: 1px solid var(--border-light);
+    margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 12px;
     font-size: 13px;
-    color: var(--text-muted);
   }
-  .landing-footer a { color: var(--text-secondary); }
+  .landing-footer a { color: rgba(255,255,255,0.5); transition: color 0.15s; }
+  .landing-footer a:hover { color: rgba(255,255,255,0.85); }
 
   /* ── Responsive ── */
-  @@media (max-width: 680px) {
-    .hero h1 { font-size: 22px; }
+  @@media (max-width: 900px) {
+    .hero-cards { grid-template-columns: 1fr; }
+    .all-products-grid { grid-template-columns: repeat(2, 1fr); }
+    .news-grid { grid-template-columns: 1fr; }
+    .help-strip { grid-template-columns: 1fr; }
+  }
+  @@media (max-width: 640px) {
+    .landing-hero { padding: 36px 20px 0; }
+    .hero-welcome h1 { font-size: 26px; }
+    .landing-main { padding: 0 20px 60px; }
+    .qs-grid { grid-template-columns: 1fr; }
+    .all-products-grid { grid-template-columns: 1fr; }
   }
 </style>
 
 <div hx-select-oob="#main-container" hx-swap="none" class="landing-page w-full max-w-[100vw] relative overflow-x-hidden">
 
-  <!-- ── Hero: Search-first ── -->
-  <div class="hero">
-    <h1>Elastic documentation</h1>
-    <div class="search-wrap">
-      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-      <navigation-search></navigation-search>
-    </div>
-  </div>
+  <!-- ── Hero ── -->
+  <section class="landing-hero">
+    <div class="landing-hero-inner">
 
-  <!-- ── Top tabs: Platform / Solutions / Deploy ── -->
-  <div class="top-tabs">
-    <div class="tabs-nav">
-      <button class="active" onclick="switchTopTab(event, 'top-tab-platform')">Platform</button>
-      <button onclick="switchTopTab(event, 'top-tab-solutions')">Solutions</button>
-      <button onclick="switchTopTab(event, 'top-tab-deploy')">Deploy</button>
-    </div>
-
-    <div id="top-tab-platform" class="tab-panel active">
-      <div class="tab-cards">
-        <div class="tab-card">
-          <h4>Elasticsearch</h4>
-          <ul>
-            <li><a href="@Model.Link("/deploy-manage/deploy/self-managed/installing-elasticsearch")">Install Elasticsearch →</a></li>
-            <li><a href="https://www.elastic.co/docs/api" target="_blank" rel="noopener noreferrer" hx-disable="true">REST APIs →</a></li>
-            <li><a href="@Model.Link("/reference/query-languages/")">Query DSL →</a></li>
-            <li><a href="@Model.Link("/reference/query-languages/")">Aggregations →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Index management →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Kibana</h4>
-          <ul>
-            <li><a href="@Model.Link("/deploy-manage")">Install Kibana →</a></li>
-            <li><a href="@Model.Link("/explore-analyze")">Dashboards →</a></li>
-            <li><a href="@Model.Link("/explore-analyze")">Visualizations →</a></li>
-            <li><a href="@Model.Link("/explore-analyze")">Discover →</a></li>
-            <li><a href="@Model.Link("/explore-analyze")">Alerting →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Logstash</h4>
-          <ul>
-            <li><a href="@Model.Link("/manage-data")">Getting started →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Input plugins →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Filter plugins →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Output plugins →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Pipeline configuration →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Beats</h4>
-          <ul>
-            <li><a href="@Model.Link("/manage-data")">Filebeat →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Metricbeat →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Packetbeat →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Heartbeat →</a></li>
-            <li><a href="@Model.Link("/manage-data")">Auditbeat →</a></li>
-          </ul>
-        </div>
+      <div class="hero-welcome">
+        <h1>Elastic documentation</h1>
+        <p>Official docs for the Elastic Stack, Elastic Cloud, and Elastic solutions.</p>
       </div>
-    </div>
 
-    <div id="top-tab-solutions" class="tab-panel">
-      <div class="tab-cards">
-        <div class="tab-card">
-          <h4>Elasticsearch</h4>
-          <ul>
-            <li><a href="@Model.Link("/solutions/search")">Get started with Search →</a></li>
-            <li><a href="@Model.Link("/solutions/search")">Semantic &amp; vector search →</a></li>
-            <li><a href="@Model.Link("/solutions/search")">Search applications →</a></li>
-            <li><a href="@Model.Link("/solutions/search")">Agent Builder →</a></li>
-            <li><a href="@Model.Link("/solutions/search")">AI agent skills →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Elastic Observability</h4>
-          <ul>
-            <li><a href="@Model.Link("/solutions/observability")">Get started with Observability →</a></li>
-            <li><a href="@Model.Link("/solutions/observability")">APM →</a></li>
-            <li><a href="@Model.Link("/solutions/observability")">Log monitoring →</a></li>
-            <li><a href="@Model.Link("/solutions/observability")">Infrastructure monitoring →</a></li>
-            <li><a href="@Model.Link("/solutions/observability")">Synthetics →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Elastic Security</h4>
-          <ul>
-            <li><a href="@Model.Link("/solutions/security")">Get started with Security →</a></li>
-            <li><a href="@Model.Link("/solutions/security")">Detection rules →</a></li>
-            <li><a href="@Model.Link("/solutions/security")">Endpoint protection →</a></li>
-            <li><a href="@Model.Link("/solutions/security")">Cases &amp; investigations →</a></li>
-            <li><a href="@Model.Link("/solutions/security")">Cloud security →</a></li>
-          </ul>
-        </div>
+      <div class="hero-search-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C9BAB" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <navigation-search></navigation-search>
       </div>
-    </div>
 
-    <div id="top-tab-deploy" class="tab-panel">
-      <div class="tab-cards">
-        <div class="tab-card">
-          <h4>Elastic Cloud Serverless</h4>
-          <ul>
-            <li><a href="@Model.Link("/deploy-manage")">Getting started →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Project management →</a></li>
-            <li><a href="@Model.Link("/cloud-account")">Billing &amp; usage →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Elastic Cloud Hosted</h4>
-          <ul>
-            <li><a href="@Model.Link("/deploy-manage")">Getting started →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Deployment management →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Monitoring →</a></li>
-            <li><a href="@Model.Link("/cloud-account")">Billing →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Self-managed</h4>
-          <ul>
-            <li><a href="@Model.Link("/deploy-manage/deploy/self-managed/installing-elasticsearch")">Install Elasticsearch →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Install Kibana →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Configure →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Secure a cluster →</a></li>
-            <li><a href="@Model.Link("/deploy-manage/upgrade")">Upgrade →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Elastic Cloud Enterprise (ECE)</h4>
-          <ul>
-            <li><a href="@Model.Link("/deploy-manage")">Install ECE →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Manage deployments →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Security &amp; users →</a></li>
-            <li><a href="@Model.Link("/deploy-manage/upgrade")">Upgrade →</a></li>
-          </ul>
-        </div>
-        <div class="tab-card">
-          <h4>Elastic Cloud on Kubernetes (ECK)</h4>
-          <ul>
-            <li><a href="@Model.Link("/deploy-manage")">Quickstart →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Operator configuration →</a></li>
-            <li><a href="@Model.Link("/deploy-manage")">Manage resources →</a></li>
-            <li><a href="@Model.Link("/deploy-manage/upgrade")">Upgrade →</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="page-layout">
-    <div class="page-main">
-
-      <!-- ── Get started ── -->
-      <div class="section">
-        <div class="section-header">
-          <h2>Get started</h2>
-        </div>
-        <div class="gs-grid">
-          <a class="gs-card" href="@Model.Link("/get-started")">
-            <div class="gs-card-icon icon-purple">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-            </div>
-            <h3>Elasticsearch concepts</h3>
+      <div class="hero-cards">
+        <div class="hero-card primary">
+          <h2>Learn how to use Elastic</h2>
+          <p class="desc">Get started with an overview of Elasticsearch, Kibana, and the rest of the Elastic Stack.</p>
+          <div class="card-links">
+            <a href="@Model.Link("/get-started")">What is Elasticsearch?</a>
+            <a href="@Model.Link("/get-started")">The Elastic Stack</a>
+            <a href="@Model.Link("/manage-data")">Ingest data</a>
+            <a href="@Model.Link("/manage-data")">Index basics</a>
+          </div>
+          <a href="@Model.Link("/get-started")" class="card-cta">
+            Get started
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
-          <a class="gs-card" href="@Model.Link("/get-started")">
-            <div class="gs-card-icon icon-green">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            </div>
-            <h3>Try locally</h3>
-          </a>
-          <a class="gs-card" href="https://cloud.elastic.co/registration?page=docs&placement=docs-body" target="_blank" rel="noopener noreferrer" hx-disable="true">
-            <div class="gs-card-icon icon-blue">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
-            </div>
-            <h3>Start free trial</h3>
+        </div>
+        <div class="hero-card">
+          <h2>Elasticsearch</h2>
+          <p class="desc">Store, search, and analyze your data with full-text search, vector search, AI search, and more.</p>
+          <div class="card-links">
+            <a href="@Model.Link("/deploy-manage/deploy/self-managed/installing-elasticsearch")">Install</a>
+            <a href="https://www.elastic.co/docs/api" target="_blank" rel="noopener noreferrer" hx-disable="true">REST API reference</a>
+            <a href="@Model.Link("/reference/query-languages/")">Query DSL</a>
+            <a href="@Model.Link("/release-notes/")">Release notes</a>
+          </div>
+          <a href="@Model.Link("/solutions/search")" class="card-cta">
+            Elasticsearch docs
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
         </div>
       </div>
 
-      <!-- ── All products ── -->
-      <div class="section">
-        <div class="section-header">
-          <h2>All products</h2>
+    </div>
+  </section>
+
+  <!-- ── Main content ── -->
+  <div class="landing-main">
+
+    <!-- Quick start -->
+    <div class="quickstart">
+      <h2>New to Elastic? Give it a try.</h2>
+      <div class="qs-grid">
+        <div class="qs-card">
+          <h4>Try locally</h4>
+          <p>Use Docker to install and run Elasticsearch and Kibana on your local machine.</p>
+          <a href="@Model.Link("/get-started")" class="qs-cta">Local installation docs →</a>
         </div>
-        <div class="all-products-grid">
-          <div>
-            <h3 class="cat-heading">Platform</h3>
-            <ul class="cat-list">
-              <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
-              <li><a href="@Model.Link("/explore-analyze")">Kibana</a></li>
-              <li><a href="@Model.Link("/manage-data")">Logstash</a></li>
-              <li><a href="@Model.Link("/manage-data")">Beats</a></li>
-              <li><a href="@Model.Link("/explore-analyze")">Machine Learning</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="cat-heading">Solutions</h3>
-            <ul class="cat-list">
-              <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
-              <li><a href="@Model.Link("/solutions/observability")">Elastic Observability</a></li>
-              <li><a href="@Model.Link("/solutions/security")">Elastic Security</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="cat-heading">Deploy</h3>
-            <ul class="cat-list">
-              <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Serverless</a></li>
-              <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Hosted</a></li>
-              <li><a href="@Model.Link("/deploy-manage")">Self-managed</a></li>
-              <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Enterprise (ECE)</a></li>
-              <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud on Kubernetes (ECK)</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="cat-heading">Ingest tools</h3>
-            <ul class="cat-list">
-              <li><a href="@Model.Link("/manage-data")">Integrations</a></li>
-              <li><a href="@Model.Link("/reference/opentelemetry/")">Elastic Distributions for OpenTelemetry</a></li>
-              <li><a href="@Model.Link("/manage-data")">Fleet &amp; Elastic Agent</a></li>
-              <li><a href="@Model.Link("/solutions/observability")">APM</a></li>
-              <li><a href="@Model.Link("/solutions/security")">Elastic Defend</a></li>
-              <li><a href="@Model.Link("/manage-data")">Elastic Serverless Forwarder for AWS</a></li>
-              <li><a href="@Model.Link("/manage-data")">Connectors</a></li>
-              <li><a href="@Model.Link("/manage-data")">Web crawler</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="cat-heading">Query languages</h3>
-            <ul class="cat-list">
-              <li><a href="@Model.Link("/reference/query-languages/")">Query DSL</a></li>
-              <li><a href="@Model.Link("/reference/query-languages/")">ES|QL</a></li>
-              <li><a href="@Model.Link("/reference/query-languages/")">KQL</a></li>
-              <li><a href="@Model.Link("/reference/query-languages/")">SQL</a></li>
-              <li><a href="@Model.Link("/reference/query-languages/")">EQL</a></li>
-              <li><a href="@Model.Link("/reference/query-languages/")">Lucene</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="cat-heading">APM agents</h3>
-            <ul class="cat-list">
-              <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Java</a></li>
-              <li><a href="@Model.Link("/reference/elasticsearch-clients/")">&#46;NET</a></li>
-              <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Node.js</a></li>
-              <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Python</a></li>
-              <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Ruby</a></li>
-              <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Go</a></li>
-              <li><a href="@Model.Link("/reference/elasticsearch-clients/")">PHP</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="cat-heading">Developer tools &amp; standards</h3>
-            <ul class="cat-list">
-              <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Elasticsearch clients</a></li>
-              <li><a href="@Model.Link("/reference")">Elastic Common Schema (ECS)</a></li>
-              <li><a href="@Model.Link("/reference")">Search UI</a></li>
-            </ul>
-          </div>
+        <div class="qs-card">
+          <h4>Start free Cloud trial</h4>
+          <p>Evaluate Elastic with a production-ready trial, using real data and use cases.</p>
+          <a href="https://cloud.elastic.co/registration?page=docs&placement=docs-body" target="_blank" rel="noopener noreferrer" hx-disable="true" class="qs-cta">Start free trial →</a>
         </div>
       </div>
+    </div>
 
-    </div><!-- /.page-main -->
-  </div><!-- /.page-layout -->
+    <!-- What's new -->
+    <div class="landing-section-header">
+      <h2>What's new</h2>
+      <a href="@Model.Link("/release-notes/")">All release notes →</a>
+    </div>
+    <div class="news-grid">
+      <div class="news-card">
+        <div class="news-date">April 2026</div>
+        <h4>Elasticsearch @Model.CurrentVersion</h4>
+        <p>Improved authentication and upgraded security features.</p>
+      </div>
+      <div class="news-card">
+        <div class="news-date">April 2026</div>
+        <h4>Elastic AI Assistant is GA</h4>
+        <p>Ask questions about your data in plain English across Observability and Security.</p>
+      </div>
+      <div class="news-card">
+        <div class="news-date">March 2026</div>
+        <h4>New Serverless features</h4>
+        <p>Run Elasticsearch without managing infrastructure. New capabilities for search workloads.</p>
+      </div>
+    </div>
+
+    <!-- All products -->
+    <div class="landing-section-header">
+      <h2>All products</h2>
+    </div>
+    <div class="all-products-grid">
+      <div class="product-column">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
+          <li><a href="@Model.Link("/explore-analyze")">Kibana</a></li>
+          <li><a href="@Model.Link("/manage-data")">Logstash</a></li>
+          <li><a href="@Model.Link("/manage-data")">Beats</a></li>
+          <li><a href="@Model.Link("/explore-analyze")">Machine Learning</a></li>
+        </ul>
+      </div>
+      <div class="product-column">
+        <h4>Solutions</h4>
+        <ul>
+          <li><a href="@Model.Link("/solutions/search")">Elasticsearch</a></li>
+          <li><a href="@Model.Link("/solutions/observability")">Elastic Observability</a></li>
+          <li><a href="@Model.Link("/solutions/security")">Elastic Security</a></li>
+        </ul>
+      </div>
+      <div class="product-column">
+        <h4>Deploy</h4>
+        <ul>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Serverless</a></li>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Hosted</a></li>
+          <li><a href="@Model.Link("/deploy-manage")">Self-managed</a></li>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud Enterprise (ECE)</a></li>
+          <li><a href="@Model.Link("/deploy-manage")">Elastic Cloud on Kubernetes (ECK)</a></li>
+        </ul>
+      </div>
+      <div class="product-column">
+        <h4>Ingest tools</h4>
+        <ul>
+          <li><a href="@Model.Link("/manage-data")">Integrations</a></li>
+          <li><a href="@Model.Link("/reference/opentelemetry/")">Elastic Distributions for OpenTelemetry</a></li>
+          <li><a href="@Model.Link("/manage-data")">Fleet &amp; Elastic Agent</a></li>
+          <li><a href="@Model.Link("/solutions/observability")">APM</a></li>
+          <li><a href="@Model.Link("/solutions/security")">Elastic Defend</a></li>
+          <li><a href="@Model.Link("/manage-data")">Elastic Serverless Forwarder for AWS</a></li>
+          <li><a href="@Model.Link("/manage-data")">Connectors</a></li>
+          <li><a href="@Model.Link("/manage-data")">Web crawler</a></li>
+        </ul>
+      </div>
+      <div class="product-column">
+        <h4>Query languages</h4>
+        <ul>
+          <li><a href="@Model.Link("/reference/query-languages/")">Query DSL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">ES|QL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">KQL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">SQL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">EQL</a></li>
+          <li><a href="@Model.Link("/reference/query-languages/")">Lucene</a></li>
+        </ul>
+      </div>
+      <div class="product-column">
+        <h4>APM agents</h4>
+        <ul>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Java</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">&#46;NET</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Node.js</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Python</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Ruby</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Go</a></li>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">PHP</a></li>
+        </ul>
+      </div>
+      <div class="product-column">
+        <h4>Developer tools &amp; standards</h4>
+        <ul>
+          <li><a href="@Model.Link("/reference/elasticsearch-clients/")">Elasticsearch clients</a></li>
+          <li><a href="@Model.Link("/reference")">Elastic Common Schema (ECS)</a></li>
+          <li><a href="@Model.Link("/reference")">Search UI</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Help strip -->
+    <div class="help-strip">
+      <div class="help-item">
+        <h4>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Community forums
+        </h4>
+        <p>Ask questions and get help from other Elastic users and engineers.</p>
+      </div>
+      <div class="help-item">
+        <h4>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          Training &amp; certification
+        </h4>
+        <p>Free courses and hands-on labs to build your Elastic skills.</p>
+      </div>
+      <div class="help-item">
+        <h4>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+          Report a docs issue
+        </h4>
+        <p>Found something wrong or confusing? Let us know on GitHub.</p>
+      </div>
+    </div>
+
+  </div><!-- /.landing-main -->
 
   <!-- ── Footer ── -->
   <footer class="landing-footer">
-    <span>© 2026 Elasticsearch B.V.</span>
-    <span><a href="@Model.Link("/contribute-docs")">Edit this page</a> · <a href="@Model.Link("/contribute-docs")">Report a docs issue</a></span>
+    <div class="landing-footer-inner">
+      <span>© 2026 Elasticsearch B.V.</span>
+      <span><a href="@Model.Link("/contribute-docs")">Edit this page</a> · <a href="@Model.Link("/contribute-docs")">Report a docs issue</a></span>
+    </div>
   </footer>
 
 </div>
-
-<script>
-  function switchTopTab(e, tabId) {
-    var container = e.currentTarget.closest('.top-tabs');
-    container.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-    container.querySelectorAll('.tabs-nav button').forEach(function(b) { b.classList.remove('active'); });
-    document.getElementById(tabId).classList.add('active');
-    e.currentTarget.classList.add('active');
-  }
-</script>
