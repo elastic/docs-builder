@@ -9,9 +9,13 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// values are emitted verbatim into href attributes and don't go through Markdig's
 /// link resolver. Root-relative URLs (e.g. "/deploy-manage/...") need the site's
 /// URL path prefix (e.g. "/docs") prepended so they resolve on the assembled site.
+/// They also need to opt out of body-level <c>hx-boost</c> because the layout uses
+/// <c>hx-swap="none"</c> by default — without an explicit <c>hx-select-oob</c>,
+/// boosted clicks fetch the URL but swap nothing.
 /// </summary>
 internal static class HubUrl
 {
+
 	/// <summary>
 	/// Prefix a root-relative URL with the site's path prefix. Absolute URLs
 	/// (http/https/mailto), anchors, and URLs already under the prefix are

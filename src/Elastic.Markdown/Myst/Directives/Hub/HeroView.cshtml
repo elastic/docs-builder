@@ -68,7 +68,7 @@
 								}
 								else
 								{
-									<li role="menuitem"><a href="@Model.PrefixUrl(v.Url)">@v.Label</a></li>
+									<li role="menuitem"><a href="@Model.PrefixUrl(v.Url)" hx-boost="false">@v.Label</a></li>
 								}
 							}
 						</ul>
@@ -87,7 +87,7 @@
 				<ul class="hub-hero-pills">
 					@foreach (var link in Model.QuickLinks)
 					{
-						<li><a href="@Model.PrefixUrl(link.Url)">@link.Label</a></li>
+						<li><a href="@Model.PrefixUrl(link.Url)" hx-boost="false">@link.Label</a></li>
 					}
 				</ul>
 			}
