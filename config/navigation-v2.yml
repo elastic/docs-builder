@@ -23,7 +23,7 @@ nav:
         - page: docs-content://solutions/search/site-or-app.md
           title: Add search to your site or app
         - page: docs-content://solutions/search/rag.md
-          title: RAG
+          title: Retrieval-augmented generation (RAG)
   - label: Install, deploy, and administer
     children:
       - group: Distributed architecture
@@ -78,9 +78,9 @@ nav:
           page: docs-content://deploy-manage/reference-architectures.md
           children:
           - page: docs-content://deploy-manage/reference-architectures/hotfrozen-high-availability.md
-            title: Hot/Frozen - High Availability
+            title: Hot-frozen high availability
           - page: docs-content://deploy-manage/reference-architectures/genai-search-high-availability.md
-            title: GenAI Search - High Availability
+            title: GenAI search high availability
         - group: Production guidance
           page: docs-content://deploy-manage/production-guidance.md
           children:
@@ -1446,7 +1446,7 @@ nav:
       - group: "Ingest or migrate: bring your data into Elasticsearch"
         children:
         - page: docs-content://manage-data/ingest.md
-          title: Choose/Plan your ingest method
+          title: Choose an ingest method
         - group: Ingest architectures
           page: docs-content://manage-data/ingest/ingest-reference-architectures.md
           children:
@@ -2652,7 +2652,7 @@ nav:
             - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/k8s.md
               title: Kubernetes
             - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/hosts_vms.md
-              title: Hosts / VMs
+              title: Hosts and VMs
             - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/docker.md
               title: Docker
           - group: Elastic Cloud Serverless
