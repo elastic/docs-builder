@@ -8,6 +8,7 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
@@ -155,6 +156,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{on-this-page}") > 0)
 			return new OnThisPageBlock(this, context);
+
+		if (info.IndexOf("{cli-modifiers}") > 0)
+			return new CliModifiersBlock(this, context);
 
 		foreach (var admonition in Admonitions)
 		{

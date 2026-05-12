@@ -110,8 +110,8 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		info.Entity switch
 		{
 			CliSchema schema => new CliRootFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
-			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc, info.FullPath ?? [ns.Segment], info.Schema.Name),
-			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc, info.FullPath ?? [cmd.Name], info.Schema.Name),
+			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc, info.FullPath ?? [ns.Segment], info.Schema.Name, info.Schema.ReservedMetaCommands),
+			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc, info.FullPath ?? [cmd.Name], info.Schema.Name, info.Schema.ReservedMetaCommands),
 			_ => null
 		};
 

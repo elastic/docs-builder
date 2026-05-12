@@ -30,6 +30,7 @@
 @import './markdown/hub.css';
 @import './markdown/metadata-box.css';
 @import './secondary-nav-dropdown.css';
+@import './markdown/cli-modifiers.css';
 @import './markdown/contributors.css';
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
