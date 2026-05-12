@@ -1,5 +1,6 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<div class="relative isolate sticky top-0 z-50 h-12 border-b border-grey-20">
+@* Fixed chrome + in-flow spacer: sticky was losing the strip under Nav V2 / grid stacking on isolated serve. *@
+<div class="fixed inset-x-0 top-0 z-[60] flex h-12 shrink-0 border-b border-grey-20 bg-ink-navy">
 	<elastic-docs-header title="@(Model.HeaderTitle ?? Model.DocSetName)"
 	                     logo-href="@(Model.Link("/"))"
 	                     github-repository="@(Model.GitRepository)"
@@ -12,3 +13,4 @@
 	                     icon-src="@(Model.BrandingIconStaticPath)">
 	</elastic-docs-header>
 </div>
+<div class="h-12 w-full shrink-0 pointer-events-none" aria-hidden="true"></div>

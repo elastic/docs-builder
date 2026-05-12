@@ -6,8 +6,7 @@
 }
 
 /*
- * Preview chrome must stack above the pages sidebar (z-40 on small screens) and the
- * mobile drawer overlay (z-30). The host uses z-50 in _IsolatedHeader.cshtml.
+ * Preview chrome: fixed bar uses z-[60] in _IsolatedHeader.cshtml (above sidebar z-40 / overlay z-30).
  * Until the custom element upgrades, keep a visible bar so the strip is not mistaken for “missing”.
  */
 elastic-docs-header:not(:defined) {
