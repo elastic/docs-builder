@@ -52,6 +52,33 @@ AsciiDoc output ignores the `--dropdowns` flag and always uses a standardized fo
 - Strong text formatting uses idiomatic single asterisk syntax (`*Impact:*`, `*Action:*`) following AsciiDoc best practices
 - All content blocks are properly attached to their parent list items for correct rendering.
 
+### GFM format
+
+When `--file-type gfm` is specified, the command generates a single GitHub Flavored Markdown file optimized for GitHub releases:
+
+- `changelog.md` - Contains all sections in a single file with clean headings
+- Clean section headings without anchor links (for example, `### Features and enhancements`)
+- Simplified structure focused on readability
+- Suitable for copy/pasting into GitHub releases
+
+The GFM output includes the following sections in order when entries are present:
+
+- Highlights (only included when at least one entry has `highlight: true`)
+- Features and enhancements
+- Breaking changes
+- Deprecations
+- Bug fixes (includes security updates)
+- Known issues
+- Documentation
+- Regressions
+- Other changes
+
+AsciiDoc output ignores the `--dropdowns` flag and always uses a standardized format with the following characteristics:
+
+- Multi-block entries (containing description, Impact, and Action sections) use proper list continuation markers (`+`) to maintain list structure
+- Strong text formatting uses idiomatic single asterisk syntax (`*Impact:*`, `*Action:*`) following AsciiDoc best practices
+- All content blocks are properly attached to their parent list items for correct rendering
+
 ### Multiple PR and issue links
 
 Changelog entries can reference multiple pull requests and issues via the `prs` and `issues` array fields. All links are rendered inline:
@@ -66,7 +93,7 @@ Changelog entries can reference multiple pull requests and issues via the `prs` 
 # Render a single bundle
 docs-builder changelog render \
   --input "./docs/changelog/bundles/9.3.0.yaml" \
-  --output ./release-notes
+  --output ./release-notes \
 
 # Render with explicit changelog dir and repo
 docs-builder changelog render \
@@ -94,4 +121,10 @@ docs-builder changelog render \
   --input "./docs/changelog/bundles/9.3.0.yaml" \
   --output ./release-notes \
   --dropdowns
+
+# Render as GitHub Flavored Markdown
+docs-builder changelog render \
+  --input "./docs/changelog/bundles/9.3.0.yaml" \
+  --output ./release-notes \
+  --file-type gfm
 ```
