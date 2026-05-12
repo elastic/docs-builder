@@ -84,6 +84,13 @@ internal static class HubLinkValidator
 		if (context.Build.BuildType != BuildType.Isolated)
 			return;
 
+		// dev_docs sandboxes (docs-builder's own /docs, etc.) are not part of the
+		// assembled site and routinely host fixtures that reference cross-docset
+		// pages with bare absolute paths. Existence checks against the local docset
+		// would produce false positives.
+		if (context.Configuration.DevelopmentDocs)
+			return;
+
 		var (path, _) = SplitAnchor(url);
 		if (string.IsNullOrEmpty(path) || path == "/")
 			return;
