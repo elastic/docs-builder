@@ -1641,6 +1641,8 @@ nav:
           - toc: ecctl://reference
           - page: elasticsearch://reference/elasticsearch/command-line-tools/index.md
             title: Command-line tools
+          - island: Account and preferences
+            toc: docs-content://cloud-account
     - label: The Elasticsearch platform
       children:
       - label: Ingest and manage data
