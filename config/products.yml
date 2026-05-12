@@ -138,6 +138,10 @@ products:
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
+  elastic-docs:
+    display: 'Elastic Documentation'
+    features:
+      public-reference: false
   elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
     versioning: 'esf'
