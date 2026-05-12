@@ -64,6 +64,15 @@ public class LinkCardBlock(DirectiveBlockParser parser, ParserContext context)
 
 		if (string.IsNullOrWhiteSpace(Data.Title))
 			this.EmitError("{link-card} requires a `title` field in its YAML body.");
+
+		Data.Link = HubLinkValidator.ValidateAndResolve(Data.Link, this, context);
+		foreach (var link in Data.Links)
+			link.Url = HubLinkValidator.ValidateAndResolve(link.Url, this, context);
+		if (Data.Aside is not null)
+		{
+			foreach (var link in Data.Aside.Links)
+				link.Url = HubLinkValidator.ValidateAndResolve(link.Url, this, context);
+		}
 	}
 }
 

@@ -7,4 +7,6 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 public class WhatsNewViewModel : DirectiveViewModel
 {
 	public required WhatsNewData Data { get; init; }
+	public required string? SitePathPrefix { get; init; }
+	public string? PrefixUrl(string? url) => HubUrl.Prefix(url, SitePathPrefix);
 }

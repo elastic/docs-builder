@@ -49,6 +49,7 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 				return;
 			}
 			Data = resolved;
+			ValidateLinks(context);
 			return;
 		}
 
@@ -66,7 +67,18 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 		catch (YamlException ex)
 		{
 			this.EmitError($"{{whats-new}} YAML parse error: {ex.Message}");
+			return;
 		}
+
+		ValidateLinks(context);
+	}
+
+	private void ValidateLinks(ParserContext context)
+	{
+		foreach (var link in Data.ReleaseLinks)
+			link.Url = HubLinkValidator.ValidateAndResolve(link.Url, this, context);
+		foreach (var item in Data.Items)
+			item.Link = HubLinkValidator.ValidateAndResolve(item.Link, this, context);
 	}
 
 	private WhatsNewData? LoadFromCentralConfig(string productKey)
