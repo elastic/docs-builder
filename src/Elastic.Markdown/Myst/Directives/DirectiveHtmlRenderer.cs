@@ -13,11 +13,13 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
+using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.SubPages;
@@ -101,6 +103,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case MathBlock mathBlock:
 				WriteMathBlock(renderer, mathBlock);
 				return;
+			case PageCardBlock pageCardBlock:
+				WritePageCard(renderer, pageCardBlock);
+				return;
 			case StepperBlock stepperBlock:
 				WriteStepperBlock(renderer, stepperBlock);
 				return;
@@ -124,6 +129,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
+				return;
+			case CliModifiersBlock cliModifiersBlock:
+				WriteCliModifiers(renderer, cliModifiersBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -177,6 +185,17 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				ImageUrl = img.ImageUrl
 			}).ToList(),
 			MaxHeight = block.MaxHeight
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WritePageCard(HtmlRenderer renderer, PageCardBlock block)
+	{
+		var slice = PageCardView.Create(new PageCardViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Url = block.ResolvedUrl
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -238,6 +257,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			ColumnWidths = block.ColumnWidths
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteCliModifiers(HtmlRenderer renderer, CliModifiersBlock block)
+	{
+		if (!block.Destructive && !block.RequiresConfirmation && !block.RequiresAuth
+			&& !block.Idempotent && string.IsNullOrWhiteSpace(block.Scope)
+			&& !block.Streaming && !block.LongRunning)
+			return;
+
+		var slice = CliModifiersView.Create(new CliModifiersViewModel
+		{
+			DirectiveBlock = block,
+			Destructive = block.Destructive,
+			RequiresConfirmation = block.RequiresConfirmation,
+			RequiresAuth = block.RequiresAuth,
+			Idempotent = block.Idempotent,
+			Scope = block.Scope,
+			Streaming = block.Streaming,
+			LongRunning = block.LongRunning,
 		});
 		RenderRazorSlice(slice, renderer);
 	}

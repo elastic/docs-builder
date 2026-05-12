@@ -1,0 +1,35 @@
+@layer components {
+	.cli-modifiers {
+		@apply flex flex-wrap gap-2 pb-4;
+
+		.cli-modifier {
+			@apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium;
+
+			svg {
+				@apply size-3.5 shrink-0;
+			}
+		}
+
+		.cli-modifier--destructive {
+			@apply border-red-20 bg-red-10 text-red-90;
+		}
+
+		.cli-modifier--confirmation {
+			@apply border-yellow-20 bg-yellow-10 text-yellow-90;
+		}
+
+		.cli-modifier--auth {
+			@apply border-blue-elastic-20 bg-blue-elastic-10 text-blue-elastic;
+		}
+
+		.cli-modifier--idempotent {
+			@apply border-green-20 bg-green-10 text-green-90;
+		}
+
+		.cli-modifier--scope,
+		.cli-modifier--streaming,
+		.cli-modifier--long-running {
+			@apply border-grey-20 bg-grey-10 text-grey-90;
+		}
+	}
+}

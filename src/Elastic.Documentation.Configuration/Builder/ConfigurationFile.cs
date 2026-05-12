@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using static Elastic.Documentation.Configuration.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -67,6 +68,11 @@ public record ConfigurationFile
 	/// Set of diagnostic hint types to suppress for this documentation set.
 	/// </summary>
 	public HashSet<HintType> SuppressDiagnostics { get; } = [];
+
+	/// <summary>
+	/// White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.
+	/// </summary>
+	public BrandingConfiguration? Branding { get; private set; }
 
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
@@ -145,36 +151,58 @@ public record ConfigurationFile
 				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
 				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
 
-				foreach (var (productKey, apiConfig) in docSetFile.Api)
+				foreach (var (productKey, apiSequence) in docSetFile.Api)
 				{
-					if (!apiConfig.IsValid)
+					if (!apiSequence.IsValid)
 					{
 						context.EmitError(
 							context.ConfigurationPath,
-							$"API configuration for '{productKey}' is invalid. Must have at least one spec and cannot specify both 'spec' and 'specs'."
+							$"API configuration for '{productKey}' is invalid. Must have at least one spec and all entries must be valid."
 						);
 						continue;
 					}
 
-					// Resolve template file if specified
-					IFileInfo? templateFile = null;
-					if (!string.IsNullOrEmpty(apiConfig.Template))
+					// Resolve intro markdown files
+					var introMarkdownFiles = new List<IFileInfo>();
+					foreach (var introPath in apiSequence.GetIntroMarkdownFiles())
 					{
-						var templatePath = Path.Join(context.DocumentationSourceDirectory.FullName, apiConfig.Template);
-						templateFile = context.ReadFileSystem.FileInfo.New(templatePath);
-						if (!templateFile.Exists)
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, introPath);
+						var introFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!introFile.Exists)
 						{
 							context.EmitWarning(
 								context.ConfigurationPath,
-								$"Template file '{apiConfig.Template}' for API '{productKey}' does not exist."
+								$"Intro markdown file '{introPath}' for API '{productKey}' does not exist."
 							);
-							templateFile = null;
+						}
+						else
+						{
+							introMarkdownFiles.Add(introFile);
+						}
+					}
+
+					// Resolve outro markdown files
+					var outroMarkdownFiles = new List<IFileInfo>();
+					foreach (var outroPath in apiSequence.GetOutroMarkdownFiles())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, outroPath);
+						var outroFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!outroFile.Exists)
+						{
+							context.EmitWarning(
+								context.ConfigurationPath,
+								$"Outro markdown file '{outroPath}' for API '{productKey}' does not exist."
+							);
+						}
+						else
+						{
+							outroMarkdownFiles.Add(outroFile);
 						}
 					}
 
 					// Resolve specification files
 					var specFiles = new List<IFileInfo>();
-					foreach (var specPath in apiConfig.GetSpecPaths())
+					foreach (var specPath in apiSequence.GetSpecPaths())
 					{
 						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, specPath);
 						var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
@@ -202,8 +230,9 @@ public record ConfigurationFile
 					var resolvedConfig = new ResolvedApiConfiguration
 					{
 						ProductKey = productKey,
-						TemplateFile = templateFile,
-						SpecFiles = specFiles
+						IntroMarkdownFiles = introMarkdownFiles,
+						SpecFiles = specFiles,
+						OutroMarkdownFiles = outroMarkdownFiles
 					};
 
 					apiConfigs[productKey] = resolvedConfig;
@@ -225,12 +254,20 @@ public record ConfigurationFile
 					.ToHashSet()!;
 			}
 
+			// Process branding with validation
+			if (docSetFile.Branding is not null)
+				Branding = ValidateBranding(docSetFile.Branding, context);
+
 			// Process features
 			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 			if (docSetFile.Features.PrimaryNav.HasValue)
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
 			if (docSetFile.Features.DisableGithubEditLink.HasValue)
 				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
+
+			// primary-nav requires the Elastic global navigation which is not available for white-label builds
+			if (Branding is not null && docSetFile.Features.PrimaryNav is true)
+				context.EmitError(context.ConfigurationPath, "'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation.");
 
 			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
@@ -258,6 +295,75 @@ public record ConfigurationFile
 			context.EmitError(context.ConfigurationPath, $"Could not load docset.yml: {e.Message}");
 			throw;
 		}
+	}
+
+	private static readonly HashSet<string> AllowedImageExtensions =
+		[".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico"];
+
+	private static BrandingConfiguration ValidateBranding(BrandingConfiguration branding, IDocumentationSetContext context)
+	{
+		branding.Icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
+		branding.OgImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
+		branding.Favicon = string.IsNullOrEmpty(branding.Favicon)
+			? DiscoverBrandingFile(["favicon.ico", "favicon.png", "favicon.svg"], context)
+			: ValidateBrandingImage(branding.Favicon, "branding.favicon", context);
+		branding.AppleTouchIcon = string.IsNullOrEmpty(branding.AppleTouchIcon)
+			? DiscoverBrandingFile(["apple-touch-icon.png"], context)
+			: ValidateBrandingImage(branding.AppleTouchIcon, "branding.apple-touch-icon", context);
+		return branding;
+	}
+
+	private static string? DiscoverBrandingFile(string[] candidates, IDocumentationSetContext context)
+	{
+		foreach (var name in candidates)
+		{
+			var f = context.ReadFileSystem.FileInfo.New(
+				Path.Join(context.DocumentationSourceDirectory.FullName, name));
+			if (f.Exists && f.LinkTarget is null)
+				return name;
+		}
+		return null;
+	}
+
+	private static string? ValidateBrandingImage(string? imagePath, string fieldName, IDocumentationSetContext context)
+	{
+		if (string.IsNullOrEmpty(imagePath))
+			return null;
+
+		var ext = Path.GetExtension(imagePath).ToLowerInvariant();
+		if (!AllowedImageExtensions.Contains(ext))
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' has unsupported extension '{ext}'. Allowed: {string.Join(", ", AllowedImageExtensions)}");
+			return null;
+		}
+
+		var resolved = context.ReadFileSystem.FileInfo.New(
+			Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, imagePath))
+		);
+
+		if (!resolved.IsSubPathOf(context.DocumentationSourceDirectory))
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' path '{imagePath}' escapes the documentation source directory.");
+			return null;
+		}
+
+		var symlinkError = ValidateFileAccess(resolved, context.DocumentationSourceDirectory);
+		if (symlinkError is not null)
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' path '{imagePath}' is unsafe: {symlinkError}");
+			return null;
+		}
+
+		if (!resolved.Exists)
+		{
+			context.EmitError(context.ConfigurationPath, $"'{fieldName}' file '{imagePath}' does not exist.");
+			return null;
+		}
+
+		return imagePath;
 	}
 
 	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)

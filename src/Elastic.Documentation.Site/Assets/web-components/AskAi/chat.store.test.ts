@@ -1,6 +1,5 @@
 import { chatStore } from './chat.store'
 import { act } from 'react'
-import { v4 as uuidv4 } from 'uuid'
 
 // Mock idb-keyval (IndexedDB not available in Node.js test environment)
 jest.mock('idb-keyval', () => ({
@@ -10,18 +9,18 @@ jest.mock('idb-keyval', () => ({
     createStore: jest.fn().mockReturnValue({}),
 }))
 
-// Mock uuid
-jest.mock('uuid', () => ({
-    v4: jest.fn(),
-}))
-
-const mockUuidv4 = uuidv4 as jest.MockedFunction<() => string>
-
 describe('chat.store', () => {
     beforeEach(() => {
-        // Setup UUID mock to return unique IDs
+        // Setup randomUUID mock to return unique IDs
         let counter = 0
-        mockUuidv4.mockImplementation((): string => `mock-uuid-${++counter}`)
+        Object.defineProperty(globalThis, 'crypto', {
+            configurable: true,
+            value: {
+                randomUUID: jest
+                    .fn()
+                    .mockImplementation((): string => `mock-uuid-${++counter}`),
+            },
+        })
 
         // Clear localStorage to ensure clean state
         try {

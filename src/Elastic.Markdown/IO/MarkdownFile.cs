@@ -56,7 +56,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	private IDiagnosticsCollector Collector { get; }
+	protected IDiagnosticsCollector Collector { get; }
 
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
@@ -76,7 +76,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public string? Description { get; private set; }
 
 	[field: AllowNull, MaybeNull]
-	public string NavigationTitle
+	public virtual string NavigationTitle
 	{
 		get => !string.IsNullOrEmpty(field) ? field : Title ?? string.Empty;
 		private set => field = value.StripMarkdown();
@@ -435,12 +435,15 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}
 	}
 
-	public static string CreateHtml(MarkdownDocument document)
+	public static string CreateHtml(MarkdownDocument document, bool stripFirstHeadingLevel1 = true)
 	{
-		//we manually render title and optionally append an applies block embedded in yaml front matter.
-		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
-		if (h1 is not null)
-			_ = document.Remove(h1);
+		// We manually render title and optionally append an applies block embedded in yaml front matter.
+		if (stripFirstHeadingLevel1)
+		{
+			var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+			if (h1 is not null)
+				_ = document.Remove(h1);
+		}
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		return InsertFootnotesHeading(html);

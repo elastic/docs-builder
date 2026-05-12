@@ -1,9 +1,16 @@
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
+@functions {
+	static string StripBadge(string t) =>
+		t.StartsWith("[ns]", StringComparison.Ordinal) ? t[4..] :
+		t.StartsWith("[cmd]", StringComparison.Ordinal) ? t[5..] : t;
+}
 @{
 	var targets = Model.Breadcrumbs;
 	var crumbs = targets.ToList();
 }
 
+@if (crumbs.Count > 0 && (crumbs.Count > 1 || Model.BuildType != BuildType.Isolated))
+{
 <ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full py-6">
 	@for (var i = 0; i < crumbs.Count; i++)
 	{
@@ -14,7 +21,7 @@
 				href="@item.Url"
 				@(i == 0 ? "hx-disable=true" : "")
 				@Model.Htmx.GetHxAttributes(Model.CurrentNavigationItem?.NavigationRoot.Id == item.NavigationRoot.Id)>
-				<span class="hover:text-black">@item.NavigationTitle</span>
+				<span class="hover:text-black">@StripBadge(item.NavigationTitle)</span>
 			</a>
 			@if (i < crumbs.Count - 1)
 			{
@@ -23,3 +30,4 @@
 		</li>
 	}
 </ol>
+}

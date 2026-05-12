@@ -25,6 +25,8 @@ The directive supports the following options:
 | `:type: value` | Filter entries by type | Excludes separated types |
 | `:subsections:` | Group entries by area/component | false |
 | `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
+| `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
+| `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
 
 ### Example with options
@@ -34,6 +36,8 @@ The directive supports the following options:
 :type: all
 :subsections:
 :link-visibility: keep-links
+:description-visibility: keep-descriptions
+:dropdowns:
 :::
 ```
 
@@ -114,6 +118,29 @@ Bundles whose repo is listed as private in `assembler.yml` hide links by default
 
 This aligns with the `changelog render` command's link visibility controls.
 
+#### `:description-visibility:`
+
+Controls whether the **`description`** text on each **changelog record** appears in output (bullet body text under each item, or the first paragraph inside a breaking-change, deprecation, known-issue, or highlight entry when [`:dropdowns:`](#dropdowns) is enabled). This is **different** from the optional **bundle** `description` field (release intro prose after `_Released:_`), which is always shown when present. See [Rendered output](#rendered-output).
+
+| Value | Behavior |
+|-------|----------|
+| `auto` | When **every** constituent repository in the bundle’s resolved repo identity is **public** (same private-repo detection as `:link-visibility:` from `assembler.yml`, including `repo1+repo2` merged bundles), **omit** record `description` bodies. When **any** constituent is marked **private**, **show** those bodies. In standalone builds without `assembler.yml`, every repo is treated as public ⇒ record descriptions are omitted under `auto`. |
+| `keep-descriptions` | Always render record descriptions when present in the bundle source. Use this on pages such as deprecations or breaking changes when you still want full release-note prose alongside public repos. |
+| `hide-descriptions` | Always omit record `description` bodies (titles, PR/issue links, Impact and Action sections, and bundle-level intros are unaffected). |
+
+**Contrast with `:link-visibility:`:** `:link-visibility: auto` hides **links** when a repo is **private**. `:description-visibility: auto` **shows** richer record **description** prose when **any** source repo is **private**, and hides that prose for bundles that resolve to **only public** repositories.
+
+#### `:dropdowns:` [dropdowns]
+
+Controls how the "separated" entry types (`breaking-change`, `deprecation`, `known-issue`, and entries flagged `highlight: true`) are rendered. This option only affects these types; features, enhancements, security, bug fixes, documentation, regressions, and other changes are always rendered as flat bulleted lists.
+
+| Mode | Behavior |
+|------|----------|
+| (omitted, default) | Flattened: each entry renders as a bullet with its title, links, and (when present) `Impact:` / `Action:` lines as indented continuation. |
+| `:dropdowns:` | Dropdowns: each entry renders as an expandable `{dropdown}` with the title as the summary and description, links, `**Impact**`, and `**Action**` inside. |
+
+Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release-notes pages where the list itself is the primary content.
+
 #### `:subsections:`
 
 When enabled, entries are grouped by "area" within each section.
@@ -133,10 +160,10 @@ Both explicit and auto-discovered paths must resolve within the repository check
 
 You can filter changelog entries at bundle time using the `rules.bundle` configuration in your `changelog.yml` file. This is evaluated during `changelog bundle` and `changelog gh-release`, before the bundle is written. Entries that don't match are excluded from the bundle entirely.
 
-The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/changelog/bundle.md#changelog-bundle-rules) for full syntax.
+The `{changelog}` directive and the `changelog render` command both do not apply `rules.publish`. To filter entries, use `rules.bundle` at bundle time so entries are excluded before bundling. Both receive only the bundled entries. See the [changelog bundle documentation](/cli/changelog/bundle.md) for full syntax.
 
 `rules.bundle` supports product, type, and area filtering, and per-product overrides.
-For full syntax, refer to the [rules for filtered bundles](/cli/changelog/bundle.md#changelog-bundle-rules).
+For full syntax, refer to the [rules for filtered bundles](/cli/changelog/bundle.md).
 
 ## Hiding features
 
@@ -254,6 +281,8 @@ When present, the `release-date` field is rendered immediately after the version
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
+**Record descriptions:** Each changelog entry may have its own `description` field in YAML (shown as body text under list items or as the introductory paragraph inside dropdowns). Visibility of **these** descriptions is controlled with `:description-visibility:` (defaults to `auto`; see Option details section). Do not confuse bundle `description` (intro prose) with per-record `description` (entry bodies).
+
 ### Section types
 
 | Section | Entry type | Rendering |
@@ -263,10 +292,10 @@ Bundle descriptions are rendered when present in the bundle YAML file. The descr
 | Documentation | `docs` | Grouped by area |
 | Regressions | `regression` | Grouped by area |
 | Other changes | `other` | Grouped by area |
-| Breaking changes | `breaking-change` | Expandable dropdowns |
-| Highlights | Entries with `highlight: true` | Expandable dropdowns |
-| Deprecations | `deprecation` | Expandable dropdowns |
-| Known issues | `known-issue` | Expandable dropdowns |
+| Breaking changes | `breaking-change` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Highlights | Entries with `highlight: true` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Deprecations | `deprecation` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
+| Known issues | `known-issue` | Flattened bullets by default; expandable dropdowns with [`:dropdowns:`](#dropdowns) |
 
 **Note about highlights:**
 - Highlights only appear when using `:type: all` (they are excluded from the default view)
