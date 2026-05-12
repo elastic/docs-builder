@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Build.Tests;
 /// </summary>
 public class MockEnvironmentVariables : IEnvironmentVariables
 {
-	private readonly Dictionary<string, string> _variables = [with(StringComparer.OrdinalIgnoreCase)];
+	private readonly Dictionary<string, string> _variables = new(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// Sets an environment variable value for testing.
