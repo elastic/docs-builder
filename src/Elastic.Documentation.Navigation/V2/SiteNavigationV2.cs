@@ -59,11 +59,22 @@ public class SiteNavigationV2 : SiteNavigation
 	public IReadOnlyList<NavigationIsland> Islands { get; }
 
 	/// <summary>
-	/// Resolves which island a page belongs to by its toc root.
-	/// Uses the nav ownership model — the toc root that owns the page determines the island.
+	/// Resolves which island a page belongs to by walking up its parent chain.
+	/// Returns the innermost registered toc root, so islands that wrap nested tocs
+	/// (whose pages have an outer toc as their NavigationRoot) still resolve correctly.
 	/// </summary>
-	public NavigationIsland? GetIslandForTocRoot(IRootNavigationItem<INavigationModel, INavigationItem> tocRoot) =>
-		_tocRootToIsland.GetValueOrDefault(tocRoot.Id);
+	public NavigationIsland? GetIslandForNavigationItem(INavigationItem item)
+	{
+		var current = item;
+		while (current is not null)
+		{
+			if (current is INodeNavigationItem<INavigationModel, INavigationItem> node
+				&& _tocRootToIsland.TryGetValue(node.Id, out var island))
+				return island;
+			current = current.Parent;
+		}
+		return null;
+	}
 
 	/// <summary>
 	/// Resolves which section a page belongs to by its URL.
