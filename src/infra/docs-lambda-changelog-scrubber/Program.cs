@@ -43,7 +43,17 @@ IReadOnlyList<string> BuildAllowlist()
 
 async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 {
-	using var s3Client = new AmazonS3Client();
+	var region = Amazon.RegionEndpoint.GetBySystemName(
+		Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1");
+	var credentials = new Amazon.Runtime.EnvironmentVariablesAWSCredentials();
+
+	using var s3Client = new AmazonS3Client(credentials, new AmazonS3Config
+	{
+		RegionEndpoint = region,
+		Timeout = TimeSpan.FromSeconds(10),
+		MaxErrorRetry = 2
+	});
+
 	var batchItemFailures = new List<SQSBatchResponse.BatchItemFailure>();
 
 	foreach (var message in ev.Records)
