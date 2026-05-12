@@ -198,8 +198,13 @@ body:has([data-nav-v2]) aside.sidebar {
 }
 
 .sidebar #pages-nav .pages-nav-menu {
-	scrollbar-gutter: stable;
+	scrollbar-gutter: auto;
+	scrollbar-width: none;
 	padding-right: 8px;
+}
+
+.sidebar #pages-nav .pages-nav-menu::-webkit-scrollbar {
+	display: none;
 }
 
 /* Nav V2: stack list items vertically */

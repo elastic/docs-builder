@@ -69,6 +69,33 @@
 			</div>
 		</div>
 	}
+
+	private async Task RenderLandingPage()
+	{
+		<div class="relative">
+			<div class="min-h-screen w-full max-w-(--max-layout-width) mx-auto md:px-4">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
+					<main id="content-container" class="min-w-0">
+						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						<div class="md:hidden sticky top-[calc(var(--offset-top)+1px)] z-20 border-b border-grey-20 bg-white/95 px-4 py-3">
+							<label role="button" class="inline-flex cursor-pointer items-center gap-2 font-sans text-sm font-semibold text-ink" for="pages-nav-hamburger">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+									stroke="currentColor" class="size-5" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round"
+										d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+								</svg>
+								<span>Guide menu</span>
+							</label>
+						</div>
+						@await RenderPartialAsync(_LandingPage.Create(Model))
+					</main>
+					@* Empty TOC slot so htmx hx-select-oob="#toc-nav" swaps don't fail when boosted from a regular page. *@
+					<aside id="toc-nav" class="hidden" aria-hidden="true"></aside>
+				</div>
+			</div>
+		</div>
+	}
 }
 
 @if (RenderHeaderAndFooter)
@@ -90,7 +117,7 @@
 		await RenderPartialAsync(_NotFound.Create(Model));
 		break;
 	case MarkdownPageLayout.LandingPage:
-		await RenderPartialAsync(_LandingPage.Create(Model));
+		await RenderLandingPage();
 		break;
 	case MarkdownPageLayout.Archive:
 		await RenderPartialAsync(_Archive.Create(Model));
