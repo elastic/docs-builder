@@ -4532,6 +4532,15 @@
             },
             {
               "role": "flag",
+              "name": "dropdowns",
+              "shortName": null,
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "title",
               "shortName": null,
               "type": "string",
