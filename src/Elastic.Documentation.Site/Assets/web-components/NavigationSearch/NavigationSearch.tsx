@@ -27,11 +27,13 @@ import { useRef, useState, useEffect } from 'react'
 interface Props {
     placeholder?: string
     size?: 's' | 'm' | 'l'
+    disabled?: boolean
 }
 
 export const NavigationSearch = ({
     placeholder = 'Jump to page',
     size = 'm',
+    disabled = false,
 }: Props) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
@@ -114,6 +116,9 @@ export const NavigationSearch = ({
     }
 
     useGlobalKeyboardShortcut('k', () => {
+        if (disabled) {
+            return
+        }
         trackOpened('keyboard_shortcut')
         inputRef.current?.focus()
         inputRef.current?.select()
@@ -154,9 +159,13 @@ export const NavigationSearch = ({
             panelProps={{
                 css: css`
                     border-radius: ${euiTheme.size.s};
-                    visibility: ${isPopoverOpen ? 'visible' : 'hidden'};
-                    opacity: ${isPopoverOpen ? 1 : 0};
-                    pointer-events: ${isPopoverOpen ? 'auto' : 'none'};
+                    visibility: ${isPopoverOpen && !disabled
+                        ? 'visible'
+                        : 'hidden'};
+                    opacity: ${isPopoverOpen && !disabled ? 1 : 0};
+                    pointer-events: ${isPopoverOpen && !disabled
+                        ? 'auto'
+                        : 'none'};
                 `,
                 onMouseDown: (e: React.MouseEvent) => {
                     // Prevent input blur when clicking anywhere inside the popover panel
@@ -172,6 +181,9 @@ export const NavigationSearch = ({
                         value={searchTerm}
                         onChange={handleChange}
                         onFocus={() => {
+                            if (disabled) {
+                                return
+                            }
                             trackOpened('focus')
                             if (hasContent) {
                                 setIsPopoverOpen(true)
@@ -179,13 +191,13 @@ export const NavigationSearch = ({
                         }}
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
-                        disabled={isSearchCooldownActive}
-                        isLoading={isSearching}
+                        disabled={disabled || isSearchCooldownActive}
+                        isLoading={!disabled && isSearching}
                     />
                 </>
             }
         >
-            {hasContent && (
+            {hasContent && !disabled && (
                 <div ref={popoverContentRef}>
                     <SearchDropdownContent
                         isKeyboardNavigating={isKeyboardNavigating}

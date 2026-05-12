@@ -13,6 +13,7 @@ interface NavigationSearchProps {
 }
 
 const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
+    const shouldCheckApi = config.buildType !== 'codex' && !config.airGapped
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
@@ -23,12 +24,14 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
         },
         staleTime: 60 * 60 * 1000, // 60 minutes
         retry: false,
-        enabled: config.buildType !== 'codex' && !config.airGapped,
+        enabled: shouldCheckApi,
     })
 
-    if (config.airGapped || (!isApiAvailable && config.buildType !== 'codex')) {
+    if (config.airGapped) {
         return null
     }
+
+    const isSearchUnavailable = shouldCheckApi && isApiAvailable === false
 
     return (
         <div
@@ -40,7 +43,10 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
                 padding-left: 0;
             `}
         >
-            <NavigationSearch placeholder={placeholder} />
+            <NavigationSearch
+                placeholder={placeholder}
+                disabled={isSearchUnavailable}
+            />
         </div>
     )
 }

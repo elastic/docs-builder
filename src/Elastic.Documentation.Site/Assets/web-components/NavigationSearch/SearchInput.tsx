@@ -140,6 +140,19 @@ export const SearchInput = ({
                         outline: none;
                         box-shadow: none;
                     }
+
+                    &:disabled {
+                        cursor: not-allowed;
+                        opacity: 1;
+                        color: ${euiTheme.colors.textSubdued};
+                        -webkit-text-fill-color: ${euiTheme.colors.textSubdued};
+                        background: #ffffff;
+                    }
+
+                    &:disabled::placeholder {
+                        color: ${navSearchMuted};
+                        opacity: 1;
+                    }
                 `}
             />
 
