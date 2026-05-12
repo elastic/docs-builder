@@ -101,6 +101,7 @@ async Task<SQSBatchResponse> Handler(SQSEvent ev, ILambdaContext context)
 
 async Task DeleteFromPublicBucket(IAmazonS3 s3Client, string key, ILambdaContext context)
 {
+	context.Logger.LogDebug($"Removing {key} from the public bucket", key);
 	try
 	{
 		_ = await s3Client.DeleteObjectAsync(new DeleteObjectRequest
@@ -118,6 +119,8 @@ async Task DeleteFromPublicBucket(IAmazonS3 s3Client, string key, ILambdaContext
 
 async Task ScrubAndCopyToPublicBucket(IAmazonS3 s3Client, string sourceBucket, string key, ILambdaContext context)
 {
+	context.Logger.LogDebug("Scrubbing {Key} to public bucket", key);
+
 	var fileName = Path.GetFileName(key);
 	if (string.Equals(fileName, "registry-index.json", StringComparison.OrdinalIgnoreCase))
 	{
@@ -138,6 +141,7 @@ async Task ScrubAndCopyToPublicBucket(IAmazonS3 s3Client, string sourceBucket, s
 		return;
 	}
 
+	context.Logger.LogInformation("Getting {Key} from private bucket", key);
 	var getResponse = await s3Client.GetObjectAsync(new GetObjectRequest
 	{
 		BucketName = sourceBucket,
@@ -148,8 +152,10 @@ async Task ScrubAndCopyToPublicBucket(IAmazonS3 s3Client, string sourceBucket, s
 	using (var reader = new StreamReader(getResponse.ResponseStream))
 		content = await reader.ReadToEndAsync();
 
+	context.Logger.LogInformation("Performing scrub pass for {Key}", key);
 	var scrubbed = await ScrubContent(key, content, context);
 
+	context.Logger.LogInformation("Putting scrubbed {Key} on public bucket", key);
 	_ = await s3Client.PutObjectAsync(new PutObjectRequest
 	{
 		BucketName = publicBucketName,
