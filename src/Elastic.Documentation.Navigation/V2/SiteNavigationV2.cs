@@ -21,8 +21,8 @@ namespace Elastic.Documentation.Navigation.V2;
 /// </summary>
 public class SiteNavigationV2 : SiteNavigation, INavigationTraversable
 {
-	private readonly Dictionary<string, NavigationSection> _urlToSection = new(StringComparer.OrdinalIgnoreCase);
-	private readonly Dictionary<string, NavigationIsland> _tocRootToIsland = new(StringComparer.Ordinal);
+	private readonly Dictionary<string, NavigationSection> _urlToSection = [with(StringComparer.OrdinalIgnoreCase)];
+	private readonly Dictionary<string, NavigationIsland> _tocRootToIsland = [with(StringComparer.Ordinal)];
 	private readonly Dictionary<int, INavigationItem> _v2NavigationIndexedByOrder;
 	private readonly Dictionary<INavigationItem, int> _v2NavigationIndexByItem;
 
