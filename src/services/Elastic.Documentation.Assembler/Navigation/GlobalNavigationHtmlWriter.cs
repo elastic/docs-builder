@@ -98,7 +98,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			var model = new NavigationViewModel
 			{
 				Title = section.Label,
-				TitleUrl = section.Url,
+				TitleUrl = CombineWithSitePrefix(navV2, section.Url),
 				Tree = wrapper,
 				IsPrimaryNavEnabled = true,
 				IsUsingNavigationDropdown = false,

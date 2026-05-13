@@ -21,7 +21,7 @@ public class SectionNavigationNode : INodeNavigationItem<INavigationModel, INavi
 		bool isolated,
 		bool dropdown,
 		IReadOnlyCollection<INavigationItem> children,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent
+		INodeNavigationItem<INavigationModel, INavigationItem> parent
 	)
 	{
 		Id = ShortId.Create("section", label);
@@ -31,7 +31,7 @@ public class SectionNavigationNode : INodeNavigationItem<INavigationModel, INavi
 		Dropdown = dropdown;
 		NavigationItems = children;
 		Parent = parent;
-		NavigationRoot = parent?.NavigationRoot!;
+		NavigationRoot = parent.NavigationRoot;
 		_index = new SectionIndexLeaf(this);
 	}
 

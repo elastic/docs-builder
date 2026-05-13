@@ -18,7 +18,7 @@ public class LabelNavigationNode : INodeNavigationItem<INavigationModel, INaviga
 		string label,
 		bool expandedByDefault,
 		IReadOnlyCollection<INavigationItem> children,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent
+		INodeNavigationItem<INavigationModel, INavigationItem> parent
 	)
 	{
 		Id = ShortId.Create("label", label);
@@ -26,7 +26,7 @@ public class LabelNavigationNode : INodeNavigationItem<INavigationModel, INaviga
 		ExpandedByDefault = expandedByDefault;
 		NavigationItems = children;
 		Parent = parent;
-		NavigationRoot = parent?.NavigationRoot!;
+		NavigationRoot = parent.NavigationRoot;
 		_index = new LabelIndexLeaf(this);
 	}
 

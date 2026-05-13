@@ -19,7 +19,7 @@ public class PlaceholderNavigationNode : INodeNavigationItem<INavigationModel, I
 		string title,
 		string sitePrefix,
 		IReadOnlyCollection<INavigationItem> children,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent
+		INodeNavigationItem<INavigationModel, INavigationItem> parent
 	)
 	{
 		Id = ShortId.Create("placeholder-group", title);
@@ -27,7 +27,7 @@ public class PlaceholderNavigationNode : INodeNavigationItem<INavigationModel, I
 		Url = ComputeUrl(title, sitePrefix);
 		NavigationItems = children;
 		Parent = parent;
-		NavigationRoot = parent?.NavigationRoot!;
+		NavigationRoot = parent.NavigationRoot;
 		_index = new PlaceholderIndexLeaf(this);
 	}
 

@@ -12,7 +12,7 @@ public class PageCrossLinkLeaf(
 	Uri page,
 	string title,
 	string sitePrefix,
-	INodeNavigationItem<INavigationModel, INavigationItem>? parent
+	INodeNavigationItem<INavigationModel, INavigationItem> parent
 ) : ILeafNavigationItem<INavigationModel>, INavigationModel
 {
 	public Uri Page { get; } = page;
@@ -27,7 +27,7 @@ public class PageCrossLinkLeaf(
 	public string NavigationTitle { get; } = title;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = parent?.NavigationRoot!;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = parent.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;

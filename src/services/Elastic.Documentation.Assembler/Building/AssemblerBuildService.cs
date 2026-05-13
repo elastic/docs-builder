@@ -118,8 +118,13 @@ public class AssemblerBuildService(
 
 		var navV2FileInfo = configurationContext.ConfigurationFileProvider.NavigationV2File;
 		SiteNavigation navigation;
-		if (featureFlags.NavV2Enabled && navV2FileInfo is not null)
+		if (featureFlags.NavV2Enabled)
 		{
+			if (navV2FileInfo is null)
+			{
+				assembleContext.Collector.EmitGlobalError("nav-v2 feature flag is enabled but config/navigation-v2.yml is missing — refusing to fall back to navigation.yml because that would silently produce the wrong sidebar.");
+				return false;
+			}
 			_logger.LogInformation("nav-v2 feature flag enabled — loading navigation-v2.yml");
 			var v2File = NavigationV2File.Deserialize(await readFs.File.ReadAllTextAsync(navV2FileInfo.FullName, ctx));
 			navigation = new SiteNavigationV2(v2File, siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);

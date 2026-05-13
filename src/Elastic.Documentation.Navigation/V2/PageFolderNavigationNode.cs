@@ -20,7 +20,7 @@ public class PageFolderNavigationNode : INodeNavigationItem<INavigationModel, IN
 		Uri page,
 		string sitePrefix,
 		IReadOnlyCollection<INavigationItem> children,
-		INodeNavigationItem<INavigationModel, INavigationItem>? parent
+		INodeNavigationItem<INavigationModel, INavigationItem> parent
 	)
 	{
 		Id = ShortId.Create("page-folder", title);
@@ -29,7 +29,7 @@ public class PageFolderNavigationNode : INodeNavigationItem<INavigationModel, IN
 		Url = ResolveUrl(page, sitePrefix);
 		NavigationItems = children;
 		Parent = parent;
-		NavigationRoot = parent?.NavigationRoot!;
+		NavigationRoot = parent.NavigationRoot;
 		_index = new PageFolderIndexLeaf(this);
 	}
 

@@ -14,7 +14,7 @@ namespace Elastic.Documentation.Navigation.V2;
 public class IslandNavigationNode(
 	string label,
 	IRootNavigationItem<IDocumentationFile, INavigationItem> source,
-	INodeNavigationItem<INavigationModel, INavigationItem>? parent
+	INodeNavigationItem<INavigationModel, INavigationItem> parent
 ) : INodeNavigationItem<INavigationModel, INavigationItem>
 {
 	/// <summary>The Id of the wrapped toc root, used for island lookup by nav ownership.</summary>
@@ -30,7 +30,7 @@ public class IslandNavigationNode(
 	public string NavigationTitle { get; } = label;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = parent?.NavigationRoot!;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = parent.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
