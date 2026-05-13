@@ -233,6 +233,26 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	}
 
 	[Fact]
+	public async Task PrepareArtifact_EmptyExistingFilename_FallsBackToStagingFilename()
+	{
+		// Regression: CLI parsers (Argh) forward `--existing-changelog-filename ""`
+		// as the empty string instead of null. An empty filename used to make
+		// Path.Combine(OutputDir, "") collapse to OutputDir itself and write the
+		// artifact YAML at the directory path → EACCES on Linux.
+		await SetupStagingYaml("1735700000-new-title.yaml");
+		await SetupConfig();
+		var service = CreateService();
+		var args = DefaultArgs() with { ExistingChangelogFilename = string.Empty };
+
+		var result = await service.PrepareArtifact(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		FileSystem.File.Exists(Path.Join(OutputDir, "1735700000-new-title.yaml")).Should().BeTrue();
+		var metadata = ReadMetadata();
+		metadata.ChangelogFilename.Should().Be("1735700000-new-title.yaml");
+	}
+
+	[Fact]
 	public async Task PrepareArtifact_MissingStagingYaml_StatusError()
 	{
 		await SetupConfig();
