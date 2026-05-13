@@ -52,10 +52,6 @@ public class AutoLinkInlineParser : InlineParser
 		if (!span.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 			return false;
 
-		// Skip when inside open `[...]` link text to avoid nested <a> (elastic/docs-builder#3317).
-		if (IsInsideOpenLinkDelimiter(processor.Inline))
-			return false;
-
 		// Find the end of the URL
 		var urlLength = FindUrlEnd(span);
 		if (urlLength <= "https://".Length)
@@ -213,17 +209,6 @@ public class AutoLinkInlineParser : InlineParser
 				return true;
 		}
 
-		return false;
-	}
-
-	private static bool IsInsideOpenLinkDelimiter(Inline? current)
-	{
-		while (current != null)
-		{
-			if (current is LinkDelimiterInline)
-				return true;
-			current = current.PreviousSibling;
-		}
 		return false;
 	}
 
