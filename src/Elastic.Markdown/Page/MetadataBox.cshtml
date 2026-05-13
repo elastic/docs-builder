@@ -1,8 +1,11 @@
 @inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
+@using Elastic.Markdown
 @using Elastic.Markdown.Myst.Components
 @{
-	var layout = Model.CurrentDocument.YamlFrontMatter?.Layout;
-	if (layout is not null)
+	// Suppress the "applies to" metadata only on hub pages (they have their own layout).
+	// The previous "any layout != null" check accidentally suppressed it on landing pages,
+	// archive pages, etc., which still want the metadata.
+	if (Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.Hub)
 		return;
 
 	var prefix = Model.UrlPathPrefix?.TrimEnd('/') ?? string.Empty;

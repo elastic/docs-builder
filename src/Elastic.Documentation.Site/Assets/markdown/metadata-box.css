@@ -150,8 +150,19 @@
 	.metadata-values .applicable-info::before {
 		content: '?';
 	}
+	/* Visually hide children but keep them in the accessibility tree so the trigger
+	   has an accessible name. `display: none` would strip the label entirely and
+	   leave only the decorative `?` from ::before. */
 	.metadata-values .applicable-info > * {
-		display: none;
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 	.metadata-values .applicable-info:hover {
 		background: var(--color-grey-30);

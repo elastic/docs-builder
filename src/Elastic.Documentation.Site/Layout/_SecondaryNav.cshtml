@@ -37,9 +37,19 @@
 										var childItems = child is INodeNavigationItem<INavigationModel, INavigationItem> nn ? nn.NavigationItems : null;
 										var isHidden = child is ILeafNavigationItem<INavigationModel> hl && hl.Hidden;
 
+										// Render the hidden section-index leaf as the first dropdown entry
+										// so the section landing is reachable. The previous code skipped
+										// it on the assumption that the summary already linked to the
+										// section, but the summary only toggles the dropdown.
 										if (isHidden)
 										{
-											// Section index leaf is already linked from the summary; skip.
+											if (string.IsNullOrEmpty(childUrl))
+												continue;
+											<a class="secondary-nav-dropdown-link"
+												href="@childUrl"
+												@Model.Htmx.GetHxAttributes(hxSwapOob: "#main-container,#secondary-nav")>
+												@childTitle
+											</a>
 											continue;
 										}
 										if (childItems is { Count: > 0 })

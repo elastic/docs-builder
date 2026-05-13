@@ -46,7 +46,13 @@ internal static class HubUrl
 
 		if (string.IsNullOrEmpty(sitePathPrefix))
 			return clean + anchor;
-		var prefix = "/" + sitePathPrefix.Trim('/');
+		// Trim slashes; if the prefix is effectively root ("/" or ""), there is no
+		// path component to prepend. Building "/" + clean would produce "//foo",
+		// which the browser treats as a protocol-relative URL and breaks navigation.
+		var trimmed = sitePathPrefix.Trim('/');
+		if (string.IsNullOrEmpty(trimmed))
+			return clean + anchor;
+		var prefix = "/" + trimmed;
 		if (clean == prefix || clean.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
 			return clean + anchor;
 		if (!clean.StartsWith('/'))

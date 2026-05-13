@@ -19,7 +19,7 @@ products:
 
   kibana:
     title: What's new in Kibana
-    id: whats-new
+    id: whats-new-kibana
     badge: New
     release-links:
       - label: '9.4'
@@ -46,7 +46,7 @@ products:
 
   elasticsearch:
     title: What's new in Elasticsearch
-    id: whats-new
+    id: whats-new-elasticsearch
     badge: New
     release-links:
       - label: '9.4'

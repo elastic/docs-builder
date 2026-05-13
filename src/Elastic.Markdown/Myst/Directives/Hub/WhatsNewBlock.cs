@@ -2,7 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using Elastic.Documentation.Configuration;
 using Elastic.Markdown.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
@@ -30,7 +31,12 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 	: DirectiveBlock(parser, context)
 {
-	private static readonly ConcurrentDictionary<string, WhatsNewConfig?> CentralConfigCache = new();
+	// Key the cache by ConfigurationFileProvider identity rather than the temp file path.
+	// Each build gets a fresh provider with a fresh GUID-named temp file, so a path-keyed
+	// cache would never hit across builds yet would accumulate entries forever in a
+	// long-running process. ConditionalWeakTable scopes the cache to the provider's
+	// lifetime — entries are reclaimed automatically when the provider is GC'd.
+	private static readonly ConditionalWeakTable<ConfigurationFileProvider, Lazy<WhatsNewConfig?>> CentralConfigCache = [];
 
 	public override string Directive => "whats-new";
 
@@ -83,22 +89,24 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 
 	private WhatsNewData? LoadFromCentralConfig(string productKey)
 	{
-		var configFile = Build.ConfigurationFileProvider.WhatsNewFile;
+		var provider = Build.ConfigurationFileProvider;
+		var configFile = provider.WhatsNewFile;
 		if (configFile is null || !configFile.Exists)
 			return null;
 
-		var config = CentralConfigCache.GetOrAdd(configFile.FullName, path =>
+		var lazy = CentralConfigCache.GetValue(provider, _ => new Lazy<WhatsNewConfig?>(() =>
 		{
 			try
 			{
-				var yaml = Build.ReadFileSystem.File.ReadAllText(path);
+				var yaml = Build.ReadFileSystem.File.ReadAllText(configFile.FullName);
 				return YamlSerialization.Deserialize<WhatsNewConfig>(yaml, Build.ProductsConfiguration);
 			}
 			catch
 			{
 				return null;
 			}
-		});
+		}));
+		var config = lazy.Value;
 
 		if (config?.Products is null)
 			return null;

@@ -116,15 +116,23 @@ internal static class HubLinkValidator
 		}
 
 		// Honour configured redirects so old paths emit a hint, not an error.
-		if (context.Configuration.Redirects is not null
-			&& context.Configuration.Redirects.TryGetValue(rel, out var redirect))
+		// Probe the same candidates as the existence check above: redirects.yml
+		// keys are stored with the `.md` suffix, so an extensionless authored
+		// path (e.g. `/explore-analyze/discover`) would otherwise miss a redirect
+		// keyed `explore-analyze/discover.md` and fall through to the hard error.
+		if (context.Configuration.Redirects is not null)
 		{
-			var to = redirect.To
-				?? (redirect.Many is not null
-					? string.Join(", ", redirect.Many.Select(m => m.To))
-					: "unknown");
-			block.EmitWarning($"Hub directive link `{url}` has a redirect; update to: {to}");
-			return;
+			foreach (var candidate in candidates)
+			{
+				if (!context.Configuration.Redirects.TryGetValue(candidate, out var redirect))
+					continue;
+				var to = redirect.To
+					?? (redirect.Many is not null
+						? string.Join(", ", redirect.Many.Select(m => m.To))
+						: "unknown");
+				block.EmitWarning($"Hub directive link `{url}` has a redirect; update to: {to}");
+				return;
+			}
 		}
 
 		block.EmitError($"Hub directive link `{url}` does not exist. If it was recently removed add a redirect.");
