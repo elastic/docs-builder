@@ -332,7 +332,7 @@ public class DocumentationDocumentSerializationTests
 		deserialized.Applies.Deployment.Ess.Should().BeEquivalentTo(original.Applies.Deployment.Ess);
 		deserialized.ContentLastUpdated.Should().Be(original.ContentLastUpdated);
 		deserialized.ContentBodyHash.Should().Be(original.ContentBodyHash);
-		deserialized!.ContentType.Should().Be(original.ContentType);
+		deserialized.ContentType.Should().Be(original.ContentType);
 	}
 
 	[Fact]
@@ -374,7 +374,7 @@ public class DocumentationDocumentSerializationTests
 		var deserialized = JsonSerializer.Deserialize<DocumentationDocument>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Type.Should().Be("doc");
+		deserialized.Type.Should().Be("doc");
 		deserialized.ContentType.Should().Be("archived-docs");
 	}
 
