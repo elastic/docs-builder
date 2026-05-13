@@ -31,6 +31,12 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 	public bool Found { get; private set; }
 
 	/// <summary>
+	/// When set, only settings available for this deployment type are rendered.
+	/// Accepted values: <c>ech</c>, <c>ece</c>, <c>eck</c>, <c>self</c>.
+	/// </summary>
+	public string? ActiveDeploymentFilter { get; private set; }
+
+	/// <summary>
 	/// Heading level for each YAML group title (e.g. 3 when the directive follows an <c>##</c> heading), same rule as <see cref="Stepper.StepBlock"/>.
 	/// </summary>
 	public int GroupHeadingLevel => _groupHeadingLevel ??= CalculateGroupHeadingLevel();
@@ -48,19 +54,26 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 				return [];
 
 			var level = GroupHeadingLevel;
-			return settings.Groups.Select(g => new PageTocItem
-			{
-				Heading = g.Name ?? string.Empty,
-				Slug = SettingsViewModel.GroupHeadingSlug(g),
-				Level = level
-			}).Where(t => !string.IsNullOrEmpty(t.Slug));
+			return settings.Groups
+				.Where(g => ActiveDeploymentFilter is null ||
+					DeploymentFilter.AnyVisible(g.Settings, ActiveDeploymentFilter, null))
+				.Select(g => new PageTocItem
+				{
+					Heading = g.Name ?? string.Empty,
+					Slug = SettingsViewModel.GroupHeadingSlug(g),
+					Level = level
+				}).Where(t => !string.IsNullOrEmpty(t.Slug));
 		}
 	}
 
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include
-	public override void FinalizeAndValidate(ParserContext context) => ExtractInclusionPath(context);
+	public override void FinalizeAndValidate(ParserContext context)
+	{
+		ExtractInclusionPath(context);
+		ValidateDeploymentFilter();
+	}
 
 	/// <summary>
 	/// Records docset substitution keys referenced in raw settings YAML (e.g. <c>page_description</c>) so
@@ -115,6 +128,24 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 
 		foreach (var child in setting.Settings)
 			PrepareSettingForRendering(child, context);
+	}
+
+	private void ValidateDeploymentFilter()
+	{
+		var raw = Prop("deployment");
+		if (raw is null)
+			return;
+
+		var trimmed = raw.Trim().ToLowerInvariant();
+		if (!DeploymentFilter.ValidValues.Contains(trimmed))
+		{
+			this.EmitWarning(
+				$"Unknown deployment filter '{raw}'. Valid values are: {string.Join(", ", DeploymentFilter.ValidValues)}."
+			);
+			return;
+		}
+
+		ActiveDeploymentFilter = trimmed;
 	}
 
 	private void ExtractInclusionPath(ParserContext context)
@@ -206,33 +237,41 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		if (TryLoadSettings() is not { } settings)
 			return [];
 
-		return CollectSettingIds(settings).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+		return CollectSettingIds(settings, ActiveDeploymentFilter).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 	}
 
-	private static IEnumerable<string> CollectSettingIds(YamlSettings yaml)
+	private static IEnumerable<string> CollectSettingIds(YamlSettings yaml, string? deploymentFilter)
 	{
 		if (!string.IsNullOrWhiteSpace(yaml.Id))
 			yield return yaml.Id;
 
 		foreach (var group in yaml.Groups)
 		{
+			var groupVisible = deploymentFilter is null ||
+				DeploymentFilter.AnyVisible(group.Settings, deploymentFilter, null);
+			if (!groupVisible)
+				continue;
+
 			var groupSlug = SettingsViewModel.GroupHeadingSlug(group);
 			if (!string.IsNullOrEmpty(groupSlug))
 				yield return groupSlug;
-			foreach (var id in CollectSettingIds(group.Settings, parentName: null))
+			foreach (var id in CollectSettingIds(group.Settings, parentName: null, deploymentFilter))
 				yield return id;
 		}
 	}
 
-	private static IEnumerable<string> CollectSettingIds(Setting[] settings, string? parentName)
+	private static IEnumerable<string> CollectSettingIds(Setting[] settings, string? parentName, string? deploymentFilter)
 	{
 		foreach (var setting in settings)
 		{
+			if (deploymentFilter is not null && !setting.IsVisibleForDeployment(deploymentFilter, null))
+				continue;
+
 			var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
 			var fragmentId = SettingsViewModel.SettingFragmentId(setting, displayName);
 			if (!string.IsNullOrWhiteSpace(fragmentId))
 				yield return fragmentId;
-			foreach (var id in CollectSettingIds(setting.Settings, displayName))
+			foreach (var id in CollectSettingIds(setting.Settings, displayName, deploymentFilter))
 				yield return id;
 		}
 	}
