@@ -33,7 +33,8 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
 
     // Treat network/timeout failures (isError) the same as a non-ok response —
     // either way the search API is not reachable and the input should be disabled.
-    const isSearchUnavailable = shouldCheckApi && (isApiAvailable === false || isError)
+    const isSearchUnavailable =
+        shouldCheckApi && (isApiAvailable === false || isError)
 
     return (
         <div

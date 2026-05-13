@@ -257,13 +257,6 @@ dotnet_diagnostic.CA1727.severity = none
 
 dotnet_diagnostic.IDE0305.severity = none
 
-# https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0028
-# In .NET SDK 10.0.300+ this rule began flagging `new(comparer)` Dictionary
-# initializations with no actionable fix — collection expressions `[]` do not
-# support custom comparers, so the suggested simplification is not possible.
-# Downgrade to suggestion to avoid spurious build breaks.
-dotnet_diagnostic.IDE0028.severity = suggestion
-
 # https://github.com/dotnet/roslyn/issues/60784
 # CS8509 already warns
 dotnet_diagnostic.IDE0072.severity = none
