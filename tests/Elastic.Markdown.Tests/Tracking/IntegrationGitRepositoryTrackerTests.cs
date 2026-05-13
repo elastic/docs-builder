@@ -12,6 +12,7 @@ namespace Elastic.Markdown.Tests.Tracking;
 /// ADDED_FILES / MODIFIED_FILES / DELETED_FILES / RENAMED_FILES environment
 /// variables that the docs-build workflow exposes on CI.
 /// </summary>
+[Collection(TrackingTestCollection.Name)]
 public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 {
 	private static readonly string[] EnvVarNames =
