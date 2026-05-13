@@ -14,7 +14,7 @@ interface NavigationSearchProps {
 
 const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
     const shouldCheckApi = config.buildType !== 'codex' && !config.airGapped
-    const { data: isApiAvailable } = useQuery({
+    const { data: isApiAvailable, isError } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
             const response = await fetch(`${config.apiBasePath}/v1/`, {
@@ -31,7 +31,9 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
         return null
     }
 
-    const isSearchUnavailable = shouldCheckApi && isApiAvailable === false
+    // Treat network/timeout failures (isError) the same as a non-ok response —
+    // either way the search API is not reachable and the input should be disabled.
+    const isSearchUnavailable = shouldCheckApi && (isApiAvailable === false || isError)
 
     return (
         <div

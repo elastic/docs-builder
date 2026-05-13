@@ -308,7 +308,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public void SiteNavigationV2PageEntriesResolveFilesFromUnseenChildTocs()
+	public void SiteNavigationV2_PageEntriesForUnseenChildTocs_ResolvesFiles()
 	{
 		var fileSystem = new MockFileSystem();
 		var docsContentDir = "/checkouts/current/docs-content";
@@ -383,7 +383,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public void SiteNavigationV2PageEntriesUseV2OrderForPrevNext()
+	public void SiteNavigationV2_PageEntriesWithV2Navigation_UseCorrectPrevNextOrder()
 	{
 		var fileSystem = new MockFileSystem();
 		var docsContentDir = "/checkouts/current/docs-content";
@@ -459,7 +459,7 @@ public class SiteNavigationTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public void SiteNavigationResolvesFilesFromUnseenChildTocs()
+	public void SiteNavigation_FilesFromUnseenChildTocs_ResolvesCorrectly()
 	{
 		var fileSystem = new MockFileSystem();
 		var docsContentDir = "/checkouts/current/docs-content";

@@ -101,9 +101,12 @@ public record DetectionRuleFile : MarkdownFile
 		{
 			Rule = DetectionRule.From(sourceFile);
 		}
-		catch (Exception ex)
+		catch (Exception)
 		{
-			Rule = DetectionRule.ForUnparsableSource(sourceFile, ex.InnerException?.Message ?? ex.Message);
+			// Avoid surfacing raw exception messages — they can leak absolute checkout paths
+			// and internal parser state into the rendered markdown. A generic note is enough;
+			// the build's diagnostic collector reports the underlying error separately.
+			Rule = DetectionRule.ForUnparsableSource(sourceFile, "Could not parse detection rule TOML during the documentation build.");
 		}
 	}
 
