@@ -74,12 +74,32 @@
     padding: 14px 20px;
     margin-bottom: 24px;
     max-width: 640px;
-    cursor: pointer;
+    width: 100%;
+    cursor: text;
     transition: border-color 0.2s, box-shadow 0.2s;
+    color: #8C9BAB;
+    font-family: inherit;
+    font-size: 15px;
+    text-align: left;
   }
-  .hero-search-wrap:focus-within {
+  .hero-search-wrap:hover,
+  .hero-search-wrap:focus-visible {
     border-color: var(--elastic-blue);
     box-shadow: var(--shadow-sm);
+    outline: none;
+  }
+  .hero-search-label {
+    flex: 1;
+    color: #8C9BAB;
+  }
+  .hero-search-kbd {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #8C9BAB;
+    background: #F7F8FA;
   }
 
   /* Hero cards */
@@ -332,10 +352,15 @@
       </div>
 
       <search role="search" aria-label="Search documentation">
-        <div class="hero-search-wrap">
+        @* Hero search is a button-like proxy: clicking it focuses the sidebar's <navigation-search>
+           so the landing page reads as a clean search prompt instead of duplicating the sidebar widget. *@
+        <button type="button" class="hero-search-wrap"
+                onclick="document.querySelector('#pages-nav navigation-search input')?.focus()"
+                aria-label="Search documentation">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C9BAB" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          <navigation-search></navigation-search>
-        </div>
+          <span class="hero-search-label">Search documentation</span>
+          <kbd class="hero-search-kbd">⌘K</kbd>
+        </button>
       </search>
 
       <section class="hero-cards" aria-label="Popular documentation">
