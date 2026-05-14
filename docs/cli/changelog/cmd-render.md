@@ -73,12 +73,6 @@ The GFM output includes the following sections in order when entries are present
 - Regressions
 - Other changes
 
-AsciiDoc output ignores the `--dropdowns` flag and always uses a standardized format with the following characteristics:
-
-- Multi-block entries (containing description, Impact, and Action sections) use proper list continuation markers (`+`) to maintain list structure
-- Strong text formatting uses idiomatic single asterisk syntax (`*Impact:*`, `*Action:*`) following AsciiDoc best practices
-- All content blocks are properly attached to their parent list items for correct rendering
-
 ### Multiple PR and issue links
 
 Changelog entries can reference multiple pull requests and issues via the `prs` and `issues` array fields. All links are rendered inline:
