@@ -4500,7 +4500,7 @@
               "shortName": null,
               "type": "string",
               "required": false,
-              "summary": "Optional: Output file type. Valid values: \u0022markdown\u0022 or \u0022asciidoc\u0022. Defaults to \u0022markdown\u0022",
+              "summary": "Optional: Output file type. Valid values: \u0022markdown\u0022, \u0022asciidoc\u0022, or \u0022gfm\u0022. Defaults to \u0022markdown\u0022",
               "defaultValue": "markdown"
             },
             {
@@ -4537,6 +4537,15 @@
               "type": "boolean",
               "required": false,
               "summary": "Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "no-descriptions",
+              "shortName": null,
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false",
               "defaultValue": "false"
             },
             {

@@ -32,6 +32,7 @@ public record RenderChangelogsArguments
 	public string[]? HideFeatures { get; init; }
 	public string? Config { get; init; }
 	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
+	public bool HideDescriptions { get; init; }
 
 }
 
@@ -59,11 +60,14 @@ public enum ChangelogFileType
 	Markdown,
 	[Display(Name = "asciidoc")]
 	[JsonStringEnumMemberName("asciidoc")]
-	Asciidoc
+	Asciidoc,
+	[Display(Name = "gfm")]
+	[JsonStringEnumMemberName("gfm")]
+	Gfm
 }
 
 /// <summary>
-/// Service for rendering changelog output (markdown or asciidoc)
+/// Service for rendering changelog output (markdown, asciidoc, or gfm)
 /// </summary>
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
@@ -341,6 +345,7 @@ public class ChangelogRenderingService(
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
 			Dropdowns = input.Dropdowns,
+			HideDescriptions = input.HideDescriptions,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,

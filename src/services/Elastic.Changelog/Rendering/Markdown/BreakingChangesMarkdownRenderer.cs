@@ -68,7 +68,8 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 					{
 						// Dropdown rendering (current logic)
 						_ = sb.AppendLine(InvariantCulture, $"::::{{dropdown}} {ChangelogTextUtilities.Beautify(entry.Title)}");
-						_ = sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
+						if (!context.HideDescriptions)
+							_ = sb.AppendLine(entry.Description ?? "% Describe the functionality that changed");
 						_ = sb.AppendLine();
 						RenderPrIssueLinks(sb, new PrIssueLinkOptions(entry, entryRepo, entryOwner, entryHideLinks));
 
@@ -92,7 +93,7 @@ public class BreakingChangesMarkdownRenderer(ScopedFileSystem fileSystem) : Mark
 						_ = sb.AppendLine();
 
 						// Description with proper indentation
-						if (!string.IsNullOrWhiteSpace(entry.Description))
+						if (!context.HideDescriptions && !string.IsNullOrWhiteSpace(entry.Description))
 						{
 							_ = sb.AppendLine(ChangelogTextUtilities.Indent(entry.Description));
 							_ = sb.AppendLine();
