@@ -1149,6 +1149,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.</param>
 	/// <param name="output">Optional: Output directory for rendered files. Defaults to current directory</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
+	/// <param name="dropdowns">Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false</param>
 	/// <param name="title">Optional: Title to use for section headers in output files. Defaults to version from first bundle</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
@@ -1159,6 +1160,7 @@ internal sealed partial class ChangelogCommands(
 		string[]? hideFeatures = null,
 		string? output = null,
 		bool subsections = false,
+		bool dropdowns = false,
 		string? title = null,
 		CancellationToken ct = default
 	)
@@ -1191,6 +1193,7 @@ internal sealed partial class ChangelogCommands(
 			Output = output,
 			Title = title,
 			Subsections = subsections,
+			Dropdowns = dropdowns,
 			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
 			FileType = ft.Value,
 			Config = config?.FullName
