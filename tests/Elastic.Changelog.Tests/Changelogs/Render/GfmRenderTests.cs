@@ -390,6 +390,7 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 
 		content.Should().Contain("Feature with description");
 		content.Should().Contain("This is a detailed description of the feature.");
+		content.Should().Contain("It spans multiple lines.");
 
 		// Test with descriptions hidden
 		var outputDir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -405,11 +406,13 @@ public class GfmRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(
 		var result2 = await Service.RenderChangelogs(Collector, inputWithoutDescriptions, TestContext.Current.CancellationToken);
 
 		result2.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
 		var changelogFile2 = FileSystem.Path.Join(outputDir2, "9.2.0", "changelog.md");
 		var content2 = await FileSystem.File.ReadAllTextAsync(changelogFile2, TestContext.Current.CancellationToken);
 
 		content2.Should().Contain("Feature with description");
 		content2.Should().NotContain("This is a detailed description of the feature.");
+		content2.Should().NotContain("It spans multiple lines.");
 	}
 
 	[Fact]
