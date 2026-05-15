@@ -12,7 +12,6 @@ phantoms:
   - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
   - toc: cloud://release-notes
-  - toc: elasticsearch://reference/ingest-processor
 
 toc:
   #############
