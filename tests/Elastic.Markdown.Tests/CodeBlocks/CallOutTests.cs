@@ -51,7 +51,7 @@ var z = y - 2; // another callout
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MagicCallOutsWithFormatting(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+public class MagicCallOutWithFormatting(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
 var x = 1; // this uses `formatting` and a [link](page.html)
 """
