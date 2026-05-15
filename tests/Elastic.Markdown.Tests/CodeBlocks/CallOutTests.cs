@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
@@ -53,16 +54,19 @@ var z = y - 2; // another callout
 
 public class MagicCallOutWithFormatting(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
-var x = 1; // this uses `formatting` and a [link](page.html)
+var x = 1; // this uses `formatting` and a [link](testing/req.md)
 """
 	)
 {
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile("docs/testing/req.md", new MockFileData("# Requirements"));
+
 	[Fact]
 	public void RendersFormattedInlineMarkdown() =>
 		Html.ShouldContainHtml(
 			"""
 			<ol class="code-callouts">
-				<li>this uses <code>formatting</code> and a <a href="page.html">link</a></li>
+				<li>this uses <code>formatting</code> and a <a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">link</a></li>
 			</ol>
 			"""
 		);

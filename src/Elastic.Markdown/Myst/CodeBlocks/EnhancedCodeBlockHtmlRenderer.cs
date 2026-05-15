@@ -14,8 +14,8 @@ using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
-using RazorSlices;
 using Microsoft.AspNetCore.Html;
+using RazorSlices;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
 
