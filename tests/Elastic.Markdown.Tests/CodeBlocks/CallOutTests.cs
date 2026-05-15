@@ -51,6 +51,26 @@ var z = y - 2; // another callout
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+public class MagicCallOutsWithFormatting(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+"""
+var x = 1; // this uses `formatting` and a [link](page.html)
+"""
+	)
+{
+	[Fact]
+	public void RendersFormattedInlineMarkdown() =>
+		Html.ShouldContainHtml(
+			"""
+			<ol class="code-callouts">
+				<li>this uses <code>formatting</code> and a <a href="page.html">link</a></li>
+			</ol>
+			"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
 public class ClassicCallOutsRequiresContent(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
 """
 var x = 1; <1>

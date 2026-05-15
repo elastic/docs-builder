@@ -14,6 +14,7 @@ using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using RazorSlices;
+using Microsoft.AspNetCore.Html;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
 
@@ -238,12 +239,46 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			foreach (var c in block.UniqueCallOuts)
 			{
 				_ = renderer.WriteLine("<li>");
-				_ = renderer.WriteLine(c.Text);
+				_ = renderer.WriteLine(RenderCalloutMarkdown(block, c).Value ?? string.Empty);
 				_ = renderer.WriteLine("</li>");
 			}
 
 			_ = renderer.WriteLine("</ol>");
 		}
+	}
+
+	private static HtmlString RenderCalloutMarkdown(EnhancedCodeBlock block, CallOut callOut)
+	{
+		if (string.IsNullOrWhiteSpace(callOut.Text))
+			return HtmlString.Empty;
+
+		var document = MarkdownParser.ParseMarkdownStringAsync(
+			block.Build,
+			block.Context,
+			callOut.Text,
+			block.CurrentFile,
+			block.Context.YamlFrontMatter,
+			MarkdownParser.Pipeline);
+
+		if (document.Count == 1 && document.FirstOrDefault() is ParagraphBlock paragraph && paragraph.Inline != null)
+			return RenderInlineMarkdown(paragraph);
+
+		var html = document.ToHtml(MarkdownParser.Pipeline);
+		return new HtmlString(html.EnsureTrimmed());
+	}
+
+	private static HtmlString RenderInlineMarkdown(ParagraphBlock paragraph)
+	{
+		if (paragraph.Inline is null)
+			return HtmlString.Empty;
+
+		var subscription = DocumentationObjectPoolProvider.HtmlRendererPool.Get();
+		subscription.HtmlRenderer.WriteChildren(paragraph.Inline);
+
+		var result = subscription.RentedStringBuilder?.ToString();
+		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
+
+		return result == null ? HtmlString.Empty : new HtmlString(result.EnsureTrimmed());
 	}
 
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
