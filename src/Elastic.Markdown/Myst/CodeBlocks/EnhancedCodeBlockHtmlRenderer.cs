@@ -9,6 +9,7 @@ using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Comments;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Contributors;
+using Markdig;
 using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
