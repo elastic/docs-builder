@@ -9,7 +9,7 @@ nav:
     - group: Elasticsearch concepts
       children:
       - page: docs-content://manage-data/data-store.md
-        title: Elasticsearch essentials (Core document database)
+        title: Elasticsearch essentials
       - page: docs-content://manage-data/ingest.md
         title: Ingest data into Elasticsearch
       - page: docs-content://solutions/search.md
@@ -1443,7 +1443,7 @@ nav:
     children:
     - label: Ingest and manage data
       children:
-      - group: "Ingest or migrate: bring your data into Elasticsearch"
+      - group: Ingest or migrate data
         children:
         - page: docs-content://manage-data/ingest.md
           title: Choose an ingest method
@@ -1493,7 +1493,7 @@ nav:
             title: Ingesting data for search use cases
           - title: Ingesting data for observability
           - page: docs-content://solutions/security/get-started/ingest-data-to-elastic-security.md
-            title: Ingesting data for security (Move from Solutions)
+            title: Ingesting data for security
         - page: docs-content://manage-data/ingest/ingesting-timeseries-data.md
           title: Ingesting time series data
         - group: Ingest logs
@@ -2301,7 +2301,7 @@ nav:
           title: Workflow templates
     - label: AI and machine learning
       children:
-      - group: Machine Learning and NLP
+      - group: Machine learning and NLP
         page: docs-content://explore-analyze/machine-learning.md
         children:
         - page: docs-content://explore-analyze/machine-learning/setting-up-machine-learning.md
