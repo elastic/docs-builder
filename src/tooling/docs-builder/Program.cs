@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Reflection;
 using Documentation.Builder;
 using Documentation.Builder.Commands;
 using Documentation.Builder.Commands.Assembler;
@@ -15,7 +16,18 @@ using Microsoft.Extensions.Hosting;
 using Nullean.Argh;
 using Nullean.Argh.Hosting;
 
-// Pre-host fast path: run --help, --version, __schema, __completion directly and exit
+if (args is ["--version"])
+{
+	var version = Assembly.GetExecutingAssembly()
+		.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+		?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+		?? "unknown";
+
+	Console.WriteLine(version);
+	return;
+}
+
+// Pre-host fast path: run --help, __schema, __completion directly and exit
 // before the host (and its startup logs) are ever constructed.
 await ArghApp.TryArghIntrinsicCommand(args);
 
