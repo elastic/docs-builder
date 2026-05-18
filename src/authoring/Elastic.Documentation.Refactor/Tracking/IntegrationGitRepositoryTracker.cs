@@ -9,7 +9,18 @@ namespace Elastic.Documentation.Refactor.Tracking;
 
 public class IntegrationGitRepositoryTracker(string lookupPath) : IRepositoryTracker
 {
-	private string LookupPath { get; } = $"{lookupPath.Trim(['/', '\\'])}/";
+	// When the docset lives at the repository root, lookupPath is "." (or empty after trimming).
+	// In that case there is no prefix to match against, so we use an empty string which makes
+	// StartsWith("") true for every path. Otherwise we anchor with a trailing slash to avoid
+	// false-positive prefix matches (e.g. "docs/" should not match "docs-extra/foo.md").
+	private string LookupPath { get; } = NormalizeLookupPath(lookupPath);
+
+	private static string NormalizeLookupPath(string lookupPath)
+	{
+		var trimmed = lookupPath.Trim(['/', '\\']);
+		return trimmed is "" or "." ? "" : $"{trimmed}/";
+	}
+
 	public IReadOnlyCollection<GitChange> GetChangedFiles()
 	{
 		return GetChanges().ToArray();
