@@ -35,117 +35,28 @@ project:
 
 ### Code callouts
 
-There are two ways to add callouts to a code block. When using callouts, you must use one callout format. You cannot combine explicit and magic callouts.
+There are two ways to add callouts to a code block.
 
-#### Explicit callouts
-
-Add `<\d+>` to the end of a line to explicitly create a code callout.
-
-An ordered list with the same number of items as callouts must follow the code block. If the number of list items doesn’t match the callouts, docs-builder will throw an error.
-
-
-::::{tab-set}
-
-:::{tab-item} Output
-
-```yaml
-project:
-  license:
-    content: CC-BY-4.0 <1>
-```
-
-1. The license
-
+:::{important}
+You cannot combine automatic and explicit callouts in the same code block. `docs-builder` will throw an error if both formats are present.
 :::
 
-:::{tab-item} Markdown
-
-````markdown
-```yaml
-project:
-  license:
-    content: CC-BY-4.0 <1>
-```
-
-1. The license
-````
-
+:::{tip}
+Prefer automatic callouts for single-line descriptions. Numbering is handled for you, so adding or removing a callout does not require renumbering. Each description sits next to the code it annotates, making the source easier to read. Use explicit callouts when a description needs multiple lines or block-level content.
 :::
-
-::::
-
-You can also have one block element in between the code block and the callout list:
-
-::::{tab-set}
-
-:::{tab-item} Output
-
-```javascript
-var input1 = "World"; // <1>
-var input2 = "Elastic"; // <2>
-
-function render(input) {
-    return `Hello, ${input}!`;
-}
-
-render(input1);
-render(input2);
-```
-
-**Inputs:**
-
-1. `World`
-2. `Elastic`
-
-**Outputs**:
-
-1. `Hello, World!`
-2. `Hello, Elastic!`
-
-:::
-
-
-:::{tab-item} Markdown
-
-````markdown
-```javascript
-var input1 = "World"; // <1>
-var input2 = "Elastic"; // <2>
-
-function render(input) {
-    return `Hello, ${input}!`;
-}
-
-render(input1);
-render(input2);
-```
-
-**Inputs:**
-
-1. `World`
-2. `Elastic`
-
-**Outputs**:
-
-1. `Hello, World!`
-2. `Hello, Elastic!`
-````
-
-:::
-
-::::
 
 #### Automatic callouts
 
-If a code block contains code comments in the form of `//` or `#`, callouts are automatically created.
+If a code block contains code comments in the form of `//` or `#`, callouts are automatically created. The comment must follow code on the same line. A comment on its own line is not treated as a callout.
 
+Callout text supports inline Markdown formatting such as `` `code` `` and [links](links.md).
 
 ::::{tab-set}
 
 :::{tab-item} Output
 
 ```csharp
-var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
+var apiKey = new ApiKey("<API_KEY>"); // Set up the `api` key
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
 
@@ -155,16 +66,15 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 
 ````markdown
 ```csharp
-var apiKey = new ApiKey("<API_KEY>"); // Set up the api key
+var apiKey = new ApiKey("<API_KEY>"); // Set up the `api` key
 var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 ```
 ````
 :::
 
-
 ::::
 
-Code comments must follow code to be hoisted as a callout. For example:
+Comments on their own line are left as-is:
 
 ::::{tab-set}
 
@@ -192,7 +102,102 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 
 ::::
 
-#### Align callouts
+#### Explicit callouts
+
+Add `<\d+>` to the end of a line to create a numbered callout. An ordered list with the same number of items must follow the code block. If the counts don’t match, docs-builder throws an error.
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```yaml
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
+
+:::
+
+:::{tab-item} Markdown
+
+````markdown
+```yaml
+project:
+  license:
+    content: CC-BY-4.0 <1>
+```
+
+1. The license
+````
+
+:::
+
+::::
+
+You can have one block element between the code block and the callout list:
+
+::::{tab-set}
+
+:::{tab-item} Output
+
+```javascript
+var input1 = "World"; // <1>
+var input2 = "Elastic"; // <2>
+
+function render(input) {
+    return `Hello, ${input}!`;
+}
+
+render(input1);
+render(input2);
+```
+
+**Inputs:**
+
+1. `World`
+2. `Elastic`
+
+**Outputs**:
+
+1. `Hello, World!`
+2. `Hello, Elastic!`
+
+:::
+
+
+:::{tab-item} Markdown
+
+````markdown
+```javascript
+var input1 = "World"; // <1>
+var input2 = "Elastic"; // <2>
+
+function render(input) {
+    return `Hello, ${input}!`;
+}
+
+render(input1);
+render(input2);
+```
+
+**Inputs:**
+
+1. `World`
+2. `Elastic`
+
+**Outputs**:
+
+1. `Hello, World!`
+2. `Hello, Elastic!`
+````
+
+:::
+
+::::
+
+##### Align callouts
 
 You can align callouts with spaces.
 
