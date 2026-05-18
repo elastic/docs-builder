@@ -122,7 +122,7 @@ internal static class AspireHost
 			.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
 			.WithEnvironment("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", llmServiceAccountPath)
 			.WithHttpEndpoint(port: 4000, isProxied: false)
-			.WithArgs(["assembler", "serve", .. GlobalArguments])
+			.WithArgs(["assembler", "serve-static", .. GlobalArguments])
 			.WithHttpHealthCheck("/", 200)
 			.WaitForCompletion(buildAll)
 			.WithParentRelationship(cloneAll);
