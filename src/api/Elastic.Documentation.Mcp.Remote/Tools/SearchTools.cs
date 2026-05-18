@@ -5,8 +5,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Assembler.Mcp;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Microsoft.Extensions.Logging;

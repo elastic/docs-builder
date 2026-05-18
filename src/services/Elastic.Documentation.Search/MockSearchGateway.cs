@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Api.Core.Search;
-
 namespace Elastic.Documentation.Search;
 
 public class MockNavigationSearchGateway : INavigationSearchGateway

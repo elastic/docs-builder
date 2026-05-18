@@ -5,7 +5,6 @@
 using System.Text.RegularExpressions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;

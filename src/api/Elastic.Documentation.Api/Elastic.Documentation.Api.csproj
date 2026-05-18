@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>docs-builder-api</AssemblyName>
+    <RootNamespace>Elastic.Documentation.Api</RootNamespace>
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IsPublishable>true</IsPublishable>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\..\services\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.DynamoDBv2" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" />
+    <PackageReference Include="NetEscapades.EnumGenerators" />
+    <PackageReference Include="Elastic.OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="Microsoft.Extensions.Telemetry.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Documentation.Api.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Documentation.Api.IntegrationTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

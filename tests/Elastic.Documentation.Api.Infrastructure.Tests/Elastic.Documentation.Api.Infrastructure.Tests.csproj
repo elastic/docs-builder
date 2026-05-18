@@ -5,8 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
+    <ProjectReference Include="..\..\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" />
     <ProjectReference Include="..\..\src\services\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
   </ItemGroup>
 

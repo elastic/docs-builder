@@ -5,8 +5,8 @@
 using System.Diagnostics;
 using System.Text;
 using AwesomeAssertions;
-using Elastic.Documentation.Api.Core;
-using Elastic.Documentation.Api.Core.AskAi;
+using Elastic.Documentation.Api;
+using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using FakeItEasy;
 using Microsoft.Extensions.DependencyInjection;

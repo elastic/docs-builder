@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Api.Core.Changes;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,17 +28,14 @@ public static class ServicesExtension
 
 		// Navigation Search (autocomplete/navigation search)
 		_ = services.AddScoped<INavigationSearchGateway, NavigationSearchGateway>();
-		_ = services.AddScoped<NavigationSearchUsecase>();
 
 		// FullSearch (full-page search with hybrid RRF)
 		_ = services.AddScoped<IFullSearchGateway, FullSearchGateway>();
-		_ = services.AddScoped<FullSearchUsecase>();
-		logger?.LogInformation("Full search use case registered with hybrid RRF support");
+		logger?.LogInformation("Full search gateways registered with hybrid RRF support");
 
 		// Changes feed (cursor-paginated changes since a given date)
 		_ = services.AddSingleton<SharedPointInTimeManager>();
 		_ = services.AddScoped<IChangesGateway, ChangesGateway>();
-		_ = services.AddScoped<ChangesUsecase>();
 
 		return services;
 	}

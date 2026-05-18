@@ -11,7 +11,7 @@ using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
 #if DEBUG
-using Elastic.Documentation.Api.Infrastructure;
+using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ServiceDefaults;

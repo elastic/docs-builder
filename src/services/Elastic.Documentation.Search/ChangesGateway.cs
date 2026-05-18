@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Clients.Elasticsearch;
-using Elastic.Documentation.Api.Core.Changes;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
 

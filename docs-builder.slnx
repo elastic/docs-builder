@@ -56,9 +56,7 @@
     <Project Path="src/Elastic.Markdown/Elastic.Markdown.csproj" />
   </Folder>
   <Folder Name="/src/api/">
-    <Project Path="src/api/Elastic.Documentation.Api.Core/Elastic.Documentation.Api.Core.csproj" />
-    <Project Path="src/api/Elastic.Documentation.Api.Infrastructure/Elastic.Documentation.Api.Infrastructure.csproj" />
-	<Project Path="src/api/Elastic.Documentation.Api.App/Elastic.Documentation.Api.App.csproj" />
+    <Project Path="src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" />
 	<Project Path="src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" />
   </Folder>
   <Folder Name="/src/authoring/">

@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
 using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Configuration;
@@ -11,6 +10,7 @@ using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -24,7 +24,7 @@ try
 	var builder = WebApplication.CreateSlimBuilder(args);
 	_ = builder.AddDocumentationServiceDefaults();
 	_ = builder.AddDefaultHealthChecks();
-	_ = builder.AddDocsApiOpenTelemetry();
+	_ = builder.AddEuidEnrichment();
 
 	// Configure Kestrel to listen on port 8080 (standard container port)
 	_ = builder.WebHost.ConfigureKestrel(serverOptions =>

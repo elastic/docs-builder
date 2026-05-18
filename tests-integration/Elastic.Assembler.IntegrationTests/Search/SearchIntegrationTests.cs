@@ -4,7 +4,7 @@
 
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Api.Search;
 
 namespace Elastic.Assembler.IntegrationTests.Search;
 

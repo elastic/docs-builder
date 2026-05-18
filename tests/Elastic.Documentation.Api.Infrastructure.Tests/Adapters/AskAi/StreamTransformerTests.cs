@@ -6,8 +6,8 @@ using System.IO.Pipelines;
 using System.Text;
 using System.Text.Json;
 using AwesomeAssertions;
-using Elastic.Documentation.Api.Core.AskAi;
-using Elastic.Documentation.Api.Infrastructure.Adapters.AskAi;
+using Elastic.Documentation.Api.AskAi;
+using Elastic.Documentation.Api.Adapters.AskAi;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Adapters.AskAi;

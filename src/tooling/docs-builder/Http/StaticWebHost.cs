@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 #if DEBUG
-using Elastic.Documentation.Api.Infrastructure;
+using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
