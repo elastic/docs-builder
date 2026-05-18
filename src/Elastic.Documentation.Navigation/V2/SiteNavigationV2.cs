@@ -98,15 +98,31 @@ public class SiteNavigationV2 : SiteNavigation, INavigationTraversable
 	/// </summary>
 	public NavigationSection? GetSectionForUrl(string? pageUrl)
 	{
-		if (pageUrl is not null)
-		{
-			var normalized = pageUrl.TrimEnd('/');
-			if (_urlToSection.TryGetValue(normalized, out var section))
-				return section;
-			if (_urlToSection.TryGetValue(normalized + "/", out section))
-				return section;
-		}
+		if (pageUrl is not null && TryGetSectionForUrl(pageUrl, out var section))
+			return section;
 		return Sections.FirstOrDefault(s => !s.Isolated);
+	}
+
+	private bool TryGetSectionForUrl(string url, out NavigationSection section)
+	{
+		var normalized = url.TrimEnd('/');
+		if (_urlToSection.TryGetValue(normalized, out section!))
+			return true;
+		if (_urlToSection.TryGetValue(normalized + "/", out section!))
+			return true;
+
+		var prefix = Url.TrimEnd('/');
+		if (!string.IsNullOrEmpty(prefix) && normalized.StartsWith($"{prefix}/", StringComparison.OrdinalIgnoreCase))
+		{
+			var withoutPrefix = normalized[prefix.Length..];
+			if (_urlToSection.TryGetValue(withoutPrefix, out section!))
+				return true;
+			if (_urlToSection.TryGetValue(withoutPrefix + "/", out section!))
+				return true;
+		}
+
+		section = null!;
+		return false;
 	}
 
 	private INavigationItem GetNavigationForFile(IDocumentationFile file) =>
@@ -212,7 +228,10 @@ public class SiteNavigationV2 : SiteNavigation, INavigationTraversable
 	private void BuildUrlToSectionLookup()
 	{
 		foreach (var section in Sections)
+		{
 			CollectUrlsForSection(section.NavigationItems, section);
+			AddUrlToSection(section.Url, section, replaceExisting: true);
+		}
 	}
 
 	private void CollectUrlsForSection(IEnumerable<INavigationItem> items, NavigationSection section)
@@ -223,16 +242,39 @@ public class SiteNavigationV2 : SiteNavigation, INavigationTraversable
 			if (item is IslandNavigationNode)
 				continue;
 
-			if (!string.IsNullOrEmpty(item.Url))
-			{
-				var normalized = item.Url.TrimEnd('/');
-				_ = _urlToSection.TryAdd(normalized, section);
-			}
+			AddUrlToSection(item.Url, section);
 
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
 				CollectUrlsForSection(node.NavigationItems, section);
 		}
 	}
+
+	private void AddUrlToSection(string url, NavigationSection section, bool replaceExisting = false)
+	{
+		if (string.IsNullOrEmpty(url))
+			return;
+		AddNormalizedUrlToSection(url, section, replaceExisting);
+		if (IsExternalUrl(url))
+			return;
+		var prefix = Url.TrimEnd('/');
+		var path = url.TrimStart('/');
+		var prefixed = string.IsNullOrEmpty(path) ? prefix : $"{prefix}/{path}";
+		if (!url.Equals(prefixed, StringComparison.OrdinalIgnoreCase))
+			AddNormalizedUrlToSection(prefixed, section, replaceExisting);
+	}
+
+	private void AddNormalizedUrlToSection(string url, NavigationSection section, bool replaceExisting)
+	{
+		var normalized = url.TrimEnd('/');
+		if (replaceExisting)
+			_urlToSection[normalized] = section;
+		else
+			_ = _urlToSection.TryAdd(normalized, section);
+	}
+
+	private static bool IsExternalUrl(string url) =>
+		url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+		url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
 	private void BuildTocRootToIslandLookup()
 	{
