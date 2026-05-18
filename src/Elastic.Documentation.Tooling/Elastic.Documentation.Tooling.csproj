@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Elastic.Documentation</RootNamespace>
     <IsAotCompatible>true</IsAotCompatible>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
