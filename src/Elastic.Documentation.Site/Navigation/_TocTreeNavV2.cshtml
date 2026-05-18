@@ -133,63 +133,15 @@
 	else if (item is IslandNavigationNode island)
 	{
 		var islandHxAttrs = Model.Htmx.GetHxAttributes(hxSwapOob: "#main-container,#secondary-nav", preload: null);
-		var islandAllHidden = island.NavigationItems.All(n => n.Hidden);
-		<li class="flex flex-wrap group-navigation relative">
-			<div class="peer nav-folder-peer grid w-full grid-cols-1">
-				@if (!islandAllHidden)
-				{
-					<input
-						id="@island.Id"
-						type="checkbox"
-						class="sr-only pointer-events-none"
-						tabindex="-1"
-						aria-hidden="true">
-				}
-				<a
-					href="@island.Url"
-					@islandHxAttrs
-					class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
-					style="--nav-level:@Model.Level">
-					@if (!islandAllHidden)
-					{
-						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="1.5"
-								stroke="currentColor"
-								>
-								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
-							</svg>
-						</span>
-					}
-					else
-					{
-						<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
-					}
-					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@island.NavigationTitle</span>
-				</a>
-			</div>
-			@if (island.NavigationItems.Count > 0)
-			{
-				<div class="docs-sidebar-nav-v2__folder-clip w-full">
-					<div class="docs-sidebar-nav-v2__folder-clip-inner">
-						<ul class="docs-sidebar-nav-v2__folder-children w-full relative">
-							@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
-							{
-								IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
-								IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
-								Level = Model.Level + 1,
-								SubTree = island,
-								RootNavigationId = Model.RootNavigationId,
-								Htmx = Model.Htmx,
-								IsIslandSubtree = true
-							}))
-						</ul>
-					</div>
-				</div>
-			}
+		<li class="flex group/li">
+			<a
+				href="@island.Url"
+				@islandHxAttrs
+				class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
+				style="--nav-level:@Model.Level">
+				<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
+				<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@island.NavigationTitle</span>
+			</a>
 		</li>
 	}
 	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)

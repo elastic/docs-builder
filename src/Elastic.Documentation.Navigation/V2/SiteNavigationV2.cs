@@ -123,6 +123,7 @@ public class SiteNavigationV2 : SiteNavigation
 					islandNode.Url,
 					islandNode.SourceTocRootId,
 					parentSection,
+					islandNode.ParentUrl,
 					[.. islandNode.NavigationItems]
 				));
 			}

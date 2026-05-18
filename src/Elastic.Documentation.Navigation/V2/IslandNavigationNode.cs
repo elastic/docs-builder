@@ -20,6 +20,25 @@ public class IslandNavigationNode(
 	/// <summary>The Id of the wrapped toc root, used for island lookup by nav ownership.</summary>
 	public string SourceTocRootId { get; } = source.Id;
 
+	/// <summary>
+	/// The URL to use for the back arrow when this island is active.
+	/// Walks up the parent chain to find the nearest ancestor with a meaningful URL,
+	/// falling back to "/" if none is found.
+	/// </summary>
+	public string ParentUrl { get; } = ResolveParentUrl(parent);
+
+	private static string ResolveParentUrl(INodeNavigationItem<INavigationModel, INavigationItem>? parent)
+	{
+		var current = parent;
+		while (current is not null)
+		{
+			if (!string.IsNullOrEmpty(current.Url) && current.Url != "/")
+				return current.Url;
+			current = current.Parent;
+		}
+		return "/";
+	}
+
 	/// <inheritdoc />
 	public string Id { get; } = ShortId.Create("island", label);
 
