@@ -9,6 +9,17 @@ The `render` command automatically discovers and merges `.amend-*.yaml` files wi
 
 The `changelog render` command does **not** use `rules.publish` for filtering. Filtering must be done at bundle time using `rules.bundle`. For how the directive differs, see the [{changelog} directive syntax reference](/syntax/changelog.md).
 
+## Options
+
+: `--dropdowns`
+  Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. Defaults to false (flattened bulleted lists). When used, each entry in separated files is rendered as a collapsible dropdown section using MyST syntax (`::::{dropdown}`). When it's not used, entries are rendered as flattened bulleted lists with PR/issue links inline and `Impact` and `Action` sections indented. This flag affects only markdown output; AsciiDoc output always uses its standard format.
+
+: `--no-descriptions`
+  Hide changelog entry descriptions from output. Entry titles, PR/issue links, and `Impact` / `Action` sections remain visible. Bundle-level descriptions are unaffected. Applies to all output formats (markdown, asciidoc, gfm). Defaults to false.
+
+: `--title`
+  The title to use for section headers, directories, and anchors in output files. Defaults to the version in the first bundle. When omitted, ISO date targets are formatted for display the same way as the `{changelog}` directive (for example, `2026-05-04` becomes "May 4, 2026", `2026-05` becomes "May 2026"), while directory names and heading anchors continue to use the raw target slug. If the string contains spaces, they are replaced with dashes when used in directory names and anchors.
+
 ## Output formats
 
 ### Markdown
@@ -23,7 +34,47 @@ The default output (`--file-type markdown`) generates multiple files:
 
 ### Asciidoc
 
-`--file-type asciidoc` generates a single file with all sections in order: security updates, bug fixes, highlights, new features and enhancements, breaking changes, deprecations, known issues, documentation, regressions, and other changes. The asciidoc output uses attribute references for links (for example, `{repo-pull}NUMBER[#NUMBER]`).
+When `--file-type asciidoc` is specified, the command generates a single asciidoc file with all sections:
+
+- Security updates
+- Bug fixes
+- Highlights (only included when at least one entry has `highlight: true`)
+- New features and enhancements
+- Breaking changes
+- Deprecations
+- Known issues
+- Documentation
+- Regressions
+- Other changes
+
+The asciidoc output uses attribute references for links (for example, `{repo-pull}NUMBER[#NUMBER]`).
+
+AsciiDoc output ignores the `--dropdowns` flag and always uses a standardized format with the following characteristics:
+
+- Multi-block entries (containing description, Impact, and Action sections) use proper list continuation markers (`+`) to maintain list structure
+- Strong text formatting uses idiomatic single asterisk syntax (`*Impact:*`, `*Action:*`) following AsciiDoc best practices
+- All content blocks are properly attached to their parent list items for correct rendering.
+
+### GFM format
+
+When `--file-type gfm` is specified, the command generates a single GitHub Flavored Markdown file optimized for GitHub releases:
+
+- `changelog.md` - Contains all sections in a single file with clean headings
+- Clean section headings without anchor links (for example, `### Features and enhancements`)
+- Simplified structure focused on readability
+- Suitable for copy/pasting into GitHub releases
+
+The GFM output includes the following sections in order when entries are present:
+
+- Highlights (only included when at least one entry has `highlight: true`)
+- Features and enhancements
+- Breaking changes
+- Deprecations
+- Bug fixes (includes security updates)
+- Known issues
+- Documentation
+- Regressions
+- Other changes
 
 ### Multiple PR and issue links
 
@@ -55,4 +106,28 @@ docs-builder changelog render \
 docs-builder changelog render \
   --input "./public-bundle.yaml|./changelog|elasticsearch|keep-links,./private-bundle.yaml|./private-changelog|internal-repo|hide-links" \
   --output ./release-notes
+
+# Render with subsections and flattened format (default)
+docs-builder changelog render \
+  --input "./docs/changelog/bundles/9.3.0.yaml" \
+  --output ./release-notes \
+  --subsections
+
+### Render with dropdown format
+docs-builder changelog render \
+  --input "./docs/changelog/bundles/9.3.0.yaml" \
+  --output ./release-notes \
+  --dropdowns
+
+# Render as GitHub Flavored Markdown
+docs-builder changelog render \
+  --input "./docs/changelog/bundles/9.3.0.yaml" \
+  --output ./release-notes \
+  --file-type gfm
+
+# Render without entry descriptions (titles, links, Impact/Action still shown)
+docs-builder changelog render \
+  --input "./docs/changelog/bundles/9.3.0.yaml" \
+  --output ./release-notes \
+  --no-descriptions
 ```
