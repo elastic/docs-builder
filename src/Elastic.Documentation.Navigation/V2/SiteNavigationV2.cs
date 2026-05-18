@@ -198,6 +198,7 @@ public class SiteNavigationV2 : SiteNavigation, INavigationTraversable
 					islandNode.Url,
 					islandNode.SourceTocRootId,
 					parentSection,
+					islandNode.ParentUrl,
 					[.. islandNode.NavigationItems]
 				));
 			}
