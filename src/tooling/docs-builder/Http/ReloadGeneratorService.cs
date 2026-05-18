@@ -107,7 +107,8 @@ public sealed class ReloadGeneratorService(
 			// Content-only .md edits are picked up on the next request via ParseFullAsync.
 			if (reloadConfiguration)
 			{
-				var sourcePath = ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
+				var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName
+					?? ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
 				await InMemoryBuildState.StartBuildAsync(sourcePath, ctx);
 			}
 		}, token);
