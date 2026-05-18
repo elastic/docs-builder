@@ -203,7 +203,7 @@ sub:
 	[Fact]
 	public void OnlySeesGlobalVariable() =>
 		Html.Should().NotContain("title=\"{{hello-world}}\"")
-			.And.Contain("title=\"Hello World\"");
+			.And.Contain("title=\"Observability\"");
 }
 
 public class MutationOperatorTest(ITestOutputHelper output) : InlineTest(output,

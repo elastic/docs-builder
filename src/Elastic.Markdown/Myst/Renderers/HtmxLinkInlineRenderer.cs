@@ -91,15 +91,16 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.Write('"');
 		}
 
-		if (!string.IsNullOrEmpty(link.Title))
-		{
-			_ = renderer.Write(" title=\"");
-			_ = renderer.WriteEscape(link.Title);
-			_ = renderer.Write('"');
-		}
-
 		// Write any additional attributes (like width/height from styling instructions)
 		_ = renderer.WriteAttributes(link);
+
+		// Always use alt text as title for accessibility consistency
+		if (link.FirstChild != null)
+		{
+			_ = renderer.Write(" title=\"");
+			renderer.WriteChildren(link);
+			_ = renderer.Write('"');
+		}
 
 		_ = renderer.Write(" />");
 	}
