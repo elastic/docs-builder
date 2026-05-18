@@ -10,7 +10,7 @@ using Elastic.Documentation.Api.Gcp;
 
 namespace Elastic.Documentation.Api.Adapters.AskAi;
 
-public class LlmGatewayAskAiGateway(HttpClient httpClient, IGcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiGateway
+public class LlmGatewayAskAiGateway(HttpClient httpClient, IGcpIdTokenProvider tokenProvider, LlmGatewayOptions options) : IAskAiService
 {
 	/// <summary>
 	/// Model name used by LLM Gateway (from PlatformContext.UseCase)

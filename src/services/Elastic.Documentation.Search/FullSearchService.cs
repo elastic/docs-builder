@@ -13,14 +13,14 @@ using EsHighlight = Elastic.Clients.Elasticsearch.Core.Search.HighlightDescripto
 namespace Elastic.Documentation.Search;
 
 /// <summary>
-/// Full-page search gateway implementation.
+/// Full-page search service implementation.
 /// Uses hybrid RRF search for semantic queries, lexical-only for keyword queries.
 /// </summary>
-public partial class FullSearchGateway(
+public partial class FullSearchService(
 	ElasticsearchClientAccessor clientAccessor,
 	ProductsConfiguration productsConfiguration,
-	ILogger<FullSearchGateway> logger)
-	: IFullSearchGateway, IDisposable
+	ILogger<FullSearchService> logger)
+	: IFullSearchService, IDisposable
 {
 	/// <summary>
 	/// Regex pattern to detect semantic/question queries.
@@ -60,16 +60,46 @@ public partial class FullSearchGateway(
 			wordCount > 3;
 	}
 
-	public async Task<FullSearchResult> SearchAsync(FullSearchRequest request, Cancel ctx = default)
+	public async Task<FullSearchResponse> SearchAsync(FullSearchRequest request, Cancel ctx = default)
 	{
 		var isSemantic = IsSemanticQuery(request.Query);
 
 		logger.LogDebug("Full search for query '{Query}' - semantic: {IsSemantic}", request.Query, isSemantic);
 
-		return isSemantic
+		var result = isSemantic
 			? await SearchWithHybridRrf(request, ctx)
 			: await SearchLexicalOnly(request, ctx);
+
+		var response = new FullSearchResponse
+		{
+			Results = result.Results,
+			TotalResults = result.TotalHits,
+			PageNumber = request.PageNumber,
+			PageSize = request.PageSize,
+			Aggregations = result.Aggregations,
+			IsSemanticQuery = result.IsSemanticQuery
+		};
+
+		LogFullSearchResults(
+			logger,
+			response.PageSize,
+			response.PageNumber,
+			request.Query,
+			result.IsSemanticQuery,
+			result.Results.Select(i => i.Url).ToArray()
+		);
+
+		return response;
 	}
+
+	[LoggerMessage(Level = LogLevel.Information, Message = "Full search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}' (semantic: {IsSemantic}): {Urls}")]
+	private static partial void LogFullSearchResults(
+		ILogger logger,
+		int pageSize,
+		int pageNumber,
+		string searchQuery,
+		bool isSemantic,
+		string[] urls);
 
 	/// <summary>
 	/// Performs hybrid RRF search combining lexical and semantic queries.

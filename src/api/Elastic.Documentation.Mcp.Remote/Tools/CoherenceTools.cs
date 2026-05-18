@@ -18,7 +18,7 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for checking documentation coherence and finding inconsistencies.
 /// </summary>
 [McpServerToolType]
-public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<CoherenceTools> logger)
+public class CoherenceTools(IFullSearchService fullSearchGateway, ILogger<CoherenceTools> logger)
 {
 	/// <summary>
 	/// Checks documentation coherence for a given topic.
@@ -73,13 +73,13 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 			var response = new CoherenceCheckResponse
 			{
 				Topic = topic,
-				TotalDocuments = result.TotalHits,
+				TotalDocuments = result.TotalResults,
 				AnalyzedDocuments = result.Results.Count,
 				SectionCoverage = navigationSections,
 				ProductCoverage = products,
 				DocsWithAiSummary = docsWithSummaries,
 				DocsWithRagSummary = docsWithRagSummaries,
-				CoverageScore = CalculateCoverageScore(result.TotalHits, navigationSections.Count, products.Count),
+				CoverageScore = CalculateCoverageScore(result.TotalResults, navigationSections.Count, products.Count),
 				TopDocuments = result.Results.Take(5).Select(r => new CoherenceDocDto
 				{
 					Url = r.Url,
@@ -203,7 +203,7 @@ public class CoherenceTools(IFullSearchGateway fullSearchGateway, ILogger<Cohere
 			{
 				Topic = topic,
 				FocusArea = focusArea,
-				TotalDocuments = result.TotalHits,
+				TotalDocuments = result.TotalResults,
 				PotentialInconsistencies = potentialOverlaps.Take(10).ToList(),
 				ProductBreakdown = byProduct.ToDictionary(g => g.Key, g => g.Value.Count)
 			};

@@ -4,15 +4,34 @@
 
 namespace Elastic.Documentation.Search;
 
-public interface INavigationSearchGateway
+public interface INavigationSearchService
 {
-	Task<NavigationSearchResult> NavigationSearchAsync(
-		string query,
-		int pageNumber,
-		int pageSize,
-		string? filter = null,
-		Cancel ctx = default
-	);
+	Task<NavigationSearchResponse> NavigationSearchAsync(NavigationSearchRequest request, Cancel ctx = default);
+}
+
+public record NavigationSearchRequest
+{
+	public required string Query { get; init; }
+	public int PageNumber { get; init; } = 1;
+	public int PageSize { get; init; } = 20;
+	public string? TypeFilter { get; init; }
+}
+
+public record NavigationSearchResponse
+{
+	public required IEnumerable<NavigationSearchResultItem> Results { get; init; }
+	public required int TotalResults { get; init; }
+	public required int PageNumber { get; init; }
+	public required int PageSize { get; init; }
+	public NavigationSearchAggregations Aggregations { get; init; } = new();
+	public int PageCount => TotalResults > 0
+				? (int)Math.Ceiling((double)TotalResults / PageSize)
+				: 0;
+}
+
+public record NavigationSearchAggregations
+{
+	public IReadOnlyDictionary<string, long> Type { get; init; } = new Dictionary<string, long>();
 }
 
 public record NavigationSearchResult

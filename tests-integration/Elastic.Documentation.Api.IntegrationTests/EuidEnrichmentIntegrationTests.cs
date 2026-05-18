@@ -50,8 +50,8 @@ public class EuidEnrichmentIntegrationTests : IAsyncLifetime
 		// Create factory with mocked AskAi services
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
-			// Mock IAskAiGateway to avoid external AI service calls
-			var mockAskAiGateway = A.Fake<IAskAiGateway>();
+			// Mock IAskAiService to avoid external AI service calls
+			var mockAskAiGateway = A.Fake<IAskAiService>();
 			A.CallTo(() => mockAskAiGateway.AskAi(A<AskAiRequest>._, A<Cancel>._))
 				.ReturnsLazily(() =>
 				{
@@ -113,11 +113,10 @@ public class EuidEnrichmentIntegrationTests : IAsyncLifetime
 		var logRecords = factory.ExportedLogRecords;
 		logRecords.Should().NotBeEmpty("Should have captured log records");
 
-		// Find a log entry from AskAiUsecase
+		// Find a log entry from the AskAI endpoint handler
 		var askAiLogRecord = logRecords.FirstOrDefault(r =>
-			string.Equals(r.CategoryName, typeof(AskAiUsecase).FullName, StringComparison.OrdinalIgnoreCase) &&
 			r.FormattedMessage?.Contains("Starting AskAI", StringComparison.OrdinalIgnoreCase) == true);
-		askAiLogRecord.Should().NotBeNull("Should have logged from AskAiUsecase");
+		askAiLogRecord.Should().NotBeNull("Should have logged from AskAI endpoint handler");
 
 		// Verify euid is present in OTEL log attributes (mirrors production exporter behavior)
 		var euidAttribute = askAiLogRecord.Attributes?.FirstOrDefault(a => a.Key == TelemetryConstants.UserEuidAttributeName) ?? default;

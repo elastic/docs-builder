@@ -5,8 +5,8 @@
 using System.Net;
 using System.Text;
 using AwesomeAssertions;
-using Elastic.Documentation.Api.Adapters.Telemetry;
 using Elastic.Documentation.Api.IntegrationTests.Fixtures;
+using Elastic.Documentation.Api.Telemetry;
 using FakeItEasy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -52,7 +52,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
 			// Replace the named HttpClient with our mock
-			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
 		});
 
@@ -116,7 +116,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
-			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
 		});
 
@@ -173,7 +173,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
-			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
 		});
 
@@ -225,7 +225,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
 #pragma warning disable EXTEXP0001 // Experimental API - needed for test to bypass resilience handlers
-			_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler)
 				.RemoveAllResilienceHandlers();
 #pragma warning restore EXTEXP0001

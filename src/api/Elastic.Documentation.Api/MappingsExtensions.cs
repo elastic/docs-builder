@@ -2,16 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
+using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
-using Elastic.Documentation.Api.Changes;
-using Elastic.Documentation.Api.Search;
 using Elastic.Documentation.Api.Telemetry;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api;
 
@@ -33,23 +33,71 @@ public static class MappingsExtension
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
 	{
 		var askAiGroup = group.MapGroup("/ask-ai");
-		_ = askAiGroup.MapPost("/stream", async (HttpContext context, AskAiRequest askAiRequest, AskAiUsecase askAiUsecase, Cancel ctx) =>
+		_ = askAiGroup.MapPost("/stream", async (HttpContext context, AskAiRequest askAiRequest, IAskAiService askAiService, IStreamTransformer streamTransformer, ILogger<Program> logger, Cancel ctx) =>
 		{
 			context.Response.ContentType = "text/event-stream";
 			context.Response.Headers.CacheControl = "no-cache";
 			context.Response.Headers.Connection = "keep-alive";
 
-			var stream = await askAiUsecase.AskAi(askAiRequest, ctx);
-			await stream.CopyToAsync(context.Response.Body, ctx);
+			var askAiActivitySource = new ActivitySource(TelemetryConstants.AskAiSourceName);
+			logger.LogInformation("Starting AskAI chat with {AgentProvider} and {AgentId}", streamTransformer.AgentProvider, streamTransformer.AgentId);
+			var activity = askAiActivitySource.StartActivity($"chat {streamTransformer.AgentProvider}", ActivityKind.Client);
+			_ = activity?.SetTag("gen_ai.operation.name", "chat");
+			_ = activity?.SetTag("gen_ai.provider.name", streamTransformer.AgentProvider);
+			_ = activity?.SetTag("gen_ai.agent.id", streamTransformer.AgentId);
+			if (askAiRequest.ConversationId is not null)
+				_ = activity?.SetTag("gen_ai.conversation.id", askAiRequest.ConversationId.ToString());
+
+			var inputMessages = new[]
+			{
+				new InputMessage("user", [new MessagePart("text", askAiRequest.Message)])
+			};
+			var inputMessagesJson = JsonSerializer.Serialize(inputMessages, ApiJsonContext.Default.InputMessageArray);
+			_ = activity?.SetTag("gen_ai.input.messages", inputMessagesJson);
+			var sanitizedMessage = askAiRequest.Message?.Replace("\r", "").Replace("\n", "");
+			logger.LogInformation("AskAI input message: <{ask_ai.input.message}>", sanitizedMessage);
+			logger.LogInformation("Streaming AskAI response");
+
+			var response = await askAiService.AskAi(askAiRequest, ctx);
+
+			var conversationId = response.GeneratedConversationId ?? askAiRequest.ConversationId;
+			if (conversationId is not null)
+				_ = activity?.SetTag("gen_ai.conversation.id", conversationId.ToString());
+
+			var transformedStream = await streamTransformer.TransformAsync(
+				response.Stream,
+				response.GeneratedConversationId,
+				activity,
+				ctx);
+			await transformedStream.CopyToAsync(context.Response.Body, ctx);
 		});
 
 		// UUID validation is automatic via Guid type deserialization (returns 400 if invalid)
-		_ = askAiGroup.MapPost("/message-feedback", async (HttpContext context, AskAiMessageFeedbackRequest request, AskAiMessageFeedbackUsecase feedbackUsecase, Cancel ctx) =>
+		_ = askAiGroup.MapPost("/message-feedback", async (HttpContext context, AskAiMessageFeedbackRequest request, IAskAiMessageFeedbackService feedbackService, ILogger<Program> logger, Cancel ctx) =>
 		{
 			// Extract euid cookie for user tracking
 			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
 
-			await feedbackUsecase.SubmitFeedback(request, euid, ctx);
+			var feedbackActivitySource = new ActivitySource(TelemetryConstants.AskAiFeedbackSourceName);
+			using var activity = feedbackActivitySource.StartActivity("record message-feedback", ActivityKind.Internal);
+			_ = activity?.SetTag("gen_ai.conversation.id", request.ConversationId);
+			_ = activity?.SetTag("ask_ai.message.id", request.MessageId);
+			_ = activity?.SetTag("ask_ai.feedback.reaction", request.Reaction.ToString().ToLowerInvariant());
+
+			logger.LogInformation(
+				"Recording message feedback for message {MessageId} in conversation {ConversationId}: {Reaction}",
+				request.MessageId,
+				request.ConversationId,
+				request.Reaction);
+
+			var record = new AskAiMessageFeedbackRecord(
+				request.MessageId,
+				request.ConversationId,
+				request.Reaction,
+				euid
+			);
+
+			await feedbackService.RecordFeedbackAsync(record, ctx);
 			return Results.NoContent();
 		}).DisableAntiforgery();
 	}
@@ -62,17 +110,17 @@ public static class MappingsExtension
 				[FromQuery(Name = "q")] string query,
 				[FromQuery(Name = "page")] int? pageNumber,
 				[FromQuery(Name = "type")] string? typeFilter,
-				NavigationSearchUsecase navigationSearchUsecase,
+				INavigationSearchService navigationSearchService,
 				Cancel ctx
 			) =>
 			{
-				var request = new NavigationSearchApiRequest
+				var request = new NavigationSearchRequest
 				{
 					Query = query,
 					PageNumber = pageNumber ?? 1,
 					TypeFilter = typeFilter
 				};
-				var response = await navigationSearchUsecase.NavigationSearchAsync(request, ctx);
+				var response = await navigationSearchService.NavigationSearchAsync(request, ctx);
 				return Results.Ok(response);
 			});
 	}
@@ -91,11 +139,11 @@ public static class MappingsExtension
 				[FromQuery(Name = "product")] string[]? productFilter,
 				[FromQuery(Name = "version")] string? versionFilter,
 				[FromQuery(Name = "sort")] string? sortBy,
-				FullSearchUsecase searchUsecase,
+				IFullSearchService searchService,
 				Cancel ctx
 			) =>
 			{
-				var request = new FullSearchApiRequest
+				var request = new FullSearchRequest
 				{
 					Query = query,
 					PageNumber = pageNumber ?? 1,
@@ -107,7 +155,7 @@ public static class MappingsExtension
 					VersionFilter = versionFilter,
 					SortBy = sortBy ?? "relevance"
 				};
-				var response = await searchUsecase.SearchAsync(request, ctx);
+				var response = await searchService.SearchAsync(request, ctx);
 				return Results.Ok(response);
 			});
 	}
@@ -118,17 +166,17 @@ public static class MappingsExtension
 				[FromQuery(Name = "since")] DateTimeOffset since,
 				[FromQuery(Name = "cursor")] string? cursor,
 				[FromQuery(Name = "size")] int? pageSize,
-				ChangesUsecase changesUsecase,
+				IChangesService changesService,
 				Cancel ctx
 			) =>
 			{
-				var request = new ChangesApiRequest
+				var request = new ChangesRequest
 				{
 					Since = since,
 					PageSize = pageSize ?? ChangesDefaults.PageSize,
 					Cursor = cursor
 				};
-				var response = await changesUsecase.GetChangesAsync(request, ctx);
+				var response = await changesService.GetChangesAsync(request, ctx);
 				return Results.Ok(response);
 			});
 
@@ -147,10 +195,10 @@ public static class MappingsExtension
 		string path,
 		OtlpSignalType signalType) =>
 		group.MapPost(path,
-			async (HttpContext context, OtlpProxyUsecase proxyUsecase, Cancel ctx) =>
+			async (HttpContext context, IOtlpService otlpService, Cancel ctx) =>
 			{
 				var contentType = context.Request.ContentType ?? "application/json";
-				var result = await proxyUsecase.ProxyOtlp(
+				var result = await otlpService.ForwardOtlp(
 					signalType,
 					context.Request.Body,
 					contentType,

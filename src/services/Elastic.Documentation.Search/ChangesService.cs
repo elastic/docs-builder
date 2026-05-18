@@ -2,6 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Buffers;
+using System.Text;
+using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
@@ -9,17 +12,47 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Search;
 
 /// <summary>
-/// Elasticsearch gateway for the documentation changes feed.
+/// Elasticsearch service for the documentation changes feed.
 /// Queries content_last_updated > since with search_after cursor pagination.
 /// Uses a shared Point In Time (PIT) for consistent pagination across requests.
 /// </summary>
-public partial class ChangesGateway(
+public partial class ChangesService(
 	ElasticsearchClientAccessor clientAccessor,
 	SharedPointInTimeManager pitManager,
-	ILogger<ChangesGateway> logger
-) : IChangesGateway
+	ILogger<ChangesService> logger
+) : IChangesService
 {
-	public async Task<ChangesResult> GetChangesAsync(ChangesRequest request, Cancel ctx = default)
+	public async Task<ChangesResponse> GetChangesAsync(ChangesRequest request, Cancel ctx = default)
+	{
+		var cursor = DecodeCursor(request.Cursor);
+		var pageSize = Math.Clamp(request.PageSize, 1, ChangesDefaults.MaxPageSize);
+
+		var internalRequest = new ChangesInternalRequest
+		{
+			Since = request.Since,
+			PageSize = pageSize,
+			Cursor = cursor
+		};
+
+		var result = await GetChangesInternalAsync(internalRequest, ctx);
+
+		var nextCursor = result.NextCursor is not null
+			? EncodeCursor(result.NextCursor)
+			: null;
+
+		var hasMore = nextCursor is not null;
+
+		LogChanges(logger, request.Since, result.Pages.Count, hasMore);
+
+		return new ChangesResponse
+		{
+			Pages = result.Pages,
+			HasMore = hasMore,
+			NextCursor = nextCursor
+		};
+	}
+
+	private async Task<ChangesResult> GetChangesInternalAsync(ChangesInternalRequest request, Cancel ctx = default)
 	{
 		var fetchSize = request.PageSize + 1;
 
@@ -56,7 +89,7 @@ public partial class ChangesGateway(
 	}
 
 	private async Task<SearchResponse<DocumentationDocument>> Search(
-		ChangesRequest request, string pitId, int fetchSize, Cancel ctx
+		ChangesInternalRequest request, string pitId, int fetchSize, Cancel ctx
 	) =>
 		await clientAccessor.Client.SearchAsync<DocumentationDocument>(s =>
 		{
@@ -145,6 +178,60 @@ public partial class ChangesGateway(
 			NextCursor = nextCursor
 		};
 	}
+
+	private static ChangesPageCursor? DecodeCursor(string? cursor)
+	{
+		if (string.IsNullOrWhiteSpace(cursor))
+			return null;
+
+		try
+		{
+			var remainder = cursor.Length % 4;
+			var paddingLength = (4 - remainder) % 4;
+			var base64 = cursor
+				.Replace('-', '+')
+				.Replace('_', '/')
+				+ new string('=', paddingLength);
+
+			var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
+			using var doc = JsonDocument.Parse(json);
+			var root = doc.RootElement;
+			var arrayLength = root.GetArrayLength();
+			if (root.ValueKind != JsonValueKind.Array || arrayLength < 2)
+				return null;
+
+			var epochEl = root[0];
+			var urlEl = root[1];
+			if (epochEl.ValueKind != JsonValueKind.Number || urlEl.ValueKind != JsonValueKind.String)
+				return null;
+
+			return new ChangesPageCursor(epochEl.GetInt64(), urlEl.GetString()!);
+		}
+		catch (Exception ex) when (ex is FormatException or JsonException or InvalidOperationException)
+		{
+			return null;
+		}
+	}
+
+	private static string EncodeCursor(ChangesPageCursor cursor)
+	{
+		var buffer = new ArrayBufferWriter<byte>();
+		using var writer = new Utf8JsonWriter(buffer);
+		writer.WriteStartArray();
+		writer.WriteNumberValue(cursor.ContentLastUpdatedEpochMs);
+		writer.WriteStringValue(cursor.Url);
+		writer.WriteEndArray();
+		writer.Flush();
+
+		return Convert.ToBase64String(buffer.WrittenSpan)
+			.TrimEnd('=')
+			.Replace('+', '-')
+			.Replace('/', '_');
+	}
+
+	[LoggerMessage(Level = LogLevel.Information,
+		Message = "Changes feed returned {Count} pages since {Since} (hasMore: {HasMore})")]
+	private static partial void LogChanges(ILogger logger, DateTimeOffset since, int count, bool hasMore);
 
 	[LoggerMessage(Level = LogLevel.Warning, Message = "PIT expired or not found, opening a new one and retrying with existing search_after position")]
 	private static partial void LogPitExpired(ILogger logger);

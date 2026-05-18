@@ -2,21 +2,22 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
 using System.Net.Sockets;
-using Elastic.Documentation.Api.Telemetry;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Api.Adapters.Telemetry;
+namespace Elastic.Documentation.Api.Telemetry;
 
 /// <summary>
-/// Gateway that forwards OTLP telemetry to the ADOT Lambda Layer collector.
+/// Service that forwards OTLP telemetry to the ADOT Lambda Layer collector.
 /// </summary>
-public class AdotOtlpGateway(
+public class AdotOtlpService(
 	IHttpClientFactory httpClientFactory,
 	OtlpProxyOptions options,
-	ILogger<AdotOtlpGateway> logger) : IOtlpGateway
+	ILogger<AdotOtlpService> logger) : IOtlpService
 {
 	public const string HttpClientName = "OtlpProxy";
+	private static readonly ActivitySource ActivitySource = new(TelemetryConstants.OtlpProxySourceName);
 	private readonly HttpClient _httpClient = httpClientFactory.CreateClient(HttpClientName);
 
 	/// <inheritdoc />
@@ -26,6 +27,8 @@ public class AdotOtlpGateway(
 		string contentType,
 		Cancel ctx = default)
 	{
+		using var activity = ActivitySource.StartActivity("forward otlp", ActivityKind.Client);
+
 		try
 		{
 			var targetUrl = $"{options.Endpoint.TrimEnd('/')}/v1/{signalType.ToStringFast(true)}";

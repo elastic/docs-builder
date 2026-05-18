@@ -5,13 +5,29 @@
 namespace Elastic.Documentation.Search;
 
 /// <summary>Gateway interface for querying documentation page changes.</summary>
-public interface IChangesGateway
+public interface IChangesService
 {
-	Task<ChangesResult> GetChangesAsync(ChangesRequest request, Cancel ctx = default);
+	Task<ChangesResponse> GetChangesAsync(ChangesRequest request, Cancel ctx = default);
+}
+
+/// <summary>API request for the changes feed endpoint.</summary>
+public record ChangesRequest
+{
+	public required DateTimeOffset Since { get; init; }
+	public int PageSize { get; init; } = ChangesDefaults.PageSize;
+	public string? Cursor { get; init; }
+}
+
+/// <summary>API response for the changes feed endpoint.</summary>
+public record ChangesResponse
+{
+	public required IReadOnlyList<ChangedPageDto> Pages { get; init; }
+	public required bool HasMore { get; init; }
+	public string? NextCursor { get; init; }
 }
 
 /// <summary>Internal request for the changes gateway.</summary>
-public record ChangesRequest
+public record ChangesInternalRequest
 {
 	public required DateTimeOffset Since { get; init; }
 	public int PageSize { get; init; } = ChangesDefaults.PageSize;

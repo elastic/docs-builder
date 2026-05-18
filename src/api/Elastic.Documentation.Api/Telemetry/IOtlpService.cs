@@ -5,9 +5,9 @@
 namespace Elastic.Documentation.Api.Telemetry;
 
 /// <summary>
-/// Gateway for forwarding OTLP telemetry to a collector.
+/// Service for forwarding OTLP telemetry to a collector.
 /// </summary>
-public interface IOtlpGateway
+public interface IOtlpService
 {
 	/// <summary>
 	/// Forwards OTLP telemetry data to the collector.

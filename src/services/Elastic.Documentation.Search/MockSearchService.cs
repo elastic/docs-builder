@@ -4,7 +4,7 @@
 
 namespace Elastic.Documentation.Search;
 
-public class MockNavigationSearchGateway : INavigationSearchGateway
+public class MockNavigationSearchService : INavigationSearchService
 {
 	private static readonly List<NavigationSearchResultItem> Results =
 	[
@@ -80,39 +80,53 @@ public class MockNavigationSearchGateway : INavigationSearchGateway
 		}
 	];
 
-	public async Task<NavigationSearchResult> NavigationSearchAsync(string query, int pageNumber, int pageSize, string? filter = null, CancellationToken ctx = default)
+	public async Task<NavigationSearchResponse> NavigationSearchAsync(NavigationSearchRequest request, CancellationToken ctx = default)
 	{
 		var filteredResults = Results
 			.Where(item =>
-				item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-				item.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) == true)
+				item.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
+				item.Description?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) == true)
 			.ToList();
 
 		// Apply type filter if specified
-		if (!string.IsNullOrWhiteSpace(filter))
-			filteredResults = filteredResults.Where(item => item.Type == filter).ToList();
+		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
+			filteredResults = filteredResults.Where(item => item.Type == request.TypeFilter).ToList();
 
 		// Calculate aggregations before filtering
 		var aggregations = Results
 			.Where(item =>
-				item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-				item.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) == true)
+				item.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
+				item.Description?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) == true)
 			.GroupBy(item => item.Type)
 			.ToDictionary(g => g.Key, g => (long)g.Count());
 
 		var pagedResults = filteredResults
-			.Skip((pageNumber - 1) * pageSize)
-			.Take(pageSize)
+			.Skip((request.PageNumber - 1) * request.PageSize)
+			.Take(request.PageSize)
 			.ToList();
 
-		Console.WriteLine($"MockSearchGateway: Paged results count: {pagedResults.Count}");
+		Console.WriteLine($"MockSearchService: Paged results count: {pagedResults.Count}");
 
 		await Task.Delay(1000, ctx);
-		return new NavigationSearchResult
+		return new NavigationSearchResponse
 		{
-			TotalHits = filteredResults.Count,
+			TotalResults = filteredResults.Count,
 			Results = pagedResults,
-			Aggregations = aggregations
+			PageNumber = request.PageNumber,
+			PageSize = request.PageSize,
+			Aggregations = new NavigationSearchAggregations { Type = aggregations }
 		};
 	}
+}
+
+public class MockFullSearchService : IFullSearchService
+{
+	public Task<FullSearchResponse> SearchAsync(FullSearchRequest request, Cancel ctx = default) =>
+		Task.FromResult(new FullSearchResponse
+		{
+			Results = [],
+			TotalResults = 0,
+			PageNumber = request.PageNumber,
+			PageSize = request.PageSize
+		});
 }

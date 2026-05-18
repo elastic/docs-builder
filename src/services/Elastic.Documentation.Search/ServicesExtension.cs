@@ -27,15 +27,15 @@ public static class ServicesExtension
 		_ = services.AddSingleton<ElasticsearchClientAccessor>();
 
 		// Navigation Search (autocomplete/navigation search)
-		_ = services.AddScoped<INavigationSearchGateway, NavigationSearchGateway>();
+		_ = services.AddScoped<INavigationSearchService, NavigationSearchService>();
 
 		// FullSearch (full-page search with hybrid RRF)
-		_ = services.AddScoped<IFullSearchGateway, FullSearchGateway>();
-		logger?.LogInformation("Full search gateways registered with hybrid RRF support");
+		_ = services.AddScoped<IFullSearchService, FullSearchService>();
+		logger?.LogInformation("Full search services registered with hybrid RRF support");
 
 		// Changes feed (cursor-paginated changes since a given date)
 		_ = services.AddSingleton<SharedPointInTimeManager>();
-		_ = services.AddScoped<IChangesGateway, ChangesGateway>();
+		_ = services.AddScoped<IChangesService, ChangesService>();
 
 		return services;
 	}

@@ -9,18 +9,18 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Api.Adapters.AskAi;
 
 /// <summary>
-/// Factory that creates the appropriate IAskAiGateway based on the resolved provider
+/// Factory that creates the appropriate IAskAiService based on the resolved provider
 /// </summary>
 public class AskAiGatewayFactory(
 	IServiceProvider serviceProvider,
 	AskAiProviderResolver providerResolver,
-	ILogger<AskAiGatewayFactory> logger) : IAskAiGateway
+	ILogger<AskAiGatewayFactory> logger) : IAskAiService
 {
 	public async Task<AskAiGatewayResponse> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{
 		var provider = providerResolver.ResolveProvider();
 
-		IAskAiGateway gateway = provider switch
+		IAskAiService gateway = provider switch
 		{
 			"LlmGateway" => serviceProvider.GetRequiredService<LlmGatewayAskAiGateway>(),
 			"AgentBuilder" => serviceProvider.GetRequiredService<AgentBuilderAskAiGateway>(),

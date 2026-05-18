@@ -5,12 +5,12 @@
 namespace Elastic.Documentation.Search;
 
 /// <summary>
-/// Gateway interface for full-page search operations.
+/// Service interface for full-page search operations.
 /// Supports hybrid RRF search with semantic query detection.
 /// </summary>
-public interface IFullSearchGateway
+public interface IFullSearchService
 {
-	Task<FullSearchResult> SearchAsync(FullSearchRequest request, Cancel ctx = default);
+	Task<FullSearchResponse> SearchAsync(FullSearchRequest request, Cancel ctx = default);
 }
 
 /// <summary>
@@ -31,7 +31,23 @@ public record FullSearchRequest
 }
 
 /// <summary>
-/// Result model for full-page search.
+/// Response model for full-page search (unified API+service response).
+/// </summary>
+public record FullSearchResponse
+{
+	public required IReadOnlyList<FullSearchResultItem> Results { get; init; }
+	public required int TotalResults { get; init; }
+	public required int PageNumber { get; init; }
+	public required int PageSize { get; init; }
+	public FullSearchAggregations Aggregations { get; init; } = new();
+	public bool IsSemanticQuery { get; init; }
+	public int PageCount => TotalResults > 0
+		? (int)Math.Ceiling((double)TotalResults / PageSize)
+		: 0;
+}
+
+/// <summary>
+/// Result model for full-page search (used internally by the service implementation).
 /// </summary>
 public record FullSearchResult
 {

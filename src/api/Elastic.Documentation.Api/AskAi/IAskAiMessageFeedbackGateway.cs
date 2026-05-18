@@ -5,10 +5,10 @@
 namespace Elastic.Documentation.Api.AskAi;
 
 /// <summary>
-/// Gateway interface for recording Ask AI message feedback.
+/// Service interface for recording Ask AI message feedback.
 /// Infrastructure implementations may use different storage backends (Elasticsearch, database, etc.)
 /// </summary>
-public interface IAskAiMessageFeedbackGateway
+public interface IAskAiMessageFeedbackService
 {
 	/// <summary>
 	/// Records feedback for a specific Ask AI message.

@@ -4,8 +4,6 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Api.AskAi;
-using Elastic.Documentation.Api.Changes;
-using Elastic.Documentation.Api.Search;
 using Elastic.Documentation.Search;
 
 namespace Elastic.Documentation.Api;
@@ -22,19 +20,19 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(AskAiRequest))]
 [JsonSerializable(typeof(AskAiMessageFeedbackRequest))]
 [JsonSerializable(typeof(Reaction))]
-[JsonSerializable(typeof(NavigationSearchApiRequest))]
-[JsonSerializable(typeof(NavigationSearchApiResponse))]
+[JsonSerializable(typeof(NavigationSearchRequest))]
+[JsonSerializable(typeof(NavigationSearchResponse))]
 [JsonSerializable(typeof(NavigationSearchAggregations))]
 [JsonSerializable(typeof(InputMessage))]
 [JsonSerializable(typeof(OutputMessage[]))]
 [JsonSerializable(typeof(MessagePart))]
 [JsonSerializable(typeof(InputMessage[]))]
 
-[JsonSerializable(typeof(FullSearchApiRequest))]
-[JsonSerializable(typeof(FullSearchApiResponse))]
+[JsonSerializable(typeof(FullSearchRequest))]
+[JsonSerializable(typeof(FullSearchResponse))]
 [JsonSerializable(typeof(FullSearchAggregations))]
 
-[JsonSerializable(typeof(ChangesApiResponse))]
+[JsonSerializable(typeof(ChangesResponse))]
 [JsonSerializable(typeof(ChangedPageDto))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class ApiJsonContext : JsonSerializerContext;

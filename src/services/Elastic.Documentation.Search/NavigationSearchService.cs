@@ -12,16 +12,40 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Search;
 
 /// <summary>
-/// Elasticsearch gateway for Navigation Search (autocomplete/navigation search).
+/// Elasticsearch service for Navigation Search (autocomplete/navigation search).
 /// Uses shared lexical query optimized for autocomplete.
 /// </summary>
-public class NavigationSearchGateway(ElasticsearchClientAccessor clientAccessor, ILogger<NavigationSearchGateway> logger)
-	: INavigationSearchGateway, IDisposable
+public partial class NavigationSearchService(ElasticsearchClientAccessor clientAccessor, ILogger<NavigationSearchService> logger)
+	: INavigationSearchService, IDisposable
 {
 	public async Task<bool> CanConnect(Cancel ctx) => await clientAccessor.CanConnect(ctx);
 
-	public async Task<NavigationSearchResult> NavigationSearchAsync(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default) =>
-		await SearchImplementation(query, pageNumber, pageSize, filter, ctx);
+	public async Task<NavigationSearchResponse> NavigationSearchAsync(NavigationSearchRequest request, Cancel ctx = default)
+	{
+		var result = await SearchImplementation(request.Query, request.PageNumber, request.PageSize, request.TypeFilter, ctx);
+
+		var response = new NavigationSearchResponse
+		{
+			Results = result.Results,
+			TotalResults = result.TotalHits,
+			PageNumber = request.PageNumber,
+			PageSize = request.PageSize,
+			Aggregations = new NavigationSearchAggregations { Type = result.Aggregations }
+		};
+
+		LogNavigationSearchResults(
+			logger,
+			response.PageSize,
+			response.PageNumber,
+			request.Query,
+			result.Results.Select(i => i.Url).ToArray()
+		);
+
+		return response;
+	}
+
+	[LoggerMessage(Level = LogLevel.Information, Message = "Navigation search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}': {Urls}")]
+	private static partial void LogNavigationSearchResults(ILogger logger, int pageSize, int pageNumber, string searchQuery, string[] urls);
 
 	public async Task<NavigationSearchResult> SearchImplementation(string query, int pageNumber, int pageSize, string? filter = null, Cancel ctx = default)
 	{
