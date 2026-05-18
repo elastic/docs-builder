@@ -48,7 +48,8 @@ public sealed class ReloadGeneratorService(
 		_serviceCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
 		// Run live reload and in-memory validation build in parallel
-		var sourcePath = ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
+		var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName
+			?? ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
 		await Task.WhenAll(
 			ReloadableGenerator.ReloadAsync(cancellationToken),
 			InMemoryBuildState.StartBuildAsync(sourcePath, cancellationToken)

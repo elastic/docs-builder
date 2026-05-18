@@ -47,6 +47,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Elastic.Markdown.Tests"/>
+  </ItemGroup>
+
+  <ItemGroup>
     <UpToDateCheckInput Remove="Myst\Directives\AppliesSwitch\AppliesItemView.cshtml" />
     <UpToDateCheckInput Remove="Myst\Directives\AppliesSwitch\AppliesSwitchView.cshtml" />
   </ItemGroup>
