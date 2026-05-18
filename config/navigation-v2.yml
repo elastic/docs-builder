@@ -4291,7 +4291,15 @@ nav:
   - section: Reference
     url: /reference/
     children:
-    - toc: docs-content://reference
+    - toc: docs-content://reference/security
+    - toc: docs-content://reference/observability
+    - toc: docs-content://reference/elasticsearch-clients
+    - toc: docs-content://reference/ingestion-tools
+    - toc: docs-content://reference/fleet
+    - toc: docs-content://reference/apm
+    - toc: docs-content://reference/apm-agents
+    - toc: docs-content://reference/machine-learning
+    - toc: docs-content://reference/glossary
     - toc: elasticsearch://reference/elasticsearch
     - toc: elasticsearch://reference/elasticsearch-plugins
     - toc: elasticsearch://reference/community-contributed
