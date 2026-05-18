@@ -9,7 +9,7 @@ nav:
     - group: Elasticsearch concepts
       children:
       - page: docs-content://manage-data/data-store.md
-        title: Elasticsearch essentials (Core document database)
+        title: Elasticsearch essentials
       - page: docs-content://manage-data/ingest.md
         title: Ingest data into Elasticsearch
       - page: docs-content://solutions/search.md
@@ -23,7 +23,7 @@ nav:
         - page: docs-content://solutions/search/site-or-app.md
           title: Add search to your site or app
         - page: docs-content://solutions/search/rag.md
-          title: RAG
+          title: Retrieval-augmented generation (RAG)
   - label: Install, deploy, and administer
     children:
       - group: Distributed architecture
@@ -78,9 +78,9 @@ nav:
           page: docs-content://deploy-manage/reference-architectures.md
           children:
           - page: docs-content://deploy-manage/reference-architectures/hotfrozen-high-availability.md
-            title: Hot/Frozen - High Availability
+            title: Hot-frozen high availability
           - page: docs-content://deploy-manage/reference-architectures/genai-search-high-availability.md
-            title: GenAI Search - High Availability
+            title: GenAI search high availability
         - group: Production guidance
           page: docs-content://deploy-manage/production-guidance.md
           children:
@@ -1443,10 +1443,10 @@ nav:
     children:
     - label: Ingest and manage data
       children:
-      - group: "Ingest or migrate: bring your data into Elasticsearch"
+      - group: Ingest or migrate data
         children:
         - page: docs-content://manage-data/ingest.md
-          title: Choose/Plan your ingest method
+          title: Choose an ingest method
         - group: Ingest architectures
           page: docs-content://manage-data/ingest/ingest-reference-architectures.md
           children:
@@ -1493,7 +1493,7 @@ nav:
             title: Ingesting data for search use cases
           - title: Ingesting data for observability
           - page: docs-content://solutions/security/get-started/ingest-data-to-elastic-security.md
-            title: Ingesting data for security (Move from Solutions)
+            title: Ingesting data for security
         - page: docs-content://manage-data/ingest/ingesting-timeseries-data.md
           title: Ingesting time series data
         - group: Ingest logs
@@ -1847,7 +1847,7 @@ nav:
           title: Index mapping and text analysis
         - page: docs-content://manage-data/ingest/transform-enrich/ingest-lag.md
           title: Calculate ingest lag metadata
-    - label: Search, visualize and analyze
+    - label: Search, visualize, and analyze
       children:
       - group: Search and query
         children:
@@ -2301,7 +2301,7 @@ nav:
           title: Workflow templates
     - label: AI and machine learning
       children:
-      - group: Machine Learning and NLP
+      - group: Machine learning and NLP
         page: docs-content://explore-analyze/machine-learning.md
         children:
         - page: docs-content://explore-analyze/machine-learning/setting-up-machine-learning.md
@@ -2652,7 +2652,7 @@ nav:
             - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/k8s.md
               title: Kubernetes
             - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/hosts_vms.md
-              title: Hosts / VMs
+              title: Hosts and VMs
             - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/docker.md
               title: Docker
           - group: Elastic Cloud Serverless
