@@ -50,4 +50,23 @@
 	ol > li > ol > li > ol > li > ol > li > ol > li > ol {
 		list-style-type: lower-roman;
 	}
+
+	ul.task-list {
+		list-style: none;
+		margin-left: 0.25em;
+
+		li.task-list-item {
+			display: flex;
+			align-items: baseline;
+			gap: 0.5em;
+		}
+
+		input.task-list-item-checkbox {
+			margin: 0;
+			flex-shrink: 0;
+			width: 1em;
+			height: 1em;
+			cursor: default;
+		}
+	}
 }
