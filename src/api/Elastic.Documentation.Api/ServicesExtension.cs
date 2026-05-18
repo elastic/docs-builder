@@ -5,14 +5,14 @@
 using System.ComponentModel.DataAnnotations;
 using Amazon.DynamoDBv2;
 using Elastic.Documentation.Api;
-using Elastic.Documentation.Api.AskAi;
-using Elastic.Documentation.Api.Changes;
-using Elastic.Documentation.Api.Telemetry;
 using Elastic.Documentation.Api.Adapters.AskAi;
 using Elastic.Documentation.Api.Adapters.Telemetry;
+using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.Caching;
+using Elastic.Documentation.Api.Changes;
 using Elastic.Documentation.Api.Gcp;
 using Elastic.Documentation.Api.Search;
+using Elastic.Documentation.Api.Telemetry;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

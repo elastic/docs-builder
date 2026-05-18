@@ -13,7 +13,7 @@ public static class TelemetryConstants
 	/// Tag/baggage name used to annotate spans with the user's EUID value.
 	/// Forwarded from ServiceDefaults.Telemetry.TelemetryConstants for convenience.
 	/// </summary>
-	public const string UserEuidAttributeName = Elastic.Documentation.ServiceDefaults.Telemetry.TelemetryConstants.UserEuidAttributeName;
+	public const string UserEuidAttributeName = ServiceDefaults.Telemetry.TelemetryConstants.UserEuidAttributeName;
 
 	/// <summary>
 	/// ActivitySource name for AskAi operations.

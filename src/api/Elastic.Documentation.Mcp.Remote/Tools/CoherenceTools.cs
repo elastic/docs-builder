@@ -6,9 +6,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 using Elastic.Documentation.Assembler.Mcp;
-using Elastic.Documentation.Search;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 

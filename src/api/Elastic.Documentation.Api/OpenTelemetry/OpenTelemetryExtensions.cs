@@ -82,9 +82,9 @@ public static class OpenTelemetryExtensions
 					// Add euid cookie value to span attributes and baggage
 					if (httpRequest.Cookies.TryGetValue("euid", out var euid) && !string.IsNullOrEmpty(euid))
 					{
-						_ = activity.SetTag(Elastic.Documentation.ServiceDefaults.Telemetry.TelemetryConstants.UserEuidAttributeName, euid);
+						_ = activity.SetTag(ServiceDefaults.Telemetry.TelemetryConstants.UserEuidAttributeName, euid);
 						// Add to baggage so it propagates to all child spans
-						_ = activity.AddBaggage(Elastic.Documentation.ServiceDefaults.Telemetry.TelemetryConstants.UserEuidAttributeName, euid);
+						_ = activity.AddBaggage(ServiceDefaults.Telemetry.TelemetryConstants.UserEuidAttributeName, euid);
 					}
 				};
 			})

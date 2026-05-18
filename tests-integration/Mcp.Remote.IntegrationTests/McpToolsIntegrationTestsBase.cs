@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Search;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.Logging.Abstractions;
