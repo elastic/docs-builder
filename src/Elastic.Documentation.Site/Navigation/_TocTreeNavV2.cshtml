@@ -6,6 +6,11 @@
 @inherits RazorSlice<NavigationTreeItem>
 @{
 	var isTopLevel = Model.Level == 0 && Model.SubTree is not LabelNavigationNode;
+	// Inside an island subtree, every link must swap the full page chrome so the sidebar
+	// switches from the parent section's tree to the island's focused tree.
+	var navHxAttrs = Model.IsIslandSubtree
+		? Model.Htmx.GetHxAttributes(hxSwapOob: "#main-container,#secondary-nav", preload: null)
+		: Model.Htmx.GetNavHxAttributes(true, null);
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
@@ -44,7 +49,8 @@
 						Level = Model.Level,
 						SubTree = label,
 						RootNavigationId = Model.RootNavigationId,
-						Htmx = Model.Htmx
+						Htmx = Model.Htmx,
+						IsIslandSubtree = Model.IsIslandSubtree
 					}))
 				</ul>
 			}
@@ -55,7 +61,7 @@
 		<li class="flex group/li">
 			<a
 				href="@placeholder.Url"
-				@Model.Htmx.GetNavHxAttributes(true, null)
+				@navHxAttrs
 				class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 				style="--nav-level:@Model.Level">
 				<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
@@ -79,7 +85,7 @@
 				}
 				<a
 					href="@placeholderGroup.Url"
-					@Model.Htmx.GetNavHxAttributes(true, null)
+					@navHxAttrs
 					class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 					style="--nav-level:@Model.Level">
 					@if (!allHidden)
@@ -115,7 +121,70 @@
 								Level = Model.Level + 1,
 								SubTree = placeholderGroup,
 								RootNavigationId = Model.RootNavigationId,
-								Htmx = Model.Htmx
+								Htmx = Model.Htmx,
+								IsIslandSubtree = Model.IsIslandSubtree
+							}))
+						</ul>
+					</div>
+				</div>
+			}
+		</li>
+	}
+	else if (item is IslandNavigationNode island)
+	{
+		var islandHxAttrs = Model.Htmx.GetHxAttributes(hxSwapOob: "#main-container,#secondary-nav", preload: null);
+		var islandAllHidden = island.NavigationItems.All(n => n.Hidden);
+		<li class="flex flex-wrap group-navigation relative">
+			<div class="peer nav-folder-peer grid w-full grid-cols-1">
+				@if (!islandAllHidden)
+				{
+					<input
+						id="@island.Id"
+						type="checkbox"
+						class="sr-only pointer-events-none"
+						tabindex="-1"
+						aria-hidden="true">
+				}
+				<a
+					href="@island.Url"
+					@islandHxAttrs
+					class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
+					style="--nav-level:@Model.Level">
+					@if (!islandAllHidden)
+					{
+						<span class="nav-folder-chevron shrink-0" aria-hidden="true">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="1.5"
+								stroke="currentColor"
+								>
+								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+							</svg>
+						</span>
+					}
+					else
+					{
+						<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
+					}
+					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@island.NavigationTitle</span>
+				</a>
+			</div>
+			@if (island.NavigationItems.Count > 0)
+			{
+				<div class="docs-sidebar-nav-v2__folder-clip w-full">
+					<div class="docs-sidebar-nav-v2__folder-clip-inner">
+						<ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+							@await RenderPartialAsync(_TocTreeNavV2.Create(new NavigationTreeItem
+							{
+								IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
+								IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
+								Level = Model.Level + 1,
+								SubTree = island,
+								RootNavigationId = Model.RootNavigationId,
+								Htmx = Model.Htmx,
+								IsIslandSubtree = true
 							}))
 						</ul>
 					</div>
@@ -128,7 +197,7 @@
 		<li class="flex group/li">
 			<a
 				href="@group.Url"
-				@Model.Htmx.GetNavHxAttributes(true, null)
+				@navHxAttrs
 				class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 				style="--nav-level:@Model.Level"
 			>
@@ -153,7 +222,7 @@
 				}
 				<a
 					href="@(folder.Url)"
-					@Model.Htmx.GetNavHxAttributes(true, null)
+					@navHxAttrs
 					class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 					style="--nav-level:@Model.Level">
 					@if (!allHidden)
@@ -189,7 +258,8 @@
 								Level = Model.Level + 1,
 								SubTree = folder,
 								RootNavigationId = Model.RootNavigationId,
-								Htmx = Model.Htmx
+								Htmx = Model.Htmx,
+								IsIslandSubtree = Model.IsIslandSubtree
 							}))
 						</ul>
 					</div>
@@ -202,7 +272,7 @@
 		<li class="flex group/li">
 			<a
 				href="@leaf.Url"
-				@Model.Htmx.GetNavHxAttributes(true, null)
+				@navHxAttrs
 				class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 				style="--nav-level:@Model.Level"
 			>
