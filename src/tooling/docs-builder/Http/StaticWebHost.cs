@@ -111,6 +111,12 @@ public class StaticWebHost
 			return Results.NotFound();
 
 		await Task.CompletedTask;
+
+#if DEBUG
+		if (TryResolveDevSiteStaticFile(slug, out var devStatic))
+			return Results.File(devStatic.FullName, GetStaticMimeType(devStatic.Extension));
+#endif
+
 		var contentRoot = Path.GetFullPath(_contentRoot);
 		var localPath = Path.GetFullPath(Path.Join(contentRoot, slug.Replace('/', Path.DirectorySeparatorChar)));
 		if (!localPath.StartsWith(contentRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
@@ -121,28 +127,60 @@ public class StaticWebHost
 			fileInfo = new FileInfo(Path.Join(directoryInfo.FullName, "index.html"));
 
 		if (fileInfo.Exists)
-		{
-			var mimetype = fileInfo.Extension switch
-			{
-				".js" => "text/javascript",
-				".css" => "text/css",
-				".png" => "image/png",
-				".jpg" => "image/jpeg",
-				".gif" => "image/gif",
-				".svg" => "image/svg+xml",
-				".ico" => "image/x-icon",
-				".json" => "application/json",
-				".map" => "application/json",
-				".txt" => "text/plain",
-				".xml" => "text/xml",
-				".yml" => "text/yaml",
-				".md" => "text/markdown",
-				_ => "text/html"
-			};
-			return Results.File(fileInfo.FullName, mimetype);
-		}
-
+			return Results.File(fileInfo.FullName, GetStaticMimeType(fileInfo.Extension));
 
 		return Results.NotFound();
 	}
+
+	private static string GetStaticMimeType(string extension) =>
+		extension switch
+		{
+			".js" => "text/javascript",
+			".css" => "text/css",
+			".png" => "image/png",
+			".jpg" => "image/jpeg",
+			".gif" => "image/gif",
+			".svg" => "image/svg+xml",
+			".ico" => "image/x-icon",
+			".json" => "application/json",
+			".map" => "application/json",
+			".txt" => "text/plain",
+			".xml" => "text/xml",
+			".yml" => "text/yaml",
+			".md" => "text/markdown",
+			_ => "text/html"
+		};
+
+#if DEBUG
+	/// <summary>
+	/// <c>assembler serve</c> reads pre-built HTML from <c>.artifacts/assembly</c>; static assets there lag behind
+	/// <c>src/Elastic.Documentation.Site/_static</c> until <c>assembler build</c> runs. In Debug, prefer the live Parcel output when present.
+	/// </summary>
+	private static bool TryResolveDevSiteStaticFile(string slug, out FileInfo devStatic)
+	{
+		devStatic = null!;
+		const string marker = "_static/";
+		var idx = slug.IndexOf(marker, StringComparison.Ordinal);
+		if (idx < 0)
+			return false;
+
+		var solutionRoot = Paths.GetSolutionDirectory();
+		if (solutionRoot is null)
+			return false;
+
+		var relativeWithinStatic = slug[(idx + marker.Length)..].Replace('/', Path.DirectorySeparatorChar);
+		var devStaticRoot = Path.GetFullPath(Path.Join(solutionRoot.FullName, "src", "Elastic.Documentation.Site", "_static"));
+		var candidatePath = Path.GetFullPath(Path.Join(devStaticRoot, relativeWithinStatic));
+		var devPrefix = devStaticRoot + Path.DirectorySeparatorChar;
+		if (!candidatePath.StartsWith(devPrefix, StringComparison.Ordinal) && !string.Equals(candidatePath, devStaticRoot, StringComparison.Ordinal))
+			return false;
+
+		var candidate = new FileInfo(candidatePath);
+		if (!candidate.Exists)
+			return false;
+
+		devStatic = candidate;
+		return true;
+	}
+#endif
 }

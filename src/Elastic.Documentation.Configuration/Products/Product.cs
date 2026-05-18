@@ -84,5 +84,12 @@ public record Product
 	public VersioningSystem? VersioningSystem { get; init; }
 	public string? Repository { get; init; }
 	public ProductFeatures Features { get; init; } = ProductFeatures.All;
+
+	/// <summary>
+	/// Slug of the product hub page, relative to the site root (no leading or trailing slash).
+	/// When set, regular pages that declare this product in frontmatter render a clickable
+	/// badge linking to <c>/{Hub}/</c>. When null, no badge is rendered for the product.
+	/// </summary>
+	public string? Hub { get; init; }
 }
 

@@ -71,6 +71,7 @@ public class DocumentationWebHost
 		Context = new BuildContext(collector, readFs, writeFs, configurationContext, ExportOptions.Default, path, null)
 		{
 			CanonicalBaseUrl = new Uri(hostUrl),
+			BuildType = BuildType.Isolated,
 		};
 
 		// Enable diagnostics panel in serve mode

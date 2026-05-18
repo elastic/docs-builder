@@ -32,7 +32,9 @@
     <EmbeddedResource Include="$(SolutionRoot)\config\products.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\assembler.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\navigation.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\navigation-v2.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\legacy-url-mappings.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\search.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\whats-new.yml" />
   </ItemGroup>
 </Project>

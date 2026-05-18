@@ -51,7 +51,7 @@
 			<a
 				href="@group.Url"
 				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link group-[.current]/li:text-blue-elastic! flex items-center w-full"
+				class="sidebar-link px-[8px] py-[6px] group-[.current]/li:text-blue-elastic! flex items-center w-full"
 			>
 				<span>@groupLabel</span>
 				@if (groupBadge == "ns") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@NsStyle">ns</span> }
@@ -65,11 +65,11 @@
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
 		var (folderBadge, folderLabel) = ParseNavTitle(g.NavigationTitle);
 		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
-			<div class="peer grid grid-cols-[1fr_auto] w-full">
+			<div class="peer grid w-full grid-cols-[1fr_auto] gap-2">
 				<a
 					href="@(g.Url)"
 					@Model.Htmx.GetNavHxAttributes(true)
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic! flex items-center gap-1">
+					class="sidebar-link content-center px-[8px] py-[6px] @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic! flex items-center gap-1">
 					<span>@folderLabel</span>
 					@if (folderBadge == "ns") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@NsStyle">ns</span> }
 					else if (folderBadge == "cmd") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@CmdStyle">cmd</span> }
@@ -120,7 +120,7 @@
 			<a
 				href="@leaf.Url"
 				@Model.Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
-				class="sidebar-link grow group-[.current]/li:text-blue-elastic! flex items-center w-full"
+				class="sidebar-link grow px-[8px] py-[6px] group-[.current]/li:text-blue-elastic! flex items-center w-full"
 			>
 				<span>@leafLabel</span>
 				@if (leafBadge == "ns") { <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0" style="@NsStyle">ns</span> }
