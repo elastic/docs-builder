@@ -12,7 +12,6 @@ using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
-using OpenTelemetry.Trace;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -20,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol;
+using OpenTelemetry.Trace;
 
 try
 {
