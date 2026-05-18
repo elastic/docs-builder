@@ -56,7 +56,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	private IDiagnosticsCollector Collector { get; }
+	protected IDiagnosticsCollector Collector { get; }
 
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }

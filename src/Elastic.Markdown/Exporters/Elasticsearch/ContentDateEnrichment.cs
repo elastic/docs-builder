@@ -192,7 +192,7 @@ public class ContentDateEnrichment(
 				new JsonObject { ["remove"] = new JsonObject { ["index"] = oldIndex, ["alias"] = _lookupAlias } },
 				addAction
 			)
-			: [with(addAction)];
+			: [(JsonNode)addAction];
 
 		var body = new JsonObject { ["actions"] = actions };
 
