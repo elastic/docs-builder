@@ -6,7 +6,7 @@ namespace Elastic.Documentation.Configuration.Builder;
 
 public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 {
-	private readonly Dictionary<string, bool> _featureFlags = new(initFeatureFlags);
+	private readonly Dictionary<string, bool> _featureFlags = [with(initFeatureFlags)];
 
 	public void Set(string key, bool value)
 	{

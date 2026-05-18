@@ -35,6 +35,34 @@ public record DocumentationDocument
 	[JsonPropertyName("type")]
 	public required string Type { get; set; } = "doc";
 
+#pragma warning disable IDE0032 // Backing field: ContentType getter/setter normalizes away values equal to Type for stable JSON.
+	private string? _contentType;
+#pragma warning restore IDE0032
+
+	/// <summary>
+	/// Indexed document kind for filtering, stored as <c>content_type</c> alongside <see cref="Type"/> (<c>type</c>).
+	/// Both fields exist for future shared <c>_source</c> with website-ai-search, where CLR type may stay JSON-ignored
+	/// to avoid System.Text.Json polymorphic <c>$type</c> clashes with a serialized <c>type</c> property; the persisted
+	/// filter value then uses <c>content_type</c>. Values present in JSON win over <see cref="Type"/>; otherwise
+	/// <see cref="Type"/> applies, then <c>doc</c> when both are absent (sparse hits).
+	/// </summary>
+	[Keyword]
+	[JsonPropertyName("content_type")]
+	public string ContentType
+	{
+		get => _contentType ?? Type ?? "doc";
+		set
+		{
+			if (string.IsNullOrWhiteSpace(value))
+			{
+				_contentType = null;
+				return;
+			}
+
+			_contentType = string.Equals(value, Type, StringComparison.Ordinal) ? null : value;
+		}
+	}
+
 	/// <summary>
 	/// The canonical/primary product for this document (nested object with id and repository).
 	/// Name and version are looked up dynamically by product id.
