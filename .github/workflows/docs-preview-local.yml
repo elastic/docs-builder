@@ -189,7 +189,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      deployments: none
+      deployments: write
       id-token: write
       pull-requests: none
     outputs:
@@ -216,10 +216,8 @@ jobs:
           persist-credentials: false
 
       - name: Create Deployment
-        # disabled: deployments are not enabled on this branch
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
           && (
             github.event_name == 'push'
@@ -363,10 +361,8 @@ jobs:
 
       - name: Update deployment status
         uses: actions/github-script@v8
-        # disabled: deployments are not enabled on this branch
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && always()
           && steps.deployment.outputs.result
         env:
@@ -382,3 +378,80 @@ jobs:
               environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
+
+  comment:
+    if: >
+      github.event_name == 'pull_request'
+      && needs.check.outputs.any_modified == 'true'
+      && needs.build.outputs.path_prefix != ''
+      && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    needs:
+      - check
+      - build
+    permissions:
+      contents: none
+      deployments: none
+      id-token: none
+      pull-requests: write
+    steps:
+      - name: Comment handbook preview links on PR
+        uses: actions/github-script@v8
+        env:
+          PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
+          ALL_CHANGED_FILES: ${{ needs.check.outputs.all_changed_files }}
+        with:
+          script: |
+            const title = '## Docs preview (local build)'
+            const base = `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}`
+            const changedMdFiles = process.env.ALL_CHANGED_FILES
+              .split(/\s+/)
+              .filter(Boolean)
+              .filter((i) => i.endsWith('.md'))
+              .filter((i) => !i.includes('/_snippets/'))
+
+            const lines = [title, '', `**Handbook preview:** ${base}/`, '']
+
+            if (changedMdFiles.length > 0) {
+              lines.push('Sample changed pages:')
+              for (const file of changedMdFiles.slice(0, 15)) {
+                const path = file
+                  .replace(/^docs\//, '')
+                  .replace(/\/index\.md$/, '')
+                  .replace(/\.md$/, '')
+                lines.push(`- [${file}](${base}/${path})`)
+              }
+              if (changedMdFiles.length > 15) {
+                lines.push(`- …and ${changedMdFiles.length - 15} more`)
+              }
+            }
+
+            const body = lines.join('\n')
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const issue_number = context.payload.pull_request.number
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+            })
+            const existing = comments.find(
+              (c) =>
+                c.user.type === 'Bot' && c.body.startsWith(title)
+            )
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              })
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              })
+            }

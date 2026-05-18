@@ -1,0 +1,413 @@
+/* Host: custom elements are inline by default; ensure layout and visible footprint. */
+vector-sizing-calculator {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	/* Permite que el grid/flex del layout padre encoja por debajo del min-content de los hijos (p. ej. EUI + CTA). */
+	min-width: 0;
+	min-height: 1px;
+	margin-top: 16px;
+}
+
+vector-sizing-calculator:not(:defined) {
+	min-height: 120px;
+	border-radius: 8px;
+	background: var(--euiColorEmptyShade, #f5f7fa);
+}
+
+/* Layout: una columna (filas) hasta lg; dos columnas desde lg (~1024px), alineado con el rail derecho del layout Markdown. */
+.vectorSizingCalc {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	margin: 0 auto;
+	box-sizing: border-box;
+	border-radius: 10px;
+	overflow: visible;
+	background: #fff;
+}
+
+.vectorSizingCalc__grid {
+	display: grid;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	grid-template-columns: 1fr;
+	align-items: stretch;
+	border: 1px solid #d3dae6;
+	border-radius: inherit;
+	overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+	.vectorSizingCalc__grid {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	}
+}
+
+.vectorSizingCalc__panel {
+	box-sizing: border-box;
+	padding: 40px;
+	min-width: 0;
+	min-height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.vectorSizingCalc__panel--left {
+	background: #fff;
+}
+
+.vectorSizingCalc__panel--right {
+	background: #f6f9fc;
+}
+
+.vectorSizingCalc__summary {
+	flex: 1;
+}
+
+.vectorSizingCalc__summaryLabel {
+	color: #1d2a3e;
+	font-weight: 500;
+}
+
+/* EuiText size="s" aplica peso vía Emotion (p. ej. .css-…-euiText-s); forzar 500. */
+.vectorSizingCalc .vectorSizingCalc__summaryLabel.euiText {
+	font-weight: 500 !important;
+}
+
+/* EuiSpacer: forzar 16px entre “RAM required” y el hero. */
+.vectorSizingCalc .vectorSizingCalc__spacerHeroGap.euiSpacer {
+	block-size: 16px !important;
+	min-block-size: 16px;
+	height: 16px !important;
+	min-height: 16px;
+}
+
+.vectorSizingCalc__kvList {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.vectorSizingCalc__heroRam {
+	color: var(--euiTextColor, #343741);
+	font-size: clamp(2.25rem, 6vw, 3.3rem);
+	font-weight: 800;
+	line-height: 1.05;
+	letter-spacing: -0.02em;
+}
+
+.vectorSizingCalc__kvRow {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 16px;
+	padding: 0;
+	font-size: 0.95rem;
+}
+
+.vectorSizingCalc__kvRow > span {
+	color: #1d2a3e;
+	font-weight: 500;
+}
+
+.vectorSizingCalc__kvRow > strong {
+	color: #516381;
+	font-weight: 400;
+}
+
+.vectorSizingCalc__sectionTitle {
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 500;
+	margin-bottom: 16px;
+	color: #798eaf;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.vectorSizingCalc__sectionDesc {
+	font-size: 14px;
+	line-height: 17px;
+	margin: 0 0 18px;
+	color: #5b6f8a;
+}
+
+.vectorSizingCalc .euiLink {
+	font-weight: 600;
+}
+
+.vectorSizingCalc a[target='_blank']::after,
+.vectorSizingCalc a[href^='http']::after {
+	display: none !important;
+	content: none !important;
+}
+
+.vectorSizingCalc__fieldGrid2 {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
+}
+
+@media (min-width: 480px) {
+	.vectorSizingCalc__fieldGrid2 {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.vectorSizingCalc__labelRow {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: #24334b;
+	font-size: 1rem;
+	line-height: 16px;
+	font-weight: 600;
+	cursor: default;
+}
+
+.vectorSizingCalc__labelTip {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	cursor: default;
+	color: #516381;
+}
+
+/* Mismo pictograma «info» que el callout; forzar 12×12 y color del label. */
+.vectorSizingCalc__labelTip .euiIcon {
+	flex-shrink: 0;
+	width: 12px !important;
+	height: 12px !important;
+	color: inherit;
+}
+
+.vectorSizingCalc__labelTip .euiIcon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.vectorSizingCalc .euiFormRow {
+	margin-bottom: 16px;
+}
+
+.vectorSizingCalc .euiFormRow + .euiFormRow,
+.vectorSizingCalc .css-1ylwq6x-euiFormRow + .euiFormRow {
+	margin-block-start: 0;
+}
+
+.vectorSizingCalc .vectorSizingCalc__row--dimensions {
+	margin-bottom: 0;
+}
+
+.vectorSizingCalc .euiFormLabel {
+	color: #24334b;
+	margin-bottom: 0;
+}
+
+.vectorSizingCalc .euiSelect,
+.vectorSizingCalc .euiSelect__input {
+	cursor: pointer;
+}
+
+.vectorSizingCalc .euiFormControlLayout,
+.vectorSizingCalc .euiFieldText,
+.vectorSizingCalc .euiFieldNumber,
+.vectorSizingCalc .euiSelect {
+	border-radius: 6px;
+}
+
+.vectorSizingCalc .euiFieldText,
+.vectorSizingCalc .euiFieldNumber,
+.vectorSizingCalc .euiSelect {
+	min-height: 42px;
+	background: #fff;
+	border-color: #b6c2d4;
+}
+
+.vectorSizingCalc .euiFormControlLayout__append,
+.vectorSizingCalc .euiFormControlLayout__childrenWrapper {
+	background: #fff;
+}
+
+.vectorSizingCalc .euiFieldText:focus,
+.vectorSizingCalc .euiFieldNumber:focus,
+.vectorSizingCalc .euiSelect:focus {
+	border-color: #1a73e8;
+	box-shadow: 0 0 0 1px #1a73e8 inset;
+}
+
+.vectorSizingCalc .euiCallOut {
+	border-radius: 8px;
+}
+
+.vectorSizingCalc .euiCallOutHeader__title,
+.vectorSizingCalc .euiCallOut .euiText {
+	font-size: 0.95rem;
+	line-height: 1.45;
+}
+
+.vectorSizingCalc__sectionDivider {
+	width: 100%;
+	height: 1px;
+	background: #e3e8f2;
+}
+
+.vectorSizingCalc__infoCallout {
+	padding: 12px !important;
+	border-radius: 8px !important;
+	border: 1px solid #aee8d2 !important;
+	background: #e9fff7 !important;
+}
+
+.vectorSizingCalc__infoCalloutRow {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.vectorSizingCalc__infoCalloutIcon {
+	color: #008a5e !important;
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+.vectorSizingCalc__infoCalloutText {
+	color: #008a5e !important;
+	font-size: 0.95rem;
+	line-height: 1.45;
+}
+
+.vectorSizingCalc .vectorSizingCalc__fieldGrid2 .euiFormRow {
+	margin: 0 !important;
+}
+
+/* Etiqueta a ancho completo; fila siguiente alinea solo slider + input (no el bloque etiqueta+slider). */
+.vectorSizingCalc__graphConnectionsBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	width: 100%;
+	margin-bottom: 14px;
+}
+
+.vectorSizingCalc__graphConnectionsControlsRow {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) max-content;
+	align-items: center;
+	column-gap: 16px;
+	width: 100%;
+	min-width: 0;
+}
+
+.vectorSizingCalc__graphConnectionsSlider {
+	--vsc-range-track-h: 10px;
+	--vsc-range-track-bg: #dde4ef;
+	--vsc-range-active: #5a6d88;
+	--vsc-range-thumb: #516381;
+	--vsc-range-thumb-focus-ring: #3d6ecc;
+
+	display: block;
+	width: 100%;
+	min-width: 0;
+	min-height: 32px;
+}
+
+/* EuiRange + showRange: pista gruesa tipo “pill”, parte activa/inactiva y thumb con borde blanco + sombra. */
+.vectorSizingCalc__graphConnectionsSlider .euiRangeTrack::after {
+	block-size: var(--vsc-range-track-h) !important;
+	inset-block-start: calc(50% - (var(--vsc-range-track-h) / 2)) !important;
+	background: var(--vsc-range-track-bg) !important;
+	border-radius: 9999px !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeHighlight {
+	block-size: var(--vsc-range-track-h) !important;
+	inset-block-start: calc(50% - (var(--vsc-range-track-h) / 2)) !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeHighlight__progress {
+	block-size: var(--vsc-range-track-h) !important;
+	border-radius: 9999px !important;
+	background-color: var(--vsc-range-active) !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider
+	.euiRangeSlider:focus-visible
+	~ .euiRangeHighlight
+	.euiRangeHighlight__progress {
+	background-color: #6b7fa3 !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider
+	.euiRangeSlider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	inline-size: 18px !important;
+	block-size: 18px !important;
+	border-radius: 50% !important;
+	box-sizing: border-box !important;
+	background-color: var(--vsc-range-thumb) !important;
+	border: 2px solid #fff !important;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.95),
+		0 1px 2px rgba(17, 43, 84, 0.2),
+		0 3px 8px rgba(17, 43, 84, 0.18) !important;
+	cursor: pointer;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeSlider::-moz-range-thumb {
+	inline-size: 18px !important;
+	block-size: 18px !important;
+	border-radius: 50% !important;
+	box-sizing: border-box !important;
+	background-color: var(--vsc-range-thumb) !important;
+	border: 2px solid #fff !important;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.95),
+		0 1px 2px rgba(17, 43, 84, 0.2),
+		0 3px 8px rgba(17, 43, 84, 0.18) !important;
+	cursor: pointer;
+}
+
+.vectorSizingCalc__graphConnectionsSlider
+	.euiRangeSlider:focus-visible::-webkit-slider-thumb {
+	outline: 2px solid var(--vsc-range-thumb-focus-ring) !important;
+	outline-offset: 2px !important;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.95),
+		0 1px 2px rgba(17, 43, 84, 0.22),
+		0 3px 10px rgba(17, 43, 84, 0.2) !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider
+	.euiRangeSlider:focus-visible::-moz-range-thumb {
+	outline: 2px solid var(--vsc-range-thumb-focus-ring) !important;
+	outline-offset: 2px !important;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.95),
+		0 1px 2px rgba(17, 43, 84, 0.22),
+		0 3px 10px rgba(17, 43, 84, 0.2) !important;
+}
+
+.vectorSizingCalc__graphConnectionsValueCell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	min-width: 0;
+}
+
+.vectorSizingCalc__graphConnectionsValueCell .euiFormControlLayout {
+	width: 100%;
+	max-width: 100%;
+}
+
+@media (max-width: 1023px) {
+	.vectorSizingCalc__panel--right {
+		border-top: none;
+	}
+}
