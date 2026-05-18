@@ -616,13 +616,12 @@ function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
  */
 function expandToCurrentPage(nav: HTMLElement) {
     if (isOnSectionRootPage(nav)) {
-        // On the section root page, expand all top-level folders so the
-        // section content is visible even though no specific page is current.
-        nav.querySelectorAll<HTMLInputElement>(
+        const topLevelFolders = nav.querySelectorAll<HTMLInputElement>(
             '#nav-tree > li > .peer > input[type="checkbox"]'
-        ).forEach((cb) => {
-            cb.checked = true
-        })
+        )
+        if (topLevelFolders.length === 1) {
+            topLevelFolders[0].checked = true
+        }
         return
     }
     expandToCurrentPageForPath(nav, window.location.pathname)
