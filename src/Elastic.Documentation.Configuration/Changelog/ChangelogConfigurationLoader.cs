@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.Changelog.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
@@ -15,7 +14,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Elastic.Changelog.Configuration;
+namespace Elastic.Documentation.Configuration.Changelog;
 
 /// <summary>
 /// Service for loading and validating changelog configuration
@@ -25,7 +24,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
 
 	private static readonly IDeserializer ConfigurationDeserializer =
-		new StaticDeserializerBuilder(new ChangelogYamlStaticContext())
+		new StaticDeserializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.WithTypeConverter(new YamlLenientListConverter())
 			.WithTypeConverter(new TypeEntryYamlConverter())

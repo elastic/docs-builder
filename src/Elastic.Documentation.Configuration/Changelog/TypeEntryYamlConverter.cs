@@ -6,7 +6,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace Elastic.Changelog.Serialization;
+namespace Elastic.Documentation.Configuration.Changelog;
 
 /// <summary>
 /// YAML type converter for TypeEntryYaml that handles both string and object forms.

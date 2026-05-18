@@ -5,7 +5,6 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Amazon.S3;
-using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;

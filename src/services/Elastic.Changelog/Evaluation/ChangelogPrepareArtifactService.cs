@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using System.Text;
 using System.Text.Json;
 using Actions.Core.Services;
-using Elastic.Changelog.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;

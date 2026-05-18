@@ -11,7 +11,7 @@ using Actions.Core.Services;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;

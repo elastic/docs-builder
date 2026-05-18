@@ -4,7 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
