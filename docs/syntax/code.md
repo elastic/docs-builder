@@ -42,22 +42,23 @@ You cannot combine automatic and explicit callouts in the same code block. `docs
 :::
 
 :::{tip}
-Prefer automatic callouts for single-line descriptions. Numbering is handled for you, so adding or removing a callout does not require renumbering. Each description sits next to the code it annotates, making the source easier to read. Use explicit callouts when a description needs multiple lines or block-level content.
+Prefer automatic callouts for single-line descriptions. Numbering is handled for you, so adding or removing a callout does not require renumbering. Each description sits next to the code it annotates, making the source easier to read. Use explicit callouts when a description needs multiple lines, block-level content, or links.
 :::
 
 #### Automatic callouts
 
 If a code block contains code comments in the form of `//` or `#`, callouts are automatically created. The comment must follow code on the same line. A comment on its own line is not treated as a callout.
 
-Callout text supports inline Markdown formatting such as `` `code` `` and [links](links.md).
+Callout text supports inline Markdown formatting such as `` `code` ``, **bold**, and *italic*. Automatic callouts do not currently support links.
 
 ::::{tab-set}
 
 :::{tab-item} Output
 
-```csharp
-var apiKey = new ApiKey("<API_KEY>"); // Set up the `api` key
-var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
+```python
+api_key = ApiKey("<API_KEY>") # Set up the `api` key
+client = Elasticsearch("<CLOUD_ID>", api_key) # Connect to your **Elastic Cloud** deployment
+response = client.search(index="my-index") # Returns a *list* of matching documents
 ```
 
 :::
@@ -65,9 +66,10 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 :::{tab-item} Markdown
 
 ````markdown
-```csharp
-var apiKey = new ApiKey("<API_KEY>"); // Set up the `api` key
-var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
+```python
+api_key = ApiKey("<API_KEY>") # Set up the `api` key
+client = Elasticsearch("<CLOUD_ID>", api_key) # Connect to your **Elastic Cloud** deployment
+response = client.search(index="my-index") # Returns a *list* of matching documents
 ```
 ````
 :::
