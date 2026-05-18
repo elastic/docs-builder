@@ -58,13 +58,13 @@
 		<div class="relative hub-page">
 			<div class="min-h-screen w-full max-w-(--max-layout-width) mx-auto md:px-4">
 				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
-					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
-					<main id="content-container" class="min-w-0">
+					<main id="content-container" class="min-w-0 md:order-2">
 						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 						<article id="hub-content" class="hub-content min-w-0">
 							@await RenderBodyAsync()
 						</article>
 					</main>
+					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
 					@* Empty TOC slot so htmx hx-select-oob="#toc-nav" swaps don't fail when boosted from a regular page. Hub pages have their own inline {on-this-page} chip. *@
 					<aside id="toc-nav" class="hidden" aria-hidden="true"></aside>
 				</div>
@@ -77,8 +77,7 @@
 		<div class="relative">
 			<div class="min-h-screen w-full max-w-(--max-layout-width) mx-auto md:px-4">
 				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-0">
-					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
-					<main id="content-container" class="min-w-0">
+					<main id="content-container" class="min-w-0 md:order-2">
 						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 						<div class="md:hidden sticky top-[calc(var(--offset-top)+1px)] z-20 border-b border-grey-20 bg-white/95 px-4 py-3">
 							<label role="button" class="inline-flex cursor-pointer items-center gap-2 font-sans text-sm font-semibold text-ink" for="pages-nav-hamburger">
@@ -92,6 +91,7 @@
 						</div>
 						@await RenderPartialAsync(_LandingPage.Create(Model))
 					</main>
+					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
 					@* Empty TOC slot so htmx hx-select-oob="#toc-nav" swaps don't fail when boosted from a regular page. *@
 					<aside id="toc-nav" class="hidden" aria-hidden="true"></aside>
 				</div>
