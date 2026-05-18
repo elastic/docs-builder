@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Reflection;
 using Documentation.Builder;
 using Documentation.Builder.Commands;
 using Documentation.Builder.Commands.Assembler;
@@ -15,7 +16,39 @@ using Microsoft.Extensions.Hosting;
 using Nullean.Argh;
 using Nullean.Argh.Hosting;
 
-// Pre-host fast path: run --help, --version, __schema, __completion directly and exit
+var informationalVersion =
+	Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+	?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+	?? "unknown";
+
+// Intercept --version before Argh to print the semantic release version (set by
+// MinVer) rather than the CLR assembly file version.
+if (args is ["--version"])
+{
+	Console.WriteLine(informationalVersion);
+	return;
+}
+
+// Intercept __schema to patch the version field in Argh's JSON output with the
+// informational version. Argh calls Environment.Exit after writing; the ProcessExit
+// handler below runs before the process terminates and rewrites the captured output.
+if (args is ["__schema"])
+{
+	var originalOut = Console.Out;
+	var captured = new StringWriter();
+	Console.SetOut(captured);
+
+	AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+	{
+		var json = captured.ToString();
+		var patched = SchemaVersionRewriter.VersionField().Replace(json,
+			$@"$1""{informationalVersion}""");
+		originalOut.Write(patched);
+		originalOut.Flush();
+	};
+}
+
+// Pre-host fast path: run --help, __schema, __completion directly and exit
 // before the host (and its startup logs) are ever constructed.
 await ArghApp.TryArghIntrinsicCommand(args);
 
@@ -71,3 +104,9 @@ _ = builder.Services.AddArgh(args, app =>
 
 using var host = builder.Build();
 await host.RunAsync();
+
+internal static partial class SchemaVersionRewriter
+{
+	[System.Text.RegularExpressions.GeneratedRegex(@"(""version""\s*:\s*)""[^""]*""")]
+	internal static partial System.Text.RegularExpressions.Regex VersionField();
+}
