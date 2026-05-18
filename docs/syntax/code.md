@@ -35,15 +35,9 @@ project:
 
 ### Code callouts
 
-There are two ways to add callouts to a code block.
+There are two ways to add callouts to a code block: **automatic** and **explicit**. Automatic callouts are best for single-line descriptions. Numbering is handled for you, so adding or removing a callout does not require renumbering. Each description sits next to the code it annotates, making the source easier to read. Use explicit callouts when a description needs multiple lines, block-level content, or links.
 
-:::{important}
-You cannot combine automatic and explicit callouts in the same code block. `docs-builder` will throw an error if both formats are present.
-:::
-
-:::{tip}
-Prefer automatic callouts for single-line descriptions. Numbering is handled for you, so adding or removing a callout does not require renumbering. Each description sits next to the code it annotates, making the source easier to read. Use explicit callouts when a description needs multiple lines, block-level content, or links.
-:::
+You cannot combine both formats in the same code block. `docs-builder` will throw an error if both are present.
 
 #### Automatic callouts
 
