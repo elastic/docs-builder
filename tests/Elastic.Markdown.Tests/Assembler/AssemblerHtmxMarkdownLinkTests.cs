@@ -29,7 +29,7 @@ public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTest
 
 	[Fact]
 	public void CrossLink_UsesGranularSwap_ForAssembler() =>
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#nav-tree,#nav-dropdown\"");
+		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#pages-nav\"");
 
 	[Fact]
 	public void CrossLink_HasPreload() =>
@@ -98,7 +98,7 @@ public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : Link
 	public void AbsolutePathLink_GetsHtmxAttributes_ForAssembler()
 	{
 		// Assembler: absolute path links get HTMX (granular swap when hasSameTopLevelGroup is false)
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#nav-tree,#nav-dropdown\"");
+		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#pages-nav\"");
 		Html.Should().Contain("preload=\"mousedown\"");
 	}
 
@@ -158,7 +158,7 @@ Go to [](kibana://index.md)
 
 	[Fact]
 	public void EmptyTextCrossLink_UsesGranularSwap_ForAssembler() =>
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#nav-tree,#nav-dropdown\"");
+		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#pages-nav\"");
 
 	[Fact]
 	public void EmptyTextCrossLink_NoTargetBlank() =>
