@@ -280,8 +280,8 @@ function getDeploymentLinks(
     const repo = raw.includes('/')
         ? raw
         : raw.length > 0
-            ? `elastic/${raw}`
-            : 'elastic/docs-builder'
+          ? `elastic/${raw}`
+          : 'elastic/docs-builder'
     const base = `${GITHUB_BASE}/${repo}`
     const branchName = (gitBranch ?? '').trim() || 'main'
     const commitSha = (gitCommit ?? '').trim()
@@ -292,7 +292,9 @@ function getDeploymentLinks(
         ref: pullUrl,
         branch: `${base}/tree/${encodeURIComponent(branchName)}`,
         commit:
-            commitSha.length > 0 ? `${base}/commit/${commitSha}` : `${base}/commits`,
+            commitSha.length > 0
+                ? `${base}/commit/${commitSha}`
+                : `${base}/commits`,
         repository: base,
     }
 }
