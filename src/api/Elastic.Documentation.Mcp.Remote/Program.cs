@@ -8,9 +8,11 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
+using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
+using OpenTelemetry.Trace;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -25,6 +27,8 @@ try
 	_ = builder.AddDocumentationServiceDefaults();
 	_ = builder.AddDefaultHealthChecks();
 	_ = builder.AddEuidEnrichment();
+	_ = builder.Services.ConfigureOpenTelemetryTracerProvider(t =>
+		t.AddSource(McpToolTelemetry.McpToolSourceName));
 
 	// Configure Kestrel to listen on port 8080 (standard container port)
 	_ = builder.WebHost.ConfigureKestrel(serverOptions =>

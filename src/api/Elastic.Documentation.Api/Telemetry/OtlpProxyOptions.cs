@@ -33,16 +33,17 @@ public class OtlpProxyOptions(IConfiguration configuration)
 	private static string ResolveEndpoint(IConfiguration configuration)
 	{
 		const string configKey = "OtlpProxy:Endpoint";
-		const string envVarKey = "OTLP_PROXY_ENDPOINT";
 		const string defaultEndpoint = "http://localhost:4318";
 
 		// Priority 1: Explicit configuration (for tests or custom deployments)
 		if (!string.IsNullOrEmpty(configuration[configKey]))
 			return configuration[configKey]!;
 
-		// Priority 2: Environment variable (ADOT Lambda Layer standard)
-		if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVarKey)))
-			return Environment.GetEnvironmentVariable(envVarKey)!;
+		// Priority 2: Standard OTEL env var, then legacy fallback
+		var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+			?? Environment.GetEnvironmentVariable("OTLP_PROXY_ENDPOINT");
+		if (!string.IsNullOrEmpty(endpoint))
+			return endpoint;
 
 		// Priority 3: Default (ADOT Lambda Layer collector)
 		return defaultEndpoint;

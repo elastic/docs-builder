@@ -80,7 +80,7 @@ public static class EuidEnrichmentExtensions
 	private static void ConfigureServiceVersionAttributes<TBuilder>(TBuilder builder)
 		where TBuilder : IHostApplicationBuilder
 	{
-		var informationalVersion = Assembly.GetCallingAssembly()
+		var informationalVersion = (Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly())
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
 		if (informationalVersion is null)
