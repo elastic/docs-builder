@@ -45,7 +45,8 @@ public record ChangelogConfiguration
 	[
 		Lifecycle.Preview,
 		Lifecycle.Beta,
-		Lifecycle.Ga
+		Lifecycle.Ga,
+		Lifecycle.Experimental
 	];
 
 	/// <summary>
