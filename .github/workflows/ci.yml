@@ -162,7 +162,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           dotnet run --project src/tooling/docs-builder -c release --no-build -- __schema > docs/cli-schema.json.tmp
-          diff docs/cli-schema.json docs/cli-schema.json.tmp || (echo "docs/cli-schema.json is out of date — run: dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json" && exit 1)
+          diff <(jq 'del(.version)' docs/cli-schema.json) <(jq 'del(.version)' docs/cli-schema.json.tmp) || (echo "docs/cli-schema.json is out of date — run: dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json" && exit 1)
           rm docs/cli-schema.json.tmp
 
       - name: Test
