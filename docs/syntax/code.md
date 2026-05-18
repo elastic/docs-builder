@@ -104,7 +104,7 @@ var client = new ElasticsearchClient("<CLOUD_ID>", apiKey);
 
 #### Explicit callouts
 
-Add `<\d+>` to the end of a line to create a numbered callout. An ordered list with the same number of items must follow the code block. If the counts don’t match, docs-builder throws an error.
+Add a numbered marker like `<1>`, `<2>`, etc. to the end of a line to create a callout. An ordered list with the same number of items must follow the code block. If the counts don’t match, docs-builder throws an error.
 
 ::::{tab-set}
 
