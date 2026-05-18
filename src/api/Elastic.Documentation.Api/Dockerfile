@@ -29,14 +29,14 @@ ENV DOTNET_NOLOGO=true \
 
 RUN arch=$TARGETARCH \
     && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
-    && echo $TARGETOS-$arch > /tmp/rid
-
-RUN dotnet publish src/api/Elastic.Documentation.Api -r linux-x64 -c Release
+    && RID="${TARGETOS}-${arch}" \
+    && dotnet publish src/api/Elastic.Documentation.Api -r "${RID}" -c Release \
+    && cp -r ".artifacts/publish/Elastic.Documentation.Api/release_${RID}/." /app/publish/
 
 # Runtime stage
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal AS runtime
 WORKDIR /app
-COPY --from=base /app/.artifacts/publish/Elastic.Documentation.Api/release_linux-x64/ /app/
+COPY --from=base /app/publish/ /app/
 RUN chmod +x /app/docs-builder-api
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
