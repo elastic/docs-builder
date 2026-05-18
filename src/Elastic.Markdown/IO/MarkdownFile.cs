@@ -84,10 +84,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 
 	//indexed by slug
-	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlyDictionary<string, PageTocItem> PageTableOfContent => _pageTableOfContent;
 
-	private readonly HashSet<string> _anchors = new(StringComparer.OrdinalIgnoreCase);
+	private readonly HashSet<string> _anchors = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlySet<string> Anchors => _anchors;
 
 	public string FilePath { get; }
