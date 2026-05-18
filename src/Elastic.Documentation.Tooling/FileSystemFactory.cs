@@ -6,6 +6,8 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Nullean.ScopedFileSystem;
 
+// ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
+#pragma warning disable IDE0130
 namespace Elastic.Documentation.Configuration;
 
 public static class FileSystemFactory

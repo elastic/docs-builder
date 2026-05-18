@@ -5,7 +5,6 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
@@ -154,9 +153,8 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 
 			foreach (var (key, items) in productProps)
 			{
-				// Find the property by YamlMember alias
 				var property = productType.GetProperties()
-					.FirstOrDefault(p => p.GetCustomAttribute<YamlMemberAttribute>()?.Alias == key);
+					.FirstOrDefault(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name == key);
 
 				property?.SetValue(productApplicability, new AppliesCollection(items.ToArray()));
 			}
@@ -209,11 +207,11 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			var productType = typeof(ProductApplicability);
 			foreach (var property in productType.GetProperties())
 			{
-				var yamlAlias = property.GetCustomAttribute<YamlMemberAttribute>()?.Alias;
-				if (yamlAlias != null)
+				var jsonName = property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name;
+				if (jsonName != null)
 				{
 					if (property.GetValue(value.ProductApplicability) is AppliesCollection propertyValue)
-						WriteApplicabilityEntries(writer, "product", yamlAlias, propertyValue);
+						WriteApplicabilityEntries(writer, "product", jsonName, propertyValue);
 				}
 			}
 		}

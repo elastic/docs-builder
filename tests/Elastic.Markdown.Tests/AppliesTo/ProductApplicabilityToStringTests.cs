@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Reflection;
+using System.Text.Json.Serialization;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using YamlDotNet.Serialization;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 
@@ -19,7 +19,7 @@ public class ProductApplicabilityToStringTests
 		var productApplicability = new ProductApplicability();
 		var productType = typeof(ProductApplicability);
 		var properties = productType.GetProperties()
-			.Where(p => p.GetCustomAttribute<YamlMemberAttribute>() != null)
+			.Where(p => p.GetCustomAttribute<JsonPropertyNameAttribute>() != null)
 			.ToList();
 
 		// Set all properties to a test value
@@ -35,9 +35,9 @@ public class ProductApplicabilityToStringTests
 		// Verify that each property's YAML alias appears in the output
 		foreach (var property in properties)
 		{
-			var yamlAlias = property.GetCustomAttribute<YamlMemberAttribute>()!.Alias;
-			result.Should().Contain($"{yamlAlias}=",
-				$"ToString should include the property {property.Name} with alias '{yamlAlias}'");
+			var jsonName = property.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name;
+			result.Should().Contain($"{jsonName}=",
+				$"ToString should include the property {property.Name} with alias '{jsonName}'");
 		}
 
 		// Verify we have the expected number of properties
@@ -90,8 +90,8 @@ public class ProductApplicabilityToStringTests
 		// Get the properties in reflection order
 		var productType = typeof(ProductApplicability);
 		var properties = productType.GetProperties()
-			.Where(p => p.GetCustomAttribute<YamlMemberAttribute>() != null)
-			.Select(p => p.GetCustomAttribute<YamlMemberAttribute>()!.Alias)
+			.Where(p => p.GetCustomAttribute<JsonPropertyNameAttribute>() != null)
+			.Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name)
 			.ToList();
 
 		// Find positions in the string

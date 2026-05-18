@@ -8,6 +8,8 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
+// ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
+#pragma warning disable IDE0130
 namespace Elastic.Documentation.AppliesTo;
 
 public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) : IYamlTypeConverter

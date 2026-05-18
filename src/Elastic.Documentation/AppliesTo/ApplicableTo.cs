@@ -6,7 +6,6 @@ using System.Collections;
 using System.Text;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
@@ -34,26 +33,20 @@ public interface IApplicableToElement
 	ApplicableTo? AppliesTo { get; }
 }
 
-[YamlSerializable]
 [JsonConverter(typeof(ApplicableToJsonConverter))]
 public record ApplicableTo
 {
-	[YamlMember(Alias = "stack")]
 	public AppliesCollection? Stack { get; set; }
 
-	[YamlMember(Alias = "deployment")]
 	public DeploymentApplicability? Deployment { get; set; }
 
-	[YamlMember(Alias = "serverless")]
 	public ServerlessProjectApplicability? Serverless { get; set; }
 
-	[YamlMember(Alias = "product")]
 	public AppliesCollection? Product { get; set; }
 
 	public ProductApplicability? ProductApplicability { get; set; }
 
 	[JsonIgnore]
-	[YamlIgnore]
 	public ApplicabilityDiagnosticsCollection? Diagnostics { get; set; }
 
 	public static ApplicableTo All { get; } = new()
@@ -119,19 +112,14 @@ public record ApplicableTo
 	}
 }
 
-[YamlSerializable]
 public record DeploymentApplicability
 {
-	[YamlMember(Alias = "self")]
 	public AppliesCollection? Self { get; set; }
 
-	[YamlMember(Alias = "ece")]
 	public AppliesCollection? Ece { get; set; }
 
-	[YamlMember(Alias = "eck")]
 	public AppliesCollection? Eck { get; set; }
 
-	[YamlMember(Alias = "ess")]
 	public AppliesCollection? Ess { get; set; }
 
 	public static DeploymentApplicability All { get; } = new()
@@ -181,16 +169,12 @@ public record DeploymentApplicability
 	}
 }
 
-[YamlSerializable]
 public record ServerlessProjectApplicability
 {
-	[YamlMember(Alias = "elasticsearch")]
 	public AppliesCollection? Elasticsearch { get; set; }
 
-	[YamlMember(Alias = "observability")]
 	public AppliesCollection? Observability { get; set; }
 
-	[YamlMember(Alias = "security")]
 	public AppliesCollection? Security { get; set; }
 
 	/// <summary>
