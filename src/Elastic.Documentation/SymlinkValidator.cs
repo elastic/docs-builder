@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using System.Security;
 using Elastic.Documentation.Extensions;
 
-namespace Elastic.Documentation.Configuration;
+namespace Elastic.Documentation;
 
 /// <summary>
 /// Provides validation to ensure control files (docset.yml, toc.yml, redirects.yml)

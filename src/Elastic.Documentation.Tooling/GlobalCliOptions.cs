@@ -4,6 +4,8 @@
 
 using Microsoft.Extensions.Logging;
 
+// ReSharper disable once CheckNamespace — intentionally preserving the namespace so consumers need no using changes
+#pragma warning disable IDE0130
 namespace Elastic.Documentation;
 
 /// <summary>

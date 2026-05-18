@@ -4,7 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Elastic.Documentation;
+namespace Elastic.Documentation.Versions;
 
 public sealed class AllVersionsSpec : VersionSpec
 {

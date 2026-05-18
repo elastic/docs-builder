@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Inference;

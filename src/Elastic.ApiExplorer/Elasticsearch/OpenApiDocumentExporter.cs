@@ -11,6 +11,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 

@@ -19,6 +19,7 @@ using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;

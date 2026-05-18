@@ -9,6 +9,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Tests.Search;
 

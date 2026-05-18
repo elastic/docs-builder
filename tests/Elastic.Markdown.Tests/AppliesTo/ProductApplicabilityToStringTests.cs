@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 
