@@ -8,6 +8,7 @@ using Actions.Core.Services;
 using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
@@ -173,24 +174,27 @@ public class ChangelogPrEvaluationService(
 		await coreService.SetOutputAsync("status", statusString);
 		await coreService.SetOutputAsync("should-generate", shouldGenerate ? "true" : "false");
 
+		// All PR-derived outputs flow through OutputSanitizer to strip
+		// control characters and enforce per-field length caps before they
+		// cross the GITHUB_OUTPUT boundary. See elastic/docs-eng-team#491.
 		if (resolvedTitle != null)
-			await coreService.SetOutputAsync("title", resolvedTitle);
+			await coreService.SetOutputAsync("title", OutputSanitizer.SanitizeForOutput(resolvedTitle, OutputSanitizer.TitleMaxLength));
 		if (resolvedDescription != null)
-			await coreService.SetOutputAsync("description", resolvedDescription);
+			await coreService.SetOutputAsync("description", OutputSanitizer.SanitizeForOutput(resolvedDescription, OutputSanitizer.DescriptionMaxLength));
 		if (resolvedType != null)
-			await coreService.SetOutputAsync("type", resolvedType);
+			await coreService.SetOutputAsync("type", OutputSanitizer.SanitizeForOutput(resolvedType, OutputSanitizer.TypeMaxLength));
 		if (resolvedProducts != null)
-			await coreService.SetOutputAsync("products", resolvedProducts);
+			await coreService.SetOutputAsync("products", OutputSanitizer.SanitizeForOutput(resolvedProducts, OutputSanitizer.LabelsMaxLength));
 		if (labelTable != null)
-			await coreService.SetOutputAsync("label-table", labelTable);
+			await coreService.SetOutputAsync("label-table", OutputSanitizer.SanitizeForOutput(labelTable, OutputSanitizer.LabelTableMaxLength));
 		if (productLabelTable != null)
-			await coreService.SetOutputAsync("product-label-table", productLabelTable);
+			await coreService.SetOutputAsync("product-label-table", OutputSanitizer.SanitizeForOutput(productLabelTable, OutputSanitizer.LabelTableMaxLength));
 		if (changelogDir != null)
-			await coreService.SetOutputAsync("changelog-dir", changelogDir);
+			await coreService.SetOutputAsync("changelog-dir", OutputSanitizer.SanitizeForOutput(changelogDir, OutputSanitizer.PathMaxLength));
 		if (existingFilename != null)
-			await coreService.SetOutputAsync("existing-changelog-filename", existingFilename);
+			await coreService.SetOutputAsync("existing-changelog-filename", OutputSanitizer.SanitizeForOutput(existingFilename, OutputSanitizer.PathMaxLength));
 		if (skipLabels != null)
-			await coreService.SetOutputAsync("skip-labels", skipLabels);
+			await coreService.SetOutputAsync("skip-labels", OutputSanitizer.SanitizeForOutput(skipLabels, OutputSanitizer.LabelsMaxLength));
 
 		return true;
 	}

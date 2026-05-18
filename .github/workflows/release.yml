@@ -47,6 +47,12 @@ jobs:
     needs: 
       - release-drafter
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # Required for `actions/attest-build-provenance`
+      id-token: write
+      attestations: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
@@ -58,7 +64,16 @@ jobs:
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
-        
+
+      - name: Restore npm dependencies
+        working-directory: src/Elastic.Documentation.Site
+        run: npm ci
+
+      - name: Check shai-hulud supply-chain hashes
+        uses: ./.github/actions/check-shai-hulud
+        with:
+          path: src/Elastic.Documentation.Site
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v4
         with:
@@ -68,6 +83,53 @@ jobs:
 
       - name: Publish Containers
         run: ./build.sh publishcontainers
+
+      # Resolve the manifest digest of each pushed image so we can
+      # mint a signed attestation against the immutable digest. The
+      # release version tag (e.g., :v1.4.0) is the canonical reference
+      # but we attest against the digest because tags can be moved.
+      # Consumers verify with:
+      #   gh attestation verify oci://ghcr.io/elastic/docs-builder@<digest> \
+      #     -R elastic/docs-builder
+      - name: Resolve pushed image digests
+        id: digests
+        env:
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+        # language=bash
+        run: |
+          set -euo pipefail
+          for image in docs-builder docs-builder-mcp docs-builder-api; do
+            ref="ghcr.io/elastic/${image}:${TAG_NAME}"
+            digest=$(docker buildx imagetools inspect "$ref" 2>/dev/null \
+              | awk '/^Digest:/ {print $2; exit}')
+            if [ -z "$digest" ]; then
+              echo "::error::Could not resolve manifest digest for ${ref}"
+              exit 1
+            fi
+            echo "${image}=${digest}" >> "$GITHUB_OUTPUT"
+            echo "Resolved ${ref} -> ${digest}"
+          done
+
+      - name: Attest docs-builder image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder
+          subject-digest: ${{ steps.digests.outputs.docs-builder }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-mcp image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-mcp
+          subject-digest: ${{ steps.digests.outputs.docs-builder-mcp }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-api image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-api
+          subject-digest: ${{ steps.digests.outputs.docs-builder-api }}
+          push-to-registry: true
         
   build-link-index-lambda:
     needs: 
