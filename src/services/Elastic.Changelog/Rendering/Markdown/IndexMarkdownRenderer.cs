@@ -240,7 +240,7 @@ public class IndexMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRender
 					}
 				}
 
-				if (!string.IsNullOrWhiteSpace(entry.Description))
+				if (!context.HideDescriptions && !string.IsNullOrWhiteSpace(entry.Description))
 				{
 					_ = sb.AppendLine(entryHideLinks && hasCommentedLinks ? "  " : "");
 					_ = sb.AppendLine();

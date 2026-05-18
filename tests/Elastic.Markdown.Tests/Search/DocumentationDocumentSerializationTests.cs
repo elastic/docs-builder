@@ -332,6 +332,50 @@ public class DocumentationDocumentSerializationTests
 		deserialized.Applies.Deployment.Ess.Should().BeEquivalentTo(original.Applies.Deployment.Ess);
 		deserialized.ContentLastUpdated.Should().Be(original.ContentLastUpdated);
 		deserialized.ContentBodyHash.Should().Be(original.ContentBodyHash);
+		deserialized.ContentType.Should().Be(original.ContentType);
+	}
+
+	[Fact]
+	public void SerializeDocumentationDocument_IncludesContentType_MatchingType()
+	{
+		foreach (var type in new[] { "doc", "api" })
+		{
+			var doc = new DocumentationDocument
+			{
+				Type = type,
+				Url = $"/test/{type}",
+				Title = "T",
+				SearchTitle = "T"
+			};
+
+			var json = JsonSerializer.Serialize(doc, _options);
+			using var parsed = JsonDocument.Parse(json);
+			var root = parsed.RootElement;
+
+			root.GetProperty("type").GetString().Should().Be(type);
+			root.GetProperty("content_type").GetString().Should().Be(type);
+		}
+	}
+
+	[Fact]
+	public void ContentType_FromJson_Overrides_Type()
+	{
+		var json = """
+		{
+			"title": "Legacy",
+			"search_title": "Legacy",
+			"url": "/x",
+			"type": "doc",
+			"hash": "h",
+			"content_type": "archived-docs"
+		}
+		""";
+
+		var deserialized = JsonSerializer.Deserialize<DocumentationDocument>(json, _options);
+
+		deserialized.Should().NotBeNull();
+		deserialized.Type.Should().Be("doc");
+		deserialized.ContentType.Should().Be("archived-docs");
 	}
 
 	[Fact]

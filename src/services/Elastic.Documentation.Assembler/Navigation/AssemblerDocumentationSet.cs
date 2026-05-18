@@ -45,7 +45,7 @@ public record AssemblerDocumentationSet
 		{
 			RepositoryName = checkout.Repository.Name,
 			Ref = checkout.HeadReference,
-			Remote = $"elastic/${checkout.Repository.Name}",
+			Remote = $"elastic/{checkout.Repository.Name}",
 			Branch = checkout.Repository.GetBranch(env.ContentSource)
 		};
 

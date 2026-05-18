@@ -47,11 +47,17 @@ public class ChangelogPrepareArtifactService(
 
 			if (sourceYaml != null)
 			{
-				changelogFilename = input.ExistingChangelogFilename != null
-					? _fileSystem.Path.GetFileName(input.ExistingChangelogFilename)
+				// Treat empty as unset: CLI parsers (e.g. Argh) forward `--flag ""`
+				// as the empty string instead of null. An empty filename here would
+				// make Path.Combine(OutputDir, "") collapse to OutputDir itself and
+				// turn the artifact write into a write against the directory path,
+				// which fails with EACCES on Linux.
+				var hasExistingFilename = !string.IsNullOrEmpty(input.ExistingChangelogFilename);
+				changelogFilename = hasExistingFilename
+					? _fileSystem.Path.GetFileName(input.ExistingChangelogFilename!)
 					: _fileSystem.Path.GetFileName(sourceYaml);
 
-				if (input.ExistingChangelogFilename != null)
+				if (hasExistingFilename)
 					_logger.LogInformation("Reusing existing filename {Filename} for stable path on branch", changelogFilename);
 
 				var destYaml = _fileSystem.Path.Combine(input.OutputDir, changelogFilename);
