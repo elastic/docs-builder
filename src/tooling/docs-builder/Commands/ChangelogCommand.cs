@@ -1145,10 +1145,12 @@ internal sealed partial class ChangelogCommands(
 	/// <summary>Render one or more changelog bundles to Markdown or AsciiDoc.</summary>
 	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Use "hide-links" for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
-	/// <param name="fileType">Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown"</param>
+	/// <param name="fileType">Optional: Output file type. Valid values: "markdown", "asciidoc", or "gfm". Defaults to "markdown"</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.</param>
 	/// <param name="output">Optional: Output directory for rendered files. Defaults to current directory</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
+	/// <param name="dropdowns">Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false</param>
+	/// <param name="noDescriptions">Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false</param>
 	/// <param name="title">Optional: Title to use for section headers in output files. Defaults to version from first bundle</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
@@ -1159,6 +1161,8 @@ internal sealed partial class ChangelogCommands(
 		string[]? hideFeatures = null,
 		string? output = null,
 		bool subsections = false,
+		bool dropdowns = false,
+		bool noDescriptions = false,
 		string? title = null,
 		CancellationToken ct = default
 	)
@@ -1174,11 +1178,12 @@ internal sealed partial class ChangelogCommands(
 		{
 			"markdown" => ChangelogFileType.Markdown,
 			"asciidoc" => ChangelogFileType.Asciidoc,
+			"gfm" => ChangelogFileType.Gfm,
 			_ => null
 		};
 		if (ft is null)
 		{
-			collector.EmitError(string.Empty, $"Invalid file-type '{fileType}'. Valid values are 'markdown' or 'asciidoc'.");
+			collector.EmitError(string.Empty, $"Invalid file-type '{fileType}'. Valid values are 'markdown', 'asciidoc', or 'gfm'.");
 			return 1;
 		}
 
@@ -1191,6 +1196,8 @@ internal sealed partial class ChangelogCommands(
 			Output = output,
 			Title = title,
 			Subsections = subsections,
+			Dropdowns = dropdowns,
+			HideDescriptions = noDescriptions,
 			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
 			FileType = ft.Value,
 			Config = config?.FullName

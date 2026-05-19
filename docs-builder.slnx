@@ -65,7 +65,8 @@
     <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
   </Folder>
   <Folder Name="/src/infra/">
-    <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
+	  <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
+	  <Project Path="src/infra/docs-lambda-changelog-scrubber/docs-lambda-changelog-scrubber.csproj" />
   </Folder>
   <Folder Name="/src/services/">
     <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
