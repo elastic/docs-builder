@@ -5,7 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using NetEscapades.EnumGenerators;
 
-namespace Elastic.Documentation;
+namespace Elastic.Documentation.ReleaseNotes;
 
 /// <summary>
 /// Enum representing changelog entry subtypes (only applicable to breaking changes)

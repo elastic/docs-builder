@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.Extensions;
 
+// ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
+#pragma warning disable IDE0130
 namespace Elastic.Documentation.Configuration;
 
 public static class Paths

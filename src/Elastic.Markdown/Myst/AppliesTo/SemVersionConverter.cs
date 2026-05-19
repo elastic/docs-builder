@@ -2,10 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Versions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
+// ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
+#pragma warning disable IDE0130
 namespace Elastic.Documentation.AppliesTo;
 
 public class SemVersionConverter : IYamlTypeConverter

@@ -4,7 +4,7 @@
 
 using System.Globalization;
 
-namespace Elastic.Documentation;
+namespace Elastic.Documentation.Versions;
 
 /// <summary>
 /// A version representation that can be either a semantic version or a date.

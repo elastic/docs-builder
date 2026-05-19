@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Nullean.Argh;
-using static Elastic.Documentation.Exporter;
 
 namespace Elastic.Documentation;
 
@@ -21,6 +20,6 @@ public enum Exporter
 
 public static class ExportOptions
 {
-	public static HashSet<Exporter> Default { get; } = [Html, LLMText, Configuration, DocumentationState, LinkMetadata, Redirects];
-	public static HashSet<Exporter> MetadataOnly { get; } = [Configuration, DocumentationState, LinkMetadata, Redirects];
+	public static HashSet<Exporter> Default { get; } = [Exporter.Html, Exporter.LLMText, Exporter.Configuration, Exporter.DocumentationState, Exporter.LinkMetadata, Exporter.Redirects];
+	public static HashSet<Exporter> MetadataOnly { get; } = [Exporter.Configuration, Exporter.DocumentationState, Exporter.LinkMetadata, Exporter.Redirects];
 }

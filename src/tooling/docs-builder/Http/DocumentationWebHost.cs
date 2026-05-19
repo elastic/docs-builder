@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 #if DEBUG
 using Elastic.Documentation.Api;
 #endif
@@ -34,7 +35,7 @@ public class DocumentationWebHost
 {
 	private readonly WebApplication _webApplication;
 
-	private readonly IHostedService _hostedService;
+	private readonly IDiagnosticsCollector _hostedService;
 	private readonly ScopedFileSystem _writeFileSystem;
 
 	public InMemoryBuildState InMemoryBuildState { get; }

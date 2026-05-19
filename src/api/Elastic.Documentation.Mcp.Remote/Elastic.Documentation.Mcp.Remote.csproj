@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\services\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
+    <ProjectReference Include="..\..\services\search\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
     <ProjectReference Include="..\..\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
   </ItemGroup>
 

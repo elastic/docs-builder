@@ -117,7 +117,7 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		if (ConfigurationPath.FullName != DocumentationSourceDirectory.FullName)
 			DocumentationSourceDirectory = ConfigurationPath.Directory!;
 
-		Git = gitCheckoutInformation ?? GitCheckoutInformation.Create(DocumentationCheckoutDirectory, ReadFileSystem);
+		Git = gitCheckoutInformation ?? GitCheckoutInformationFactory.Create(DocumentationCheckoutDirectory, ReadFileSystem);
 
 		// Load and resolve the docset file, or create an empty one if it doesn't exist
 		ConfigurationYaml = ConfigurationPath.Exists
