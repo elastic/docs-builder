@@ -9,7 +9,10 @@ let navV2OptimisticNavigateBound = false
 
 let navV2TruncationTippyInstances: Instance[] = []
 const navV2ActiveBranchScrollTimeouts = new WeakMap<HTMLElement, number[]>()
-const navV2ActiveBranchScrollObservers = new WeakMap<HTMLElement, ResizeObserver>()
+const navV2ActiveBranchScrollObservers = new WeakMap<
+    HTMLElement,
+    ResizeObserver
+>()
 
 function readCollapsedFolderIds(): Set<string> {
     try {
