@@ -10,6 +10,7 @@ public sealed class DiagnosticsChannel : IDisposable
 {
 	private readonly Channel<Diagnostic> _channel;
 	private readonly CancellationTokenSource _ctxSource;
+
 	public ChannelReader<Diagnostic> Reader => _channel.Reader;
 
 	public Cancel CancellationToken => _ctxSource.Token;
@@ -33,6 +34,8 @@ public sealed class DiagnosticsChannel : IDisposable
 
 	public ValueTask<bool> WaitToWrite(Cancel ctx) => _channel.Writer.WaitToWriteAsync(ctx);
 
+	// Unbounded channel: TryWrite only fails if the writer is completed, which
+	// means a producer raced past StopAsync/DisposeAsync.
 	public void Write(Diagnostic diagnostic)
 	{
 		var written = _channel.Writer.TryWrite(diagnostic);

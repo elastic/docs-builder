@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.IO.Abstractions;
 using Microsoft.Extensions.Hosting;
 
@@ -30,6 +29,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public ConcurrentBag<string> CrossLinks { get; } = [];
 
 	public bool NoHints { get; set; }
+
+	public bool IsStarted => _started is not null;
 
 	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
@@ -60,18 +61,18 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			Drain();
 		}, cancellationToken);
 		return _started;
+	}
 
-		void Drain()
+	private void Drain()
+	{
+		while (Channel.Reader.TryRead(out var item))
 		{
-			while (Channel.Reader.TryRead(out var item))
-			{
-				if (item.Severity == Severity.Hint && NoHints)
-					continue;
-				HandleItem(item);
-				_ = OffendingFiles.Add(item.File);
-				foreach (var output in outputs)
-					output.Write(item);
-			}
+			if (item.Severity == Severity.Hint && NoHints)
+				continue;
+			HandleItem(item);
+			_ = OffendingFiles.Add(item.File);
+			foreach (var output in outputs)
+				output.Write(item);
 		}
 	}
 
@@ -90,8 +91,15 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
 		Channel.TryComplete();
-		if (_started is not null)
-			await _started;
+		// If StartAsync was never called there is no background reader; drain
+		// synchronously so emitted diagnostics still reach HandleItem/outputs
+		// instead of deadlocking on Channel.Reader.Completion.
+		if (_started is null)
+		{
+			Drain();
+			return;
+		}
+		await _started;
 		await Channel.Reader.Completion;
 	}
 

@@ -21,6 +21,9 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 	HashSet<string> OffendingFiles { get; }
 	ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; }
 
+	/// True once StartAsync has been called and a background reader is draining the channel.
+	bool IsStarted => true;
+
 	void Emit(Severity severity, string file, string message);
 	void EmitError(string file, string message, Exception? e = null);
 	void EmitError(string file, string message, string specificErrorMessage);
@@ -49,6 +52,13 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 
 	async Task WaitForDrain()
 	{
+		if (!IsStarted)
+		{
+			throw new InvalidOperationException(
+				"WaitForDrain called on a collector that was never started; no reader is draining the channel. " +
+				"Call StartAsync first or dispose the collector to drain synchronously.");
+		}
+
 		var start = DateTime.UtcNow;
 		while (Channel.Reader.TryPeek(out _))
 		{
