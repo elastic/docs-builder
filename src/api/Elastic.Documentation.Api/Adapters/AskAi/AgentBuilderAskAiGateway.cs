@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Api.Adapters.AskAi;
 
-public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kibanaOptions, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiGateway
+public class AgentBuilderAskAiGateway(HttpClient httpClient, KibanaOptions kibanaOptions, ILogger<AgentBuilderAskAiGateway> logger) : IAskAiService
 {
 	/// <summary>
 	/// Model name used by Agent Builder (from AgentId)

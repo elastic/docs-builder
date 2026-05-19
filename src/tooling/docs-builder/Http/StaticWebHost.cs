@@ -39,7 +39,7 @@ public class StaticWebHost
 
 		_ = builder.AddDocumentationServiceDefaults();
 #if DEBUG
-		builder.Services.AddElasticDocsApiUsecases("dev");
+		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
 		_ = builder.Logging

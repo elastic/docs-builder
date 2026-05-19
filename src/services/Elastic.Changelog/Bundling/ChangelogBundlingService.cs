@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Utilities;

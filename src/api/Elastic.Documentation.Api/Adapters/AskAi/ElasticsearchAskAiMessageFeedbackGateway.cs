@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Api.Adapters.AskAi;
 /// <summary>
 /// Records Ask AI message feedback to Elasticsearch.
 /// </summary>
-public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackGateway, IDisposable
+public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackService, IDisposable
 {
 	private readonly ElasticsearchClient _client;
 	private readonly string _indexName;

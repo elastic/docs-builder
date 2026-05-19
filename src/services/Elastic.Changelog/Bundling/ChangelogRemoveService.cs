@@ -4,7 +4,6 @@
 
 using System.IO.Abstractions;
 using System.Linq;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;

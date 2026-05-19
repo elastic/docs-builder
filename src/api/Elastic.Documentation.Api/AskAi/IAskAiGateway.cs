@@ -15,7 +15,9 @@ namespace Elastic.Documentation.Api.AskAi;
 /// </param>
 public record AskAiGatewayResponse(Stream Stream, Guid? GeneratedConversationId);
 
-public interface IAskAiGateway
+public record AskAiRequest(string Message, Guid? ConversationId);
+
+public interface IAskAiService
 {
 	Task<AskAiGatewayResponse> AskAi(AskAiRequest askAiRequest, Cancel ctx = default);
 }

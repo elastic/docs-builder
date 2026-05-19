@@ -6,12 +6,9 @@ using System.ComponentModel.DataAnnotations;
 using Amazon.DynamoDBv2;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.Adapters.AskAi;
-using Elastic.Documentation.Api.Adapters.Telemetry;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.Caching;
-using Elastic.Documentation.Api.Changes;
 using Elastic.Documentation.Api.Gcp;
-using Elastic.Documentation.Api.Search;
 using Elastic.Documentation.Api.Telemetry;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Configuration;
@@ -44,20 +41,20 @@ public static class ServicesExtension
 		return loggerFactory?.CreateLogger(typeof(ServicesExtension));
 	}
 
-	public static void AddElasticDocsApiUsecases(this IServiceCollection services, string? appEnvironment)
+	public static void AddElasticDocsApiServices(this IServiceCollection services, string? appEnvironment)
 	{
 		if (AppEnvExtensions.TryParse(appEnvironment, out var parsedEnvironment, true))
-			AddElasticDocsApiUsecases(services, parsedEnvironment);
+			AddElasticDocsApiServices(services, parsedEnvironment);
 		else
 		{
 			var logger = GetLogger(services);
 			logger?.LogWarning("Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
-			AddElasticDocsApiUsecases(services, AppEnv.Dev);
+			AddElasticDocsApiServices(services, AppEnv.Dev);
 		}
 	}
 
 
-	private static void AddElasticDocsApiUsecases(this IServiceCollection services, AppEnv appEnv)
+	private static void AddElasticDocsApiServices(this IServiceCollection services, AppEnv appEnv)
 	{
 		_ = services.ConfigureHttpJsonOptions(options =>
 		{
@@ -74,9 +71,9 @@ public static class ServicesExtension
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddDistributedCache(services, appEnv);
-		AddAskAiUsecase(services, appEnv);
-		AddSearchUsecase(services, appEnv);
-		AddOtlpProxyUsecase(services, appEnv);
+		AddAskAiServices(services, appEnv);
+		AddSearchServices(services, appEnv);
+		AddOtlpProxyService(services, appEnv);
 	}
 
 	// Note: IParameterProvider is no longer needed - all options now read from IConfiguration (env vars)
@@ -134,10 +131,10 @@ public static class ServicesExtension
 		}
 	}
 
-	private static void AddAskAiUsecase(IServiceCollection services, AppEnv appEnv)
+	private static void AddAskAiServices(IServiceCollection services, AppEnv appEnv)
 	{
 		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring AskAi use case for environment {AppEnvironment}", appEnv);
+		logger?.LogInformation("Configuring AskAi services for environment {AppEnvironment}", appEnv);
 
 		try
 		{
@@ -153,9 +150,6 @@ public static class ServicesExtension
 			_ = services.AddSingleton<KibanaOptions>();
 			logger?.LogInformation("KibanaOptions registered successfully");
 
-			_ = services.AddScoped<AskAiUsecase>();
-			logger?.LogInformation("AskAiUsecase registered successfully");
-
 			// Register HttpContextAccessor for provider resolution
 			_ = services.AddHttpContextAccessor();
 			logger?.LogInformation("HttpContextAccessor registered successfully");
@@ -164,51 +158,46 @@ public static class ServicesExtension
 			_ = services.AddScoped<AskAiProviderResolver>();
 			logger?.LogInformation("AskAiProviderResolver registered successfully");
 
-			// Register both gateways as concrete types
+			// Register both service implementations as concrete types
 			_ = services.AddScoped<LlmGatewayAskAiGateway>();
 			_ = services.AddScoped<AgentBuilderAskAiGateway>();
-			logger?.LogInformation("Both AI gateways registered as concrete types");
+			logger?.LogInformation("Both AI service implementations registered as concrete types");
 
 			// Register both transformers as concrete types
 			_ = services.AddScoped<LlmGatewayStreamTransformer>();
 			_ = services.AddScoped<AgentBuilderStreamTransformer>();
 			logger?.LogInformation("Both stream transformers registered as concrete types");
 
-			// Register factories as interface implementations
-			_ = services.AddScoped<IAskAiGateway, AskAiGatewayFactory>();
+			// Register factory as interface implementation
+			_ = services.AddScoped<IAskAiService, AskAiGatewayFactory>();
 			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
-			logger?.LogInformation("Gateway and transformer factories registered successfully - provider switchable via X-AI-Provider header");
+			logger?.LogInformation("Service and transformer factories registered successfully - provider switchable via X-AI-Provider header");
 
-			// Register message feedback components (gateway is singleton for connection reuse)
-			_ = services.AddSingleton<IAskAiMessageFeedbackGateway, ElasticsearchAskAiMessageFeedbackGateway>();
-			_ = services.AddScoped<AskAiMessageFeedbackUsecase>();
-			logger?.LogInformation("AskAiMessageFeedbackUsecase and Elasticsearch gateway registered successfully");
+			// Register message feedback service (singleton for connection reuse)
+			_ = services.AddSingleton<IAskAiMessageFeedbackService, ElasticsearchAskAiMessageFeedbackGateway>();
+			logger?.LogInformation("AskAiMessageFeedbackService (Elasticsearch) registered successfully");
 		}
 		catch (Exception ex)
 		{
-			logger?.LogError(ex, "Failed to configure AskAi use case for environment {AppEnvironment}", appEnv);
+			logger?.LogError(ex, "Failed to configure AskAi services for environment {AppEnvironment}", appEnv);
 			throw;
 		}
 	}
-	private static void AddSearchUsecase(IServiceCollection services, AppEnv appEnv)
+
+	private static void AddSearchServices(IServiceCollection services, AppEnv appEnv)
 	{
 		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring Search use case for environment {AppEnvironment}", appEnv);
+		logger?.LogInformation("Configuring Search services for environment {AppEnvironment}", appEnv);
 
-		// Use the shared search service for DI registration (registers gateways)
+		// Use the shared search service for DI registration
 		_ = services.AddSearchServices();
-
-		// Register usecases (depend on the gateways from search service)
-		_ = services.AddScoped<NavigationSearchUsecase>();
-		_ = services.AddScoped<FullSearchUsecase>();
-		logger?.LogInformation("Full search use case registered with hybrid RRF support");
-		_ = services.AddScoped<ChangesUsecase>();
+		logger?.LogInformation("Full search service registered with hybrid RRF support");
 	}
 
-	private static void AddOtlpProxyUsecase(IServiceCollection services, AppEnv appEnv)
+	private static void AddOtlpProxyService(IServiceCollection services, AppEnv appEnv)
 	{
 		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring OTLP proxy use case for environment {AppEnvironment}", appEnv);
+		logger?.LogInformation("Configuring OTLP proxy service for environment {AppEnvironment}", appEnv);
 
 		_ = services.AddSingleton(sp =>
 		{
@@ -217,14 +206,13 @@ public static class ServicesExtension
 		});
 
 		// Register named HttpClient for OTLP proxy
-		_ = services.AddHttpClient(AdotOtlpGateway.HttpClientName)
+		_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 			.ConfigureHttpClient(client =>
 			{
 				client.Timeout = TimeSpan.FromSeconds(30);
 			});
 
-		_ = services.AddScoped<IOtlpGateway, AdotOtlpGateway>();
-		_ = services.AddScoped<OtlpProxyUsecase>();
+		_ = services.AddScoped<IOtlpService, AdotOtlpService>();
 		logger?.LogInformation("OTLP proxy configured to forward to ADOT Lambda Layer collector");
 	}
 }

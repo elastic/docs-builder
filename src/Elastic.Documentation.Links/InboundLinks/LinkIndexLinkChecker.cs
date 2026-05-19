@@ -38,7 +38,7 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
 		if (fromRepository == null && toRepository == null)
 		{
-			fromRepository ??= GitCheckoutInformation.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName;
+			fromRepository ??= GitCheckoutInformationFactory.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName;
 			if (fromRepository == null)
 				throw new Exception("Unable to determine repository name");
 		}
@@ -58,7 +58,7 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 	{
 		file ??= ".artifacts/docs/html/links.json";
 		var root = !string.IsNullOrEmpty(path) ? fileSystem.DirectoryInfo.New(path) : fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var repository = GitCheckoutInformation.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
+		var repository = GitCheckoutInformationFactory.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
 						?? throw new Exception("Unable to determine repository name");
 
 		var localLinksJson = fileSystem.FileInfo.New(Path.Join(root.FullName, file));

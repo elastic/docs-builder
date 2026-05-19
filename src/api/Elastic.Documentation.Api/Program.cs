@@ -31,7 +31,7 @@ try
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
 
-	builder.Services.AddElasticDocsApiUsecases(environment);
+	builder.Services.AddElasticDocsApiServices(environment);
 	var app = builder.Build();
 
 	var logger = app.Services.GetRequiredService<ILogger<Program>>();
