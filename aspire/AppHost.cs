@@ -61,7 +61,7 @@ internal static class AspireHost
 
 		var elasticsearchRemote = builder.AddExternalService(ElasticsearchRemote, elasticsearchUrl);
 
-		var api = builder.AddProject<Projects.Elastic_Documentation_Api_App>(Api)
+		var api = builder.AddProject<Projects.Elastic_Documentation_Api>(Api)
 			.WithArgs(GlobalArguments)
 			.WithEnvironment("ENVIRONMENT", "dev")
 			.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)

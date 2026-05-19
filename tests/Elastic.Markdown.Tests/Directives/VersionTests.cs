@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation;
+using Elastic.Documentation.Versions;
 using Elastic.Markdown.Myst.Directives.Version;
 
 namespace Elastic.Markdown.Tests.Directives;

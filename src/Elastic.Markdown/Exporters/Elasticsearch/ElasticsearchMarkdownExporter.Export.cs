@@ -127,7 +127,7 @@ public partial class ElasticsearchMarkdownExporter
 			StrippedBody = strippedBody,
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Abstract = @abstract,
-			Applies = appliesTo,
+			Applies = appliesTo.ToAppliesTo(),
 			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
 			{
 				Title = i.NavigationTitle,

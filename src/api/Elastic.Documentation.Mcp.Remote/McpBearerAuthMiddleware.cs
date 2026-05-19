@@ -4,6 +4,7 @@
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
