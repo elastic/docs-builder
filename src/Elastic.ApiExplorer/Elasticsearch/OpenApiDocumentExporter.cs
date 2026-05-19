@@ -11,6 +11,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
@@ -177,7 +178,7 @@ public partial class OpenApiDocumentExporter(
 					StrippedBody = body,
 					Headings = headings,
 					Links = [],
-					Applies = applies,
+					Applies = applies?.ToAppliesTo(),
 					Parents =
 					[
 						new ParentDocument { Title = "API Reference", Url = "/docs/api" },

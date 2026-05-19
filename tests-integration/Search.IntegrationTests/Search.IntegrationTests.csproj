@@ -8,7 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" />
-      <ProjectReference Include="..\..\src\services\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
+      <ProjectReference Include="..\..\src\services\search\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
       <ProjectReference Include="..\..\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     </ItemGroup>
 

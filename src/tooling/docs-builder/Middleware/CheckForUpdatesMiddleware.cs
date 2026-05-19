@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh.Middleware;
 

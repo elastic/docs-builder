@@ -2,13 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Changelog.Serialization;
+namespace Elastic.Documentation.Configuration.Changelog;
 
 /// <summary>
 /// Internal DTO for YAML deserialization of changelog configuration.
 /// Maps directly to the YAML file structure.
 /// </summary>
-internal record ChangelogConfigurationYaml
+internal sealed record ChangelogConfigurationYaml
 {
 	/// <summary>
 	/// Filename strategy for generated changelog files (pr, issue, timestamp).
@@ -57,7 +57,7 @@ internal record ChangelogConfigurationYaml
 /// <summary>
 /// Internal DTO for rules configuration in YAML.
 /// </summary>
-internal record RulesConfigurationYaml
+internal sealed record RulesConfigurationYaml
 {
 	/// <summary>
 	/// Global match mode for multi-valued fields ("any" or "all"). Default: "any".
@@ -83,7 +83,7 @@ internal record RulesConfigurationYaml
 /// <summary>
 /// Internal DTO for bundle rules in YAML.
 /// </summary>
-internal record BundleRulesYaml
+internal sealed record BundleRulesYaml
 {
 	/// <summary>
 	/// Product IDs to exclude from the bundle (string or list). Cannot be combined with IncludeProducts.
@@ -134,7 +134,7 @@ internal record BundleRulesYaml
 /// <summary>
 /// Internal DTO for create rules in YAML.
 /// </summary>
-internal record CreateRulesYaml
+internal sealed record CreateRulesYaml
 {
 	/// <summary>
 	/// Labels to exclude (string or list). Cannot be combined with Include.
@@ -161,7 +161,7 @@ internal record CreateRulesYaml
 /// <summary>
 /// Internal DTO for publish rules in YAML.
 /// </summary>
-internal record PublishRulesYaml
+internal sealed record PublishRulesYaml
 {
 	/// <summary>
 	/// Match mode for areas ("any" or "all"). Inherits from rules.match if not set.
@@ -198,7 +198,7 @@ internal record PublishRulesYaml
 /// <summary>
 /// Internal DTO for pivot configuration in YAML.
 /// </summary>
-internal record PivotConfigurationYaml
+internal sealed record PivotConfigurationYaml
 {
 	/// <summary>
 	/// Type definitions with optional labels and subtypes.
@@ -231,7 +231,7 @@ internal record PivotConfigurationYaml
 /// <summary>
 /// Internal DTO for products configuration in YAML.
 /// </summary>
-internal record ProductsConfigYaml
+internal sealed record ProductsConfigYaml
 {
 	/// <summary>
 	/// List of available product IDs (string or list, empty = all from products.yml).
@@ -247,7 +247,7 @@ internal record ProductsConfigYaml
 /// <summary>
 /// Internal DTO for default product specification in YAML.
 /// </summary>
-internal record DefaultProductYaml
+internal sealed record DefaultProductYaml
 {
 	/// <summary>
 	/// Product ID.
@@ -263,7 +263,7 @@ internal record DefaultProductYaml
 /// <summary>
 /// Internal DTO for bundle configuration in YAML.
 /// </summary>
-internal record BundleConfigurationYaml
+internal sealed record BundleConfigurationYaml
 {
 	/// <summary>
 	/// Input directory containing changelog YAML files.
@@ -314,7 +314,7 @@ internal record BundleConfigurationYaml
 /// <summary>
 /// Internal DTO for bundle profile in YAML.
 /// </summary>
-internal record BundleProfileYaml
+internal sealed record BundleProfileYaml
 {
 	/// <summary>
 	/// Product filter pattern for input changelogs.
@@ -371,7 +371,7 @@ internal record BundleProfileYaml
 /// <summary>
 /// Internal DTO for extract configuration in YAML.
 /// </summary>
-internal record ExtractConfigurationYaml
+internal sealed record ExtractConfigurationYaml
 {
 	/// <summary>
 	/// Whether to extract release note text from PR or issue descriptions for the changelog entry description by default.
@@ -397,7 +397,7 @@ internal record ExtractConfigurationYaml
 /// Internal DTO for type entry in YAML.
 /// Can represent either a simple label string or an object with labels and subtypes.
 /// </summary>
-internal record TypeEntryYaml
+internal sealed record TypeEntryYaml
 {
 	/// <summary>
 	/// Labels for this type (comma-separated string).

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.AppliesTo;
 

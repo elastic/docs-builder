@@ -72,7 +72,10 @@
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
     <Project Path="src/services/Elastic.Documentation.Integrations/Elastic.Documentation.Integrations.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
-	<Project Path="src/services/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
+  </Folder>
+  <Folder Name="/src/services/search/">
+    <Project Path="src/services/search/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
+    <Project Path="src/services/search/Elastic.Documentation.Search.Contract/Elastic.Documentation.Search.Contract.csproj" />
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />

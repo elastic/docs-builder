@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Versions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
