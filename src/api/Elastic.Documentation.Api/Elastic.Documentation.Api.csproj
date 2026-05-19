@@ -20,7 +20,7 @@
     <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
-    <ProjectReference Include="..\..\services\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
+    <ProjectReference Include="..\..\services\search\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.DynamoDBv2" />
