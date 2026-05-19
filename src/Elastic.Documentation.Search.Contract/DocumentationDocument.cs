@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
-using Elastic.Documentation.AppliesTo;
 using Elastic.Mapping;
 
 namespace Elastic.Documentation.Search;
@@ -134,7 +133,7 @@ public record DocumentationDocument
 
 	[Nested]
 	[JsonPropertyName("applies_to")]
-	public ApplicableTo? Applies { get; set; }
+	public IReadOnlyCollection<AppliesToEntry>? Applies { get; set; }
 
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
