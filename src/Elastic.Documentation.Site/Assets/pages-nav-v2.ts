@@ -8,6 +8,11 @@ let navV2FolderLinkToggleBound = false
 let navV2OptimisticNavigateBound = false
 
 let navV2TruncationTippyInstances: Instance[] = []
+const navV2ActiveBranchScrollTimeouts = new WeakMap<HTMLElement, number[]>()
+const navV2ActiveBranchScrollObservers = new WeakMap<
+    HTMLElement,
+    ResizeObserver
+>()
 
 function readCollapsedFolderIds(): Set<string> {
     try {
@@ -227,43 +232,42 @@ function ensureNavV2OptimisticCurrentOnNavigate() {
             markCurrentPageForPath(nav, path)
             expandToCurrentPageForPath(nav, path)
             applyActiveSubtreeHighlight(nav)
+            scheduleActiveBranchScroll(nav)
         },
         true
     )
 }
 
 /**
- * Returns all sibling top-level accordion checkboxes for a given checkbox.
- * Siblings are other checkboxes inside [data-v2-accordion] elements at the
- * same nesting level as the given checkbox's ancestor accordion.
+ * Returns all sibling folder checkboxes at the same nesting level.
  */
 function getSiblingAccordionCheckboxes(
     checkbox: HTMLInputElement
 ): HTMLInputElement[] {
-    const accordion = checkbox.closest('[data-v2-accordion]')
-    if (!accordion) {
+    const group = checkbox.closest('li.group-navigation')
+    if (!group) {
         return []
     }
 
-    const parent = accordion.parentElement
+    const parent = group.parentElement
     if (!parent) {
         return []
     }
 
     return Array.from(
         parent.querySelectorAll<HTMLInputElement>(
-            '[data-v2-accordion] > .peer input[type=checkbox]'
+            ':scope > li.group-navigation > .nav-folder-peer input[type=checkbox]'
         )
     ).filter((c) => c !== checkbox)
 }
 
 /**
- * Accordion behaviour: when a top-level section is opened,
- * collapse all its siblings so only one section is expanded at a time.
+ * Accordion behaviour: when a folder is opened, collapse its siblings so
+ * only one branch stays expanded at that nesting level.
  */
 function initAccordion(nav: HTMLElement) {
     nav.querySelectorAll<HTMLInputElement>(
-        '[data-v2-accordion] > .peer input[type=checkbox]'
+        'li.group-navigation > .nav-folder-peer input[type=checkbox]'
     ).forEach((cb) => {
         if (cb.dataset.navV2AccordionBound === 'true') {
             return
@@ -279,6 +283,142 @@ function initAccordion(nav: HTMLElement) {
             }
         })
     })
+}
+
+function getAllFolderCheckboxes(nav: HTMLElement): HTMLInputElement[] {
+    return Array.from(
+        nav.querySelectorAll<HTMLInputElement>(
+            'li.group-navigation > .nav-folder-peer input[type=checkbox]'
+        )
+    )
+}
+
+function collapseInactiveFolders(
+    nav: HTMLElement,
+    activeCheckboxes: Set<HTMLInputElement>
+) {
+    getAllFolderCheckboxes(nav).forEach((cb) => {
+        if (!activeCheckboxes.has(cb)) {
+            cb.checked = false
+        }
+    })
+}
+
+function findNavV2ScrollContainer(nav: HTMLElement): HTMLElement | null {
+    return nav.closest<HTMLElement>('.pages-nav-menu')
+}
+
+function pickActiveBranchScrollTarget(
+    nav: HTMLElement,
+    current: HTMLAnchorElement
+): HTMLElement | null {
+    let target = current.closest<HTMLElement>('li')
+    let walk = target
+    while (walk && walk !== nav) {
+        if (walk.matches('li.group-navigation')) {
+            target = walk
+        }
+
+        walk = walk.parentElement?.closest<HTMLElement>('li') ?? null
+    }
+
+    return target
+}
+
+function scrollActiveBranchIntoView(nav: HTMLElement) {
+    const container = findNavV2ScrollContainer(nav)
+    if (!container) {
+        return
+    }
+
+    const current = deepestCurrentSidebarLink(nav)
+    if (!current) {
+        return
+    }
+
+    const target = pickActiveBranchScrollTarget(nav, current)
+    if (!target) {
+        return
+    }
+
+    const containerRect = container.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const topPadding = 8
+    const bottomPadding = 16
+    const visibleTop = containerRect.top + topPadding
+    const visibleBottom = containerRect.bottom - bottomPadding
+
+    if (targetRect.top >= visibleTop && targetRect.bottom <= visibleBottom) {
+        return
+    }
+
+    const targetTop =
+        targetRect.top - containerRect.top + container.scrollTop - topPadding
+    container.scrollTop = Math.max(0, targetTop)
+}
+
+function scheduleActiveBranchScroll(nav: HTMLElement) {
+    const existingTimeouts = navV2ActiveBranchScrollTimeouts.get(nav)
+    if (existingTimeouts !== undefined) {
+        existingTimeouts.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    }
+
+    const run = () => {
+        if (!nav.isConnected) {
+            return
+        }
+
+        scrollActiveBranchIntoView(nav)
+    }
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            run()
+        })
+    })
+
+    const timeoutIds = [260, 520].map((delay, index) =>
+        window.setTimeout(() => {
+            run()
+            if (index === 1) {
+                navV2ActiveBranchScrollTimeouts.delete(nav)
+            }
+        }, delay)
+    )
+    navV2ActiveBranchScrollTimeouts.set(nav, timeoutIds)
+}
+
+function initActiveBranchScrollObserver(nav: HTMLElement) {
+    if (
+        typeof ResizeObserver === 'undefined' ||
+        navV2ActiveBranchScrollObservers.has(nav)
+    ) {
+        return
+    }
+
+    const observer = new ResizeObserver(() => {
+        if (!nav.isConnected) {
+            observer.disconnect()
+            navV2ActiveBranchScrollObservers.delete(nav)
+            return
+        }
+
+        scheduleActiveBranchScroll(nav)
+    })
+    navV2ActiveBranchScrollObservers.set(nav, observer)
+
+    const container = findNavV2ScrollContainer(nav)
+    const stickyChrome =
+        container?.previousElementSibling instanceof HTMLElement
+            ? container.previousElementSibling
+            : null
+
+    if (container) {
+        observer.observe(container)
+    }
+    if (stickyChrome) {
+        observer.observe(stickyChrome)
+    }
 }
 
 function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
@@ -568,60 +708,59 @@ function pickDeepestAnchorMatchingPath(
 function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
     const link = pickDeepestAnchorMatchingPath(nav, pathnameRaw)
     if (!link) {
+        collapseInactiveFolders(nav, new Set())
         return
     }
 
     const collapsedIds = readCollapsedFolderIds()
+    const activeCheckboxes = new Set<HTMLInputElement>()
+    let wroteCollapsedIds = false
 
     let el: Element | null = link.parentElement
     while (el && el !== nav) {
         if (el.matches('li')) {
             const cb = el.querySelector<HTMLInputElement>(
-                ':scope > .peer input[type=checkbox]'
+                ':scope > .nav-folder-peer input[type=checkbox]'
             )
             if (cb && cb.id) {
-                const rowLink = el.querySelector<HTMLElement>(
-                    ':scope > .nav-folder-peer > a.sidebar-link'
-                )
-                const currentIsThisFolderRow =
-                    rowLink !== null && rowLink === link
-
+                activeCheckboxes.add(cb)
                 if (collapsedIds.has(cb.id)) {
-                    if (currentIsThisFolderRow) {
-                        // User collapsed this folder while its index is current; HTML swap often
-                        // re-checks the input — force closed so a second click can stay collapsed.
-                        cb.checked = false
-                    } else {
-                        collapsedIds.delete(cb.id)
-                        writeCollapsedFolderIds(collapsedIds)
-                        cb.checked = true
-                    }
-                } else {
-                    cb.checked = true
+                    collapsedIds.delete(cb.id)
+                    wroteCollapsedIds = true
                 }
+                cb.checked = true
             } else if (cb) {
+                activeCheckboxes.add(cb)
                 cb.checked = true
             }
         }
 
         el = el.parentElement
     }
+
+    if (wroteCollapsedIds) {
+        writeCollapsedFolderIds(collapsedIds)
+    }
+
+    collapseInactiveFolders(nav, activeCheckboxes)
 }
 
 /**
  * Expand all ancestor collapsible sections that contain the current page link,
- * so that navigating directly to a URL reveals its location in the sidebar.
- * Does not re-open a folder row that the user collapsed while that folder index
- * is the current page (see session storage + folder row link match).
+ * so that navigating directly to a URL reveals its location in the sidebar,
+ * while collapsing folders that are outside the active branch.
  */
 function expandToCurrentPage(nav: HTMLElement) {
     if (isOnSectionRootPage(nav)) {
+        const activeCheckboxes = new Set<HTMLInputElement>()
         const topLevelFolders = nav.querySelectorAll<HTMLInputElement>(
-            '#nav-tree > li > .peer > input[type="checkbox"]'
+            '#nav-tree > li.group-navigation > .nav-folder-peer > input[type="checkbox"]'
         )
         if (topLevelFolders.length === 1) {
             topLevelFolders[0].checked = true
+            activeCheckboxes.add(topLevelFolders[0])
         }
+        collapseInactiveFolders(nav, activeCheckboxes)
         return
     }
     expandToCurrentPageForPath(nav, window.location.pathname)
@@ -704,6 +843,8 @@ export function initNavV2(nav: HTMLElement) {
     markCurrentPage(nav)
     expandToCurrentPage(nav)
     applyActiveSubtreeHighlight(nav)
+    initActiveBranchScrollObserver(nav)
+    scheduleActiveBranchScroll(nav)
     initNavV2FolderLayoutWarmup(nav)
     requestAnimationFrame(() => {
         requestAnimationFrame(() => initNavV2TruncationTooltips(nav))
