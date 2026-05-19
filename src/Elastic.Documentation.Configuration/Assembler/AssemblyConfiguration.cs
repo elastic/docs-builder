@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 

@@ -4,7 +4,7 @@
 
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using Elastic.Documentation.Api.Core.Search;
+using Elastic.Documentation.Search;
 
 namespace Elastic.Assembler.IntegrationTests.Search;
 
@@ -55,18 +55,18 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 		// Assert - Response should be successful
 		response.EnsureSuccessStatusCode();
 
-		var searchResponse = await response.Content.ReadFromJsonAsync<NavigationSearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var searchResponse = await response.Content.ReadFromJsonAsync<FullSearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
 		searchResponse.Should().NotBeNull("Search response should be deserialized");
 
 		// Log results for debugging
 		output.WriteLine($"Query: {query}");
 		output.WriteLine($"Total results: {searchResponse.TotalResults}");
-		output.WriteLine($"Results returned: {searchResponse.Results.Count()}");
+		output.WriteLine($"Results returned: {searchResponse.Results.Count}");
 
 		if (searchResponse.Results.Any())
 		{
 			output.WriteLine("First result:");
-			var firstResult = searchResponse.Results.First();
+			var firstResult = searchResponse.Results[0];
 			output.WriteLine($"  Title: {firstResult.Title}");
 			output.WriteLine($"  URL: {firstResult.Url}");
 			output.WriteLine($"  Score: {firstResult.Score}");
@@ -76,7 +76,7 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 		searchResponse.Results.Should().NotBeEmpty($"Search for '{query}' should return results");
 
 		// Assert - First result should match expected URL
-		var actualFirstResultUrl = searchResponse.Results.First().Url;
+		var actualFirstResultUrl = searchResponse.Results[0].Url;
 		actualFirstResultUrl.Should().Be(expectedFirstResultUrl,
 			$"First result for query '{query}' should be the expected documentation page");
 	}
@@ -93,12 +93,12 @@ public class SearchIntegrationTests(SearchBootstrapFixture searchFixture, ITestO
 		// Act - Get first page
 		var page1Response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=1", TestContext.Current.CancellationToken);
 		page1Response.EnsureSuccessStatusCode();
-		var page1Data = await page1Response.Content.ReadFromJsonAsync<NavigationSearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var page1Data = await page1Response.Content.ReadFromJsonAsync<FullSearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
 
 		// Act - Get second page
 		var page2Response = await searchFixture.HttpClient.GetAsync($"/docs/_api/v1/search?q={Uri.EscapeDataString(query)}&page=2", TestContext.Current.CancellationToken);
 		page2Response.EnsureSuccessStatusCode();
-		var page2Data = await page2Response.Content.ReadFromJsonAsync<NavigationSearchApiResponse>(cancellationToken: TestContext.Current.CancellationToken);
+		var page2Data = await page2Response.Content.ReadFromJsonAsync<FullSearchResponse>(cancellationToken: TestContext.Current.CancellationToken);
 
 		// Assert
 		page1Data.Should().NotBeNull();

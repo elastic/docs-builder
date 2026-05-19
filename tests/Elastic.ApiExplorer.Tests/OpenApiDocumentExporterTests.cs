@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Versions;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
