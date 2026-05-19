@@ -252,6 +252,111 @@ groups:
 	}
 }
 
+/// <summary>
+/// Uses the real kibana-general-settings.yml fixture.
+/// In that file every setting has an explicit applies_to with either ech: ga or ech: unavailable.
+/// - execution_context.enabled → ech: ga, self: ga  → ECH visible
+/// - console.ui.enabled        → ech: unavailable, self: ga → ECH hidden
+/// Settings with no applies_to at all (universally available) are also visible.
+/// </summary>
+public class DeploymentFilterEchOnKibanaGeneralSettings(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+$$"""
+:::{settings} /{{GeneralSettingsPath.Replace("docs/", "")}}
+:deployment: ech
+:::
+"""
+)
+{
+	private static readonly string GeneralSettingsPath = "docs/testing/kibana-general-settings.yml";
+
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		var fullPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, GeneralSettingsPath);
+		fileSystem.AddFile(GeneralSettingsPath, System.IO.File.ReadAllText(fullPath));
+	}
+
+	[Fact]
+	public void ShowsEchGaSetting() =>
+		Html.Should().Contain("execution_context.enabled");
+
+	[Fact]
+	public void HidesEchUnavailableSetting() =>
+		Html.Should().NotContain("console.ui.enabled");
+}
+
+/// <summary>
+/// When a setting has applies_to but ECH is not mentioned at all (only self: ga),
+/// it must be treated as unavailable for ECH — "missing means unavailable".
+/// Uses the real kibana-general-settings.yml which has self-only and ech:unavailable patterns.
+/// </summary>
+public class DeploymentFilterEchMissingMeansUnavailable(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/self-only.yml
+:deployment: ech
+:::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/self-only.yml", """
+groups:
+  - group: Example
+    settings:
+      - setting: self.only.setting
+        description: Only self is listed — ech is missing so unavailable.
+        applies_to:
+          self: ga
+      - setting: ech.explicit.setting
+        description: ECH is explicitly listed as ga.
+        applies_to:
+          ech: ga
+          self: ga
+      - setting: no.applies.to.setting
+        description: No applies_to at all — universally available.
+""");
+	}
+
+	[Fact]
+	public void HidesSettingWhenEchIsMissing() =>
+		Html.Should().NotContain("self.only.setting");
+
+	[Fact]
+	public void ShowsSettingWithExplicitEchGa() =>
+		Html.Should().Contain("ech.explicit.setting");
+
+	[Fact]
+	public void ShowsSettingWithNoAppliesTo() =>
+		Html.Should().Contain("no.applies.to.setting");
+}
+
+public class DeploymentFilterWithUnknownValueEmitsWarning(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+$$"""
+:::{settings} /{{GeneralSettingsPath.Replace("docs/", "")}}
+:deployment: invalid-deployment
+:::
+"""
+)
+{
+	private static readonly string GeneralSettingsPath = "docs/testing/kibana-general-settings.yml";
+
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		var fullPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, GeneralSettingsPath);
+		fileSystem.AddFile(GeneralSettingsPath, System.IO.File.ReadAllText(fullPath));
+	}
+
+	[Fact]
+	public void EmitsWarning() =>
+		Collector.Diagnostics.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("invalid-deployment"));
+
+	[Fact]
+	public void StillRendersAllSettingsWhenFilterIsInvalid() =>
+		Html.Should().Contain("execution_context.enabled");
+}
+
 public class AppliesToInlineRoleInDescriptionRendersAsBadge(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
 """
 :::{settings} _settings/applies-to-in-description.yml
