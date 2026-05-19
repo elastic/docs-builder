@@ -8,6 +8,7 @@ let navV2FolderLinkToggleBound = false
 let navV2OptimisticNavigateBound = false
 
 let navV2TruncationTippyInstances: Instance[] = []
+const navV2ActiveBranchScrollTimeouts = new WeakMap<HTMLElement, number[]>()
 
 function readCollapsedFolderIds(): Set<string> {
     try {
@@ -227,6 +228,7 @@ function ensureNavV2OptimisticCurrentOnNavigate() {
             markCurrentPageForPath(nav, path)
             expandToCurrentPageForPath(nav, path)
             applyActiveSubtreeHighlight(nav)
+            scheduleActiveBranchScroll(nav)
         },
         true
     )
@@ -296,6 +298,90 @@ function collapseInactiveFolders(
             cb.checked = false
         }
     })
+}
+
+function findNavV2ScrollContainer(nav: HTMLElement): HTMLElement | null {
+    return nav.closest<HTMLElement>('.pages-nav-menu')
+}
+
+function pickActiveBranchScrollTarget(
+    nav: HTMLElement,
+    current: HTMLAnchorElement
+): HTMLElement | null {
+    let target = current.closest<HTMLElement>('li')
+    let walk = target
+    while (walk && walk !== nav) {
+        if (walk.matches('li.group-navigation')) {
+            target = walk
+        }
+
+        walk = walk.parentElement?.closest<HTMLElement>('li') ?? null
+    }
+
+    return target
+}
+
+function scrollActiveBranchIntoView(nav: HTMLElement) {
+    const container = findNavV2ScrollContainer(nav)
+    if (!container) {
+        return
+    }
+
+    const current = deepestCurrentSidebarLink(nav)
+    if (!current) {
+        return
+    }
+
+    const target = pickActiveBranchScrollTarget(nav, current)
+    if (!target) {
+        return
+    }
+
+    const containerRect = container.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const topPadding = 8
+    const bottomPadding = 16
+    const visibleTop = containerRect.top + topPadding
+    const visibleBottom = containerRect.bottom - bottomPadding
+
+    if (targetRect.top >= visibleTop && targetRect.bottom <= visibleBottom) {
+        return
+    }
+
+    const targetTop =
+        targetRect.top - containerRect.top + container.scrollTop - topPadding
+    container.scrollTop = Math.max(0, targetTop)
+}
+
+function scheduleActiveBranchScroll(nav: HTMLElement) {
+    const existingTimeouts = navV2ActiveBranchScrollTimeouts.get(nav)
+    if (existingTimeouts !== undefined) {
+        existingTimeouts.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    }
+
+    const run = () => {
+        if (!nav.isConnected) {
+            return
+        }
+
+        scrollActiveBranchIntoView(nav)
+    }
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            run()
+        })
+    })
+
+    const timeoutIds = [260, 520].map((delay, index) =>
+        window.setTimeout(() => {
+            run()
+            if (index === 1) {
+                navV2ActiveBranchScrollTimeouts.delete(nav)
+            }
+        }, delay)
+    )
+    navV2ActiveBranchScrollTimeouts.set(nav, timeoutIds)
 }
 
 function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
@@ -720,6 +806,7 @@ export function initNavV2(nav: HTMLElement) {
     markCurrentPage(nav)
     expandToCurrentPage(nav)
     applyActiveSubtreeHighlight(nav)
+    scheduleActiveBranchScroll(nav)
     initNavV2FolderLayoutWarmup(nav)
     requestAnimationFrame(() => {
         requestAnimationFrame(() => initNavV2TruncationTooltips(nav))
