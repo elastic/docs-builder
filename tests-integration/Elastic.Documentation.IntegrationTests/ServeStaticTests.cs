@@ -6,7 +6,7 @@ using Aspire.Hosting.Testing;
 using AwesomeAssertions;
 using Elastic.Documentation.Aspire;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
 {

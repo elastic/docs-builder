@@ -24,7 +24,7 @@ using Microsoft.Extensions.Hosting;
 using Nullean.ScopedFileSystem;
 using RazorSlices;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
 {

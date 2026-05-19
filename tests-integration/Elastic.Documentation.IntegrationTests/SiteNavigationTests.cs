@@ -17,7 +17,7 @@ using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class SiteNavigationTests : IAsyncLifetime
 {

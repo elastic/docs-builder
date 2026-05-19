@@ -5,15 +5,15 @@
 using System.Net;
 using System.Text;
 using AwesomeAssertions;
-using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using Elastic.Documentation.Api.Telemetry;
+using Elastic.Documentation.Api.Tests.Fixtures;
 using FakeItEasy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Elastic.Documentation.Api.IntegrationTests;
+namespace Elastic.Documentation.Api.Tests;
 
-public class OtlpProxyIntegrationTests : IAsyncLifetime
+public class OtlpProxyTests : IAsyncLifetime
 {
 	private const string OtlpEndpoint = "http://localhost:4318";
 

@@ -5,7 +5,7 @@
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class TestLogger(ITestOutputHelper? output) : ILogger
 {

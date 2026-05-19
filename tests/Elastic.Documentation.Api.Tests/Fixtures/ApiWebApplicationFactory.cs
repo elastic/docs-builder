@@ -16,7 +16,7 @@ using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
 
-namespace Elastic.Documentation.Api.IntegrationTests.Fixtures;
+namespace Elastic.Documentation.Api.Tests.Fixtures;
 
 /// <summary>
 /// Custom WebApplicationFactory for testing the API with mocked services.

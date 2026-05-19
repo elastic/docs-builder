@@ -185,6 +185,10 @@ jobs:
 
   integration:
     runs-on: docs-builder-latest-16
+    environment: integration-tests
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v6
 
@@ -194,6 +198,21 @@ jobs:
 
       - name: Install Aspire workload
         run: dotnet workload install aspire
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-integration-tests
+          aws-region: us-east-1
+
+      - name: Fetch ES credentials
+        run: |
+          ES_URL=$(aws ssm get-parameter --name /elastic-docs-v3/prod/docs-elasticsearch-github-actions-readonly-url --with-decryption --query Parameter.Value --output text)
+          ES_KEY=$(aws ssm get-parameter --name /elastic-docs-v3/prod/docs-elasticsearch-github-actions-readonly-api-key --with-decryption --query Parameter.Value --output text)
+          echo "::add-mask::$ES_URL"
+          echo "::add-mask::$ES_KEY"
+          dotnet user-secrets set "DocumentationElasticUrl" "$ES_URL" --project aspire
+          dotnet user-secrets set "DocumentationElasticApiKey" "$ES_KEY" --project aspire
 
       - name: Integration Tests
         run: dotnet run --project build -c release -- integrate

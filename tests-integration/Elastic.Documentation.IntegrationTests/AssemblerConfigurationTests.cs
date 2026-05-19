@@ -11,7 +11,7 @@ using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class PublicOnlyAssemblerConfigurationTests
 {
