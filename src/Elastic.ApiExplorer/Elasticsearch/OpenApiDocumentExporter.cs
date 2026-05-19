@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -169,7 +170,7 @@ public partial class OpenApiDocumentExporter(
 
 				yield return new DocumentationDocument
 				{
-					Type = "api",
+					ContentType = "api",
 					Url = url,
 					Title = title,
 					SearchTitle = title,

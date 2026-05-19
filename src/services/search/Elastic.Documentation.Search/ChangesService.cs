@@ -2,12 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
+using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Internal.Search.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 
@@ -88,7 +90,7 @@ public partial class ChangesService(
 		}
 	}
 
-	private async Task<SearchResponse<DocumentationDocument>> Search(
+	private async Task<EsSearchResponse> Search(
 		ChangesInternalRequest request, string pitId, int fetchSize, Cancel ctx
 	) =>
 		await clientAccessor.Client.SearchAsync<DocumentationDocument>(s =>
@@ -128,12 +130,12 @@ public partial class ChangesService(
 			}
 		}, ctx);
 
-	private static bool IsExpiredPit(SearchResponse<DocumentationDocument> response) =>
+	private static bool IsExpiredPit(EsSearchResponse response) =>
 		response.ElasticsearchServerError?.Error?.Type is "search_phase_execution_exception"
 		|| response.ElasticsearchServerError?.Error?.Reason?.Contains("point in time", StringComparison.OrdinalIgnoreCase) == true
 		|| response.ElasticsearchServerError?.Error?.Reason?.Contains("No search context found", StringComparison.OrdinalIgnoreCase) == true;
 
-	private static ChangesResult BuildResult(SearchResponse<DocumentationDocument> response, int pageSize)
+	private static ChangesResult BuildResult(EsSearchResponse response, int pageSize)
 	{
 		var hits = response.Hits.ToList();
 		var hasMore = hits.Count > pageSize;

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
@@ -70,7 +71,7 @@ public class DocumentGateway(
 					Url = p.Url
 				}).ToArray(),
 				Headings = doc.Headings,
-				Links = doc.Links,
+				Links = doc.Links ?? [],
 				AiShortSummary = doc.AiShortSummary,
 				AiRagOptimizedSummary = doc.AiRagOptimizedSummary,
 				AiQuestions = doc.AiQuestions,
@@ -134,7 +135,7 @@ public class DocumentGateway(
 				Url = doc.Url,
 				Title = doc.Title,
 				HeadingCount = doc.Headings.Length,
-				LinkCount = doc.Links.Length,
+				LinkCount = doc.Links?.Length ?? 0,
 				ParentCount = doc.Parents.Length,
 				BodyLength = doc.Body?.Length ?? 0,
 				Headings = doc.Headings,

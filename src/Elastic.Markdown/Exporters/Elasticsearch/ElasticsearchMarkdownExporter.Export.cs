@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation;
@@ -121,7 +122,6 @@ public partial class ElasticsearchMarkdownExporter
 		{
 			Url = url,
 			Title = file.Title,
-			Type = "doc",
 			SearchTitle = file.Title, //updated in CommonEnrichments
 			Body = body,
 			StrippedBody = strippedBody,

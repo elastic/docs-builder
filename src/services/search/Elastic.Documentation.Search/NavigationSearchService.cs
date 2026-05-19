@@ -2,12 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using System.Globalization;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Explain;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
+using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Internal.Search.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 
@@ -132,7 +134,7 @@ public partial class NavigationSearchService(ElasticsearchClientAccessor clientA
 	}
 
 	private NavigationSearchResult ProcessSearchResponse(
-		SearchResponse<DocumentationDocument> response,
+		EsSearchResponse response,
 		string searchQuery)
 	{
 		var totalHits = (int)response.Total;

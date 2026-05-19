@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Channels;
@@ -175,7 +176,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ExportMaxConcurrency = _endpoint.IndexNumThreads,
 			ExportMaxRetries = _endpoint.MaxRetries
 		};
-		options.SerializerContext = SourceGenerationContext.Default;
+		options.SerializerContext = Elastic.Documentation.Serialization.SourceGenerationContext.Default;
 		options.ExportResponseCallback = (response, buffer) =>
 		{
 			var sent = response.Items?.Count ?? 0;

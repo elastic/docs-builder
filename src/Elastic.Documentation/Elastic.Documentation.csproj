@@ -11,7 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\services\search\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
+    <!-- Temporary on-disk reference to the shared search Contract owned by website-search-data.
+         Resolves through a sibling repo checkout under ~/.supacode/repos/. Swap to a
+         <PackageReference Include="Elastic.Internal.Search.Contract" /> once the package is
+         published to a real NuGet feed. -->
+    <ProjectReference Include="..\..\..\..\..\website-ai-search\feature\search-contract\src\Elastic.Internal.Search.Contract\Elastic.Internal.Search.Contract.csproj" />
   </ItemGroup>
 
   <ItemGroup>

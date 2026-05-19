@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using System.Globalization;
 using System.Text.Json;
 using AwesomeAssertions;
@@ -15,14 +16,14 @@ namespace Elastic.Markdown.Tests.Search;
 
 public class DocumentationDocumentSerializationTests
 {
-	private readonly JsonSerializerOptions _options = new(SourceGenerationContext.Default.Options);
+	private readonly JsonSerializerOptions _options = new(Elastic.Documentation.Serialization.SourceGenerationContext.Default.Options);
 
 	[Fact]
 	public void SerializeDocumentWithStackAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/page",
 			Title = "Test Page",
 			SearchTitle = "Test Page",
@@ -56,7 +57,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/deployment",
 			Title = "Deployment Test",
 			SearchTitle = "Deployment Test",
@@ -98,7 +99,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/serverless",
 			Title = "Serverless Test",
 			SearchTitle = "Serverless Test",
@@ -140,7 +141,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/product",
 			Title = "Product Test",
 			SearchTitle = "Product Test",
@@ -170,7 +171,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/apm",
 			Title = "APM Test",
 			SearchTitle = "APM Test",
@@ -212,7 +213,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/complex",
 			Title = "Complex Test",
 			SearchTitle = "Complex Test",
@@ -249,7 +250,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/no-applies",
 			Title = "No Applies Test",
 			SearchTitle = "No Applies Test",
@@ -276,7 +277,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/empty-applies",
 			Title = "Empty Applies Test",
 			SearchTitle = "Empty Applies Test",
@@ -306,7 +307,7 @@ public class DocumentationDocumentSerializationTests
 
 		var original = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/roundtrip",
 			Title = "Round Trip Test",
 			SearchTitle = "Round Trip Test",
@@ -345,7 +346,7 @@ public class DocumentationDocumentSerializationTests
 		{
 			var doc = new DocumentationDocument
 			{
-				Type = type,
+				ContentType = type,
 				Url = $"/test/{type}",
 				Title = "T",
 				SearchTitle = "T"
@@ -355,7 +356,7 @@ public class DocumentationDocumentSerializationTests
 			using var parsed = JsonDocument.Parse(json);
 			var root = parsed.RootElement;
 
-			root.GetProperty("type").GetString().Should().Be(type);
+			root.GetProperty("content_type").GetString().Should().Be(type);
 			root.GetProperty("content_type").GetString().Should().Be(type);
 		}
 	}
@@ -377,7 +378,9 @@ public class DocumentationDocumentSerializationTests
 		var deserialized = JsonSerializer.Deserialize<DocumentationDocument>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized.Type.Should().Be("doc");
+		// Type is now the polymorphic CLR discriminator (always "docs" for DocumentationDocument);
+		// docs-builder's legacy `type: "doc"` JSON value is no longer mapped to a property.
+		deserialized.Type.Should().Be("docs");
 		deserialized.ContentType.Should().Be("archived-docs");
 	}
 
@@ -386,7 +389,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/multiple",
 			Title = "Multiple Test",
 			SearchTitle = "Multiple Test",

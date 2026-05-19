@@ -2,13 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using System.Text.RegularExpressions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search.Common;
 using Microsoft.Extensions.Logging;
-using EsHighlight = Elastic.Clients.Elasticsearch.Core.Search.HighlightDescriptor<Elastic.Documentation.Search.DocumentationDocument>;
+using EsHighlight = Elastic.Clients.Elasticsearch.Core.Search.HighlightDescriptor<Elastic.Internal.Search.DocumentationDocument>;
+using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Internal.Search.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 
@@ -348,7 +350,7 @@ public partial class FullSearchService(
 	/// Processes the search response into a FullSearchResult.
 	/// </summary>
 	private FullSearchResult ProcessSearchResponse(
-		SearchResponse<DocumentationDocument> response,
+		EsSearchResponse response,
 		string searchQuery,
 		bool isSemanticQuery,
 		bool includeHighlighting = true)

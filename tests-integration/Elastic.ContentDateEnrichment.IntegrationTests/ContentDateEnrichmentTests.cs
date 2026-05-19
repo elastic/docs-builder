@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Internal.Search;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -253,11 +254,11 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			Url = "test-discovery-url",
 			Title = "Discovery Test",
 			SearchTitle = "Discovery Test",
-			Type = "doc",
+			ContentType = "doc",
 			Hash = "testhash123",
 			ContentBodyHash = "contenthash123"
 		};
-		var serializedDoc = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
+		var serializedDoc = JsonSerializer.Serialize(doc, Elastic.Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
 
 		// Index via scripted upsert (same as HashedBulkUpdate)
 		await IndexFullDocumentViaScriptedUpsert(index, doc.Url, serializedDoc);
@@ -306,10 +307,10 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			Url = "url2",
 			Title = "Doc 2",
 			SearchTitle = "Doc 2",
-			Type = "doc",
+			ContentType = "doc",
 			ContentBodyHash = "hash_b"
 		};
-		var serialized2 = JsonSerializer.Serialize(doc2, SourceGenerationContext.Default.DocumentationDocument);
+		var serialized2 = JsonSerializer.Serialize(doc2, Elastic.Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
 		await IndexFullDocumentViaScriptedUpsert(index, "url2", serialized2);
 
 		// doc3: content_last_updated set to a real date (simulates unchanged doc from previous run)
@@ -453,11 +454,11 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 				Url = url,
 				Title = title,
 				SearchTitle = title,
-				Type = "doc",
+				ContentType = "doc",
 				Hash = contentHash,
 				ContentBodyHash = contentHash
 			};
-			var serialized = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
+			var serialized = JsonSerializer.Serialize(doc, Elastic.Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
 			await IndexFullDocumentViaScriptedUpsert(index, url, serialized);
 		}
 	}
