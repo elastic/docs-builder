@@ -49,6 +49,7 @@
     <Project Path="src/Elastic.Documentation.LinkIndex/Elastic.Documentation.LinkIndex.csproj" />
     <Project Path="src/Elastic.Documentation.Links/Elastic.Documentation.Links.csproj" />
     <Project Path="src/Elastic.Documentation.Navigation/Elastic.Documentation.Navigation.csproj" />
+    <Project Path="src/Elastic.Documentation.Search.Contract/Elastic.Documentation.Search.Contract.csproj" />
     <Project Path="src/Elastic.Documentation.ServiceDefaults/Elastic.Documentation.ServiceDefaults.csproj" />
     <Project Path="src/Elastic.Documentation.Site/Elastic.Documentation.Site.csproj" />
     <Project Path="src/Elastic.Documentation.Svg/Elastic.Documentation.Svg.csproj" />

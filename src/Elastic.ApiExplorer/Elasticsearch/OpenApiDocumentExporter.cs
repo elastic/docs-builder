@@ -178,7 +178,7 @@ public partial class OpenApiDocumentExporter(
 					StrippedBody = body,
 					Headings = headings,
 					Links = [],
-					Applies = applies,
+					Applies = applies?.ToAppliesTo(),
 					Parents =
 					[
 						new ParentDocument { Title = "API Reference", Url = "/docs/api" },

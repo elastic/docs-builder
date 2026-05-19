@@ -20,6 +20,7 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(LinkRegistry))]
 [JsonSerializable(typeof(LinkRegistryEntry))]
 [JsonSerializable(typeof(DocumentationDocument))]
+[JsonSerializable(typeof(AppliesToEntry))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(ApplicableTo))]
 [JsonSerializable(typeof(AppliesCollection))]
