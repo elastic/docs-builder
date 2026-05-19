@@ -5,7 +5,6 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;

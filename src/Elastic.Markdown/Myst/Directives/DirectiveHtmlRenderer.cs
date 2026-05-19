@@ -611,6 +611,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			GroupHeadingLevel = block.GroupHeadingLevel,
 			VersionsConfig = block.Build.VersionsConfiguration,
+			ActiveDeploymentFilter = block.ActiveDeploymentFilter,
 			RenderMarkdown = s =>
 			{
 				var normalized = SettingsMarkdownNormalizer.Normalize(s, settings.Product);

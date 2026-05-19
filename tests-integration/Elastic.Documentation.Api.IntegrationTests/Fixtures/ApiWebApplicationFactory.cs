@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
-using Elastic.Documentation.Api.Infrastructure;
-using Elastic.Documentation.Api.Infrastructure.Aws;
-using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Api;
+using Elastic.Documentation.Api.Aws;
+using Elastic.Documentation.Api.OpenTelemetry;
 using FakeItEasy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;

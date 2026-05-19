@@ -5,10 +5,10 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
@@ -18,7 +18,7 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for semantic search operations on Elastic documentation.
 /// </summary>
 [McpServerToolType]
-public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
+public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchTools> logger)
 {
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
@@ -70,7 +70,7 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 			var response = new SemanticSearchResponse
 			{
 				Query = query,
-				TotalHits = result.TotalHits,
+				TotalHits = result.TotalResults,
 				IsSemanticQuery = result.IsSemanticQuery,
 				Results = result.Results.Select(r => new SearchResultDto
 				{

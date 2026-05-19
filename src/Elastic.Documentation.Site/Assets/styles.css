@@ -244,7 +244,7 @@ body:has([data-nav-v2]) aside.sidebar {
 	+ ul.docs-sidebar-nav-v2__subsection:has(
 		> li > .docs-sidebar-nav-v2__label--nested
 	) {
-	gap: 0.5rem !important;
+	gap: 8px !important;
 }
 
 /*
@@ -310,31 +310,38 @@ body:has([data-nav-v2]) aside.sidebar {
 	ul.docs-sidebar-nav-v2__tree
 	> li:has(> .docs-sidebar-nav-v2__label--top) {
 	margin-top: 0;
-	padding: 0 0 24px 0;
+	padding: 0 0 16px;
 }
 
 #pages-nav
 	nav[data-nav-v2]
 	ul.docs-sidebar-nav-v2__tree
 	> li:has(> .docs-sidebar-nav-v2__label--top):last-child {
-	padding: 0 0 22px 0;
+	padding: 0 0 16px;
 }
 
-/* Breathing room when sticky chrome is empty (no search, no product dropdown). */
+/*
+ * Breathing room when Jump-to-page is absent: <navigation-search> is not rendered
+ * (see _TocTree.cshtml). Match the first tree row regardless of label vs link — the old
+ * li:first-child:has(> .label--top) selector missed link-first sidebars (e.g. surfaced index).
+ * Top inset: 4px when search chrome is absent.
+ */
 #pages-nav
+	#pages-nav-sticky-chrome:not(:has(navigation-search))
+	+ .pages-nav-menu
 	nav[data-nav-v2]
 	ul.docs-sidebar-nav-v2__tree
-	> li:first-child:has(> .docs-sidebar-nav-v2__label--top) {
-	padding-top: 12px;
+	> li:first-child {
+	padding-top: 4px;
 }
 
-/* Search already adds top chrome; drop extra padding on first tree row. */
+/* Search supplies top chrome; keep the first row flush. */
 #pages-nav
 	#pages-nav-sticky-chrome:has(navigation-search)
 	+ .pages-nav-menu
 	nav[data-nav-v2]
 	ul.docs-sidebar-nav-v2__tree
-	> li:first-child:has(> .docs-sidebar-nav-v2__label--top) {
+	> li:first-child {
 	padding-top: 0;
 }
 
@@ -356,8 +363,8 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
 	font-weight: 700;
 	font-size: 16px;
 	line-height: 24px;
-	color: #343741;
-	margin: 10px 0 10px;
+	color: #1c1e23;
+	margin: 16px 0;
 }
 
 /*
@@ -368,7 +375,7 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
 #pages-nav
 	nav[data-nav-v2]
 	.docs-sidebar-nav-v2__label--top:has(+ ul.docs-sidebar-nav-v2__subsection) {
-	margin: 12px 0 6px;
+	margin: 12px 0 8px;
 }
 
 /* Nav V2: nested subgroup section titles (non-clickable; color never overridden by active path) */
@@ -393,6 +400,19 @@ nav.docs-sidebar-nav-v2
 #pages-nav nav[data-nav-v2] li {
 	min-width: 0;
 	width: 100%;
+}
+
+/*
+ * Subsection heading copy (nested label + nav-text). Scoped to nested only so link/folder
+ * rows keep normal body styling.
+ */
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__label--nested.docs-sidebar-nav-v2__nav-text {
+	font-size: 12px;
+	color: #8a919e;
+	margin: 16px 0 8px;
+	font-weight: 700;
 }
 
 #pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__nav-text {
