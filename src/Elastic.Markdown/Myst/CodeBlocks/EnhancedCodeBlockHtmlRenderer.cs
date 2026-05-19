@@ -239,8 +239,8 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			_ = renderer.WriteLine("<ol class=\"code-callouts\">");
 			foreach (var c in block.UniqueCallOuts)
 			{
-				_ = renderer.WriteLine("<li>");
-				_ = renderer.WriteLine(RenderCalloutMarkdown(block, c).Value ?? string.Empty);
+				_ = renderer.Write("<li>");
+				_ = renderer.Write(RenderCalloutMarkdown(block, c).Value ?? string.Empty);
 				_ = renderer.WriteLine("</li>");
 			}
 
