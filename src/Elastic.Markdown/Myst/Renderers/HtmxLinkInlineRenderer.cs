@@ -94,7 +94,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 		// Write any additional attributes (like width/height from styling instructions)
 		_ = renderer.WriteAttributes(link);
 
-		// Set title to alt text for inline images (after any substitutions are processed)
+		// Always use alt text as title for accessibility consistency
 		if (link.FirstChild != null)
 		{
 			_ = renderer.Write(" title=\"");

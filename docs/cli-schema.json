@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "docs-builder",
-  "version": "1.0.0.0",
+  "version": "1.0.0",
   "description": null,
   "reservedMetaCommands": [
     "__complete",

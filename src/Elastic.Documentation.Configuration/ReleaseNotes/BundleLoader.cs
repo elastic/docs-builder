@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Versions;
 using YamlDotNet.Core;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;

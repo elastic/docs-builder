@@ -520,7 +520,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task EvaluatePr_WithoutProductLabels_OutputsProductLabelTable()
+	public async Task EvaluatePr_WithoutProductLabels_ReturnsNoLabelAndOutputsProductLabelTable()
 	{
 		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
 		var service = CreateService();
@@ -532,10 +532,113 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
 
 		result.Should().BeTrue();
-		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("status", "no-label");
+		VerifyOutputSet("should-generate", "false");
 		A.CallTo(() => _mockCore.SetOutputAsync("products", A<string>._)).MustNotHaveHappened();
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("@Product:ECH"))).MustHaveHappened();
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("cloud-hosted"))).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("label-table", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_SingleProductConfigured_WithoutLabel_AutoAssignsProduct()
+	{
+		var singleProductConfig = """
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    breaking-change: "type:breaking"
+			    enhancement:
+			    deprecation:
+			    docs:
+			    known-issue:
+			    other:
+			    regression:
+			    security:
+			  products:
+			    kibana: "@Product:Kibana"
+			""";
+		await WriteMinimalConfig(content: singleProductConfig);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:feature"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("products", "kibana");
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_SingleProductConfigured_WithMultipleLabelAliases_AutoAssignsProduct()
+	{
+		// Multi-label aliasing for the same product is still a single-product config — should
+		// not require any explicit label on the PR.
+		var configWithAliases = """
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    breaking-change: "type:breaking"
+			    enhancement:
+			    deprecation:
+			    docs:
+			    known-issue:
+			    other:
+			    regression:
+			    security:
+			  products:
+			    kibana:
+			      - "@Product:Kibana"
+			      - "@kibana"
+			""";
+		await WriteMinimalConfig(content: configWithAliases);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:feature"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("products", "kibana");
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task EvaluatePr_WithoutProductLabels_WithDefaultProducts_ReturnsProceed()
+	{
+		var configWithDefaults = """
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    breaking-change: "type:breaking"
+			    enhancement:
+			    deprecation:
+			    docs:
+			    known-issue:
+			    other:
+			    regression:
+			    security:
+			  products:
+			    cloud-hosted: "@Product:ECH"
+			    cloud-serverless: "@Product:ESS"
+			products:
+			  default:
+			    - product: cloud-hosted
+			      lifecycle: ga
+			""";
+		await WriteMinimalConfig(content: configWithDefaults);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:feature"]);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("should-generate", "true");
 	}
 
 	[Fact]

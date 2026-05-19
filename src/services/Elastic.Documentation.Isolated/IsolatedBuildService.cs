@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
