@@ -9,6 +9,7 @@ let navV2OptimisticNavigateBound = false
 
 let navV2TruncationTippyInstances: Instance[] = []
 const navV2ActiveBranchScrollTimeouts = new WeakMap<HTMLElement, number[]>()
+const navV2ActiveBranchScrollObservers = new WeakMap<HTMLElement, ResizeObserver>()
 
 function readCollapsedFolderIds(): Set<string> {
     try {
@@ -382,6 +383,39 @@ function scheduleActiveBranchScroll(nav: HTMLElement) {
         }, delay)
     )
     navV2ActiveBranchScrollTimeouts.set(nav, timeoutIds)
+}
+
+function initActiveBranchScrollObserver(nav: HTMLElement) {
+    if (
+        typeof ResizeObserver === 'undefined' ||
+        navV2ActiveBranchScrollObservers.has(nav)
+    ) {
+        return
+    }
+
+    const observer = new ResizeObserver(() => {
+        if (!nav.isConnected) {
+            observer.disconnect()
+            navV2ActiveBranchScrollObservers.delete(nav)
+            return
+        }
+
+        scheduleActiveBranchScroll(nav)
+    })
+    navV2ActiveBranchScrollObservers.set(nav, observer)
+
+    const container = findNavV2ScrollContainer(nav)
+    const stickyChrome =
+        container?.previousElementSibling instanceof HTMLElement
+            ? container.previousElementSibling
+            : null
+
+    if (container) {
+        observer.observe(container)
+    }
+    if (stickyChrome) {
+        observer.observe(stickyChrome)
+    }
 }
 
 function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
@@ -806,6 +840,7 @@ export function initNavV2(nav: HTMLElement) {
     markCurrentPage(nav)
     expandToCurrentPage(nav)
     applyActiveSubtreeHighlight(nav)
+    initActiveBranchScrollObserver(nav)
     scheduleActiveBranchScroll(nav)
     initNavV2FolderLayoutWarmup(nav)
     requestAnimationFrame(() => {
