@@ -239,14 +239,14 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// <summary>
 	/// Creates an ElasticsearchGateway instance using configuration from the distributed application.
 	/// </summary>
-	private static (NavigationSearchGateway Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
+	private static (NavigationSearchService Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
 	{
 		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
 		var configProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new FileSystem(), configurationSource: ConfigurationSource.Embedded);
 		var searchConfig = configProvider.CreateSearchConfiguration();
 
 		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);
-		var gateway = new NavigationSearchGateway(clientAccessor, NullLogger<NavigationSearchGateway>.Instance);
+		var gateway = new NavigationSearchService(clientAccessor, NullLogger<NavigationSearchService>.Instance);
 		return (gateway, clientAccessor);
 	}
 }

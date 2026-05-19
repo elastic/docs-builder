@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Versions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 

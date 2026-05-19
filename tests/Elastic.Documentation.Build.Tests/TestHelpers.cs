@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Versions;
 using FakeItEasy;
 using Microsoft.Extensions.Logging;
 

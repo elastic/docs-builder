@@ -6,11 +6,10 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Serialization;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.AppliesTo;
 
-[YamlSerializable]
 public record AppliesCollection : IReadOnlyCollection<Applicability>
 {
 	private readonly Applicability[] _items;
@@ -169,7 +168,6 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	public int Count => _items.Length;
 }
 
-[YamlSerializable]
 public record Applicability : IComparable<Applicability>, IComparable
 {
 	public ProductLifecycle Lifecycle { get; init; }
