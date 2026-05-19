@@ -22,6 +22,20 @@ public class SettingsViewModel
 	/// <summary>Markdown heading level for each group section (1–6).</summary>
 	public required int GroupHeadingLevel { get; init; }
 
+	/// <summary>
+	/// When set, only settings visible for this deployment type are rendered.
+	/// Accepted values: <c>ech</c>, <c>ece</c>, <c>eck</c>, <c>self</c>.
+	/// </summary>
+	public string? ActiveDeploymentFilter { get; init; }
+
+	public bool IsGroupVisible(SettingsGrouping group) =>
+		ActiveDeploymentFilter is null ||
+		DeploymentFilter.AnyVisible(group.Settings, ActiveDeploymentFilter, null);
+
+	public bool IsSettingVisible(Setting setting, ApplicableTo? inheritedAppliesTo) =>
+		ActiveDeploymentFilter is null ||
+		setting.IsVisibleForDeployment(ActiveDeploymentFilter, inheritedAppliesTo);
+
 	public string RenderAppliesToInline(ApplicableTo? appliesTo) =>
 		RenderAppliesToPlacement(appliesTo, ApplicabilityBadgePlacement.Combined);
 
