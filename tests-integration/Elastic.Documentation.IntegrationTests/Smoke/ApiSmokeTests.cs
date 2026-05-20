@@ -53,7 +53,8 @@ public class ApiSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 		}
 
 		var body = await response.Content.ReadFromJsonAsync<FullSearchResponse>(TestContext.Current.CancellationToken);
-		Assert.SkipWhen(body is null || body.TotalResults == 0 || body.Results.Count == 0, "search index has no data, skipping result assertions");
+		Assert.NotNull(body);
+		Assert.SkipWhen(body.TotalResults == 0 || body.Results.Count == 0, "search index has no data, skipping result assertions");
 		_ = body.Results.Should().NotBeEmpty("search for 'elasticsearch' should return results when the index is populated");
 		body.Results.Should().AllSatisfy(r =>
 		{
