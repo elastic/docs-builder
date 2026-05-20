@@ -6,13 +6,13 @@
  * to a child page without going through the section landing.
  */
 
-@layer components {
-	@media screen and (min-width: 768px) {
-		.secondary-nav-scroll-container {
-			overflow: visible;
-		}
+@media screen and (min-width: 768px) {
+	.secondary-nav-scroll-container {
+		overflow: visible;
 	}
+}
 
+@layer components {
 	.secondary-nav-dropdown {
 		display: inline-flex;
 		align-items: center;
