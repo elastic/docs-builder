@@ -21,11 +21,12 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public int Hints => _hints;
 
 	private Task? _started;
-	// True once the background reader delegate has actually begun executing.
-	// _started becoming non-null is not enough: Task.Run short-circuits to a
-	// canceled Task when given an already-canceled token, never running the
-	// delegate. We need to know the reader will actually drain the channel
-	// before we let writes accumulate in it.
+	// True once the background reader has passed its initial WaitToWrite setup
+	// and is about to enter the read loop. _started becoming non-null is not
+	// enough: Task.Run short-circuits to a canceled Task when given an
+	// already-canceled token, never running the delegate. Setting the flag
+	// only after WaitToWrite means we know the reader will actually drain
+	// the channel before we let writes accumulate in it.
 	private volatile bool _readerStarted;
 
 	public HashSet<string> OffendingFiles { get; } = [];
@@ -50,8 +51,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			return _started;
 		_started = Task.Run(async () =>
 		{
-			_readerStarted = true;
 			_ = await Channel.WaitToWrite(cancellationToken);
+			_readerStarted = true;
 			while (!Channel.CancellationToken.IsCancellationRequested)
 			{
 				try
