@@ -170,7 +170,7 @@ To apply additional filtering by the changelog type, areas, or products, add [ru
 
 :::{tip}
 If you are not creating changelogs when you create your pull requests, consider the `docs-builder changelog gh-release` command as a one-shot alternative to the `changelog add` and `changelog bundle` commands.
-It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
+It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [changelog gh-release](/cli/changelog/gh-release.md).
 :::
 
 ### Bundle by issues [changelog-bundle-issues]
