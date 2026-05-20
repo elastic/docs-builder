@@ -215,4 +215,6 @@ jobs:
           dotnet user-secrets set "DocumentationElasticApiKey" "$ES_KEY" --project aspire
 
       - name: Integration Tests
+        env:
+          ENVIRONMENT: prod
         run: dotnet run --project build -c release -- integrate

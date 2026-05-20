@@ -61,9 +61,10 @@ internal static class AspireHost
 
 		var elasticsearchRemote = builder.AddExternalService(ElasticsearchRemote, elasticsearchUrl);
 
-		// Use "dev" environment with a local ES container, "prod" when pointing at a remote cluster
-		// so the services look for the correct index prefix (docs-isolated.semantic-{env}-latest).
-		var serviceEnvironment = startElasticsearch ? "dev" : "prod";
+		// Read ENVIRONMENT from the host process (injected by CI or set locally).
+		// Determines the index prefix: docs-isolated.semantic-{env}-latest.
+		// Falls back to "prod" so external-ES runs default to the production index.
+		var serviceEnvironment = Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "prod";
 
 		var api = builder.AddProject<Projects.Elastic_Documentation_Api>(Api, launchProfileName: "http")
 			.WithArgs(GlobalArguments)

@@ -46,8 +46,11 @@ public class ApiSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 	{
 		using var client = fixture.CreateApiClient();
 		var response = await client.GetAsync("/docs/_api/v1/search?q=elasticsearch", TestContext.Current.CancellationToken);
-		Assert.SkipWhen(response.StatusCode == HttpStatusCode.InternalServerError, "search endpoint returned 500, ES index likely not configured");
-		_ = response.StatusCode.Should().Be(HttpStatusCode.OK);
+		if (!response.IsSuccessStatusCode)
+		{
+			var diagnostics = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+			Assert.Fail($"Search endpoint returned {(int)response.StatusCode} {response.StatusCode}:\n{diagnostics}");
+		}
 
 		var body = await response.Content.ReadFromJsonAsync<FullSearchResponse>(TestContext.Current.CancellationToken);
 		Assert.SkipWhen(body is null || body.TotalResults == 0 || body.Results.Count == 0, "search index has no data, skipping result assertions");
@@ -65,8 +68,11 @@ public class ApiSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 		using var client = fixture.CreateApiClient();
 		var since = Uri.EscapeDataString("2020-01-01T00:00:00Z");
 		var response = await client.GetAsync($"/docs/_api/v1/changes?since={since}", TestContext.Current.CancellationToken);
-		Assert.SkipWhen(response.StatusCode == HttpStatusCode.InternalServerError, "changes endpoint returned 500, ES index likely not configured");
-		_ = response.StatusCode.Should().Be(HttpStatusCode.OK);
+		if (!response.IsSuccessStatusCode)
+		{
+			var diagnostics = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+			Assert.Fail($"Changes endpoint returned {(int)response.StatusCode} {response.StatusCode}:\n{diagnostics}");
+		}
 
 		var body = await response.Content.ReadFromJsonAsync<ChangesResponse>(TestContext.Current.CancellationToken);
 		_ = body.Should().NotBeNull();
