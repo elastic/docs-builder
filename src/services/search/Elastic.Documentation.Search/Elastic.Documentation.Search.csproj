@@ -11,14 +11,12 @@
     <ItemGroup>
       <ProjectReference Include="..\..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
       <ProjectReference Include="..\..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
-      <!-- Temporary on-disk reference to the shared search Contract owned by website-search-data.
-           Swap to a <PackageReference Include="Elastic.Internal.Search.Contract" /> once the
-           package ships to a real NuGet feed. -->
-      <ProjectReference Include="..\..\..\..\..\..\..\website-ai-search\feature\search-contract\src\Elastic.Internal.Search.Contract\Elastic.Internal.Search.Contract.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Elastic.Clients.Elasticsearch" />
+      <PackageReference Include="Elastic.Internal.Search.Contract" />
+      <PackageReference Include="Elastic.Internal.Search.Elasticsearch" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Logging" />
     </ItemGroup>

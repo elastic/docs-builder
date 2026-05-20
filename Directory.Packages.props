@@ -47,12 +47,12 @@
     <PackageVersion Include="Generator.Equals" Version="4.0.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="KubernetesClient" Version="18.0.5" />
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
-    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.3.6" />
+    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.4.0" />
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.41.2" />
     <PackageVersion Include="Elastic.Mapping" Version="0.44.1" />
-    <PackageVersion Include="Elastic.Internal.Search.Contract" Version="0.0.0-alpha.0.138" />
-    <PackageVersion Include="Elastic.Internal.Search.Elasticsearch" Version="0.0.0-alpha.0.138" />
+    <PackageVersion Include="Elastic.Internal.Search.Contract" Version="0.0.0-alpha.0.139" />
+    <PackageVersion Include="Elastic.Internal.Search.Elasticsearch" Version="0.0.0-alpha.0.139" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.7.1" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
