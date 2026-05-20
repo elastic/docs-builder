@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Reflection;
-using Elastic.Documentation.Api.Core;
 using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +11,8 @@ namespace Elastic.Documentation.Mcp.Remote.Telemetry;
 
 public static class McpToolTelemetry
 {
-	private static readonly ActivitySource McpActivitySource = new(TelemetryConstants.McpToolSourceName);
+	internal const string McpToolSourceName = "Elastic.Documentation.Api.McpTools";
+	private static readonly ActivitySource McpActivitySource = new(McpToolSourceName);
 	private static readonly McpServerProfile ServerProfile = ResolveServerProfile();
 	private static readonly string? ServerVersion = ResolveServerVersion();
 

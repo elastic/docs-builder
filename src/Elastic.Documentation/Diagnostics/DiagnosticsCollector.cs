@@ -4,7 +4,6 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
-using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Documentation.Diagnostics;
 
@@ -41,11 +40,13 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
-		_ = ((IHostedService)this).StartAsync(ctx);
+		_ = EnsureStarted(ctx);
 		return this;
 	}
 
-	Task IHostedService.StartAsync(Cancel cancellationToken)
+	Task IDiagnosticsCollector.StartAsync(Cancel cancellationToken) => EnsureStarted(cancellationToken);
+
+	private Task EnsureStarted(Cancel cancellationToken)
 	{
 		if (_started is not null)
 			return _started;

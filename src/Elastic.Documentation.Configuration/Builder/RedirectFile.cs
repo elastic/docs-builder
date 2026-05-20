@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Links;
 using YamlDotNet.RepresentationModel;
-using static Elastic.Documentation.Configuration.SymlinkValidator;
+using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
 

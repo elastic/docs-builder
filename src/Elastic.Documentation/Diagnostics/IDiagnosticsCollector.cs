@@ -4,11 +4,10 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
-using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Documentation.Diagnostics;
 
-public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
+public interface IDiagnosticsCollector : IAsyncDisposable
 {
 	int Warnings { get; }
 	int Errors { get; }
@@ -23,6 +22,9 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 
 	/// True once the background reader is actively draining the channel.
 	bool IsStarted { get; }
+
+	Task StartAsync(Cancel cancellationToken);
+	Task StopAsync(Cancel cancellationToken);
 
 	void Emit(Severity severity, string file, string message);
 	void EmitError(string file, string message, Exception? e = null);

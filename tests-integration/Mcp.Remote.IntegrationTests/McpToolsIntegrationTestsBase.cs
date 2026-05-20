@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Mcp.Remote.Gateways;
@@ -48,10 +47,10 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		var clientAccessor = CreateElasticsearchClientAccessor();
 
 		var productsConfig = CreateProductsConfiguration();
-		var fullSearchGateway = new FullSearchGateway(
+		var fullSearchGateway = new FullSearchService(
 			clientAccessor,
 			productsConfig,
-			NullLogger<FullSearchGateway>.Instance
+			NullLogger<FullSearchService>.Instance
 		);
 
 		var searchTools = new SearchTools(fullSearchGateway, NullLogger<SearchTools>.Instance);
@@ -78,7 +77,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		var clientAccessor = CreateElasticsearchClientAccessor();
 
 		var productsConfig = CreateProductsConfiguration();
-		var fullSearchGateway = new FullSearchGateway(clientAccessor, productsConfig, NullLogger<FullSearchGateway>.Instance);
+		var fullSearchGateway = new FullSearchService(clientAccessor, productsConfig, NullLogger<FullSearchService>.Instance);
 		var coherenceTools = new CoherenceTools(fullSearchGateway, NullLogger<CoherenceTools>.Instance);
 		return (coherenceTools, clientAccessor);
 	}
