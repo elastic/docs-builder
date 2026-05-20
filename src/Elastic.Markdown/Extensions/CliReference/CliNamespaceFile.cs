@@ -17,6 +17,7 @@ public record CliNamespaceFile : IO.MarkdownFile
 	private readonly string? _binaryName;
 	private readonly string[] _fullPath;
 	private readonly string[]? _reservedMetaCommands;
+	private readonly List<CliShortcutSchema>? _shortcuts;
 
 	public CliNamespaceFile(
 		IFileInfo sourceFile,
@@ -27,7 +28,8 @@ public record CliNamespaceFile : IO.MarkdownFile
 		IFileInfo? supplementalDoc,
 		string[]? fullPath = null,
 		string? binaryName = null,
-		string[]? reservedMetaCommands = null
+		string[]? reservedMetaCommands = null,
+		List<CliShortcutSchema>? shortcuts = null
 	) : base(sourceFile, rootPath, parser, build)
 	{
 		_namespace = @namespace;
@@ -35,6 +37,7 @@ public record CliNamespaceFile : IO.MarkdownFile
 		_fullPath = fullPath ?? [@namespace.Segment];
 		_binaryName = binaryName;
 		_reservedMetaCommands = reservedMetaCommands;
+		_shortcuts = shortcuts;
 		Title = @namespace.Segment;
 	}
 
@@ -60,6 +63,6 @@ public record CliNamespaceFile : IO.MarkdownFile
 			: null;
 		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
 		return CliMarkdownGenerator.NamespacePage(_namespace, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
-			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error));
+			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error), _shortcuts);
 	}
 }
