@@ -93,7 +93,7 @@ For example, each time you create a new set of markdown files, you must include 
 :::
 ```
 
-Since this method requires generating files and adding file inclusions for each release, it's preferrable to [publish bundles directly](#changelog-directive).
+Since this method requires generating files and adding file inclusions for each release, it's preferable to [publish bundles directly](#changelog-directive).
 
 ## Create GFM output [gfm]
 
