@@ -147,14 +147,14 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// Links to these repositories will be hidden (commented out) in the rendered output.
 	/// Auto-detected from assembler configuration when available.
 	/// </summary>
-	public HashSet<string> PrivateRepositories { get; private set; } = [with(StringComparer.OrdinalIgnoreCase)];
+	public HashSet<string> PrivateRepositories { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// Feature IDs that should be hidden when rendering changelog entries.
 	/// Combined from all loaded bundles' hide-features fields.
 	/// Entries with matching feature-id values will be excluded from the output.
 	/// </summary>
-	public HashSet<string> HideFeatures { get; private set; } = [with(StringComparer.OrdinalIgnoreCase)];
+	public HashSet<string> HideFeatures { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// How to handle PR/issue links relative to private bundle repos (see :link-visibility: option).
