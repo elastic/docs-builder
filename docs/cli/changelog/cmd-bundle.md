@@ -136,3 +136,217 @@ Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/r
 :::{important}
 `bundle.link_allow_repos` requires a **resolved** bundle. Set `bundle.resolve: true` or pass `--resolve`.
 :::
+
+## Examples
+
+### Bundle by GitHub release [changelog-bundle-release-version]
+
+You can use `--release-version` to fetch pull request references directly from GitHub release notes and use them as the bundle filter.
+This is equivalent to building a PR list file manually and passing it with `--prs`, but without any file management.
+
+:::{important}
+Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.
+:::
+
+```sh
+docs-builder changelog bundle \
+  --release-version v1.34.0 \ <1>
+  --repo apm-agent-dotnet \ <2>
+  --owner elastic <3>
+  --output-products "apm-agent-dotnet 1.34.0 ga" <4>
+```
+
+1. The tag value that is used in the `GET /repos/{owner}/{repo}/releases/tags/{tag}` releases API.
+2. You must specify `--repo` or set `bundle.repo` in the changelog configuration file.
+3. If you don't specify `--owner`, it uses `bundle.owner` in the changelog configuration or else defaults to `elastic`.
+4. The bundle's product metadata is inferred automatically from the release tag and repository name; you can override that behavior with the `--output-products` option.
+
+:::{note}
+`--release-version` requires a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `gh` login) to fetch release details from the GitHub API.
+:::
+
+By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+:::{tip}
+If you are not creating changelogs when you create your pull requests, consider the `docs-builder changelog gh-release` command as a one-shot alternative to the `changelog add` and `changelog bundle` commands.
+It parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
+:::
+
+### Bundle by issues [changelog-bundle-issues]
+
+You can use the `--issues` option to create a bundle of changelogs that relate to those GitHub issues.
+Issues can be identified by a full URL (such as `https://github.com/owner/repo/issues/123`), a short format (such as `owner/repo#123`), or just a number (in which case `--owner` and `--repo` are required — or set via `bundle.owner` and `bundle.repo` in the configuration).
+
+```sh
+docs-builder changelog bundle --issues "12345,12346" \
+  --repo elasticsearch \
+  --owner elastic \
+  --output-products "elasticsearch 9.2.2 ga"
+```
+
+Alternatively, you can specify a path to a newline-delimited file that contains the issue URLS (for example, `--issues /path/to/file.txt`).
+In this case, you cannot use short URLs or numbers, each line must have a full URL.
+
+By default all changelogs that match issues in the list are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+### Bundle by pull requests [changelog-bundle-pr]
+
+You can use the `--prs` option to create a bundle of the changelogs that relate to those pull requests.
+
+Pull requests can be identified by a full URL (such as `https://github.com/owner/repo/pull/123`), a short format (such as `owner/repo#123`), or just a number.
+
+```sh
+docs-builder changelog bundle --prs "108875,135873,136886" \ <1>
+  --repo elasticsearch \ <2>
+  --owner elastic \ <3>
+  --output-products "elasticsearch 9.2.2 ga" <4>
+```
+
+1. The comma-separated list of pull request numbers to seek.
+2. The repository in the pull request URLs. Not required when using full PR URLs, or when `bundle.repo` is set in the changelog configuration.
+3. The owner in the pull request URLs. Not required when using full PR URLs, or when `bundle.owner` is set in the changelog configuration.
+4. The product metadata for the bundle. If it is not provided, it will be derived from all the changelog product values.
+
+Alternatively, you can specify a path to a newline-delimited file that contains the PR URLS (for example, `--prs /path/to/file.txt`).
+In this case, you cannot use short URLs or numbers, each line must have a full URL.
+For example:
+
+```txt
+https://github.com/elastic/elasticsearch/pull/108875
+https://github.com/elastic/elasticsearch/pull/135873
+https://github.com/elastic/elasticsearch/pull/136886
+https://github.com/elastic/elasticsearch/pull/137126
+```
+
+By default all changelogs that match PRs in the list are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+If you have changelog files that reference those pull requests, the command creates a file like this:
+
+```yaml
+products:
+- product: elasticsearch
+  target: 9.2.2
+  lifecycle: ga
+entries:
+- file:
+    name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
+    checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
+- file:
+    name: 1765507798-convert-bytestransportresponse-when-proxying-respo.yaml
+    checksum: c6dbd4730bf34dbbc877c16c042e6578dd108b62
+- file:
+    name: 1765507839-use-ivf_pq-for-gpu-index-build-for-large-datasets.yaml
+    checksum: 451d60283fe5df426f023e824339f82c2900311e
+```
+
+### Bundle by product [changelog-bundle-product]
+
+You can use the `--input-products` option to create a bundle of changelogs that match the product details.
+When using `--input-products`, you must provide all three parts: product, target, and lifecycle.
+Each part can be a wildcard (`*`) to match any value.
+
+:::{tip}
+If you use profile-based bundling, provide this information in the `bundle.profiles.<name>.products` field.
+:::
+
+```sh
+docs-builder changelog bundle \
+  --input-products "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta" <1>
+```
+
+1. Include all changelogs that have the `cloud-serverless` product identifier with target dates of either December 2 2025 (lifecycle `ga`) or December 6 2025 (lifecycle `beta`). For more information about product values, refer to [Product format](/cli/changelog/bundle.md#product-format).
+
+You can use wildcards in any of the three parts:
+
+```sh
+# Bundle any changelogs that have exact matches for either of these clauses
+docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 ga, elasticsearch 9.3.0 beta"
+
+# Bundle all elasticsearch changelogs regardless of target or lifecycle
+docs-builder changelog bundle --input-products "elasticsearch * *"
+
+# Bundle all cloud-serverless 2025-12-02 changelogs with any lifecycle
+docs-builder changelog bundle --input-products "cloud-serverless 2025-12-02 *"
+
+# Bundle any cloud-serverless changelogs with target starting with "2025-11-" and "ga" lifecycle
+docs-builder changelog bundle --input-products "cloud-serverless 2025-11-* ga"
+
+# Bundle all changelogs (equivalent to --all)
+docs-builder changelog bundle --input-products "* * *"
+```
+
+If you have changelog files that reference those product details, the command creates a file like this:
+
+```yaml
+products: <1>
+- product: cloud-serverless
+  target: 2025-12-02
+- product: cloud-serverless
+  target: 2025-12-06
+entries:
+- file:
+    name: 1765495972-fixes-enrich-and-lookup-join-resolution-based-on-m.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+- file:
+    name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
+    checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
+```
+
+1. By default these values match your `--input-products` (even if the changelogs have more products).
+To specify different product metadata, use the `--output-products` option.
+
+:::{note}
+When a changelog matches multiple `--input-products` filters, it appears only once in the bundle. This deduplication applies even when using `--all` or `--prs`.
+:::
+
+### Bundle by report
+
+You can use `--report` to filter by a promotion report:
+
+```sh
+# Extract PRs from a downloaded report and use them as the filter
+docs-builder changelog bundle \
+  --report ./promotion-report.html \
+  --directory ./docs/changelog \
+  --output ./docs/releases/bundle.yaml
+```
+
+By default all changelogs that match PRs in the promotion report are included in the bundle.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+### Hide features [changelog-bundle-hide-features]
+
+You can use the `--hide-features` option to embed feature IDs that should be hidden when the bundle is rendered. This is useful for features that are not yet ready for public documentation.
+
+```sh
+docs-builder changelog bundle \
+  --input-products "elasticsearch 9.3.0 *" \
+  --hide-features "feature:hidden-api,feature:experimental" \ <1>
+  --output /path/to/bundles/9.3.0.yaml
+```
+
+1. Feature IDs to hide. Changelogs with matching `feature-id` values will be commented out when rendered.
+
+The bundle output will include a `hide-features` field:
+
+```yaml
+products:
+- product: elasticsearch
+  target: 9.3.0
+hide-features:
+  - feature:hidden-api
+  - feature:experimental
+entries:
+- file:
+    name: 1765495972-new-feature.yaml
+    checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+```
+
+When this bundle is rendered (either via the `changelog render` command or the `{changelog}` directive), changelogs with `feature-id` values matching any of the listed features will be commented out in the output.
+
+:::{note}
+The `--hide-features` option on the `render` command and the `hide-features` field in bundles are **combined**. If you specify `--hide-features` on both the `bundle` and `render` commands, all specified features are hidden. The `{changelog}` directive automatically reads `hide-features` from all loaded bundles and applies them.
+:::
