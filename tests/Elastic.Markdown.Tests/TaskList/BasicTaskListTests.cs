@@ -12,7 +12,7 @@ public class UncheckedTaskItemTests(ITestOutputHelper output)
 {
     [Fact]
     public void RendersTaskListContainer() =>
-        Html.Should().Contain("""class="contains-task-list"""");
+        Html.Should().Contain("class=\"contains-task-list\"");
 
     [Fact]
     public void RendersTaskListItem() =>
