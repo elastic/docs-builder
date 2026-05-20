@@ -7,6 +7,12 @@
  */
 
 @layer components {
+	@media screen and (min-width: 768px) {
+		.secondary-nav-scroll-container {
+			overflow: visible;
+		}
+	}
+
 	.secondary-nav-dropdown {
 		display: inline-flex;
 		align-items: center;

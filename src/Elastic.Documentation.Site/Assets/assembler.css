@@ -27,6 +27,11 @@ body.air-gapped elastic-docs-header .euiHeader {
 	overflow-x: clip;
 }
 
+#elastic-nav-wrapper {
+	position: relative;
+	z-index: 40;
+}
+
 #elastic-nav {
 	@media screen and (min-width: 1200px) {
 		[data-component='Container'] {
