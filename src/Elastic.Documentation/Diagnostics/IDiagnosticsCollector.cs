@@ -21,8 +21,8 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 	HashSet<string> OffendingFiles { get; }
 	ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; }
 
-	/// True once StartAsync has been called and a background reader is draining the channel.
-	bool IsStarted => true;
+	/// True once the background reader is actively draining the channel.
+	bool IsStarted { get; }
 
 	void Emit(Severity severity, string file, string message);
 	void EmitError(string file, string message, Exception? e = null);

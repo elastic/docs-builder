@@ -21,6 +21,12 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public int Hints => _hints;
 
 	private Task? _started;
+	// True once the background reader delegate has actually begun executing.
+	// _started becoming non-null is not enough: Task.Run short-circuits to a
+	// canceled Task when given an already-canceled token, never running the
+	// delegate. We need to know the reader will actually drain the channel
+	// before we let writes accumulate in it.
+	private volatile bool _readerStarted;
 
 	public HashSet<string> OffendingFiles { get; } = [];
 
@@ -30,7 +36,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public bool NoHints { get; set; }
 
-	public bool IsStarted => _started is not null;
+	public bool IsStarted => _readerStarted;
 
 	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
@@ -44,6 +50,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			return _started;
 		_started = Task.Run(async () =>
 		{
+			_readerStarted = true;
 			_ = await Channel.WaitToWrite(cancellationToken);
 			while (!Channel.CancellationToken.IsCancellationRequested)
 			{
@@ -91,16 +98,22 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
 		Channel.TryComplete();
-		// If StartAsync was never called there is no background reader; drain
-		// synchronously so emitted diagnostics still reach HandleItem/outputs
-		// instead of deadlocking on Channel.Reader.Completion.
-		if (_started is null)
-		{
-			Drain();
+		// No reader was ever scheduled, so Write() gated everything out and the
+		// channel is empty — nothing to await, nothing to drain.
+		if (!_readerStarted)
 			return;
+
+		try
+		{
+			await _started!;
 		}
-		await _started;
-		await Channel.Reader.Completion;
+		catch (OperationCanceledException)
+		{
+			// Reader was canceled before its final Drain(); mop up below.
+		}
+		// Defensive: if the reader exited early via cancellation, items may
+		// still be queued. Drain them synchronously so they're not lost.
+		Drain();
 	}
 
 	public void EmitCrossLink(string link) => CrossLinks.Add(link);
@@ -108,7 +121,11 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public virtual void Write(Diagnostic diagnostic)
 	{
 		IncrementSeverityCount(diagnostic);
-		Channel.Write(diagnostic);
+		// Severity counters are always accurate; the channel only matters if a
+		// reader will actually drain it. Skip the channel write otherwise so
+		// items don't accumulate and StopAsync has nothing to wait for.
+		if (_readerStarted)
+			Channel.Write(diagnostic);
 	}
 
 	public void Emit(Severity severity, string file, string message) =>
