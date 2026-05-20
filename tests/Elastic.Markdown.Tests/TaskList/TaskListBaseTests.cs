@@ -5,7 +5,7 @@
 
 using Elastic.Markdown.Tests.Inline;
 
-namespace Elastic.Markdown.Tests.TaskLists;
+namespace Elastic.Markdown.Tests.TaskList;
 
 public abstract class TaskListTest(ITestOutputHelper output, string content)
-    : InlineTest(output, content);
+	: InlineTest(output, content);
