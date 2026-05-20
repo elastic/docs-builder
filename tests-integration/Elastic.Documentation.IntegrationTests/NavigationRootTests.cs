@@ -24,7 +24,7 @@ using Microsoft.Extensions.Hosting;
 using Nullean.ScopedFileSystem;
 using RazorSlices;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
 {
@@ -78,7 +78,7 @@ public class NavigationRootTests(DocumentationFixture fixture, ITestOutputHelper
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
 			return default;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
 			output.WriteLine(resource.Message);

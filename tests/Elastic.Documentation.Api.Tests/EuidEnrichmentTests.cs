@@ -7,17 +7,17 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.AskAi;
-using Elastic.Documentation.Api.IntegrationTests.Fixtures;
+using Elastic.Documentation.Api.Tests.Fixtures;
 using FakeItEasy;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Elastic.Documentation.Api.IntegrationTests;
+namespace Elastic.Documentation.Api.Tests;
 
 /// <summary>
 /// Integration tests for euid cookie enrichment in OpenTelemetry traces and logging.
 /// Uses WebApplicationFactory to test the real API configuration with mocked AskAi services.
 /// </summary>
-public class EuidEnrichmentIntegrationTests : IAsyncLifetime
+public class EuidEnrichmentTests : IAsyncLifetime
 {
 	private const string OtlpEndpoint = "http://localhost:4318";
 

@@ -5,6 +5,7 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
+using Elastic.Documentation.Aspire;
 using Elastic.Documentation.ServiceDefaults;
 using InMemLogger;
 using Microsoft.Extensions.Configuration;
@@ -12,9 +13,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Elastic.Documentation.Aspire.ResourceNames;
 
-[assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Assembler.IntegrationTests.DocumentationFixture))]
+[assembly: CaptureConsole, AssemblyFixture(typeof(Elastic.Documentation.IntegrationTests.DocumentationFixture))]
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public static class DistributedApplicationExtensions
 {
@@ -90,6 +91,14 @@ public class DocumentationFixture : IAsyncLifetime
 			_ = await DistributedApplication.ResourceNotifications
 				.WaitForResourceHealthyAsync(AssemblerServe, cancellationToken: TestContext.Current.CancellationToken)
 				.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
+
+			_ = await DistributedApplication.ResourceNotifications
+				.WaitForResourceHealthyAsync(ResourceNames.Api, cancellationToken: TestContext.Current.CancellationToken)
+				.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
+
+			_ = await DistributedApplication.ResourceNotifications
+				.WaitForResourceHealthyAsync(RemoteMcp, cancellationToken: TestContext.Current.CancellationToken)
+				.WaitAsync(TimeSpan.FromMinutes(3), TestContext.Current.CancellationToken);
 		}
 		catch (Exception e)
 		{
@@ -98,6 +107,10 @@ public class DocumentationFixture : IAsyncLifetime
 			throw new Exception($"{e.Message}: {string.Join(Environment.NewLine, InMemoryLogger.RecordedLogs.Reverse().Take(30).Reverse())}", e);
 		}
 	}
+
+	public HttpClient CreateApiClient() => DistributedApplication.CreateHttpClient(ResourceNames.Api);
+
+	public HttpClient CreateMcpClient() => DistributedApplication.CreateHttpClient(RemoteMcp);
 
 	private async ValueTask ValidateExitCode(string resourceName)
 	{
