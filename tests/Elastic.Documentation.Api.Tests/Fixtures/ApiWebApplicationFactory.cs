@@ -36,38 +36,50 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 	public List<LogRecord> ExportedLogRecords { get; } = [];
 	private readonly Action<IServiceCollection>? _configureServices;
 
-	public ApiWebApplicationFactory() : this(null)
+	private readonly string? _otlpEndpoint;
+
+	public ApiWebApplicationFactory() : this(null, null)
 	{
 	}
 
-	internal ApiWebApplicationFactory(Action<IServiceCollection>? configureServices) => _configureServices = configureServices;
+	internal ApiWebApplicationFactory(Action<IServiceCollection>? configureServices, string? otlpEndpoint = null)
+	{
+		_configureServices = configureServices;
+		_otlpEndpoint = otlpEndpoint;
+	}
 
 	/// <summary>
 	/// Creates a factory with specific services replaced by mocks.
 	/// This allows tests to inject fake implementations for testing specific scenarios.
 	/// </summary>
 	/// <param name="serviceReplacements">Action to configure service replacements</param>
+	/// <param name="otlpEndpoint">Optional OTLP endpoint to enable the OTLP proxy routes</param>
 	/// <returns>New factory instance with replaced services</returns>
-	public static ApiWebApplicationFactory WithMockedServices(Action<ServiceReplacementBuilder> serviceReplacements)
+	public static ApiWebApplicationFactory WithMockedServices(Action<ServiceReplacementBuilder> serviceReplacements, string? otlpEndpoint = null)
 	{
 		var builder = new ServiceReplacementBuilder();
 		serviceReplacements(builder);
-		return new ApiWebApplicationFactory(builder.Build());
+		return new ApiWebApplicationFactory(builder.Build(), otlpEndpoint);
 	}
 
 	/// <summary>
 	/// Creates a factory with custom service configuration.
 	/// </summary>
 	/// <param name="configureServices">Action to configure services directly</param>
+	/// <param name="otlpEndpoint">Optional OTLP endpoint to enable the OTLP proxy routes</param>
 	/// <returns>New factory instance with custom service configuration</returns>
-	public static ApiWebApplicationFactory WithMockedServices(Action<IServiceCollection> configureServices)
-		=> new(configureServices);
+	public static ApiWebApplicationFactory WithMockedServices(Action<IServiceCollection> configureServices, string? otlpEndpoint = null)
+		=> new(configureServices, otlpEndpoint);
 
 	protected override void ConfigureWebHost(IWebHostBuilder builder)
 	{
 		// Use instance ID in environment name to ensure each factory gets a unique server
 		// This prevents WebApplicationFactory from caching and reusing servers across different factory instances
 		builder.UseEnvironment($"Testing-{_instanceId}");
+
+		// Configure OTLP endpoint per-instance to avoid process-global env var races in parallel tests
+		if (_otlpEndpoint is not null)
+			builder.UseSetting("OTEL_EXPORTER_OTLP_ENDPOINT", _otlpEndpoint);
 
 		builder.ConfigureServices(services =>
 		{

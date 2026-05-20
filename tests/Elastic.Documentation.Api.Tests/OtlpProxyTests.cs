@@ -13,22 +13,9 @@ using Xunit;
 
 namespace Elastic.Documentation.Api.Tests;
 
-public class OtlpProxyTests : IAsyncLifetime
+public class OtlpProxyTests
 {
 	private const string OtlpEndpoint = "http://localhost:4318";
-
-	public ValueTask InitializeAsync()
-	{
-		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", OtlpEndpoint);
-		return ValueTask.CompletedTask;
-	}
-
-	public ValueTask DisposeAsync()
-	{
-		GC.SuppressFinalize(this);
-		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", null);
-		return ValueTask.CompletedTask;
-	}
 
 	[Fact]
 	public async Task OtlpProxyTracesEndpointForwardsToCorrectUrl()
@@ -54,7 +41,7 @@ public class OtlpProxyTests : IAsyncLifetime
 			// Replace the named HttpClient with our mock
 			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -118,7 +105,7 @@ public class OtlpProxyTests : IAsyncLifetime
 		{
 			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -175,7 +162,7 @@ public class OtlpProxyTests : IAsyncLifetime
 		{
 			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -229,7 +216,7 @@ public class OtlpProxyTests : IAsyncLifetime
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler)
 				.RemoveAllResilienceHandlers();
 #pragma warning restore EXTEXP0001
-		});
+		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
 		using var content = new StringContent("{}", Encoding.UTF8, "application/json");
