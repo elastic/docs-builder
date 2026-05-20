@@ -18,6 +18,7 @@ public class PlaceholderNavigationNode : INodeNavigationItem<INavigationModel, I
 	public PlaceholderNavigationNode(
 		string title,
 		string sitePrefix,
+		bool expandedByDefault,
 		IReadOnlyCollection<INavigationItem> children,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent
 	)
@@ -25,6 +26,7 @@ public class PlaceholderNavigationNode : INodeNavigationItem<INavigationModel, I
 		Id = ShortId.Create("placeholder-group", title);
 		NavigationTitle = title;
 		Url = ComputeUrl(title, sitePrefix);
+		ExpandedByDefault = expandedByDefault;
 		NavigationItems = children;
 		Parent = parent;
 		NavigationRoot = parent.NavigationRoot;
@@ -39,6 +41,9 @@ public class PlaceholderNavigationNode : INodeNavigationItem<INavigationModel, I
 
 	/// <inheritdoc />
 	public string NavigationTitle { get; }
+
+	/// <summary>Whether this folder starts expanded by default.</summary>
+	public bool ExpandedByDefault { get; }
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }

@@ -261,9 +261,24 @@ function getSiblingAccordionCheckboxes(
     ).filter((c) => c !== checkbox)
 }
 
+function isDefaultExpandedCheckbox(checkbox: HTMLInputElement) {
+    return checkbox.dataset.navV2ExpandedDefault === 'true'
+}
+
+function shouldKeepDefaultExpanded(
+    checkbox: HTMLInputElement,
+    collapsedIds: Set<string>
+) {
+    return (
+        isDefaultExpandedCheckbox(checkbox) &&
+        (!checkbox.id || !collapsedIds.has(checkbox.id))
+    )
+}
+
 /**
  * Accordion behaviour: when a folder is opened, collapse its siblings so
- * only one branch stays expanded at that nesting level.
+ * only one branch stays expanded at that nesting level. Default-expanded
+ * siblings stay open unless the user explicitly collapsed them this session.
  */
 function initAccordion(nav: HTMLElement) {
     nav.querySelectorAll<HTMLInputElement>(
@@ -277,7 +292,13 @@ function initAccordion(nav: HTMLElement) {
         cb.addEventListener('change', (e) => {
             const target = e.target as HTMLInputElement
             if (target.checked) {
+                const collapsedIds = readCollapsedFolderIds()
                 getSiblingAccordionCheckboxes(target).forEach((sibling) => {
+                    if (shouldKeepDefaultExpanded(sibling, collapsedIds)) {
+                        sibling.checked = true
+                        return
+                    }
+
                     sibling.checked = false
                 })
             }
@@ -297,10 +318,17 @@ function collapseInactiveFolders(
     nav: HTMLElement,
     activeCheckboxes: Set<HTMLInputElement>
 ) {
+    const collapsedIds = readCollapsedFolderIds()
     getAllFolderCheckboxes(nav).forEach((cb) => {
-        if (!activeCheckboxes.has(cb)) {
-            cb.checked = false
+        if (
+            activeCheckboxes.has(cb) ||
+            shouldKeepDefaultExpanded(cb, collapsedIds)
+        ) {
+            cb.checked = true
+            return
         }
+
+        cb.checked = false
     })
 }
 

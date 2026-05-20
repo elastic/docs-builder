@@ -41,12 +41,27 @@ function renderNav() {
                                             </li>
                                             <li class="flex flex-wrap group-navigation relative">
                                                 <div class="peer nav-folder-peer grid w-full grid-cols-1">
-                                                    <input id="group-a-2" type="checkbox" checked />
+                                                    <input id="group-a-2" type="checkbox" checked data-nav-v2-expanded-default="true" />
                                                     <a href="/guide/a/topic-2" class="sidebar-link nav-v2-link">Topic 2</a>
                                                 </div>
                                                 <div class="docs-sidebar-nav-v2__folder-clip w-full">
                                                     <div class="docs-sidebar-nav-v2__folder-clip-inner">
                                                         <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+                                                            <li class="flex flex-wrap group-navigation relative">
+                                                                <div class="peer nav-folder-peer grid w-full grid-cols-1">
+                                                                    <input id="group-a-2-child" type="checkbox" checked />
+                                                                    <a href="/guide/a/topic-2/nested" class="sidebar-link nav-v2-link">Nested topic</a>
+                                                                </div>
+                                                                <div class="docs-sidebar-nav-v2__folder-clip w-full">
+                                                                    <div class="docs-sidebar-nav-v2__folder-clip-inner">
+                                                                        <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+                                                                            <li class="flex group/li">
+                                                                                <a href="/guide/a/topic-2/nested/page" class="sidebar-link nav-v2-link">Nested page</a>
+                                                                            </li>
+                                                                        </ul>
+                                                                    </div>
+                                                                </div>
+                                                            </li>
                                                             <li class="flex group/li">
                                                                 <a href="/guide/a/topic-2/other-page" class="sidebar-link nav-v2-link">Other page</a>
                                                             </li>
@@ -60,7 +75,7 @@ function renderNav() {
                             </li>
                             <li class="flex flex-wrap group-navigation relative">
                                 <div class="peer nav-folder-peer grid w-full grid-cols-1">
-                                    <input id="group-b" type="checkbox" checked />
+                                    <input id="group-b" type="checkbox" checked data-nav-v2-expanded-default="true" />
                                     <a href="/guide/b" class="sidebar-link nav-v2-link">Group B</a>
                                 </div>
                                 <div class="docs-sidebar-nav-v2__folder-clip w-full">
@@ -68,6 +83,21 @@ function renderNav() {
                                         <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
                                             <li class="flex group/li">
                                                 <a href="/guide/b/page" class="sidebar-link nav-v2-link">Group B page</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="flex flex-wrap group-navigation relative">
+                                <div class="peer nav-folder-peer grid w-full grid-cols-1">
+                                    <input id="group-c" type="checkbox" checked />
+                                    <a href="/guide/c" class="sidebar-link nav-v2-link">Group C</a>
+                                </div>
+                                <div class="docs-sidebar-nav-v2__folder-clip w-full">
+                                    <div class="docs-sidebar-nav-v2__folder-clip-inner">
+                                        <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+                                            <li class="flex group/li">
+                                                <a href="/guide/c/page" class="sidebar-link nav-v2-link">Group C page</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -110,7 +140,7 @@ describe('initNavV2', () => {
         window.requestAnimationFrame = originalRequestAnimationFrame
     })
 
-    it('keeps only the active page branch expanded', () => {
+    it('keeps the active page branch and default-expanded folders expanded', () => {
         window.history.pushState({}, '', '/guide/a/topic-1/current-page')
 
         const nav = renderNav()
@@ -119,11 +149,13 @@ describe('initNavV2', () => {
 
         expect(checkbox('group-a').checked).toBe(true)
         expect(checkbox('group-a-1').checked).toBe(true)
-        expect(checkbox('group-a-2').checked).toBe(false)
-        expect(checkbox('group-b').checked).toBe(false)
+        expect(checkbox('group-a-2').checked).toBe(true)
+        expect(checkbox('group-a-2-child').checked).toBe(false)
+        expect(checkbox('group-b').checked).toBe(true)
+        expect(checkbox('group-c').checked).toBe(false)
     })
 
-    it('collapses sibling folders when a new folder is opened manually', () => {
+    it('collapses non-default sibling folders when a new folder is opened manually', () => {
         window.history.pushState({}, '', '/guide/a/topic-1/current-page')
 
         const nav = renderNav()
@@ -132,11 +164,29 @@ describe('initNavV2', () => {
 
         const groupA = checkbox('group-a')
         const groupB = checkbox('group-b')
-        groupB.checked = true
-        groupB.dispatchEvent(new Event('change', { bubbles: true }))
+        const groupC = checkbox('group-c')
+        groupC.checked = true
+        groupC.dispatchEvent(new Event('change', { bubbles: true }))
 
-        expect(groupB.checked).toBe(true)
+        expect(groupC.checked).toBe(true)
         expect(groupA.checked).toBe(false)
+        expect(groupB.checked).toBe(true)
+    })
+
+    it('respects manually collapsed default-expanded folders', () => {
+        window.history.pushState({}, '', '/guide/a/topic-1/current-page')
+        sessionStorage.setItem(
+            'docs-builder-nav-v2-collapsed-ids',
+            JSON.stringify(['group-b'])
+        )
+
+        const nav = renderNav()
+
+        initNavV2(nav)
+
+        const groupB = checkbox('group-b')
+
+        expect(groupB.checked).toBe(false)
     })
 
     it('scrolls the active branch into view when it opens below the viewport', () => {
