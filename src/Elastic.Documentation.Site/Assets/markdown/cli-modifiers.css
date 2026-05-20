@@ -1,12 +1,22 @@
 @layer components {
 	.cli-modifiers {
-		@apply flex flex-wrap gap-2 pb-4;
+		@apply mt-4 mb-4 flex flex-wrap gap-2;
 
 		.cli-modifier {
-			@apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium;
+			@apply relative inline-flex cursor-help items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium;
 
 			svg {
 				@apply size-3.5 shrink-0;
+			}
+
+			/* CSS tooltip via data-tooltip attribute */
+			&[data-tooltip]::after {
+				content: attr(data-tooltip);
+				@apply pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-64 -translate-x-1/2 rounded px-2 py-1 text-xs text-white opacity-0 transition-opacity;
+				background: #1e293b;
+			}
+			&[data-tooltip]:hover::after {
+				@apply opacity-100;
 			}
 		}
 

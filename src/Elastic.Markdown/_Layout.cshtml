@@ -13,6 +13,10 @@
 
 		if (name == GlobalSections.Head)
 		{
+			if (Model.RedirectUrl is { } redirectUrl)
+			{
+				<script>window.location.replace('@redirectUrl');</script>
+			}
 			//this ensures we forward head sections declared in this project into to GlobalLayout view's section
 			await RenderSectionAsync(GlobalSections.Head);
 		}

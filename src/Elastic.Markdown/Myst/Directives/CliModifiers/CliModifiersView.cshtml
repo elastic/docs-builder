@@ -1,8 +1,13 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.CliModifiers.CliModifiersViewModel>
+@{
+	string Tip(string? schemaDescription, string fallback) =>
+		!string.IsNullOrWhiteSpace(schemaDescription) ? schemaDescription : fallback;
+}
 <div class="cli-modifiers">
 	@if (Model.Destructive)
 	{
-		<span class="cli-modifier cli-modifier--destructive">
+		<span class="cli-modifier cli-modifier--destructive"
+		      data-tooltip="@Tip(Model.DestructiveDescription, "Modifies or removes data on the target. The change cannot be undone.")">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 				<path fill-rule="evenodd" d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 4a.75.75 0 0 1 .75.75v3a.75.75 0 1 1-1.5 0v-3A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
 			</svg>
@@ -11,7 +16,8 @@
 	}
 	@if (Model.RequiresConfirmation)
 	{
-		<span class="cli-modifier cli-modifier--confirmation">
+		<span class="cli-modifier cli-modifier--confirmation"
+		      data-tooltip="@Tip(Model.RequiresConfirmationDescription, "Prompts before running. Pass a non-interactive override (e.g. --yes) to skip the prompt in scripts.")">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 				<path fill-rule="evenodd" d="M15 8A7 7 0 1 1 1 8a7 7 0 0 1 14 0Zm-7-3.25a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 9.75 11H10a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 8.25 5H8ZM9 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" clip-rule="evenodd"/>
 			</svg>
@@ -20,7 +26,8 @@
 	}
 	@if (Model.RequiresAuth)
 	{
-		<span class="cli-modifier cli-modifier--auth">
+		<span class="cli-modifier cli-modifier--auth"
+		      data-tooltip="@Tip(Model.RequiresAuthDescription, "Valid credentials for the target must be configured before this command can run.")">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 				<path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 1 3.5 3.5V7A1.5 1.5 0 0 1 13 8.5v5A1.5 1.5 0 0 1 11.5 15h-7A1.5 1.5 0 0 1 3 13.5v-5A1.5 1.5 0 0 1 4.5 7V4.5A3.5 3.5 0 0 1 8 1Zm0 1.5A2 2 0 0 0 6 4.5V7h4V4.5A2 2 0 0 0 8 2.5ZM8 10a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z" clip-rule="evenodd"/>
 			</svg>
@@ -29,7 +36,8 @@
 	}
 	@if (Model.Idempotent)
 	{
-		<span class="cli-modifier cli-modifier--idempotent">
+		<span class="cli-modifier cli-modifier--idempotent"
+		      data-tooltip="@Tip(Model.IdempotentDescription, "Running this command repeatedly produces the same result. Safe to retry on transient failures.")">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 				<path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd"/>
 			</svg>
@@ -38,7 +46,8 @@
 	}
 	@if (!string.IsNullOrWhiteSpace(Model.Scope))
 	{
-		<span class="cli-modifier cli-modifier--scope">
+		<span class="cli-modifier cli-modifier--scope"
+		      data-tooltip="@Tip(Model.ScopeDescription, $"This command operates against the {Model.Scope} scope.")">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 				<path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/>
 				<path fill-rule="evenodd" d="M1.38 8a6.5 6.5 0 1 1 13.24 0A6.5 6.5 0 0 1 1.38 8ZM8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3Z" clip-rule="evenodd"/>
@@ -48,7 +57,8 @@
 	}
 	@if (Model.Streaming)
 	{
-		<span class="cli-modifier cli-modifier--streaming">
+		<span class="cli-modifier cli-modifier--streaming"
+		      data-tooltip="@Tip(Model.StreamingDescription, "Emits output incrementally as it becomes available. Designed to be piped into other tools.")">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 				<path d="M3.75 7.25a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Z"/>
 			</svg>
@@ -57,7 +67,8 @@
 	}
 	@if (Model.LongRunning)
 	{
-		<span class="cli-modifier cli-modifier--long-running">
+		<span class="cli-modifier cli-modifier--long-running"
+		      data-tooltip="@Tip(Model.LongRunningDescription, "May take significant time to complete. Consider running unattended or with a timeout.")">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 				<path fill-rule="evenodd" d="M1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7.75-4.25a.75.75 0 0 0-1.5 0V8c0 .414.336.75.75.75h3.25a.75.75 0 0 0 0-1.5h-2.5v-3.5Z" clip-rule="evenodd"/>
 			</svg>
