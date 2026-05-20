@@ -22,11 +22,17 @@ try
 	_ = builder.AddDefaultHealthChecks();
 	_ = builder.AddDocsApiOpenTelemetry();
 
-	// Configure Kestrel to listen on port 8080 (standard container port)
-	_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+	// Only hardcode port 8080 when not running under Aspire/orchestration.
+	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
+	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
+		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
 	{
-		serverOptions.ListenAnyIP(8080);
-	});
+		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+		{
+			serverOptions.ListenAnyIP(8080);
+		});
+	}
 
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
