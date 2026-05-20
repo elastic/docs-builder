@@ -6,7 +6,10 @@
 @RenderAdmonition("note", Model.SettingsCollection.Note)
 @foreach (var group in Model.SettingsCollection.Groups)
 {
-	@RenderGroup(group)
+	if (Model.IsGroupVisible(group))
+	{
+		@RenderGroup(group)
+	}
 }
 @functions {
 
@@ -65,12 +68,15 @@
 		@RenderMarkdown(group.Description)
 		@RenderAdmonition("note", group.Note)
 		@RenderExample(group.Example)
-		<dl>
-		@foreach (var setting in group.Settings)
+	<dl>
+	@foreach (var setting in group.Settings)
+	{
+		if (Model.IsSettingVisible(setting, null))
 		{
 			@RenderSetting(setting, null, null)
 		}
-		</dl>
+	}
+	</dl>
 		return HtmlString.Empty;
 	}
 
@@ -99,7 +105,10 @@
 				<dl>
 					@foreach (var child in setting.Settings)
 					{
-						@RenderSetting(child, displayName, appliesTo)
+						if (Model.IsSettingVisible(child, appliesTo))
+						{
+							@RenderSetting(child, displayName, appliesTo)
+						}
 					}
 				</dl>
 			}

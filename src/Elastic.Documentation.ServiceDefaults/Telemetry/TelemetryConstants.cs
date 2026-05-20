@@ -11,4 +11,9 @@ namespace Elastic.Documentation.ServiceDefaults.Telemetry;
 public static class TelemetryConstants
 {
 	public const string AssemblerSyncInstrumentationName = "Elastic.Documentation.Assembler.Sync";
+
+	/// <summary>
+	/// Tag/baggage name used to annotate spans and log records with the user's EUID value.
+	/// </summary>
+	public const string UserEuidAttributeName = "user.euid";
 }

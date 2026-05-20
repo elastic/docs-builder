@@ -5,7 +5,6 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using Actions.Core.Services;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
@@ -114,16 +113,31 @@ public class ChangelogPrEvaluationService(
 		// Resolve products from labels
 		string? resolvedProducts = null;
 		string? productLabelTable = null;
-		if (config.LabelToProducts is { Count: > 0 })
+		if (config.LabelToProducts is { Count: > 0 } labelToProducts)
 		{
-			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, config.LabelToProducts);
+			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, labelToProducts);
 			if (products.Count > 0)
 			{
 				resolvedProducts = ProductArgument.FormatProductSpecs(products);
 				_logger.LogInformation("Mapped PR labels to products: {Products}", resolvedProducts);
 			}
 			else
-				productLabelTable = BuildProductLabelTable(config.LabelToProducts);
+			{
+				// When only one distinct product is configured, assigning it implicitly is
+				// unambiguous — no point requiring contributors to add a redundant label.
+				var distinctSpecs = labelToProducts.Values
+					.Distinct(StringComparer.OrdinalIgnoreCase)
+					.ToList();
+				if (distinctSpecs.Count == 1)
+				{
+					resolvedProducts = ProductArgument.FormatProductSpecs(
+						ProductArgument.ParseProductSpecs(distinctSpecs[0])
+					);
+					_logger.LogInformation("Single product configured; assigning implicitly: {Products}", resolvedProducts);
+				}
+				else
+					productLabelTable = BuildProductLabelTable(labelToProducts);
+			}
 		}
 
 		if (resolvedType == null)
@@ -133,6 +147,22 @@ public class ChangelogPrEvaluationService(
 				PrEvaluationResult.NoLabel, title,
 				resolvedDescription: description,
 				labelTable: BuildLabelTable(config.LabelToType),
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels
+			);
+		}
+
+		// Multiple products are configured via labels but none matched, and no defaults are
+		// available to fill in via inference at 'changelog add' time. Surface this as a
+		// missing-label failure so the contributor sees an actionable hint instead of a hard
+		// error later in the workflow.
+		if (productLabelTable != null
+			&& (config.ProductsConfiguration?.Default is null or { Count: 0 }))
+		{
+			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
+			return await SetOutputs(
+				PrEvaluationResult.NoLabel, title,
+				resolvedDescription: description,
 				productLabelTable: productLabelTable,
 				skipLabels: skipLabels
 			);

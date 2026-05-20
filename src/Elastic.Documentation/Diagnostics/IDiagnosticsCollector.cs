@@ -4,11 +4,10 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
-using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Documentation.Diagnostics;
 
-public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
+public interface IDiagnosticsCollector : IAsyncDisposable
 {
 	int Warnings { get; }
 	int Errors { get; }
@@ -20,6 +19,12 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 	ConcurrentBag<string> CrossLinks { get; }
 	HashSet<string> OffendingFiles { get; }
 	ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; }
+
+	/// True once the background reader is actively draining the channel.
+	bool IsStarted { get; }
+
+	Task StartAsync(Cancel cancellationToken);
+	Task StopAsync(Cancel cancellationToken);
 
 	void Emit(Severity severity, string file, string message);
 	void EmitError(string file, string message, Exception? e = null);
@@ -49,6 +54,13 @@ public interface IDiagnosticsCollector : IAsyncDisposable, IHostedService
 
 	async Task WaitForDrain()
 	{
+		if (!IsStarted)
+		{
+			throw new InvalidOperationException(
+				"WaitForDrain called on a collector that was never started; no reader is draining the channel. " +
+				"Call StartAsync first or dispose the collector to drain synchronously.");
+		}
+
 		var start = DateTime.UtcNow;
 		while (Channel.Reader.TryPeek(out _))
 		{
