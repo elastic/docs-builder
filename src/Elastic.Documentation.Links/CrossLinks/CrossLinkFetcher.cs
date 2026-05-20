@@ -4,11 +4,14 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Links.CrossLinks;
 
@@ -27,10 +30,22 @@ public record FetchedCrossLinks
 	public FrozenDictionary<string, string>? RegistryUrlsByRepository { get; init; }
 
 	/// <summary>
+	/// Optional map of repository name to the declared <see cref="DocSetRegistry"/> for that cross-link entry.
+	/// Used to pick the correct links.json path shape in error messages when the index could not be fetched.
+	/// </summary>
+	public FrozenDictionary<string, DocSetRegistry>? RegistryByRepository { get; init; }
+
+	/// <summary>
 	/// Set of repository names that belong to a codex (non-public) registry.
 	/// Used by the URI resolver to generate codex URLs instead of public preview URLs.
 	/// </summary>
 	public FrozenSet<string>? CodexRepositories { get; init; }
+
+	/// <summary>
+	/// True when all declared repositories resolved without falling back to placeholder data.
+	/// When false, callers should avoid caching so a subsequent reload retries the fetch.
+	/// </summary>
+	public bool IsComplete { get; init; } = true;
 
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
@@ -38,13 +53,15 @@ public record FetchedCrossLinks
 		LinkReferences = new Dictionary<string, RepositoryLinks>().ToFrozenDictionary(),
 		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
 		RegistryUrlsByRepository = null,
+		RegistryByRepository = null,
 		CodexRepositories = null
 	};
 }
 
-public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : IDisposable
+public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider, ScopedFileSystem? fileSystem = null) : IDisposable
 {
 	protected ILogger Logger { get; } = logFactory.CreateLogger(nameof(CrossLinkFetcher));
+	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.AppData;
 	private LinkRegistry? _linkIndex;
 
 	public static RepositoryLinks Deserialize(string json) =>
@@ -145,13 +162,13 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 	private void WriteLinksJsonCachedFile(string repository, LinkRegistryEntry linkRegistryEntry, RepositoryLinks linkReference)
 	{
 		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
-		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "links", cachedFileName);
-		if (File.Exists(cachedPath))
+		var cachedPath = Path.Join(Paths.ApplicationData.FullName, "links", cachedFileName);
+		if (_fileSystem.File.Exists(cachedPath))
 			return;
 		try
 		{
-			_ = Directory.CreateDirectory(Path.GetDirectoryName(cachedPath)!);
-			File.WriteAllText(cachedPath, RepositoryLinks.Serialize(linkReference));
+			_ = _fileSystem.Directory.CreateDirectory(Path.GetDirectoryName(cachedPath)!);
+			_fileSystem.File.WriteAllText(cachedPath, RepositoryLinks.Serialize(linkReference));
 		}
 		catch (Exception e)
 		{
@@ -164,15 +181,15 @@ public abstract class CrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRead
 	private async Task<RepositoryLinks?> TryGetCachedLinkReference(string repository, LinkRegistryEntry linkRegistryEntry)
 	{
 		var cachedFileName = $"links-elastic-{repository}-{linkRegistryEntry.Branch}-{linkRegistryEntry.ETag}.json";
-		var cachedPath = Path.Combine(Paths.ApplicationData.FullName, "links", cachedFileName);
+		var cachedPath = Path.Join(Paths.ApplicationData.FullName, "links", cachedFileName);
 		if (_cachedLinkReferences.TryGetValue(cachedFileName, out var cachedLinkReference))
 			return cachedLinkReference;
 
-		if (File.Exists(cachedPath))
+		if (_fileSystem.File.Exists(cachedPath))
 		{
 			try
 			{
-				var json = await File.ReadAllTextAsync(cachedPath);
+				var json = await _fileSystem.File.ReadAllTextAsync(cachedPath);
 				var linkReference = Deserialize(json);
 				_ = _cachedLinkReferences.TryAdd(cachedFileName, linkReference);
 				return linkReference;

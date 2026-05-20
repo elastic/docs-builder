@@ -37,7 +37,12 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 			};
 		}
 
-		if (ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), input.Products, config, collector, issueUrl))
+		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
+		var effectiveProducts = input.Products;
+		if (input.Products.Count == 0 && config.LabelToProducts != null)
+			effectiveProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+
+		if (ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), effectiveProducts, config, collector, issueUrl))
 		{
 			return new IssueProcessingResult
 			{
@@ -77,7 +82,12 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 			return (false, null);
 		}
 
-		var shouldSkip = ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), products, config, collector, issueUrl);
+		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
+		var effectiveProducts = products;
+		if (products.Count == 0 && config.LabelToProducts != null)
+			effectiveProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+
+		var shouldSkip = ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), effectiveProducts, config, collector, issueUrl);
 		return (shouldSkip, issueInfo);
 	}
 
@@ -92,22 +102,15 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 
 		if (input.ExtractReleaseNotes ?? false)
 		{
-			var (releaseNoteTitle, releaseNoteDescription) = ReleaseNotesExtractor.ExtractReleaseNotes(issueInfo.Body);
-
-			if (releaseNoteTitle != null && string.IsNullOrWhiteSpace(input.Title))
+			var releaseNote = ReleaseNotesExtractor.FindReleaseNote(issueInfo.Body);
+			if (releaseNote != null && string.IsNullOrWhiteSpace(input.Description))
 			{
-				derived.Title = releaseNoteTitle;
-				logger.LogInformation("Using extracted release note as title: {Title}", derived.Title);
-			}
-
-			if (releaseNoteDescription != null && string.IsNullOrWhiteSpace(input.Description))
-			{
-				derived.Description = releaseNoteDescription;
-				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNoteDescription.Length);
+				derived.Description = releaseNote;
+				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNote.Length);
 			}
 		}
 
-		if (string.IsNullOrWhiteSpace(input.Title) && derived.Title == null)
+		if (string.IsNullOrWhiteSpace(input.Title))
 		{
 			if (string.IsNullOrWhiteSpace(issueInfo.Title))
 			{
@@ -116,7 +119,7 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 			}
 
 			var issueTitle = issueInfo.Title;
-			if (input.StripTitlePrefix)
+			if (input.StripTitlePrefix == true)
 				issueTitle = ChangelogTextUtilities.StripSquareBracketPrefix(issueTitle);
 			derived.Title = issueTitle;
 			logger.LogInformation("Using issue title: {Title}", derived.Title);
@@ -174,6 +177,19 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 		derived.Issues = input.Issues is { Length: > 0 }
 			? input.Issues
 			: [issueUrl];
+
+		// Map labels to products if products were not explicitly provided
+		if (input.Products.Count == 0 && config.LabelToProducts != null)
+		{
+			var mappedProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+			if (mappedProducts.Count > 0)
+			{
+				derived.Products = mappedProducts;
+				logger.LogInformation("Mapped issue labels to products: {Products}", string.Join(", ", mappedProducts.Select(p => p.Product)));
+			}
+		}
+		else if (input.Products.Count > 0)
+			logger.LogDebug("Using explicitly provided products, ignoring issue labels");
 
 		// Extract linked PRs from issue body
 		if ((input.ExtractIssues ?? false) && issueInfo.LinkedPrs.Count > 0)

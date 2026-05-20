@@ -9,6 +9,7 @@ Here is a list of all available icons:
 | Syntax                                           |                    Icon                     |
 |:-------------------------------------------------|:-------------------------------------------:|
 | `` {icon}`accessibility` ``                     |            {icon}`accessibility`            |
+| `` {icon}`add_to_dashboard` ``                  |          {icon}`add_to_dashboard`          |
 | `` {icon}`aggregate` ``                         |             {icon}`aggregate`              |
 | `` {icon}`analyzeEvent` ``                      |            {icon}`analyzeEvent`            |
 | `` {icon}`annotation` ``                        |            {icon}`annotation`             |
@@ -120,6 +121,7 @@ Here is a list of all available icons:
 | `` {icon}`copy_clipboard` ``                    |          {icon}`copy_clipboard`           |
 | `` {icon}`cross` ``                             |               {icon}`cross`               |
 | `` {icon}`cross_in_circle` ``                   |          {icon}`cross_in_circle`          |
+| `` {icon}`cross_project_search` ``              |        {icon}`cross_project_search`        |
 | `` {icon}`crosshairs` ``                        |            {icon}`crosshairs`             |
 | `` {icon}`currency` ``                          |              {icon}`currency`              |
 | `` {icon}`cut` ``                               |                {icon}`cut`                |
@@ -435,6 +437,8 @@ Here is a list of all available icons:
 | `` {icon}`training` ``                          |              {icon}`training`              |
 | `` {icon}`transitionLeftIn` ``                  |          {icon}`transitionLeftIn`          |
 | `` {icon}`transitionLeftOut` ``                 |         {icon}`transitionLeftOut`          |
+| `` {icon}`transition_bottom_in` ``              |       {icon}`transition_bottom_in`        |
+| `` {icon}`transition_bottom_out` ``             |       {icon}`transition_bottom_out`       |
 | `` {icon}`transitionTopIn` ``                   |          {icon}`transitionTopIn`          |
 | `` {icon}`transitionTopOut` ``                  |          {icon}`transitionTopOut`          |
 | `` {icon}`trash` ``                             |               {icon}`trash`               |

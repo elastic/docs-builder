@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json;
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using FluentAssertions;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 
@@ -25,7 +26,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Stack.Should().NotBeNull();
+		deserialized.Stack.Should().NotBeNull();
 		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 	}
 
@@ -45,7 +46,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Stack.Should().NotBeNull();
+		deserialized.Stack.Should().NotBeNull();
 		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 	}
 
@@ -67,8 +68,8 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Deployment.Should().NotBeNull();
-		deserialized.Deployment!.Self.Should().BeEquivalentTo(original.Deployment!.Self);
+		deserialized.Deployment.Should().NotBeNull();
+		deserialized.Deployment.Self.Should().BeEquivalentTo(original.Deployment.Self);
 		deserialized.Deployment.Ece.Should().BeEquivalentTo(original.Deployment.Ece);
 		deserialized.Deployment.Eck.Should().BeEquivalentTo(original.Deployment.Eck);
 		deserialized.Deployment.Ess.Should().BeEquivalentTo(original.Deployment.Ess);
@@ -91,8 +92,8 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Serverless.Should().NotBeNull();
-		deserialized.Serverless!.Elasticsearch.Should().BeEquivalentTo(original.Serverless!.Elasticsearch);
+		deserialized.Serverless.Should().NotBeNull();
+		deserialized.Serverless.Elasticsearch.Should().BeEquivalentTo(original.Serverless.Elasticsearch);
 		deserialized.Serverless.Observability.Should().BeEquivalentTo(original.Serverless.Observability);
 		deserialized.Serverless.Security.Should().BeEquivalentTo(original.Serverless.Security);
 	}
@@ -109,7 +110,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Product.Should().NotBeNull();
+		deserialized.Product.Should().NotBeNull();
 		deserialized.Product.Should().BeEquivalentTo(original.Product);
 	}
 
@@ -128,8 +129,8 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.ProductApplicability.Should().NotBeNull();
-		deserialized.ProductApplicability!.Ecctl.Should().BeEquivalentTo(original.ProductApplicability!.Ecctl);
+		deserialized.ProductApplicability.Should().NotBeNull();
+		deserialized.ProductApplicability.Ecctl.Should().BeEquivalentTo(original.ProductApplicability.Ecctl);
 	}
 
 	[Fact]
@@ -150,8 +151,8 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.ProductApplicability.Should().NotBeNull();
-		deserialized.ProductApplicability!.Ecctl.Should().BeEquivalentTo(original.ProductApplicability!.Ecctl);
+		deserialized.ProductApplicability.Should().NotBeNull();
+		deserialized.ProductApplicability.Ecctl.Should().BeEquivalentTo(original.ProductApplicability.Ecctl);
 		deserialized.ProductApplicability.Curator.Should().BeEquivalentTo(original.ProductApplicability.Curator);
 		deserialized.ProductApplicability.ApmAgentDotnet.Should().BeEquivalentTo(original.ProductApplicability.ApmAgentDotnet);
 		deserialized.ProductApplicability.EdotDotnet.Should().BeEquivalentTo(original.ProductApplicability.EdotDotnet);
@@ -193,8 +194,8 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.ProductApplicability.Should().NotBeNull();
-		deserialized.ProductApplicability!.Ecctl.Should().BeEquivalentTo(original.ProductApplicability!.Ecctl);
+		deserialized.ProductApplicability.Should().NotBeNull();
+		deserialized.ProductApplicability.Ecctl.Should().BeEquivalentTo(original.ProductApplicability.Ecctl);
 		deserialized.ProductApplicability.Curator.Should().BeEquivalentTo(original.ProductApplicability.Curator);
 		deserialized.ProductApplicability.ApmAgentAndroid.Should().BeEquivalentTo(original.ProductApplicability.ApmAgentAndroid);
 		deserialized.ProductApplicability.ApmAgentDotnet.Should().BeEquivalentTo(original.ProductApplicability.ApmAgentDotnet);
@@ -253,19 +254,19 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Stack.Should().BeEquivalentTo(original.Stack);
+		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 		deserialized.Deployment.Should().NotBeNull();
-		deserialized.Deployment!.Self.Should().BeEquivalentTo(original.Deployment!.Self);
+		deserialized.Deployment.Self.Should().BeEquivalentTo(original.Deployment.Self);
 		deserialized.Deployment.Ece.Should().BeEquivalentTo(original.Deployment.Ece);
 		deserialized.Deployment.Eck.Should().BeEquivalentTo(original.Deployment.Eck);
 		deserialized.Deployment.Ess.Should().BeEquivalentTo(original.Deployment.Ess);
 		deserialized.Serverless.Should().NotBeNull();
-		deserialized.Serverless!.Elasticsearch.Should().BeEquivalentTo(original.Serverless!.Elasticsearch);
+		deserialized.Serverless.Elasticsearch.Should().BeEquivalentTo(original.Serverless.Elasticsearch);
 		deserialized.Serverless.Observability.Should().BeEquivalentTo(original.Serverless.Observability);
 		deserialized.Serverless.Security.Should().BeEquivalentTo(original.Serverless.Security);
 		deserialized.Product.Should().BeEquivalentTo(original.Product);
 		deserialized.ProductApplicability.Should().NotBeNull();
-		deserialized.ProductApplicability!.Ecctl.Should().BeEquivalentTo(original.ProductApplicability!.Ecctl);
+		deserialized.ProductApplicability.Ecctl.Should().BeEquivalentTo(original.ProductApplicability.Ecctl);
 		deserialized.ProductApplicability.ApmAgentDotnet.Should().BeEquivalentTo(original.ProductApplicability.ApmAgentDotnet);
 	}
 
@@ -284,8 +285,8 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Deployment.Should().NotBeNull();
-		deserialized.Deployment!.Ess.Should().BeEquivalentTo(original.Deployment!.Ess);
+		deserialized.Deployment.Should().NotBeNull();
+		deserialized.Deployment.Ess.Should().BeEquivalentTo(original.Deployment.Ess);
 	}
 
 	[Fact]
@@ -301,9 +302,9 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Deployment.Should().NotBeNull();
-		deserialized.Deployment!.Ess.Should().NotBeNull();
-		deserialized.Deployment.Ess!.First().Lifecycle.Should().Be(ProductLifecycle.Beta);
+		deserialized.Deployment.Should().NotBeNull();
+		deserialized.Deployment.Ess.Should().NotBeNull();
+		deserialized.Deployment.Ess.First().Lifecycle.Should().Be(ProductLifecycle.Beta);
 	}
 
 	[Fact]
@@ -323,7 +324,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Stack.Should().NotBeNull();
+		deserialized.Stack.Should().NotBeNull();
 		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 	}
 
@@ -345,7 +346,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Stack.Should().NotBeNull();
+		deserialized.Stack.Should().NotBeNull();
 		deserialized.Stack.Should().HaveCount(4);
 		deserialized.Stack.Should().BeEquivalentTo(original.Stack);
 	}
@@ -359,7 +360,7 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Stack.Should().BeNull();
+		deserialized.Stack.Should().BeNull();
 		deserialized.Deployment.Should().BeNull();
 		deserialized.Serverless.Should().BeNull();
 		deserialized.Product.Should().BeNull();
@@ -390,8 +391,8 @@ public class ApplicableToJsonConverterRoundTripTests
 
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 		deserialized.Should().NotBeNull();
-		deserialized!.Stack.Should().NotBeNull();
-		deserialized.Stack!.First().Version.Should().Be(AllVersionsSpec.Instance);
+		deserialized.Stack.Should().NotBeNull();
+		deserialized.Stack.First().Version.Should().Be(AllVersionsSpec.Instance);
 	}
 
 	[Fact]
@@ -410,8 +411,8 @@ public class ApplicableToJsonConverterRoundTripTests
 		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized!.Product.Should().BeEquivalentTo(original.Product);
+		deserialized.Product.Should().BeEquivalentTo(original.Product);
 		deserialized.ProductApplicability.Should().NotBeNull();
-		deserialized.ProductApplicability!.Ecctl.Should().BeEquivalentTo(original.ProductApplicability!.Ecctl);
+		deserialized.ProductApplicability.Ecctl.Should().BeEquivalentTo(original.ProductApplicability.Ecctl);
 	}
 }

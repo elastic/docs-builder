@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Markdown.Myst.Directives.Button;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -181,6 +181,60 @@ public class ButtonCrossLinkTests(ITestOutputHelper output) : DirectiveTest<Butt
 
 	[Fact]
 	public void RendersLinkHref() => Html.Should().Contain("href=\"");
+}
+
+public class ButtonCursorProtocolTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+[Install with Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=elastic&config=eyJmb28iOiJiYXIifQ==)
+:::
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void RendersLinkHref() => Html.Should().Contain("href=\"cursor://");
+
+	[Fact]
+	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+public class ButtonVscodeProtocolTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+[Install with VS Code](vscode:extension/elastic.elasticsearch)
+:::
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void RendersLinkHref() => Html.Should().Contain("href=\"vscode:");
+
+	[Fact]
+	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+public class ButtonVscodeInsidersProtocolTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+[Install with VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22oblt-cli%22%7D)
+:::
+"""
+)
+{
+	[Fact]
+	public void ParsesBlock() => Block.Should().NotBeNull();
+
+	[Fact]
+	public void RendersLinkHref() => Html.Should().Contain("href=\"vscode-insiders:");
+
+	[Fact]
+	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
 public class ButtonEmptyTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,

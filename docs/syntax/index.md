@@ -12,7 +12,7 @@ Elastic Docs V3 uses a custom implementation of [MyST](https://mystmd.org/) (Mar
 
 If you know [Markdown](https://commonmark.org), you already know most of what you need. If not, the CommonMark project offers a [10-minute tutorial](https://commonmark.org/help/). 
 
-When you need more than basic Markdown, you can use [directives](directives.md) to add features like callouts, tabs, and diagrams.
+When you need more than basic Markdown, you can use _directives_ to add features like callouts, tabs, and diagrams. To learn how directives work in general, including how to add options and arguments and nest multiple directives, refer to [How directives work](directives.md). For a full list of available directives, refer to the sidebar.
 
 ## GitHub Flavored Markdown support
 

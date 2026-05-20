@@ -4,11 +4,11 @@
 
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Build.Tests;

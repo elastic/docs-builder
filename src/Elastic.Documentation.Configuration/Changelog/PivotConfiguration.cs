@@ -32,6 +32,15 @@ public record PivotConfiguration
 	public Dictionary<string, string?>? Areas { get; init; }
 
 	/// <summary>
+	/// Product definitions with labels mapped to product spec strings.
+	/// Keys are product spec strings (e.g., "elasticsearch", "kibana 9.2.0", "cloud-serverless 2025-06 ga").
+	/// Values are label strings (e.g., ":stack/elasticsearch").
+	/// When a PR has labels matching a product's value, that product is added to the changelog entry.
+	/// Multiple matching product entries are all applied (same behavior as areas).
+	/// </summary>
+	public Dictionary<string, string?>? Products { get; init; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (comma-separated string).
 	/// When a PR has any of these labels, highlight is set to true.
 	/// Example: ">highlight, >release-highlight"

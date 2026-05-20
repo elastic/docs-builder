@@ -39,7 +39,7 @@ public class ProductConverter(ProductsConfiguration products) : IYamlTypeConvert
 		if (string.IsNullOrWhiteSpace(productId))
 			throw new InvalidProductException("Product 'id' field is required. Example format:\nproducts:\n  - id: apm", products);
 
-		if (products.Products.TryGetValue(productId.Replace('_', '-'), out var product))
+		if (products.PublicReferenceProducts.TryGetValue(productId.Replace('_', '-'), out var product))
 			return product;
 
 		throw new InvalidProductException(productId, products);
@@ -51,5 +51,5 @@ public class ProductConverter(ProductsConfiguration products) : IYamlTypeConvert
 public class InvalidProductException(string invalidValue, ProductsConfiguration products)
 	: Exception(
 		$"Invalid products frontmatter value: \"{invalidValue}\"." +
-		(!string.IsNullOrWhiteSpace(invalidValue) ? " " + new Suggestion(products.Products.Select(p => p.Value.Id).ToHashSet(), invalidValue).GetSuggestionQuestion() : "") +
+		(!string.IsNullOrWhiteSpace(invalidValue) ? " " + new Suggestion(products.PublicReferenceProducts.Select(p => p.Value.Id).ToHashSet(), invalidValue).GetSuggestionQuestion() : "") +
 		"\nYou can find the full list at https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main/syntax/frontmatter#products.");

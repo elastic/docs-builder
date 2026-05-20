@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text.Json;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Elastic.Documentation.Mcp.Remote.Telemetry;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
@@ -16,7 +18,7 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for semantic search operations on Elastic documentation.
 /// </summary>
 [McpServerToolType]
-public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
+public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchTools> logger)
 {
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
@@ -34,6 +36,20 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 		[Description("Filter by navigation section (e.g., 'reference', 'getting-started')")] string? sectionFilter = null,
 		CancellationToken cancellationToken = default)
 	{
+		var toolName = McpToolTelemetry.ResolveToolName("search_{resource}");
+		using var activity = McpToolTelemetry.StartActivity(toolName);
+		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
+		{
+			["query"] = query,
+			["pageNumber"] = pageNumber,
+			["pageSize"] = pageSize,
+			["productFilter"] = productFilter,
+			["sectionFilter"] = sectionFilter
+		});
+		McpToolTelemetry.LogStart(logger, toolName, payload);
+		var duration = Stopwatch.StartNew();
+		var outcome = "failure";
+
 		try
 		{
 			pageSize = Math.Clamp(pageSize, 1, 50);
@@ -54,7 +70,7 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 			var response = new SemanticSearchResponse
 			{
 				Query = query,
-				TotalHits = result.TotalHits,
+				TotalHits = result.TotalResults,
 				IsSemanticQuery = result.IsSemanticQuery,
 				Results = result.Results.Select(r => new SearchResultDto
 				{
@@ -69,16 +85,26 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 				}).ToList()
 			};
 
+			McpToolTelemetry.MarkSuccess(activity);
+			outcome = "success";
 			return JsonSerializer.Serialize(response, McpJsonContext.Default.SemanticSearchResponse);
 		}
 		catch (OperationCanceledException)
 		{
+			McpToolTelemetry.MarkCancelled(activity);
+			outcome = "cancelled";
 			throw;
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			McpToolTelemetry.MarkFailure(activity, ex);
 			logger.LogError(ex, "SemanticSearch failed for query '{Query}'", query);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+		}
+		finally
+		{
+			duration.Stop();
+			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
 		}
 	}
 
@@ -95,6 +121,18 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana')")] string? productFilter = null,
 		CancellationToken cancellationToken = default)
 	{
+		var toolName = McpToolTelemetry.ResolveToolName("find_related_{resource}");
+		using var activity = McpToolTelemetry.StartActivity(toolName);
+		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
+		{
+			["topic"] = topic,
+			["limit"] = limit,
+			["productFilter"] = productFilter
+		});
+		McpToolTelemetry.LogStart(logger, toolName, payload);
+		var duration = Stopwatch.StartNew();
+		var outcome = "failure";
+
 		try
 		{
 			limit = Math.Clamp(limit, 1, 20);
@@ -125,16 +163,26 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 				}).ToList()
 			};
 
+			McpToolTelemetry.MarkSuccess(activity);
+			outcome = "success";
 			return JsonSerializer.Serialize(response, McpJsonContext.Default.RelatedDocsResponse);
 		}
 		catch (OperationCanceledException)
 		{
+			McpToolTelemetry.MarkCancelled(activity);
+			outcome = "cancelled";
 			throw;
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			McpToolTelemetry.MarkFailure(activity, ex);
 			logger.LogError(ex, "FindRelatedDocs failed for topic '{Topic}'", topic);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+		}
+		finally
+		{
+			duration.Stop();
+			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
 		}
 	}
 }

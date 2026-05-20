@@ -5,11 +5,13 @@
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Codex.Navigation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -74,13 +76,13 @@ public abstract class CodexNavigationTestBase(ITestOutputHelper output)
 
 internal sealed class TestCodexDocumentationContext(IDiagnosticsCollector collector) : ICodexDocumentationContext
 {
-	private readonly MockFileSystem _fileSystem = new();
+	private readonly MockFileSystem _fileSystem = new(new Dictionary<string, MockFileData>(), Paths.WorkingDirectoryRoot.FullName);
 
-	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New("/codex.yml");
+	public IFileInfo ConfigurationPath => _fileSystem.FileInfo.New(_fileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
 	public IDiagnosticsCollector Collector => collector;
-	public IFileSystem ReadFileSystem => _fileSystem;
-	public IFileSystem WriteFileSystem => _fileSystem;
-	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New("/output");
+	public ScopedFileSystem ReadFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectory(_fileSystem);
+	public ScopedFileSystem WriteFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(_fileSystem);
+	public IDirectoryInfo OutputDirectory => _fileSystem.DirectoryInfo.New(_fileSystem.Path.Join(Paths.ApplicationData.FullName, "codex", "output"));
 	public BuildType BuildType => BuildType.Codex;
 
 	public void EmitError(string message) => collector.EmitError(ConfigurationPath, message);

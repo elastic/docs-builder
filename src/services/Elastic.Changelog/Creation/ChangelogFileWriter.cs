@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -19,6 +20,10 @@ namespace Elastic.Changelog.Creation;
 public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 {
 	/// <summary>
+	/// UTF-8 encoding without BOM for writing YAML files.
+	/// </summary>
+	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+	/// <summary>
 	/// Writes a changelog file with the given data.
 	/// </summary>
 	public async Task<bool> WriteChangelogAsync(
@@ -33,7 +38,9 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 		var changelogData = BuildChangelogData(input);
 
 		// Generate YAML file
-		var yamlContent = GenerateYaml(changelogData, config, titleMissing, typeMissing);
+		var yamlContent = input.Concise
+			? GenerateConciseYaml(changelogData)
+			: GenerateYaml(changelogData, config, titleMissing, typeMissing);
 
 		// Determine output path
 		var outputDir = input.Output ?? fileSystem.Directory.GetCurrentDirectory();
@@ -42,14 +49,18 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 
 		// Generate filename
 		var filename = GenerateFilename(collector, input);
-		var filePath = fileSystem.Path.Combine(outputDir, filename);
+		var filePath = fileSystem.Path.Join(outputDir, filename);
 
-		// Write file with explicit UTF-8 encoding to ensure proper character handling
-		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
+		// Write UTF-8 text without BOM using explicit encoding instance.
+		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
+		await fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
 		logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
 
 		return true;
 	}
+
+	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
+	private const int MaxFilenameLength = 200;
 
 	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
 	{
@@ -64,7 +75,13 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 				.ToList();
 
 			if (numbers.Count > 0)
-				return $"{string.Join("-", numbers)}.yaml";
+			{
+				var joined = $"{string.Join("-", numbers)}.yaml";
+				if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
+					return joined;
+				// Too many PRs: use compact format to avoid path-too-long errors
+				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
+			}
 
 			collector.EmitWarning(string.Empty, $"Failed to extract PR numbers from PRs. Falling back to timestamp-based filename.");
 		}
@@ -80,7 +97,12 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 				.ToList();
 
 			if (numbers.Count > 0)
-				return $"{string.Join("-", numbers)}.yaml";
+			{
+				var joined = $"{string.Join("-", numbers)}.yaml";
+				if (joined.Length <= MaxFilenameLength + 5)
+					return joined;
+				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-issues.yaml";
+			}
 
 			collector.EmitWarning(string.Empty, "Failed to extract issue numbers from issues. Falling back to timestamp-based filename.");
 		}
@@ -252,5 +274,16 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			""";
 
 		return result;
+	}
+
+	private static string GenerateConciseYaml(ChangelogEntry data)
+	{
+		var serializeData = data with
+		{
+			Areas = data.Areas is { Count: 0 } ? null : data.Areas,
+			Issues = data.Issues is { Count: 0 } ? null : data.Issues
+		};
+
+		return ReleaseNotesSerialization.SerializeEntry(serializeData);
 	}
 }

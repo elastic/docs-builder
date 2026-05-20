@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -82,7 +82,7 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		if (docSetNavigations["apm-agent"] is INavigationHomeAccessor homeAccessor)
 		{
 			homeAccessor.HomeProvider.Should().NotBeNull();
-			homeAccessor.HomeProvider!.NavigationRoot.Should().BeSameAs(groupNav);
+			homeAccessor.HomeProvider.NavigationRoot.Should().BeSameAs(groupNav);
 		}
 	}
 
@@ -102,7 +102,7 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		if (docSetNavigations["standalone"] is INavigationHomeAccessor homeAccessor)
 		{
 			homeAccessor.HomeProvider.Should().NotBeNull();
-			homeAccessor.HomeProvider!.NavigationRoot.Should().BeSameAs(standaloneNavItem);
+			homeAccessor.HomeProvider.NavigationRoot.Should().BeSameAs(standaloneNavItem);
 		}
 	}
 

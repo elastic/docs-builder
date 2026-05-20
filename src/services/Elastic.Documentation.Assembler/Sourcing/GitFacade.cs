@@ -42,7 +42,7 @@ public class SingleCommitOptimizedGitRepository(ILoggerFactory logFactory, IDiag
 	public string GetCurrentCommit() => Capture("git", "rev-parse", "HEAD");
 
 	public void Init() => ExecIn(EnvironmentVars, "git", "init");
-	public bool IsInitialized() => Directory.Exists(Path.Combine(WorkingDirectory.FullName, ".git"));
+	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));
 	public void Pull(string branch) => ExecIn(EnvironmentVars, "git", "pull", "--depth", "1", "--allow-unrelated-histories", "--no-ff", "origin", branch);
 	public void Fetch(string reference) => ExecIn(EnvironmentVars, "git", "fetch", "--no-tags", "--prune", "--no-recurse-submodules", "--depth", "1", "origin", reference);
 	public void EnableSparseCheckout(string[] folders) => ExecIn(EnvironmentVars, "git", ["sparse-checkout", "set", "--no-cone", .. folders]);

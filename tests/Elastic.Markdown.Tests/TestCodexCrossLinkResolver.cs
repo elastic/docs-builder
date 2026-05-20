@@ -74,4 +74,6 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, UriResolver, crossLinkUri, out resolvedUri);
+
+	public bool IsDeclaredCrossLinkScheme(string scheme) => _crossLinks.DeclaredRepositories.Contains(scheme);
 }

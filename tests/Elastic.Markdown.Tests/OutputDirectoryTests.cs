@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.IO;
-using FluentAssertions;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests;
 
@@ -32,7 +33,7 @@ toc:
 		});
 		await using var collector = new DiagnosticsCollector([]).StartAsync(TestContext.Current.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var context = new BuildContext(collector, fileSystem, configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
 		var set = new DocumentationSet(context, logger, linkResolver);
 		var generator = new DocumentationGenerator(set, logger);

@@ -25,7 +25,7 @@ public class DocumentGateway(
 		{
 			var normalizedUrl = NormalizeUrl(url);
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s => s
-				.Indices(clientAccessor.Options.IndexName)
+				.Indices(clientAccessor.SearchIndex)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(normalizedUrl)))
 				.Size(1)
 			.Source(sf => sf.Filter(f => f.Includes(
@@ -104,7 +104,7 @@ public class DocumentGateway(
 		{
 			var normalizedUrl = NormalizeUrl(url);
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s => s
-				.Indices(clientAccessor.Options.IndexName)
+				.Indices(clientAccessor.SearchIndex)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(normalizedUrl)))
 				.Size(1)
 			.Source(sf => sf.Filter(f => f.Includes(

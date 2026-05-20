@@ -34,6 +34,7 @@ public record ResolvedEntry
 {
 	public required ChangelogEntry Entry { get; init; }
 	public required string Repo { get; init; }
+	public required string Owner { get; init; }
 	public required HashSet<string> BundleProductIds { get; init; }
 	public required bool HideLinks { get; init; }
 }

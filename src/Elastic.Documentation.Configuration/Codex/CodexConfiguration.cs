@@ -21,7 +21,7 @@ public record CodexConfiguration
 	public string SitePrefix { get; set; } = "/";
 
 	/// <summary>
-	/// The environment name for this codex (e.g., "engineering", "security").
+	/// The environment name for this codex (e.g., "internal", "security").
 	/// Used as part of the Elasticsearch index namespace.
 	/// </summary>
 	[YamlMember(Alias = "environment")]

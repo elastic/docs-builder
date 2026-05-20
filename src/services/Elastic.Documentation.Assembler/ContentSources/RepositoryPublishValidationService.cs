@@ -10,6 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.ContentSources;
 
@@ -17,7 +18,7 @@ public class RepositoryPublishValidationService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
-	FileSystem fileSystem
+	ScopedFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<RepositoryPublishValidationService>();

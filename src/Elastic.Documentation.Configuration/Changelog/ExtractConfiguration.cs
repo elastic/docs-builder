@@ -20,4 +20,14 @@ public record ExtractConfiguration
 	/// Defaults to true. Looks for patterns like "Fixes #123", "Closes #456", etc.
 	/// </summary>
 	public bool Issues { get; init; } = true;
+
+	/// <summary>
+	/// Whether to strip square-bracket prefixes from PR titles by default.
+	/// Defaults to false. When enabled, titles like "[ES|QL] Fix bug" become "Fix bug",
+	/// and a single ASCII hyphen used as a team separator after the prefix is removed when it is followed by whitespace
+	/// (for example "[Team] - Do something" becomes "Do something").
+	/// Serialized changelog YAML uses quoted scalars when a title still starts with <c>-</c>, <c>*</c>, <c>+</c>, en dash, or em dash so the value is not parsed as a list marker.
+	/// Can be overridden by CLI --strip-title-prefix flag.
+	/// </summary>
+	public bool StripTitlePrefix { get; init; }
 }

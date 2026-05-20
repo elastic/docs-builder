@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
 using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using Actions.Core;
@@ -15,6 +14,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Documentation.Builder.Http;
 
@@ -53,8 +53,10 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly Lock _diagnosticsLock = new();
 	private readonly List<DiagnosticDto> _diagnostics = [];
 
-	// Reuse MockFileSystem across builds to benefit from caching
-	private readonly MockFileSystem _writeFs = new();
+	// Reuse MockFileSystem across builds to benefit from caching.
+	// Initialized lazily on first ExecuteBuildAsync so we can scope it to the source path.
+	private ScopedFileSystem? _writeFs;
+	private string? _writeFsPath;
 
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();
@@ -169,7 +171,12 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			// Create a diagnostics collector that streams to our channel
 			var streamingCollector = new StreamingDiagnosticsCollector(_loggerFactory, this);
 
-			var readFs = new FileSystem();
+			var readFs = FileSystemFactory.RealGitRootForPath(sourcePath);
+			if (_writeFs is null || _writeFsPath != sourcePath)
+			{
+				_writeFs = FileSystemFactory.InMemoryForPath(sourcePath);
+				_writeFsPath = sourcePath;
+			}
 			var service = new IsolatedBuildService(_loggerFactory, _configurationContext, new NullCoreService(), SystemEnvironmentVariables.Instance);
 
 			_logger.LogInformation("Starting in-memory validation build for {Path}", sourcePath);
@@ -177,18 +184,18 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 			_ = await service.Build(
 				streamingCollector,
 				readFs,
-				sourcePath,
-				null,  // output
-				null,  // pathPrefix
-				true,  // force - always rebuild for validation
-				false, // strict
-				false, // allowIndexing
-				false, // metadataOnly
-				ExportOptions.Default,
-				null,  // canonicalBaseUrl
-				_writeFs, // reuse MockFileSystem across builds for caching
-				true,  // skipOpenApi - skip for faster validation builds
-				false, // skipCrossLinks - enable cross-links (cached in MockFileSystem)
+				new IsolatedBuildOptions
+				{
+					Path = new DirectoryInfo(sourcePath),
+					Force = true,
+					Strict = false,
+					AllowIndexing = false,
+					MetadataOnly = false,
+					Exporters = ExportOptions.Default,
+					SkipApi = true,
+					SkipCrossLinks = false
+				},
+				_writeFs, // reuse MockFileSystem across builds for caching; initialized above
 				ct
 			);
 

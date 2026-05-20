@@ -28,4 +28,10 @@ public interface IGitHubPrService
 	/// <param name="ctx">Cancellation token</param>
 	/// <returns>Issue information or null if fetch fails</returns>
 	Task<GitHubIssueInfo?> FetchIssueInfoAsync(string issueUrl, string? owner = null, string? repo = null, CancellationToken ctx = default);
+
+	/// <summary>Returns the author login of a specific commit (for bot-loop detection in CI).</summary>
+	Task<string?> FetchCommitAuthorAsync(string owner, string repo, string sha, CancellationToken ctx = default);
+
+	/// <summary>Returns the author login of the last commit that touched a file (for manual-edit detection in CI).</summary>
+	Task<string?> FetchLastFileCommitAuthorAsync(string owner, string repo, string filePath, string branch, CancellationToken ctx = default);
 }

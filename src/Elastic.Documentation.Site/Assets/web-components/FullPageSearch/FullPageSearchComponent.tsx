@@ -23,9 +23,10 @@ const FullPageSearchInner = () => {
         },
         staleTime: 60 * 60 * 1000, // 60 minutes
         retry: false,
+        enabled: !config.airGapped,
     })
 
-    if (!isApiAvailable) {
+    if (config.airGapped || !isApiAvailable) {
         return null
     }
 

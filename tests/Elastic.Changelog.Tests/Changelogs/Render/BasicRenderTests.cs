@@ -2,9 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
-using FluentAssertions;
+using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -14,7 +15,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 	public async Task RenderChangelogs_WithValidBundle_CreatesMarkdownFiles()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		// Create test changelog file
@@ -31,11 +32,11 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			description: This is a test feature
 			""";
 
-		var changelogFile = FileSystem.Path.Combine(changelogDir, "1755268130-test-feature.yaml");
+		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-test-feature.yaml");
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
 
 		// Create bundle file
-		var bundleFile = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString(), "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
@@ -51,7 +52,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -67,7 +68,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
 		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
@@ -79,8 +80,8 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 	public async Task RenderChangelogs_WithMultipleBundles_MergesAndRenders()
 	{
 		// Arrange
-		var changelogDir1 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var changelogDir2 = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir1);
 		FileSystem.Directory.CreateDirectory(changelogDir2);
 
@@ -108,16 +109,16 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			- "200"
 			""";
 
-		var file1 = FileSystem.Path.Combine(changelogDir1, "1755268130-first.yaml");
-		var file2 = FileSystem.Path.Combine(changelogDir2, "1755268140-second.yaml");
+		var file1 = FileSystem.Path.Join(changelogDir1, "1755268130-first.yaml");
+		var file2 = FileSystem.Path.Join(changelogDir2, "1755268140-second.yaml");
 		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
 		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
 
 		// Create bundle files
-		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundle1 = FileSystem.Path.Combine(bundleDir, "bundle1.yaml");
+		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
 		// language=yaml
 		var bundleContent1 =
 			$"""
@@ -131,7 +132,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current.CancellationToken);
 
-		var bundle2 = FileSystem.Path.Combine(bundleDir, "bundle2.yaml");
+		var bundle2 = FileSystem.Path.Join(bundleDir, "bundle2.yaml");
 		// language=yaml
 		var bundleContent2 =
 			$"""
@@ -145,7 +146,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current.CancellationToken);
 
-		var outputDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
@@ -165,7 +166,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Combine(outputDir, "9.2.0", "index.md");
+		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
 		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);

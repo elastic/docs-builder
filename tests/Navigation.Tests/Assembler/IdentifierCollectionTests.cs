@@ -2,10 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -20,7 +21,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
-			platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
+			platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		// Root identifier should be <repository>://
@@ -35,7 +36,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 
 		// Test platform repository with nested TOCs
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector, platformContext.ConfigurationPath, fileSystem);
+		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector, platformContext.ConfigurationPath, FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		// Should collect identifiers from nested TOCs
@@ -56,7 +57,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 
 		// Test observability repository (no nested TOCs)
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), fileSystem);
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
 		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
 
 		// Should only have root identifier
@@ -73,7 +74,7 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
-			platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
+			platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		// Get the deployment-guide TOC
@@ -96,13 +97,13 @@ public class IdentifierCollectionTests(ITestOutputHelper output)
 		var platformContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/platform", output);
 		var platformDocset = DocumentationSetFile.LoadAndResolve(
-			platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), fileSystem);
+			platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
 		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(
 			fileSystem, "/checkouts/current/observability", output);
 		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
-			observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), fileSystem);
+			observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
 		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
 
 		// Each should have its own set of identifiers

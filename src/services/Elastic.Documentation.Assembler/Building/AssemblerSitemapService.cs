@@ -1,0 +1,90 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.IO.Abstractions;
+using Actions.Core.Services;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Search;
+using Elastic.Documentation.Services;
+using Elastic.Markdown.Exporters.Elasticsearch;
+using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
+
+namespace Elastic.Documentation.Assembler.Building;
+
+public class AssemblerSitemapService(
+	ILoggerFactory logFactory,
+	AssemblyConfiguration assemblyConfiguration,
+	IConfigurationContext configurationContext,
+	ICoreService githubActionsService
+) : IService
+{
+	private readonly ILogger _logger = logFactory.CreateLogger<AssemblerSitemapService>();
+
+	public async Task<bool> GenerateSitemapAsync(
+		IDiagnosticsCollector collector,
+		ScopedFileSystem fileSystem,
+		ElasticsearchIndexOptions es,
+		string? environment = null,
+		Cancel ctx = default
+	)
+	{
+		var githubEnvironmentInput = githubActionsService.GetInput("environment");
+		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
+
+		_logger.LogInformation("Generating sitemap from ES index for environment {Environment}", environment);
+
+		var assembleContext = new AssembleContext(
+			assemblyConfiguration, configurationContext, environment, collector,
+			fileSystem, fileSystem, null, null
+		);
+
+		var cfg = configurationContext.Endpoints.Elasticsearch;
+		await ElasticsearchEndpointConfigurator.ApplyAsync(cfg, es, collector, fileSystem, ctx);
+
+		if (collector.Errors > 0)
+			return false;
+
+		var transport = ElasticsearchTransportFactory.Create(cfg);
+
+		var indexName = DocumentationMappingContext.DocumentationDocumentSemantic
+			.CreateContext(type: "assembler", env: environment)
+			.ResolveReadTarget();
+
+		_logger.LogInformation("Querying index {Index} for sitemap entries", indexName);
+
+		var reader = new EsSitemapReader(transport, _logger, indexName);
+		var entries = new Dictionary<string, DateTimeOffset>();
+
+		await foreach (var entry in reader.ReadAllAsync(ctx))
+			entries[entry.Url] = entry.LastUpdated;
+
+		_logger.LogInformation("Fetched {Count} sitemap entries from ES", entries.Count);
+
+		if (entries.Count == 0)
+		{
+			collector.EmitGlobalError("No documents found in ES index — cannot generate sitemap");
+			return false;
+		}
+
+		if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
+			collector.EmitGlobalWarning(
+				$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
+				"Consider implementing sitemap index files."
+			);
+
+		var result = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+
+		if (result.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
+			collector.EmitGlobalWarning(
+				$"Sitemap file size is {result.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
+				"Consider implementing sitemap index files."
+			);
+
+		_logger.LogInformation("Sitemap written to {Path}", assembleContext.OutputWithPathPrefixDirectory.FullName);
+		return true;
+	}
+}

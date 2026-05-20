@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
-using FluentAssertions;
 using JetBrains.Annotations;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -132,7 +133,7 @@ $"""
 		TestDiagnosticsCollector collector,
 		MockFileSystem fileSystem,
 		IConfigurationContext configurationContext) =>
-		new(collector, fileSystem, configurationContext)
+		new(collector, FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem), configurationContext)
 		{
 			UrlPathPrefix = "/docs"
 		};

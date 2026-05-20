@@ -49,7 +49,8 @@ public static class PublishBlockerExtensions
 	}
 
 	/// <summary>
-	/// Checks if entry areas match the blocker's area list using the configured match mode.
+	/// Checks if entry areas match the blocker's area list using the configured match mode
+	/// (<see cref="MatchMode.Any"/>, <see cref="MatchMode.All"/>, or <see cref="MatchMode.Conjunction"/>).
 	/// </summary>
 	public static bool MatchesArea(this PublishBlocker blocker, IReadOnlyList<string>? entryAreas)
 	{
@@ -60,6 +61,8 @@ public static class PublishBlockerExtensions
 		{
 			MatchMode.All => entryAreas.All(area =>
 				blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase))),
+			MatchMode.Conjunction => blocker.Areas.All(listed =>
+				entryAreas.Any(e => e.Equals(listed, StringComparison.OrdinalIgnoreCase))),
 			_ => entryAreas.Any(area =>
 				blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
 		};

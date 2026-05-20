@@ -4,13 +4,15 @@
 
 using System.IO.Abstractions;
 using System.Net;
+using Nullean.ScopedFileSystem;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 #if DEBUG
-using Elastic.Documentation.Api.Infrastructure;
+using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ServiceDefaults;
@@ -33,16 +35,16 @@ public class DocumentationWebHost
 {
 	private readonly WebApplication _webApplication;
 
-	private readonly IHostedService _hostedService;
-	private readonly IFileSystem _writeFileSystem;
+	private readonly IDiagnosticsCollector _hostedService;
+	private readonly ScopedFileSystem _writeFileSystem;
 
 	public InMemoryBuildState InMemoryBuildState { get; }
 
 	public DocumentationWebHost(ILoggerFactory logFactory,
 		string? path,
 		int port,
-		IFileSystem readFs,
-		IFileSystem writeFs,
+		ScopedFileSystem readFs,
+		ScopedFileSystem writeFs,
 		IConfigurationContext configurationContext,
 		bool isWatchBuild
 	)
@@ -52,7 +54,7 @@ public class DocumentationWebHost
 		_ = builder.AddDocumentationServiceDefaults();
 
 #if DEBUG
-		builder.Services.AddElasticDocsApiUsecases("dev");
+		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
 		_ = builder.Logging
@@ -211,7 +213,25 @@ public class DocumentationWebHost
 
 	private async Task<IResult> ServeApiFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
 	{
-		var path = Path.Combine(holder.ApiPath.FullName, slug.Trim('/'), "index.html");
+		try
+		{
+			await holder.EnsureApiReferencesAsync(ctx);
+		}
+		catch (OperationCanceledException) when (ctx.IsCancellationRequested)
+		{
+			// HTTP request was canceled - return 499 or appropriate status
+			return Results.Problem("Request canceled", statusCode: 499);
+		}
+		catch (OperationCanceledException)
+		{
+			// API generation timed out - return 503 with retry info
+			return Results.Problem("API generation in progress, please retry", statusCode: 503);
+		}
+
+		var apiRoot = Path.GetFullPath(holder.ApiPath.FullName);
+		var path = Path.GetFullPath(Path.Join(apiRoot, slug.Trim('/'), "index.html"));
+		if (!path.StartsWith(apiRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+			return Results.NotFound();
 		var info = _writeFileSystem.FileInfo.New(path);
 		if (info.Exists)
 		{
@@ -241,7 +261,7 @@ public class DocumentationWebHost
 			slug = slug.Replace('/', Path.DirectorySeparatorChar);
 
 		slug = slug.TrimEnd('/');
-		var s = Path.GetExtension(slug) == string.Empty ? Path.Combine(slug, "index.md") : slug;
+		var s = Path.GetExtension(slug) == string.Empty ? Path.Join(slug, "index.md") : slug;
 		var fp = new FilePath(s, generator.DocumentationSet.SourceDirectory);
 
 		if (!generator.DocumentationSet.Files.TryGetValue(fp, out var documentationFile))

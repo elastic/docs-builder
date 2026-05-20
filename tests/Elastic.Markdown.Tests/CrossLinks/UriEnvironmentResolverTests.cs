@@ -3,10 +3,23 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using AwesomeAssertions;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.CrossLinks;
+
+/// <summary>Mirrors the path extraction logic in CodexBuildService.CollectRedirects.</summary>
+internal static class RedirectPathExtractor
+{
+	public static string GetPath(Uri? uri) =>
+		uri is null
+			? string.Empty
+			: uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
+}
 
 public class CodexAwareUriResolverTests
 {
@@ -85,6 +98,34 @@ public class CodexAwareUriResolverTests
 		result.IsAbsoluteUri.Should().BeTrue();
 		result.ToString().Should().Be("https://codex.elastic.dev/r/observability-robots/page");
 	}
+
+	[Fact]
+	public void SameRepoRedirect_CurrentRepoInCodexSet_ProducesCodexPath()
+	{
+		var codexRepos = new HashSet<string> { "ai-guild" }.ToFrozenSet();
+		var resolver = new CodexAwareUriResolver(codexRepos, useRelativePaths: true);
+		var crossLinkUri = new Uri("ai-guild://best-practices/tools", UriKind.Absolute);
+		var targetPath = CrossLinkResolver.ToTargetUrlPath("best-practices/tools");
+
+		var result = resolver.Resolve(crossLinkUri, targetPath);
+
+		result.IsAbsoluteUri.Should().BeFalse();
+		result.ToString().Should().Be("/r/ai-guild/best-practices/tools");
+	}
+
+	[Fact]
+	public void SameRepoRedirect_WithIndexNormalization_StripsTrailingIndex()
+	{
+		var codexRepos = new HashSet<string> { "ai-guild" }.ToFrozenSet();
+		var resolver = new CodexAwareUriResolver(codexRepos, useRelativePaths: true);
+		var crossLinkUri = new Uri("ai-guild://best-practices/tools/index.md", UriKind.Absolute);
+		var targetPath = CrossLinkResolver.ToTargetUrlPath("best-practices/tools/index.md");
+
+		var result = resolver.Resolve(crossLinkUri, targetPath);
+
+		result.IsAbsoluteUri.Should().BeFalse();
+		result.ToString().Should().Be("/r/ai-guild/best-practices/tools");
+	}
 }
 
 public class IsolatedBuildEnvironmentUriResolverTests
@@ -121,5 +162,145 @@ public class IsolatedBuildEnvironmentUriResolverTests
 		var result = resolver.Resolve(uri, "page");
 
 		result.ToString().Should().Contain("/tree/main/");
+	}
+}
+
+public class CodexRedirectPathExtractionTests
+{
+	[Fact]
+	public void RelativeUri_FromCodexAwareResolver_ExtractsPathCorrectly()
+	{
+		var codexRepos = new HashSet<string> { "ai-guild" }.ToFrozenSet();
+		var resolver = new CodexAwareUriResolver(codexRepos, useRelativePaths: true);
+		var uri = resolver.Resolve(new Uri("ai-guild://tools", UriKind.Absolute), "tools");
+
+		var path = RedirectPathExtractor.GetPath(uri);
+
+		path.Should().Be("/r/ai-guild/tools");
+	}
+
+	[Fact]
+	public void AbsoluteUri_FromCodexAwareResolver_ExtractsPathCorrectly()
+	{
+		var codexRepos = new HashSet<string> { "ai-guild" }.ToFrozenSet();
+		var resolver = new CodexAwareUriResolver(codexRepos, useRelativePaths: false);
+		var uri = resolver.Resolve(new Uri("ai-guild://tools", UriKind.Absolute), "tools");
+
+		var path = RedirectPathExtractor.GetPath(uri);
+
+		path.Should().Be("/r/ai-guild/tools");
+	}
+
+	[Fact]
+	public void AbsoluteUri_FromIsolatedBuildResolver_ExtractsPathCorrectly()
+	{
+		var resolver = new IsolatedBuildEnvironmentUriResolver();
+		var uri = resolver.Resolve(new Uri("docs-content://get-started", UriKind.Absolute), "get-started");
+
+		var path = RedirectPathExtractor.GetPath(uri);
+
+		path.Should().Be("/elastic/docs-content/tree/main/get-started");
+	}
+
+	[Fact]
+	public void NullUri_ReturnsEmptyString()
+	{
+		var path = RedirectPathExtractor.GetPath(null);
+
+		path.Should().BeEmpty();
+	}
+}
+
+public class CodexCrossRepoRedirectTests
+{
+	[Fact]
+	public void CrossRepoRedirect_TargetInCodexRepo_ResolvesToCodexPath()
+	{
+		var resolver = new Elastic.Markdown.Tests.TestCodexCrossLinkResolver(useRelativePaths: true);
+		var crossRepoUri = new Uri("kibana://get-started/index.md", UriKind.Absolute);
+
+		var success = resolver.TryResolve(_ => { }, crossRepoUri, out var resolvedUri);
+
+		success.Should().BeTrue();
+		resolvedUri.Should().NotBeNull();
+		resolvedUri.IsAbsoluteUri.Should().BeFalse();
+		resolvedUri.ToString().Should().Be("/r/kibana/get-started");
+	}
+}
+
+public class CrossLinkResolverFallbackUrlTests
+{
+	private static FetchedCrossLinks BuildFallbackOnlyCrossLinks(string repository, string registryUrl, DocSetRegistry registry)
+	{
+		var emptyRepositoryLinks = new RepositoryLinks
+		{
+			Links = [],
+			Origin = new GitCheckoutInformation
+			{
+				Branch = "main",
+				RepositoryName = repository,
+				Remote = "origin",
+				Ref = "refs/heads/main"
+			},
+			UrlPathPrefix = "",
+			CrossLinks = []
+		};
+		return new FetchedCrossLinks
+		{
+			DeclaredRepositories = [repository],
+			LinkReferences = new Dictionary<string, RepositoryLinks> { [repository] = emptyRepositoryLinks }.ToFrozenDictionary(),
+			LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
+			RegistryUrlsByRepository = new Dictionary<string, string> { [repository] = registryUrl }.ToFrozenDictionary(),
+			RegistryByRepository = new Dictionary<string, DocSetRegistry> { [repository] = registry }.ToFrozenDictionary()
+		};
+	}
+
+	[Fact]
+	public void InternalRegistry_NoIndexEntry_UsesCodexInternalPath()
+	{
+		var crossLinks = BuildFallbackOnlyCrossLinks(
+			"platform-observability-team",
+			"https://github.com/elastic/codex-link-index",
+			DocSetRegistry.Internal
+		);
+
+		string? emittedError = null;
+		var resolver = new IsolatedBuildEnvironmentUriResolver();
+		var success = CrossLinkResolver.TryResolve(
+			s => emittedError = s,
+			crossLinks,
+			resolver,
+			new Uri("platform-observability-team://index.md", UriKind.Absolute),
+			out _
+		);
+
+		success.Should().BeFalse();
+		emittedError.Should().NotBeNull();
+		emittedError.Should().Contain("https://github.com/elastic/codex-link-index/blob/main/internal/elastic/platform-observability-team/links.json");
+		emittedError.Should().NotContain("/main/links.json");
+	}
+
+	[Fact]
+	public void PublicRegistry_NoIndexEntry_UsesPublicS3Path()
+	{
+		var crossLinks = BuildFallbackOnlyCrossLinks(
+			"docs-content",
+			"https://elastic-docs-link-index.s3.us-east-2.amazonaws.com",
+			DocSetRegistry.Public
+		);
+
+		string? emittedError = null;
+		var resolver = new IsolatedBuildEnvironmentUriResolver();
+		var success = CrossLinkResolver.TryResolve(
+			s => emittedError = s,
+			crossLinks,
+			resolver,
+			new Uri("docs-content://index.md", UriKind.Absolute),
+			out _
+		);
+
+		success.Should().BeFalse();
+		emittedError.Should().NotBeNull();
+		emittedError.Should().Contain("https://elastic-docs-link-index.s3.us-east-2.amazonaws.com/elastic/docs-content/main/links.json");
 	}
 }

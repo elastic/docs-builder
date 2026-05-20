@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Security;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
@@ -34,7 +35,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		if (!checkoutDir.Exists)
 			return null;
 
-		var snapshotFilePath = Path.Combine(checkoutDir.FullName, LinkRegistrySnapshotFileName);
+		var snapshotFilePath = Path.Join(checkoutDir.FullName, LinkRegistrySnapshotFileName);
 		if (!context.ReadFileSystem.File.Exists(snapshotFilePath))
 			return null;
 
@@ -44,7 +45,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		var checkouts = new List<CodexCheckout>();
 		foreach (var subDir in checkoutDir.GetDirectories())
 		{
-			var gitDir = Path.Combine(subDir.FullName, ".git");
+			var gitDir = Path.Join(subDir.FullName, ".git");
 			if (!context.ReadFileSystem.Directory.Exists(gitDir))
 				continue;
 
@@ -128,7 +129,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		if (Path.IsPathRooted(LinkRegistrySnapshotFileName))
 			throw new InvalidOperationException($"Snapshot file name '{LinkRegistrySnapshotFileName}' must be a relative path.");
 
-		var snapshotFilePath = Path.Combine(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName);
+		var snapshotFilePath = Path.Join(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName);
 
 		await context.WriteFileSystem.File.WriteAllTextAsync(
 			snapshotFilePath,
@@ -169,7 +170,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		}
 
 		var repoDir = context.ReadFileSystem.DirectoryInfo.New(
-			Path.Combine(context.CheckoutDirectory.FullName, repoName));
+			Path.Join(context.CheckoutDirectory.FullName, repoName));
 
 		var gitUrl = GetGitUrl($"elastic/{repoName}");
 		var gitRef = fetchLatest ? entry.Branch : entry.GitReference;
@@ -238,7 +239,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 	{
 		foreach (var candidate in DocsetSearchPaths)
 		{
-			var path = Path.Combine(repoDir.FullName, candidate);
+			var path = Path.Join(repoDir.FullName, candidate);
 			var file = fileSystem.FileInfo.New(path);
 			if (file.Exists)
 				return file;
@@ -268,9 +269,9 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 					return found;
 			}
 		}
-		catch (UnauthorizedAccessException)
+		catch (Exception ex) when (ex is UnauthorizedAccessException or SecurityException)
 		{
-			// Skip directories we can't access
+			// Skip directories we can't access (including ScopedFileSystem-blocked hidden dirs)
 		}
 
 		return null;

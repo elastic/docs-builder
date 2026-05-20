@@ -240,7 +240,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			return false;
 		}
 
-		var filePath = fileSystem.Path.Combine(bundleDirectory, entry.File.Name);
+		var filePath = fileSystem.Path.Join(bundleDirectory, entry.File.Name);
 		if (!fileSystem.File.Exists(filePath))
 		{
 			collector.EmitError(bundleFile, $"Referenced changelog file '{entry.File.Name}' does not exist at path: {filePath}");

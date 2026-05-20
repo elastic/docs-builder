@@ -121,22 +121,22 @@ Requires JetBrains AI Assistant plugin version 2025.2 or later.
 
 | Tool | Description |
 |------|-------------|
-| `SemanticSearch` | Searches all published Elastic documentation by meaning. Returns relevant documents with AI summaries, relevance scores, and navigation context. Supports filtering by product and navigation section. |
-| `FindRelatedDocs` | Finds Elastic documentation pages related to a given topic. Useful for exploring what documentation exists around a subject and discovering related content. |
+| `search_docs` | Searches all published Elastic documentation by meaning. Returns relevant documents with AI summaries, relevance scores, and navigation context. Supports filtering by product and navigation section. |
+| `find_related_docs` | Finds Elastic documentation pages related to a given topic. Useful for exploring what documentation exists around a subject and discovering related content. |
 
 ### Document tools
 
 | Tool | Description |
 |------|-------------|
-| `GetDocumentByUrl` | Retrieves a specific Elastic documentation page by its URL. Accepts a full URL or a path. Returns title, AI summaries, headings, navigation context, and optionally the full body. |
-| `AnalyzeDocumentStructure` | Analyzes the structure of an Elastic documentation page. Accepts a full URL or a path. Returns heading count, link count, parent pages, and AI enrichment status. |
+| `get_document_by_url` | Retrieves a specific Elastic documentation page by its URL. Accepts a full URL or a path. Returns title, AI summaries, headings, navigation context, and optionally the full body. |
+| `analyze_document_structure` | Analyzes the structure of an Elastic documentation page. Accepts a full URL or a path. Returns heading count, link count, parent pages, and AI enrichment status. |
 
 ### Coherence tools
 
 | Tool | Description |
 |------|-------------|
-| `CheckCoherence` | Checks how coherently a topic is covered across all Elastic documentation by finding related documents and analyzing their coverage across products and sections. |
-| `FindInconsistencies` | Finds potential inconsistencies across Elastic documentation pages covering the same topic. Identifies overlapping content within a product area. |
+| `check_docs_coherence` | Checks how coherently a topic is covered across all Elastic documentation by finding related documents and analyzing their coverage across products and sections. |
+| `find_docs_inconsistencies` | Finds potential inconsistencies across Elastic documentation pages covering the same topic. Identifies overlapping content within a product area. |
 
 ## Testing with MCP Inspector
 

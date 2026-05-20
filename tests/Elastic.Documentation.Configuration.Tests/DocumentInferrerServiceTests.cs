@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
-using FluentAssertions;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -81,6 +82,7 @@ public class DocumentInferrerServiceTests
 		return new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 	}
@@ -129,7 +131,7 @@ public class DocumentInferrerServiceTests
 			applicableTo: null);
 
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("elasticsearch");
+		result.Product.Id.Should().Be("elasticsearch");
 		result.Repository.Should().Be("elasticsearch");
 		result.ProductVersion.Should().Be("9.2.0");
 	}
@@ -152,7 +154,7 @@ public class DocumentInferrerServiceTests
 			applicableTo: null);
 
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("apm-agent-java");
+		result.Product.Id.Should().Be("apm-agent-java");
 		result.Repository.Should().Be("elastic-otel-java");
 	}
 
@@ -175,7 +177,7 @@ public class DocumentInferrerServiceTests
 			applicableTo: null);
 
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("elasticsearch");
+		result.Product.Id.Should().Be("elasticsearch");
 	}
 
 	[Fact]
@@ -200,7 +202,7 @@ public class DocumentInferrerServiceTests
 			applicableTo: applicableTo);
 
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("curator");
+		result.Product.Id.Should().Be("curator");
 	}
 
 	[Fact]
@@ -227,7 +229,7 @@ public class DocumentInferrerServiceTests
 
 		// Legacy mapping should take priority
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("kibana");
+		result.Product.Id.Should().Be("kibana");
 	}
 
 	[Fact]
@@ -253,7 +255,7 @@ public class DocumentInferrerServiceTests
 
 		// Applicability should take priority over repository match
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("curator");
+		result.Product.Id.Should().Be("curator");
 	}
 
 	[Fact]
@@ -396,6 +398,7 @@ public class DocumentInferrerServiceTests
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = products.ToFrozenDictionary(),
+			PublicReferenceProducts = products.ToFrozenDictionary(),
 			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 		};
 		var legacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] };
@@ -410,7 +413,7 @@ public class DocumentInferrerServiceTests
 			applicableTo: null);
 
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("serverless-es");
+		result.Product.Id.Should().Be("serverless-es");
 		result.ProductVersion.Should().BeNull("versionless products should return null version");
 	}
 
@@ -426,7 +429,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForOpenApi("elasticsearch");
 
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("elasticsearch");
+		result.Product.Id.Should().Be("elasticsearch");
 		result.Repository.Should().Be("elasticsearch");
 		result.ProductVersion.Should().Be("9.2.0");
 		result.RelatedProducts.Should().HaveCount(1);
@@ -445,7 +448,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForOpenApi("kibana");
 
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("kibana");
+		result.Product.Id.Should().Be("kibana");
 		result.Repository.Should().Be("kibana");
 		result.ProductVersion.Should().Be("9.2.0");
 	}
@@ -479,7 +482,7 @@ public class DocumentInferrerServiceTests
 		var result = inferrer.InferForOpenApi("ELASTICSEARCH");
 
 		result.Product.Should().NotBeNull();
-		result.Product!.Id.Should().Be("elasticsearch");
+		result.Product.Id.Should().Be("elasticsearch");
 	}
 
 	[Fact]

@@ -15,6 +15,12 @@ public interface IDocsBuilderExtension
 {
 	IDocumentationFileExporter? FileExporter { get; }
 
+	/// <summary>
+	/// Directories outside the working directory root that this extension requires read access to.
+	/// These are collected and added as additional <c>ScopedFileSystem</c> roots when building.
+	/// </summary>
+	IEnumerable<string> ExternalScopeRoots => [];
+
 	/// Create an instance of <see cref="DocumentationFile"/> if it matches the <paramref name="file"/>.
 	/// Return `null` to let another extension handle this.
 	DocumentationFile? CreateDocumentationFile(IFileInfo file, MarkdownParser markdownParser);

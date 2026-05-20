@@ -7,7 +7,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using static System.Globalization.CultureInfo;
-using static Elastic.Documentation.ChangelogEntryType;
+using static Elastic.Documentation.ReleaseNotes.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Asciidoc;
 
@@ -31,6 +31,19 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		_ = sb.AppendLine(InvariantCulture, $"[[release-notes-{context.TitleSlug}]]");
 		_ = sb.AppendLine(InvariantCulture, $"== {context.Title}");
 		_ = sb.AppendLine();
+
+		if (context.BundleReleaseDate is { } releaseDate)
+		{
+			_ = sb.AppendLine(InvariantCulture, $"_Released: {releaseDate.ToString("MMMM d, yyyy", InvariantCulture)}_");
+			_ = sb.AppendLine();
+		}
+
+		// Add description if present
+		if (!string.IsNullOrEmpty(context.BundleDescription))
+		{
+			_ = sb.AppendLine(context.BundleDescription);
+			_ = sb.AppendLine();
+		}
 
 		// Group entries by type
 		var entriesByType = context.EntriesByType;
@@ -131,7 +144,7 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 		}
 
 		// Write the asciidoc file
-		var asciidocPath = fileSystem.Path.Combine(context.OutputDir, $"{context.TitleSlug}.asciidoc");
+		var asciidocPath = fileSystem.Path.Join(context.OutputDir, $"{context.TitleSlug}.asciidoc");
 		var asciidocDir = fileSystem.Path.GetDirectoryName(asciidocPath);
 		if (!string.IsNullOrWhiteSpace(asciidocDir) && !fileSystem.Directory.Exists(asciidocDir))
 			_ = fileSystem.Directory.CreateDirectory(asciidocDir);

@@ -1,0 +1,56 @@
+name: Docs preview cleanup (local)
+
+# Runs when a PR is closed. Pairs with docs-preview-local.yml (push/PR build).
+# Inlined cleanup: GitHub deployment records + S3 preview prefix (no docs-actions call).
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: none
+  deployments: write
+  id-token: write
+
+jobs:
+  destroy:
+    if: github.event.repository.fork == false # Skip on fork repo; upstream PRs still run here.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete GitHub environment
+        uses: actions/github-script@v9
+        id: delete-deployment
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const deployments = await github.rest.repos.listDeployments({
+              owner,
+              repo,
+              environment: 'docs-preview',
+              task: `docs-preview-${context.issue.number}`,
+            });
+            core.setOutput('is-empty', deployments.data.length === 0)
+            for (const deployment of deployments.data) {
+              await github.rest.repos.createDeploymentStatus({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+                state: 'inactive',
+                description: 'Marking deployment as inactive'
+              });
+              await github.rest.repos.deleteDeployment({
+                owner,
+                repo,
+                deployment_id: deployment.id
+              });
+            }
+
+      - uses: elastic/docs-builder/.github/actions/aws-auth@main
+        if: steps.delete-deployment.outputs.is-empty == 'false'
+
+      - name: Delete s3 objects
+        if: steps.delete-deployment.outputs.is-empty == 'false'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --recursive

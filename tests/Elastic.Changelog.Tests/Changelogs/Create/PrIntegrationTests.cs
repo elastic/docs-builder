@@ -2,10 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Configuration;
 using FakeItEasy;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -149,6 +150,76 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	}
 
 	[Fact]
+	public async Task CreateChangelog_WithMultiplePrsAndUsePrNumber_CreatesOneFilePerPrEachNamedByPrNumber()
+	{
+		// With --use-pr-number and multiple PRs, creates one changelog per PR, each named by its PR number (not one aggregated file)
+		var pr1Info = new GitHubPrInfo
+		{
+			Title = "First PR",
+			Labels = ["type:feature"]
+		};
+		var pr2Info = new GitHubPrInfo
+		{
+			Title = "Second PR",
+			Labels = ["type:bug"]
+		};
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>.That.Contains("1234"),
+				null,
+				null,
+				A<CancellationToken>._))
+			.Returns(pr1Info);
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>.That.Contains("5678"),
+				null,
+				null,
+				A<CancellationToken>._))
+			.Returns(pr2Info);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix: "type:bug"
+			    breaking-change:
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/1234", "https://github.com/elastic/elasticsearch/pull/5678"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			UsePrNumber = true
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
+		files.Should().HaveCount(2, "multiple PRs with --use-pr-number should create one file per PR");
+
+		var fileNames = files.Select(f => Path.GetFileName(f)).ToHashSet();
+		fileNames.Should().Contain("1234.yaml");
+		fileNames.Should().Contain("5678.yaml");
+	}
+
+	[Fact]
 	public async Task CreateChangelog_WithUseIssueNumberAndBothIssuesAndPrs_UseIssueNumberForFilename()
 	{
 		// When both --issues and --prs are specified, --use-issue-number should still determine the filename
@@ -197,7 +268,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var files = FileSystem.Directory.GetFiles(input.Output!, "*.yaml");
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
 		var fileName = Path.GetFileName(files[0]);
@@ -205,22 +276,8 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 	}
 
 	[Fact]
-	public async Task CreateChangelog_WithPrNumberAndOwnerRepo_FetchesPrInfo()
+	public async Task CreateChangelog_WithPrNumberAndOwnerRepo_SkipsApiFetchWhenTitleAndTypeProvided()
 	{
-		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Update documentation",
-			Labels = []
-		};
-
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"12345",
-				"elastic",
-				"elasticsearch",
-				A<CancellationToken>._))
-			.Returns(prInfo);
-
 		var service = CreateService();
 
 		var input = new CreateChangelogArguments
@@ -234,19 +291,17 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			Output = CreateOutputDirectory()
 		};
 
-		// Act
 		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
 
-		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"12345",
-				"elastic",
-				"elasticsearch",
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
 				A<CancellationToken>._))
-			.MustHaveHappenedOnceExactly();
+			.MustNotHaveHappened();
 	}
 
 	[Fact]
@@ -366,11 +421,11 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 				A<CancellationToken>._))
 			.Returns(pr3Info);
 
-		var tempDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var tempDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with newline-delimited PRs (simulating what ChangelogCommand would read)
-		var prsFile = FileSystem.Path.Combine(tempDir, "prs.txt");
+		var prsFile = FileSystem.Path.Join(tempDir, "prs.txt");
 		var prsFileContent =
 			"""
 			https://github.com/elastic/elasticsearch/pull/1111
@@ -464,11 +519,11 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 				A<CancellationToken>._))
 			.Returns(pr2Info);
 
-		var tempDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var tempDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempDir);
 
 		// Create a file with PRs
-		var prsFile = FileSystem.Path.Combine(tempDir, "prs.txt");
+		var prsFile = FileSystem.Path.Join(tempDir, "prs.txt");
 		var prsFileContent =
 			"""
 			https://github.com/elastic/elasticsearch/pull/2222

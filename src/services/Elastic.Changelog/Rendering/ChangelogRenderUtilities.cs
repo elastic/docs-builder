@@ -14,76 +14,42 @@ public static class ChangelogRenderUtilities
 {
 	/// <summary>
 	/// Gets the component (area) for an entry for subsection grouping.
-	/// When context is provided and publish rules with areas are configured, uses the first area
-	/// that aligns with those rules (first included or first non-excluded). Otherwise uses the first area.
+	/// Always uses the first area from the entry; rules.publish is no longer supported.
 	/// </summary>
+#pragma warning disable IDE0060 // Remove unused parameter
 	public static string GetComponent(ChangelogEntry entry, ChangelogRenderContext? context = null)
+#pragma warning restore IDE0060 // Remove unused parameter
+		=> entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
+
+	/// <summary>
+	/// Gets the entry context (repo, owner, hideLinks, shouldHide) for a specific entry.
+	/// </summary>
+	public static (string EntryRepo, string EntryOwner, bool HideLinks, bool ShouldHide) GetEntryContext(
+		ChangelogEntry entry,
+		ChangelogRenderContext context)
 	{
-		if (context == null)
-			return entry.Areas is { Count: > 0 } ? entry.Areas[0] : string.Empty;
-
-		var blocker = GetPublishBlockerForEntry(entry, context);
-		return blocker.GetPreferredArea(entry);
-	}
-
-	private static PublishBlocker? GetPublishBlockerForEntry(ChangelogEntry entry, ChangelogRenderContext context)
-	{
-		var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry);
-		if (productIds == null || context.Configuration?.Rules?.Publish == null)
-			return null;
-
-		foreach (var productId in productIds)
-		{
-			var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
-			if (blocker != null)
-				return blocker;
-		}
-
-		return null;
+		var entryRepo = context.EntryToRepo.GetValueOrDefault(entry, context.Repo);
+		var entryOwner = context.EntryToOwner.GetValueOrDefault(entry, context.Owner);
+		var hideLinks = context.EntryToHideLinks.GetValueOrDefault(entry, false);
+		var shouldHide = ShouldHideEntry(entry, context.FeatureIdsToHide, context);
+		return (entryRepo, entryOwner, hideLinks, shouldHide);
 	}
 
 	/// <summary>
-	/// Determines if an entry should be hidden based on feature IDs or rules configuration
+	/// Determines if an entry should be hidden based on feature IDs only.
+	/// rules.publish is no longer supported; filtering must be done at bundle time via rules.bundle.
 	/// </summary>
+#pragma warning disable IDE0060 // Remove unused parameter
 	public static bool ShouldHideEntry(
 		ChangelogEntry entry,
 		HashSet<string> featureIdsToHide,
 		ChangelogRenderContext? context = null)
+#pragma warning restore IDE0060 // Remove unused parameter
 	{
-		// Check feature IDs first
+		// Check feature IDs only
 		if (!string.IsNullOrWhiteSpace(entry.FeatureId) && featureIdsToHide.Contains(entry.FeatureId))
 			return true;
 
-		// Check rules configuration if context and configuration are available
-		if (context?.Configuration?.Rules?.Publish == null)
-			return false;
-
-		// Get product IDs for this entry
-		var productIds = context.EntryToBundleProducts.GetValueOrDefault(entry, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-		if (productIds.Count == 0)
-			return false;
-
-		// Check each product's publish configuration
-		foreach (var productId in productIds)
-		{
-			var blocker = GetPublishBlockerForProduct(context.Configuration.Rules.Publish, productId);
-			if (blocker != null && blocker.ShouldBlock(entry))
-				return true;
-		}
-
 		return false;
-	}
-
-	/// <summary>
-	/// Gets the publish blocker configuration for a specific product, checking product-specific overrides first
-	/// </summary>
-	private static PublishBlocker? GetPublishBlockerForProduct(PublishRules publishRules, string productId)
-	{
-		// Check product-specific override first
-		if (publishRules.ByProduct?.TryGetValue(productId, out var productBlocker) == true)
-			return productBlocker;
-
-		// Fall back to global publish blocker
-		return publishRules.Blocker;
 	}
 }

@@ -83,6 +83,18 @@ type ``link to valid anchor`` () =
     [<Fact>]
     let ``has no warning`` () = markdown |> hasNoWarnings
 
+type ``link to anchor with different casing`` () =
+
+    static let markdown = Setup.Markdown """
+[Whitelist](docs-content:/solutions/observability/apps/apm-server-binary.md#elasticsearch-requestheaderswhitelist)
+"""
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings
+
 type ``link to repository that does not resolve yet`` () =
 
     static let markdown = Setup.Markdown """

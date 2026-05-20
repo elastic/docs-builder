@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"/>
   </ItemGroup>
 
 </Project>

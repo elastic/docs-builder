@@ -1,0 +1,46 @@
+---
+# This workflow builds the changelog-scrubber Lambda function bootstrap binary
+# that can be deployed to AWS Lambda.
+name: Build Changelog Scrubber Lambda
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: ${{ github.ref }}
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BINARY_PATH: .artifacts/docs-lambda-changelog-scrubber/release_linux-x64/bootstrap
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - name: Amazon Linux 2023 build
+        run: |
+          docker build . -t changelog-scrubber:latest -f src/infra/docs-lambda-changelog-scrubber/lambda.DockerFile
+      - name: Get bootstrap binary
+        run: |
+          docker cp "$(docker create --name tc changelog-scrubber:latest)":/app/.artifacts/publish ./.artifacts && docker rm tc
+      - name: Inspect bootstrap binary
+        run: |
+          tree .artifacts
+          stat "${BINARY_PATH}"
+      - name: Archive artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: changelog-scrubber-lambda-binary
+          retention-days: 1
+          if-no-files-found: error
+          path: ${{ env.BINARY_PATH }}

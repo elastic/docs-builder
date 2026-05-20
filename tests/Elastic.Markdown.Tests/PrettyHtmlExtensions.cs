@@ -5,9 +5,9 @@
 using AngleSharp.Diffing;
 using AngleSharp.Html;
 using AngleSharp.Html.Parser;
+using AwesomeAssertions;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
-using FluentAssertions;
 using JetBrains.Annotations;
 using Xunit.Internal;
 using Xunit.Sdk;
@@ -81,7 +81,7 @@ public static class PrettyHtmlExtensions
 		actual = actual.Trim('\n').PrettyHtml(sanitize);
 
 		var actualCompare = actual.Replace("\t", string.Empty);
-		var expectedCompare = actual.Replace("\t", string.Empty);
+		var expectedCompare = expected.Replace("\t", string.Empty);
 
 		// we compare over unindented HTML, but if that fails, we rely on the pretty HTML Contain().
 		// to throw for improved error messages

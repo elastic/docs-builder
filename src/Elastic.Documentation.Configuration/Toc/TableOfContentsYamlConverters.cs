@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -72,7 +73,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 					}
 					value = childrenList;
 				}
-				else if (key.Value == "detection_rules")
+				else if (key.Value is "detection_rules" or "exclude")
 				{
 					// Parse the children list manually
 					var childrenList = new List<string>();
@@ -105,6 +106,20 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Context will be set during LoadAndResolve, use empty string as placeholder during deserialization
 		const string placeholderContext = "";
 
+		// Capture raw sort value; parsing and validation happen during resolution
+		var sort = dictionary.TryGetValue("sort", out var sortValue) && sortValue is string sortStr ? sortStr : null;
+
+		// Capture exclude list for folder auto-discovery
+		var exclude = dictionary.TryGetValue("exclude", out var excludeObj) && excludeObj is string[] excludeArr ? excludeArr : null;
+
+		// Check for CLI reference (cli: schema.json, optional folder: supplemental-docs/)
+		// Must come before the folder+file check to prevent folder: from being consumed by that branch
+		if (dictionary.TryGetValue("cli", out var cliSchemaPath) && cliSchemaPath is string cliSchema)
+		{
+			var supplementalFolder = dictionary.TryGetValue("folder", out var f) && f is string fStr ? fStr : null;
+			return new CliReferenceRef(cliSchema, supplementalFolder, cliSchema, cliSchema, placeholderContext, children);
+		}
+
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
 		// This represents a folder with a specific index file
 		// The file becomes a child of the folder (as FolderIndexFileRef), and user-specified children follow
@@ -124,7 +139,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			// Return a FolderRef with the index file and children
 			// The folder path can be deep (e.g., "guides/getting-started"), that's OK
 			// PathRelativeToContainer will be set during resolution
-			return new FolderRef(folder, folder, folderChildren, placeholderContext);
+			return new FolderRef(folder, folder, folderChildren, placeholderContext, sort, exclude);
 		}
 		if (dictionary.TryGetValue("detection_rules", out var detectionRulesObj) && detectionRulesObj is string[] detectionRulesFolders &&
 			dictionary.TryGetValue("file", out var detectionRulesFilePath) && detectionRulesFilePath is string detectionRulesFile)
@@ -159,7 +174,7 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// Check for folder reference
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("folder", out var folderPathOnly) && folderPathOnly is string folderOnly)
-			return new FolderRef(folderOnly, folderOnly, children, placeholderContext);
+			return new FolderRef(folderOnly, folderOnly, children, placeholderContext, sort, exclude);
 
 		// Check for toc reference
 		// PathRelativeToContainer will be set during resolution

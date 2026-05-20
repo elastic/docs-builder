@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
@@ -36,7 +37,7 @@ public class IndexViewModel
 
 	public required string NavigationHtml { get; init; }
 
-	public required string CurrentVersion { get; init; }
+	public required string? CurrentVersion { get; init; }
 
 	public required string? AllVersionsUrl { get; init; }
 	public required LegacyPageMapping[]? LegacyPages { get; init; }
@@ -69,6 +70,9 @@ public class IndexViewModel
 	public string? GitRepository { get; init; }
 	public string? GitHubDocsUrl { get; init; }
 	public string? GitHubRef { get; init; }
+
+	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
+	public BrandingConfiguration? Branding { get; init; }
 
 	/// <summary>Codex site header title. When set (codex builds), overrides DocSetName in the header.</summary>
 	public string? SiteHeaderTitle { get; set; }

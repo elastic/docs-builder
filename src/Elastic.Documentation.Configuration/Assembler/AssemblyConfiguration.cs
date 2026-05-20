@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 
@@ -35,7 +36,7 @@ public record AssemblyConfiguration
 				&& Paths.GetSolutionDirectory() is { } solutionDir
 			   )
 			{
-				var docsRepositoryPath = Path.Combine(solutionDir.FullName, "docs");
+				var docsRepositoryPath = Path.Join(solutionDir.FullName, "docs");
 				config.ReferenceRepositories["docs-builder"] = docsContentRepository with
 				{
 					Skip = false,

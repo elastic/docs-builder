@@ -41,7 +41,7 @@ import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
 
-if (config.buildType === 'isolated') {
+if (config.buildType === 'isolated' || config.airGapped) {
     import('./isolated')
 } else if (config.buildType === 'codex') {
     import('./codex')

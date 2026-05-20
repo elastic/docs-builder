@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Codex.Navigation;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -75,14 +75,14 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		// Get the standalone repo's navigation
 		var standaloneNav = docSetNavigations["standalone"] as INavigationHomeAccessor;
 		standaloneNav.Should().NotBeNull();
-		var homeProvider = standaloneNav!.HomeProvider;
+		var homeProvider = standaloneNav.HomeProvider;
 
 		// Assert: The HomeProvider's NavigationRoot should be the repo itself
 		homeProvider.Should().NotBeNull();
 
 		// The navigation root for an ungrouped repo should be itself (DocumentationSetNavigation)
 		// This means when rendering, it will show only its own navigation tree
-		var navRoot = homeProvider!.NavigationRoot;
+		var navRoot = homeProvider.NavigationRoot;
 		navRoot.Should().BeAssignableTo<IDocumentationSetNavigation>();
 		navRoot.Url.Should().Be("/docs/r/standalone");
 	}
@@ -104,9 +104,9 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		apmNav.Should().NotBeNull();
 
 		// Assert: The HomeProvider's NavigationRoot should be the GroupNavigation
-		apmNav!.HomeProvider.Should().NotBeNull();
+		apmNav.HomeProvider.Should().NotBeNull();
 
-		var navRoot = apmNav.HomeProvider!.NavigationRoot;
+		var navRoot = apmNav.HomeProvider.NavigationRoot;
 		navRoot.Should().BeOfType<GroupNavigation>();
 		navRoot.Url.Should().Be("/docs/g/observability");
 

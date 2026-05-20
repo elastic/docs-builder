@@ -88,7 +88,7 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 				.Replace("_static.", $"_static{Path.DirectorySeparatorChar}");
 
 			// Output to codex's URL prefix directory (e.g., internal-docs/_static/)
-			var outputPath = Path.Combine(
+			var outputPath = Path.Join(
 				_outputDirectory.FullName,
 				context.UrlPathPrefix?.Trim('/') ?? string.Empty,
 				path);
@@ -174,7 +174,7 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 		const string indexHtml = "index.html";
 		// Keep the full URL path so file structure matches URLs
 		var fileName = url.TrimStart('/') + "/" + indexHtml;
-		return _writeFileSystem.FileInfo.New(Path.Combine(_outputDirectory.FullName, fileName.Trim('/')));
+		return _writeFileSystem.FileInfo.New(Path.Join(_outputDirectory.FullName, fileName.Trim('/')));
 	}
 }
 

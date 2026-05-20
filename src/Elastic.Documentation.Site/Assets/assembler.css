@@ -1,31 +1,24 @@
 /* Assembler build type specific styles */
 
+/* Elastic global nav is position:static (scrolls with page).
+   The secondary nav (Docs sub-header) is sticky on md+ viewports. */
 :root {
-	/* Assembler uses Elastic global nav with banner - different heights at different breakpoints */
-	--offset-top: calc(64px + 38px); /* header height + banner height */
+	--offset-top: 0px;
 }
 
-@media screen and (min-width: 767px) {
+@media screen and (min-width: 768px) {
 	:root {
-		--offset-top: calc(72px + 38px); /* header height + banner height */
+		--offset-top: calc(var(--spacing) * 18);
 	}
 }
 
-@media screen and (min-width: 992px) {
-	:root {
-		--offset-top: 110px;
-	}
+/* Air-gapped: uses elastic-docs-header web component instead of elastic nav */
+body.air-gapped {
+	--offset-top: 48px;
 }
 
-@media screen and (min-width: 1180px) {
-	:root {
-		--offset-top: calc(80px + 38px); /* header height + banner height */
-	}
-}
-
-/* Elastic nav wrapper and nav styles - assembler specific */
-#elastic-nav-wrapper {
-	min-height: var(--offset-top);
+body.air-gapped elastic-docs-header .euiHeader {
+	padding-inline: calc((100vw - var(--max-layout-width)) / 2 + 8px);
 }
 
 #elastic-nav {

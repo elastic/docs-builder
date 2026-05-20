@@ -13,6 +13,7 @@ using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
@@ -55,7 +56,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
-	private IDiagnosticsCollector Collector { get; }
+	protected IDiagnosticsCollector Collector { get; }
 
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
@@ -75,7 +76,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public string? Description { get; private set; }
 
 	[field: AllowNull, MaybeNull]
-	public string NavigationTitle
+	public virtual string NavigationTitle
 	{
 		get => !string.IsNullOrEmpty(field) ? field : Title ?? string.Empty;
 		private set => field = value.StripMarkdown();
@@ -83,10 +84,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 
 	//indexed by slug
-	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlyDictionary<string, PageTocItem> PageTableOfContent => _pageTableOfContent;
 
-	private readonly HashSet<string> _anchors = new(StringComparer.OrdinalIgnoreCase);
+	private readonly HashSet<string> _anchors = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlySet<string> Anchors => _anchors;
 
 	public string FilePath { get; }
@@ -293,9 +294,18 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.SelectMany(changelog => changelog.GeneratedTableOfContent
 				.Select(tocItem => new { TocItem = tocItem, changelog.Line }));
 
+		// Collect settings group headings (h2) from {settings} directives
+		var settingsTocs = document
+			.Descendants<DirectiveBlock>()
+			.OfType<SettingsBlock>()
+			.Where(settings => !IsNestedInOtherDirective(settings))
+			.SelectMany(settings => settings.GeneratedTableOfContent
+				.Select(tocItem => new { TocItem = tocItem, settings.Line }));
+
 		var toc = headingTocs
 			.Concat(stepperTocs)
 			.Concat(changelogTocs)
+			.Concat(settingsTocs)
 			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)
@@ -425,12 +435,15 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}
 	}
 
-	public static string CreateHtml(MarkdownDocument document)
+	public static string CreateHtml(MarkdownDocument document, bool stripFirstHeadingLevel1 = true)
 	{
-		//we manually render title and optionally append an applies block embedded in yaml front matter.
-		var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
-		if (h1 is not null)
-			_ = document.Remove(h1);
+		// We manually render title and optionally append an applies block embedded in yaml front matter.
+		if (stripFirstHeadingLevel1)
+		{
+			var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+			if (h1 is not null)
+				_ = document.Remove(h1);
+		}
 
 		var html = document.ToHtml(MarkdownParser.Pipeline);
 		return InsertFootnotesHeading(html);

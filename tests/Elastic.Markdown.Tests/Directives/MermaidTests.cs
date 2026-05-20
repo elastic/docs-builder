@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Myst.CodeBlocks;
-using FluentAssertions;
+using AwesomeAssertions;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -163,4 +163,23 @@ erDiagram
 		Html.Should().Contain("ORDER");
 		Html.Should().Contain("LINE_ITEM");
 	}
+}
+
+public class MermaidStyledFlowchartTests(ITestOutputHelper output) : DirectiveTest(output,
+"""
+```mermaid
+flowchart LR
+A[Start] --> B[Process]
+classDef elasticBlue fill:#0B64DD,stroke:#333,stroke-width:2px,color:#fff
+class A elasticBlue
+style B fill:#0A52B3,color:#fff
+```
+"""
+)
+{
+	[Fact]
+	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+
+	[Fact]
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
 }

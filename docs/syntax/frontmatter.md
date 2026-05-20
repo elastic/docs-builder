@@ -49,6 +49,7 @@ The products frontmatter is a list of products that the page relates to.
 This is used for the "Products" filter in the Search UI.
 
 The products frontmatter is a list of objects, each object has an `id` field.
+Only products with the `public-reference` feature enabled in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) are valid here. Products that have set `public-reference: false` cannot be used in frontmatter.
 
 | Product ID                                  | Product Name                                  |
 |---------------------------------------------|-----------------------------------------------|

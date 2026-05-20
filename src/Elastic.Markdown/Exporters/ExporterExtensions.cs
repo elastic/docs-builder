@@ -15,16 +15,16 @@ public static class ExporterExtensions
 		this IReadOnlySet<Exporter> exportOptions,
 		ILoggerFactory logFactory,
 		IDocumentationConfigurationContext context,
-		string indexNamespace
+		bool branded = false
 	)
 	{
 		var markdownExporters = new List<IMarkdownExporter>(4);
 		if (exportOptions.Contains(Exporter.LLMText))
-			markdownExporters.Add(new LlmMarkdownExporter());
+			markdownExporters.Add(new LlmMarkdownExporter(branded));
 		if (exportOptions.Contains(Exporter.Configuration))
 			markdownExporters.Add(new ConfigurationExporter(logFactory, context.ConfigurationFileProvider, context));
 		if (exportOptions.Contains(Exporter.Elasticsearch))
-			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints, indexNamespace, context));
+			markdownExporters.Add(new ElasticsearchMarkdownExporter(logFactory, context.Collector, context.Endpoints, context));
 		return markdownExporters;
 	}
 }

@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Links;
 using YamlDotNet.RepresentationModel;
-using static Elastic.Documentation.Configuration.SymlinkValidator;
+using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -19,7 +19,7 @@ public record RedirectFile
 	{
 		var docsetConfigurationPath = context.ConfigurationPath;
 		var redirectFileName = docsetConfigurationPath.Name.StartsWith('_') ? "_redirects.yml" : "redirects.yml";
-		var redirectFileInfo = docsetConfigurationPath.FileSystem.FileInfo.New(Path.Combine(docsetConfigurationPath.Directory!.FullName, redirectFileName));
+		var redirectFileInfo = docsetConfigurationPath.FileSystem.FileInfo.New(Path.Join(docsetConfigurationPath.Directory!.FullName, redirectFileName));
 		Source = source ?? redirectFileInfo;
 		Context = context;
 

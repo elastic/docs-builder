@@ -27,8 +27,9 @@ public class ReloadableGeneratorState : IDisposable
 	private readonly ILoggerFactory _logFactory;
 	private readonly BuildContext _context;
 	private readonly bool _isWatchBuild;
-	private readonly DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
-	private readonly ILinkIndexReader? _codexReader;
+	private DocSetConfigurationCrossLinkFetcher _crossLinkFetcher;
+	private ILinkIndexReader? _codexReader;
+	private FetchedCrossLinks? _cachedCrossLinks;
 
 	public ReloadableGeneratorState(ILoggerFactory logFactory,
 		IDirectoryInfo sourcePath,
@@ -42,10 +43,10 @@ public class ReloadableGeneratorState : IDisposable
 		_isWatchBuild = isWatchBuild;
 		SourcePath = sourcePath;
 		OutputPath = outputPath;
-		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Combine(outputPath.FullName, "api"));
+		ApiPath = context.WriteFileSystem.DirectoryInfo.New(Path.Join(outputPath.FullName, "api"));
 
 		if (context.Configuration.Registry != DocSetRegistry.Public)
-			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), context.ReadFileSystem);
+			_codexReader = new GitLinkIndexReader(context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData);
 
 		_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
 		// we pass NoopCrossLinkResolver.Instance here because `ReloadAsync` will always be called when the <see cref="ReloadableGeneratorState"/> is started.
@@ -57,11 +58,38 @@ public class ReloadableGeneratorState : IDisposable
 	// Track OpenAPI spec file modification times to detect changes
 	private readonly Dictionary<string, DateTimeOffset> _openApiSpecLastModified = [];
 
-	public async Task ReloadAsync(Cancel ctx)
+	// Track intro/outro markdown file modification times to detect changes
+	private readonly Dictionary<string, DateTimeOffset> _apiMarkdownFilesLastModified = [];
+
+	private volatile bool _apiReferencesStale = true;
+	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
+	private CancellationTokenSource? _apiGenerationCts;
+
+	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
+		// Content-only changes (e.g. .md edits) don't need a full rebuild:
+		// RenderLayout -> ParseFullAsync reads fresh content from disk on each request.
+		if (!reloadConfiguration && _cachedCrossLinks is not null)
+			return;
+
 		SourcePath.Refresh();
 		OutputPath.Refresh();
-		var crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+		if (reloadConfiguration)
+		{
+			_context.ReloadConfiguration();
+			(_codexReader as IDisposable)?.Dispose();
+			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
+				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
+				: null;
+			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
+		}
+		var crossLinks = _cachedCrossLinks;
+		if (crossLinks is null || reloadConfiguration)
+		{
+			crossLinks = await _crossLinkFetcher.FetchCrossLinks(ctx);
+			// Only cache successful fetches so transient failures get retried on the next reload.
+			_cachedCrossLinks = crossLinks.IsComplete ? crossLinks : null;
+		}
 		IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
 			: null;
@@ -71,17 +99,45 @@ public class ReloadableGeneratorState : IDisposable
 		// Add LLM markdown export for dev server
 		var markdownExporters = new List<IMarkdownExporter>();
 		if (!_isWatchBuild)
-			markdownExporters.AddLlmMarkdownExport(); // Consistent LLM-optimized output
+			markdownExporters.AddLlmMarkdownExport(branded: _context.Configuration.Branding is not null); // Consistent LLM-optimized output
 
 		var generator = new DocumentationGenerator(docSet, _logFactory, markdownExporters: markdownExporters.ToArray());
 		await generator.ResolveDirectoryTree(ctx);
 		_ = Interlocked.Exchange(ref _generator, generator);
+		_apiReferencesStale = true;
+	}
 
-		// Only regenerate OpenAPI if spec files have changed
-		if (HaveOpenApiSpecsChanged(docSet.Configuration))
+	/// <summary>Lazily generates OpenAPI references on the first /api/ request, and regenerates when spec files change.</summary>
+	public async Task EnsureApiReferencesAsync(Cancel ctx)
+	{
+		if (!_apiReferencesStale)
+			return;
+
+		// Create isolated cancellation for API generation (or reuse existing)
+		_apiGenerationCts ??= new CancellationTokenSource();
+
+		// Use combined token that respects both HTTP cancellation AND generation-specific timeout
+		using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(ctx, _apiGenerationCts.Token);
+		combinedCts.CancelAfter(TimeSpan.FromMinutes(5)); // Reasonable timeout for API generation
+
+		await _apiSemaphore.WaitAsync(ctx); // Still respect immediate HTTP cancellation for semaphore
+		try
 		{
-			await ReloadApiReferences(generator.MarkdownStringRenderer, ctx);
-			UpdateOpenApiSpecTimestamps(docSet.Configuration);
+			if (!_apiReferencesStale)
+				return;
+
+			// Use the isolated token for actual generation
+			var config = _generator.DocumentationSet.Configuration;
+			if (HaveOpenApiSpecsChanged(config))
+			{
+				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
+				UpdateOpenApiSpecTimestamps(config);
+			}
+			_apiReferencesStale = false;
+		}
+		finally
+		{
+			_ = _apiSemaphore.Release();
 		}
 	}
 
@@ -89,20 +145,61 @@ public class ReloadableGeneratorState : IDisposable
 	{
 		if (_isWatchBuild)
 			return false;
-		if (config.OpenApiSpecifications is null)
+		if (config.OpenApiSpecifications is null && config.ApiConfigurations is null)
 			return false;
 
 		// First run - no timestamps yet
-		if (_openApiSpecLastModified.Count == 0)
+		if (_openApiSpecLastModified.Count == 0 && _apiMarkdownFilesLastModified.Count == 0)
 			return true;
 
-		foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+		// Check legacy OpenAPI specification files
+		if (config.OpenApiSpecifications is not null)
 		{
-			fileInfo.Refresh();
-			if (!_openApiSpecLastModified.TryGetValue(fileInfo.FullName, out var lastModified))
-				return true; // New file
-			if (fileInfo.LastWriteTimeUtc > lastModified)
-				return true; // File modified
+			foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+			{
+				fileInfo.Refresh();
+				if (!_openApiSpecLastModified.TryGetValue(fileInfo.FullName, out var lastModified))
+					return true; // New file
+				if (fileInfo.LastWriteTimeUtc > lastModified)
+					return true; // File modified
+			}
+		}
+
+		// Check new API configuration files (specs and intro/outro markdown files)
+		if (config.ApiConfigurations is not null)
+		{
+			foreach (var apiConfig in config.ApiConfigurations.Values)
+			{
+				// Check spec files
+				foreach (var specFile in apiConfig.SpecFiles)
+				{
+					specFile.Refresh();
+					if (!_openApiSpecLastModified.TryGetValue(specFile.FullName, out var lastModified))
+						return true; // New file
+					if (specFile.LastWriteTimeUtc > lastModified)
+						return true; // File modified
+				}
+
+				// Check intro markdown files
+				foreach (var markdownFile in apiConfig.IntroMarkdownFiles)
+				{
+					markdownFile.Refresh();
+					if (!_apiMarkdownFilesLastModified.TryGetValue(markdownFile.FullName, out var lastModified))
+						return true; // New file
+					if (markdownFile.LastWriteTimeUtc > lastModified)
+						return true; // File modified
+				}
+
+				// Check outro markdown files
+				foreach (var markdownFile in apiConfig.OutroMarkdownFiles)
+				{
+					markdownFile.Refresh();
+					if (!_apiMarkdownFilesLastModified.TryGetValue(markdownFile.FullName, out var lastModified))
+						return true; // New file
+					if (markdownFile.LastWriteTimeUtc > lastModified)
+						return true; // File modified
+				}
+			}
 		}
 
 		return false;
@@ -110,14 +207,45 @@ public class ReloadableGeneratorState : IDisposable
 
 	private void UpdateOpenApiSpecTimestamps(ConfigurationFile config)
 	{
-		if (config.OpenApiSpecifications is null)
-			return;
-
 		_openApiSpecLastModified.Clear();
-		foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+		_apiMarkdownFilesLastModified.Clear();
+
+		// Update legacy OpenAPI specification timestamps
+		if (config.OpenApiSpecifications is not null)
 		{
-			fileInfo.Refresh();
-			_openApiSpecLastModified[fileInfo.FullName] = fileInfo.LastWriteTimeUtc;
+			foreach (var (_, fileInfo) in config.OpenApiSpecifications)
+			{
+				fileInfo.Refresh();
+				_openApiSpecLastModified[fileInfo.FullName] = fileInfo.LastWriteTimeUtc;
+			}
+		}
+
+		// Update new API configuration timestamps (specs and intro/outro markdown files)
+		if (config.ApiConfigurations is not null)
+		{
+			foreach (var apiConfig in config.ApiConfigurations.Values)
+			{
+				// Update spec file timestamps
+				foreach (var specFile in apiConfig.SpecFiles)
+				{
+					specFile.Refresh();
+					_openApiSpecLastModified[specFile.FullName] = specFile.LastWriteTimeUtc;
+				}
+
+				// Update intro markdown file timestamps
+				foreach (var markdownFile in apiConfig.IntroMarkdownFiles)
+				{
+					markdownFile.Refresh();
+					_apiMarkdownFilesLastModified[markdownFile.FullName] = markdownFile.LastWriteTimeUtc;
+				}
+
+				// Update outro markdown file timestamps
+				foreach (var markdownFile in apiConfig.OutroMarkdownFiles)
+				{
+					markdownFile.Refresh();
+					_apiMarkdownFilesLastModified[markdownFile.FullName] = markdownFile.LastWriteTimeUtc;
+				}
+			}
 		}
 	}
 
@@ -137,6 +265,9 @@ public class ReloadableGeneratorState : IDisposable
 
 	public void Dispose()
 	{
+		_apiGenerationCts?.Cancel();
+		_apiGenerationCts?.Dispose();
+		_apiSemaphore.Dispose();
 		(_codexReader as IDisposable)?.Dispose();
 		GC.SuppressFinalize(this);
 	}

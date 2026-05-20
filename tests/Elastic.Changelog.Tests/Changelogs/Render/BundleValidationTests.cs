@@ -2,9 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -86,15 +87,15 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		await WriteFileAsync(changelogDir, file3, ChangelogFeature3);
 
 		// Main bundle references file1
-		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		await WriteBundleAsync(bundleFile, file1, ComputeSha1(ChangelogFeature1));
 
 		// Amend-1 references file2
-		var amend1 = FileSystem.Path.Combine(bundleDir, "bundle.amend-1.yaml");
+		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
 		await WriteBundleAsync(amend1, file2, ComputeSha1(ChangelogFeature2));
 
 		// Amend-2 references file3
-		var amend2 = FileSystem.Path.Combine(bundleDir, "bundle.amend-2.yaml");
+		var amend2 = FileSystem.Path.Join(bundleDir, "bundle.amend-2.yaml");
 		await WriteBundleAsync(amend2, file3, ComputeSha1(ChangelogFeature3));
 
 		var input = CreateRenderInput(bundleFile, changelogDir);
@@ -108,7 +109,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		Collector.Warnings.Should().Be(0, "all checksums match, no warnings expected");
 
 		// Verify all 3 entries were rendered
-		var indexFile = FileSystem.Path.Combine(input.Output!, "9.2.0", "index.md");
+		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
+		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue("output should be rendered");
 		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 		content.Should().Contain("Feature one");
@@ -127,10 +129,10 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		await WriteFileAsync(changelogDir, file1, ChangelogFeature1);
 		await WriteFileAsync(changelogDir, file2, ChangelogFeature2);
 
-		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		await WriteBundleAsync(bundleFile, file1, ComputeSha1(ChangelogFeature1));
 
-		var amend1 = FileSystem.Path.Combine(bundleDir, "bundle.amend-1.yaml");
+		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
 		await WriteBundleAsync(amend1, file2, ComputeSha1(ChangelogFeature2));
 
 		var input = CreateRenderInput(bundleFile, changelogDir);
@@ -154,11 +156,11 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		await WriteFileAsync(changelogDir, file1, ChangelogFeature1);
 		await WriteFileAsync(changelogDir, file2, ChangelogDifferentData); // Different content!
 
-		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		await WriteBundleAsync(bundleFile, file1, ComputeSha1(ChangelogFeature1));
 
 		// Amend stores checksum of ChangelogFeature2 but file on disk has ChangelogDifferentData
-		var amend1 = FileSystem.Path.Combine(bundleDir, "bundle.amend-1.yaml");
+		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
 		await WriteBundleAsync(amend1, file2, ComputeSha1(ChangelogFeature2));
 
 		var input = CreateRenderInput(bundleFile, changelogDir);
@@ -186,11 +188,11 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		var file1 = "1000000001-feature.yaml";
 		await WriteFileAsync(changelogDir, file1, ChangelogFeature1);
 
-		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		await WriteBundleAsync(bundleFile, file1, ComputeSha1(ChangelogFeature1));
 
 		// Amend with resolved entry (inline data, no file reference needed)
-		var amend1 = FileSystem.Path.Combine(bundleDir, "bundle.amend-1.yaml");
+		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
 		// language=yaml
 		var amendContent =
 			"""
@@ -215,7 +217,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		result.Should().BeTrue();
 		Collector.Warnings.Should().Be(0, "resolved entries skip checksum validation");
 
-		var indexFile = FileSystem.Path.Combine(input.Output!, "9.2.0", "index.md");
+		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
+		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 		content.Should().Contain("Resolved amend feature");
 	}
@@ -231,11 +234,11 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		await WriteFileAsync(changelogDir, file1, ChangelogFeature1);
 		await WriteFileAsync(changelogDir, file2, ChangelogWithComments);
 
-		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		await WriteBundleAsync(bundleFile, file1, ComputeSha1(ChangelogFeature1));
 
 		// Amend stores normalized checksum (comments are stripped before hashing)
-		var amend1 = FileSystem.Path.Combine(bundleDir, "bundle.amend-1.yaml");
+		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
 		await WriteBundleAsync(amend1, file2, ComputeSha1(ChangelogWithComments));
 
 		var input = CreateRenderInput(bundleFile, changelogDir);
@@ -250,8 +253,8 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 
 	private (string BundleDir, string ChangelogDir) CreateTestDirs()
 	{
-		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
-		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 		FileSystem.Directory.CreateDirectory(changelogDir);
 		return (bundleDir, changelogDir);
@@ -259,7 +262,7 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 
 	private async Task WriteFileAsync(string dir, string fileName, string content) =>
 		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Combine(dir, fileName), content, TestContext.Current.CancellationToken);
+			FileSystem.Path.Join(dir, fileName), content, TestContext.Current.CancellationToken);
 
 	private async Task WriteBundleAsync(string bundlePath, string entryFileName, string checksum)
 	{
@@ -281,7 +284,7 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		new()
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
-			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString()),
 			Title = "9.2.0"
 		};
 }

@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Markdown.Myst.Directives.Changelog;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -569,4 +569,154 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		}
 		return count;
 	}
+}
+
+/// <summary>
+/// Verifies that when a changelog entry has both a title and a description,
+/// the rendered output does not concatenate them without a separator.
+/// Regression test for: "allowlist.This PR introduces..." (no space between title and description).
+/// </summary>
+public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogTitleDescriptionSpacingTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:description-visibility: keep-descriptions
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Added missing banner-related Kibana settings to the settings allowlist
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: This PR introduces the following settings.
+		"""));
+
+	[Fact]
+	public void RendersTitleText() =>
+		Html.Should().Contain("Added missing banner-related Kibana settings to the settings allowlist");
+
+	[Fact]
+	public void RendersDescriptionText() =>
+		Html.Should().Contain("This PR introduces the following settings");
+
+	[Fact]
+	public void DoesNotConcatenateTitleAndDescriptionWithoutSeparator() =>
+		Html.Should().NotContain("allowlist.This PR introduces");
+}
+
+/// <summary>
+/// Verifies that when a bundle has a release-date field, it is rendered in the output.
+/// </summary>
+public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogReleaseDateTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: apm-agent-dotnet
+			  target: 1.34.0
+			release-date: "2026-04-09"
+			entries:
+			- title: Add tracing improvements
+			  type: feature
+			  products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			  prs:
+			  - "500"
+			"""));
+
+	[Fact]
+	public void RendersReleaseDate() =>
+		Html.Should().Contain("Released: April 9, 2026");
+
+	[Fact]
+	public void RendersEntries() =>
+		Html.Should().Contain("Add tracing improvements");
+}
+
+/// <summary>
+/// Verifies that when a bundle has no release-date field, no "Released:" text appears.
+/// </summary>
+public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogNoReleaseDateTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: New feature
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "100"
+		"""));
+
+	[Fact]
+	public void DoesNotRenderReleaseDate() =>
+		Html.Should().NotContain("Released:");
+}
+
+/// <summary>
+/// Verifies that both release-date and description render together.
+/// </summary>
+public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogReleaseDateWithDescriptionTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: apm-agent-dotnet
+			  target: 1.34.0
+			release-date: "2026-04-09"
+			description: |
+			  This release includes tracing improvements and bug fixes.
+			entries:
+			- title: Add tracing improvements
+			  type: feature
+			  products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			  prs:
+			  - "500"
+			"""));
+
+	[Fact]
+	public void RendersReleaseDate() =>
+		Html.Should().Contain("Released: April 9, 2026");
+
+	[Fact]
+	public void RendersDescription() =>
+		Html.Should().Contain("This release includes tracing improvements and bug fixes.");
+
+	[Fact]
+	public void RendersEntries() =>
+		Html.Should().Contain("Add tracing improvements");
 }

@@ -2,11 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Api.Infrastructure.OpenTelemetry;
+using Elastic.Documentation.Assembler.Links;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
-using Elastic.Documentation.Search;
+using Elastic.Documentation.Mcp.Remote.Telemetry;
+using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -14,19 +19,28 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol;
+using OpenTelemetry.Trace;
 
 try
 {
 	var builder = WebApplication.CreateSlimBuilder(args);
-	_ = builder.AddDocumentationServiceDefaults(ref args);
+	_ = builder.AddDocumentationServiceDefaults();
 	_ = builder.AddDefaultHealthChecks();
-	_ = builder.AddDocsApiOpenTelemetry();
+	_ = builder.AddEuidEnrichment();
+	_ = builder.Services.ConfigureOpenTelemetryTracerProvider(t =>
+		t.AddSource(McpToolTelemetry.McpToolSourceName));
 
-	// Configure Kestrel to listen on port 8080 (standard container port)
-	_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+	// Only hardcode port 8080 when not running under Aspire/orchestration.
+	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
+	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
+		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
 	{
-		serverOptions.ListenAnyIP(8080);
-	});
+		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+		{
+			serverOptions.ListenAnyIP(8080);
+		});
+	}
 
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
@@ -108,17 +122,17 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 {
 	try
 	{
-		var esOptions = app.Services.GetService<ElasticsearchOptions>();
-		if (esOptions != null)
+		var clientAccessor = app.Services.GetService<ElasticsearchClientAccessor>();
+		if (clientAccessor is not null)
 		{
 			logger.LogInformation(
-				"Elasticsearch configuration - Url: {Url}, Index: {Index}",
-				esOptions.Url,
-				esOptions.IndexName
+				"Elasticsearch configuration - Url: {Url}, SearchIndex: {SearchIndex}",
+				clientAccessor.Endpoint.Uri,
+				clientAccessor.SearchIndex
 			);
 		}
 		else
-			logger.LogWarning("ElasticsearchOptions could not be resolved from DI");
+			logger.LogWarning("ElasticsearchClientAccessor could not be resolved from DI");
 	}
 	catch (Exception ex)
 	{
