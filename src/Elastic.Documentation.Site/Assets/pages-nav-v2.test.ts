@@ -103,6 +103,48 @@ function renderNav() {
                                     </div>
                                 </div>
                             </li>
+                            <li class="flex flex-wrap group-navigation relative">
+                                <div class="peer nav-folder-peer grid w-full grid-cols-1">
+                                    <input id="duplicate-primary" type="checkbox" checked />
+                                    <a href="/guide/fundamentals" data-nav-v2-location="3" class="sidebar-link nav-v2-link">Fundamentals</a>
+                                </div>
+                                <div class="docs-sidebar-nav-v2__folder-clip w-full">
+                                    <div class="docs-sidebar-nav-v2__folder-clip-inner">
+                                        <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+                                            <li class="flex group/li">
+                                                <a href="/guide/shared" data-nav-v2-location="3.0" class="sidebar-link nav-v2-link">Shared page in fundamentals</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="flex flex-wrap group-navigation relative">
+                                <div class="peer nav-folder-peer grid w-full grid-cols-1">
+                                    <input id="duplicate-secondary" type="checkbox" checked data-nav-v2-expanded-default="true" />
+                                    <a href="/guide/platform" data-nav-v2-location="4" class="sidebar-link nav-v2-link">Platform</a>
+                                </div>
+                                <div class="docs-sidebar-nav-v2__folder-clip w-full">
+                                    <div class="docs-sidebar-nav-v2__folder-clip-inner">
+                                        <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+                                            <li class="flex flex-wrap group-navigation relative">
+                                                <div class="peer nav-folder-peer grid w-full grid-cols-1">
+                                                    <input id="duplicate-secondary-child" type="checkbox" checked />
+                                                    <a href="/guide/platform/ingest" data-nav-v2-location="4.0" class="sidebar-link nav-v2-link">Ingest or migrate data</a>
+                                                </div>
+                                                <div class="docs-sidebar-nav-v2__folder-clip w-full">
+                                                    <div class="docs-sidebar-nav-v2__folder-clip-inner">
+                                                        <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+                                                            <li class="flex group/li">
+                                                                <a href="/guide/shared" data-nav-v2-location="4.0.0" class="sidebar-link nav-v2-link">Shared page in platform</a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -119,6 +161,12 @@ function checkbox(id: string): HTMLInputElement {
 
 function groupRow(id: string): HTMLElement {
     return checkbox(id).closest('li.group-navigation') as HTMLElement
+}
+
+function currentLinks(nav: HTMLElement): string[] {
+    return Array.from(nav.querySelectorAll('a.sidebar-link.current')).map(
+        (a) => a.textContent?.trim() ?? ''
+    )
 }
 
 describe('initNavV2', () => {
@@ -233,5 +281,36 @@ describe('initNavV2', () => {
         initNavV2(nav)
 
         expect(container.scrollTop).toBe(142)
+    })
+
+    it('focuses the canonical duplicate location on direct page load', () => {
+        window.history.pushState({}, '', '/guide/shared')
+
+        const nav = renderNav()
+
+        initNavV2(nav)
+
+        expect(currentLinks(nav)).toEqual(['Shared page in fundamentals'])
+        expect(checkbox('duplicate-primary').checked).toBe(true)
+        expect(checkbox('duplicate-secondary').checked).toBe(false)
+        expect(checkbox('duplicate-secondary-child').checked).toBe(false)
+    })
+
+    it('focuses the clicked duplicate location after navigation', () => {
+        window.history.pushState({}, '', '/guide/start')
+
+        const nav = renderNav()
+        const platformDuplicate = nav.querySelector<HTMLAnchorElement>(
+            'a[data-nav-v2-location="4.0.0"]'
+        )!
+
+        platformDuplicate.click()
+        window.history.pushState({}, '', '/guide/shared')
+        initNavV2(nav)
+
+        expect(currentLinks(nav)).toEqual(['Shared page in platform'])
+        expect(checkbox('duplicate-primary').checked).toBe(false)
+        expect(checkbox('duplicate-secondary').checked).toBe(true)
+        expect(checkbox('duplicate-secondary-child').checked).toBe(true)
     })
 })
