@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Internal.Search;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using AwesomeAssertions;
@@ -13,6 +12,7 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Internal.Search;
 using Elastic.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;

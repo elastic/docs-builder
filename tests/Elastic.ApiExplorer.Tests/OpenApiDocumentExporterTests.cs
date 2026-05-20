@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Internal.Search;
 using System.Collections.Concurrent;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Elasticsearch;
@@ -10,6 +9,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;

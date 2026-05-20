@@ -2,13 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Internal.Search;
 using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.State;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 
 namespace Elastic.Documentation.Serialization;
 

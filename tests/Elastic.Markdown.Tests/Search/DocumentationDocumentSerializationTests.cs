@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Internal.Search;
 using System.Globalization;
 using System.Text.Json;
 using AwesomeAssertions;
@@ -11,12 +10,13 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 
 namespace Elastic.Markdown.Tests.Search;
 
 public class DocumentationDocumentSerializationTests
 {
-	private readonly JsonSerializerOptions _options = new(Elastic.Documentation.Serialization.SourceGenerationContext.Default.Options);
+	private readonly JsonSerializerOptions _options = new(Documentation.Serialization.SourceGenerationContext.Default.Options);
 
 	[Fact]
 	public void SerializeDocumentWithStackAppliesToProducesCorrectJson()

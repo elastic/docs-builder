@@ -2,12 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Internal.Search;
 using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search.Common;
+using Elastic.Internal.Search;
 using Microsoft.Extensions.Logging;
 using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Internal.Search.DocumentationDocument>;
 

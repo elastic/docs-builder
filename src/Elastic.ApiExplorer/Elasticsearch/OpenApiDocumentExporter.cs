@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Internal.Search;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -13,6 +12,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
