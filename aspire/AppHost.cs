@@ -61,13 +61,16 @@ internal static class AspireHost
 
 		var elasticsearchRemote = builder.AddExternalService(ElasticsearchRemote, elasticsearchUrl);
 
-		var api = builder.AddProject<Projects.Elastic_Documentation_Api>(Api)
+		// Use "dev" environment with a local ES container, "prod" when pointing at a remote cluster
+		// so the services look for the correct index prefix (docs-isolated.semantic-{env}-latest).
+		var serviceEnvironment = startElasticsearch ? "dev" : "prod";
+
+		var api = builder.AddProject<Projects.Elastic_Documentation_Api>(Api, launchProfileName: "http")
 			.WithArgs(GlobalArguments)
-			.WithEnvironment("ENVIRONMENT", "dev")
+			.WithEnvironment("ENVIRONMENT", serviceEnvironment)
 			.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
 			.WithEnvironment("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", llmServiceAccountPath)
-			.WithHttpEndpoint(isProxied: false)
-			.WithHttpHealthCheck("/health");
+			.WithHttpHealthCheck("/docs/_api/health");
 
 		// ReSharper disable once RedundantAssignment
 		api = startElasticsearch
@@ -83,9 +86,8 @@ internal static class AspireHost
 
 		var mcp = builder.AddProject<Projects.Elastic_Documentation_Mcp_Remote>(RemoteMcp)
 			.WithArgs(GlobalArguments)
-			.WithEnvironment("ENVIRONMENT", "dev")
-			.WithHttpEndpoint(isProxied: false)
-			.WithHttpHealthCheck("/health");
+			.WithEnvironment("ENVIRONMENT", serviceEnvironment)
+			.WithHttpHealthCheck("/docs/_mcp/health");
 
 		// ReSharper disable once RedundantAssignment
 		mcp = startElasticsearch

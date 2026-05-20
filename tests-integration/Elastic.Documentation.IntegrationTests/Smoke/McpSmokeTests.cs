@@ -26,10 +26,10 @@ public class McpSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 	}
 
 	[Fact]
-	public async Task HealthEndpoint_Returns200()
+	public async Task AliveEndpoint_Returns200()
 	{
 		using var client = fixture.CreateMcpClient();
-		var response = await client.GetAsync("/health", TestContext.Current.CancellationToken);
+		var response = await client.GetAsync("/docs/_mcp/alive", TestContext.Current.CancellationToken);
 		_ = response.StatusCode.Should().Be(HttpStatusCode.OK);
 	}
 
