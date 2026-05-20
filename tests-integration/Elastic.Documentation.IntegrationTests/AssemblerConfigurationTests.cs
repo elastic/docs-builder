@@ -11,7 +11,7 @@ using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class PublicOnlyAssemblerConfigurationTests
 {
@@ -130,7 +130,7 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
 			return default;
 		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs)
 			_output.WriteLine(resource.Message);

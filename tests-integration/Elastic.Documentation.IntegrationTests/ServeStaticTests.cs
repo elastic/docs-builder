@@ -6,7 +6,7 @@ using Aspire.Hosting.Testing;
 using AwesomeAssertions;
 using Elastic.Documentation.Aspire;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper output) : IAsyncLifetime
 {
@@ -23,7 +23,7 @@ public class ServeStaticTests(DocumentationFixture fixture, ITestOutputHelper ou
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
 			return default;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
 			output.WriteLine(resource.Message);

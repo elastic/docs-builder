@@ -6,7 +6,7 @@ using System.Net.Http.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Search;
 
-namespace Elastic.Assembler.IntegrationTests.Search;
+namespace Elastic.Documentation.IntegrationTests.Search;
 
 /// <summary>
 /// Integration tests for the search endpoint exposed through MapSearchEndpoint.

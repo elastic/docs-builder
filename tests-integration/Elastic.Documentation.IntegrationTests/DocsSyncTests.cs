@@ -21,7 +21,7 @@ using Nullean.ScopedFileSystem;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class DocsSyncTests
 {

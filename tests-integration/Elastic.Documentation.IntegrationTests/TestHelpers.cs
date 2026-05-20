@@ -13,7 +13,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public static class TestHelpers
 {

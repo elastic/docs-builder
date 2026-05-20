@@ -19,7 +19,7 @@ using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Assembler.IntegrationTests.Search;
+namespace Elastic.Documentation.IntegrationTests.Search;
 
 [CollectionDefinition(Collection)]
 public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifetime

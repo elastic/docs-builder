@@ -12,6 +12,7 @@
     <ProjectReference Include="$(SolutionRoot)\aspire\aspire.csproj" />
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" />
+    <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Mcp.Remote\Elastic.Documentation.Mcp.Remote.csproj" />
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -19,6 +20,7 @@
     <PackageReference Include="AngleSharp" />
     <PackageReference Include="Aspire.Hosting.Testing"/>
     <PackageReference Include="InMemoryLogger"/>
+    <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="OpenTelemetry" />
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
   </ItemGroup>
