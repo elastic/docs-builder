@@ -53,8 +53,7 @@ function readSelectedNavLocations(): Record<string, string> {
         return Object.fromEntries(
             Object.entries(parsed).filter(
                 (entry): entry is [string, string] =>
-                    typeof entry[0] === 'string' &&
-                    typeof entry[1] === 'string'
+                    typeof entry[0] === 'string' && typeof entry[1] === 'string'
             )
         )
     } catch {
@@ -274,7 +273,8 @@ function ensureNavV2OptimisticCurrentOnNavigate() {
             const pathStripped = normalizeDocPathname(path)
             if (
                 pathStripped === here &&
-                (!selectedLocation || selectedLocation === previousSelectedLocation)
+                (!selectedLocation ||
+                    selectedLocation === previousSelectedLocation)
             ) {
                 return
             }
