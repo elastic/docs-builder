@@ -67,14 +67,14 @@ public class ApiSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 	{
 		using var client = fixture.CreateApiClient();
 		var since = Uri.EscapeDataString("2020-01-01T00:00:00Z");
+		// The changes endpoint requires open_point_in_time privilege. CI uses a read-only API key that lacks it.
+		Assert.SkipWhen(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI")),
+			"Skipping: CI read-only API key lacks open_point_in_time privilege required by the changes endpoint");
+
 		var response = await client.GetAsync($"/docs/_api/v1/changes?since={since}", TestContext.Current.CancellationToken);
 		if (!response.IsSuccessStatusCode)
 		{
 			var diagnostics = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-			// The changes endpoint requires PIT (open_point_in_time privilege). Read-only API keys used in CI
-			// lack this privilege, so we skip rather than fail when we hit that specific error.
-			Assert.SkipWhen(diagnostics.Contains("open PIT", StringComparison.OrdinalIgnoreCase),
-				"Skipping: API key lacks open_point_in_time privilege required by the changes endpoint");
 			Assert.Fail($"Changes endpoint returned {(int)response.StatusCode} {response.StatusCode}:\n{diagnostics}");
 		}
 
