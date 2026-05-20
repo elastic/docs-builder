@@ -51,7 +51,7 @@
 		list-style-type: lower-roman;
 	}
 
-	ul.task-list {
+	ul.contains-task-list {
 		list-style: none;
 		margin-left: 0.25em;
 
@@ -61,7 +61,7 @@
 			gap: 0.5em;
 		}
 
-		input.task-list-item-checkbox {
+		input[type="checkbox"] {
 			margin: 0;
 			flex-shrink: 0;
 			width: 1em;
