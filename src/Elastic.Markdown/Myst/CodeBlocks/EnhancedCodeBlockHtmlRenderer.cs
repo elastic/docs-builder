@@ -327,6 +327,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		try
 		{
 			svg = MermaidRenderer.RenderSvg(mermaidText, MermaidRenderOptions);
+			// Keep Mermaid style directives compatible with existing docs while stripping unsafe SVG output.
 			svg = SvgSanitizer.Sanitize(svg).Svg;
 		}
 		catch (SystemException e)
