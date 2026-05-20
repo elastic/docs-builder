@@ -145,6 +145,36 @@ function renderNav() {
                                     </div>
                                 </div>
                             </li>
+                            <li class="flex flex-wrap group-navigation relative">
+                                <div class="peer nav-folder-peer grid w-full grid-cols-1">
+                                    <input id="duplicate-folder-primary" type="checkbox" checked />
+                                    <a href="/guide/shared-folder" data-nav-v2-location="5" class="sidebar-link nav-v2-link">Shared folder primary</a>
+                                </div>
+                                <div class="docs-sidebar-nav-v2__folder-clip w-full">
+                                    <div class="docs-sidebar-nav-v2__folder-clip-inner">
+                                        <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+                                            <li class="flex group/li">
+                                                <a href="/guide/shared-folder/child" data-nav-v2-location="5.0" class="sidebar-link nav-v2-link">Shared folder child</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="flex flex-wrap group-navigation relative">
+                                <div class="peer nav-folder-peer grid w-full grid-cols-1">
+                                    <input id="duplicate-folder-secondary" type="checkbox" checked />
+                                    <a href="/guide/shared-folder" data-nav-v2-location="6" class="sidebar-link nav-v2-link">Shared folder secondary</a>
+                                </div>
+                                <div class="docs-sidebar-nav-v2__folder-clip w-full">
+                                    <div class="docs-sidebar-nav-v2__folder-clip-inner">
+                                        <ul class="docs-sidebar-nav-v2__folder-children w-full relative">
+                                            <li class="flex group/li">
+                                                <a href="/guide/shared-folder/other-child" data-nav-v2-location="6.0" class="sidebar-link nav-v2-link">Shared folder other child</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -312,5 +342,24 @@ describe('initNavV2', () => {
         expect(checkbox('duplicate-primary').checked).toBe(false)
         expect(checkbox('duplicate-secondary').checked).toBe(true)
         expect(checkbox('duplicate-secondary-child').checked).toBe(true)
+    })
+
+    it('focuses a duplicate folder row when already on its page', () => {
+        window.history.pushState({}, '', '/guide/shared-folder')
+
+        const nav = renderNav()
+        initNavV2(nav)
+
+        expect(currentLinks(nav)).toEqual(['Shared folder primary'])
+
+        const secondaryFolder = nav.querySelector<HTMLAnchorElement>(
+            'a[data-nav-v2-location="6"]'
+        )!
+
+        secondaryFolder.click()
+
+        expect(currentLinks(nav)).toEqual(['Shared folder secondary'])
+        expect(checkbox('duplicate-folder-primary').checked).toBe(false)
+        expect(checkbox('duplicate-folder-secondary').checked).toBe(true)
     })
 })

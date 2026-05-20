@@ -183,7 +183,10 @@ function ensureNavV2FolderLinkToggle() {
                 return
             }
 
-            if (linkPathMatchesCurrentPage(a)) {
+            if (
+                a.classList.contains('current') &&
+                linkPathMatchesCurrentPage(a)
+            ) {
                 cb.checked = !cb.checked
                 cb.dispatchEvent(new Event('change', { bubbles: true }))
                 persistFolderCheckboxCollapsedState(cb)
@@ -249,7 +252,11 @@ function ensureNavV2OptimisticCurrentOnNavigate() {
                 li?.querySelector<HTMLAnchorElement>(
                     ':scope > .nav-folder-peer > a.sidebar-link'
                 ) ?? null
-            if (folderRowInLi === a && linkPathMatchesCurrentPage(a)) {
+            if (
+                folderRowInLi === a &&
+                a.classList.contains('current') &&
+                linkPathMatchesCurrentPage(a)
+            ) {
                 return
             }
 
