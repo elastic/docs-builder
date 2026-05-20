@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests.TaskList;
 
-public class UncheckedTaskItemTests(ITestOutputHelper output)
-	: TaskListTest(output, """
+public class BasicTaskListTests(ITestOutputHelper output)
+	: InlineTest(output, """
 - [ ] A pending task
+- [x] A completed task
 """)
 {
 	[Fact]
@@ -17,9 +19,13 @@ public class UncheckedTaskItemTests(ITestOutputHelper output)
 
 	[Fact]
 	public void RendersTaskListItem() =>
-		Html.ShouldContainHtml("""<li class="task-list-item">""");
+		Html.Should().Contain("class=\"task-list-item\"");
 
 	[Fact]
 	public void RendersUncheckedCheckbox() =>
 		Html.ShouldContainHtml("""<input disabled="disabled" type="checkbox">""");
+
+	[Fact]
+	public void RendersCheckedCheckbox() =>
+		Html.ShouldContainHtml("""<input disabled="disabled" type="checkbox" checked="checked">""");
 }
