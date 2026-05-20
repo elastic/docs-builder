@@ -19,6 +19,7 @@ public class PageFolderNavigationNode : INodeNavigationItem<INavigationModel, IN
 		string title,
 		Uri page,
 		string sitePrefix,
+		bool expandedByDefault,
 		IReadOnlyCollection<INavigationItem> children,
 		INodeNavigationItem<INavigationModel, INavigationItem>? parent
 	)
@@ -26,6 +27,7 @@ public class PageFolderNavigationNode : INodeNavigationItem<INavigationModel, IN
 		Id = ShortId.Create("page-folder", title);
 		NavigationTitle = title;
 		Url = ResolveUrl(page, sitePrefix);
+		ExpandedByDefault = expandedByDefault;
 		NavigationItems = children;
 		Parent = parent;
 		NavigationRoot = parent?.NavigationRoot!;
@@ -40,6 +42,9 @@ public class PageFolderNavigationNode : INodeNavigationItem<INavigationModel, IN
 
 	/// <inheritdoc />
 	public string NavigationTitle { get; }
+
+	/// <summary>Whether this folder starts expanded by default.</summary>
+	public bool ExpandedByDefault { get; }
 
 	/// <inheritdoc />
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }

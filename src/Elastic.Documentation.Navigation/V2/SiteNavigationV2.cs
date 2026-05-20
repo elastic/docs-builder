@@ -318,12 +318,12 @@ public class SiteNavigationV2 : SiteNavigation
 	{
 		if (group.Page is not null)
 		{
-			var folderPlaceholder = new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, [], parent);
+			var folderPlaceholder = new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, group.Expanded, [], parent);
 			var folderChildren = BuildV2Items(group.Children, nodes, folderPlaceholder, sitePrefix);
-			return new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, folderChildren, parent);
+			return new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, group.Expanded, folderChildren, parent);
 		}
-		var placeholder = new PlaceholderNavigationNode(group.Title, sitePrefix, [], parent);
+		var placeholder = new PlaceholderNavigationNode(group.Title, sitePrefix, group.Expanded, [], parent);
 		var children = BuildV2Items(group.Children, nodes, placeholder, sitePrefix);
-		return new PlaceholderNavigationNode(group.Title, sitePrefix, children, parent);
+		return new PlaceholderNavigationNode(group.Title, sitePrefix, group.Expanded, children, parent);
 	}
 }

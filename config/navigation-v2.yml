@@ -1788,6 +1788,7 @@ nav:
             - page: docs-content://manage-data/migrate/migrate-internal-indices.md
               title: Migrate system indices
         - group: Ingest tools
+          expanded: true
           page: docs-content://reference/ingestion-tools/index.md
           children:
           - toc: opentelemetry://reference
@@ -2086,6 +2087,7 @@ nav:
           # FTS is the foundation — everything else layers on top.
           # -----------------------------------------------------------------------
           - group: Search approaches
+            expanded: true
             page: docs-content://solutions/search/search-approaches.md
             children:
             # Full-text is core to every deployment, not just one option
@@ -2173,6 +2175,7 @@ nav:
           # Two dimensions: what language? what interface?
           # -----------------------------------------------------------------------
           - group: Build search queries
+            expanded: true
             page: docs-content://solutions/search/querying-for-search.md
             children:
             - group: The search API

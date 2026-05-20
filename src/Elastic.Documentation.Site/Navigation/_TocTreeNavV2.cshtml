@@ -79,6 +79,10 @@
 					<input
 						id="@placeholderGroup.Id"
 						type="checkbox"
+						@if (placeholderGroup.ExpandedByDefault)
+						{
+							<text>data-nav-v2-expanded-default="true"</text>
+						}
 						class="sr-only pointer-events-none"
 						tabindex="-1"
 						aria-hidden="true">
@@ -161,6 +165,12 @@
 	else if (item is INodeNavigationItem<INavigationModel, INavigationItem> folder)
 	{
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
+		var expandedByDefault = folder switch
+		{
+			PageFolderNavigationNode pageFolder => pageFolder.ExpandedByDefault,
+			PlaceholderNavigationNode placeholderFolder => placeholderFolder.ExpandedByDefault,
+			_ => false
+		};
 		<li class="flex flex-wrap group-navigation relative">
 			<div class="peer nav-folder-peer grid w-full grid-cols-1">
 				@if (!allHidden)
@@ -168,6 +178,10 @@
 					<input
 						id="@folder.Id"
 						type="checkbox"
+						@if (expandedByDefault)
+						{
+							<text>data-nav-v2-expanded-default="true"</text>
+						}
 						class="sr-only pointer-events-none"
 						tabindex="-1"
 						aria-hidden="true">
