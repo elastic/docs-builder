@@ -169,7 +169,7 @@ public class NavigationBuildingTests(DocumentationFixture fixture, ITestOutputHe
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
 			return default;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
 			output.WriteLine(resource.Message);

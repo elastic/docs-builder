@@ -18,7 +18,7 @@ public class McpSmokeTests(DocumentationFixture fixture, ITestOutputHelper outpu
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
 			return default;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs.ToList())
 			output.WriteLine(resource.Message);
