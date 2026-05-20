@@ -61,14 +61,17 @@ internal static class AspireHost
 
 		var elasticsearchRemote = builder.AddExternalService(ElasticsearchRemote, elasticsearchUrl);
 
-		// Read ENVIRONMENT from the host process (injected by CI or set locally).
-		// Determines the index prefix: docs-isolated.semantic-{env}-latest.
-		// Falls back to "prod" so external-ES runs default to the production index.
-		var serviceEnvironment = Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "prod";
+		// Read ENVIRONMENT and DOCS_BUILD_TYPE from the host process (injected by CI or set locally).
+		// Index name pattern: docs-{type}.semantic-{env}-latest
+		var rawEnvironment = Environment.GetEnvironmentVariable("ENVIRONMENT");
+		var serviceEnvironment = string.IsNullOrWhiteSpace(rawEnvironment) ? "prod" : rawEnvironment;
+		var rawBuildType = Environment.GetEnvironmentVariable("DOCS_BUILD_TYPE");
+		var buildType = string.IsNullOrWhiteSpace(rawBuildType) ? "assembler" : rawBuildType;
 
 		var api = builder.AddProject<Projects.Elastic_Documentation_Api>(Api, launchProfileName: "http")
 			.WithArgs(GlobalArguments)
 			.WithEnvironment("ENVIRONMENT", serviceEnvironment)
+			.WithEnvironment("DOCS_BUILD_TYPE", buildType)
 			.WithEnvironment("LLM_GATEWAY_FUNCTION_URL", llmUrl)
 			.WithEnvironment("LLM_GATEWAY_SERVICE_ACCOUNT_KEY_PATH", llmServiceAccountPath)
 			.WithHttpHealthCheck("/docs/_api/health");
@@ -88,6 +91,7 @@ internal static class AspireHost
 		var mcp = builder.AddProject<Projects.Elastic_Documentation_Mcp_Remote>(RemoteMcp)
 			.WithArgs(GlobalArguments)
 			.WithEnvironment("ENVIRONMENT", serviceEnvironment)
+			.WithEnvironment("DOCS_BUILD_TYPE", buildType)
 			.WithHttpHealthCheck("/docs/_mcp/health");
 
 		// ReSharper disable once RedundantAssignment

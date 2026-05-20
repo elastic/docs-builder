@@ -25,6 +25,7 @@ try
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
 	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
 		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
 	{
 		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
