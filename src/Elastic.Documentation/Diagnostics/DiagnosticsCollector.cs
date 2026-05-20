@@ -20,12 +20,11 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public int Hints => _hints;
 
 	private Task? _started;
-	// True once the background reader has passed its initial WaitToWrite setup
-	// and is about to enter the read loop. _started becoming non-null is not
-	// enough: Task.Run short-circuits to a canceled Task when given an
-	// already-canceled token, never running the delegate. Setting the flag
-	// only after WaitToWrite means we know the reader will actually drain
-	// the channel before we let writes accumulate in it.
+	// True once the background reader delegate has actually begun executing.
+	// _started becoming non-null is not enough: Task.Run short-circuits to a
+	// canceled Task when given an already-canceled token, and the delegate
+	// never runs. StopAsync uses this to decide whether awaiting _started is
+	// meaningful or whether the channel is guaranteed to have no drainer.
 	private volatile bool _readerStarted;
 
 	public HashSet<string> OffendingFiles { get; } = [];
@@ -100,14 +99,16 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
 		Channel.TryComplete();
-		// No reader was ever scheduled, so Write() gated everything out and the
-		// channel is empty — nothing to await, nothing to drain.
-		if (!_readerStarted)
+		// StartAsync was never called. Items may sit in the channel but
+		// nobody is coming to drain them — awaiting Channel.Reader.Completion
+		// here would deadlock. Returning is the correct behaviour for
+		// fire-and-forget collectors (the channel dies with the instance).
+		if (_started is null)
 			return;
 
 		try
 		{
-			await _started!;
+			await _started;
 		}
 		catch (OperationCanceledException)
 		{
@@ -123,11 +124,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public virtual void Write(Diagnostic diagnostic)
 	{
 		IncrementSeverityCount(diagnostic);
-		// Severity counters are always accurate; the channel only matters if a
-		// reader will actually drain it. Skip the channel write otherwise so
-		// items don't accumulate and StopAsync has nothing to wait for.
-		if (_readerStarted)
-			Channel.Write(diagnostic);
+		Channel.Write(diagnostic);
 	}
 
 	public void Emit(Severity severity, string file, string message) =>

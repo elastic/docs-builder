@@ -39,8 +39,8 @@ public class DiagnosticsCollectorDisposeTests
 
 		collector.Warnings.Should().Be(1, "severity counters update regardless of reader state");
 		collector.IsStarted.Should().BeFalse();
-		collector.OffendingFiles.Should().BeEmpty("writes are gated when no reader will drain them");
-		output.Items.Should().BeEmpty();
+		collector.OffendingFiles.Should().BeEmpty("OffendingFiles is only populated by the background reader");
+		output.Items.Should().BeEmpty("IDiagnosticsOutput sinks are only invoked by the background reader");
 	}
 
 	[Fact]

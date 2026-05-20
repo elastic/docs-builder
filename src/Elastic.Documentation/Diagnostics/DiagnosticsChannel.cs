@@ -35,15 +35,9 @@ public sealed class DiagnosticsChannel : IDisposable
 	public ValueTask<bool> WaitToWrite(Cancel ctx) => _channel.Writer.WaitToWriteAsync(ctx);
 
 	// Unbounded channel: TryWrite only fails if the writer is completed, which
-	// means a producer raced past StopAsync/DisposeAsync.
-	public void Write(Diagnostic diagnostic)
-	{
-		var written = _channel.Writer.TryWrite(diagnostic);
-		if (!written)
-		{
-			//TODO
-		}
-	}
+	// means a producer raced past StopAsync/DisposeAsync. Drop silently —
+	// diagnostics must never throw back into the caller.
+	public void Write(Diagnostic diagnostic) => _ = _channel.Writer.TryWrite(diagnostic);
 
 	public void Dispose() => _ctxSource.Dispose();
 }
