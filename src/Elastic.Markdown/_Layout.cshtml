@@ -13,9 +13,10 @@
 
 		if (name == GlobalSections.Head)
 		{
-			if (Model.RedirectUrl is { } redirectUrl)
+			if (Model.RedirectUrl is { } redirectUrl && Model.Layout is not MarkdownPageLayout.Archive)
 			{
-				<script>window.location.replace('@redirectUrl');</script>
+				var encodedUrl = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(redirectUrl);
+				<script>window.location.replace('@(new HtmlString(encodedUrl))');</script>
 			}
 			//this ensures we forward head sections declared in this project into to GlobalLayout view's section
 			await RenderSectionAsync(GlobalSections.Head);

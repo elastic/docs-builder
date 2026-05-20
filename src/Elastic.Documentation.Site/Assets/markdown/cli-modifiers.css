@@ -15,7 +15,8 @@
 				@apply pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-64 -translate-x-1/2 rounded px-2 py-1 text-xs text-white opacity-0 transition-opacity;
 				background: #1e293b;
 			}
-			&[data-tooltip]:hover::after {
+			&[data-tooltip]:hover::after,
+			&[data-tooltip]:focus-visible::after {
 				@apply opacity-100;
 			}
 		}

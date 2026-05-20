@@ -93,9 +93,6 @@ internal static partial class CliMarkdownGenerator
 		var canonicalFull = string.Join(" ", shortcut.To);
 		_ = sb.AppendLine($"# {shortcut.From} <span class=\"cli-badge-alias\">alias</span>");
 		_ = sb.AppendLine();
-		// JS redirect — fires immediately; the link below is the no-JS fallback
-		_ = sb.AppendLine($"<script>window.location.replace('{canonicalUrl}');</script>");
-		_ = sb.AppendLine();
 		_ = sb.AppendLine($"`{binaryName} {shortcut.From}` is a shortcut for [`{binaryName} {canonicalFull}`]({canonicalUrl}).");
 		_ = sb.AppendLine();
 		return sb.ToString();
@@ -497,7 +494,10 @@ internal static partial class CliMarkdownGenerator
 		IEnumerable<CliParamSchema> parameters,
 		Dictionary<string, string>? overrides)
 	{
-		foreach (var p in parameters.Where(p => p.Name != "_" && !p.Hidden).OrderByDescending(p => p.Required))
+		var filtered = parameters.Where(p => p.Name != "_" && !p.Hidden).ToList();
+		var positionals = filtered.Where(p => p.Role == "positional");
+		var options = filtered.Where(p => p.Role != "positional").OrderByDescending(p => p.Required);
+		foreach (var p in positionals.Concat(options))
 		{
 			var isBool = IsBoolFlag(p.Type);
 			var flagName = FormatFlagName(p);
@@ -853,14 +853,13 @@ internal static partial class CliMarkdownGenerator
 			if (!matches)
 				continue;
 
-			// Build alias usage: binary shortcut.From remaining_path_segments suffix
-			// The suffix is everything after the canonical prefix in the original usage line
+			// Build alias usage by replacing the canonical prefix in the original usage line
 			var canonicalPrefix = string.Join(" ", binaryName is not null
 				? [binaryName, .. to]
 				: to);
-			var suffix = canonicalUsage.StartsWith(canonicalPrefix, StringComparison.OrdinalIgnoreCase)
-				? canonicalUsage[canonicalPrefix.Length..]
-				: " " + string.Join(" ", fullPath[to.Length..]);
+			if (!canonicalUsage.StartsWith(canonicalPrefix, StringComparison.OrdinalIgnoreCase))
+				continue; // can't safely rewrite; skip this alias variant
+			var suffix = canonicalUsage[canonicalPrefix.Length..];
 			var aliasBase = binaryName is not null
 				? $"{binaryName} {shortcut.From}"
 				: shortcut.From;

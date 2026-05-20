@@ -212,11 +212,16 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 			foreach (var shortcut in schema.Shortcuts ?? [])
 			{
 				var aliasPath = SyntheticPath(Build.DocumentationSourceDirectory.FullName, virtualRoot, [shortcut.From], isNamespace: true);
+				if (_syntheticFiles!.ContainsKey(aliasPath))
+				{
+					Build.Collector.EmitError(schemaFileInfo,
+						$"CLI shortcut '{shortcut.From}' conflicts with an existing path; skipping alias.");
+					continue;
+				}
 				var aliasFileInfo = Build.ReadFileSystem.FileInfo.New(aliasPath);
-				// Absolute URL path for the canonical target — used for JS redirect and links
 				var canonicalUrl = "/" + virtualRoot + "/" + string.Join("/", shortcut.To) + "/";
 				var aliasInfo = new CliEntityInfo(schema, shortcut, null, aliasFileInfo, AliasCanonicalRelativePath: canonicalUrl);
-				_syntheticFiles![aliasPath] = aliasInfo;
+				_syntheticFiles[aliasPath] = aliasInfo;
 				fileInfos.Add(aliasFileInfo);
 			}
 
