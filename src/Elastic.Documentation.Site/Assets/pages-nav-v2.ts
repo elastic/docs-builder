@@ -3,6 +3,8 @@ import tippy from 'tippy.js'
 import type { Instance } from 'tippy.js'
 
 const navV2CollapsedStorageKey = 'docs-builder-nav-v2-collapsed-ids'
+const navV2SelectedLocationsStorageKey =
+    'docs-builder-nav-v2-selected-locations'
 
 let navV2FolderLinkToggleBound = false
 let navV2OptimisticNavigateBound = false
@@ -34,6 +36,47 @@ function readCollapsedFolderIds(): Set<string> {
 
 function writeCollapsedFolderIds(ids: Set<string>) {
     sessionStorage.setItem(navV2CollapsedStorageKey, JSON.stringify([...ids]))
+}
+
+function readSelectedNavLocations(): Record<string, string> {
+    try {
+        const raw = sessionStorage.getItem(navV2SelectedLocationsStorageKey)
+        if (!raw) {
+            return {}
+        }
+
+        const parsed = JSON.parse(raw) as unknown
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return {}
+        }
+
+        return Object.fromEntries(
+            Object.entries(parsed).filter(
+                (entry): entry is [string, string] =>
+                    typeof entry[0] === 'string' &&
+                    typeof entry[1] === 'string'
+            )
+        )
+    } catch {
+        return {}
+    }
+}
+
+function rememberSelectedNavLocation(pathnameRaw: string, location?: string) {
+    if (!location) {
+        return
+    }
+
+    const locations = readSelectedNavLocations()
+    locations[normalizeDocPathname(pathnameRaw)] = location
+    sessionStorage.setItem(
+        navV2SelectedLocationsStorageKey,
+        JSON.stringify(locations)
+    )
+}
+
+function selectedNavLocationForPath(pathnameRaw: string): string | null {
+    return readSelectedNavLocations()[normalizeDocPathname(pathnameRaw)] ?? null
 }
 
 function persistFolderCheckboxCollapsedState(cb: HTMLInputElement) {
@@ -223,9 +266,16 @@ function ensureNavV2OptimisticCurrentOnNavigate() {
                 return
             }
 
-            const here = window.location.pathname.replace(/\/$/, '')
-            const pathStripped = path.replace(/\/$/, '')
-            if (pathStripped === here) {
+            const selectedLocation = a.dataset.navV2Location
+            const previousSelectedLocation = selectedNavLocationForPath(path)
+            rememberSelectedNavLocation(path, selectedLocation)
+
+            const here = normalizeDocPathname(window.location.pathname)
+            const pathStripped = normalizeDocPathname(path)
+            if (
+                pathStripped === here &&
+                (!selectedLocation || selectedLocation === previousSelectedLocation)
+            ) {
                 return
             }
 
@@ -314,15 +364,33 @@ function getAllFolderCheckboxes(nav: HTMLElement): HTMLInputElement[] {
     )
 }
 
+function folderContainsMatchingPath(
+    checkbox: HTMLInputElement,
+    pathnameRaw: string
+) {
+    const group = checkbox.closest('li.group-navigation')
+    if (!group) {
+        return false
+    }
+
+    return getAnchorsMatchingPath(group, pathnameRaw).length > 0
+}
+
 function collapseInactiveFolders(
     nav: HTMLElement,
-    activeCheckboxes: Set<HTMLInputElement>
+    activeCheckboxes: Set<HTMLInputElement>,
+    pathnameRaw?: string
 ) {
     const collapsedIds = readCollapsedFolderIds()
     getAllFolderCheckboxes(nav).forEach((cb) => {
+        if (activeCheckboxes.has(cb)) {
+            cb.checked = true
+            return
+        }
+
         if (
-            activeCheckboxes.has(cb) ||
-            shouldKeepDefaultExpanded(cb, collapsedIds)
+            shouldKeepDefaultExpanded(cb, collapsedIds) &&
+            (!pathnameRaw || !folderContainsMatchingPath(cb, pathnameRaw))
         ) {
             cb.checked = true
             return
@@ -593,30 +661,8 @@ function navListItemDepthFromAnchor(anchor: Element, nav: HTMLElement): number {
     return depth
 }
 
-/**
- * Prefer the deepest {@code a.sidebar-link.current} when several share the URL (folder index
- * and child, or duplicate toc entries). Otherwise {@code querySelector} picks the first in DOM
- * order (usually a parent folder) and subtree/ancestor classes apply to the wrong rows.
- */
 function deepestCurrentSidebarLink(nav: HTMLElement): HTMLAnchorElement | null {
-    const anchors = nav.querySelectorAll<HTMLAnchorElement>(
-        'a.sidebar-link.current'
-    )
-    if (anchors.length === 0) {
-        return null
-    }
-
-    let best = anchors[0]
-    let bestDepth = navListItemDepthFromAnchor(best, nav)
-    for (let i = 1; i < anchors.length; i++) {
-        const candidate = anchors[i]
-        const d = navListItemDepthFromAnchor(candidate, nav)
-        if (d > bestDepth) {
-            bestDepth = d
-            best = candidate
-        }
-    }
-    return best
+    return nav.querySelector<HTMLAnchorElement>('a.sidebar-link.current')
 }
 
 /**
@@ -680,16 +726,11 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
     }
 }
 
-/**
- * Mark all nav links whose href matches {@code pathname} with the "current" CSS class.
- */
 function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
     $$('.current', nav).forEach((el) => el.classList.remove('current'))
 
-    const pathname = stripTrailingSlashForNavHref(pathnameRaw)
-    $$(`a[href="${pathname}"], a[href="${pathname}/"]`, nav).forEach((el) =>
-        el.classList.add('current')
-    )
+    const current = pickAnchorMatchingPath(nav, pathnameRaw)
+    current?.classList.add('current')
 }
 
 /**
@@ -704,37 +745,74 @@ function markCurrentPage(nav: HTMLElement) {
     markCurrentPageForPath(nav, window.location.pathname)
 }
 
-function pickDeepestAnchorMatchingPath(
-    nav: HTMLElement,
+function getAnchorsMatchingPath(
+    root: ParentNode,
     pathnameRaw: string
-): HTMLElement | null {
+): HTMLAnchorElement[] {
     const pathname = stripTrailingSlashForNavHref(pathnameRaw)
-    const matches = nav.querySelectorAll<HTMLElement>(
-        `a[href="${pathname}"], a[href="${pathname}/"]`
+    return Array.from(
+        root.querySelectorAll<HTMLAnchorElement>(
+            `a[href="${pathname}"], a[href="${pathname}/"]`
+        )
     )
-    if (matches.length === 0) {
+}
+
+function pickCanonicalAnchor(
+    nav: HTMLElement,
+    anchors: HTMLAnchorElement[]
+): HTMLAnchorElement | null {
+    if (anchors.length === 0) {
         return null
     }
 
-    let best = matches[0]
+    let best = anchors[0]
     let bestDepth = navListItemDepthFromAnchor(best, nav)
-    for (let i = 1; i < matches.length; i++) {
-        const m = matches[i]
-        const d = navListItemDepthFromAnchor(m, nav)
+    let bestLi = best.closest('li')
+    for (let i = 1; i < anchors.length; i++) {
+        const candidate = anchors[i]
+        const candidateLi = candidate.closest('li')
+        if (!bestLi || !candidateLi || !bestLi.contains(candidateLi)) {
+            continue
+        }
+
+        const d = navListItemDepthFromAnchor(candidate, nav)
         if (d > bestDepth) {
             bestDepth = d
-            best = m
+            best = candidate
+            bestLi = candidateLi
         }
     }
     return best
 }
 
+function pickAnchorMatchingPath(
+    nav: HTMLElement,
+    pathnameRaw: string
+): HTMLAnchorElement | null {
+    const matches = getAnchorsMatchingPath(nav, pathnameRaw)
+    if (matches.length === 0) {
+        return null
+    }
+
+    const selectedLocation = selectedNavLocationForPath(pathnameRaw)
+    if (selectedLocation) {
+        const selected = matches.find(
+            (m) => m.dataset.navV2Location === selectedLocation
+        )
+        if (selected) {
+            return selected
+        }
+    }
+
+    return pickCanonicalAnchor(nav, matches)
+}
+
 /**
  * Expand all ancestor collapsible sections that contain the link for {@code pathnameRaw}.
- * Uses the deepest matching anchor when several share the URL.
+ * Uses the selected nav occurrence when available; direct loads fall back to the canonical occurrence.
  */
 function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
-    const link = pickDeepestAnchorMatchingPath(nav, pathnameRaw)
+    const link = pickAnchorMatchingPath(nav, pathnameRaw)
     if (!link) {
         collapseInactiveFolders(nav, new Set())
         return
@@ -770,7 +848,7 @@ function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
         writeCollapsedFolderIds(collapsedIds)
     }
 
-    collapseInactiveFolders(nav, activeCheckboxes)
+    collapseInactiveFolders(nav, activeCheckboxes, pathnameRaw)
 }
 
 /**

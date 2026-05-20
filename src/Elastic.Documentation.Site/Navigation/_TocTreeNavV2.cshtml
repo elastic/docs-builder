@@ -11,6 +11,7 @@
 	var navHxAttrs = Model.IsIslandSubtree
 		? Model.Htmx.GetHxAttributes(hxSwapOob: "#main-container,#secondary-nav", preload: null)
 		: Model.Htmx.GetNavHxAttributes(true, null);
+	var navV2ItemIndex = 0;
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
@@ -18,6 +19,11 @@
 	{
 		continue;
 	}
+
+	var itemLocation = string.IsNullOrEmpty(Model.NavV2LocationPath)
+		? $"{navV2ItemIndex}"
+		: $"{Model.NavV2LocationPath}.{navV2ItemIndex}";
+	navV2ItemIndex++;
 
 	if (item is LabelNavigationNode label)
 	{
@@ -50,7 +56,8 @@
 						SubTree = label,
 						RootNavigationId = Model.RootNavigationId,
 						Htmx = Model.Htmx,
-						IsIslandSubtree = Model.IsIslandSubtree
+						IsIslandSubtree = Model.IsIslandSubtree,
+						NavV2LocationPath = itemLocation
 					}))
 				</ul>
 			}
@@ -62,6 +69,7 @@
 			<a
 				href="@placeholder.Url"
 				@navHxAttrs
+				data-nav-v2-location="@itemLocation"
 				class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 				style="--nav-level:@Model.Level">
 				<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
@@ -90,6 +98,7 @@
 				<a
 					href="@placeholderGroup.Url"
 					@navHxAttrs
+					data-nav-v2-location="@itemLocation"
 					class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 					style="--nav-level:@Model.Level">
 					@if (!allHidden)
@@ -126,7 +135,8 @@
 								SubTree = placeholderGroup,
 								RootNavigationId = Model.RootNavigationId,
 								Htmx = Model.Htmx,
-								IsIslandSubtree = Model.IsIslandSubtree
+								IsIslandSubtree = Model.IsIslandSubtree,
+								NavV2LocationPath = itemLocation
 							}))
 						</ul>
 					</div>
@@ -141,6 +151,7 @@
 			<a
 				href="@island.Url"
 				@islandHxAttrs
+				data-nav-v2-location="@itemLocation"
 				class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 				style="--nav-level:@Model.Level">
 				<span class="nav-item-slot shrink-0" aria-hidden="true"></span>
@@ -154,6 +165,7 @@
 			<a
 				href="@group.Url"
 				@navHxAttrs
+				data-nav-v2-location="@itemLocation"
 				class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 				style="--nav-level:@Model.Level"
 			>
@@ -189,6 +201,7 @@
 				<a
 					href="@(folder.Url)"
 					@navHxAttrs
+					data-nav-v2-location="@itemLocation"
 					class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 					style="--nav-level:@Model.Level">
 					@if (!allHidden)
@@ -225,7 +238,8 @@
 								SubTree = folder,
 								RootNavigationId = Model.RootNavigationId,
 								Htmx = Model.Htmx,
-								IsIslandSubtree = Model.IsIslandSubtree
+								IsIslandSubtree = Model.IsIslandSubtree,
+								NavV2LocationPath = itemLocation
 							}))
 						</ul>
 					</div>
@@ -239,6 +253,7 @@
 			<a
 				href="@leaf.Url"
 				@navHxAttrs
+				data-nav-v2-location="@itemLocation"
 				class="sidebar-link nav-v2-link flex w-full items-center gap-2 py-[6px]"
 				style="--nav-level:@Model.Level"
 			>

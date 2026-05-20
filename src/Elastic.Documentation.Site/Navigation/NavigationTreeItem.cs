@@ -16,6 +16,7 @@ public class NavigationTreeItem
 	public required bool IsGlobalAssemblyBuild { get; init; }
 	public required string RootNavigationId { get; set; }
 	public required IHtmxAttributeProvider Htmx { get; init; }
+	public string NavV2LocationPath { get; init; } = "";
 
 	/// <summary>True when this subtree renders inside an island (entry-point + descendants).
 	/// Links here must swap the full page chrome so clicking from a parent section's sidebar
