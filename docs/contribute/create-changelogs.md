@@ -176,6 +176,28 @@ The option precedence is: CLI option > `changelog.yml` bundle section > built-in
 You can use the `docs-builder changelog gh-release` command as a one-shot alternative to `changelog add` and `changelog bundle` commands.
 The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md).
 
+### Release highlights
+
+Some teams have historically had a dedicated page for release highlights.
+To accommodate this behavior, changelogs have an optional `highlight` boolean field.
+Highlights are most commonly used for major or minor version releases to draw attention to the most important changes.
+Any type of changelog (such as features, enhancements, or bug fixes) can be a highlight, though they're typically associated with `type: feature`.
+
+Example changelog for a release highlight:
+
+```yaml
+type: feature
+products:
+- product: elasticsearch
+  target: 9.4.0
+  lifecycle: ga
+title: ES|QL Views support
+description: 'ES|QL now supports Views: virtual indices whose fields are produced by an ES|QL query. A view is referenced inside a FROM clause exactly like a regular index....'
+highlight: true
+```
+
+When you set `highlight: true` in a changelog, it appears in both the highlights page (for example, `highlights.md` in markdown output) and its normal type section (for example, `index.md`).
+
 ## Next steps
 
 After you've created a changelog files, you can gather them into [release bundles](/contribute/bundle-changelogs.md).
