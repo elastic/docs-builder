@@ -202,6 +202,27 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Deprecations");
 		Html.Should().Contain("Deprecated feature");
 	}
+
+	[Fact]
+	public void TableOfContentsIncludesSeparatedTypeSections()
+	{
+		var tocItems = Block!.GeneratedTableOfContent.ToList();
+
+		tocItems.Should().Contain(t => t.Heading == "Breaking changes" && t.Level == 3);
+		tocItems.Should().Contain(t => t.Heading == "Known issues" && t.Level == 3);
+		tocItems.Should().Contain(t => t.Heading == "Deprecations" && t.Level == 3);
+	}
+
+	[Fact]
+	public void SeparatedTypeTocSlugsMatchHtmlIds()
+	{
+		var tocItems = Block!.GeneratedTableOfContent.ToList();
+		foreach (var item in tocItems.Where(t => t.Level == 3))
+		{
+			Html.Should().Contain($"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+		}
+	}
 }
 
 /// <summary>
