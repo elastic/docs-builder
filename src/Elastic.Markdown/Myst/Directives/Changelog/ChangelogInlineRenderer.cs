@@ -28,9 +28,6 @@ public static class ChangelogInlineRenderer
 		var isFirst = true;
 		foreach (var bundle in block.LoadedBundles)
 		{
-			if (!isFirst)
-				_ = sb.AppendLine();
-
 			var bundleMarkdown = RenderSingleBundle(
 				bundle,
 				block.Subsections,
@@ -41,13 +38,65 @@ public static class ChangelogInlineRenderer
 				block.LinkVisibility,
 				block.DescriptionVisibility,
 				block.DropdownsEnabled);
-			_ = sb.Append(bundleMarkdown);
 
+			if (string.IsNullOrWhiteSpace(bundleMarkdown))
+				continue;
+
+			if (!isFirst)
+				_ = sb.AppendLine();
+
+			_ = sb.Append(bundleMarkdown);
 			isFirst = false;
 		}
 
-		return sb.ToString();
+		return sb.Length == 0 ? null : sb.ToString();
 	}
+
+	/// <summary>
+	/// True when the directive filters to a single separated type page (deprecations, breaking changes, etc.).
+	/// </summary>
+	public static bool IsDedicatedSeparatedTypePage(ChangelogTypeFilter typeFilter) =>
+		typeFilter is ChangelogTypeFilter.BreakingChange
+			or ChangelogTypeFilter.Deprecation
+			or ChangelogTypeFilter.KnownIssue
+			or ChangelogTypeFilter.Highlight;
+
+	/// <summary>
+	/// True when <paramref name="typeFilter"/> is <see cref="ChangelogTypeFilter.All"/> or default.
+	/// </summary>
+	public static bool IsGeneralReleaseNotesPage(ChangelogTypeFilter typeFilter) =>
+		typeFilter is ChangelogTypeFilter.All or ChangelogTypeFilter.Default;
+
+	/// <summary>
+	/// Returns filtered changelog entries for a bundle using the same filters as rendering.
+	/// </summary>
+	public static IReadOnlyList<ChangelogEntry> GetFilteredEntries(
+		LoadedBundle bundle,
+		PublishBlocker? publishBlocker,
+		HashSet<string> hideFeatures,
+		ChangelogTypeFilter typeFilter)
+	{
+		var entries = FilterEntries(bundle.Entries, publishBlocker);
+		entries = FilterEntriesByHideFeatures(entries, hideFeatures);
+		return FilterEntriesByType(entries, typeFilter);
+	}
+
+	/// <summary>
+	/// True when the bundle would produce visible entry content after filtering.
+	/// </summary>
+	public static bool BundleHasRenderableEntries(
+		LoadedBundle bundle,
+		PublishBlocker? publishBlocker,
+		HashSet<string> hideFeatures,
+		ChangelogTypeFilter typeFilter) =>
+		GetFilteredEntries(bundle, publishBlocker, hideFeatures, typeFilter).Count > 0;
+
+	/// <summary>
+	/// True when an empty bundle should still render a version block for bundle-level <c>description</c> only.
+	/// <c>release-date</c> alone does not preserve an otherwise empty release.
+	/// </summary>
+	public static bool ShouldRenderEmptyBundleMetadata(ChangelogTypeFilter typeFilter, string? description) =>
+		IsGeneralReleaseNotesPage(typeFilter) && !string.IsNullOrEmpty(description);
 
 	private static string RenderSingleBundle(
 		LoadedBundle bundle,
@@ -204,6 +253,7 @@ public static class ChangelogInlineRenderer
 		DateOnly? releaseDate = null)
 	{
 		var sb = new StringBuilder();
+		var dedicatedPage = IsDedicatedSeparatedTypePage(typeFilter);
 
 		// Get entries by category
 		var features = entriesByType.GetValueOrDefault(ChangelogEntryType.Feature, []);
@@ -223,21 +273,6 @@ public static class ChangelogInlineRenderer
 			.Where(e => e.Highlight == true)
 			.ToList();
 
-		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
-
-		if (releaseDate is { } date)
-		{
-			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"_Released: {date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}_");
-		}
-
-		// Add description if present
-		if (!string.IsNullOrEmpty(description))
-		{
-			_ = sb.AppendLine();
-			_ = sb.AppendLine(description);
-		}
-
 		// Check if we have any content at all
 		var hasAnyContent = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 ||
 							bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0 ||
@@ -246,27 +281,33 @@ public static class ChangelogInlineRenderer
 
 		if (!hasAnyContent)
 		{
-			_ = sb.AppendLine(GetEmptyMessage(typeFilter));
-			return sb.ToString();
+			if (ShouldRenderEmptyBundleMetadata(typeFilter, description))
+			{
+				AppendVersionHeader(sb, title, description, releaseDate);
+				return sb.ToString();
+			}
+
+			return string.Empty;
 		}
+
+		AppendVersionHeader(sb, title, description, releaseDate);
 
 		// Special case: When filtering by highlight, render only highlights without type-based sections
 		if (typeFilter == ChangelogTypeFilter.Highlight)
 		{
 			if (highlights.Count > 0)
 			{
-				if (dropdownsEnabled)
-					RenderDetailedEntries(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
-				else
-					RenderDetailedEntriesFlattened(sb, highlights, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions);
+				_ = sb.AppendLine();
+				RenderSeparatedTypeEntries(
+					sb, highlights, repo, owner, subsections, dropdownsEnabled, groupBySubtype: false,
+					hideLinks, hideEntryDescriptions, publishBlocker);
 			}
 			return sb.ToString();
 		}
 
 		if (breakingChanges.Count > 0)
 		{
-			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Breaking changes [{repo}-{titleSlug}-breaking-changes]");
+			AppendSectionHeader(sb, dedicatedPage, $"### Breaking changes [{repo}-{titleSlug}-breaking-changes]");
 			if (dropdownsEnabled)
 				RenderDetailedEntries(sb, breakingChanges, repo, owner, groupBySubtype: true, hideLinks, hideEntryDescriptions, publishBlocker);
 			else
@@ -292,22 +333,18 @@ public static class ChangelogInlineRenderer
 
 		if (knownIssues.Count > 0)
 		{
-			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Known issues [{repo}-{titleSlug}-known-issues]");
-			if (dropdownsEnabled)
-				RenderDetailedEntries(sb, knownIssues, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
-			else
-				RenderDetailedEntriesFlattened(sb, knownIssues, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions);
+			AppendSectionHeader(sb, dedicatedPage, $"### Known issues [{repo}-{titleSlug}-known-issues]");
+			RenderSeparatedTypeEntries(
+				sb, knownIssues, repo, owner, subsections, dropdownsEnabled, groupBySubtype: false,
+				hideLinks, hideEntryDescriptions, publishBlocker);
 		}
 
 		if (deprecations.Count > 0)
 		{
-			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"### Deprecations [{repo}-{titleSlug}-deprecations]");
-			if (dropdownsEnabled)
-				RenderDetailedEntries(sb, deprecations, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
-			else
-				RenderDetailedEntriesFlattened(sb, deprecations, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions);
+			AppendSectionHeader(sb, dedicatedPage, $"### Deprecations [{repo}-{titleSlug}-deprecations]");
+			RenderSeparatedTypeEntries(
+				sb, deprecations, repo, owner, subsections, dropdownsEnabled, groupBySubtype: false,
+				hideLinks, hideEntryDescriptions, publishBlocker);
 		}
 
 		if (features.Count > 0 || enhancements.Count > 0)
@@ -655,16 +692,55 @@ public static class ChangelogInlineRenderer
 		_ = sb.AppendLine();
 	}
 
-	/// <summary>
-	/// Gets the appropriate empty message based on the type filter.
-	/// Matches messages used by CLI renderers for consistency.
-	/// </summary>
-	private static string GetEmptyMessage(ChangelogTypeFilter typeFilter) =>
-		typeFilter switch
+	private static void AppendVersionHeader(StringBuilder sb, string title, string? description, DateOnly? releaseDate)
+	{
+		_ = sb.AppendLine(CultureInfo.InvariantCulture, $"## {title}");
+
+		if (releaseDate is { } date)
 		{
-			ChangelogTypeFilter.BreakingChange => "_There are no breaking changes associated with this release._",
-			ChangelogTypeFilter.Deprecation => "_There are no deprecations associated with this release._",
-			ChangelogTypeFilter.KnownIssue => "_There are no known issues associated with this release._",
-			_ => "_No new features, enhancements, or fixes._"
-		};
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"_Released: {date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}_");
+		}
+
+		if (!string.IsNullOrEmpty(description))
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(description);
+		}
+	}
+
+	private static void AppendSectionHeader(StringBuilder sb, bool dedicatedPage, string sectionHeading)
+	{
+		if (dedicatedPage)
+			_ = sb.AppendLine();
+		else
+		{
+			_ = sb.AppendLine();
+			_ = sb.AppendLine(sectionHeading);
+		}
+	}
+
+	private static void RenderSeparatedTypeEntries(
+		StringBuilder sb,
+		List<ChangelogEntry> entries,
+		string repo,
+		string owner,
+		bool subsections,
+		bool dropdownsEnabled,
+		bool groupBySubtype,
+		bool hideLinks,
+		bool hideEntryDescriptions,
+		PublishBlocker? publishBlocker)
+	{
+		if (dropdownsEnabled)
+		{
+			RenderDetailedEntries(sb, entries, repo, owner, groupBySubtype, hideLinks, hideEntryDescriptions, publishBlocker);
+			return;
+		}
+
+		if (subsections && !groupBySubtype)
+			RenderDetailedEntries(sb, entries, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+		else
+			RenderDetailedEntriesFlattened(sb, entries, repo, owner, groupBySubtype, hideLinks, hideEntryDescriptions);
+	}
 }

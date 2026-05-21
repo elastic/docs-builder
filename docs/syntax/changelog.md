@@ -105,6 +105,11 @@ To show all entries on a single page (previous default behavior):
 :::
 ```
 
+**General release notes** (default or `:type: all`):
+
+- Section headings are shown when that type has entries.
+- Releases with no matching entries are omitted unless the bundle has a `description`; in that case only the version heading and description are shown (no placeholder messages). A `release-date` alone does not preserve an otherwise empty release.
+
 #### `:link-visibility:`
 
 Controls how pull request and issue links are shown when the directive applies source-repo-based privacy.
@@ -303,7 +308,7 @@ Bundle descriptions are rendered when present in the bundle YAML file. The descr
 - The "Highlights" section is only created when at least one entry has `highlight: true`
 - When using `:type: highlight`, only highlighted entries are shown (no section headers or other content)
 
-Sections with no entries of that type are omitted from the output.
+Sections with no entries of that type are omitted from the output. Releases with no entries after the `:type:` filter are omitted entirely, except on general release-notes pages (`:type: all` or default) when the bundle has a `description`.
 
 ## Error behavior for missing files [changelog-missing-files]
 
