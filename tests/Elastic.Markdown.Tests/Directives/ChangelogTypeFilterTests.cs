@@ -1059,6 +1059,7 @@ public class ChangelogDedicatedPageWithSubsectionsTests : DirectiveTest<Changelo
 	{
 		Html.Should().NotContain("### Deprecations");
 		Html.Should().NotContain(">Deprecations<");
+		Html.Should().NotContain("{dropdown}");
 		Html.Should().Contain("Search");
 		Html.Should().Contain("Search deprecation");
 		Html.Should().Contain("Indexing");

@@ -534,6 +534,31 @@ public static class ChangelogInlineRenderer
 		}
 	}
 
+	private static void RenderDetailedEntriesFlattenedByArea(
+		StringBuilder sb,
+		List<ChangelogEntry> entries,
+		string repo,
+		string owner,
+		bool hideLinks,
+		bool hideEntryDescriptions,
+		PublishBlocker? publishBlocker)
+	{
+		var groupedByArea = entries.GroupBy(e => publishBlocker.GetPreferredArea(e)).OrderBy(g => g.Key).ToList();
+
+		foreach (var areaGroup in groupedByArea)
+		{
+			if (!string.IsNullOrWhiteSpace(areaGroup.Key))
+			{
+				var header = ChangelogTextUtilities.FormatAreaHeader(areaGroup.Key);
+				_ = sb.AppendLine();
+				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**{header}**");
+			}
+
+			foreach (var entry in areaGroup)
+				RenderDetailedEntryFlattened(sb, entry, repo, owner, hideLinks, hideEntryDescriptions);
+		}
+	}
+
 	private static void RenderDetailedEntryFlattened(StringBuilder sb, ChangelogEntry entry, string repo, string owner, bool hideLinks, bool hideEntryDescriptions)
 	{
 		// Start with bullet point and title (no bold, matching regular entries)
@@ -739,7 +764,7 @@ public static class ChangelogInlineRenderer
 		}
 
 		if (subsections && !groupBySubtype)
-			RenderDetailedEntries(sb, entries, repo, owner, groupBySubtype: false, hideLinks, hideEntryDescriptions, publishBlocker);
+			RenderDetailedEntriesFlattenedByArea(sb, entries, repo, owner, hideLinks, hideEntryDescriptions, publishBlocker);
 		else
 			RenderDetailedEntriesFlattened(sb, entries, repo, owner, groupBySubtype, hideLinks, hideEntryDescriptions);
 	}
