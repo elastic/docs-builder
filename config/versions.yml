@@ -103,7 +103,7 @@ versioning_systems:
     current: 1.6.0
   edot-cf-azure:
     base: 0.7.1
-    current: 0.7.1
+    current: 0.8.0
   edot-cf-gcp:
     base: 0.1
     current: 0.1.3
