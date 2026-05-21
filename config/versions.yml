@@ -76,7 +76,7 @@ versioning_systems:
     current: 9.4.1
   edot-ios:
     base: 1.0
-    current: 2.0.0
+    current: 2.0.1
   edot-android:
     base: 1.0
     current: 1.6.0
