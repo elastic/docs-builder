@@ -1,8 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "docs-builder",
-  "version": "1.0.0",
-  "description": null,
+  "version": "1",
   "reservedMetaCommands": [
     "__complete",
     "__completion",
@@ -42,13 +41,11 @@
     {
       "role": "flag",
       "name": "skip-private-repositories",
-      "shortName": null,
       "type": "boolean",
       "required": false,
       "summary": "Skip cloning private repositories"
     }
   ],
-  "rootDefault": null,
   "commands": [
     {
       "path": [],
@@ -61,7 +58,6 @@
         {
           "role": "flag",
           "name": "strict",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Treat warnings as errors."
@@ -69,7 +65,6 @@
         {
           "role": "flag",
           "name": "environment",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Named deployment target, e.g. dev, staging, production. Determines which configuration branch and index names are used."
@@ -77,7 +72,6 @@
         {
           "role": "flag",
           "name": "metadata-only",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Write only metadata files; skip HTML generation. Ignored when --exporters is also set."
@@ -85,7 +79,6 @@
         {
           "role": "flag",
           "name": "show-hints",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Print documentation hints emitted during the build."
@@ -93,7 +86,6 @@
         {
           "role": "flag",
           "name": "exporters",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Comma-separated list of exporters to run."
@@ -101,7 +93,6 @@
         {
           "role": "flag",
           "name": "assume-build",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip the build step when .artifacts/docs/index.html already exists. Intended for test scenarios only."
@@ -109,7 +100,6 @@
         {
           "role": "flag",
           "name": "fetch-latest",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Fetch the HEAD of each branch instead of the pinned link-registry ref.",
@@ -118,7 +108,6 @@
         {
           "role": "flag",
           "name": "assume-cloned",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip cloning; assume repositories are already on disk. Useful for iterating on the build.",
@@ -127,7 +116,6 @@
         {
           "role": "flag",
           "name": "serve",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Serve the site on port 4000 after a successful build.",
@@ -166,7 +154,6 @@
         {
           "role": "flag",
           "name": "skip-private-repositories",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip cloning private repositories"
@@ -190,25 +177,10 @@
           "summary": "Root directory of the documentation source. Defaults to cwd/docs.",
           "validations": [
             {
-              "kind": "rejectSymbolicLinks",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
+              "kind": "rejectSymbolicLinks"
             },
             {
-              "kind": "existing",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
-            },
-            {
-              "kind": "expandUserProfile",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
+              "kind": "existing"
             }
           ]
         },
@@ -221,25 +193,13 @@
           "summary": "Destination for generated HTML. Defaults to .artifacts/html.",
           "validations": [
             {
-              "kind": "rejectSymbolicLinks",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
-            },
-            {
-              "kind": "expandUserProfile",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
+              "kind": "rejectSymbolicLinks"
             }
           ]
         },
         {
           "role": "flag",
           "name": "path-prefix",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "URL path prefix prepended to every generated link."
@@ -247,7 +207,6 @@
         {
           "role": "flag",
           "name": "force",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Delete and rebuild the output folder even if nothing changed."
@@ -255,7 +214,6 @@
         {
           "role": "flag",
           "name": "strict",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Treat warnings as errors."
@@ -263,7 +221,6 @@
         {
           "role": "flag",
           "name": "allow-indexing",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Emit meta robots tags that allow search engine indexing."
@@ -271,7 +228,6 @@
         {
           "role": "flag",
           "name": "metadata-only",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Write only metadata files; skip HTML generation. Ignored when --exporters is also set."
@@ -279,7 +235,6 @@
         {
           "role": "flag",
           "name": "exporters",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Comma-separated list of exporters to run."
@@ -287,16 +242,12 @@
         {
           "role": "flag",
           "name": "canonical-base-url",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Base URL written into \u003Clink rel=canonical\u003E tags.",
           "validations": [
             {
               "kind": "uriScheme",
-              "min": null,
-              "max": null,
-              "pattern": null,
               "values": [
                 "http",
                 "https"
@@ -307,7 +258,6 @@
         {
           "role": "flag",
           "name": "skip-api",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip OpenAPI spec generation for faster builds."
@@ -315,7 +265,6 @@
         {
           "role": "flag",
           "name": "skip-cross-links",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip fetching cross-doc-set link indexes."
@@ -323,10 +272,8 @@
         {
           "role": "flag",
           "name": "in-memory",
-          "shortName": null,
           "type": "boolean",
           "required": false,
-          "summary": null,
           "defaultValue": "false"
         },
         {
@@ -362,7 +309,6 @@
         {
           "role": "flag",
           "name": "skip-private-repositories",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip cloning private repositories"
@@ -422,7 +368,6 @@
         {
           "role": "flag",
           "name": "skip-private-repositories",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip cloning private repositories"
@@ -448,7 +393,6 @@
         {
           "role": "flag",
           "name": "check",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Report files that need formatting without modifying them. Exits 1 when any file is out of format.",
@@ -457,7 +401,6 @@
         {
           "role": "flag",
           "name": "write",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Apply formatting changes in place.",
@@ -496,7 +439,6 @@
         {
           "role": "flag",
           "name": "skip-private-repositories",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip cloning private repositories"
@@ -518,16 +460,12 @@
         {
           "role": "flag",
           "name": "endpoint",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "-es,--endpoint, Elasticsearch endpoint URL. Falls back to env DOCUMENTATION_ELASTIC_URL.",
           "validations": [
             {
               "kind": "uriScheme",
-              "min": null,
-              "max": null,
-              "pattern": null,
               "values": [
                 "http",
                 "https"
@@ -538,7 +476,6 @@
         {
           "role": "flag",
           "name": "api-key",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "API key for authentication. Falls back to env DOCUMENTATION_ELASTIC_APIKEY."
@@ -546,7 +483,6 @@
         {
           "role": "flag",
           "name": "username",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Username for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_USERNAME."
@@ -554,7 +490,6 @@
         {
           "role": "flag",
           "name": "password",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Password for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_PASSWORD."
@@ -562,7 +497,6 @@
         {
           "role": "flag",
           "name": "ai-enrichment",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
@@ -570,7 +504,6 @@
         {
           "role": "flag",
           "name": "search-num-threads",
-          "shortName": null,
           "type": "integer",
           "required": false,
           "summary": "Number of search threads for the inference endpoint.",
@@ -578,16 +511,13 @@
             {
               "kind": "range",
               "min": "1",
-              "max": "128",
-              "pattern": null,
-              "values": null
+              "max": "128"
             }
           ]
         },
         {
           "role": "flag",
           "name": "index-num-threads",
-          "shortName": null,
           "type": "integer",
           "required": false,
           "summary": "Number of index threads for the inference endpoint.",
@@ -595,16 +525,13 @@
             {
               "kind": "range",
               "min": "1",
-              "max": "128",
-              "pattern": null,
-              "values": null
+              "max": "128"
             }
           ]
         },
         {
           "role": "flag",
           "name": "eis",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Use the Elastic Inference Service to bootstrap the inference endpoint (enabled by default)."
@@ -612,7 +539,6 @@
         {
           "role": "flag",
           "name": "bootstrap-timeout",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "How long to wait for the inference endpoint to become ready (e.g. 4m, 90s).",
@@ -620,16 +546,13 @@
             {
               "kind": "timeSpanRange",
               "min": "\u00221s\u0022",
-              "max": "\u002260m\u0022",
-              "pattern": null,
-              "values": null
+              "max": "\u002260m\u0022"
             }
           ]
         },
         {
           "role": "flag",
           "name": "force-reindex",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Force a full reindex, discarding any incremental state."
@@ -637,7 +560,6 @@
         {
           "role": "flag",
           "name": "buffer-size",
-          "shortName": null,
           "type": "integer",
           "required": false,
           "summary": "Number of documents per bulk request.",
@@ -645,16 +567,13 @@
             {
               "kind": "range",
               "min": "1",
-              "max": "10000",
-              "pattern": null,
-              "values": null
+              "max": "10000"
             }
           ]
         },
         {
           "role": "flag",
           "name": "max-retries",
-          "shortName": null,
           "type": "integer",
           "required": false,
           "summary": "Number of retry attempts for failed bulk items.",
@@ -662,16 +581,13 @@
             {
               "kind": "range",
               "min": "0",
-              "max": "20",
-              "pattern": null,
-              "values": null
+              "max": "20"
             }
           ]
         },
         {
           "role": "flag",
           "name": "debug-mode",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Log every Elasticsearch request and response body; append ?pretty to all requests."
@@ -679,16 +595,12 @@
         {
           "role": "flag",
           "name": "proxy-address",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Route requests through this proxy URL.",
           "validations": [
             {
               "kind": "uriScheme",
-              "min": null,
-              "max": null,
-              "pattern": null,
               "values": [
                 "http",
                 "https"
@@ -699,7 +611,6 @@
         {
           "role": "flag",
           "name": "proxy-username",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Proxy server username."
@@ -707,7 +618,6 @@
         {
           "role": "flag",
           "name": "proxy-password",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Proxy server password."
@@ -715,7 +625,6 @@
         {
           "role": "flag",
           "name": "disable-ssl-verification",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Disable SSL certificate validation. Use only in controlled environments."
@@ -723,7 +632,6 @@
         {
           "role": "flag",
           "name": "certificate-fingerprint",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "SHA-256 fingerprint of a self-signed server certificate."
@@ -731,50 +639,30 @@
         {
           "role": "flag",
           "name": "certificate-path",
-          "shortName": null,
           "type": "string",
           "required": false,
           "summary": "Path to a PEM or DER certificate file for SSL validation.",
           "validations": [
             {
-              "kind": "rejectSymbolicLinks",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
+              "kind": "rejectSymbolicLinks"
             },
             {
-              "kind": "existing",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
+              "kind": "existing"
             },
             {
               "kind": "fileExtensions",
-              "min": null,
-              "max": null,
-              "pattern": null,
               "values": [
                 "pem",
                 "der",
                 "crt",
                 "cer"
               ]
-            },
-            {
-              "kind": "expandUserProfile",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
             }
           ]
         },
         {
           "role": "flag",
           "name": "certificate-not-root",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Set when the certificate is an intermediate CA rather than the root."
@@ -782,10 +670,8 @@
         {
           "role": "flag",
           "name": "path",
-          "shortName": null,
           "type": "string",
-          "required": false,
-          "summary": null
+          "required": false
         },
         {
           "role": "flag",
@@ -820,7 +706,6 @@
         {
           "role": "flag",
           "name": "skip-private-repositories",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip cloning private repositories"
@@ -834,14 +719,12 @@
       "path": [],
       "name": "mv",
       "summary": "Move a file or folder and rewrite all inbound links across the documentation set.",
-      "notes": null,
       "usage": "docs-builder mv \u003Csource\u003E \u003Ctarget\u003E [options]",
       "examples": [],
       "parameters": [
         {
           "role": "positional",
           "name": "source",
-          "shortName": null,
           "type": "string",
           "required": true,
           "summary": "Source file or folder path."
@@ -849,7 +732,6 @@
         {
           "role": "positional",
           "name": "target",
-          "shortName": null,
           "type": "string",
           "required": true,
           "summary": "Destination file or folder path."
@@ -857,7 +739,6 @@
         {
           "role": "dryRun",
           "name": "dry-run",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Print the changes that would be made without applying them.",
@@ -904,7 +785,6 @@
         {
           "role": "flag",
           "name": "skip-private-repositories",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip cloning private repositories"
@@ -932,32 +812,16 @@
           "summary": "Documentation source directory. Defaults to the cwd/docs folder.",
           "validations": [
             {
-              "kind": "rejectSymbolicLinks",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
+              "kind": "rejectSymbolicLinks"
             },
             {
-              "kind": "existing",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
-            },
-            {
-              "kind": "expandUserProfile",
-              "min": null,
-              "max": null,
-              "pattern": null,
-              "values": null
+              "kind": "existing"
             }
           ]
         },
         {
           "role": "flag",
           "name": "port",
-          "shortName": null,
           "type": "integer",
           "required": false,
           "summary": "Port to serve the documentation. Default: 3000",
@@ -966,7 +830,6 @@
         {
           "role": "flag",
           "name": "watch",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Special flag for dotnet watch optimizations during development",
@@ -1005,7 +868,6 @@
         {
           "role": "flag",
           "name": "skip-private-repositories",
-          "shortName": null,
           "type": "boolean",
           "required": false,
           "summary": "Skip cloning private repositories"
@@ -1017,9 +879,7 @@
     {
       "segment": "assembler",
       "summary": "Build a unified documentation site by composing multiple documentation sets under a shared navigation.",
-      "notes": null,
       "options": [],
-      "defaultCommand": null,
       "commands": [
         {
           "path": [
@@ -1034,7 +894,6 @@
             {
               "role": "flag",
               "name": "strict",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Treat warnings as errors."
@@ -1042,7 +901,6 @@
             {
               "role": "flag",
               "name": "environment",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Named deployment target, e.g. dev, staging, production. Determines which configuration branch and index names are used."
@@ -1050,7 +908,6 @@
             {
               "role": "flag",
               "name": "metadata-only",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Write only metadata files; skip HTML generation. Ignored when --exporters is also set."
@@ -1058,7 +915,6 @@
             {
               "role": "flag",
               "name": "show-hints",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Print documentation hints emitted during the build."
@@ -1066,7 +922,6 @@
             {
               "role": "flag",
               "name": "exporters",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Comma-separated list of exporters to run."
@@ -1074,7 +929,6 @@
             {
               "role": "flag",
               "name": "assume-build",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip the build step when .artifacts/docs/index.html already exists. Intended for test scenarios only."
@@ -1112,7 +966,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -1135,7 +988,6 @@
             {
               "role": "flag",
               "name": "strict",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Treat warnings as errors.",
@@ -1144,7 +996,6 @@
             {
               "role": "flag",
               "name": "environment",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Named deployment target. Determines which repositories and branches are cloned."
@@ -1152,7 +1003,6 @@
             {
               "role": "flag",
               "name": "fetch-latest",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Fetch the HEAD of each branch instead of the pinned link-registry ref.",
@@ -1161,7 +1011,6 @@
             {
               "role": "flag",
               "name": "assume-cloned",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning; assume repositories are already on disk.",
@@ -1200,7 +1049,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -1223,16 +1071,12 @@
             {
               "role": "flag",
               "name": "endpoint",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "-es,--endpoint, Elasticsearch endpoint URL. Falls back to env DOCUMENTATION_ELASTIC_URL.",
               "validations": [
                 {
                   "kind": "uriScheme",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "http",
                     "https"
@@ -1243,7 +1087,6 @@
             {
               "role": "flag",
               "name": "api-key",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "API key for authentication. Falls back to env DOCUMENTATION_ELASTIC_APIKEY."
@@ -1251,7 +1094,6 @@
             {
               "role": "flag",
               "name": "username",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Username for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_USERNAME."
@@ -1259,7 +1101,6 @@
             {
               "role": "flag",
               "name": "password",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Password for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_PASSWORD."
@@ -1267,7 +1108,6 @@
             {
               "role": "flag",
               "name": "ai-enrichment",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
@@ -1275,7 +1115,6 @@
             {
               "role": "flag",
               "name": "search-num-threads",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of search threads for the inference endpoint.",
@@ -1283,16 +1122,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "128",
-                  "pattern": null,
-                  "values": null
+                  "max": "128"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "index-num-threads",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of index threads for the inference endpoint.",
@@ -1300,16 +1136,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "128",
-                  "pattern": null,
-                  "values": null
+                  "max": "128"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "eis",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Use the Elastic Inference Service to bootstrap the inference endpoint (enabled by default)."
@@ -1317,7 +1150,6 @@
             {
               "role": "flag",
               "name": "bootstrap-timeout",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "How long to wait for the inference endpoint to become ready (e.g. 4m, 90s).",
@@ -1325,16 +1157,13 @@
                 {
                   "kind": "timeSpanRange",
                   "min": "\u00221s\u0022",
-                  "max": "\u002260m\u0022",
-                  "pattern": null,
-                  "values": null
+                  "max": "\u002260m\u0022"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "force-reindex",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Force a full reindex, discarding any incremental state."
@@ -1342,7 +1171,6 @@
             {
               "role": "flag",
               "name": "buffer-size",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of documents per bulk request.",
@@ -1350,16 +1178,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "10000",
-                  "pattern": null,
-                  "values": null
+                  "max": "10000"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "max-retries",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of retry attempts for failed bulk items.",
@@ -1367,16 +1192,13 @@
                 {
                   "kind": "range",
                   "min": "0",
-                  "max": "20",
-                  "pattern": null,
-                  "values": null
+                  "max": "20"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "debug-mode",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Log every Elasticsearch request and response body; append ?pretty to all requests."
@@ -1384,16 +1206,12 @@
             {
               "role": "flag",
               "name": "proxy-address",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Route requests through this proxy URL.",
               "validations": [
                 {
                   "kind": "uriScheme",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "http",
                     "https"
@@ -1404,7 +1222,6 @@
             {
               "role": "flag",
               "name": "proxy-username",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Proxy server username."
@@ -1412,7 +1229,6 @@
             {
               "role": "flag",
               "name": "proxy-password",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Proxy server password."
@@ -1420,7 +1236,6 @@
             {
               "role": "flag",
               "name": "disable-ssl-verification",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Disable SSL certificate validation. Use only in controlled environments."
@@ -1428,7 +1243,6 @@
             {
               "role": "flag",
               "name": "certificate-fingerprint",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "SHA-256 fingerprint of a self-signed server certificate."
@@ -1436,50 +1250,30 @@
             {
               "role": "flag",
               "name": "certificate-path",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Path to a PEM or DER certificate file for SSL validation.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "pem",
                     "der",
                     "crt",
                     "cer"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "certificate-not-root",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Set when the certificate is an intermediate CA rather than the root."
@@ -1487,7 +1281,6 @@
             {
               "role": "flag",
               "name": "environment",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Named deployment target; becomes part of the Elasticsearch index name."
@@ -1525,7 +1318,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -1545,7 +1337,6 @@
             {
               "role": "flag",
               "name": "port",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Port to listen on. Default: 4000.",
@@ -1554,31 +1345,15 @@
             {
               "role": "flag",
               "name": "path",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Path to the built site. Defaults to .artifacts/docs/.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 }
               ]
             },
@@ -1615,7 +1390,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -1635,16 +1409,12 @@
             {
               "role": "flag",
               "name": "endpoint",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "-es,--endpoint, Elasticsearch endpoint URL. Falls back to env DOCUMENTATION_ELASTIC_URL.",
               "validations": [
                 {
                   "kind": "uriScheme",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "http",
                     "https"
@@ -1655,7 +1425,6 @@
             {
               "role": "flag",
               "name": "api-key",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "API key for authentication. Falls back to env DOCUMENTATION_ELASTIC_APIKEY."
@@ -1663,7 +1432,6 @@
             {
               "role": "flag",
               "name": "username",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Username for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_USERNAME."
@@ -1671,7 +1439,6 @@
             {
               "role": "flag",
               "name": "password",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Password for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_PASSWORD."
@@ -1679,7 +1446,6 @@
             {
               "role": "flag",
               "name": "ai-enrichment",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
@@ -1687,7 +1453,6 @@
             {
               "role": "flag",
               "name": "search-num-threads",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of search threads for the inference endpoint.",
@@ -1695,16 +1460,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "128",
-                  "pattern": null,
-                  "values": null
+                  "max": "128"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "index-num-threads",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of index threads for the inference endpoint.",
@@ -1712,16 +1474,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "128",
-                  "pattern": null,
-                  "values": null
+                  "max": "128"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "eis",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Use the Elastic Inference Service to bootstrap the inference endpoint (enabled by default)."
@@ -1729,7 +1488,6 @@
             {
               "role": "flag",
               "name": "bootstrap-timeout",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "How long to wait for the inference endpoint to become ready (e.g. 4m, 90s).",
@@ -1737,16 +1495,13 @@
                 {
                   "kind": "timeSpanRange",
                   "min": "\u00221s\u0022",
-                  "max": "\u002260m\u0022",
-                  "pattern": null,
-                  "values": null
+                  "max": "\u002260m\u0022"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "force-reindex",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Force a full reindex, discarding any incremental state."
@@ -1754,7 +1509,6 @@
             {
               "role": "flag",
               "name": "buffer-size",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of documents per bulk request.",
@@ -1762,16 +1516,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "10000",
-                  "pattern": null,
-                  "values": null
+                  "max": "10000"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "max-retries",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of retry attempts for failed bulk items.",
@@ -1779,16 +1530,13 @@
                 {
                   "kind": "range",
                   "min": "0",
-                  "max": "20",
-                  "pattern": null,
-                  "values": null
+                  "max": "20"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "debug-mode",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Log every Elasticsearch request and response body; append ?pretty to all requests."
@@ -1796,16 +1544,12 @@
             {
               "role": "flag",
               "name": "proxy-address",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Route requests through this proxy URL.",
               "validations": [
                 {
                   "kind": "uriScheme",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "http",
                     "https"
@@ -1816,7 +1560,6 @@
             {
               "role": "flag",
               "name": "proxy-username",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Proxy server username."
@@ -1824,7 +1567,6 @@
             {
               "role": "flag",
               "name": "proxy-password",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Proxy server password."
@@ -1832,7 +1574,6 @@
             {
               "role": "flag",
               "name": "disable-ssl-verification",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Disable SSL certificate validation. Use only in controlled environments."
@@ -1840,7 +1581,6 @@
             {
               "role": "flag",
               "name": "certificate-fingerprint",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "SHA-256 fingerprint of a self-signed server certificate."
@@ -1848,50 +1588,30 @@
             {
               "role": "flag",
               "name": "certificate-path",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Path to a PEM or DER certificate file for SSL validation.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "pem",
                     "der",
                     "crt",
                     "cer"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "certificate-not-root",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Set when the certificate is an intermediate CA rather than the root."
@@ -1899,7 +1619,6 @@
             {
               "role": "flag",
               "name": "environment",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Named deployment target; used to resolve the correct Elasticsearch index."
@@ -1937,7 +1656,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -1949,9 +1667,7 @@
         {
           "segment": "bloom-filter",
           "summary": "Build and query the bloom filter used for legacy-URL redirect coverage.",
-          "notes": null,
           "options": [],
-          "defaultCommand": null,
           "commands": [
             {
               "path": [
@@ -1967,31 +1683,15 @@
                 {
                   "role": "flag",
                   "name": "built-docs-dir",
-                  "shortName": null,
                   "type": "string",
                   "required": true,
                   "summary": "Path to the local legacy-docs repository checkout.",
                   "validations": [
                     {
-                      "kind": "rejectSymbolicLinks",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "rejectSymbolicLinks"
                     },
                     {
-                      "kind": "existing",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
-                    },
-                    {
-                      "kind": "expandUserProfile",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "existing"
                     }
                   ]
                 },
@@ -2028,7 +1728,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2042,14 +1741,12 @@
               ],
               "name": "lookup",
               "summary": "Test whether a URL path is recorded in the bloom filter.",
-              "notes": null,
               "usage": "docs-builder assembler bloom-filter lookup --path \u003Cstring\u003E",
               "examples": [],
               "parameters": [
                 {
                   "role": "flag",
                   "name": "path",
-                  "shortName": null,
                   "type": "string",
                   "required": true,
                   "summary": "URL path to look up (e.g. /guide/en/elasticsearch/reference/current/index.html)."
@@ -2087,7 +1784,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2100,9 +1796,7 @@
         {
           "segment": "config",
           "summary": "Fetch and manage the central assembler configuration repository.",
-          "notes": null,
           "options": [],
-          "defaultCommand": null,
           "commands": [
             {
               "path": [
@@ -2118,7 +1812,6 @@
                 {
                   "role": "flag",
                   "name": "git-ref",
-                  "shortName": null,
                   "type": "string",
                   "required": false,
                   "summary": "Git ref to fetch. Defaults to main."
@@ -2126,7 +1819,6 @@
                 {
                   "role": "flag",
                   "name": "local",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Write the configuration into cwd so subsequent commands treat it as a local override.",
@@ -2165,7 +1857,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2178,9 +1869,7 @@
         {
           "segment": "content-source",
           "summary": "Inspect and validate repository entries in the link registry.",
-          "notes": null,
           "options": [],
-          "defaultCommand": null,
           "commands": [
             {
               "path": [
@@ -2196,7 +1885,6 @@
                 {
                   "role": "positional",
                   "name": "repository",
-                  "shortName": null,
                   "type": "string",
                   "required": false,
                   "summary": "Repository slug to match (e.g. elastic/elasticsearch)."
@@ -2204,7 +1892,6 @@
                 {
                   "role": "positional",
                   "name": "branch-or-tag",
-                  "shortName": null,
                   "type": "string",
                   "required": false,
                   "summary": "Branch name or version tag to test against."
@@ -2242,7 +1929,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2256,7 +1942,6 @@
               ],
               "name": "validate",
               "summary": "Verify that every repository in the assembler configuration has an active published entry in the link registry.",
-              "notes": null,
               "usage": "docs-builder assembler content-source validate",
               "examples": [],
               "parameters": [
@@ -2293,7 +1978,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2306,9 +1990,7 @@
         {
           "segment": "deploy",
           "summary": "Deploy built documentation to S3 and update CloudFront redirect rules.",
-          "notes": null,
           "options": [],
-          "defaultCommand": null,
           "commands": [
             {
               "path": [
@@ -2324,7 +2006,6 @@
                 {
                   "role": "flag",
                   "name": "environment",
-                  "shortName": null,
                   "type": "string",
                   "required": true,
                   "summary": "Named deployment target."
@@ -2332,7 +2013,6 @@
                 {
                   "role": "flag",
                   "name": "s3-bucket-name",
-                  "shortName": null,
                   "type": "string",
                   "required": true,
                   "summary": "S3 bucket to deploy to."
@@ -2340,41 +2020,22 @@
                 {
                   "role": "flag",
                   "name": "plan-file",
-                  "shortName": null,
                   "type": "string",
                   "required": true,
                   "summary": "Path to the plan file produced by assembler deploy plan.",
                   "validations": [
                     {
-                      "kind": "rejectSymbolicLinks",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "rejectSymbolicLinks"
                     },
                     {
-                      "kind": "existing",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "existing"
                     },
                     {
                       "kind": "fileExtensions",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
                       "values": [
                         "json",
                         "plan"
                       ]
-                    },
-                    {
-                      "kind": "expandUserProfile",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
                     }
                   ]
                 },
@@ -2411,7 +2072,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2437,7 +2097,6 @@
                 {
                   "role": "flag",
                   "name": "environment",
-                  "shortName": null,
                   "type": "string",
                   "required": true,
                   "summary": "Named deployment target."
@@ -2445,7 +2104,6 @@
                 {
                   "role": "flag",
                   "name": "s3-bucket-name",
-                  "shortName": null,
                   "type": "string",
                   "required": true,
                   "summary": "S3 bucket to deploy to."
@@ -2453,31 +2111,18 @@
                 {
                   "role": "flag",
                   "name": "out",
-                  "shortName": null,
                   "type": "string",
                   "required": false,
                   "summary": "Path to write the plan file. Defaults to stdout.",
                   "validations": [
                     {
-                      "kind": "rejectSymbolicLinks",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
-                    },
-                    {
-                      "kind": "expandUserProfile",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "rejectSymbolicLinks"
                     }
                   ]
                 },
                 {
                   "role": "flag",
                   "name": "delete-threshold",
-                  "shortName": null,
                   "type": "number",
                   "required": false,
                   "summary": "Abort if the plan would delete more than this percentage of objects (0\u2013100).",
@@ -2516,7 +2161,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2541,7 +2185,6 @@
                 {
                   "role": "flag",
                   "name": "environment",
-                  "shortName": null,
                   "type": "string",
                   "required": true,
                   "summary": "Named deployment target."
@@ -2549,40 +2192,21 @@
                 {
                   "role": "flag",
                   "name": "redirects-file",
-                  "shortName": null,
                   "type": "string",
                   "required": false,
                   "summary": "Path to redirects.json. Defaults to .artifacts/docs/redirects.json.",
                   "validations": [
                     {
-                      "kind": "rejectSymbolicLinks",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "rejectSymbolicLinks"
                     },
                     {
-                      "kind": "existing",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "existing"
                     },
                     {
                       "kind": "fileExtensions",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
                       "values": [
                         "json"
                       ]
-                    },
-                    {
-                      "kind": "expandUserProfile",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
                     }
                   ]
                 },
@@ -2619,7 +2243,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2632,9 +2255,7 @@
         {
           "segment": "navigation",
           "summary": "Validate the global navigation structure and cross-doc-set link references.",
-          "notes": null,
           "options": [],
-          "defaultCommand": null,
           "commands": [
             {
               "path": [
@@ -2643,7 +2264,6 @@
               ],
               "name": "validate",
               "summary": "Check navigation.yml for duplicate path prefixes and non-unique URLs.",
-              "notes": null,
               "usage": "docs-builder assembler navigation validate",
               "examples": [],
               "parameters": [
@@ -2680,7 +2300,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2694,47 +2313,27 @@
               ],
               "name": "validate-link-reference",
               "summary": "Check that no link in a local links.json conflicts with a path prefix defined in navigation.yml.",
-              "notes": null,
               "usage": "docs-builder assembler navigation validate-link-reference [\u003Cfile\u003E]",
               "examples": [],
               "parameters": [
                 {
                   "role": "positional",
                   "name": "file",
-                  "shortName": null,
                   "type": "string",
                   "required": false,
                   "summary": "Path to links.json. Defaults to .artifacts/docs/html/links.json.",
                   "validations": [
                     {
-                      "kind": "rejectSymbolicLinks",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "rejectSymbolicLinks"
                     },
                     {
-                      "kind": "existing",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
+                      "kind": "existing"
                     },
                     {
                       "kind": "fileExtensions",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
                       "values": [
                         "json"
                       ]
-                    },
-                    {
-                      "kind": "expandUserProfile",
-                      "min": null,
-                      "max": null,
-                      "pattern": null,
-                      "values": null
                     }
                   ]
                 },
@@ -2771,7 +2370,6 @@
                 {
                   "role": "flag",
                   "name": "skip-private-repositories",
-                  "shortName": null,
                   "type": "boolean",
                   "required": false,
                   "summary": "Skip cloning private repositories"
@@ -2786,9 +2384,7 @@
     {
       "segment": "changelog",
       "summary": "Create, bundle, and publish changelog entries.",
-      "notes": null,
       "options": [],
-      "defaultCommand": null,
       "commands": [
         {
           "path": [
@@ -2796,14 +2392,12 @@
           ],
           "name": "add",
           "summary": "Create a new changelog entry YAML file.",
-          "notes": null,
           "usage": "docs-builder changelog add [options]",
           "examples": [],
           "parameters": [
             {
               "role": "flag",
               "name": "products",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Products affected in format \u0022product target lifecycle, ...\u0022 (e.g., \u0022elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05\u0022). If not specified, will be inferred from repository or config defaults."
@@ -2811,7 +2405,6 @@
             {
               "role": "flag",
               "name": "action",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: What users must do to mitigate"
@@ -2819,7 +2412,6 @@
             {
               "role": "flag",
               "name": "areas",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Optional: Area(s) affected (comma-separated or specify multiple times)",
@@ -2829,7 +2421,6 @@
             {
               "role": "flag",
               "name": "concise",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Omit schema reference comments from generated YAML files. Useful in CI to produce compact output.",
@@ -2838,48 +2429,28 @@
             {
               "role": "flag",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "description",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Additional information about the change (max 600 characters)"
@@ -2887,7 +2458,6 @@
             {
               "role": "flag",
               "name": "no-extract-release-notes",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Matched release note text is used as the changelog description (only if --description is not explicitly provided). The changelog title comes from --title or the PR title, not from the release note section.",
@@ -2896,7 +2466,6 @@
             {
               "role": "flag",
               "name": "no-extract-issues",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Turn off extraction of linked references. When using --prs: turns off extraction of linked issues from the PR body (e.g., \u0022Fixes #123\u0022). When using --issues: turns off extraction of linked PRs from the issue body (e.g., \u0022Fixed by #123\u0022). By default, linked references are extracted in both cases.",
@@ -2905,7 +2474,6 @@
             {
               "role": "flag",
               "name": "feature-id",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Feature flag ID"
@@ -2913,7 +2481,6 @@
             {
               "role": "flag",
               "name": "highlight",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Include in release highlights",
@@ -2922,7 +2489,6 @@
             {
               "role": "flag",
               "name": "impact",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: How the user\u0027s environment is affected"
@@ -2930,7 +2496,6 @@
             {
               "role": "flag",
               "name": "issues",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., \u0060--issues \u0022https://github.com/owner/repo/issues/123,456\u0022\u0060) or a file path (e.g., \u0060--issues /path/to/file.txt\u0060). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.",
@@ -2940,7 +2505,6 @@
             {
               "role": "flag",
               "name": "owner",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, \u0022elastic\u0022 is used."
@@ -2948,7 +2512,6 @@
             {
               "role": "flag",
               "name": "output",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Output directory for the changelog. Falls back to bundle.directory in changelog.yml when not specified. Defaults to current directory."
@@ -2956,7 +2519,6 @@
             {
               "role": "flag",
               "name": "prs",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., \u0060--prs \u0022https://github.com/owner/repo/pull/123,6789\u0022\u0060) or a file path (e.g., \u0060--prs /path/to/file.txt\u0060). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.",
@@ -2966,7 +2528,6 @@
             {
               "role": "flag",
               "name": "report",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as \u0060changelog bundle --report\u0060). Mutually exclusive with --prs, --issues, and --release-version."
@@ -2974,7 +2535,6 @@
             {
               "role": "flag",
               "name": "release-version",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: GitHub release tag to fetch PRs from (e.g., \u0022v9.2.0\u0022 or \u0022latest\u0022). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs, --issues, and --report. Does not create a bundle; use \u0027changelog gh-release\u0027 for that."
@@ -2982,7 +2542,6 @@
             {
               "role": "flag",
               "name": "repo",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified."
@@ -2990,7 +2549,6 @@
             {
               "role": "flag",
               "name": "strip-title-prefix",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: When used with --prs or --report, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., \u0022[Inference API] Title\u0022 becomes \u0022Title\u0022, \u0022[ES|QL]: Title\u0022 becomes \u0022Title\u0022, \u0022[Discover][ESQL] Title\u0022 becomes \u0022Title\u0022)",
@@ -2999,7 +2557,6 @@
             {
               "role": "flag",
               "name": "subtype",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)"
@@ -3007,7 +2564,6 @@
             {
               "role": "flag",
               "name": "title",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: A short, user-facing title (max 80 characters). Required if neither --prs, --issues, nor --report is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR."
@@ -3015,7 +2571,6 @@
             {
               "role": "flag",
               "name": "type",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs, --issues, nor --report is specified. If mappings are configured, type can be derived from the PR or issue."
@@ -3023,7 +2578,6 @@
             {
               "role": "flag",
               "name": "use-pr-number",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Use PR numbers for filenames instead of timestamp-slug. With --prs, --report, or --issues (where PRs are resolved), each changelog filename will be derived from its PR numbers. Requires --prs, --report, or --issues. Mutually exclusive with --use-issue-number.",
@@ -3032,7 +2586,6 @@
             {
               "role": "flag",
               "name": "use-issue-number",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Use issue numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires --prs or --issues. Mutually exclusive with --use-pr-number.",
@@ -3071,7 +2624,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -3091,7 +2643,6 @@
             {
               "role": "positional",
               "name": "profile",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Profile name from bundle.profiles in config (for example, \u0022elasticsearch-release\u0022). When specified, the second argument is the version or promotion report URL."
@@ -3099,7 +2650,6 @@
             {
               "role": "positional",
               "name": "profile-arg",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Version number or promotion report URL/path when using a profile (for example, \u00229.2.0\u0022 or \u0022https://buildkite.../promotion-report.html\u0022)"
@@ -3107,7 +2657,6 @@
             {
               "role": "positional",
               "name": "profile-report",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source (for example, \u0022bundle serverless-release 2026-02 ./report.html\u0022)."
@@ -3115,7 +2664,6 @@
             {
               "role": "flag",
               "name": "all",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Include all changelogs in the directory.",
@@ -3124,72 +2672,40 @@
             {
               "role": "flag",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "directory",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "description",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Bundle description text with placeholder support. Supports VERSION, LIFECYCLE, OWNER, and REPO placeholders. Overrides bundle.description from config. In option-based mode, placeholders require --output-products to be explicitly specified."
@@ -3197,7 +2713,6 @@
             {
               "role": "flag",
               "name": "hide-features",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Optional: Filter by feature IDs (comma-separated) or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or changelog directive).",
@@ -3207,7 +2722,6 @@
             {
               "role": "flag",
               "name": "no-release-date",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. Not available in profile mode.",
@@ -3216,7 +2730,6 @@
             {
               "role": "flag",
               "name": "release-date",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behavior. Mutually exclusive with --no-release-date. Not available in profile mode."
@@ -3224,7 +2737,6 @@
             {
               "role": "flag",
               "name": "input-products",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Filter by products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta\u0022). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: \u0022elasticsearch * *\u0022 matches all elasticsearch changelogs, \u0022cloud-serverless 2025-12-02 *\u0022 matches cloud-serverless 2025-12-02 with any lifecycle, \u0022* 9.3.* *\u0022 matches any product with target starting with \u00229.3.\u0022, \u0022* * *\u0022 matches all changelogs (equivalent to --all)."
@@ -3232,7 +2744,6 @@
             {
               "role": "flag",
               "name": "output",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case \u0027changelog-bundle.yaml\u0027 is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to \u0027changelog-bundle.yaml\u0027 in the input directory"
@@ -3240,7 +2751,6 @@
             {
               "role": "flag",
               "name": "output-products",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Explicitly set the products array in the output file in format \u0022product target lifecycle, ...\u0022. Overrides any values from changelogs."
@@ -3248,7 +2758,6 @@
             {
               "role": "flag",
               "name": "issues",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.",
@@ -3258,7 +2767,6 @@
             {
               "role": "flag",
               "name": "owner",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, \u0022elastic\u0022 is used."
@@ -3266,7 +2774,6 @@
             {
               "role": "flag",
               "name": "plan",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Emit GitHub Actions step outputs (needs_network, needs_github_token, output_path) describing network requirements and the resolved output path, then exit without generating the bundle. Intended for CI actions.",
@@ -3275,7 +2782,6 @@
             {
               "role": "flag",
               "name": "prs",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.",
@@ -3285,7 +2791,6 @@
             {
               "role": "flag",
               "name": "release-version",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "GitHub release tag to use as a filter source (for example, \u0022v9.2.0\u0022 or \u0022latest\u0022). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter \u2014 equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name."
@@ -3293,7 +2798,6 @@
             {
               "role": "flag",
               "name": "repo",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "GitHub repository name, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used."
@@ -3301,7 +2805,6 @@
             {
               "role": "flag",
               "name": "report",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter."
@@ -3309,7 +2812,6 @@
             {
               "role": "flag",
               "name": "resolve",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.",
@@ -3348,7 +2850,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -3368,48 +2869,28 @@
             {
               "role": "positional",
               "name": "bundle-path",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Required: Path to the original bundle file to amend",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "add",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add \u0022file1.yaml,file2.yaml\u0022). Supports tilde (~) expansion and relative paths.",
@@ -3419,7 +2900,6 @@
             {
               "role": "flag",
               "name": "resolve",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).",
@@ -3458,7 +2938,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -3478,7 +2957,6 @@
             {
               "role": "flag",
               "name": "metadata",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Path to the downloaded metadata.json file"
@@ -3486,7 +2964,6 @@
             {
               "role": "flag",
               "name": "owner",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "GitHub repository owner"
@@ -3494,7 +2971,6 @@
             {
               "role": "flag",
               "name": "repo",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "GitHub repository name"
@@ -3532,7 +3008,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -3552,16 +3027,12 @@
             {
               "role": "flag",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Path to the changelog.yml configuration file",
               "validations": [
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
@@ -3572,7 +3043,6 @@
             {
               "role": "flag",
               "name": "owner",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "GitHub repository owner"
@@ -3580,7 +3050,6 @@
             {
               "role": "flag",
               "name": "repo",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "GitHub repository name"
@@ -3588,7 +3057,6 @@
             {
               "role": "flag",
               "name": "pr-number",
-              "shortName": null,
               "type": "integer",
               "required": true,
               "summary": "Pull request number"
@@ -3596,7 +3064,6 @@
             {
               "role": "flag",
               "name": "pr-title",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Pull request title"
@@ -3604,7 +3071,6 @@
             {
               "role": "flag",
               "name": "pr-labels",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Comma-separated PR labels"
@@ -3612,7 +3078,6 @@
             {
               "role": "flag",
               "name": "head-ref",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "PR head branch ref"
@@ -3620,7 +3085,6 @@
             {
               "role": "flag",
               "name": "head-sha",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "PR head commit SHA"
@@ -3628,7 +3092,6 @@
             {
               "role": "flag",
               "name": "event-action",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: GitHub event action (e.g., opened, synchronize, edited). When omitted, body-only-edit and bot-loop checks are skipped."
@@ -3636,7 +3099,6 @@
             {
               "role": "flag",
               "name": "title-changed",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Whether the PR title changed (for edited events)",
@@ -3645,7 +3107,6 @@
             {
               "role": "flag",
               "name": "body-changed",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Whether the PR body changed (for edited events)",
@@ -3654,7 +3115,6 @@
             {
               "role": "flag",
               "name": "strip-title-prefix",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Remove square-bracket prefixes from the PR title",
@@ -3663,7 +3123,6 @@
             {
               "role": "flag",
               "name": "bot-name",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Bot login name for loop detection",
@@ -3702,7 +3161,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -3715,14 +3173,12 @@
           ],
           "name": "gh-release",
           "summary": "Create changelog entries from the PRs referenced in a GitHub release.",
-          "notes": null,
           "usage": "docs-builder changelog gh-release \u003Crepo\u003E [\u003Cversion\u003E] [options]",
           "examples": [],
           "parameters": [
             {
               "role": "positional",
               "name": "repo",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Required: GitHub repository in owner/repo format (e.g., \u0022elastic/elasticsearch\u0022 or just \u0022elasticsearch\u0022 which defaults to elastic/elasticsearch)"
@@ -3730,7 +3186,6 @@
             {
               "role": "positional",
               "name": "version",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Version tag to fetch (e.g., \u0022v9.0.0\u0022, \u00229.0.0\u0022). Defaults to \u0022latest\u0022",
@@ -3739,48 +3194,28 @@
             {
               "role": "flag",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "description",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Bundle description text with placeholder support. Supports VERSION, LIFECYCLE, OWNER, and REPO placeholders. Overrides bundle.description from config."
@@ -3788,7 +3223,6 @@
             {
               "role": "flag",
               "name": "output",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Output directory for changelog files. Falls back to bundle.directory in changelog.yml when not specified. Defaults to \u0027./changelogs\u0027"
@@ -3796,7 +3230,6 @@
             {
               "role": "flag",
               "name": "release-date",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides GitHub release published date."
@@ -3804,7 +3237,6 @@
             {
               "role": "flag",
               "name": "strip-title-prefix",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., \u0022[Inference API] Title\u0022 becomes \u0022Title\u0022)",
@@ -3813,7 +3245,6 @@
             {
               "role": "flag",
               "name": "warn-on-type-mismatch",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Warn when the type inferred from release notes section headers doesn\u0027t match the type derived from PR labels. Defaults to true",
@@ -3852,7 +3283,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -3872,79 +3302,42 @@
             {
               "role": "flag",
               "name": "path",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Repository root. Defaults to cwd.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "changelog-dir",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Changelog entry directory. Defaults to docs/changelog.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "bundles-dir",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Bundle output directory. Defaults to docs/releases.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "owner",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "GitHub owner for seeding bundle defaults. Overrides the value inferred from git remote origin."
@@ -3952,7 +3345,6 @@
             {
               "role": "flag",
               "name": "repo",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin."
@@ -3990,7 +3382,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -4010,7 +3401,6 @@
             {
               "role": "flag",
               "name": "staging-dir",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Directory where changelog add wrote the generated YAML"
@@ -4018,7 +3408,6 @@
             {
               "role": "flag",
               "name": "output-dir",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Directory to write the artifact (metadata.json \u002B YAML)"
@@ -4026,7 +3415,6 @@
             {
               "role": "flag",
               "name": "evaluate-status",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Status output from the evaluate-pr step"
@@ -4034,7 +3422,6 @@
             {
               "role": "flag",
               "name": "generate-outcome",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Outcome of the changelog add step (success/failure)"
@@ -4042,7 +3429,6 @@
             {
               "role": "flag",
               "name": "pr-number",
-              "shortName": null,
               "type": "integer",
               "required": true,
               "summary": "Pull request number"
@@ -4050,7 +3436,6 @@
             {
               "role": "flag",
               "name": "head-ref",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "PR head branch ref"
@@ -4058,7 +3443,6 @@
             {
               "role": "flag",
               "name": "head-sha",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "PR head commit SHA"
@@ -4066,7 +3450,6 @@
             {
               "role": "flag",
               "name": "is-fork",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Whether the PR is from a fork",
@@ -4075,7 +3458,6 @@
             {
               "role": "flag",
               "name": "can-commit",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Whether the commit strategy allows committing",
@@ -4084,7 +3466,6 @@
             {
               "role": "flag",
               "name": "maintainer-can-modify",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Whether the fork PR allows maintainer edits",
@@ -4093,7 +3474,6 @@
             {
               "role": "flag",
               "name": "head-repo",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Fork repository full name (owner/repo)"
@@ -4101,7 +3481,6 @@
             {
               "role": "flag",
               "name": "label-table",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: markdown label table from evaluate-pr"
@@ -4109,7 +3488,6 @@
             {
               "role": "flag",
               "name": "product-label-table",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: markdown product label table from evaluate-pr"
@@ -4117,7 +3495,6 @@
             {
               "role": "flag",
               "name": "skip-labels",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: comma-separated skip labels from evaluate-pr"
@@ -4125,7 +3502,6 @@
             {
               "role": "flag",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: path to changelog.yml"
@@ -4133,7 +3509,6 @@
             {
               "role": "flag",
               "name": "existing-changelog-filename",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: filename of a previously committed changelog for this PR"
@@ -4171,7 +3546,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -4191,7 +3565,6 @@
             {
               "role": "positional",
               "name": "profile",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Profile name from bundle.profiles in config (for example, \u0022elasticsearch-release\u0022). When specified, the second argument is the version or promotion report URL."
@@ -4199,7 +3572,6 @@
             {
               "role": "positional",
               "name": "profile-arg",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Version number or promotion report URL/path when using a profile (for example, \u00229.2.0\u0022 or \u0022https://buildkite.../promotion-report.html\u0022)"
@@ -4207,7 +3579,6 @@
             {
               "role": "positional",
               "name": "profile-report",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source."
@@ -4215,7 +3586,6 @@
             {
               "role": "flag",
               "name": "all",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, or --report.",
@@ -4224,96 +3594,52 @@
             {
               "role": "flag",
               "name": "bundles-dir",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "directory",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 }
               ]
             },
             {
               "role": "dryRun",
               "name": "dry-run",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Print the files that would be removed without deleting them. Valid in both profile and raw mode.",
@@ -4322,7 +3648,6 @@
             {
               "role": "confirmationSkip",
               "name": "force",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.",
@@ -4331,7 +3656,6 @@
             {
               "role": "flag",
               "name": "issues",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Filter by issue URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.",
@@ -4341,7 +3665,6 @@
             {
               "role": "flag",
               "name": "owner",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, \u0022elastic\u0022 is used."
@@ -4349,7 +3672,6 @@
             {
               "role": "flag",
               "name": "products",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Filter by products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022elasticsearch 9.3.0 ga\u0022). All three parts are required but can be wildcards (*)."
@@ -4357,7 +3679,6 @@
             {
               "role": "flag",
               "name": "prs",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Filter by pull request URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.",
@@ -4367,7 +3688,6 @@
             {
               "role": "flag",
               "name": "release-version",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "GitHub release tag to use as a filter source (for example, \u0022v9.2.0\u0022 or \u0022latest\u0022). Fetches the release, parses PR references from the release notes, and removes changelogs whose PR URLs match \u2014 equivalent to passing the PR list using --prs."
@@ -4375,7 +3695,6 @@
             {
               "role": "flag",
               "name": "repo",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "GitHub repository name, which is used when PRs or issues are specified as numbers or when --release-version is used. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used."
@@ -4383,7 +3702,6 @@
             {
               "role": "flag",
               "name": "report",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, and --issues."
@@ -4421,7 +3739,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -4439,14 +3756,12 @@
           ],
           "name": "render",
           "summary": "Render one or more changelog bundles to Markdown or AsciiDoc.",
-          "notes": null,
           "usage": "docs-builder changelog render [options]",
           "examples": [],
           "parameters": [
             {
               "role": "flag",
               "name": "input",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Required: Bundle input(s) in format \u0022bundle-file-path|changelog-file-path|repo|link-visibility\u0022 (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be \u0022hide-links\u0022 or \u0022keep-links\u0022 (default). Use \u0022hide-links\u0022 for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.",
@@ -4456,48 +3771,28 @@
             {
               "role": "flag",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "file-type",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Output file type. Valid values: \u0022markdown\u0022, \u0022asciidoc\u0022, or \u0022gfm\u0022. Defaults to \u0022markdown\u0022",
@@ -4506,7 +3801,6 @@
             {
               "role": "flag",
               "name": "hide-features",
-              "shortName": null,
               "type": "array",
               "required": false,
               "summary": "Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.",
@@ -4516,7 +3810,6 @@
             {
               "role": "flag",
               "name": "output",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Output directory for rendered files. Defaults to current directory"
@@ -4524,7 +3817,6 @@
             {
               "role": "flag",
               "name": "subsections",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false",
@@ -4533,7 +3825,6 @@
             {
               "role": "flag",
               "name": "dropdowns",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false",
@@ -4542,7 +3833,6 @@
             {
               "role": "flag",
               "name": "no-descriptions",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false",
@@ -4551,7 +3841,6 @@
             {
               "role": "flag",
               "name": "title",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Optional: Title to use for section headers in output files. Defaults to version from first bundle"
@@ -4589,7 +3878,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -4609,7 +3897,6 @@
             {
               "role": "flag",
               "name": "artifact-type",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Artifact type to upload: \u0027changelog\u0027 (individual entries) or \u0027bundle\u0027 (consolidated bundles)."
@@ -4617,7 +3904,6 @@
             {
               "role": "flag",
               "name": "target",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Upload destination: \u0027s3\u0027 or \u0027elasticsearch\u0027."
@@ -4625,7 +3911,6 @@
             {
               "role": "flag",
               "name": "s3-bucket-name",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "S3 bucket name (required when target is \u0027s3\u0027)."
@@ -4633,65 +3918,34 @@
             {
               "role": "flag",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Path to changelog.yml configuration file. Defaults to docs/changelog.yml.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "directory",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Override changelog directory instead of reading it from config.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 }
               ]
             },
@@ -4728,7 +3982,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -4741,60 +3994,38 @@
     {
       "segment": "codex",
       "summary": "Build a documentation portal over multiple independent documentation sets, each with its own navigation.",
-      "notes": null,
       "options": [],
       "defaultCommand": {
         "kind": "namespace",
         "summary": "Clone all repositories and build the portal in one step.",
-        "notes": null,
         "usage": "docs-builder codex __argh_root \u003Cconfig\u003E [options]",
         "examples": [],
         "parameters": [
           {
             "role": "positional",
             "name": "config",
-            "shortName": null,
             "type": "string",
             "required": true,
             "summary": "Path to the codex.yml configuration file.",
             "validations": [
               {
-                "kind": "rejectSymbolicLinks",
-                "min": null,
-                "max": null,
-                "pattern": null,
-                "values": null
+                "kind": "rejectSymbolicLinks"
               },
               {
-                "kind": "existing",
-                "min": null,
-                "max": null,
-                "pattern": null,
-                "values": null
+                "kind": "existing"
               },
               {
                 "kind": "fileExtensions",
-                "min": null,
-                "max": null,
-                "pattern": null,
                 "values": [
                   "yml",
                   "yaml"
                 ]
-              },
-              {
-                "kind": "expandUserProfile",
-                "min": null,
-                "max": null,
-                "pattern": null,
-                "values": null
               }
             ]
           },
           {
             "role": "flag",
             "name": "strict",
-            "shortName": null,
             "type": "boolean",
             "required": false,
             "summary": "Treat warnings as errors.",
@@ -4803,7 +4034,6 @@
           {
             "role": "flag",
             "name": "fetch-latest",
-            "shortName": null,
             "type": "boolean",
             "required": false,
             "summary": "Fetch the HEAD of each branch instead of the pinned ref.",
@@ -4812,7 +4042,6 @@
           {
             "role": "flag",
             "name": "assume-cloned",
-            "shortName": null,
             "type": "boolean",
             "required": false,
             "summary": "Skip cloning; assume repositories are already on disk.",
@@ -4821,31 +4050,18 @@
           {
             "role": "flag",
             "name": "output",
-            "shortName": null,
             "type": "string",
             "required": false,
             "summary": "Output directory for the built portal. Defaults to .artifacts/codex/.",
             "validations": [
               {
-                "kind": "rejectSymbolicLinks",
-                "min": null,
-                "max": null,
-                "pattern": null,
-                "values": null
-              },
-              {
-                "kind": "expandUserProfile",
-                "min": null,
-                "max": null,
-                "pattern": null,
-                "values": null
+                "kind": "rejectSymbolicLinks"
               }
             ]
           },
           {
             "role": "flag",
             "name": "serve",
-            "shortName": null,
             "type": "boolean",
             "required": false,
             "summary": "Serve the portal on port 4000 after a successful build.",
@@ -4884,7 +4100,6 @@
           {
             "role": "flag",
             "name": "skip-private-repositories",
-            "shortName": null,
             "type": "boolean",
             "required": false,
             "summary": "Skip cloning private repositories"
@@ -4905,48 +4120,28 @@
             {
               "role": "positional",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Path to the codex.yml configuration file.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "strict",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Treat warnings as errors.",
@@ -4955,24 +4150,12 @@
             {
               "role": "flag",
               "name": "output",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Output directory. Defaults to .artifacts/codex/.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 }
               ]
             },
@@ -5009,7 +4192,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -5025,55 +4207,34 @@
           ],
           "name": "clone",
           "summary": "Clone all repositories listed in the codex configuration.",
-          "notes": null,
           "usage": "docs-builder codex clone \u003Cconfig\u003E [options]",
           "examples": [],
           "parameters": [
             {
               "role": "positional",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Path to the codex.yml configuration file.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "strict",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Treat warnings as errors.",
@@ -5082,7 +4243,6 @@
             {
               "role": "flag",
               "name": "fetch-latest",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Fetch the HEAD of each branch instead of the pinned ref.",
@@ -5091,7 +4251,6 @@
             {
               "role": "flag",
               "name": "assume-cloned",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning; assume repositories are already on disk.",
@@ -5130,7 +4289,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -5153,57 +4311,34 @@
             {
               "role": "positional",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Path to the codex.yml configuration file.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "endpoint",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "-es,--endpoint, Elasticsearch endpoint URL. Falls back to env DOCUMENTATION_ELASTIC_URL.",
               "validations": [
                 {
                   "kind": "uriScheme",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "http",
                     "https"
@@ -5214,7 +4349,6 @@
             {
               "role": "flag",
               "name": "api-key",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "API key for authentication. Falls back to env DOCUMENTATION_ELASTIC_APIKEY."
@@ -5222,7 +4356,6 @@
             {
               "role": "flag",
               "name": "username",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Username for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_USERNAME."
@@ -5230,7 +4363,6 @@
             {
               "role": "flag",
               "name": "password",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Password for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_PASSWORD."
@@ -5238,7 +4370,6 @@
             {
               "role": "flag",
               "name": "ai-enrichment",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
@@ -5246,7 +4377,6 @@
             {
               "role": "flag",
               "name": "search-num-threads",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of search threads for the inference endpoint.",
@@ -5254,16 +4384,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "128",
-                  "pattern": null,
-                  "values": null
+                  "max": "128"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "index-num-threads",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of index threads for the inference endpoint.",
@@ -5271,16 +4398,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "128",
-                  "pattern": null,
-                  "values": null
+                  "max": "128"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "eis",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Use the Elastic Inference Service to bootstrap the inference endpoint (enabled by default)."
@@ -5288,7 +4412,6 @@
             {
               "role": "flag",
               "name": "bootstrap-timeout",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "How long to wait for the inference endpoint to become ready (e.g. 4m, 90s).",
@@ -5296,16 +4419,13 @@
                 {
                   "kind": "timeSpanRange",
                   "min": "\u00221s\u0022",
-                  "max": "\u002260m\u0022",
-                  "pattern": null,
-                  "values": null
+                  "max": "\u002260m\u0022"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "force-reindex",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Force a full reindex, discarding any incremental state."
@@ -5313,7 +4433,6 @@
             {
               "role": "flag",
               "name": "buffer-size",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of documents per bulk request.",
@@ -5321,16 +4440,13 @@
                 {
                   "kind": "range",
                   "min": "1",
-                  "max": "10000",
-                  "pattern": null,
-                  "values": null
+                  "max": "10000"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "max-retries",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Number of retry attempts for failed bulk items.",
@@ -5338,16 +4454,13 @@
                 {
                   "kind": "range",
                   "min": "0",
-                  "max": "20",
-                  "pattern": null,
-                  "values": null
+                  "max": "20"
                 }
               ]
             },
             {
               "role": "flag",
               "name": "debug-mode",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Log every Elasticsearch request and response body; append ?pretty to all requests."
@@ -5355,16 +4468,12 @@
             {
               "role": "flag",
               "name": "proxy-address",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Route requests through this proxy URL.",
               "validations": [
                 {
                   "kind": "uriScheme",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "http",
                     "https"
@@ -5375,7 +4484,6 @@
             {
               "role": "flag",
               "name": "proxy-username",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Proxy server username."
@@ -5383,7 +4491,6 @@
             {
               "role": "flag",
               "name": "proxy-password",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Proxy server password."
@@ -5391,7 +4498,6 @@
             {
               "role": "flag",
               "name": "disable-ssl-verification",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Disable SSL certificate validation. Use only in controlled environments."
@@ -5399,7 +4505,6 @@
             {
               "role": "flag",
               "name": "certificate-fingerprint",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "SHA-256 fingerprint of a self-signed server certificate."
@@ -5407,50 +4512,30 @@
             {
               "role": "flag",
               "name": "certificate-path",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Path to a PEM or DER certificate file for SSL validation.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "pem",
                     "der",
                     "crt",
                     "cer"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "certificate-not-root",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Set when the certificate is an intermediate CA rather than the root."
@@ -5488,7 +4573,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -5511,7 +4595,6 @@
             {
               "role": "flag",
               "name": "port",
-              "shortName": null,
               "type": "integer",
               "required": false,
               "summary": "Port to listen on. Default: 4000.",
@@ -5520,31 +4603,15 @@
             {
               "role": "flag",
               "name": "path",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Path to the portal output. Defaults to .artifacts/codex/docs/.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 }
               ]
             },
@@ -5581,7 +4648,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -5601,48 +4667,28 @@
             {
               "role": "positional",
               "name": "config",
-              "shortName": null,
               "type": "string",
               "required": true,
               "summary": "Path to the codex.yml configuration file (used to resolve the environment).",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "yml",
                     "yaml"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
             {
               "role": "flag",
               "name": "environment",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Named deployment target. Defaults to the value in codex.yml or the ENVIRONMENT env var."
@@ -5650,40 +4696,21 @@
             {
               "role": "flag",
               "name": "redirects-file",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Path to redirects.json. Defaults to .artifacts/codex/docs/redirects.json.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "json"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
@@ -5720,7 +4747,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -5735,7 +4761,6 @@
       "summary": "Validate cross-doc-set links against the published link registry.",
       "notes": "Every documentation set publishes a links.json file containing the URLs of all its pages.\nThese files are aggregated into a shared link registry. Inbound-links commands validate that\ncross-links between documentation sets resolve to real pages in the registry.",
       "options": [],
-      "defaultCommand": null,
       "commands": [
         {
           "path": [
@@ -5743,14 +4768,12 @@
           ],
           "name": "validate",
           "summary": "Validate all cross-links originating from or targeting a specific repository.",
-          "notes": null,
           "usage": "docs-builder inbound-links validate [options]",
           "examples": [],
           "parameters": [
             {
               "role": "flag",
               "name": "from",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Only check links published by this repository slug."
@@ -5758,7 +4781,6 @@
             {
               "role": "flag",
               "name": "to",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Only check links that point to this repository slug."
@@ -5796,7 +4818,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -5809,7 +4830,6 @@
           ],
           "name": "validate-all",
           "summary": "Validate all cross-links across every published links.json in the registry.",
-          "notes": null,
           "usage": "docs-builder inbound-links validate-all",
           "examples": [],
           "parameters": [
@@ -5846,7 +4866,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"
@@ -5866,40 +4885,21 @@
             {
               "role": "flag",
               "name": "file",
-              "shortName": null,
               "type": "string",
               "required": false,
               "summary": "Path to links.json. Defaults to .artifacts/docs/html/links.json.",
               "validations": [
                 {
-                  "kind": "rejectSymbolicLinks",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "rejectSymbolicLinks"
                 },
                 {
-                  "kind": "existing",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
+                  "kind": "existing"
                 },
                 {
                   "kind": "fileExtensions",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
                   "values": [
                     "json"
                   ]
-                },
-                {
-                  "kind": "expandUserProfile",
-                  "min": null,
-                  "max": null,
-                  "pattern": null,
-                  "values": null
                 }
               ]
             },
@@ -5944,7 +4944,6 @@
             {
               "role": "flag",
               "name": "skip-private-repositories",
-              "shortName": null,
               "type": "boolean",
               "required": false,
               "summary": "Skip cloning private repositories"

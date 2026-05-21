@@ -17,7 +17,7 @@ using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
 
-namespace Elastic.Assembler.IntegrationTests;
+namespace Elastic.Documentation.IntegrationTests;
 
 public class SiteNavigationTests : IAsyncLifetime
 {
@@ -225,7 +225,7 @@ public class SiteNavigationTests : IAsyncLifetime
 	public ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is TestResult.Passed)
+		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
 			return default;
 		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs.ToList())
 			_output.WriteLine(resource.Message);
