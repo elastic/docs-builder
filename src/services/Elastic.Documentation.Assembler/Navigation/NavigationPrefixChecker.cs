@@ -155,7 +155,7 @@ public class NavigationPrefixChecker
 		candidate.Scheme == phantom.Scheme &&
 		candidate.Host == phantom.Host &&
 		(candidate.AbsolutePath == phantom.AbsolutePath ||
-		 candidate.AbsolutePath.StartsWith(phantom.AbsolutePath.TrimEnd('/') + '/'));
+		 candidate.AbsolutePath.StartsWith(phantom.AbsolutePath.TrimEnd('/') + '/', StringComparison.Ordinal));
 
 	private async Task<RepositoryLinks> ReadLocalLinksJsonAsync(string localLinksJson, Cancel ctx)
 	{
