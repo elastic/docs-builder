@@ -21,6 +21,12 @@ body.air-gapped elastic-docs-header .euiHeader {
 	padding-inline: calc((100vw - var(--max-layout-width)) / 2 + 8px);
 }
 
+#elastic-nav-wrapper,
+#elastic-nav {
+	max-width: 100%;
+	overflow-x: clip;
+}
+
 #elastic-nav {
 	@media screen and (min-width: 1200px) {
 		[data-component='Container'] {

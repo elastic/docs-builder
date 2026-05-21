@@ -270,23 +270,31 @@ function getDeploymentSubtitle(githubRef?: string): string {
 const GITHUB_BASE = 'https://github.com'
 
 function getDeploymentLinks(
-    githubRepository: string,
-    gitBranch: string,
-    gitCommit: string,
+    githubRepository: string | undefined,
+    gitBranch: string | undefined,
+    gitCommit: string | undefined,
     githubRef?: string
 ): { ref?: string; branch: string; commit: string; repository: string } {
-    // Backend passes full org/repo; fallback only fires for bare names (shouldn't occur)
-    const repo = githubRepository.includes('/')
-        ? githubRepository
-        : `elastic/${githubRepository}`
+    // Web component attrs can be missing at runtime; avoid throwing on .includes().
+    const raw = (githubRepository ?? '').trim()
+    const repo = raw.includes('/')
+        ? raw
+        : raw.length > 0
+          ? `elastic/${raw}`
+          : 'elastic/docs-builder'
     const base = `${GITHUB_BASE}/${repo}`
+    const branchName = (gitBranch ?? '').trim() || 'main'
+    const commitSha = (gitCommit ?? '').trim()
     const pull = githubRef != null ? parseGitHubRef(githubRef) : undefined
     const pullUrl =
         pull?.kind === 'pull' ? `${base}/pull/${pull.number}` : undefined
     return {
         ref: pullUrl,
-        branch: `${base}/tree/${gitBranch}`,
-        commit: `${base}/commit/${gitCommit}`,
+        branch: `${base}/tree/${encodeURIComponent(branchName)}`,
+        commit:
+            commitSha.length > 0
+                ? `${base}/commit/${commitSha}`
+                : `${base}/commits`,
         repository: base,
     }
 }
