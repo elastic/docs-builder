@@ -139,7 +139,7 @@ public static partial class GitCheckoutInformationFactory
 
 			var remoteSection = $"remote \"{remoteName}\"";
 
-			remote = ini.GetSetting(remoteSection, "url");
+			remote = ini.GetSetting(remoteSection, "url")?.Trim();
 			return remote ?? string.Empty;
 		}
 	}

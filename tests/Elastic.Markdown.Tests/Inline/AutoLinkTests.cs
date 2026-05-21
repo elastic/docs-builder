@@ -245,6 +245,58 @@ Visit [Docs](https://docs.test.io) or https://other.test.io for more.
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
+// Regression test for elastic/docs-builder#3317: no nested <a> when a URL is the link text.
+public class AutoLinkInsideLinkTextTests(ITestOutputHelper output) : AutoLinkTestBase(output,
+"""
+Upload to a service like [https://gist.github.com](https://gist.github.com).
+"""
+)
+{
+	[Fact]
+	public void DoesNotCreateNestedAnchor() =>
+		Html.Should().Contain(
+			"""<a href="https://gist.github.com" target="_blank" rel="noopener noreferrer">https://gist.github.com</a>"""
+		).And.NotMatchRegex(@"<a\b[^>]*><a\b");
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+public class AutoLinkInsideLinkTextWithSurroundingTextTests(ITestOutputHelper output) : AutoLinkTestBase(output,
+"""
+See [the page at https://example.test.io for details](https://docs.test.io).
+"""
+)
+{
+	[Fact]
+	public void DoesNotAutolinkUrlInsideLinkText() =>
+		Html.Should().Contain(
+			"""<a href="https://docs.test.io" target="_blank" rel="noopener noreferrer">the page at https://example.test.io for details</a>"""
+		);
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+// Verify that image-inside-link is unaffected by the IsNestedInsideLink guard (images bypass it via the IsImage branch).
+public class ImageInsideLinkTests(ITestOutputHelper output) : InlineTest<LinkInline>(output,
+"""
+[![alt text](https://example.com/image.png)](https://example.com)
+"""
+)
+{
+	[Fact]
+	public void RendersOuterAnchor() =>
+		Html.Should().Contain("""<a href="https://example.com" target="_blank" rel="noopener noreferrer">""");
+
+	[Fact]
+	public void RendersImage() =>
+		Html.Should().Contain("<img src=\"https://example.com/image.png\"");
+
+	[Fact]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
 public class MultipleAutoLinksTests(ITestOutputHelper output) : AutoLinkTestBase(output,
 """
 First https://first.com then https://second.com and finally https://third.com are all linked.
