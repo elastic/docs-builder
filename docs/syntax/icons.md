@@ -376,6 +376,7 @@ Here is a list of all available icons:
 | `` {icon}`magnify_exclamation` ``               |        {icon}`magnify_exclamation`        |
 | `` {icon}`magnify_minus` ``                     |           {icon}`magnify_minus`           |
 | `` {icon}`magnify_plus` ``                      |            {icon}`magnify_plus`           |
+| `` {icon}`magnify_sparkles` ``                  |          {icon}`magnify_sparkles`         |
 | `` {icon}`magnify_with_exclamation` ``          |      {icon}`magnify_with_exclamation`     |
 | `` {icon}`magnify_with_minus` ``                |         {icon}`magnify_with_minus`        |
 | `` {icon}`magnify_with_plus` ``                 |         {icon}`magnify_with_plus`         |
