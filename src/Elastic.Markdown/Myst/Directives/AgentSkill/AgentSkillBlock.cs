@@ -13,6 +13,10 @@ public class AgentSkillBlock(DirectiveBlockParser parser, ParserContext context)
 
 	public string? Url { get; private set; }
 
+	public string? SkillName { get; private set; }
+
+	public string? InstallCommand => SkillName is not null ? $"npx skills add @{SkillName}" : null;
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Url = Prop("url");
@@ -20,5 +24,17 @@ public class AgentSkillBlock(DirectiveBlockParser parser, ParserContext context)
 			this.EmitError("agent-skill directive requires a :url: property");
 		else if (!Uri.TryCreate(Url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
 			this.EmitError($"agent-skill :url: must be an absolute URL, got '{Url}'");
+		else
+			SkillName = ExtractSkillName(Url);
+	}
+
+	private static string? ExtractSkillName(string url)
+	{
+		var atIndex = url.LastIndexOf('@');
+		if (atIndex < 0)
+			return null;
+
+		var name = url[(atIndex + 1)..];
+		return string.IsNullOrEmpty(name) ? null : name;
 	}
 }
