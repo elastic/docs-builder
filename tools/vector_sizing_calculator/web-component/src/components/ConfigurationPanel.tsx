@@ -18,10 +18,10 @@ import {
 import type { ElementType, IndexType, Quantization, ValidationResult } from '../types';
 
 const ELEMENT_TYPE_OPTIONS = [
-  { value: 'float', text: 'float (4 bytes/dim)' },
-  { value: 'bfloat16', text: 'bfloat16 (2 bytes/dim)' },
-  { value: 'byte', text: 'byte (1 byte/dim)' },
-  { value: 'bit', text: 'bit (1 bit/dim)' },
+  { value: 'float', text: 'float32' },
+  { value: 'bfloat16', text: 'bfloat16' },
+  { value: 'byte', text: 'int8' },
+  { value: 'bit', text: 'bit' },
 ];
 
 interface ConfigurationPanelProps {

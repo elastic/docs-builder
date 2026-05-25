@@ -1,3 +1,4 @@
+import { formatGroupedInteger } from './formatNumbers';
 import type {
   CalculatorInputs,
   SizingResult,
@@ -136,7 +137,7 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
   const rpv = rawBytesPerVector(elementType, D);
   const rawDisk = V * rpv;
   formulas.push(
-    `Raw vectors on disk = ${V.toLocaleString()} × ${rpv} = ${formatBytesString(rawDisk)}`
+    `Raw vectors on disk = ${formatGroupedInteger(V)} × ${rpv} = ${formatBytesString(rawDisk)}`
   );
 
   // Quantized vectors (disk)
@@ -187,7 +188,7 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     indexDisk = bbqCentroids + bbqVectors;
     indexLabel = 'DiskBBQ structures';
     formulas.push(
-      `DiskBBQ clusters = ⌈V / ${vpc}⌉ = ${nc.toLocaleString()}`
+      `DiskBBQ clusters = ⌈V / ${vpc}⌉ = ${formatGroupedInteger(nc)}`
     );
     formulas.push(`Centroid bytes = ${formatBytesString(bbqCentroids)}`);
     formulas.push(
