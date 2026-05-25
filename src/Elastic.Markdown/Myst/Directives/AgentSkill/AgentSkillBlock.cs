@@ -25,16 +25,17 @@ public class AgentSkillBlock(DirectiveBlockParser parser, ParserContext context)
 		else if (!Uri.TryCreate(Url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
 			this.EmitError($"agent-skill :url: must be an absolute URL, got '{Url}'");
 		else
-			SkillName = ExtractSkillName(Url);
+			SkillName = ExtractSkillName(uri);
 	}
 
-	private static string? ExtractSkillName(string url)
+	private static string? ExtractSkillName(Uri uri)
 	{
-		var atIndex = url.LastIndexOf('@');
+		var path = uri.AbsolutePath.TrimEnd('/');
+		var atIndex = path.LastIndexOf('@');
 		if (atIndex < 0)
 			return null;
 
-		var name = url[(atIndex + 1)..];
-		return string.IsNullOrEmpty(name) ? null : name;
+		var name = path[(atIndex + 1)..];
+		return string.IsNullOrWhiteSpace(name) ? null : name;
 	}
 }

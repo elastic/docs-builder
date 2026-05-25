@@ -64,4 +64,4 @@ This skill helps agents write and optimize ES|QL queries.
 
 The `:url:` property must be an absolute URL. Relative paths are not accepted, and the directive will emit a build error if the URL is missing or relative.
 
-The skill name is extracted from the URL as the segment after `@`. For example, `https://github.com/elastic/agent-skills@elasticsearch-esql` produces the install command `npx skills add @elasticsearch-esql`.
+The skill name is extracted from the URL as the segment after the final `@`. For example, `https://github.com/elastic/agent-skills@elasticsearch-esql` produces the install command `npx skills add @elasticsearch-esql`.
