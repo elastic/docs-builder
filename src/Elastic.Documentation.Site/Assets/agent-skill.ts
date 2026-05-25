@@ -1,6 +1,8 @@
 export function initAgentSkillCopy() {
     document
-        .querySelectorAll<HTMLButtonElement>('.agent-skill-button[data-copy-text]')
+        .querySelectorAll<HTMLButtonElement>(
+            '.agent-skill-button[data-copy-text]'
+        )
         .forEach((button) => {
             button.addEventListener('click', async () => {
                 const text = button.getAttribute('data-copy-text')
