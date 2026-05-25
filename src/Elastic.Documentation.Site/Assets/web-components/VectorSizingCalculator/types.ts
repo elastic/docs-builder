@@ -12,6 +12,8 @@ export interface CalculatorInputs {
     hnswM: number
     efConstruction: number
     vectorsPerCluster: number
+    /** DiskBBQ: share of quantized vectors cached in off-heap RAM (0–100). */
+    offHeapRamPercent: number
 }
 
 export interface BreakdownItem {
@@ -20,15 +22,30 @@ export interface BreakdownItem {
     color: 'primary' | 'accent' | 'warning'
 }
 
+export interface SizingFormulas {
+    disk: string[]
+    ram: string[]
+    cluster: string[]
+}
+
 export interface SizingResult {
     diskBreakdown: BreakdownItem[]
     ramBreakdown: BreakdownItem[]
     totalDisk: number
+    /** Per-replica RAM at the selected DiskBBQ allocation (or exact value for other index types). */
     totalRam: number
+    /** Per-replica RAM lower bound (DiskBBQ 0% vector cache). */
+    totalRamMin: number
+    /** Per-replica RAM upper bound (DiskBBQ 100% vector cache). */
+    totalRamMax: number
     clusterDisk: number
     clusterRam: number
+    clusterRamMin: number
+    clusterRamMax: number
+    /** Reserved; hero uses a single RAM value when the off-heap slider is set. */
+    usesRamRange: boolean
     totalCopies: number
-    formulas: string[]
+    formulas: SizingFormulas
 }
 
 export interface ValidationResult {

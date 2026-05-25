@@ -34,8 +34,9 @@ vector-sizing-calculator:not(:defined) {
 	min-width: 0;
 	grid-template-columns: 1fr;
 	align-items: stretch;
-	border: 1px solid #d3dae6;
-	border-radius: inherit;
+	border: 1px solid #e3e8f2;
+	border-bottom: none;
+	border-radius: 8px 8px 0 0;
 	overflow: hidden;
 }
 
@@ -64,6 +65,16 @@ vector-sizing-calculator:not(:defined) {
 
 .vectorSizingCalc__summary {
 	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+}
+
+.vectorSizingCalc__summaryMain {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 0;
 }
 
 .vectorSizingCalc__summaryLabel {
@@ -71,26 +82,106 @@ vector-sizing-calculator:not(:defined) {
 	font-weight: 500;
 }
 
-/* EuiText size="s" aplica peso vía Emotion (p. ej. .css-…-euiText-s); forzar 500. */
 .vectorSizingCalc .vectorSizingCalc__summaryLabel.euiText {
 	font-weight: 500 !important;
 }
 
-/* EuiSpacer: forzar 16px entre “RAM required” y el hero. */
-.vectorSizingCalc .vectorSizingCalc__spacerHeroGap.euiSpacer {
-	block-size: 16px !important;
-	min-block-size: 16px;
-	height: 16px !important;
-	min-height: 16px;
+.vectorSizingCalc__heroTotals {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	justify-content: flex-start;
+	gap: 24px;
+	margin-top: 16px;
 }
 
-.vectorSizingCalc__kvList {
+.vectorSizingCalc__heroSizeColumn {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	text-align: left;
+	margin: 0;
+	color: #111c2c;
+}
+
+.vectorSizingCalc__heroSizeValue {
+	font-size: 46px;
+	line-height: 46px;
+	font-weight: 800;
+}
+
+.vectorSizingCalc__heroSizeUnit {
+	font-size: 16px;
+	line-height: 20px;
+	font-weight: 700;
+}
+
+.vectorSizingCalc__resultsDetail {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	width: 100%;
+}
+
+.vectorSizingCalc__resultsDetailLabels,
+.vectorSizingCalc__resultsDetailValues {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
 
-.vectorSizingCalc__heroRam {
+.vectorSizingCalc__resultsDetailLabels {
+	flex: 0 0 auto;
+}
+
+.vectorSizingCalc__resultsDetailValues {
+	flex: 1 1 0;
+	min-width: 0;
+	align-items: flex-end;
+	text-align: right;
+}
+
+.vectorSizingCalc__detailLabel {
+	color: #1d2a3e !important;
+	font-weight: 500 !important;
+}
+
+.vectorSizingCalc__detailValue {
+	color: #516381 !important;
+	font-weight: 400 !important;
+	font-size: 14px !important;
+	line-height: 20px !important;
+}
+
+.vectorSizingCalc__disclaimerFooter {
+	margin-top: auto;
+	padding-top: 16px;
+}
+
+.vectorSizingCalc__byteSizeValue {
+	display: inline-block;
+	max-width: 100%;
+	text-align: right;
+}
+
+.vectorSizingCalc__byteSizeValue--hero {
+	text-align: left;
+}
+
+.vectorSizingCalc__byteSizeRow--kv.vectorSizingCalc__labelRow {
+	font-weight: inherit;
+	font-size: inherit;
+	color: inherit;
+}
+
+.vectorSizingCalc__byteSizeRow--hero.vectorSizingCalc__labelRow {
+	font-weight: inherit;
+	font-size: inherit;
+	color: inherit;
+	align-items: flex-start;
+}
+
+.vectorSizingCalc__byteSizeValue--hero .vectorSizingCalc__byteSizeValuePrimary {
 	color: var(--euiTextColor, #343741);
 	font-size: clamp(2.25rem, 6vw, 3.3rem);
 	font-weight: 800;
@@ -98,23 +189,31 @@ vector-sizing-calculator:not(:defined) {
 	letter-spacing: -0.02em;
 }
 
-.vectorSizingCalc__kvRow {
-	display: flex;
-	justify-content: space-between;
-	align-items: baseline;
-	gap: 16px;
-	padding: 0;
-	font-size: 0.95rem;
-}
-
-.vectorSizingCalc__kvRow > span {
-	color: #1d2a3e;
-	font-weight: 500;
-}
-
-.vectorSizingCalc__kvRow > strong {
-	color: #516381;
+.vectorSizingCalc__byteSizeValuePrimary {
 	font-weight: 400;
+}
+
+.vectorSizingCalc__tooltipBody {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-width: 16rem;
+}
+
+/* Misma tipografía que EuiText size="xs" en CalcToolTip (tooltip body). */
+.vectorSizingCalc__binaryPrefixNote,
+.vectorSizingCalc__disclaimer {
+	display: block;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+	color: #798eaf !important;
+}
+
+.vectorSizingCalc__disclaimer .euiLink {
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
 }
 
 .vectorSizingCalc__sectionTitle {
@@ -191,7 +290,19 @@ vector-sizing-calculator:not(:defined) {
 }
 
 .vectorSizingCalc .euiFormRow {
+	width: 100%;
+	max-width: 100%;
 	margin-bottom: 16px;
+}
+
+.vectorSizingCalc .euiFormRow__fieldWrapper {
+	width: 100%;
+}
+
+.vectorSizingCalc .euiComboBox,
+.vectorSizingCalc .euiSelect {
+	width: 100%;
+	max-width: 100%;
 }
 
 .vectorSizingCalc .euiFormRow + .euiFormRow,
@@ -213,16 +324,33 @@ vector-sizing-calculator:not(:defined) {
 	cursor: pointer;
 }
 
+/* Combo: mano en cáscara y chevron; texto solo en el input editable. */
+.vectorSizingCalc .euiComboBox .euiFormControlLayout,
+.vectorSizingCalc .euiComboBox .euiFormControlLayoutIcons,
+.vectorSizingCalc .euiComboBox .euiFormControlLayoutIcons button,
+.vectorSizingCalc .euiComboBox [data-test-subj='comboBoxToggleListButton'],
+.vectorSizingCalc .euiComboBox .euiComboBox__inputWrap,
+.vectorSizingCalc .euiComboBox .euiComboBox__inputWrap--plainText {
+	cursor: pointer;
+}
+
+.vectorSizingCalc .euiComboBox .euiComboBox__input,
+.vectorSizingCalc .euiComboBox [data-test-subj='comboBoxSearchInput'] {
+	cursor: text;
+}
+
 .vectorSizingCalc .euiFormControlLayout,
 .vectorSizingCalc .euiFieldText,
 .vectorSizingCalc .euiFieldNumber,
-.vectorSizingCalc .euiSelect {
+.vectorSizingCalc .euiSelect,
+.vectorSizingCalc .euiComboBox .euiFormControlLayout {
 	border-radius: 6px;
 }
 
 .vectorSizingCalc .euiFieldText,
 .vectorSizingCalc .euiFieldNumber,
-.vectorSizingCalc .euiSelect {
+.vectorSizingCalc .euiSelect,
+.vectorSizingCalc .euiComboBox .euiComboBox__inputWrap {
 	min-height: 42px;
 	background: #fff;
 	border-color: #b6c2d4;
@@ -285,7 +413,7 @@ vector-sizing-calculator:not(:defined) {
 	margin: 0 !important;
 }
 
-/* Etiqueta a ancho completo; fila siguiente alinea solo slider + input (no el bloque etiqueta+slider). */
+/* Etiqueta a ancho completo; fila siguiente: slider + input al final. */
 .vectorSizingCalc__graphConnectionsBlock {
 	display: flex;
 	flex-direction: column;
@@ -295,25 +423,37 @@ vector-sizing-calculator:not(:defined) {
 }
 
 .vectorSizingCalc__graphConnectionsControlsRow {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) max-content;
+	display: flex;
 	align-items: center;
-	column-gap: 16px;
+	gap: 16px;
 	width: 100%;
 	min-width: 0;
 }
 
 .vectorSizingCalc__graphConnectionsSlider {
-	--vsc-range-track-h: 10px;
+	--vsc-range-track-h: 6px;
 	--vsc-range-track-bg: #dde4ef;
-	--vsc-range-active: #5a6d88;
+	--vsc-range-active: #5a6d8c;
 	--vsc-range-thumb: #516381;
 	--vsc-range-thumb-focus-ring: #3d6ecc;
 
-	display: block;
+	flex: 1 1 0;
+	display: flex;
+	align-items: center;
 	width: 100%;
 	min-width: 0;
-	min-height: 32px;
+	min-height: 40px;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeWrapper,
+.vectorSizingCalc__graphConnectionsSlider .euiFormControlLayout {
+	width: 100%;
+	margin: 0;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeInput {
+	margin-block: 0;
+	padding-block: 0;
 }
 
 /* EuiRange + showRange: pista gruesa tipo “pill”, parte activa/inactiva y thumb con borde blanco + sombra. */
@@ -394,16 +534,153 @@ vector-sizing-calculator:not(:defined) {
 }
 
 .vectorSizingCalc__graphConnectionsValueCell {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	min-width: 0;
+	flex-shrink: 0;
+	width: 64px;
 }
 
+.vectorSizingCalc__rangeNumberInput,
 .vectorSizingCalc__graphConnectionsValueCell .euiFormControlLayout {
+	width: 64px;
+	max-width: 64px;
+}
+
+.vectorSizingCalc__graphConnectionsValueCell .euiFormControlLayout--group {
+	min-height: 40px;
+}
+
+.vectorSizingCalc__graphConnectionsValueCell .euiFieldNumber {
+	width: 64px;
+}
+
+.vectorSizingCalc__sectionToggle {
 	width: 100%;
+	padding-inline: 0 !important;
+	margin-inline-start: 0 !important;
+	align-self: stretch;
+	color: #0b64dd !important;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__sectionToggle:hover:not(:disabled),
+.vectorSizingCalc__sectionToggle:focus,
+.vectorSizingCalc__sectionToggle:active {
+	text-decoration: none !important;
+	background-color: transparent !important;
+}
+
+.vectorSizingCalc__sectionToggle .euiButtonEmpty__content {
+	width: 100%;
+	justify-content: flex-end;
+	padding-inline: 0 !important;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__sectionToggle .euiButtonEmpty__text {
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__sectionToggle:hover:not(:disabled) .euiButtonEmpty__text,
+.vectorSizingCalc__sectionToggle:focus .euiButtonEmpty__text {
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__formulasPanel {
+	background: #2b394f;
+	border: 1px solid #2b394f;
+	border-radius: 0 0 8px 8px;
+	overflow: hidden;
+}
+
+.vectorSizingCalc__formulasHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	width: 100%;
+	padding: 16px 24px;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+	text-align: left;
+}
+
+.vectorSizingCalc__formulasHeader:hover,
+.vectorSizingCalc__formulasHeader:focus {
+	outline: none;
+}
+
+.vectorSizingCalc__formulasHeader:focus-visible {
+	outline: 2px solid #798eaf;
+	outline-offset: -2px;
+}
+
+.vectorSizingCalc__formulasTitle {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: #798eaf !important;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+}
+
+.vectorSizingCalc__formulasTitle .euiIcon {
+	color: #798eaf;
+	flex-shrink: 0;
+}
+
+.vectorSizingCalc__formulasToggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	color: #798eaf !important;
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__formulasToggle .euiIcon {
+	color: #798eaf;
+}
+
+.vectorSizingCalc__formulasBody {
+	padding: 0 24px 24px;
+}
+
+.vectorSizingCalc__formulasSections {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.vectorSizingCalc__formulasPre {
+	margin: 0;
+	padding: 0;
 	max-width: 100%;
+	overflow-x: auto;
+	font-family: var(--euiCodeFontFamily, 'Menlo', 'Consolas', monospace);
+	font-size: 12px;
+	line-height: 16px;
+	color: #e3e8f2;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.vectorSizingCalc__formulasLine {
+	display: block;
+	line-height: 16px;
+	color: #e3e8f2;
+}
+
+.vectorSizingCalc__formulasLine--total {
+	color: #b8d4ff;
 }
 
 @media (max-width: 1023px) {

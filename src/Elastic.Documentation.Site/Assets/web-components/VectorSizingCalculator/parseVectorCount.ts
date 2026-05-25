@@ -1,6 +1,8 @@
+import { normalizeGroupedNumberInput } from './formatNumbers'
+
 export function parseVectorCount(s: string): number {
     if (!s) return NaN
-    const clean = s.trim().replace(/,/g, '')
+    const clean = normalizeGroupedNumberInput(s)
     const multipliers: Record<string, number> = {
         k: 1e3,
         K: 1e3,

@@ -1,20 +1,15 @@
-import { EuiIcon, EuiToolTip } from '@elastic/eui'
 import type { ReactNode } from 'react'
+import { CalcToolTip } from './CalcToolTip'
 
 interface LabelWithTipProps {
     children: ReactNode
-    tip: string
+    tip: ReactNode
 }
 
 export function LabelWithTip({ children, tip }: LabelWithTipProps) {
     return (
-        <EuiToolTip content={tip} position="right">
-            <span className="vectorSizingCalc__labelRow">
-                <span>{children}</span>
-                <span className="vectorSizingCalc__labelTip" aria-hidden="true">
-                    <EuiIcon type="info" />
-                </span>
-            </span>
-        </EuiToolTip>
+        <CalcToolTip content={tip} position="right">
+            {children}
+        </CalcToolTip>
     )
 }

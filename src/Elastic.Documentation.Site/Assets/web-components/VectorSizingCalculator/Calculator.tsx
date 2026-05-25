@@ -1,10 +1,6 @@
-import {
-    calculate,
-    validate,
-    getAvailableQuantizations,
-    getQuantizationInsightText,
-} from './calculations'
+import { calculate, validate, getAvailableQuantizations } from './calculations'
 import { ConfigurationPanel } from './components/ConfigurationPanel'
+import { FormulasPanel } from './components/FormulasPanel'
 import { ResultsPanel } from './components/ResultsPanel'
 import { parseVectorCount } from './parseVectorCount'
 import type {
@@ -35,7 +31,8 @@ export function Calculator() {
     const [replicas, setReplicas] = useState(2)
     const [hnswM, setHnswM] = useState(4)
     const efConstruction = 100
-    const vectorsPerCluster = 384
+    const [vectorsPerCluster, setVectorsPerCluster] = useState(384)
+    const [offHeapRamPercent, setOffHeapRamPercent] = useState(50)
 
     const indexTypeOptions = useMemo(
         () => getAvailableIndexTypes(elementType),
@@ -72,6 +69,7 @@ export function Calculator() {
             hnswM,
             efConstruction,
             vectorsPerCluster,
+            offHeapRamPercent,
         }),
         [
             vectorsText,
@@ -83,6 +81,7 @@ export function Calculator() {
             hnswM,
             efConstruction,
             vectorsPerCluster,
+            offHeapRamPercent,
         ]
     )
 
@@ -98,11 +97,6 @@ export function Calculator() {
     )
 
     const inputsValid = Boolean(validation.valid && result !== null)
-
-    const quantizationInsightText = useMemo(() => {
-        if (!validation.valid || result === null) return null
-        return getQuantizationInsightText(inputs, result)
-    }, [inputs, result, validation.valid])
 
     return (
         <div className="vectorSizingCalc">
@@ -124,6 +118,10 @@ export function Calculator() {
                     onReplicasChange={setReplicas}
                     hnswM={hnswM}
                     onHnswMChange={setHnswM}
+                    vectorsPerCluster={vectorsPerCluster}
+                    onVectorsPerClusterChange={setVectorsPerCluster}
+                    offHeapRamPercent={offHeapRamPercent}
+                    onOffHeapRamPercentChange={setOffHeapRamPercent}
                     validation={validation}
                 />
 
@@ -132,11 +130,15 @@ export function Calculator() {
                     inputsValid={inputsValid}
                     quantizationLabel={quantizationLabel}
                     replicas={replicas}
-                    quantization={quantization}
                     validation={validation}
-                    quantizationInsightText={quantizationInsightText}
                 />
             </div>
+
+            <FormulasPanel
+                formulas={
+                    result?.formulas ?? { disk: [], ram: [], cluster: [] }
+                }
+            />
         </div>
     )
 }

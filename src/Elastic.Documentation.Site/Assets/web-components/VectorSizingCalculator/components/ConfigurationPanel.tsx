@@ -1,3 +1,12 @@
+import {
+    formatGroupedInteger,
+    normalizeGroupedNumberInput,
+} from '../formatNumbers'
+import {
+    clampDiskBbqOffHeapPercent,
+    DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT,
+    DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT,
+} from '../calculations'
 import { parseVectorCount } from '../parseVectorCount'
 import type {
     ElementType,
@@ -7,7 +16,11 @@ import type {
 } from '../types'
 import { LabelWithTip } from './LabelWithTip'
 import {
+    EuiButtonEmpty,
     EuiCallOut,
+    EuiComboBox,
+    type EuiComboBoxOptionOption,
+    EuiFieldNumber,
     EuiFieldText,
     EuiFormRow,
     EuiLink,
@@ -17,32 +30,37 @@ import {
 } from '@elastic/eui'
 import { useEffect, useMemo, useState } from 'react'
 
-const VECTOR_COUNT_PRESETS = [
-    { key: '1k', text: '1.000', value: 1_000 },
-    { key: '10k', text: '10.000', value: 10_000 },
-    { key: '100k', text: '100.000', value: 100_000 },
-    { key: '1m', text: '1.000.000', value: 1_000_000 },
-    { key: '10m', text: '10.000.000', value: 10_000_000 },
-    { key: '50m', text: '50.000.000', value: 50_000_000 },
+const VECTOR_COUNT_PRESET_VALUES = [
+    { key: '1k', value: 1_000 },
+    { key: '10k', value: 10_000 },
+    { key: '100k', value: 100_000 },
+    { key: '1m', value: 1_000_000 },
+    { key: '10m', value: 10_000_000 },
+    { key: '50m', value: 50_000_000 },
 ] as const
 
-const VECTOR_PRESET_SELECT_OPTIONS = VECTOR_COUNT_PRESETS.map((p) => ({
-    value: p.key,
-    text: p.text,
+const VECTOR_COUNT_PRESETS = VECTOR_COUNT_PRESET_VALUES.map((preset) => ({
+    ...preset,
+    text: formatGroupedInteger(preset.value),
 }))
+
+const VECTOR_COMBO_OPTIONS: EuiComboBoxOptionOption<string>[] =
+    VECTOR_COUNT_PRESETS.map((p) => ({
+        label: p.text,
+        value: p.key,
+    }))
 
 const DIMENSION_PRESETS = [256, 384, 512, 768, 1024, 1536, 3072, 4096] as const
 
-const DIMENSION_SELECT_OPTIONS = [
-    ...DIMENSION_PRESETS.map((n) => ({
+const DIMENSION_COMBO_OPTIONS: EuiComboBoxOptionOption<string>[] =
+    DIMENSION_PRESETS.map((n) => ({
+        label: String(n),
         value: String(n),
-        text: String(n),
-    })),
-]
+    }))
 
 const TOOLTIPS = {
     vectors:
-        'The total number of vectors you plan to index, usually equal to the number of documents or chunks.',
+        'Count every vector you will store in the index, not just documents. One document can produce multiple vectors. For example, one embedding per product image plus one for the description.',
     dimensions:
         'The length of each vector, set by your embedding model (for example 768 or 1536).',
     elementType:
@@ -55,6 +73,10 @@ const TOOLTIPS = {
         'Compresses vectors to reduce memory. Options depend on element type and index structure.',
     replicas:
         'Each replica is a full copy of your index. Total copies = 1 primary + replicas.',
+    vectorsPerCluster:
+        'For DiskBBQ, vectors are grouped into clusters. This value sets how many vectors each cluster holds and affects cluster count and disk use.',
+    offHeapRam:
+        'Share of quantized vectors kept in off-heap RAM. Lower values save memory; higher values improve query throughput and latency (centroids are always fully in RAM).',
 }
 
 function presetKeyForVectorsText(vectorsText: string): string {
@@ -62,6 +84,29 @@ function presetKeyForVectorsText(vectorsText: string): string {
     if (!vectorsText.trim() || Number.isNaN(n) || n <= 0) return 'custom'
     const hit = VECTOR_COUNT_PRESETS.find((p) => p.value === n)
     return hit ? hit.key : 'custom'
+}
+
+function formatVectorsTextFromInput(raw: string): string {
+    const n = parseVectorCount(raw)
+    if (!Number.isNaN(n) && n > 0) {
+        return formatGroupedInteger(n)
+    }
+    return raw.trim()
+}
+
+function vectorsTextToComboSelection(
+    vectorsText: string
+): EuiComboBoxOptionOption<string>[] {
+    const presetKey = presetKeyForVectorsText(vectorsText)
+    if (presetKey !== 'custom') {
+        const preset = VECTOR_COUNT_PRESETS.find((p) => p.key === presetKey)
+        if (preset) {
+            return [{ label: preset.text, value: preset.key }]
+        }
+    }
+    const trimmed = vectorsText.trim()
+    if (!trimmed) return []
+    return [{ label: trimmed, value: 'custom' }]
 }
 
 function dimensionPresetKey(numDimensions: number | string): string {
@@ -76,11 +121,35 @@ function dimensionPresetKey(numDimensions: number | string): string {
         : 'custom'
 }
 
+function parseDimensionsInput(raw: string): number | '' {
+    const trimmed = normalizeGroupedNumberInput(raw)
+    if (!trimmed) return ''
+    const n = Math.round(Number(trimmed))
+    if (Number.isNaN(n) || n <= 0) return ''
+    return Math.min(4096, Math.max(1, n))
+}
+
+function dimensionsToComboSelection(
+    numDimensions: number | string
+): EuiComboBoxOptionOption<string>[] {
+    const presetKey = dimensionPresetKey(numDimensions)
+    if (presetKey !== 'custom') {
+        return [{ label: presetKey, value: presetKey }]
+    }
+    if (numDimensions === '') return []
+    const label =
+        typeof numDimensions === 'number'
+            ? String(numDimensions)
+            : String(numDimensions).trim()
+    if (!label) return []
+    return [{ label, value: 'custom' }]
+}
+
 const ELEMENT_TYPE_OPTIONS: { value: ElementType; text: string }[] = [
-    { value: 'float', text: 'Full precision (float32)' },
-    { value: 'bfloat16', text: 'Half precision (bfloat16)' },
-    { value: 'byte', text: 'Byte compressed (int8)' },
-    { value: 'bit', text: 'Binary compressed (bit)' },
+    { value: 'float', text: 'float32' },
+    { value: 'bfloat16', text: 'bfloat16' },
+    { value: 'byte', text: 'int8' },
+    { value: 'bit', text: 'bit' },
 ]
 
 interface ConfigurationPanelProps {
@@ -100,6 +169,10 @@ interface ConfigurationPanelProps {
     onReplicasChange: (value: number) => void
     hnswM: number
     onHnswMChange: (value: number) => void
+    vectorsPerCluster: number
+    onVectorsPerClusterChange: (value: number) => void
+    offHeapRamPercent: number
+    onOffHeapRamPercentChange: (value: number) => void
     validation: ValidationResult
 }
 
@@ -120,141 +193,126 @@ export function ConfigurationPanel({
     onReplicasChange,
     hnswM,
     onHnswMChange,
+    vectorsPerCluster,
+    onVectorsPerClusterChange,
+    offHeapRamPercent,
+    onOffHeapRamPercentChange,
     validation,
 }: ConfigurationPanelProps) {
-    const derivedVectorsPresetKey = useMemo(
-        () => presetKeyForVectorsText(vectorsText),
+    const vectorsComboSelection = useMemo(
+        () => vectorsTextToComboSelection(vectorsText),
         [vectorsText]
     )
-    const vectorsPresetSelectValue = VECTOR_COUNT_PRESETS.some(
-        (preset) => preset.key === derivedVectorsPresetKey
-    )
-        ? derivedVectorsPresetKey
-        : VECTOR_PRESET_SELECT_OPTIONS[0].value
 
-    const derivedDimPresetKey = useMemo(
-        () => dimensionPresetKey(numDimensions),
+    const dimensionsComboSelection = useMemo(
+        () => dimensionsToComboSelection(numDimensions),
         [numDimensions]
     )
-    const dimensionsPresetSelectValue = DIMENSION_PRESETS.includes(
-        Number(derivedDimPresetKey) as (typeof DIMENSION_PRESETS)[number]
-    )
-        ? derivedDimPresetKey
-        : String(DIMENSION_PRESETS[0])
 
     const showHnswSlider = indexType === 'hnsw'
+    const showOffHeapRamSlider = indexType === 'disk_bbq'
+    const showVectorsPerCluster = indexType === 'disk_bbq'
     const showQuantizationControl = quantOptions.length > 1
-    const [hnswMText, setHnswMText] = useState(String(hnswM))
-    const [isHnswMEditing, setIsHnswMEditing] = useState(false)
-    const [replicasText, setReplicasText] = useState(() => String(replicas))
-    const [isReplicasEditing, setIsReplicasEditing] = useState(false)
-
+    const [advancedOpen, setAdvancedOpen] = useState(false)
+    const [vectorsPerClusterText, setVectorsPerClusterText] = useState(() =>
+        String(vectorsPerCluster)
+    )
+    const [isVectorsPerClusterEditing, setIsVectorsPerClusterEditing] =
+        useState(false)
     useEffect(() => {
-        if (isHnswMEditing) return
-        setHnswMText(String(hnswM))
-    }, [hnswM, isHnswMEditing])
+        if (isVectorsPerClusterEditing) return
+        setVectorsPerClusterText(String(vectorsPerCluster))
+    }, [vectorsPerCluster, isVectorsPerClusterEditing])
 
-    useEffect(() => {
-        if (isReplicasEditing) return
-        setReplicasText(String(replicas))
-    }, [replicas, isReplicasEditing])
-
-    const normalizeHnswM = (raw: string) => {
-        const trimmed = raw.trim()
-        if (!trimmed) return 2
-
-        const n = Number(trimmed.replace(/[^\d]/g, ''))
-        if (Number.isNaN(n)) return 2
-
-        const rounded = Math.round(n)
+    const clampHnswM = (value: number) => {
+        if (Number.isNaN(value)) return 2
+        const rounded = Math.round(value)
         const clamped = Math.min(512, Math.max(2, rounded))
-        // Keep values aligned with the slider step (2).
         if (clamped % 2 === 0) return clamped
         const down = clamped - 1
         const up = clamped + 1
         if (down < 2) return 2
         if (up > 512) return 510
-        return Math.abs(n - down) <= Math.abs(up - n) ? down : up
+        return Math.abs(value - down) <= Math.abs(up - value) ? down : up
     }
 
-    const normalizeReplicas = (raw: string) => {
+    const clampReplicas = (value: number) => {
+        if (Number.isNaN(value)) return 1
+        return Math.min(99, Math.max(1, Math.round(value)))
+    }
+
+    const normalizeVectorsPerCluster = (raw: string) => {
         const trimmed = raw.trim()
-        if (trimmed === '') return 1
+        if (trimmed === '') return 384
         const n = Number(trimmed.replace(/[^\d]/g, ''))
-        if (Number.isNaN(n)) return 1
-        return Math.min(99, Math.max(1, n))
+        if (Number.isNaN(n)) return 384
+        return Math.max(1, n)
     }
 
     const replicasFormRow = (
         <EuiFormRow
+            fullWidth
             label={
                 <LabelWithTip tip={TOOLTIPS.replicas}>Replicas</LabelWithTip>
             }
         >
-            <EuiFieldText
-                compressed
+            <EuiFieldNumber
                 fullWidth
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={replicasText}
-                onFocus={() => setIsReplicasEditing(true)}
-                onChange={(e) => {
-                    const cleaned = e.target.value.replace(/[^\d]/g, '')
-                    setReplicasText(cleaned)
-                }}
-                onBlur={() => {
-                    const next = normalizeReplicas(replicasText)
-                    setReplicasText(String(next))
-                    onReplicasChange(next)
-                    setIsReplicasEditing(false)
-                }}
+                value={replicas}
+                min={1}
+                max={99}
+                step={1}
+                onChange={(e) =>
+                    onReplicasChange(clampReplicas(Number(e.target.value)))
+                }
             />
         </EuiFormRow>
     )
-
-    const hnswMInputWidthPx = useMemo(() => {
-        const digits = hnswMText.length
-        // Rough-but-stable sizing: enough room for digits + control chrome.
-        // Tuned for 1–3 digit values (2..512) while still feeling "tight".
-        const base = 34
-        const perDigit = 10
-        const min = 44
-        const max = 72
-        return Math.min(
-            max,
-            Math.max(min, base + perDigit * Math.max(1, digits))
-        )
-    }, [hnswMText])
 
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--left">
             <div className="vectorSizingCalc__sectionTitle">Vectors</div>
 
             <EuiFormRow
+                fullWidth
                 label={
                     <LabelWithTip tip={TOOLTIPS.vectors}>
                         Number of vectors
                     </LabelWithTip>
                 }
             >
-                <EuiSelect
-                    options={VECTOR_PRESET_SELECT_OPTIONS}
-                    value={vectorsPresetSelectValue}
+                <EuiComboBox
+                    fullWidth
+                    singleSelection={{ asPlainText: true }}
+                    options={VECTOR_COMBO_OPTIONS}
+                    selectedOptions={vectorsComboSelection}
                     aria-label="Number of vectors"
-                    onChange={(e) => {
+                    placeholder="e.g. 1,000,000"
+                    onChange={(selected) => {
+                        if (selected.length === 0) {
+                            onVectorsChange('')
+                            return
+                        }
+                        const option = selected[0]
                         const preset = VECTOR_COUNT_PRESETS.find(
-                            (p) => p.key === e.target.value
+                            (p) => p.key === option.value
                         )
                         if (preset) {
-                            onVectorsChange(
-                                preset.value.toLocaleString('en-US')
-                            )
+                            onVectorsChange(formatGroupedInteger(preset.value))
+                            return
                         }
+                        onVectorsChange(
+                            formatVectorsTextFromInput(option.label)
+                        )
+                    }}
+                    onCreateOption={(searchValue) => {
+                        onVectorsChange(formatVectorsTextFromInput(searchValue))
                     }}
                 />
             </EuiFormRow>
 
             <EuiFormRow
+                fullWidth
                 className="vectorSizingCalc__row--dimensions"
                 label={
                     <LabelWithTip tip={TOOLTIPS.dimensions}>
@@ -262,23 +320,58 @@ export function ConfigurationPanel({
                     </LabelWithTip>
                 }
             >
-                <EuiSelect
-                    options={DIMENSION_SELECT_OPTIONS}
-                    value={dimensionsPresetSelectValue}
+                <EuiComboBox
+                    fullWidth
+                    singleSelection={{ asPlainText: true }}
+                    options={DIMENSION_COMBO_OPTIONS}
+                    selectedOptions={dimensionsComboSelection}
                     aria-label="Dimensions"
-                    onChange={(e) => {
-                        onDimensionsChange(Number(e.target.value))
+                    placeholder="e.g. 768"
+                    onChange={(selected) => {
+                        if (selected.length === 0) {
+                            onDimensionsChange('')
+                            return
+                        }
+                        const option = selected[0]
+                        const preset = DIMENSION_PRESETS.find(
+                            (n) => String(n) === option.value
+                        )
+                        if (preset !== undefined) {
+                            onDimensionsChange(preset)
+                            return
+                        }
+                        onDimensionsChange(
+                            parseDimensionsInput(option.label)
+                        )
+                    }}
+                    onCreateOption={(searchValue) => {
+                        onDimensionsChange(parseDimensionsInput(searchValue))
                     }}
                 />
             </EuiFormRow>
 
-            <EuiSpacer size="l" />
-            <div className="vectorSizingCalc__sectionDivider" />
-            <EuiSpacer size="l" />
+            <EuiSpacer size="m" />
 
-            <div className="vectorSizingCalc__sectionTitle">Index options</div>
+            <EuiButtonEmpty
+                className="vectorSizingCalc__sectionToggle"
+                flush="left"
+                iconType={
+                    advancedOpen ? 'chevronSingleUp' : 'chevronSingleDown'
+                }
+                iconSide="right"
+                onClick={() => setAdvancedOpen((open) => !open)}
+            >
+                {advancedOpen
+                    ? 'Hide advanced settings'
+                    : 'Show advanced settings'}
+            </EuiButtonEmpty>
 
-            <EuiFormRow
+            {advancedOpen && (
+                <>
+                    <EuiSpacer size="l" />
+
+                    <EuiFormRow
+                fullWidth
                 label={
                     <LabelWithTip tip={TOOLTIPS.elementType}>
                         Element type
@@ -286,6 +379,7 @@ export function ConfigurationPanel({
                 }
             >
                 <EuiSelect
+                    fullWidth
                     options={ELEMENT_TYPE_OPTIONS}
                     value={elementType}
                     onChange={(e) =>
@@ -294,9 +388,66 @@ export function ConfigurationPanel({
                 />
             </EuiFormRow>
 
+            {showOffHeapRamSlider && (
+                <>
+                    <EuiSpacer size="s" />
+                    <div className="vectorSizingCalc__graphConnectionsBlock">
+                        <div className="vectorSizingCalc__graphConnectionsLabel">
+                            <LabelWithTip tip={TOOLTIPS.offHeapRam}>
+                                % allocated to off-heap RAM
+                            </LabelWithTip>
+                        </div>
+                        <div className="vectorSizingCalc__graphConnectionsControlsRow">
+                            <div className="vectorSizingCalc__graphConnectionsSlider">
+                                <EuiRange
+                                    compressed={false}
+                                    value={offHeapRamPercent}
+                                    min={DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT}
+                                    max={DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT}
+                                    step={1}
+                                    showInput={false}
+                                    showLabels={false}
+                                    showRange
+                                    fullWidth
+                                    onChange={(e) =>
+                                        onOffHeapRamPercentChange(
+                                            clampDiskBbqOffHeapPercent(
+                                                Number(
+                                                    (
+                                                        e.currentTarget as HTMLInputElement
+                                                    ).value
+                                                )
+                                            )
+                                        )
+                                    }
+                                    aria-label="Percent allocated to off-heap RAM"
+                                />
+                            </div>
+                            <div className="vectorSizingCalc__graphConnectionsValueCell">
+                                <EuiFieldNumber
+                                    className="vectorSizingCalc__rangeNumberInput"
+                                    value={offHeapRamPercent}
+                                    min={DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT}
+                                    max={DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT}
+                                    step={1}
+                                    aria-label="Percent allocated to off-heap RAM"
+                                    onChange={(e) => {
+                                        const next = clampDiskBbqOffHeapPercent(
+                                            Number(e.target.value)
+                                        )
+                                        onOffHeapRamPercentChange(next)
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
             <EuiSpacer size="s" />
 
             <EuiFormRow
+                fullWidth
                 label={
                     <LabelWithTip tip={TOOLTIPS.indexStructure}>
                         Index structure
@@ -304,6 +455,7 @@ export function ConfigurationPanel({
                 }
             >
                 <EuiSelect
+                    fullWidth
                     options={indexTypeOptions}
                     value={indexType}
                     onChange={(e) =>
@@ -324,6 +476,7 @@ export function ConfigurationPanel({
                         <div className="vectorSizingCalc__graphConnectionsControlsRow">
                             <div className="vectorSizingCalc__graphConnectionsSlider">
                                 <EuiRange
+                                    compressed={false}
                                     value={hnswM}
                                     min={2}
                                     max={512}
@@ -345,30 +498,61 @@ export function ConfigurationPanel({
                                 />
                             </div>
                             <div className="vectorSizingCalc__graphConnectionsValueCell">
-                                <EuiFieldText
-                                    compressed
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    value={hnswMText}
-                                    style={{ width: `${hnswMInputWidthPx}px` }}
-                                    onFocus={() => setIsHnswMEditing(true)}
-                                    onChange={(e) => {
-                                        const cleaned = e.target.value.replace(
-                                            /[^\d]/g,
-                                            ''
+                                <EuiFieldNumber
+                                    className="vectorSizingCalc__rangeNumberInput"
+                                    value={hnswM}
+                                    min={2}
+                                    max={512}
+                                    step={2}
+                                    aria-label="HNSW m"
+                                    onChange={(e) =>
+                                        onHnswMChange(
+                                            clampHnswM(Number(e.target.value))
                                         )
-                                        setHnswMText(cleaned)
-                                    }}
-                                    onBlur={() => {
-                                        const next = normalizeHnswM(hnswMText)
-                                        setHnswMText(String(next))
-                                        onHnswMChange(next)
-                                        setIsHnswMEditing(false)
-                                    }}
+                                    }
                                 />
                             </div>
                         </div>
                     </div>
+                </>
+            )}
+
+            {showVectorsPerCluster && (
+                <>
+                    <EuiSpacer size="s" />
+                    <EuiFormRow
+                        fullWidth
+                        label={
+                            <LabelWithTip tip={TOOLTIPS.vectorsPerCluster}>
+                                Vectors per cluster
+                            </LabelWithTip>
+                        }
+                    >
+                        <EuiFieldText
+                            compressed
+                            fullWidth
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={vectorsPerClusterText}
+                            onFocus={() => setIsVectorsPerClusterEditing(true)}
+                            onChange={(e) => {
+                                const cleaned = e.target.value.replace(
+                                    /[^\d]/g,
+                                    ''
+                                )
+                                setVectorsPerClusterText(cleaned)
+                            }}
+                            onBlur={() => {
+                                const next =
+                                    normalizeVectorsPerCluster(
+                                        vectorsPerClusterText
+                                    )
+                                setVectorsPerClusterText(String(next))
+                                onVectorsPerClusterChange(next)
+                                setIsVectorsPerClusterEditing(false)
+                            }}
+                        />
+                    </EuiFormRow>
                 </>
             )}
 
@@ -377,6 +561,7 @@ export function ConfigurationPanel({
             {showQuantizationControl ? (
                 <div className="vectorSizingCalc__fieldGrid2">
                     <EuiFormRow
+                        fullWidth
                         label={
                             <LabelWithTip tip={TOOLTIPS.quantization}>
                                 Quantization
@@ -384,6 +569,7 @@ export function ConfigurationPanel({
                         }
                     >
                         <EuiSelect
+                            fullWidth
                             options={quantOptions.map((o) => ({
                                 value: o.value,
                                 text: o.label,
@@ -402,6 +588,8 @@ export function ConfigurationPanel({
                 </div>
             ) : (
                 replicasFormRow
+            )}
+                </>
             )}
 
             {validation.warning && (
