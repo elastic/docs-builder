@@ -38,7 +38,7 @@ public static class LifecycleDescriptions
 	{
 		// Preview
 		[(ProductLifecycle.TechnicalPreview, true)] =
-			"This functionality is in technical preview and is not ready for production usage. Technical preview features may change or be removed at any time. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.",
+			"This functionality is in technical preview and is ready for evaluation. Use with caution in production; it is not recommended for mission-critical workloads. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.",
 		[(ProductLifecycle.TechnicalPreview, false)] =
 			"We plan to add this functionality in a future {product} update. Subject to changes.",
 
