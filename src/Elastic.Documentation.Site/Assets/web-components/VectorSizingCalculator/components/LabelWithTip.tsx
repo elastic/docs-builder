@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
 import { CalcToolTip } from './CalcToolTip'
+import type { ReactNode } from 'react'
 
 interface LabelWithTipProps {
     children: ReactNode

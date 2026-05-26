@@ -1,12 +1,12 @@
 import {
-    formatGroupedInteger,
-    normalizeGroupedNumberInput,
-} from '../formatNumbers'
-import {
     clampDiskBbqOffHeapPercent,
     DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT,
     DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT,
 } from '../calculations'
+import {
+    formatGroupedInteger,
+    normalizeGroupedNumberInput,
+} from '../formatNumbers'
 import { parseVectorCount } from '../parseVectorCount'
 import type {
     ElementType,
@@ -340,9 +340,7 @@ export function ConfigurationPanel({
                             onDimensionsChange(preset)
                             return
                         }
-                        onDimensionsChange(
-                            parseDimensionsInput(option.label)
-                        )
+                        onDimensionsChange(parseDimensionsInput(option.label))
                     }}
                     onCreateOption={(searchValue) => {
                         onDimensionsChange(parseDimensionsInput(searchValue))
@@ -371,224 +369,242 @@ export function ConfigurationPanel({
                     <EuiSpacer size="l" />
 
                     <EuiFormRow
-                fullWidth
-                label={
-                    <LabelWithTip tip={TOOLTIPS.elementType}>
-                        Element type
-                    </LabelWithTip>
-                }
-            >
-                <EuiSelect
-                    fullWidth
-                    options={ELEMENT_TYPE_OPTIONS}
-                    value={elementType}
-                    onChange={(e) =>
-                        onElementTypeChange(e.target.value as ElementType)
-                    }
-                />
-            </EuiFormRow>
-
-            {showOffHeapRamSlider && (
-                <>
-                    <EuiSpacer size="s" />
-                    <div className="vectorSizingCalc__graphConnectionsBlock">
-                        <div className="vectorSizingCalc__graphConnectionsLabel">
-                            <LabelWithTip tip={TOOLTIPS.offHeapRam}>
-                                % allocated to off-heap RAM
-                            </LabelWithTip>
-                        </div>
-                        <div className="vectorSizingCalc__graphConnectionsControlsRow">
-                            <div className="vectorSizingCalc__graphConnectionsSlider">
-                                <EuiRange
-                                    compressed={false}
-                                    value={offHeapRamPercent}
-                                    min={DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT}
-                                    max={DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT}
-                                    step={1}
-                                    showInput={false}
-                                    showLabels={false}
-                                    showRange
-                                    fullWidth
-                                    onChange={(e) =>
-                                        onOffHeapRamPercentChange(
-                                            clampDiskBbqOffHeapPercent(
-                                                Number(
-                                                    (
-                                                        e.currentTarget as HTMLInputElement
-                                                    ).value
-                                                )
-                                            )
-                                        )
-                                    }
-                                    aria-label="Percent allocated to off-heap RAM"
-                                />
-                            </div>
-                            <div className="vectorSizingCalc__graphConnectionsValueCell">
-                                <EuiFieldNumber
-                                    className="vectorSizingCalc__rangeNumberInput"
-                                    value={offHeapRamPercent}
-                                    min={DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT}
-                                    max={DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT}
-                                    step={1}
-                                    aria-label="Percent allocated to off-heap RAM"
-                                    onChange={(e) => {
-                                        const next = clampDiskBbqOffHeapPercent(
-                                            Number(e.target.value)
-                                        )
-                                        onOffHeapRamPercentChange(next)
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            <EuiSpacer size="s" />
-
-            <EuiFormRow
-                fullWidth
-                label={
-                    <LabelWithTip tip={TOOLTIPS.indexStructure}>
-                        Index structure
-                    </LabelWithTip>
-                }
-            >
-                <EuiSelect
-                    fullWidth
-                    options={indexTypeOptions}
-                    value={indexType}
-                    onChange={(e) =>
-                        onIndexTypeChange(e.target.value as IndexType)
-                    }
-                />
-            </EuiFormRow>
-
-            {showHnswSlider && (
-                <>
-                    <EuiSpacer size="s" />
-                    <div className="vectorSizingCalc__graphConnectionsBlock">
-                        <div className="vectorSizingCalc__graphConnectionsLabel">
-                            <LabelWithTip tip={TOOLTIPS.graphConnections}>
-                                Graph connections (m)
-                            </LabelWithTip>
-                        </div>
-                        <div className="vectorSizingCalc__graphConnectionsControlsRow">
-                            <div className="vectorSizingCalc__graphConnectionsSlider">
-                                <EuiRange
-                                    compressed={false}
-                                    value={hnswM}
-                                    min={2}
-                                    max={512}
-                                    step={2}
-                                    showInput={false}
-                                    showLabels={false}
-                                    showRange
-                                    fullWidth
-                                    onChange={(e) =>
-                                        onHnswMChange(
-                                            Number(
-                                                (
-                                                    e.currentTarget as HTMLInputElement
-                                                ).value
-                                            )
-                                        )
-                                    }
-                                    aria-label="HNSW m"
-                                />
-                            </div>
-                            <div className="vectorSizingCalc__graphConnectionsValueCell">
-                                <EuiFieldNumber
-                                    className="vectorSizingCalc__rangeNumberInput"
-                                    value={hnswM}
-                                    min={2}
-                                    max={512}
-                                    step={2}
-                                    aria-label="HNSW m"
-                                    onChange={(e) =>
-                                        onHnswMChange(
-                                            clampHnswM(Number(e.target.value))
-                                        )
-                                    }
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {showVectorsPerCluster && (
-                <>
-                    <EuiSpacer size="s" />
-                    <EuiFormRow
                         fullWidth
                         label={
-                            <LabelWithTip tip={TOOLTIPS.vectorsPerCluster}>
-                                Vectors per cluster
-                            </LabelWithTip>
-                        }
-                    >
-                        <EuiFieldText
-                            compressed
-                            fullWidth
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={vectorsPerClusterText}
-                            onFocus={() => setIsVectorsPerClusterEditing(true)}
-                            onChange={(e) => {
-                                const cleaned = e.target.value.replace(
-                                    /[^\d]/g,
-                                    ''
-                                )
-                                setVectorsPerClusterText(cleaned)
-                            }}
-                            onBlur={() => {
-                                const next =
-                                    normalizeVectorsPerCluster(
-                                        vectorsPerClusterText
-                                    )
-                                setVectorsPerClusterText(String(next))
-                                onVectorsPerClusterChange(next)
-                                setIsVectorsPerClusterEditing(false)
-                            }}
-                        />
-                    </EuiFormRow>
-                </>
-            )}
-
-            <EuiSpacer size="m" />
-
-            {showQuantizationControl ? (
-                <div className="vectorSizingCalc__fieldGrid2">
-                    <EuiFormRow
-                        fullWidth
-                        label={
-                            <LabelWithTip tip={TOOLTIPS.quantization}>
-                                Quantization
+                            <LabelWithTip tip={TOOLTIPS.elementType}>
+                                Element type
                             </LabelWithTip>
                         }
                     >
                         <EuiSelect
                             fullWidth
-                            options={quantOptions.map((o) => ({
-                                value: o.value,
-                                text: o.label,
-                            }))}
-                            value={quantization}
-                            disabled={indexType === 'disk_bbq'}
+                            options={ELEMENT_TYPE_OPTIONS}
+                            value={elementType}
                             onChange={(e) =>
-                                onQuantizationChange(
-                                    e.target.value as Quantization
+                                onElementTypeChange(
+                                    e.target.value as ElementType
                                 )
                             }
                         />
                     </EuiFormRow>
 
-                    {replicasFormRow}
-                </div>
-            ) : (
-                replicasFormRow
-            )}
+                    {showOffHeapRamSlider && (
+                        <>
+                            <EuiSpacer size="s" />
+                            <div className="vectorSizingCalc__graphConnectionsBlock">
+                                <div className="vectorSizingCalc__graphConnectionsLabel">
+                                    <LabelWithTip tip={TOOLTIPS.offHeapRam}>
+                                        % allocated to off-heap RAM
+                                    </LabelWithTip>
+                                </div>
+                                <div className="vectorSizingCalc__graphConnectionsControlsRow">
+                                    <div className="vectorSizingCalc__graphConnectionsSlider">
+                                        <EuiRange
+                                            compressed={false}
+                                            value={offHeapRamPercent}
+                                            min={
+                                                DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT
+                                            }
+                                            max={
+                                                DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT
+                                            }
+                                            step={1}
+                                            showInput={false}
+                                            showLabels={false}
+                                            showRange
+                                            fullWidth
+                                            onChange={(e) =>
+                                                onOffHeapRamPercentChange(
+                                                    clampDiskBbqOffHeapPercent(
+                                                        Number(
+                                                            (
+                                                                e.currentTarget as HTMLInputElement
+                                                            ).value
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                            aria-label="Percent allocated to off-heap RAM"
+                                        />
+                                    </div>
+                                    <div className="vectorSizingCalc__graphConnectionsValueCell">
+                                        <EuiFieldNumber
+                                            className="vectorSizingCalc__rangeNumberInput"
+                                            value={offHeapRamPercent}
+                                            min={
+                                                DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT
+                                            }
+                                            max={
+                                                DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT
+                                            }
+                                            step={1}
+                                            aria-label="Percent allocated to off-heap RAM"
+                                            onChange={(e) => {
+                                                const next =
+                                                    clampDiskBbqOffHeapPercent(
+                                                        Number(e.target.value)
+                                                    )
+                                                onOffHeapRamPercentChange(next)
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    <EuiSpacer size="s" />
+
+                    <EuiFormRow
+                        fullWidth
+                        label={
+                            <LabelWithTip tip={TOOLTIPS.indexStructure}>
+                                Index structure
+                            </LabelWithTip>
+                        }
+                    >
+                        <EuiSelect
+                            fullWidth
+                            options={indexTypeOptions}
+                            value={indexType}
+                            onChange={(e) =>
+                                onIndexTypeChange(e.target.value as IndexType)
+                            }
+                        />
+                    </EuiFormRow>
+
+                    {showHnswSlider && (
+                        <>
+                            <EuiSpacer size="s" />
+                            <div className="vectorSizingCalc__graphConnectionsBlock">
+                                <div className="vectorSizingCalc__graphConnectionsLabel">
+                                    <LabelWithTip
+                                        tip={TOOLTIPS.graphConnections}
+                                    >
+                                        Graph connections (m)
+                                    </LabelWithTip>
+                                </div>
+                                <div className="vectorSizingCalc__graphConnectionsControlsRow">
+                                    <div className="vectorSizingCalc__graphConnectionsSlider">
+                                        <EuiRange
+                                            compressed={false}
+                                            value={hnswM}
+                                            min={2}
+                                            max={512}
+                                            step={2}
+                                            showInput={false}
+                                            showLabels={false}
+                                            showRange
+                                            fullWidth
+                                            onChange={(e) =>
+                                                onHnswMChange(
+                                                    Number(
+                                                        (
+                                                            e.currentTarget as HTMLInputElement
+                                                        ).value
+                                                    )
+                                                )
+                                            }
+                                            aria-label="HNSW m"
+                                        />
+                                    </div>
+                                    <div className="vectorSizingCalc__graphConnectionsValueCell">
+                                        <EuiFieldNumber
+                                            className="vectorSizingCalc__rangeNumberInput"
+                                            value={hnswM}
+                                            min={2}
+                                            max={512}
+                                            step={2}
+                                            aria-label="HNSW m"
+                                            onChange={(e) =>
+                                                onHnswMChange(
+                                                    clampHnswM(
+                                                        Number(e.target.value)
+                                                    )
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {showVectorsPerCluster && (
+                        <>
+                            <EuiSpacer size="s" />
+                            <EuiFormRow
+                                fullWidth
+                                label={
+                                    <LabelWithTip
+                                        tip={TOOLTIPS.vectorsPerCluster}
+                                    >
+                                        Vectors per cluster
+                                    </LabelWithTip>
+                                }
+                            >
+                                <EuiFieldText
+                                    compressed
+                                    fullWidth
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    value={vectorsPerClusterText}
+                                    onFocus={() =>
+                                        setIsVectorsPerClusterEditing(true)
+                                    }
+                                    onChange={(e) => {
+                                        const cleaned = e.target.value.replace(
+                                            /[^\d]/g,
+                                            ''
+                                        )
+                                        setVectorsPerClusterText(cleaned)
+                                    }}
+                                    onBlur={() => {
+                                        const next = normalizeVectorsPerCluster(
+                                            vectorsPerClusterText
+                                        )
+                                        setVectorsPerClusterText(String(next))
+                                        onVectorsPerClusterChange(next)
+                                        setIsVectorsPerClusterEditing(false)
+                                    }}
+                                />
+                            </EuiFormRow>
+                        </>
+                    )}
+
+                    <EuiSpacer size="m" />
+
+                    {showQuantizationControl ? (
+                        <div className="vectorSizingCalc__fieldGrid2">
+                            <EuiFormRow
+                                fullWidth
+                                label={
+                                    <LabelWithTip tip={TOOLTIPS.quantization}>
+                                        Quantization
+                                    </LabelWithTip>
+                                }
+                            >
+                                <EuiSelect
+                                    fullWidth
+                                    options={quantOptions.map((o) => ({
+                                        value: o.value,
+                                        text: o.label,
+                                    }))}
+                                    value={quantization}
+                                    disabled={indexType === 'disk_bbq'}
+                                    onChange={(e) =>
+                                        onQuantizationChange(
+                                            e.target.value as Quantization
+                                        )
+                                    }
+                                />
+                            </EuiFormRow>
+
+                            {replicasFormRow}
+                        </div>
+                    ) : (
+                        replicasFormRow
+                    )}
                 </>
             )}
 

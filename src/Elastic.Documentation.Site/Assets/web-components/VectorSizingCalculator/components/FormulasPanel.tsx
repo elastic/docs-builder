@@ -1,6 +1,6 @@
+import type { SizingFormulas } from '../types'
 import { EuiIcon } from '@elastic/eui'
 import { useState, type KeyboardEvent } from 'react'
-import type { SizingFormulas } from '../types'
 
 interface FormulasPanelProps {
     formulas: SizingFormulas
@@ -72,11 +72,7 @@ export function FormulasPanel({ formulas }: FormulasPanelProps) {
                 <span className="vectorSizingCalc__formulasToggle">
                     {isOpen ? 'Hide formulas used' : 'Show formulas used'}
                     <EuiIcon
-                        type={
-                            isOpen
-                                ? 'chevronSingleUp'
-                                : 'chevronSingleDown'
-                        }
+                        type={isOpen ? 'chevronSingleUp' : 'chevronSingleDown'}
                         size="m"
                     />
                 </span>

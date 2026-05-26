@@ -1,7 +1,7 @@
 import { formatBytesString } from '../calculations'
 import { formatExactBytes } from '../formatNumbers'
-import { EuiText } from '@elastic/eui'
 import { CalcToolTip } from './CalcToolTip'
+import { EuiText } from '@elastic/eui'
 
 interface ByteSizeValueProps {
     bytes?: number

@@ -27,13 +27,18 @@ export function ResultsPanel({
 }: ResultsPanelProps) {
     const showBody = inputsValid && result !== null && !validation.warning
     const replicaLabel =
-        replicas === 1 ? '1 replica' : `${formatGroupedInteger(replicas)} replicas`
+        replicas === 1
+            ? '1 replica'
+            : `${formatGroupedInteger(replicas)} replicas`
 
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--right">
             <div className="vectorSizingCalc__summary">
                 <div className="vectorSizingCalc__summaryMain">
-                    <EuiText size="s" className="vectorSizingCalc__summaryLabel">
+                    <EuiText
+                        size="s"
+                        className="vectorSizingCalc__summaryLabel"
+                    >
                         {showBody
                             ? `Total required resources (${replicaLabel}):`
                             : 'Total required resources:'}
@@ -61,26 +66,44 @@ export function ResultsPanel({
 
                     <div className="vectorSizingCalc__resultsDetail">
                         <div className="vectorSizingCalc__resultsDetailLabels">
-                            <EuiText size="s" className="vectorSizingCalc__detailLabel">
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailLabel"
+                            >
                                 Quantization:
                             </EuiText>
-                            <EuiText size="s" className="vectorSizingCalc__detailLabel">
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailLabel"
+                            >
                                 Disk required per replica:
                             </EuiText>
-                            <EuiText size="s" className="vectorSizingCalc__detailLabel">
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailLabel"
+                            >
                                 RAM required per replica:
                             </EuiText>
                         </div>
                         <div className="vectorSizingCalc__resultsDetailValues">
-                            <EuiText size="s" className="vectorSizingCalc__detailValue">
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailValue"
+                            >
                                 {quantizationLabel || 'None'}
                             </EuiText>
-                            <EuiText size="s" className="vectorSizingCalc__detailValue">
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailValue"
+                            >
                                 {showBody
                                     ? formatBytesString(result.totalDisk)
                                     : '0 MB'}
                             </EuiText>
-                            <EuiText size="s" className="vectorSizingCalc__detailValue">
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailValue"
+                            >
                                 {showBody
                                     ? formatBytesString(result.totalRam)
                                     : '0 MB'}

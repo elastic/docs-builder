@@ -244,7 +244,9 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
             case 'none':
                 ramVectors = rawDisk
                 ramVectorsLabel = 'Raw vectors in RAM'
-                ramFormulas.push(`Vector RAM = ${formatBytesString(ramVectors)}`)
+                ramFormulas.push(
+                    `Vector RAM = ${formatBytesString(ramVectors)}`
+                )
                 break
             case 'int8':
                 ramVectors = V * (D + 4)
