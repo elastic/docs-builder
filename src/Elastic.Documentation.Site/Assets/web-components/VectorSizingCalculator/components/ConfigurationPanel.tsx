@@ -238,6 +238,28 @@ export function ConfigurationPanel({
         return Math.min(99, Math.max(0, Math.round(value)))
     }
 
+    const replicaShardsFormRow = (
+        <EuiFormRow
+            fullWidth
+            label={
+                <LabelWithTip tip={TOOLTIPS.replicas}>
+                    Replica shards
+                </LabelWithTip>
+            }
+        >
+            <EuiFieldNumber
+                fullWidth
+                value={replicas}
+                min={0}
+                max={99}
+                step={1}
+                onChange={(e) =>
+                    onReplicasChange(clampReplicas(Number(e.target.value)))
+                }
+            />
+        </EuiFormRow>
+    )
+
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--left">
             <div className="vectorSizingCalc__sectionTitle">Vectors</div>
@@ -539,55 +561,37 @@ export function ConfigurationPanel({
 
                     <EuiSpacer size="m" />
 
-                    {showQuantizationControl && (
-                        <EuiFormRow
-                            fullWidth
-                            label={
-                                <LabelWithTip tip={TOOLTIPS.quantization}>
-                                    Quantization
-                                </LabelWithTip>
-                            }
-                        >
-                            <EuiSelect
+                    {showQuantizationControl ? (
+                        <div className="vectorSizingCalc__fieldGrid2">
+                            <EuiFormRow
                                 fullWidth
-                                options={quantOptions.map((o) => ({
-                                    value: o.value,
-                                    text: o.label,
-                                }))}
-                                value={quantization}
-                                disabled={indexType === 'disk_bbq'}
-                                onChange={(e) =>
-                                    onQuantizationChange(
-                                        e.target.value as Quantization
-                                    )
+                                label={
+                                    <LabelWithTip tip={TOOLTIPS.quantization}>
+                                        Quantization
+                                    </LabelWithTip>
                                 }
-                            />
-                        </EuiFormRow>
+                            >
+                                <EuiSelect
+                                    fullWidth
+                                    options={quantOptions.map((o) => ({
+                                        value: o.value,
+                                        text: o.label,
+                                    }))}
+                                    value={quantization}
+                                    disabled={indexType === 'disk_bbq'}
+                                    onChange={(e) =>
+                                        onQuantizationChange(
+                                            e.target.value as Quantization
+                                        )
+                                    }
+                                />
+                            </EuiFormRow>
+
+                            {replicaShardsFormRow}
+                        </div>
+                    ) : (
+                        replicaShardsFormRow
                     )}
-
-                    <EuiSpacer size="s" />
-
-                    <EuiFormRow
-                        fullWidth
-                        label={
-                            <LabelWithTip tip={TOOLTIPS.replicas}>
-                                Replica shards
-                            </LabelWithTip>
-                        }
-                    >
-                        <EuiFieldNumber
-                            fullWidth
-                            value={replicas}
-                            min={0}
-                            max={99}
-                            step={1}
-                            onChange={(e) =>
-                                onReplicasChange(
-                                    clampReplicas(Number(e.target.value))
-                                )
-                            }
-                        />
-                    </EuiFormRow>
                 </>
             )}
 
