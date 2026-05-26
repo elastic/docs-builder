@@ -1,12 +1,19 @@
-import { formatBytes } from '../calculations'
+import { formatHeroSizeParts } from '../calculations'
 
 interface HeroSizeLineProps {
-    bytes: number
+    bytes?: number
+    bytesMin?: number
+    bytesMax?: number
     resourceLabel: 'Disk' | 'RAM'
 }
 
-export function HeroSizeLine({ bytes, resourceLabel }: HeroSizeLineProps) {
-    const { value, unit } = formatBytes(bytes)
+export function HeroSizeLine({
+    bytes = 0,
+    bytesMin,
+    bytesMax,
+    resourceLabel,
+}: HeroSizeLineProps) {
+    const { value, unit } = formatHeroSizeParts(bytes, bytesMin, bytesMax)
 
     return (
         <div className="vectorSizingCalc__heroSizeColumn">

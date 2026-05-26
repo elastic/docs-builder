@@ -1,4 +1,4 @@
-import { formatBytesString } from '../calculations'
+import { formatBytesRangeLabel, formatBytesString } from '../calculations'
 import { formatGroupedInteger } from '../formatNumbers'
 import type { SizingResult, ValidationResult } from '../types'
 import { HeroSizeLine } from './HeroSizeLine'
@@ -18,6 +18,16 @@ const KNN_MEMORY_DOC =
 const SIZING_DISCLAIMER =
     'This calculator is a basic approximation of per-replica and cluster disk and RAM. Real requirements depend on data shape, indexing settings, query patterns, and how you deploy Elasticsearch.'
 
+function clusterResourcesLabel(replicas: number): string {
+    if (replicas === 0) {
+        return 'Cluster total (primary only):'
+    }
+    if (replicas === 1) {
+        return 'Cluster total (1 primary + 1 replica):'
+    }
+    return `Cluster total (1 primary + ${formatGroupedInteger(replicas)} replicas):`
+}
+
 export function ResultsPanel({
     result,
     inputsValid,
@@ -26,10 +36,6 @@ export function ResultsPanel({
     validation,
 }: ResultsPanelProps) {
     const showBody = inputsValid && result !== null && !validation.warning
-    const replicaLabel =
-        replicas === 1
-            ? '1 replica'
-            : `${formatGroupedInteger(replicas)} replicas`
 
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--right">
@@ -40,8 +46,8 @@ export function ResultsPanel({
                         className="vectorSizingCalc__summaryLabel"
                     >
                         {showBody
-                            ? `Total required resources (${replicaLabel}):`
-                            : 'Total required resources:'}
+                            ? clusterResourcesLabel(replicas)
+                            : 'Cluster total:'}
                     </EuiText>
 
                     {showBody ? (
@@ -51,7 +57,21 @@ export function ResultsPanel({
                                 resourceLabel="Disk"
                             />
                             <HeroSizeLine
-                                bytes={result.clusterRam}
+                                bytes={
+                                    result.usesRamRange
+                                        ? undefined
+                                        : result.clusterRam
+                                }
+                                bytesMin={
+                                    result.usesRamRange
+                                        ? result.clusterRamMin
+                                        : undefined
+                                }
+                                bytesMax={
+                                    result.usesRamRange
+                                        ? result.clusterRamMax
+                                        : undefined
+                                }
                                 resourceLabel="RAM"
                             />
                         </div>
@@ -76,13 +96,13 @@ export function ResultsPanel({
                                 size="s"
                                 className="vectorSizingCalc__detailLabel"
                             >
-                                Disk required per replica:
+                                Disk per replica:
                             </EuiText>
                             <EuiText
                                 size="s"
                                 className="vectorSizingCalc__detailLabel"
                             >
-                                RAM required per replica:
+                                RAM per replica:
                             </EuiText>
                         </div>
                         <div className="vectorSizingCalc__resultsDetailValues">
@@ -105,7 +125,12 @@ export function ResultsPanel({
                                 className="vectorSizingCalc__detailValue"
                             >
                                 {showBody
-                                    ? formatBytesString(result.totalRam)
+                                    ? result.usesRamRange
+                                        ? formatBytesRangeLabel(
+                                              result.totalRamMin,
+                                              result.totalRamMax
+                                          )
+                                        : formatBytesString(result.totalRam)
                                     : '0 MB'}
                             </EuiText>
                         </div>

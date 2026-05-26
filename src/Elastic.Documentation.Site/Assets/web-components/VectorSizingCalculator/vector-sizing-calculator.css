@@ -105,8 +105,8 @@ vector-sizing-calculator:not(:defined) {
 }
 
 .vectorSizingCalc__heroSizeValue {
-	font-size: 46px;
-	line-height: 46px;
+	font-size: 40px;
+	line-height: 40px;
 	font-weight: 800;
 }
 

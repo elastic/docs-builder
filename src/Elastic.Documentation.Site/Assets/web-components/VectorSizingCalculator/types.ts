@@ -8,6 +8,7 @@ export interface CalculatorInputs {
     elementType: ElementType
     indexType: IndexType
     quantization: Quantization
+    /** Replica shards only (excludes primary). */
     replicas: number
     hnswM: number
     efConstruction: number
@@ -42,8 +43,9 @@ export interface SizingResult {
     clusterRam: number
     clusterRamMin: number
     clusterRamMax: number
-    /** Reserved; hero uses a single RAM value when the off-heap slider is set. */
+    /** DiskBBQ: hero and per-replica RAM show min–max (5%–50% vector cache). */
     usesRamRange: boolean
+    /** Index copies = 1 primary + replicas. */
     totalCopies: number
     formulas: SizingFormulas
 }

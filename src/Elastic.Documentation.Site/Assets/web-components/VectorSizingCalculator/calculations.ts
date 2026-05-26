@@ -42,9 +42,13 @@ export function formatBytesString(bytes: number): string {
     return `${f.value} ${f.unit}`
 }
 
-/** DiskBBQ off-heap slider: min/max % of quantized vectors to cache in RAM. */
-export const DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT = 0
-export const DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT = 100
+/** DiskBBQ off-heap slider: % of quantized vectors to cache in RAM (practical range). */
+export const DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT = 5
+export const DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT = 50
+
+/** DiskBBQ RAM range endpoints for hero/detail (fraction of quantized vectors cached). */
+const DISKBBQ_VECTOR_CACHE_MIN_FRACTION = 0.05
+const DISKBBQ_VECTOR_CACHE_MAX_FRACTION = 0.5
 
 export function clampDiskBbqOffHeapPercent(percent: number): number {
     return Math.min(
@@ -234,10 +238,11 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
 
     // --- RAM ---
     let ramVectors = 0
-    let ramVectorsMax = 0
     let ramVectorsLabel = ''
     let ramIndex = 0
     let ramIndexLabel = ''
+    let diskBbqRamMin = 0
+    let diskBbqRamMax = 0
 
     if (indexType === 'hnsw' || indexType === 'flat') {
         switch (quantization) {
@@ -277,17 +282,20 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         }
     } else if (indexType === 'disk_bbq') {
         const pct = clampDiskBbqOffHeapPercent(offHeapRamPercent) / 100
-        const ramMin = bbqCentroids
-        const ramMax = bbqCentroids + bbqVectors
+        diskBbqRamMin =
+            bbqCentroids +
+            Math.ceil(bbqVectors * DISKBBQ_VECTOR_CACHE_MIN_FRACTION)
+        diskBbqRamMax =
+            bbqCentroids +
+            Math.ceil(bbqVectors * DISKBBQ_VECTOR_CACHE_MAX_FRACTION)
         const ramSelected = bbqCentroids + Math.ceil(bbqVectors * pct)
         ramVectors = ramSelected
-        ramVectorsMax = ramMax
         ramVectorsLabel = 'DiskBBQ off-heap RAM'
         ramFormulas.push(
-            `DiskBBQ RAM min = centroids + 0% × vectors = ${formatBytesString(ramMin)}`
+            `DiskBBQ RAM min = centroids + 5% × vectors = ${formatBytesString(diskBbqRamMin)}`
         )
         ramFormulas.push(
-            `DiskBBQ RAM max = centroids + 100% × vectors = ${formatBytesString(ramMax)}`
+            `DiskBBQ RAM max = centroids + 50% × vectors = ${formatBytesString(diskBbqRamMax)}`
         )
         ramFormulas.push(
             `DiskBBQ RAM (${clampDiskBbqOffHeapPercent(offHeapRamPercent)}% vectors cached) = centroids + ${clampDiskBbqOffHeapPercent(offHeapRamPercent)}% × vectors = ${formatBytesString(ramSelected)}`
@@ -297,14 +305,16 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         )
     }
 
-    const usesRamRange = false
+    const usesRamRange = indexType === 'disk_bbq'
     const totalRam = ramVectors + ramIndex
     const totalRamMin =
-        indexType === 'disk_bbq' ? bbqCentroids + ramIndex : totalRam
+        indexType === 'disk_bbq' ? diskBbqRamMin + ramIndex : totalRam
     const totalRamMax =
-        indexType === 'disk_bbq' ? ramVectorsMax + ramIndex : totalRam
+        indexType === 'disk_bbq' ? diskBbqRamMax + ramIndex : totalRam
     ramFormulas.push(
-        `Total off-heap RAM (per replica) = ${formatBytesString(totalRam)}`
+        usesRamRange
+            ? `Total off-heap RAM (per replica) = ${formatBytesRangeLabel(totalRamMin, totalRamMax)}`
+            : `Total off-heap RAM (per replica) = ${formatBytesString(totalRam)}`
     )
 
     // Build RAM breakdown
@@ -322,21 +332,20 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
             color: 'accent',
         })
 
-    // Cluster totals
     const totalCopies = 1 + replicas
     const clusterDisk = totalDisk * totalCopies
     const clusterRam = totalRam * totalCopies
     const clusterRamMax = totalRamMax * totalCopies
     const clusterRamMin = totalRamMin * totalCopies
 
-    if (replicas > 0) {
-        clusterFormulas.push(
-            `Cluster total disk = per-replica × ${totalCopies} copies = ${formatBytesString(clusterDisk)}`
-        )
-        clusterFormulas.push(
-            `Cluster total RAM  = per-replica × ${totalCopies} copies = ${formatBytesString(clusterRam)}`
-        )
-    }
+    clusterFormulas.push(
+        `Cluster total disk = per-replica × ${totalCopies} copies = ${formatBytesString(clusterDisk)}`
+    )
+    clusterFormulas.push(
+        usesRamRange
+            ? `Cluster total RAM  = per-replica × ${totalCopies} copies = ${formatBytesRangeLabel(clusterRamMin, clusterRamMax)}`
+            : `Cluster total RAM  = per-replica × ${totalCopies} copies = ${formatBytesString(clusterRam)}`
+    )
 
     return {
         diskBreakdown,
@@ -374,6 +383,32 @@ export function formatRamHeroLabel(minBytes: number, maxBytes: number): string {
         return `${minValue}–${maxValue} ${minUnit}`
     }
     return `${minLabel} – ${maxLabel}`
+}
+
+/** Split hero label into value + unit for DiskBBQ RAM ranges. */
+export function formatHeroSizeParts(
+    bytes: number,
+    bytesMin?: number,
+    bytesMax?: number
+): { value: string; unit: string } {
+    if (
+        bytesMin !== undefined &&
+        bytesMax !== undefined &&
+        bytesMin !== bytesMax
+    ) {
+        const label = formatRamHeroLabel(bytesMin, bytesMax)
+        const lastSpace = label.lastIndexOf(' ')
+        if (lastSpace > 0) {
+            return {
+                value: label.slice(0, lastSpace),
+                unit: label.slice(lastSpace + 1),
+            }
+        }
+        return { value: label, unit: '' }
+    }
+
+    const { value, unit } = formatBytes(bytes)
+    return { value, unit }
 }
 
 function formatRamHeroSingle(bytes: number): string {

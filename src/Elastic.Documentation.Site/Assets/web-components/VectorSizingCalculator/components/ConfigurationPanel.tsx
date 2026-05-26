@@ -21,14 +21,13 @@ import {
     EuiComboBox,
     type EuiComboBoxOptionOption,
     EuiFieldNumber,
-    EuiFieldText,
     EuiFormRow,
     EuiLink,
     EuiRange,
     EuiSelect,
     EuiSpacer,
 } from '@elastic/eui'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 const VECTOR_COUNT_PRESET_VALUES = [
     { key: '1k', value: 1_000 },
@@ -72,7 +71,7 @@ const TOOLTIPS = {
     quantization:
         'Compresses vectors to reduce memory. Options depend on element type and index structure.',
     replicas:
-        'Each replica is a full copy of your index. Total copies = 1 primary + replicas.',
+        'Number of replica shards (not including the primary). Total index copies = 1 primary + replica shards.',
     vectorsPerCluster:
         'For DiskBBQ, vectors are grouped into clusters. This value sets how many vectors each cluster holds and affects cluster count and disk use.',
     offHeapRam:
@@ -216,15 +215,6 @@ export function ConfigurationPanel({
     const showVectorsPerCluster = indexType === 'disk_bbq'
     const showQuantizationControl = quantOptions.length > 1
     const [advancedOpen, setAdvancedOpen] = useState(false)
-    const [vectorsPerClusterText, setVectorsPerClusterText] = useState(() =>
-        String(vectorsPerCluster)
-    )
-    const [isVectorsPerClusterEditing, setIsVectorsPerClusterEditing] =
-        useState(false)
-    useEffect(() => {
-        if (isVectorsPerClusterEditing) return
-        setVectorsPerClusterText(String(vectorsPerCluster))
-    }, [vectorsPerCluster, isVectorsPerClusterEditing])
 
     const clampHnswM = (value: number) => {
         if (Number.isNaN(value)) return 2
@@ -238,38 +228,15 @@ export function ConfigurationPanel({
         return Math.abs(value - down) <= Math.abs(up - value) ? down : up
     }
 
+    const clampVectorsPerCluster = (value: number) => {
+        if (Number.isNaN(value)) return 384
+        return Math.min(1_000_000, Math.max(1, Math.round(value)))
+    }
+
     const clampReplicas = (value: number) => {
-        if (Number.isNaN(value)) return 1
-        return Math.min(99, Math.max(1, Math.round(value)))
+        if (Number.isNaN(value)) return 0
+        return Math.min(99, Math.max(0, Math.round(value)))
     }
-
-    const normalizeVectorsPerCluster = (raw: string) => {
-        const trimmed = raw.trim()
-        if (trimmed === '') return 384
-        const n = Number(trimmed.replace(/[^\d]/g, ''))
-        if (Number.isNaN(n)) return 384
-        return Math.max(1, n)
-    }
-
-    const replicasFormRow = (
-        <EuiFormRow
-            fullWidth
-            label={
-                <LabelWithTip tip={TOOLTIPS.replicas}>Replicas</LabelWithTip>
-            }
-        >
-            <EuiFieldNumber
-                fullWidth
-                value={replicas}
-                min={1}
-                max={99}
-                step={1}
-                onChange={(e) =>
-                    onReplicasChange(clampReplicas(Number(e.target.value)))
-                }
-            />
-        </EuiFormRow>
-    )
 
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--left">
@@ -552,30 +519,19 @@ export function ConfigurationPanel({
                                     </LabelWithTip>
                                 }
                             >
-                                <EuiFieldText
-                                    compressed
+                                <EuiFieldNumber
                                     fullWidth
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    value={vectorsPerClusterText}
-                                    onFocus={() =>
-                                        setIsVectorsPerClusterEditing(true)
+                                    value={vectorsPerCluster}
+                                    min={1}
+                                    max={1_000_000}
+                                    step={1}
+                                    onChange={(e) =>
+                                        onVectorsPerClusterChange(
+                                            clampVectorsPerCluster(
+                                                Number(e.target.value)
+                                            )
+                                        )
                                     }
-                                    onChange={(e) => {
-                                        const cleaned = e.target.value.replace(
-                                            /[^\d]/g,
-                                            ''
-                                        )
-                                        setVectorsPerClusterText(cleaned)
-                                    }}
-                                    onBlur={() => {
-                                        const next = normalizeVectorsPerCluster(
-                                            vectorsPerClusterText
-                                        )
-                                        setVectorsPerClusterText(String(next))
-                                        onVectorsPerClusterChange(next)
-                                        setIsVectorsPerClusterEditing(false)
-                                    }}
                                 />
                             </EuiFormRow>
                         </>
@@ -583,37 +539,55 @@ export function ConfigurationPanel({
 
                     <EuiSpacer size="m" />
 
-                    {showQuantizationControl ? (
-                        <div className="vectorSizingCalc__fieldGrid2">
-                            <EuiFormRow
+                    {showQuantizationControl && (
+                        <EuiFormRow
+                            fullWidth
+                            label={
+                                <LabelWithTip tip={TOOLTIPS.quantization}>
+                                    Quantization
+                                </LabelWithTip>
+                            }
+                        >
+                            <EuiSelect
                                 fullWidth
-                                label={
-                                    <LabelWithTip tip={TOOLTIPS.quantization}>
-                                        Quantization
-                                    </LabelWithTip>
+                                options={quantOptions.map((o) => ({
+                                    value: o.value,
+                                    text: o.label,
+                                }))}
+                                value={quantization}
+                                disabled={indexType === 'disk_bbq'}
+                                onChange={(e) =>
+                                    onQuantizationChange(
+                                        e.target.value as Quantization
+                                    )
                                 }
-                            >
-                                <EuiSelect
-                                    fullWidth
-                                    options={quantOptions.map((o) => ({
-                                        value: o.value,
-                                        text: o.label,
-                                    }))}
-                                    value={quantization}
-                                    disabled={indexType === 'disk_bbq'}
-                                    onChange={(e) =>
-                                        onQuantizationChange(
-                                            e.target.value as Quantization
-                                        )
-                                    }
-                                />
-                            </EuiFormRow>
-
-                            {replicasFormRow}
-                        </div>
-                    ) : (
-                        replicasFormRow
+                            />
+                        </EuiFormRow>
                     )}
+
+                    <EuiSpacer size="s" />
+
+                    <EuiFormRow
+                        fullWidth
+                        label={
+                            <LabelWithTip tip={TOOLTIPS.replicas}>
+                                Replica shards
+                            </LabelWithTip>
+                        }
+                    >
+                        <EuiFieldNumber
+                            fullWidth
+                            value={replicas}
+                            min={0}
+                            max={99}
+                            step={1}
+                            onChange={(e) =>
+                                onReplicasChange(
+                                    clampReplicas(Number(e.target.value))
+                                )
+                            }
+                        />
+                    </EuiFormRow>
                 </>
             )}
 
