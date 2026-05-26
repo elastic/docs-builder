@@ -42,7 +42,7 @@ public static class LifecycleDescriptions
 		[(ProductLifecycle.TechnicalPreview, false)] =
 			"We plan to add this functionality in a future {product} update. Subject to changes.",
 
-		// Experimental — PLACEHOLDER pending product/docs review
+		// Experimental
 		[(ProductLifecycle.Experimental, true)] =
 			"This functionality is experimental and is not ready for production usage. Experimental features may change or be removed at any time. Elastic will work to fix any issues, but experimental features are not subject to the support SLA of official GA features. Specific Support terms apply.",
 		[(ProductLifecycle.Experimental, false)] =
