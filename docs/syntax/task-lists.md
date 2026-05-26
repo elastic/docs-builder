@@ -13,7 +13,7 @@ Task lists let you render checkboxes in documentation. Use `- [ ]` for unchecked
 - [x] Set up the project
 - [x] Install dependencies
 - [ ] Write tests
-  - [x] Unit tests
+  - [x] Unit tests with [An Internal Link](#basic-task-list)
   - [ ] Integration tests
 - [ ] Deploy
 
