@@ -2,7 +2,7 @@ import { formatBytesString } from '../calculations'
 import { formatGroupedInteger } from '../formatNumbers'
 import type { SizingResult, ValidationResult } from '../types'
 import { HeroSizeLine } from './HeroSizeLine'
-import { EuiHorizontalRule, EuiLink, EuiSpacer, EuiText } from '@elastic/eui'
+import { EuiHorizontalRule, EuiLink, EuiText } from '@elastic/eui'
 
 interface ResultsPanelProps {
     result: SizingResult | null
