@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text;
 using Elastic.Documentation;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 

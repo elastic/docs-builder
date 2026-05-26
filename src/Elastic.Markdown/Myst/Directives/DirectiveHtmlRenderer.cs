@@ -272,12 +272,19 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Destructive = block.Destructive,
+			DestructiveDescription = block.DestructiveDescription,
 			RequiresConfirmation = block.RequiresConfirmation,
+			RequiresConfirmationDescription = block.RequiresConfirmationDescription,
 			RequiresAuth = block.RequiresAuth,
+			RequiresAuthDescription = block.RequiresAuthDescription,
 			Idempotent = block.Idempotent,
+			IdempotentDescription = block.IdempotentDescription,
 			Scope = block.Scope,
+			ScopeDescription = block.ScopeDescription,
 			Streaming = block.Streaming,
+			StreamingDescription = block.StreamingDescription,
 			LongRunning = block.LongRunning,
+			LongRunningDescription = block.LongRunningDescription,
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -506,6 +513,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			GroupHeadingLevel = block.GroupHeadingLevel,
 			VersionsConfig = block.Build.VersionsConfiguration,
+			ActiveDeploymentFilter = block.ActiveDeploymentFilter,
 			RenderMarkdown = s =>
 			{
 				var normalized = SettingsMarkdownNormalizer.Normalize(s, settings.Product);

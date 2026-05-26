@@ -6,7 +6,6 @@ using System.Globalization;
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation;

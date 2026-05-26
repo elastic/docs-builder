@@ -15,8 +15,8 @@ import { useRef } from 'react'
 interface Props {
     title: string
     logoHref: string
-    githubRepository: string
-    githubLink: string
+    githubRepository?: string
+    githubLink?: string
     gitBranch: string
     gitCommit: string
     /** Full ref from GitHub Actions (e.g. refs/pull/123/merge). */

@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj"/>
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"/>
   </ItemGroup>
 
 </Project>

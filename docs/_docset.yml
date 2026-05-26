@@ -148,6 +148,7 @@ toc:
       - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
+      - file: task-lists.md
       - file: line_breaks.md
       - file: links.md
       - file: list-sub-pages.md

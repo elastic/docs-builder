@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;

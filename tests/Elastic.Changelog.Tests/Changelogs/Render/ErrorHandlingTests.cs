@@ -4,9 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;

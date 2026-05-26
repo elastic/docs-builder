@@ -11,6 +11,6 @@ public static partial class CallOutParser
 	[GeneratedRegex(@"^.+\S+.*?\s<\d+>$", RegexOptions.IgnoreCase, 2000)]
 	public static partial Regex CallOutNumber();
 
-	[GeneratedRegex(@"^.+\S+.*?\s(?:\/\/|#)\s[^""\/#]+$", RegexOptions.IgnoreCase, 2000)]
+	[GeneratedRegex(@"^.+\S+.*?\s(?:\/\/|#)\s[^""#]+$", RegexOptions.IgnoreCase, 2000)]
 	public static partial Regex MathInlineAnnotation();
 }
