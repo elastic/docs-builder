@@ -68,6 +68,30 @@ stack: beta 8.8.0
 </p>
 """
 
+type ``stack experimental future version`` () =
+    static let markdown = Setup.Markdown """
+```{applies_to}
+stack: experimental 9.1.0
+```
+"""
+
+    [<Fact>]
+    let ``parses to AppliesDirective`` () =
+        let directives = markdown |> converts "index.md" |> parses<AppliesToDirective>
+        test <@ directives.Length = 1 @>
+        directives |> appliesToDirective (ApplicableTo(
+            Stack=AppliesCollection.op_Explicit "experimental 9.1.0"
+        ))
+
+    [<Fact>]
+    let ``renders experimental future version as planned`` () =
+        markdown |> convertsToHtml """
+<p class="applies applies-block">
+	<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="experimental" lifecycle-name="Experimental" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="false">
+</applies-to-popover>
+</p>
+"""
+
 type ``stack planned deprecation`` () =
     static let markdown = Setup.Markdown """
 ```{applies_to}
