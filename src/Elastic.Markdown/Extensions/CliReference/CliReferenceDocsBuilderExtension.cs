@@ -15,12 +15,16 @@ namespace Elastic.Markdown.Extensions.CliReference;
 
 internal sealed record CliEntityInfo(
 	CliSchema Schema,
-	object Entity, // CliSchema | CliNamespaceSchema | CliCommandSchema
+	object Entity, // CliSchema | CliNamespaceSchema | CliCommandSchema | CliShortcutSchema
 	IFileInfo? SupplementalDoc,
 	/// <summary>The clean synthetic file (no cmd- prefix) — used as the MarkdownFile source for correct URL generation.</summary>
 	IFileInfo? CleanSyntheticFile = null,
 	/// <summary>Full path segments used to build the page heading (e.g. ["assembler", "bloom-filter"]).</summary>
-	string[]? FullPath = null
+	string[]? FullPath = null,
+	/// <summary>Ancestor namespace options ordered from closest to furthest (direct parent first).</summary>
+	IReadOnlyList<(string Segment, List<CliParamSchema>? Options)>? AncestorNamespaceOptions = null,
+	/// <summary>Relative path from this file to the alias target — set for CliShortcutSchema entities only.</summary>
+	string? AliasCanonicalRelativePath = null
 );
 
 public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilderExtension
@@ -110,8 +114,9 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		info.Entity switch
 		{
 			CliSchema schema => new CliRootFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
-			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc, info.FullPath ?? [ns.Segment], info.Schema.Name, info.Schema.ReservedMetaCommands),
-			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc, info.FullPath ?? [cmd.Name], info.Schema.Name, info.Schema.ReservedMetaCommands),
+			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc, info.FullPath ?? [ns.Segment], info.Schema.Name, info.Schema.ReservedMetaCommands, info.Schema.Shortcuts),
+			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc, info.FullPath ?? [cmd.Name], info.Schema.Name, info.Schema.ReservedMetaCommands, info.AncestorNamespaceOptions, info.Schema.GlobalOptions, info.Schema.Shortcuts),
+			CliShortcutSchema shortcut => new CliAliasFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, shortcut, info.Schema.Name, info.AliasCanonicalRelativePath ?? "../"),
 			_ => null
 		};
 
@@ -203,6 +208,23 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 			// Namespaces (recursive)
 			CollectNamespaceFiles(Build.DocumentationSourceDirectory.FullName, virtualRoot, supplementalDirPath, schema.Namespaces, [], matched, fileInfos, schema);
 
+			// Shortcut alias pages
+			foreach (var shortcut in schema.Shortcuts ?? [])
+			{
+				var aliasPath = SyntheticPath(Build.DocumentationSourceDirectory.FullName, virtualRoot, [shortcut.From], isNamespace: true);
+				if (_syntheticFiles!.ContainsKey(aliasPath))
+				{
+					Build.Collector.EmitError(schemaFileInfo,
+						$"CLI shortcut '{shortcut.From}' conflicts with an existing path; skipping alias.");
+					continue;
+				}
+				var aliasFileInfo = Build.ReadFileSystem.FileInfo.New(aliasPath);
+				var canonicalUrl = "/" + virtualRoot + "/" + string.Join("/", shortcut.To) + "/";
+				var aliasInfo = new CliEntityInfo(schema, shortcut, null, aliasFileInfo, AliasCanonicalRelativePath: canonicalUrl);
+				_syntheticFiles[aliasPath] = aliasInfo;
+				fileInfos.Add(aliasFileInfo);
+			}
+
 			// Validate supplemental files
 			if (supplementalDirPath is not null && Build.ReadFileSystem.Directory.Exists(supplementalDirPath))
 				ValidateSupplementalFiles(supplementalDirPath, matched, cliRef.Context);
@@ -219,7 +241,8 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 		string[] nsPath,
 		HashSet<string> matched,
 		List<IFileInfo> fileInfos,
-		CliSchema schema)
+		CliSchema schema,
+		IReadOnlyList<(string Segment, List<CliParamSchema>? Options)>? ancestorOptions = null)
 	{
 		foreach (var ns in namespaces)
 		{
@@ -234,20 +257,25 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 				_supplementalFiles![nsSupplemental.FullName] = nsInfo;
 			fileInfos.Add(nsFileInfo);
 
-			foreach (var cmd in ns.Commands)
+			// Build ordered ancestor list for commands: direct parent first, then grandparents
+			var cmdAncestors = new List<(string, List<CliParamSchema>?)> { (ns.Segment, ns.Options) };
+			if (ancestorOptions is { Count: > 0 })
+				cmdAncestors.AddRange(ancestorOptions);
+
+			foreach (var cmd in ns.Commands ?? [])
 			{
 				var cmdSegments = fullNsPath.Append(cmd.Name).ToArray();
 				var cmdPath = SyntheticPath(docSourceDir, virtualRoot, cmdSegments, isNamespace: false);
 				var cmdFileInfo = Build.ReadFileSystem.FileInfo.New(cmdPath);
 				var cmdSupplemental = FindSupplemental(supplementalDirPath, cmdSegments, isNamespace: false, matched);
-				var cmdInfo = new CliEntityInfo(schema, cmd, cmdSupplemental, cmdFileInfo, FullPath: cmdSegments);
+				var cmdInfo = new CliEntityInfo(schema, cmd, cmdSupplemental, cmdFileInfo, FullPath: cmdSegments, AncestorNamespaceOptions: cmdAncestors);
 				_syntheticFiles[cmdPath] = cmdInfo;
 				if (cmdSupplemental != null)
 					_supplementalFiles![cmdSupplemental.FullName] = cmdInfo;
 				fileInfos.Add(cmdFileInfo);
 			}
 
-			CollectNamespaceFiles(docSourceDir, virtualRoot, supplementalDirPath, ns.Namespaces, fullNsPath, matched, fileInfos, schema);
+			CollectNamespaceFiles(docSourceDir, virtualRoot, supplementalDirPath, ns.Namespaces ?? [], fullNsPath, matched, fileInfos, schema, cmdAncestors);
 		}
 	}
 

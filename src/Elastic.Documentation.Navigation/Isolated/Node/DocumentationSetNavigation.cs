@@ -484,7 +484,14 @@ public class DocumentationSetNavigation<TModel>
 				children.Add(childNav);
 		}
 
-		// All root commands + namespaces from the schema always follow
+		// Shortcut alias pages first, then commands and namespaces
+		foreach (var shortcut in schema.Shortcuts ?? [])
+		{
+			var aliasNav = MakeFileLeaf(docSourceDir, virtualRoot, [shortcut.From], isNamespace: true, childIndex++, folderNavigation, homeAccessor, context);
+			if (aliasNav is not null)
+				children.Add(aliasNav);
+		}
+
 		foreach (var cmd in schema.Commands)
 		{
 			var cmdNav = MakeFileLeaf(docSourceDir, virtualRoot, [cmd.Name], isNamespace: false, childIndex++, folderNavigation, homeAccessor, context);
@@ -532,7 +539,7 @@ public class DocumentationSetNavigation<TModel>
 			children.Add(nsIndexNav);
 
 		// Namespace commands
-		foreach (var cmd in ns.Commands)
+		foreach (var cmd in ns.Commands ?? [])
 		{
 			var cmdSegments = segments.Append(cmd.Name).ToArray();
 			var cmdNav = MakeFileLeaf(docSourceDir, virtualRoot, cmdSegments, isNamespace: false, childIndex++, nsFolderNav, homeAccessor, context);
@@ -541,7 +548,7 @@ public class DocumentationSetNavigation<TModel>
 		}
 
 		// Sub-namespaces
-		foreach (var subNs in ns.Namespaces)
+		foreach (var subNs in ns.Namespaces ?? [])
 		{
 			var subSegments = segments.Append(subNs.Segment).ToArray();
 			var subNav = BuildNamespaceNavigation(docSourceDir, virtualRoot, subNs, subSegments, childIndex++, nsFolderNav, homeAccessor, context);

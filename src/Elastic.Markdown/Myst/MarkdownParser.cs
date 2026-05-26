@@ -183,6 +183,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseComments()
 				.UseYamlFrontMatter()
 				.UsePipeTables()
+				.UseTaskLists()
 				.UseDirectives()
 				.UseDefinitionLists()
 				.UseDefinitionTermAnchors()

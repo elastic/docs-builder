@@ -5,30 +5,17 @@
 using System.Net;
 using System.Text;
 using AwesomeAssertions;
-using Elastic.Documentation.Api.IntegrationTests.Fixtures;
 using Elastic.Documentation.Api.Telemetry;
+using Elastic.Documentation.Api.Tests.Fixtures;
 using FakeItEasy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Elastic.Documentation.Api.IntegrationTests;
+namespace Elastic.Documentation.Api.Tests;
 
-public class OtlpProxyIntegrationTests : IAsyncLifetime
+public class OtlpProxyTests
 {
 	private const string OtlpEndpoint = "http://localhost:4318";
-
-	public ValueTask InitializeAsync()
-	{
-		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", OtlpEndpoint);
-		return ValueTask.CompletedTask;
-	}
-
-	public ValueTask DisposeAsync()
-	{
-		GC.SuppressFinalize(this);
-		Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", null);
-		return ValueTask.CompletedTask;
-	}
 
 	[Fact]
 	public async Task OtlpProxyTracesEndpointForwardsToCorrectUrl()
@@ -54,7 +41,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 			// Replace the named HttpClient with our mock
 			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -118,7 +105,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 		{
 			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -175,7 +162,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 		{
 			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
-		});
+		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
 		var otlpPayload = /*lang=json,strict*/ """
@@ -229,7 +216,7 @@ public class OtlpProxyIntegrationTests : IAsyncLifetime
 				.ConfigurePrimaryHttpMessageHandler(() => mockHandler)
 				.RemoveAllResilienceHandlers();
 #pragma warning restore EXTEXP0001
-		});
+		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
 		using var content = new StringContent("{}", Encoding.UTF8, "application/json");

@@ -13,7 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace Elastic.Documentation.Api.IntegrationTests;
+namespace Elastic.Documentation.Api.Tests;
 
 /// <summary>
 /// Unit tests for AskAI gateway implementations that verify streaming behavior.

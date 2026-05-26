@@ -23,7 +23,6 @@ V3 supports some GitHub Flavored Markdown extensions:
 - Strikethrough with `~~text~~` (renders as ~~text~~)
 
 **Not supported:**
-- Task lists
 - Automatic URL linking: https://www.elastic.co
   - Links must use standard Markdown syntax: [Elastic](https://www.elastic.co)
 - Using a subset of HTML

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.IO.Abstractions;
 
 namespace Elastic.Documentation.Diagnostics;
@@ -21,6 +20,12 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public int Hints => _hints;
 
 	private Task? _started;
+	// True once the background reader delegate has actually begun executing.
+	// _started becoming non-null is not enough: Task.Run short-circuits to a
+	// canceled Task when given an already-canceled token, and the delegate
+	// never runs. StopAsync uses this to decide whether awaiting _started is
+	// meaningful or whether the channel is guaranteed to have no drainer.
+	private volatile bool _readerStarted;
 
 	public HashSet<string> OffendingFiles { get; } = [];
 
@@ -29,6 +34,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public ConcurrentBag<string> CrossLinks { get; } = [];
 
 	public bool NoHints { get; set; }
+
+	public bool IsStarted => _readerStarted;
 
 	public virtual DiagnosticsCollector StartAsync(Cancel ctx)
 	{
@@ -45,6 +52,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		_started = Task.Run(async () =>
 		{
 			_ = await Channel.WaitToWrite(cancellationToken);
+			_readerStarted = true;
 			while (!Channel.CancellationToken.IsCancellationRequested)
 			{
 				try
@@ -61,18 +69,18 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			Drain();
 		}, cancellationToken);
 		return _started;
+	}
 
-		void Drain()
+	private void Drain()
+	{
+		while (Channel.Reader.TryRead(out var item))
 		{
-			while (Channel.Reader.TryRead(out var item))
-			{
-				if (item.Severity == Severity.Hint && NoHints)
-					continue;
-				HandleItem(item);
-				_ = OffendingFiles.Add(item.File);
-				foreach (var output in outputs)
-					output.Write(item);
-			}
+			if (item.Severity == Severity.Hint && NoHints)
+				continue;
+			HandleItem(item);
+			_ = OffendingFiles.Add(item.File);
+			foreach (var output in outputs)
+				output.Write(item);
 		}
 	}
 
@@ -91,9 +99,24 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
 		Channel.TryComplete();
-		if (_started is not null)
+		// StartAsync was never called. Items may sit in the channel but
+		// nobody is coming to drain them — awaiting Channel.Reader.Completion
+		// here would deadlock. Returning is the correct behaviour for
+		// fire-and-forget collectors (the channel dies with the instance).
+		if (_started is null)
+			return;
+
+		try
+		{
 			await _started;
-		await Channel.Reader.Completion;
+		}
+		catch (OperationCanceledException)
+		{
+			// Reader was canceled before its final Drain(); mop up below.
+		}
+		// Defensive: if the reader exited early via cancellation, items may
+		// still be queued. Drain them synchronously so they're not lost.
+		Drain();
 	}
 
 	public void EmitCrossLink(string link) => CrossLinks.Add(link);
