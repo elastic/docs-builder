@@ -77,6 +77,8 @@ const TOOLTIPS = {
         'For DiskBBQ, vectors are grouped into clusters. This value sets how many vectors each cluster holds and affects cluster count and disk use.',
     offHeapRam:
         'Share of quantized vectors kept in off-heap RAM. Lower values save memory; higher values improve query throughput and latency (centroids are always fully in RAM).',
+    hnswIndexStructure: 'RAM estimates include the HNSW graph.',
+    diskBbqIndexStructure: 'RAM estimates reflect off-heap cache.',
 }
 
 function presetKeyForVectorsText(vectorsText: string): string {
@@ -388,6 +390,33 @@ export function ConfigurationPanel({
                         />
                     </EuiFormRow>
 
+                    <EuiSpacer size="s" />
+
+                    <EuiFormRow
+                        fullWidth
+                        label={
+                            <LabelWithTip tip={TOOLTIPS.indexStructure}>
+                                Index structure
+                            </LabelWithTip>
+                        }
+                        helpText={
+                            indexType === 'hnsw'
+                                ? TOOLTIPS.hnswIndexStructure
+                                : indexType === 'disk_bbq'
+                                  ? TOOLTIPS.diskBbqIndexStructure
+                                  : undefined
+                        }
+                    >
+                        <EuiSelect
+                            fullWidth
+                            options={indexTypeOptions}
+                            value={indexType}
+                            onChange={(e) =>
+                                onIndexTypeChange(e.target.value as IndexType)
+                            }
+                        />
+                    </EuiFormRow>
+
                     {showOffHeapRamSlider && (
                         <>
                             <EuiSpacer size="s" />
@@ -452,26 +481,6 @@ export function ConfigurationPanel({
                             </div>
                         </>
                     )}
-
-                    <EuiSpacer size="s" />
-
-                    <EuiFormRow
-                        fullWidth
-                        label={
-                            <LabelWithTip tip={TOOLTIPS.indexStructure}>
-                                Index structure
-                            </LabelWithTip>
-                        }
-                    >
-                        <EuiSelect
-                            fullWidth
-                            options={indexTypeOptions}
-                            value={indexType}
-                            onChange={(e) =>
-                                onIndexTypeChange(e.target.value as IndexType)
-                            }
-                        />
-                    </EuiFormRow>
 
                     {showHnswSlider && (
                         <>
