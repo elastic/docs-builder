@@ -413,7 +413,7 @@ groups:
       - setting: i18n.defaultLocale
         description: Locale setting planned for a future stack version.
         applies_to:
-          stack: ga 9.5
+          stack: ga 99.99
           ech: ga
           self: ga
 """);
