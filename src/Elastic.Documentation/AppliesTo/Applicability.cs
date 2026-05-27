@@ -208,6 +208,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 		var lifecycle = Lifecycle switch
 		{
 			ProductLifecycle.TechnicalPreview => "preview",
+			ProductLifecycle.Experimental => "experimental",
 			ProductLifecycle.Beta => "beta",
 			ProductLifecycle.Development => "dev",
 			ProductLifecycle.Deprecated => "deprecated",
@@ -256,6 +257,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 		{
 			"preview" => ProductLifecycle.TechnicalPreview,
 			"tech-preview" => ProductLifecycle.TechnicalPreview,
+			"experimental" => ProductLifecycle.Experimental,
 			"beta" => ProductLifecycle.Beta,
 			"ga" => ProductLifecycle.GenerallyAvailable,
 			"deprecated" => ProductLifecycle.Deprecated,
@@ -272,7 +274,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 		};
 		if (lifecycle is null)
 		{
-			diagnostics.Add((Severity.Error, $"Unknown product lifecycle: '{tokens[0]}'. Valid lifecycles are: ga, preview, tech-preview, beta, deprecated, removed."));
+			diagnostics.Add((Severity.Error, $"Unknown product lifecycle: '{tokens[0]}'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed."));
 			availability = null;
 			return false;
 		}

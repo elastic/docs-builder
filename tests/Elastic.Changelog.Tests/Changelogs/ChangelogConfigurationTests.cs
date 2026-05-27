@@ -139,6 +139,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Lifecycles.Should().Contain(Lifecycle.Preview);
 			config.Lifecycles.Should().Contain(Lifecycle.Beta);
 			config.Lifecycles.Should().Contain(Lifecycle.Ga);
+			config.Lifecycles.Should().Contain(Lifecycle.Experimental);
 		}
 		finally
 		{

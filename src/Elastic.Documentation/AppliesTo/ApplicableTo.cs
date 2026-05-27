@@ -135,6 +135,7 @@ public record ApplicableTo
 	private static string LifecycleName(ProductLifecycle lc) => lc switch
 	{
 		ProductLifecycle.TechnicalPreview => "preview",
+		ProductLifecycle.Experimental => "experimental",
 		ProductLifecycle.Beta => "beta",
 		ProductLifecycle.GenerallyAvailable => "ga",
 		ProductLifecycle.Deprecated => "deprecated",

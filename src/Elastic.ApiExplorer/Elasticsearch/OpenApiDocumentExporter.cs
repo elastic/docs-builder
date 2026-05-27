@@ -298,6 +298,8 @@ public partial class OpenApiDocumentExporter(
 			return ProductLifecycle.GenerallyAvailable;
 		if (lower.Contains("beta"))
 			return ProductLifecycle.Beta;
+		if (lower.Contains("experimental"))
+			return ProductLifecycle.Experimental;
 		if (lower.Contains("tech") && lower.Contains("preview"))
 			return ProductLifecycle.TechnicalPreview;
 		if (lower.Contains("deprecated"))
