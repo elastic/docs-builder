@@ -496,7 +496,7 @@ groups:
       - setting: xpack.sample.mixed
         description: GA since 7.0, scheduled for deprecation in 9.0.
         applies_to:
-          stack: ga 7.0, deprecated 9.0
+          stack: ga 7.0, deprecated 99.0
           ech: ga
           self: ga
 """);
