@@ -1409,15 +1409,23 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="prNumber">Pull request number</param>
 	/// <param name="headRef">PR head branch ref</param>
 	/// <param name="headSha">PR head commit SHA</param>
-	/// <param name="isFork">Whether the PR is from a fork</param>
-	/// <param name="canCommit">Whether the commit strategy allows committing</param>
-	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits</param>
+	/// <param name="isFork">Whether the PR is from a fork (pass --is-fork / --no-is-fork; omit to leave null which is treated as false)</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing (pass --can-commit / --no-can-commit; omit to leave null which is treated as false)</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits (pass --maintainer-can-modify / --no-maintainer-can-modify; omit to leave null which is treated as false)</param>
 	/// <param name="headRepo">Fork repository full name (owner/repo)</param>
 	/// <param name="labelTable">Optional: markdown label table from evaluate-pr</param>
 	/// <param name="productLabelTable">Optional: markdown product label table from evaluate-pr</param>
 	/// <param name="skipLabels">Optional: comma-separated skip labels from evaluate-pr</param>
 	/// <param name="config">Optional: path to changelog.yml</param>
 	/// <param name="existingChangelogFilename">Optional: filename of a previously committed changelog for this PR</param>
+	// `isFork`, `canCommit`, `maintainerCanModify` are declared as `bool?` so the
+	// generated CLI emits both `--flag` and `--no-flag` pairs (Argh convention).
+	// A plain `bool` parameter would expose presence-only switches: `--can-commit
+	// "false"` would set `canCommit = true` (the flag is present) and silently
+	// discard the literal "false" as a stray positional. Callers that pass a
+	// dynamic value (`--can-commit "$VAR"`) would then misroute fork PRs into the
+	// commit-and-push branch and die on a detached-HEAD push. See
+	// elastic/docs-actions#172 for the workflow-side fix.
 	[NoOptionsInjection]
 	public async Task<int> PrepareArtifact(
 		string stagingDir,
@@ -1427,9 +1435,9 @@ internal sealed partial class ChangelogCommands(
 		int prNumber,
 		string headRef,
 		string headSha,
-		bool isFork = false,
-		bool canCommit = false,
-		bool maintainerCanModify = false,
+		bool? isFork = null,
+		bool? canCommit = null,
+		bool? maintainerCanModify = null,
 		string? headRepo = null,
 		string? labelTable = null,
 		string? productLabelTable = null,
