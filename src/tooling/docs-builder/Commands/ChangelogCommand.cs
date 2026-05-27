@@ -1401,6 +1401,17 @@ internal sealed partial class ChangelogCommands(
 	/// <remarks>
 	/// Resolves final status from evaluate-pr + changelog add outcomes, copies generated YAML,
 	/// writes metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.
+	///
+	/// <para>
+	/// The <c>isFork</c>, <c>canCommit</c> and <c>maintainerCanModify</c> parameters are declared
+	/// as <c>bool?</c> so the generated CLI emits both <c>--flag</c> and <c>--no-flag</c> pairs
+	/// (Argh convention). A plain <c>bool</c> would expose presence-only switches: passing
+	/// <c>--can-commit "false"</c> would set <c>canCommit = true</c> (the flag is present) and
+	/// silently discard the literal <c>"false"</c> as a stray positional. Callers that forward a
+	/// dynamic value (<c>--can-commit "$VAR"</c>) would then misroute fork PRs into the
+	/// commit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172
+	/// for the workflow-side fix.
+	/// </para>
 	/// </remarks>
 	/// <param name="stagingDir">Directory where changelog add wrote the generated YAML</param>
 	/// <param name="outputDir">Directory to write the artifact (metadata.json + YAML)</param>
@@ -1418,14 +1429,6 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="skipLabels">Optional: comma-separated skip labels from evaluate-pr</param>
 	/// <param name="config">Optional: path to changelog.yml</param>
 	/// <param name="existingChangelogFilename">Optional: filename of a previously committed changelog for this PR</param>
-	// `isFork`, `canCommit`, `maintainerCanModify` are declared as `bool?` so the
-	// generated CLI emits both `--flag` and `--no-flag` pairs (Argh convention).
-	// A plain `bool` parameter would expose presence-only switches: `--can-commit
-	// "false"` would set `canCommit = true` (the flag is present) and silently
-	// discard the literal "false" as a stray positional. Callers that pass a
-	// dynamic value (`--can-commit "$VAR"`) would then misroute fork PRs into the
-	// commit-and-push branch and die on a detached-HEAD push. See
-	// elastic/docs-actions#172 for the workflow-side fix.
 	[NoOptionsInjection]
 	public async Task<int> PrepareArtifact(
 		string stagingDir,
