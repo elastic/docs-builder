@@ -330,9 +330,10 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 		"""));
 
 	[Fact]
-	public void HandlesEmptyBundle()
+	public void OmitsEmptyVersionBlock()
 	{
-		Html.Should().Contain("No new features, enhancements, or fixes");
+		Html.Should().NotContain("No new features, enhancements, or fixes");
+		Html.Should().NotContain("9.3.0");
 	}
 }
 
