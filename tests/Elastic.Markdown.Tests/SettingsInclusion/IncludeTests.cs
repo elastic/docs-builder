@@ -86,7 +86,7 @@ groups:
         datatype: object
         default: "[]"
         applies_to:
-          stack: ga 9.2
+          stack: ga 7.0
         options:
           - option: strict
             description: Strict mode.
@@ -386,5 +386,127 @@ groups:
 		Html.Should().Contain("applies-to-popover");
 		Html.Should().NotContain("Applies to (stack: ga 9.2)");
 		Html.Should().NotContain("Applies to (stack: ga 9.1)");
+	}
+}
+
+/// <summary>
+/// Reproduces the "Internationalization settings in Kibana" confusion: a setting whose
+/// stack badge renders as "Planned" (because every stack entry targets a future version)
+/// should not advertise itself as already supported on ECH or Self-managed.
+/// The test stack current is 8.0.0 (see <see cref="TestHelpers.CreateConfigurationContext"/>),
+/// so <c>stack: ga 9.5</c> is unreleased.
+/// </summary>
+public class HidesSupportedOnLineWhenStackIsFullyPlanned(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/stack-fully-planned.yml
+::::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/stack-fully-planned.yml", """
+groups:
+  - group: Example
+    settings:
+      - setting: i18n.defaultLocale
+        description: Locale setting planned for a future stack version.
+        applies_to:
+          stack: ga 99.99
+          ech: ga
+          self: ga
+""");
+	}
+
+	[Fact]
+	public void RendersPlannedStackBadge() =>
+		Html.Should().Contain("badge-key=\"Stack\"").And.Contain("Planned");
+
+	[Fact]
+	public void DoesNotRenderSupportedOnLine()
+	{
+		Html.Should().NotContain("settings-supported-on");
+		Html.Should().NotContain("Supported on:");
+	}
+
+	[Fact]
+	public void DoesNotRenderEchOrSelfManagedBadges()
+	{
+		Html.Should().NotContain("badge-key=\"ECH\"");
+		Html.Should().NotContain("badge-key=\"Self-managed\"");
+	}
+}
+
+/// <summary>
+/// A setting whose stack is released today (<c>stack: ga 7.0</c> with test current 8.0.0)
+/// must continue to render the "Supported on" line with ECH and Self-managed badges.
+/// </summary>
+public class KeepsSupportedOnLineWhenStackIsReleased(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/stack-released.yml
+::::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/stack-released.yml", """
+groups:
+  - group: Example
+    settings:
+      - setting: xpack.sample.released
+        description: A setting that has been GA since 7.0.
+        applies_to:
+          stack: ga 7.0
+          ech: ga
+          self: ga
+""");
+	}
+
+	[Fact]
+	public void RendersSupportedOnLineWithBothBadges()
+	{
+		Html.Should().Contain("settings-supported-on");
+		Html.Should().Contain("badge-key=\"ECH\"");
+		Html.Should().Contain("badge-key=\"Self-managed\"");
+	}
+}
+
+/// <summary>
+/// A setting whose stack collection mixes past and future versions
+/// (e.g. <c>stack: ga 7.0, deprecated 9.0</c>) is still usable today,
+/// so the "Supported on" line must remain visible.
+/// </summary>
+public class KeepsSupportedOnLineWhenStackHasMixedReleaseAndFutureVersions(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
+"""
+:::{settings} _settings/stack-mixed-versions.yml
+::::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile("docs/_settings/stack-mixed-versions.yml", """
+groups:
+  - group: Example
+    settings:
+      - setting: xpack.sample.mixed
+        description: GA since an existing version, scheduled for deprecation in a future version.
+        applies_to:
+          stack: ga 7.0, deprecated 99.0
+          ech: ga
+          self: ga
+""");
+	}
+
+	[Fact]
+	public void RendersSupportedOnLine()
+	{
+		Html.Should().Contain("settings-supported-on");
+		Html.Should().Contain("badge-key=\"ECH\"");
+		Html.Should().Contain("badge-key=\"Self-managed\"");
 	}
 }
