@@ -397,6 +397,7 @@ public static class ApplicabilityRenderer
 				badgeText = applicability.Lifecycle switch
 				{
 					ProductLifecycle.TechnicalPreview => "Planned",
+					ProductLifecycle.Experimental => "Planned",
 					ProductLifecycle.Beta => "Planned",
 					ProductLifecycle.GenerallyAvailable => "Planned",
 					ProductLifecycle.Deprecated => "Deprecation planned",
