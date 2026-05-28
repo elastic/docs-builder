@@ -3394,7 +3394,7 @@
           ],
           "name": "prepare-artifact",
           "summary": "(CI) Package changelog artifact for cross-workflow transfer.",
-          "notes": "Resolves final status from evaluate-pr \u002B changelog add outcomes, copies generated YAML,\nwrites metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.",
+          "notes": "Resolves final status from evaluate-pr \u002B changelog add outcomes, copies generated YAML,\nwrites metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.\n\n\nThe isFork, canCommit and maintainerCanModify parameters are declared\nas bool? so the generated CLI emits both --flag and --no-flag pairs\n(Argh convention). A plain bool would expose presence-only switches: passing\n--can-commit \u0022false\u0022 would set canCommit = true (the flag is present) and\nsilently discard the literal \u0022false\u0022 as a stray positional. Callers that forward a\ndynamic value (--can-commit \u0022$VAR\u0022) would then misroute fork PRs into the\ncommit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172\nfor the workflow-side fix.",
           "usage": "docs-builder changelog prepare-artifact --staging-dir \u003Cstring\u003E --output-dir \u003Cstring\u003E --evaluate-status \u003Cstring\u003E --generate-outcome \u003Cstring\u003E --pr-number \u003Cint\u003E --head-ref \u003Cstring\u003E --head-sha \u003Cstring\u003E [options]",
           "examples": [],
           "parameters": [
@@ -3452,24 +3452,24 @@
               "name": "is-fork",
               "type": "boolean",
               "required": false,
-              "summary": "Whether the PR is from a fork",
-              "defaultValue": "false"
+              "summary": "Whether the PR is from a fork (pass --is-fork / --no-is-fork; omit to leave null which is treated as false)",
+              "defaultValue": "default"
             },
             {
               "role": "flag",
               "name": "can-commit",
               "type": "boolean",
               "required": false,
-              "summary": "Whether the commit strategy allows committing",
-              "defaultValue": "false"
+              "summary": "Whether the commit strategy allows committing (pass --can-commit / --no-can-commit; omit to leave null which is treated as false)",
+              "defaultValue": "default"
             },
             {
               "role": "flag",
               "name": "maintainer-can-modify",
               "type": "boolean",
               "required": false,
-              "summary": "Whether the fork PR allows maintainer edits",
-              "defaultValue": "false"
+              "summary": "Whether the fork PR allows maintainer edits (pass --maintainer-can-modify / --no-maintainer-can-modify; omit to leave null which is treated as false)",
+              "defaultValue": "default"
             },
             {
               "role": "flag",
