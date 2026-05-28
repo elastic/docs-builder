@@ -79,16 +79,20 @@ public class ChangelogPrepareArtifactService(
 		var changelogDir = config?.Bundle?.Directory ?? "docs/changelog";
 
 		var statusString = status.ToStringFast(true);
+		// Null-coalesce the nullable bool inputs into the metadata's concrete
+		// `bool` fields. Treating "unspecified" as `false` keeps downstream
+		// consumers (apply step) failing closed: an unrecognised or omitted
+		// CLI flag never grants commit permission.
 		var metadata = new ChangelogArtifactMetadata
 		{
 			PrNumber = input.PrNumber,
 			HeadRef = input.HeadRef,
 			HeadSha = input.HeadSha,
 			Status = statusString,
-			IsFork = input.IsFork,
+			IsFork = input.IsFork ?? false,
 			HeadRepo = input.HeadRepo,
-			CanCommit = input.CanCommit,
-			MaintainerCanModify = input.MaintainerCanModify,
+			CanCommit = input.CanCommit ?? false,
+			MaintainerCanModify = input.MaintainerCanModify ?? false,
 			LabelTable = input.LabelTable,
 			ProductLabelTable = input.ProductLabelTable,
 			SkipLabels = input.SkipLabels,

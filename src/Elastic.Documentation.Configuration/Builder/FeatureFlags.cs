@@ -38,6 +38,14 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["staging-elastic-nav"] = value;
 	}
 
+	public bool WebsiteSearchEnabled
+	{
+		get => IsEnabled("website-search");
+		set => _featureFlags["website-search"] = value;
+	}
+
+	public string? WebsiteSearchScriptUrl { get; set; }
+
 	public bool AirGappedEnabled
 	{
 		get => IsEnabled("air-gapped");

@@ -31,4 +31,7 @@ public record PublishEnvironment
 
 	[YamlMember(Alias = "feature_flags")]
 	public Dictionary<string, bool> FeatureFlags { get; set; } = [];
+
+	[YamlMember(Alias = "website_search_url")]
+	public string? WebsiteSearchScriptUrl { get; set; }
 }
