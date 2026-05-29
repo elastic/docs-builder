@@ -73,7 +73,7 @@ versioning_systems:
   # EDOTs
   edot-collector:
     base: 9.0
-    current: 9.4.1
+    current: 9.4.2
   edot-ios:
     base: 1.0
     current: 2.0.1
@@ -103,7 +103,7 @@ versioning_systems:
     current: 1.6.0
   edot-cf-azure:
     base: 0.7.1
-    current: 0.8.0
+    current: 0.8.1
   edot-cf-gcp:
     base: 0.1
     current: 0.1.3
