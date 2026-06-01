@@ -211,11 +211,12 @@ Specifies the allowed lifecycle values for your changelogs.
 :::{table}
 :widths: description
 
-| Value     | Description                       |
-| --------- | --------------------------------- |
-| `preview` | Technical preview or early access |
-| `beta`    | Beta release                      |
-| `ga`      | General availability              |
+| Value          | Description                       |
+| -------------- | --------------------------------- |
+| `preview`      | Tech previews are time-boxed evaluations to help us gather early feedback from customers on key upcoming features. |
+| `beta`         | Beta features are no longer supported but some products might have beta releases. |
+| `ga`           | General availability features are stable, scalable, and production-ready. |
+| `experimental` | The experimental phase exists to enable rapid iteration on new features. |
 
 :::
 
