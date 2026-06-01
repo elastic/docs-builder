@@ -4,6 +4,7 @@
 
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
 

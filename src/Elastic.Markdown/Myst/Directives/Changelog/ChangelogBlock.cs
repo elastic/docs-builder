@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Versions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 
@@ -146,14 +147,14 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// Links to these repositories will be hidden (commented out) in the rendered output.
 	/// Auto-detected from assembler configuration when available.
 	/// </summary>
-	public HashSet<string> PrivateRepositories { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+	public HashSet<string> PrivateRepositories { get; private set; } = [with(StringComparer.OrdinalIgnoreCase)];
 
 	/// <summary>
 	/// Feature IDs that should be hidden when rendering changelog entries.
 	/// Combined from all loaded bundles' hide-features fields.
 	/// Entries with matching feature-id values will be excluded from the output.
 	/// </summary>
-	public HashSet<string> HideFeatures { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+	public HashSet<string> HideFeatures { get; private set; } = [with(StringComparer.OrdinalIgnoreCase)];
 
 	/// <summary>
 	/// How to handle PR/issue links relative to private bundle repos (see :link-visibility: option).
@@ -464,51 +465,46 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private IEnumerable<string> ComputeGeneratedAnchors()
 	{
+		var dedicatedPage = ChangelogInlineRenderer.IsDedicatedSeparatedTypePage(TypeFilter);
+
 		foreach (var bundle in LoadedBundles)
 		{
+			if (!BundleContributesToNavigation(bundle))
+				continue;
+
 			var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 			var anchorSlug = titleSlug.Slugify();
 			var repo = bundle.Repo;
-
-			// Group filtered entries by type to determine which sections will exist
 			var entriesByType = GetFilteredEntryCounts(bundle);
-
-			// Apply type filter to determine which sections to include
 			var shouldInclude = CreateTypeFilterPredicate();
 
-			// Critical sections
-			if (shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
 				yield return $"{repo}-{anchorSlug}-breaking-changes";
 
-			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
 				yield return $"{repo}-{anchorSlug}-security";
 
-			if (shouldInclude(ChangelogEntryType.KnownIssue) && entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.KnownIssue) && entriesByType.ContainsKey(ChangelogEntryType.KnownIssue))
 				yield return $"{repo}-{anchorSlug}-known-issues";
 
-			if (shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Deprecation) && entriesByType.ContainsKey(ChangelogEntryType.Deprecation))
 				yield return $"{repo}-{anchorSlug}-deprecations";
 
-			// Features and enhancements section
-			if (shouldInclude(ChangelogEntryType.Feature) &&
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Feature) &&
 				(entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
 				 entriesByType.ContainsKey(ChangelogEntryType.Enhancement)))
 				yield return $"{repo}-{anchorSlug}-features-enhancements";
 
-			// Fixes section (bug fixes only, security is separate)
-			if (shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
 				yield return $"{repo}-{anchorSlug}-fixes";
 
-			// Documentation section
-			if (shouldInclude(ChangelogEntryType.Docs) && entriesByType.ContainsKey(ChangelogEntryType.Docs))
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Docs) && entriesByType.ContainsKey(ChangelogEntryType.Docs))
 				yield return $"{repo}-{anchorSlug}-docs";
 
-			// Regressions section
-			if (shouldInclude(ChangelogEntryType.Regression) && entriesByType.ContainsKey(ChangelogEntryType.Regression))
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Regression) && entriesByType.ContainsKey(ChangelogEntryType.Regression))
 				yield return $"{repo}-{anchorSlug}-regressions";
 
-			// Other changes section
-			if (shouldInclude(ChangelogEntryType.Other) && entriesByType.ContainsKey(ChangelogEntryType.Other))
+			if (!dedicatedPage && shouldInclude(ChangelogEntryType.Other) && entriesByType.ContainsKey(ChangelogEntryType.Other))
 				yield return $"{repo}-{anchorSlug}-other";
 		}
 	}
@@ -527,40 +523,32 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		};
 
 	/// <summary>
-	/// Returns entry counts by type after applying publish blocker and hide-features filters.
+	/// Returns entry counts by type after applying publish blocker, hide-features, and type filters.
 	/// This ensures the TOC and generated anchors match what the renderer actually outputs.
 	/// </summary>
-	private Dictionary<ChangelogEntryType, int> GetFilteredEntryCounts(LoadedBundle bundle)
-	{
-		IEnumerable<ChangelogEntry> entries = bundle.Entries;
-
-		// Filter by publish blocker
-		if (PublishBlocker is { HasBlockingRules: true })
-			entries = entries.Where(e => !PublishBlocker.ShouldBlock(e));
-
-		// Filter by hide-features
-		if (HideFeatures.Count > 0)
-			entries = entries.Where(e => string.IsNullOrWhiteSpace(e.FeatureId) || !HideFeatures.Contains(e.FeatureId));
-
-		return entries
+	private Dictionary<ChangelogEntryType, int> GetFilteredEntryCounts(LoadedBundle bundle) =>
+		ChangelogInlineRenderer.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
 			.GroupBy(e => e.Type)
 			.ToDictionary(g => g.Key, g => g.Count());
-	}
+
+	private bool BundleContributesToNavigation(LoadedBundle bundle) =>
+		ChangelogInlineRenderer.BundleHasRenderableEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
+		|| ChangelogInlineRenderer.ShouldRenderEmptyBundleMetadata(TypeFilter, bundle.Data?.Description);
 
 	private IEnumerable<PageTocItem> ComputeTableOfContent()
 	{
+		var dedicatedPage = ChangelogInlineRenderer.IsDedicatedSeparatedTypePage(TypeFilter);
+
 		foreach (var bundle in LoadedBundles)
 		{
+			if (!BundleContributesToNavigation(bundle))
+				continue;
+
 			var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
-			// Slugify the title slug to match what SectionedHeadingRenderer produces from explicit anchors.
-			// e.g. "9.3.0" -> "9-3-0", "2025-11" -> "2025-11"
 			var anchorSlug = titleSlug.Slugify();
 			var repo = bundle.Repo;
 			var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
 
-			// Version header: slug must match what SectionedHeadingRenderer auto-derives from
-			// the display text (since there is no explicit anchor on the version heading).
-			// e.g. "November 2025" -> "november-2025", "9.3.0" -> "9-3-0"
 			yield return new PageTocItem
 			{
 				Heading = displayVersion,
@@ -568,13 +556,12 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				Level = 2
 			};
 
-			// Group filtered entries by type to determine which sections will exist
-			var entriesByType = GetFilteredEntryCounts(bundle);
+			if (dedicatedPage || TypeFilter == ChangelogTypeFilter.Highlight)
+				continue;
 
-			// Apply type filter to determine which sections to include
+			var entriesByType = GetFilteredEntryCounts(bundle);
 			var shouldInclude = CreateTypeFilterPredicate();
 
-			// Critical sections first (new ordering) - all at h3 level (children of version)
 			if (shouldInclude(ChangelogEntryType.BreakingChange) && entriesByType.ContainsKey(ChangelogEntryType.BreakingChange))
 				yield return new PageTocItem
 				{
@@ -583,8 +570,8 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			// Check for highlights (any entry with highlight == true) - only show in :type: all
-			var hasHighlights = bundle.Entries.Any(e => e.Highlight == true);
+			var hasHighlights = ChangelogInlineRenderer.GetFilteredEntries(bundle, PublishBlocker, HideFeatures, TypeFilter)
+				.Any(e => e.Highlight == true);
 			if (hasHighlights && TypeFilter == ChangelogTypeFilter.All)
 				yield return new PageTocItem
 				{
@@ -592,10 +579,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Slug = $"{repo}-{anchorSlug}-highlights",
 					Level = 3
 				};
-
-			// When filtering by highlight, skip all other type-based sections
-			if (TypeFilter == ChangelogTypeFilter.Highlight)
-				continue;
 
 			if (shouldInclude(ChangelogEntryType.Security) && entriesByType.ContainsKey(ChangelogEntryType.Security))
 				yield return new PageTocItem
@@ -621,7 +604,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			// Features and enhancements section
 			if (shouldInclude(ChangelogEntryType.Feature) &&
 				(entriesByType.ContainsKey(ChangelogEntryType.Feature) ||
 				 entriesByType.ContainsKey(ChangelogEntryType.Enhancement)))
@@ -632,7 +614,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			// Fixes section (bug fixes only, security is separate)
 			if (shouldInclude(ChangelogEntryType.BugFix) && entriesByType.ContainsKey(ChangelogEntryType.BugFix))
 				yield return new PageTocItem
 				{
@@ -641,7 +622,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			// Documentation section
 			if (shouldInclude(ChangelogEntryType.Docs) && entriesByType.ContainsKey(ChangelogEntryType.Docs))
 				yield return new PageTocItem
 				{
@@ -650,7 +630,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			// Regressions section
 			if (shouldInclude(ChangelogEntryType.Regression) && entriesByType.ContainsKey(ChangelogEntryType.Regression))
 				yield return new PageTocItem
 				{
@@ -659,7 +638,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 					Level = 3
 				};
 
-			// Other changes section
 			if (shouldInclude(ChangelogEntryType.Other) && entriesByType.ContainsKey(ChangelogEntryType.Other))
 				yield return new PageTocItem
 				{

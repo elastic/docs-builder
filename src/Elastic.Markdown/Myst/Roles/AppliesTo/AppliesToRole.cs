@@ -6,6 +6,7 @@ using System.Diagnostics;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Versions;
 using Elastic.Markdown.Diagnostics;
 using Markdig;
 using Markdig.Parsers;

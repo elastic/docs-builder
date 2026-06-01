@@ -11,7 +11,6 @@ using Actions.Core.Services;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
@@ -19,7 +18,9 @@ using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Uploading;
 using Elastic.Changelog.Utilities;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
@@ -1145,10 +1146,12 @@ internal sealed partial class ChangelogCommands(
 	/// <summary>Render one or more changelog bundles to Markdown or AsciiDoc.</summary>
 	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Use "hide-links" for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
-	/// <param name="fileType">Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown"</param>
+	/// <param name="fileType">Optional: Output file type. Valid values: "markdown", "asciidoc", or "gfm". Defaults to "markdown"</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.</param>
 	/// <param name="output">Optional: Output directory for rendered files. Defaults to current directory</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
+	/// <param name="dropdowns">Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false</param>
+	/// <param name="noDescriptions">Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false</param>
 	/// <param name="title">Optional: Title to use for section headers in output files. Defaults to version from first bundle</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
@@ -1159,6 +1162,8 @@ internal sealed partial class ChangelogCommands(
 		string[]? hideFeatures = null,
 		string? output = null,
 		bool subsections = false,
+		bool dropdowns = false,
+		bool noDescriptions = false,
 		string? title = null,
 		CancellationToken ct = default
 	)
@@ -1174,11 +1179,12 @@ internal sealed partial class ChangelogCommands(
 		{
 			"markdown" => ChangelogFileType.Markdown,
 			"asciidoc" => ChangelogFileType.Asciidoc,
+			"gfm" => ChangelogFileType.Gfm,
 			_ => null
 		};
 		if (ft is null)
 		{
-			collector.EmitError(string.Empty, $"Invalid file-type '{fileType}'. Valid values are 'markdown' or 'asciidoc'.");
+			collector.EmitError(string.Empty, $"Invalid file-type '{fileType}'. Valid values are 'markdown', 'asciidoc', or 'gfm'.");
 			return 1;
 		}
 
@@ -1191,6 +1197,8 @@ internal sealed partial class ChangelogCommands(
 			Output = output,
 			Title = title,
 			Subsections = subsections,
+			Dropdowns = dropdowns,
+			HideDescriptions = noDescriptions,
 			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
 			FileType = ft.Value,
 			Config = config?.FullName
@@ -1393,6 +1401,17 @@ internal sealed partial class ChangelogCommands(
 	/// <remarks>
 	/// Resolves final status from evaluate-pr + changelog add outcomes, copies generated YAML,
 	/// writes metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.
+	///
+	/// <para>
+	/// The <c>isFork</c>, <c>canCommit</c> and <c>maintainerCanModify</c> parameters are declared
+	/// as <c>bool?</c> so the generated CLI emits both <c>--flag</c> and <c>--no-flag</c> pairs
+	/// (Argh convention). A plain <c>bool</c> would expose presence-only switches: passing
+	/// <c>--can-commit "false"</c> would set <c>canCommit = true</c> (the flag is present) and
+	/// silently discard the literal <c>"false"</c> as a stray positional. Callers that forward a
+	/// dynamic value (<c>--can-commit "$VAR"</c>) would then misroute fork PRs into the
+	/// commit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172
+	/// for the workflow-side fix.
+	/// </para>
 	/// </remarks>
 	/// <param name="stagingDir">Directory where changelog add wrote the generated YAML</param>
 	/// <param name="outputDir">Directory to write the artifact (metadata.json + YAML)</param>
@@ -1401,9 +1420,9 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="prNumber">Pull request number</param>
 	/// <param name="headRef">PR head branch ref</param>
 	/// <param name="headSha">PR head commit SHA</param>
-	/// <param name="isFork">Whether the PR is from a fork</param>
-	/// <param name="canCommit">Whether the commit strategy allows committing</param>
-	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits</param>
+	/// <param name="isFork">Whether the PR is from a fork (pass --is-fork / --no-is-fork; omit to leave null which is treated as false)</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing (pass --can-commit / --no-can-commit; omit to leave null which is treated as false)</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits (pass --maintainer-can-modify / --no-maintainer-can-modify; omit to leave null which is treated as false)</param>
 	/// <param name="headRepo">Fork repository full name (owner/repo)</param>
 	/// <param name="labelTable">Optional: markdown label table from evaluate-pr</param>
 	/// <param name="productLabelTable">Optional: markdown product label table from evaluate-pr</param>
@@ -1419,9 +1438,9 @@ internal sealed partial class ChangelogCommands(
 		int prNumber,
 		string headRef,
 		string headSha,
-		bool isFork = false,
-		bool canCommit = false,
-		bool maintainerCanModify = false,
+		bool? isFork = null,
+		bool? canCommit = null,
+		bool? maintainerCanModify = null,
 		string? headRepo = null,
 		string? labelTable = null,
 		string? productLabelTable = null,

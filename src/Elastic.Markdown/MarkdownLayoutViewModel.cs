@@ -30,6 +30,8 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 	public required string? CurrentVersion { get; init; }
 
 	public required string? AllVersionsUrl { get; init; }
+
+	public string? RedirectUrl { get; init; }
 }
 
 public record PageTocItem

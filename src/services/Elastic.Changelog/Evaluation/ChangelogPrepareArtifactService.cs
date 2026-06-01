@@ -6,9 +6,9 @@ using System.IO.Abstractions;
 using System.Text;
 using System.Text.Json;
 using Actions.Core.Services;
-using Elastic.Changelog.Configuration;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -47,11 +47,17 @@ public class ChangelogPrepareArtifactService(
 
 			if (sourceYaml != null)
 			{
-				changelogFilename = input.ExistingChangelogFilename != null
-					? _fileSystem.Path.GetFileName(input.ExistingChangelogFilename)
+				// Treat empty as unset: CLI parsers (e.g. Argh) forward `--flag ""`
+				// as the empty string instead of null. An empty filename here would
+				// make Path.Combine(OutputDir, "") collapse to OutputDir itself and
+				// turn the artifact write into a write against the directory path,
+				// which fails with EACCES on Linux.
+				var hasExistingFilename = !string.IsNullOrEmpty(input.ExistingChangelogFilename);
+				changelogFilename = hasExistingFilename
+					? _fileSystem.Path.GetFileName(input.ExistingChangelogFilename!)
 					: _fileSystem.Path.GetFileName(sourceYaml);
 
-				if (input.ExistingChangelogFilename != null)
+				if (hasExistingFilename)
 					_logger.LogInformation("Reusing existing filename {Filename} for stable path on branch", changelogFilename);
 
 				var destYaml = _fileSystem.Path.Combine(input.OutputDir, changelogFilename);
@@ -73,16 +79,20 @@ public class ChangelogPrepareArtifactService(
 		var changelogDir = config?.Bundle?.Directory ?? "docs/changelog";
 
 		var statusString = status.ToStringFast(true);
+		// Null-coalesce the nullable bool inputs into the metadata's concrete
+		// `bool` fields. Treating "unspecified" as `false` keeps downstream
+		// consumers (apply step) failing closed: an unrecognised or omitted
+		// CLI flag never grants commit permission.
 		var metadata = new ChangelogArtifactMetadata
 		{
 			PrNumber = input.PrNumber,
 			HeadRef = input.HeadRef,
 			HeadSha = input.HeadSha,
 			Status = statusString,
-			IsFork = input.IsFork,
+			IsFork = input.IsFork ?? false,
 			HeadRepo = input.HeadRepo,
-			CanCommit = input.CanCommit,
-			MaintainerCanModify = input.MaintainerCanModify,
+			CanCommit = input.CanCommit ?? false,
+			MaintainerCanModify = input.MaintainerCanModify ?? false,
 			LabelTable = input.LabelTable,
 			ProductLabelTable = input.ProductLabelTable,
 			SkipLabels = input.SkipLabels,
