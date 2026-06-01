@@ -181,7 +181,7 @@ async Task CopyPassThrough(IAmazonS3 s3Client, string sourceBucket, string key, 
 
 async Task<string> ScrubContent(string key, string content, ILambdaContext context)
 {
-	var isBundlePath = key.Contains("/bundles/", StringComparison.OrdinalIgnoreCase);
+	var isBundlePath = key.Contains("/bundle/", StringComparison.OrdinalIgnoreCase);
 
 	if (isBundlePath)
 		return await ScrubBundle(content, context);
