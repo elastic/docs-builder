@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
@@ -169,7 +170,7 @@ public partial class OpenApiDocumentExporter(
 
 				yield return new DocumentationDocument
 				{
-					Type = "api",
+					ContentType = "api",
 					Url = url,
 					Title = title,
 					SearchTitle = title,

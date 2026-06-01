@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 
 namespace Elastic.Documentation.AppliesTo;
 

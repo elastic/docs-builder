@@ -9,6 +9,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
