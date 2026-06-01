@@ -65,7 +65,7 @@ public class ChangelogUploadServiceTests
 
 		targets.Should().HaveCount(1);
 		targets[0].LocalPath.Should().Be(path);
-		targets[0].S3Key.Should().Be("elasticsearch/changelogs/entry.yaml");
+		targets[0].S3Key.Should().Be("elasticsearch/changelog/entry.yaml");
 		_collector.Errors.Should().Be(0);
 	}
 
@@ -88,8 +88,8 @@ public class ChangelogUploadServiceTests
 		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
 
 		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelogs/fix.yaml");
-		targets.Should().Contain(t => t.S3Key == "kibana/changelogs/fix.yaml");
+		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelog/fix.yaml");
+		targets.Should().Contain(t => t.S3Key == "kibana/changelog/fix.yaml");
 	}
 
 	[Fact]
@@ -154,8 +154,8 @@ public class ChangelogUploadServiceTests
 		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
 
 		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelogs/mixed.yaml");
-		targets.Should().Contain(t => t.S3Key == "kibana/changelogs/mixed.yaml");
+		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelog/mixed.yaml");
+		targets.Should().Contain(t => t.S3Key == "kibana/changelog/mixed.yaml");
 		_collector.Warnings.Should().BeGreaterThan(0);
 	}
 
@@ -184,8 +184,8 @@ public class ChangelogUploadServiceTests
 		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
 
 		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelogs/first.yaml");
-		targets.Should().Contain(t => t.S3Key == "kibana/changelogs/second.yaml");
+		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelog/first.yaml");
+		targets.Should().Contain(t => t.S3Key == "kibana/changelog/second.yaml");
 	}
 
 	[Fact]
@@ -205,8 +205,8 @@ public class ChangelogUploadServiceTests
 		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
 
 		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elastic-agent/changelogs/hyphen.yaml");
-		targets.Should().Contain(t => t.S3Key == "cloud_hosted/changelogs/hyphen.yaml");
+		targets.Should().Contain(t => t.S3Key == "elastic-agent/changelog/hyphen.yaml");
+		targets.Should().Contain(t => t.S3Key == "cloud_hosted/changelog/hyphen.yaml");
 		_collector.Errors.Should().Be(0);
 		_collector.Warnings.Should().Be(0);
 	}
@@ -245,7 +245,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/changelogs/entry.yaml" && r.BucketName == "test-bucket"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/changelog/entry.yaml" && r.BucketName == "test-bucket"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 	}
@@ -375,7 +375,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundles/elasticsearch-9.2.0.yaml" && r.BucketName == "test-bucket"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundle/elasticsearch-9.2.0.yaml" && r.BucketName == "test-bucket"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 	}
@@ -405,7 +405,7 @@ public class ChangelogUploadServiceTests
 		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
 
 		targets.Should().HaveCount(1);
-		targets[0].S3Key.Should().Be("elasticsearch/bundles/elasticsearch-9.2.0.yaml");
+		targets[0].S3Key.Should().Be("elasticsearch/bundle/elasticsearch-9.2.0.yaml");
 		_collector.Errors.Should().Be(0);
 	}
 
@@ -436,8 +436,8 @@ public class ChangelogUploadServiceTests
 		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
 
 		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elasticsearch/bundles/stack-9.2.0.yaml");
-		targets.Should().Contain(t => t.S3Key == "kibana/bundles/stack-9.2.0.yaml");
+		targets.Should().Contain(t => t.S3Key == "elasticsearch/bundle/stack-9.2.0.yaml");
+		targets.Should().Contain(t => t.S3Key == "kibana/bundle/stack-9.2.0.yaml");
 	}
 
 	[Fact]
