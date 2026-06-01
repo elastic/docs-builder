@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -55,8 +55,22 @@ internal sealed class RuleQueryMatchCriteriaJsonConverter : JsonConverter<object
 
 internal static class RuleQueryMatchCriteriaAccessors
 {
-	[UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_QueryString")]
-	private static extern string GetQueryStringInternal(object target);
+	[DynamicDependency(
+		DynamicallyAccessedMemberTypes.PublicProperties,
+		"Elastic.Internal.Search.Elasticsearch.RuleQueryMatchCriteria",
+		"Elastic.Internal.Search.Elasticsearch")]
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+	private static readonly Type RuleQueryMatchCriteriaType = Type.GetType(
+		"Elastic.Internal.Search.Elasticsearch.RuleQueryMatchCriteria, Elastic.Internal.Search.Elasticsearch",
+		throwOnError: true)!;
 
-	public static string GetQueryString(object target) => GetQueryStringInternal(target);
+	private static readonly PropertyInfo QueryStringProperty = RuleQueryMatchCriteriaType.GetProperty(
+		"QueryString",
+		BindingFlags.Public | BindingFlags.Instance)!;
+
+	[UnconditionalSuppressMessage(
+		"Trimming",
+		"IL2075",
+		Justification = "RuleQueryMatchCriteria.QueryString is preserved via DynamicDependency on RuleQueryMatchCriteriaType.")]
+	public static string GetQueryString(object target) => (string)QueryStringProperty.GetValue(target)!;
 }
