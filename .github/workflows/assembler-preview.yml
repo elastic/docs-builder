@@ -118,7 +118,7 @@ jobs:
         if: always() && steps.deployment.outputs.result
         uses: actions/github-script@v9
         with:
-          script: |
+          script: | # zizmor: ignore[template-injection] deployment_id from prior step output
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,

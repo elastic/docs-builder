@@ -67,7 +67,7 @@ jobs:
           echo "repo=${{ github.repository }}"
 
       - name: Debug outputs
-        run: |
+        run: | # zizmor: ignore[template-injection] debug echoes of trusted step outputs
           echo "content-source-match: ${{ format('{0}{1}', steps.pr-check.outputs.content-source-match, steps.push-check.outputs.content-source-match) }}"
           echo "content-source-next: ${{ format('{0}{1}', steps.pr-check.outputs.content-source-next, steps.push-check.outputs.content-source-next) }}"
           echo "content-source-current: ${{ format('{0}{1}', steps.pr-check.outputs.content-source-current, steps.push-check.outputs.content-source-current) }}"
@@ -374,7 +374,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           LANDING_PAGE_PATH: ${{ env.PATH_PREFIX }}
         with:
-          script: |
+          script: | # zizmor: ignore[template-injection] deployment_id from prior step output
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,

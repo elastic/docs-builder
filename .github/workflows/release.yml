@@ -33,7 +33,7 @@ jobs:
       - name: Create tag
         uses: actions/github-script@v9
         with:
-          script: |
+          script: | # zizmor: ignore[template-injection] tag_name from release-drafter on main
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
