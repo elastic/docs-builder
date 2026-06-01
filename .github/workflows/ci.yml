@@ -184,6 +184,7 @@ jobs:
         
 
   integration:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: docs-builder-latest-16
     environment: integration-tests
     permissions:
