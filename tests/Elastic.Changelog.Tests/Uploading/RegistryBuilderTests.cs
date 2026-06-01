@@ -21,17 +21,17 @@ using Nullean.ScopedFileSystem;
 namespace Elastic.Changelog.Tests.Uploading;
 
 [SuppressMessage("Usage", "CA1001:Types that own disposable fields should be disposable")]
-public class RegistryIndexBuilderTests
+public class RegistryBuilderTests
 {
 	private readonly MockFileSystem _mockFileSystem;
 	private readonly ScopedFileSystem _fileSystem;
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly TestDiagnosticsCollector _collector;
 	private readonly string _bundleDir;
-	private readonly RegistryIndexBuilder _builder;
+	private readonly RegistryBuilder _builder;
 	private readonly List<PutObjectRequest> _puts = [];
 
-	public RegistryIndexBuilderTests(ITestOutputHelper output)
+	public RegistryBuilderTests(ITestOutputHelper output)
 	{
 		_mockFileSystem = new MockFileSystem(new MockFileSystemOptions
 		{
@@ -44,7 +44,7 @@ public class RegistryIndexBuilderTests
 		var etagCalculator = new S3EtagCalculator(NullLoggerFactory.Instance, _fileSystem);
 		// Pin time so generated_at is deterministic in tests.
 		var fixedTime = new FakeTimeProvider(new DateTimeOffset(2026, 5, 6, 12, 0, 0, TimeSpan.Zero));
-		_builder = new RegistryIndexBuilder(
+		_builder = new RegistryBuilder(
 			NullLoggerFactory.Instance,
 			_fileSystem,
 			_s3Client,
@@ -82,15 +82,15 @@ public class RegistryIndexBuilderTests
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
 			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
 
-	private void StubExistingManifest(string product, RegistryIndex manifest, string etag = "\"existing-etag\"") =>
+	private void StubExistingManifest(string product, Registry manifest, string etag = "\"existing-etag\"") =>
 		A.CallTo(() => _s3Client.GetObjectAsync(
-				A<GetObjectRequest>.That.Matches(r => r.Key == $"{product}/registry-index.json"),
+				A<GetObjectRequest>.That.Matches(r => r.Key == $"{product}/registry.json"),
 				A<CancellationToken>._))
 			.ReturnsLazily(() => MakeManifestResponse(manifest, etag));
 
-	private static GetObjectResponse MakeManifestResponse(RegistryIndex manifest, string etag)
+	private static GetObjectResponse MakeManifestResponse(Registry manifest, string etag)
 	{
-		var json = JsonSerializer.Serialize(manifest, RegistryIndexJsonContext.Default.RegistryIndex);
+		var json = JsonSerializer.Serialize(manifest, RegistryJsonContext.Default.Registry);
 		return new GetObjectResponse
 		{
 			ETag = etag,
@@ -98,8 +98,8 @@ public class RegistryIndexBuilderTests
 		};
 	}
 
-	private static RegistryIndex Deserialize(string? json) =>
-		JsonSerializer.Deserialize(json!, RegistryIndexJsonContext.Default.RegistryIndex)!;
+	private static Registry Deserialize(string? json) =>
+		JsonSerializer.Deserialize(json!, RegistryJsonContext.Default.Registry)!;
 
 	[Fact]
 	public async Task Refresh_NoExistingManifest_CreatesManifestWithIfNoneMatch()
@@ -113,7 +113,7 @@ public class RegistryIndexBuilderTests
 		result.Updated.Should().Be(1);
 		_puts.Should().ContainSingle();
 		var put = _puts[0];
-		put.Key.Should().Be("elasticsearch/registry-index.json");
+		put.Key.Should().Be("elasticsearch/registry.json");
 		put.IfNoneMatch.Should().Be("*");
 		put.IfMatch.Should().BeNull();
 
@@ -128,7 +128,7 @@ public class RegistryIndexBuilderTests
 	[Fact]
 	public async Task Refresh_ExistingManifest_MergesByFileNameAndUsesIfMatch()
 	{
-		var existing = new RegistryIndex
+		var existing = new Registry
 		{
 			Product = "elasticsearch",
 			GeneratedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -183,8 +183,8 @@ public class RegistryIndexBuilderTests
 
 		result.Updated.Should().Be(2);
 		_puts.Should().HaveCount(2);
-		_puts.Should().Contain(p => p.Key == "elasticsearch/registry-index.json");
-		_puts.Should().Contain(p => p.Key == "kibana/registry-index.json");
+		_puts.Should().Contain(p => p.Key == "elasticsearch/registry.json");
+		_puts.Should().Contain(p => p.Key == "kibana/registry.json");
 	}
 
 	[Fact]
@@ -219,10 +219,10 @@ public class RegistryIndexBuilderTests
 
 		_ = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
 
-		var es = Deserialize(_puts.Single(p => p.Key == "elasticsearch/registry-index.json").ContentBody);
+		var es = Deserialize(_puts.Single(p => p.Key == "elasticsearch/registry.json").ContentBody);
 		es.Bundles[0].Target.Should().Be("9.3.0");
 
-		var kb = Deserialize(_puts.Single(p => p.Key == "kibana/registry-index.json").ContentBody);
+		var kb = Deserialize(_puts.Single(p => p.Key == "kibana/registry.json").ContentBody);
 		kb.Bundles[0].Target.Should().Be("9.4.0");
 	}
 
@@ -277,7 +277,7 @@ public class RegistryIndexBuilderTests
 		var bundleEtag = await etagCalculator.CalculateS3ETag(path, TestContext.Current.CancellationToken);
 
 		// Existing manifest already contains exactly what this run would produce.
-		var existing = new RegistryIndex
+		var existing = new Registry
 		{
 			Product = "elasticsearch",
 			GeneratedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -296,14 +296,14 @@ public class RegistryIndexBuilderTests
 	[Fact]
 	public async Task Refresh_ConcurrentWrite_RetriesAfterPreconditionFailed()
 	{
-		var v1 = new RegistryIndex
+		var v1 = new Registry
 		{
 			Product = "elasticsearch",
 			GeneratedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
 			Bundles = [new RegistryBundle { File = "9.2.0.yaml", Target = "9.2.0", ETag = "etag-92" }]
 		};
 		// Second read reflects a concurrent writer that added 9.3.0 and bumped the object ETag.
-		var v2 = new RegistryIndex
+		var v2 = new Registry
 		{
 			Product = "elasticsearch",
 			GeneratedAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
@@ -344,7 +344,7 @@ public class RegistryIndexBuilderTests
 	[Fact]
 	public async Task Refresh_PersistentConcurrentWrite_EmitsWarningAndReportsFailure()
 	{
-		var existing = new RegistryIndex
+		var existing = new Registry
 		{
 			Product = "elasticsearch",
 			GeneratedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -370,7 +370,7 @@ public class RegistryIndexBuilderTests
 	public async Task Refresh_NoTargets_WritesNothing()
 	{
 		var result = await _builder.RefreshAsync(_collector, [], TestContext.Current.CancellationToken);
-		result.Should().Be(new RegistryIndexBuilder.RefreshResult(0, 0, 0));
+		result.Should().Be(new RegistryBuilder.RefreshResult(0, 0, 0));
 		_puts.Should().BeEmpty();
 	}
 

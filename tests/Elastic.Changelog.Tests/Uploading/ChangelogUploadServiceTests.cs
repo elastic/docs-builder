@@ -452,7 +452,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public async Task Upload_BundleArtifactType_UploadsRegistryIndexAlongsideBundle()
+	public async Task Upload_BundleArtifactType_UploadsRegistryAlongsideBundle()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
 		_mockFileSystem.Directory.CreateDirectory(bundleDir);
@@ -497,13 +497,13 @@ public class ChangelogUploadServiceTests
 		)).MustHaveHappenedOnceExactly();
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/registry-index.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/registry.json"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
-	public async Task Upload_ChangelogArtifactType_DoesNotUploadRegistryIndex()
+	public async Task Upload_ChangelogArtifactType_DoesNotUploadRegistry()
 	{
 		// language=yaml
 		AddChangelog("entry.yaml", """
@@ -534,7 +534,7 @@ public class ChangelogUploadServiceTests
 		result.Should().BeTrue();
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("/registry-index.json", StringComparison.Ordinal)),
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("/registry.json", StringComparison.Ordinal)),
 			A<CancellationToken>._
 		)).MustNotHaveHappened();
 	}

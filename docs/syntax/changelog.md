@@ -28,6 +28,8 @@ The directive supports the following options:
 | `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
 | `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
+| `:cdn: product` | Source bundles for a product from the public changelog CDN instead of a local folder | (local folder) |
+| `:version: target` | Render only the single bundle matching this target/version | (all versions) |
 
 ### Example with options
 
@@ -160,6 +162,43 @@ Explicit path to a `changelog.yml` or `changelog.yaml` configuration file, relat
 2. `changelog.yml` or `changelog.yaml` in the parent directory (typically the repository root)
 
 Both explicit and auto-discovered paths must resolve within the repository checkout directory and must not traverse symlinks.
+
+#### `:cdn:` [cdn]
+
+Sources bundles for a single **product** from the public changelog CDN instead of a local folder, so a docset can render another product's release notes without vendoring bundle YAML.
+
+```markdown
+:::{changelog}
+:cdn: elasticsearch
+:::
+```
+
+The value names the product (must match `[a-zA-Z0-9_-]+`) and maps to `{product}/registry.json` plus the bundles it lists on the CDN. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
+
+The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
+
+Fetching happens at build time. If the registry cannot be fetched the block renders empty and an error is emitted; an individual bundle that is missing from the CDN is skipped with a warning. For the full design — including the manifest format and infrastructure — see [Changelog bundle registry and CDN delivery](/development/changelog-bundle-registry.md).
+
+#### `:version:` [version]
+
+Renders only the **single** bundle whose target matches the given value, instead of every bundle for the source. A bundle matches when the value equals its declared `target` (for example `9.4.0`, or a date like `2026-04-09`) or its file name (with or without extension). Matching is case-insensitive.
+
+```markdown
+:::{changelog}
+:version: 9.4.0
+:::
+```
+
+This works for both local-folder and `:cdn:` sources. In `:cdn:` mode it is also an optimization: only the matching bundle is downloaded from the CDN rather than every file the registry lists.
+
+```markdown
+:::{changelog}
+:cdn: elasticsearch
+:version: 9.4.0
+:::
+```
+
+If no bundle matches, the directive renders nothing and emits a warning (it does not fall back to showing all versions).
 
 ## Filtering entries with bundle rules
 

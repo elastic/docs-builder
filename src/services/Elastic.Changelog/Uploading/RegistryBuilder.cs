@@ -15,12 +15,12 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Changelog.Uploading;
 
 /// <summary>
-/// Refreshes the per-product <c>{product}/registry-index.json</c> manifest in the private bundles
+/// Refreshes the per-product <c>{product}/registry.json</c> manifest in the private bundles
 /// bucket after a bundle upload run. Each product touched in the run gets its manifest merged with
 /// the bundles already known on S3 (read back, merged by file name, written with an optimistic
 /// concurrency guard so parallel uploads for the same product cannot clobber each other).
 /// </summary>
-internal sealed class RegistryIndexBuilder(
+internal sealed class RegistryBuilder(
 	ILoggerFactory logFactory,
 	IFileSystem fileSystem,
 	IAmazonS3 s3Client,
@@ -29,7 +29,7 @@ internal sealed class RegistryIndexBuilder(
 	TimeProvider? timeProvider = null
 )
 {
-	private readonly ILogger _logger = logFactory.CreateLogger<RegistryIndexBuilder>();
+	private readonly ILogger _logger = logFactory.CreateLogger<RegistryBuilder>();
 	private readonly TimeProvider _time = timeProvider ?? TimeProvider.System;
 
 	// Bounds the optimistic-concurrency retry loop. Concurrent uploads for the same product are
@@ -175,7 +175,7 @@ internal sealed class RegistryIndexBuilder(
 		IReadOnlyList<RegistryBundle> localEntries,
 		Cancel ctx)
 	{
-		var key = $"{product}/registry-index.json";
+		var key = $"{product}/registry.json";
 
 		for (var attempt = 1; attempt <= MaxWriteAttempts; attempt++)
 		{
@@ -187,34 +187,34 @@ internal sealed class RegistryIndexBuilder(
 			// Re-uploading the same bundles must not churn the manifest (keeps reruns idempotent).
 			if (etag is not null && BundlesEqual(existing, merged))
 			{
-				_logger.LogDebug("registry-index for {Product} already up to date; skipping write", product);
+				_logger.LogDebug("registry for {Product} already up to date; skipping write", product);
 				return WriteOutcome.Unchanged;
 			}
 
-			var manifest = new RegistryIndex
+			var manifest = new Registry
 			{
 				Product = product,
 				GeneratedAt = _time.GetUtcNow(),
 				Bundles = merged
 			};
-			var json = JsonSerializer.Serialize(manifest, RegistryIndexJsonContext.Default.RegistryIndex);
+			var json = JsonSerializer.Serialize(manifest, RegistryJsonContext.Default.Registry);
 
 			try
 			{
 				await PutManifest(key, json, etag, ctx);
-				_logger.LogInformation("Wrote registry-index.json for {Product} with {Count} bundle(s)", product, merged.Count);
+				_logger.LogInformation("Wrote registry.json for {Product} with {Count} bundle(s)", product, merged.Count);
 				return WriteOutcome.Updated;
 			}
 			catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.PreconditionFailed)
 			{
 				_logger.LogInformation(
-					"registry-index for {Product} changed concurrently (attempt {Attempt}/{Max}); re-reading and retrying",
+					"registry for {Product} changed concurrently (attempt {Attempt}/{Max}); re-reading and retrying",
 					product, attempt, MaxWriteAttempts);
 			}
 		}
 
 		collector.EmitWarning(string.Empty,
-			$"registry-index for {product} could not be updated after {MaxWriteAttempts} attempts due to concurrent writes; the index may be stale.");
+			$"registry for {product} could not be updated after {MaxWriteAttempts} attempts due to concurrent writes; the index may be stale.");
 		return WriteOutcome.Failed;
 	}
 
@@ -225,7 +225,7 @@ internal sealed class RegistryIndexBuilder(
 	/// </summary>
 	private async Task<(IReadOnlyList<RegistryBundle> Bundles, string? ETag)> TryFetchExistingManifest(string product, Cancel ctx)
 	{
-		var key = $"{product}/registry-index.json";
+		var key = $"{product}/registry.json";
 		string? etag = null;
 		try
 		{
@@ -239,7 +239,7 @@ internal sealed class RegistryIndexBuilder(
 			await using var stream = response.ResponseStream;
 			var existing = await JsonSerializer.DeserializeAsync(
 				stream,
-				RegistryIndexJsonContext.Default.RegistryIndex,
+				RegistryJsonContext.Default.Registry,
 				ctx);
 
 			return (existing?.Bundles ?? [], etag);

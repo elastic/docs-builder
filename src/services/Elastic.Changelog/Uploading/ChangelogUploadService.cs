@@ -94,16 +94,16 @@ public partial class ChangelogUploadService(
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
 
-		// On a successful bundle upload, refresh the per-product registry-index.json so consumers
+		// On a successful bundle upload, refresh the per-product registry.json so consumers
 		// (e.g. the changelog directive in cdn: mode) can enumerate bundles without an S3 listing.
 		// Failures here are logged but don't fail the upload — the bundles themselves are already in S3.
 		if (result.Failed == 0 && args.ArtifactType == ArtifactType.Bundle && targets.Count > 0)
-			await RefreshRegistryIndexes(collector, client, etagCalculator, args, targets, ctx);
+			await RefreshRegistries(collector, client, etagCalculator, args, targets, ctx);
 
 		return result.Failed == 0;
 	}
 
-	private async Task RefreshRegistryIndexes(
+	private async Task RefreshRegistries(
 		IDiagnosticsCollector collector,
 		IAmazonS3 client,
 		IS3EtagCalculator etagCalculator,
@@ -113,16 +113,16 @@ public partial class ChangelogUploadService(
 	{
 		try
 		{
-			var builder = new RegistryIndexBuilder(logFactory, _fileSystem, client, etagCalculator, args.S3BucketName);
+			var builder = new RegistryBuilder(logFactory, _fileSystem, client, etagCalculator, args.S3BucketName);
 			var result = await builder.RefreshAsync(collector, bundleTargets, ctx);
-			_logger.LogInformation("Registry-index refresh: {Updated} updated, {Unchanged} unchanged, {Failed} failed",
+			_logger.LogInformation("Registry refresh: {Updated} updated, {Unchanged} unchanged, {Failed} failed",
 				result.Updated, result.Unchanged, result.Failed);
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			// Leaving the manifest stale is non-fatal — bundle objects are unaffected.
-			_logger.LogWarning(ex, "Registry-index refresh failed; bundles uploaded successfully but manifests may be stale");
-			collector.EmitWarning(string.Empty, $"Failed to refresh registry-index manifest(s): {ex.Message}");
+			_logger.LogWarning(ex, "Registry refresh failed; bundles uploaded successfully but manifests may be stale");
+			collector.EmitWarning(string.Empty, $"Failed to refresh registry manifest(s): {ex.Message}");
 		}
 	}
 

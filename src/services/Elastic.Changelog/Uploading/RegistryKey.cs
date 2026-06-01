@@ -6,15 +6,15 @@ namespace Elastic.Changelog.Uploading;
 
 /// <summary>
 /// Helpers for validating S3 object keys related to the per-product
-/// <see cref="RegistryIndex"/> manifest.
+/// <see cref="Registry"/> manifest.
 /// </summary>
-public static class RegistryIndexKey
+public static class RegistryKey
 {
-	private const string Suffix = "/registry-index.json";
+	private const string Suffix = "/registry.json";
 
 	/// <summary>
 	/// Returns true when <paramref name="key"/> is a top-level per-product manifest of the
-	/// form <c>{product}/registry-index.json</c>, where <c>{product}</c> matches the same
+	/// form <c>{product}/registry.json</c>, where <c>{product}</c> matches the same
 	/// character class enforced by <c>ChangelogUploadService.ProductNameRegex</c>
 	/// (<c>[a-zA-Z0-9_-]+</c>).
 	/// </summary>
@@ -24,7 +24,7 @@ public static class RegistryIndexKey
 	/// under a bundles/ prefix, or a multi-segment product) is rejected, which keeps
 	/// arbitrary JSON out of the public surface.
 	/// </remarks>
-	public static bool IsRegistryIndex(string key)
+	public static bool IsRegistry(string key)
 	{
 		if (string.IsNullOrEmpty(key))
 			return false;

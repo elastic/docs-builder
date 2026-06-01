@@ -31,7 +31,7 @@ The `bootstrap` binary should be available under:
 ## Event handling
 
 - **`s3:ObjectCreated:*`** on `.yaml`/`.yml` files: read from private bucket, scrub private references, write to public bucket
-- **`s3:ObjectCreated:*`** on `.json` files: copy as-is (pass-through for `registry-index.json`)
+- **`s3:ObjectCreated:*`** on `.json` files: copy as-is (pass-through for `registry.json`)
 - **`s3:ObjectRemoved:*`**: delete the same key from the public bucket
 - Other keys are silently skipped
 

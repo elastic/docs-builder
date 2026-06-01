@@ -12,10 +12,10 @@ namespace Elastic.Changelog.Uploading;
 /// bundle files without an S3 listing call.
 /// </summary>
 /// <remarks>
-/// Stored at <c>{product}/registry-index.json</c> in the changelog bundles bucket.
+/// Stored at <c>{product}/registry.json</c> in the changelog bundles bucket.
 /// The scrubber Lambda mirrors it verbatim to the public bucket (pass-through).
 /// </remarks>
-public sealed record RegistryIndex
+public sealed record Registry
 {
 	/// <summary>
 	/// Manifest schema version. Incremented when consumers must change their parser.
@@ -40,7 +40,7 @@ public sealed record RegistryIndex
 }
 
 /// <summary>
-/// One entry in <see cref="RegistryIndex.Bundles"/>.
+/// One entry in <see cref="Registry.Bundles"/>.
 /// </summary>
 public sealed record RegistryBundle
 {
@@ -76,6 +76,6 @@ public sealed record RegistryBundle
 	PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
 	DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
 )]
-[JsonSerializable(typeof(RegistryIndex))]
+[JsonSerializable(typeof(Registry))]
 [JsonSerializable(typeof(RegistryBundle))]
-public sealed partial class RegistryIndexJsonContext : JsonSerializerContext;
+public sealed partial class RegistryJsonContext : JsonSerializerContext;

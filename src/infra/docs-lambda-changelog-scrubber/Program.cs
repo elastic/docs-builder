@@ -122,7 +122,7 @@ async Task ScrubAndCopyToPublicBucket(IAmazonS3 s3Client, string sourceBucket, s
 {
 	context.Logger.LogDebug("Scrubbing {Key} to public bucket", key);
 
-	if (RegistryIndexKey.IsRegistryIndex(key))
+	if (RegistryKey.IsRegistry(key))
 	{
 		await CopyPassThrough(s3Client, sourceBucket, key, context);
 		return;

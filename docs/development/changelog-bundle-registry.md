@@ -5,14 +5,14 @@ navigation_title: Changelog bundle registry
 # Changelog bundle registry and CDN delivery
 
 This page describes how changelog **bundles** are published to a public, CDN-fronted
-S3 bucket, how the per-product `registry-index.json` manifest is produced, and the
-planned `cdn:` mode for the [`{changelog}` directive](/syntax/changelog.md) that will
-consume bundles directly from the CDN instead of from a local folder.
+S3 bucket, how the per-product `registry.json` manifest is produced, and the
+`cdn:` mode for the [`{changelog}` directive](/syntax/changelog.md) that consumes
+bundles directly from the CDN instead of from a local folder.
 
 :::{note}
-The **producer** side (manifest generation + scrubber pass-through) is implemented.
-The **consumer** side (`{changelog}` directive `cdn:` mode) is **planned** and is
-documented here as a design, not as shipped behavior.
+Both sides are implemented: the **producer** (manifest generation + scrubber pass-through)
+and the **consumer** (`{changelog}` directive `cdn:` mode). Remaining follow-ups are listed
+under [Implementation notes](#implementation-notes).
 :::
 
 ## Motivation
@@ -35,11 +35,11 @@ copies, no cross-repo file syncing.
 │ (docs-actions)│  bundle  ───────────▶ │  S3 bucket         │                       │ Lambda             │
 └──────────────┘                       │                    │                       └─────────┬─────────┘
        │                               │  {product}/bundles/*.yaml                            │ scrub + copy
-       │ also refreshes                │  {product}/registry-index.json                       │ (pass-through for
-       └──────────────────────────────▶                    │                                  │  registry-index.json)
+       │ also refreshes                │  {product}/registry.json                       │ (pass-through for
+       └──────────────────────────────▶                    │                                  │  registry.json)
                                        └────────────────────┘                                 ▼
                                                                                    ┌───────────────────┐
-                                                  {changelog} directive (planned)  │  Public bundles    │
+                                                  {changelog} directive (cdn:)     │  Public bundles    │
                                                   reads via CDN  ◀───────────────  │  S3 bucket + CDN   │
                                                                                    └───────────────────┘
 ```
@@ -47,12 +47,12 @@ copies, no cross-repo file syncing.
 1. **Producer** — `changelog upload --artifact-type bundle --target s3` (invoked by the
    docs-actions changelog upload workflow) uploads each bundle to
    `{product}/bundles/{file}` in the **private** bucket, then refreshes
-   `{product}/registry-index.json` for every product the run touched.
+   `{product}/registry.json` for every product the run touched.
 2. **Scrubber Lambda** — triggered by `s3:ObjectCreated` on the private bucket, it scrubs
    private repository references out of bundle YAML and writes the sanitized copy to the
-   **public** bucket. The `registry-index.json` object is copied through **verbatim**.
-3. **Consumer (planned)** — the `{changelog}` directive in `cdn:` mode reads
-   `{product}/registry-index.json` from the CDN, then fetches each listed bundle.
+   **public** bucket. The `registry.json` object is copied through **verbatim**.
+3. **Consumer** — the `{changelog}` directive in `cdn:` mode reads
+   `{product}/registry.json` from the CDN, then fetches each listed bundle.
 
 ### Why a registry instead of an S3 listing
 
@@ -60,9 +60,9 @@ The public surface is a CDN (CloudFront) in front of S3. CloudFront does not exp
 listing, so the consumer cannot enumerate `{product}/bundles/`. The registry is a stable,
 cacheable manifest at a predictable key that lists exactly which bundles exist for a product.
 
-## `registry-index.json` format
+## `registry.json` format
 
-Stored at `{product}/registry-index.json`. Serialized with `snake_case` keys.
+Stored at `{product}/registry.json`. Serialized with `snake_case` keys.
 
 ```json
 {
@@ -102,10 +102,10 @@ reads of the same bucket).
 ## Producer details (implemented)
 
 The refresh runs inside `ChangelogUploadService` after a successful **bundle** upload (it is
-skipped for `--artifact-type changelog`). `RegistryIndexBuilder`:
+skipped for `--artifact-type changelog`). `RegistryBuilder`:
 
 - Groups the run's upload targets by product (from the `{product}/bundles/{file}` key).
-- For each product, derives one `registry-index` entry per bundle (file name, that product's
+- For each product, derives one `registry` entry per bundle (file name, that product's
   target, locally-computed S3 ETag).
 - Reads the existing manifest from S3, merges by file name (re-uploads replace their entry;
   others are preserved), and writes the merged manifest back.
@@ -149,18 +149,12 @@ for the producer**:
   covering the registry `CopyObject` pass-through and the `ObjectRemoved` delete.
 - A CloudFront cache policy tuned for the manifest already exists (default TTL 1h, min 60s).
 
-The scrubber only passes through keys accepted by `RegistryIndexKey.IsRegistryIndex` (a single
-`{product}/registry-index.json` segment), so arbitrary JSON cannot reach the public surface.
+The scrubber only passes through keys accepted by `RegistryKey.IsRegistry` (a single
+`{product}/registry.json` segment), so arbitrary JSON cannot reach the public surface.
 
 **No new docs-actions workflow logic is required** for the producer either: the refresh is a
 side-effect of the existing `changelog upload` step; docs-actions only needs a docs-builder
 build that includes this feature.
-
-:::{note}
-The CDN cache policy comment refers to `registry.json` while the implementation uses
-`registry-index.json`. This is only a comment (there is no path-based cache behavior), so it is
-harmless, but the two should be aligned to avoid confusion.
-:::
 
 ### Consistency notes the consumer must tolerate
 
@@ -171,9 +165,9 @@ harmless, but the two should be aligned to avoid confusion.
 
 Consumers must therefore treat a missing bundle as non-fatal (skip + warn), not an error.
 
-## Consumer: `{changelog}` directive `cdn:` mode (planned)
+## Consumer: `{changelog}` directive `cdn:` mode (implemented)
 
-### Proposed syntax
+### Syntax
 
 ```markdown
 :::{changelog}
@@ -181,49 +175,68 @@ Consumers must therefore treat a missing bundle as non-fatal (skip + warn), not 
 :::
 ```
 
-The directive would accept a `:cdn:` option naming the **product** to fetch. The CDN base
-URL is environment configuration (not authored per page), defaulting to the public changelog
-bundles distribution and overridable for staging/local.
+The directive accepts a `:cdn:` option naming the **product** to fetch (validated against
+`[a-zA-Z0-9_-]+`). The CDN base URL is environment configuration, not authored per page: it
+defaults to the public changelog bundles distribution and is overridable via the
+`DOCS_BUILDER_CHANGELOG_CDN` environment variable (absolute `http`/`https` URL) for
+staging, local development, and testing.
 
-When `:cdn:` is set, the local-folder argument is ignored and the directive sources bundles
-from the CDN instead.
+When `:cdn:` is set, the local-folder argument is ignored (a warning is emitted if one is
+also given) and the directive sources bundles from the CDN instead.
 
 ### Fetch flow
 
-1. `GET {cdnBase}/{product}/registry-index.json`.
+1. `GET {cdnBase}/{product}/registry.json`.
 2. Parse it; for each `bundles[].file`, `GET {cdnBase}/{product}/bundles/{file}`.
 3. Feed the downloaded YAML into the existing `BundleLoader` → `MergeBundlesByTarget` →
    render pipeline. **Rendering is unchanged**; only the source of the bundle bytes differs.
 
-Because public bundles are already scrubbed and resolved, the existing private-repo link and
-description visibility logic still applies via `assembler.yml`, exactly as for local bundles.
+Implemented by `CdnChangelogFetcher` (in `Elastic.Documentation.Configuration`) and
+`BundleLoader.LoadBundlesFromContent`. Because public bundles are already scrubbed and
+**resolved** (entries are inline/self-contained), the fetcher never needs to download separate
+entry files; the existing private-repo link and description visibility logic still applies via
+`assembler.yml`, exactly as for local bundles.
 
-### Open design decisions
+### Behavior and decisions
 
-- **Build-time network access.** Fetching at build time makes builds depend on the CDN.
-  Options: (a) fetch during the build with an on-disk cache under the docs-builder app-data
-  directory (mirrors `CrossLinkFetcher`/link-index); (b) a separate fetch step that
-  materializes bundles into the working tree before the build. Caching + ETag revalidation
-  against the CDN is the likely answer.
-- **Local/offline development.** The directive must degrade gracefully when the CDN is
-  unreachable (use cache; otherwise emit a clear, actionable diagnostic) so local builds and
-  PR previews don't hard-fail on transient network issues.
-- **Missing/partial bundles.** Skip-and-warn per the consistency notes above; never fail the
-  whole page on a single missing bundle.
-- **Schema evolution.** Honor `schema_version`; a newer major than the consumer understands
-  should produce a clear error rather than a silent mis-parse.
+- **Synchronous fetch at parse time.** Directive finalization runs inside the synchronous
+  Markdig block parser — the same place the local-folder loader does its file reads — so the
+  fetcher uses `HttpClient.Send` rather than introducing a separate async pre-parse phase.
+- **Per-build memoization.** Results are cached in-process keyed by base URL + product, so
+  repeated `{changelog}` blocks (across pages) fetch each product only once per build.
+- **Missing/partial bundles.** A registry that cannot be fetched or parsed is a hard error
+  (the block renders empty); an individual bundle that 404s or fails to parse is a warning and
+  is skipped, per the [consistency notes](#consistency-notes-the-consumer-must-tolerate).
+- **Schema evolution.** A `schema_version` newer than the consumer understands produces a
+  clear error rather than a silent mis-parse.
 - **Filtering.** `:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:` and
   `hide-features` apply identically to CDN-sourced bundles.
-- **Caching key.** Use the CDN response ETag (not the registry `etag` field) for revalidation.
+- **Version selection.** `:version:` renders a single target and works in both modes (shared match
+  on registry `target` or bundle file name, see `ChangelogVersionMatch`). In CDN mode the fetcher
+  uses it to download only the matching registry entry instead of every listed bundle.
+- **Security.** The base URL is trusted configuration; the product and registry-supplied bundle
+  file names are validated to single path segments so neither can traverse outside
+  `{product}/bundles/`.
+
+### Follow-ups (not yet implemented) [implementation-notes]
+
+- **Persistent / offline cache.** The first iteration memoizes per build but does not persist a
+  disk cache, so a cold build always reaches the CDN and an unreachable CDN yields an empty
+  render plus an error diagnostic. A follow-up should add an ETag-keyed on-disk cache under the
+  docs-builder app-data directory (mirroring `CrossLinkFetcher`) with offline fallback.
+- **`serve` mode staleness.** Because the in-process cache has no invalidation, a long-running
+  `serve` pins a product's CDN content for the process lifetime. Acceptable for now (serve
+  targets local markdown authoring, not changelog bundles); revisit alongside the disk cache.
 - **CDN staleness.** The distribution caches the manifest with a 1h default TTL (60s min), so a
-  freshly uploaded bundle may not appear in the CDN-served `registry-index.json` for up to an
-  hour. Acceptable for release notes, but if faster propagation is needed the producer (or a
-  docs-actions step) would have to issue a CloudFront invalidation on registry write. Out of
-  scope for the first iteration.
+  freshly uploaded bundle may not appear in the CDN-served `registry.json` for up to an
+  hour. If faster propagation is needed the producer (or a docs-actions step) would issue a
+  CloudFront invalidation on registry write.
+- **Caching key.** When the disk cache lands, use the CDN response ETag (not the registry
+  `etag` field) for revalidation.
 
-### Out of scope for the first iteration
+### Out of scope
 
-- Cross-product aggregation in a single directive block (start with one product per block).
+- Cross-product aggregation in a single directive block (one product per block).
 - Authenticated/private CDN access (the public bucket is anonymous-read by design).
 
 ## Related
