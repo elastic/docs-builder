@@ -22,7 +22,7 @@ jobs:
         #  - https://github.com/tj-actions/changed-files?tab=readme-ov-file#using-githubs-api-octocat
       - name: Get changed files
         id: check-files
-        uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
+        uses: tj-actions/changed-files@a284dc1814e3fd07f2e34267fc8f81227ed29fb8 # v45.0.6
         with:
           files: |
             **/*.asciidoc

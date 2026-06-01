@@ -27,6 +27,10 @@
 	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
 	<script src="@Model.Static("main.js")" defer></script>
+	@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is { } websiteSearchUrl)
+	{
+		<script type="module" src="@websiteSearchUrl"></script>
+	}
 	@if (Model.CanonicalBaseUrl is not null)
 	{
 		<link rel="canonical" href="@Model.CanonicalUrl" />

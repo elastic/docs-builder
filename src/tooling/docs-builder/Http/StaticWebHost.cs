@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 #if DEBUG
-using Elastic.Documentation.Api.Infrastructure;
+using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
@@ -39,7 +39,7 @@ public class StaticWebHost
 
 		_ = builder.AddDocumentationServiceDefaults();
 #if DEBUG
-		builder.Services.AddElasticDocsApiUsecases("dev");
+		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
 		_ = builder.Logging

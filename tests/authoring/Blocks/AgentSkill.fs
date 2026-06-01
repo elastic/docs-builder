@@ -26,14 +26,14 @@ type ``agent skill with url`` () =
 	<div class="agent-skill-content">
 		<div class="agent-skill-text">
 			<p>A skill is available to help AI agents with this topic.</p>
-			<p><a href="/explore-analyze/ai-features/agent-skills">Learn more about agent skills for Elastic</a></p>
+			<p><a href="/explore-analyze/ai-features/agent-skills#available-skills">Learn more about agent skills for Elastic</a></p>
 		</div>
-		<a href="https://github.com/elastic/agent-skills@elasticsearch-esql" target="_blank" rel="noopener noreferrer" class="agent-skill-button">
-			Get the skill
+		<button type="button" class="agent-skill-button" data-copy-text="npx skills add @elasticsearch-esql">
 			<svg class="agent-skill-button-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"></path>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"></path>
 			</svg>
-		</a>
+			Copy install command
+		</button>
 	</div>
 </div>
 """
@@ -64,14 +64,14 @@ This skill helps agents write and optimize ES|QL queries.
 		<div class="agent-skill-text">
 			<p>A skill is available to help AI agents with this topic.</p>
 			<p>This skill helps agents write and optimize ES|QL queries.</p>
-			<p><a href="/explore-analyze/ai-features/agent-skills">Learn more about agent skills for Elastic</a></p>
+			<p><a href="/explore-analyze/ai-features/agent-skills#available-skills">Learn more about agent skills for Elastic</a></p>
 		</div>
-		<a href="https://github.com/elastic/agent-skills@elasticsearch-esql" target="_blank" rel="noopener noreferrer" class="agent-skill-button">
-			Get the skill
+		<button type="button" class="agent-skill-button" data-copy-text="npx skills add @elasticsearch-esql">
 			<svg class="agent-skill-button-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"></path>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"></path>
 			</svg>
-		</a>
+			Copy install command
+		</button>
 	</div>
 </div>
 """

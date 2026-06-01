@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
@@ -142,6 +139,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Lifecycles.Should().Contain(Lifecycle.Preview);
 			config.Lifecycles.Should().Contain(Lifecycle.Beta);
 			config.Lifecycles.Should().Contain(Lifecycle.Ga);
+			config.Lifecycles.Should().Contain(Lifecycle.Experimental);
 		}
 		finally
 		{

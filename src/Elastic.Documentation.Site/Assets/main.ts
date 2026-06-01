@@ -1,3 +1,4 @@
+import { initAgentSkillCopy } from './agent-skill'
 import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
@@ -110,6 +111,7 @@ document.addEventListener('htmx:load', function () {
     initTocNav()
     initHighlight()
     initCopyButton()
+    initAgentSkillCopy()
     initTabs()
     initAppliesSwitch()
     initMath()

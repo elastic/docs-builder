@@ -7,6 +7,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Tests.AppliesTo;
 
@@ -278,6 +279,11 @@ public class ApplicableToJsonConverterSerializationTests
 				},
 				new Applicability
 				{
+					Lifecycle = ProductLifecycle.Experimental,
+					Version = (VersionSpec)"1.0.0"
+				},
+				new Applicability
+				{
 					Lifecycle = ProductLifecycle.Beta,
 					Version = (VersionSpec)"1.0.0"
 				},
@@ -302,6 +308,7 @@ public class ApplicableToJsonConverterSerializationTests
 		var json = JsonSerializer.Serialize(applicableTo, _options);
 
 		json.Should().Contain("\"lifecycle\": \"preview\"");
+		json.Should().Contain("\"lifecycle\": \"experimental\"");
 		json.Should().Contain("\"lifecycle\": \"beta\"");
 		json.Should().Contain("\"lifecycle\": \"ga\"");
 		json.Should().Contain("\"lifecycle\": \"deprecated\"");

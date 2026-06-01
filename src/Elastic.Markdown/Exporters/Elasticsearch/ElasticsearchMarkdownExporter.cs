@@ -14,6 +14,7 @@ using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Internal.Search;
 using Elastic.Mapping;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
@@ -175,7 +176,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ExportMaxConcurrency = _endpoint.IndexNumThreads,
 			ExportMaxRetries = _endpoint.MaxRetries
 		};
-		options.SerializerContext = SourceGenerationContext.Default;
+		options.SerializerContext = Documentation.Serialization.SourceGenerationContext.Default;
 		options.ExportResponseCallback = (response, buffer) =>
 		{
 			var sent = response.Items?.Count ?? 0;

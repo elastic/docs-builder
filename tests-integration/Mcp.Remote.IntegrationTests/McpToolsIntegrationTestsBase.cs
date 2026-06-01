@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Mcp.Remote.Gateways;
@@ -48,11 +47,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		var clientAccessor = CreateElasticsearchClientAccessor();
 
 		var productsConfig = CreateProductsConfiguration();
-		var fullSearchGateway = new FullSearchGateway(
-			clientAccessor,
-			productsConfig,
-			NullLogger<FullSearchGateway>.Instance
-		);
+		var fullSearchGateway = BuildFullSearchAdapter(clientAccessor, productsConfig);
 
 		var searchTools = new SearchTools(fullSearchGateway, NullLogger<SearchTools>.Instance);
 		return (searchTools, clientAccessor);
@@ -78,9 +73,27 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		var clientAccessor = CreateElasticsearchClientAccessor();
 
 		var productsConfig = CreateProductsConfiguration();
-		var fullSearchGateway = new FullSearchGateway(clientAccessor, productsConfig, NullLogger<FullSearchGateway>.Instance);
+		var fullSearchGateway = BuildFullSearchAdapter(clientAccessor, productsConfig);
 		var coherenceTools = new CoherenceTools(fullSearchGateway, NullLogger<CoherenceTools>.Instance);
 		return (coherenceTools, clientAccessor);
+	}
+
+	private static FullSearchService BuildFullSearchAdapter(
+		ElasticsearchClientAccessor clientAccessor,
+		Elastic.Documentation.Configuration.Products.ProductsConfiguration productsConfig)
+	{
+		var sharedConfig = new Elastic.Internal.Search.Configuration.SearchConfiguration
+		{
+			SynonymBiDirectional = clientAccessor.SynonymBiDirectional,
+			DiminishTerms = clientAccessor.DiminishTerms.ToArray(),
+			RulesetName = clientAccessor.RulesetName,
+			SemanticEnabled = true
+		};
+		var inner = new Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>(
+			clientAccessor.Client, clientAccessor.SearchIndex, sharedConfig,
+			NullLogger<Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>>.Instance,
+			productsConfig);
+		return new FullSearchService(inner, productsConfig, NullLogger<FullSearchService>.Instance);
 	}
 
 	/// <summary>

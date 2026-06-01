@@ -10,7 +10,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
 using YamlDotNet.Serialization;
-using static Elastic.Documentation.Configuration.SymlinkValidator;
+using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Toc;
 

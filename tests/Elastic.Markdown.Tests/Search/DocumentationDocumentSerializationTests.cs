@@ -9,26 +9,28 @@ using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 
 namespace Elastic.Markdown.Tests.Search;
 
 public class DocumentationDocumentSerializationTests
 {
-	private readonly JsonSerializerOptions _options = new(SourceGenerationContext.Default.Options);
+	private readonly JsonSerializerOptions _options = new(Documentation.Serialization.SourceGenerationContext.Default.Options);
 
 	[Fact]
 	public void SerializeDocumentWithStackAppliesToProducesCorrectJson()
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/page",
 			Title = "Test Page",
 			SearchTitle = "Test Page",
 			Applies = new ApplicableTo
 			{
 				Stack = AppliesCollection.GenerallyAvailable
-			}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -55,7 +57,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/deployment",
 			Title = "Deployment Test",
 			SearchTitle = "Deployment Test",
@@ -66,7 +68,7 @@ public class DocumentationDocumentSerializationTests
 					Ess = AppliesCollection.GenerallyAvailable,
 					Ece = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"3.5.0" }])
 				}
-			}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -97,7 +99,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/serverless",
 			Title = "Serverless Test",
 			SearchTitle = "Serverless Test",
@@ -108,7 +110,7 @@ public class DocumentationDocumentSerializationTests
 					Elasticsearch = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.0.0" }]),
 					Security = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.TechnicalPreview, Version = (VersionSpec)"1.0.0" }])
 				}
-			}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -139,14 +141,14 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/product",
 			Title = "Product Test",
 			SearchTitle = "Product Test",
 			Applies = new ApplicableTo
 			{
 				Product = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"2.0.0" }])
-			}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -169,7 +171,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/apm",
 			Title = "APM Test",
 			SearchTitle = "APM Test",
@@ -180,7 +182,7 @@ public class DocumentationDocumentSerializationTests
 					ApmAgentDotnet = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"1.5.0" }]),
 					ApmAgentNode = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"2.0.0" }])
 				}
-			}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -211,7 +213,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/complex",
 			Title = "Complex Test",
 			SearchTitle = "Complex Test",
@@ -226,7 +228,7 @@ public class DocumentationDocumentSerializationTests
 				{
 					Elasticsearch = AppliesCollection.GenerallyAvailable
 				}
-			}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -248,7 +250,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/no-applies",
 			Title = "No Applies Test",
 			SearchTitle = "No Applies Test",
@@ -275,11 +277,11 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/empty-applies",
 			Title = "Empty Applies Test",
 			SearchTitle = "Empty Applies Test",
-			Applies = new ApplicableTo()
+			Applies = new ApplicableTo().ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
@@ -294,9 +296,18 @@ public class DocumentationDocumentSerializationTests
 	[Fact]
 	public void RoundTripDocumentWithAppliesToPreservesData()
 	{
+		var originalApplies = new ApplicableTo
+		{
+			Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.5.0" }]),
+			Deployment = new DeploymentApplicability
+			{
+				Ess = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"8.6.0" }])
+			}
+		}.ToAppliesTo();
+
 		var original = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/roundtrip",
 			Title = "Round Trip Test",
 			SearchTitle = "Round Trip Test",
@@ -305,14 +316,7 @@ public class DocumentationDocumentSerializationTests
 			LastUpdated = DateTimeOffset.Parse("2024-01-15T09:00:00Z", CultureInfo.InvariantCulture),
 			ContentLastUpdated = DateTimeOffset.Parse("2024-01-14T08:00:00Z", CultureInfo.InvariantCulture),
 			ContentBodyHash = "abc123def456abc1",
-			Applies = new ApplicableTo
-			{
-				Stack = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.GenerallyAvailable, Version = (VersionSpec)"8.5.0" }]),
-				Deployment = new DeploymentApplicability
-				{
-					Ess = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"8.6.0" }])
-				}
-			},
+			Applies = originalApplies,
 			Headings = ["Introduction", "Getting Started"],
 			Links = ["/link1", "/link2"],
 			Body = "Test body content",
@@ -327,9 +331,9 @@ public class DocumentationDocumentSerializationTests
 		deserialized.Url.Should().Be(original.Url);
 		deserialized.Title.Should().Be(original.Title);
 		deserialized.Applies.Should().NotBeNull();
-		deserialized.Applies.Stack.Should().BeEquivalentTo(original.Applies.Stack);
-		deserialized.Applies.Deployment.Should().NotBeNull();
-		deserialized.Applies.Deployment.Ess.Should().BeEquivalentTo(original.Applies.Deployment.Ess);
+		deserialized.Applies.Should().HaveCount(2);
+		deserialized.Applies.Should().Contain(e => e.Type == "stack" && e.Lifecycle == "ga" && e.Version == "8.5+");
+		deserialized.Applies.Should().Contain(e => e.Type == "deployment" && e.SubType == "ess" && e.Lifecycle == "beta" && e.Version == "8.6+");
 		deserialized.ContentLastUpdated.Should().Be(original.ContentLastUpdated);
 		deserialized.ContentBodyHash.Should().Be(original.ContentBodyHash);
 		deserialized.ContentType.Should().Be(original.ContentType);
@@ -342,7 +346,7 @@ public class DocumentationDocumentSerializationTests
 		{
 			var doc = new DocumentationDocument
 			{
-				Type = type,
+				ContentType = type,
 				Url = $"/test/{type}",
 				Title = "T",
 				SearchTitle = "T"
@@ -352,7 +356,7 @@ public class DocumentationDocumentSerializationTests
 			using var parsed = JsonDocument.Parse(json);
 			var root = parsed.RootElement;
 
-			root.GetProperty("type").GetString().Should().Be(type);
+			root.GetProperty("content_type").GetString().Should().Be(type);
 			root.GetProperty("content_type").GetString().Should().Be(type);
 		}
 	}
@@ -374,7 +378,9 @@ public class DocumentationDocumentSerializationTests
 		var deserialized = JsonSerializer.Deserialize<DocumentationDocument>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized.Type.Should().Be("doc");
+		// Type is now the polymorphic CLR discriminator (always "docs" for DocumentationDocument);
+		// docs-builder's legacy `type: "doc"` JSON value is no longer mapped to a property.
+		deserialized.Type.Should().Be("docs");
 		deserialized.ContentType.Should().Be("archived-docs");
 	}
 
@@ -383,7 +389,7 @@ public class DocumentationDocumentSerializationTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Type = "doc",
+			ContentType = "doc",
 			Url = "/test/multiple",
 			Title = "Multiple Test",
 			SearchTitle = "Multiple Test",
@@ -395,7 +401,7 @@ public class DocumentationDocumentSerializationTests
 					new Applicability { Lifecycle = ProductLifecycle.Beta, Version = (VersionSpec)"7.17.0" },
 					new Applicability { Lifecycle = ProductLifecycle.Deprecated, Version = (VersionSpec)"7.0.0" }
 				])
-			}
+			}.ToAppliesTo()
 		};
 
 		var json = JsonSerializer.Serialize(doc, _options);
