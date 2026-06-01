@@ -62,7 +62,14 @@ public class AssemblerBuilder(
 				continue;
 			}
 
-			var documentInferrer = CreateInferrer(set);
+			// Create inferrer per-repository with git context
+			var documentInferrer = new DocumentInferrerService(
+				context.ProductsConfiguration,
+				context.VersionsConfiguration,
+				context.LegacyUrlMappings,
+				set.DocumentationSet.Configuration,
+				set.DocumentationSet.Context.Git
+			);
 
 			var stopwatch = Stopwatch.StartNew();
 			try
@@ -148,33 +155,6 @@ public class AssemblerBuilder(
 
 			return uri?.AbsolutePath ?? string.Empty;
 		}
-	}
-
-	private DocumentInferrerService CreateInferrer(AssemblerDocumentationSet set) =>
-		new(
-			context.ProductsConfiguration,
-			context.VersionsConfiguration,
-			context.LegacyUrlMappings,
-			set.DocumentationSet.Configuration,
-			set.DocumentationSet.Context.Git
-		);
-
-	public DocumentationGenerator CreateGenerator(AssemblerDocumentationSet set)
-	{
-		SetFeatureFlags(set);
-		return new DocumentationGenerator(
-			set.DocumentationSet,
-			logFactory, NavigationTraversable, HtmlWriter,
-			pathProvider,
-			legacyUrlMapper: LegacyUrlMapper,
-			documentInferrer: CreateInferrer(set)
-		);
-	}
-
-	public async Task BuildOneAsync(AssemblerDocumentationSet set, Cancel ctx)
-	{
-		await set.DocumentationSet.ResolveDirectoryTree(ctx);
-		_ = await BuildAsync(set, null, CreateInferrer(set), ctx);
 	}
 
 	private async Task<GenerationResult> BuildAsync(AssemblerDocumentationSet set, IMarkdownExporter[]? markdownExporters, IDocumentInferrerService documentInferrer, Cancel ctx)

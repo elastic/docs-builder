@@ -16,11 +16,9 @@ public class DocSetConfigurationCrossLinkFetcher(
 	ConfigurationFile configuration,
 	ILinkIndexReader? linkIndexProvider = null,
 	ILinkIndexReader? codexLinkIndexReader = null)
-	: CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous(), ownsReader: linkIndexProvider is null)
+	: CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous())
 {
 	private readonly ILogger _logger = logFactory.CreateLogger(nameof(DocSetConfigurationCrossLinkFetcher));
-	// _codexReader is injected by the caller who retains ownership and is responsible for disposal.
-	// ReloadableGeneratorState, the primary caller, disposes it directly in its own Dispose().
 	private readonly ILinkIndexReader? _codexReader = codexLinkIndexReader;
 
 	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
@@ -33,7 +31,7 @@ public class DocSetConfigurationCrossLinkFetcher(
 		var codexRepositories = new HashSet<string>();
 		var declaredRepositories = new HashSet<string>();
 
-		var publicReader = LinkIndexProvider;
+		var publicReader = linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous();
 		var useDualRegistry = configuration.Registry != DocSetRegistry.Public && _codexReader is not null;
 
 		// Fetch each registry once up front so per-repository lookups don't trigger N S3 round-trips.
