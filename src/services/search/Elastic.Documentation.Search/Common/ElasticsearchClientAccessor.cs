@@ -2,11 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Serialization.Metadata;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Search;
 using Elastic.Internal.Search;
 using Elastic.Transport;
 
@@ -65,9 +65,17 @@ public class ElasticsearchClientAccessor : IDisposable
 				? new BasicAuthentication(username, password)
 				: null!;
 
+		// Combine the contract's source-gen context with a reflection fallback so that
+		// internal package types (e.g. RuleQueryMatchCriteria from the Elasticsearch impl
+		// package) are still serializable when the ES client delegates to the source serializer.
+		var resolver = JsonTypeInfoResolver.Combine(
+			SourceGenerationContext.Default,
+			new DefaultJsonTypeInfoResolver()
+		);
+
 		_clientSettings = new ElasticsearchClientSettings(
 				_nodePool,
-				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default)
+				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, resolver, null)
 			)
 			.DefaultIndex(SearchIndex)
 			.Authentication(auth);

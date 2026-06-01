@@ -18,7 +18,6 @@ namespace Elastic.Documentation.Search;
 public partial class FullSearchService(
 	ISearchService<DocumentationDocument> inner,
 	IProductNameLookup productNameLookup,
-	ElasticsearchClientAccessor clientAccessor,
 	ILogger<FullSearchService> logger)
 	: IFullSearchService, IDisposable
 {
@@ -83,10 +82,10 @@ public partial class FullSearchService(
 		NavigationSection = item.Document.NavigationSection,
 		LastUpdated = item.Document.LastUpdated,
 		Product = MapProduct(item.Document.Product),
-		RelatedProducts = item.Document.RelatedProducts?
+		RelatedProducts = (item.Document.RelatedProducts?
 			.Where(p => p.Id is not null)
 			.Select(p => MapProduct(p)!)
-			.ToArray()
+			.ToArray()) ?? []
 	};
 
 	private FullSearchProduct? MapProduct(IndexedProduct? p) =>
@@ -112,9 +111,5 @@ public partial class FullSearchService(
 			})
 	};
 
-	public void Dispose()
-	{
-		GC.SuppressFinalize(this);
-		clientAccessor.Dispose();
-	}
+	public void Dispose() => GC.SuppressFinalize(this);
 }

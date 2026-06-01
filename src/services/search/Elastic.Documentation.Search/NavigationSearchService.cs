@@ -96,9 +96,5 @@ public partial class NavigationSearchService(
 		return (noop, noop);
 	}
 
-	public void Dispose()
-	{
-		GC.SuppressFinalize(this);
-		clientAccessor.Dispose();
-	}
+	public void Dispose() => GC.SuppressFinalize(this);
 }

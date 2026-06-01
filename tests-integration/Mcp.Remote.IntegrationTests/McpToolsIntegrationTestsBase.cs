@@ -93,7 +93,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 			clientAccessor.Client, clientAccessor.SearchIndex, sharedConfig,
 			NullLogger<Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>>.Instance,
 			productsConfig);
-		return new FullSearchService(inner, productsConfig, clientAccessor, NullLogger<FullSearchService>.Instance);
+		return new FullSearchService(inner, productsConfig, NullLogger<FullSearchService>.Instance);
 	}
 
 	/// <summary>

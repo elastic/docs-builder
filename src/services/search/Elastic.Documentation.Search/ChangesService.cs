@@ -115,7 +115,7 @@ public partial class ChangesService(
 							e => e.Url,
 							e => e.Title,
 							e => e.SearchTitle,
-							e => e.Type,
+							e => e.ContentType,
 							e => e.ContentLastUpdated
 						)
 					)
