@@ -69,7 +69,7 @@ public class ElasticsearchClientAccessor : IDisposable
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(
 					settings,
 					ElasticsearchClientJsonResolver.Default,
-					static jsonOptions => jsonOptions.Converters.Add(RuleQueryMatchCriteriaJsonConverter.Instance)))
+					static jsonOptions => jsonOptions.Converters.Add(RuleQueryMatchCriteriaJsonConverterFactory.Instance)))
 			.DefaultIndex(SearchIndex)
 			.Authentication(auth);
 

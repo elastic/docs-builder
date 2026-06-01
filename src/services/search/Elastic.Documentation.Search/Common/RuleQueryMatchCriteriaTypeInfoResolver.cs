@@ -41,9 +41,6 @@ internal sealed class RuleQueryMatchCriteriaTypeInfoResolver(IJsonTypeInfoResolv
 		"AOT",
 		"IL3050",
 		Justification = "RuleQueryMatchCriteria is internal to Elastic.Internal.Search.Elasticsearch; serialization uses an UnsafeAccessor-based converter.")]
-	private static JsonTypeInfo CreateRuleQueryMatchCriteriaTypeInfo(JsonSerializerOptions options)
-	{
-		options.Converters.Add(RuleQueryMatchCriteriaJsonConverter.Instance);
-		return JsonTypeInfo.CreateJsonTypeInfo(RuleQueryMatchCriteriaType, options);
-	}
+	private static JsonTypeInfo CreateRuleQueryMatchCriteriaTypeInfo(JsonSerializerOptions options) =>
+		JsonTypeInfo.CreateJsonTypeInfo(RuleQueryMatchCriteriaType, options);
 }

@@ -13,6 +13,24 @@ namespace Elastic.Documentation.Search.Common;
 /// Serializes <c>Elastic.Internal.Search.Elasticsearch.RuleQueryMatchCriteria</c>, which is internal to the
 /// Elasticsearch search package and therefore not covered by public <see cref="JsonSerializerContext"/> types.
 /// </summary>
+internal sealed class RuleQueryMatchCriteriaJsonConverterFactory : JsonConverterFactory
+{
+	public static readonly RuleQueryMatchCriteriaJsonConverterFactory Instance = new();
+
+	[DynamicDependency(
+		DynamicallyAccessedMemberTypes.All,
+		"Elastic.Internal.Search.Elasticsearch.RuleQueryMatchCriteria",
+		"Elastic.Internal.Search.Elasticsearch")]
+	private static readonly Type RuleQueryMatchCriteriaType = Type.GetType(
+		"Elastic.Internal.Search.Elasticsearch.RuleQueryMatchCriteria, Elastic.Internal.Search.Elasticsearch",
+		throwOnError: true)!;
+
+	public override bool CanConvert(Type typeToConvert) => typeToConvert == RuleQueryMatchCriteriaType;
+
+	public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+		RuleQueryMatchCriteriaJsonConverter.Instance;
+}
+
 internal sealed class RuleQueryMatchCriteriaJsonConverter : JsonConverter<object>
 {
 	public static readonly RuleQueryMatchCriteriaJsonConverter Instance = new();
