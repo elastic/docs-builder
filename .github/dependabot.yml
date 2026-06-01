@@ -10,7 +10,7 @@ updates:
     labels:
       - chore
     cooldown:
-      default-days: 7
+      default-days: 14
   - package-ecosystem: npm
     directories:
       - '**/*'
@@ -50,4 +50,4 @@ updates:
     labels:
       - chore
     cooldown:
-      default-days: 7
+      default-days: 14
