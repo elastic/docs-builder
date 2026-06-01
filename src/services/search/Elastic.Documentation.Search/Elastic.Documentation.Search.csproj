@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <AssemblyName>Elastic.Documentation.Search</AssemblyName>
         <RootNamespace>Elastic.Documentation.Search</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
     </PropertyGroup>
 
     <ItemGroup>
