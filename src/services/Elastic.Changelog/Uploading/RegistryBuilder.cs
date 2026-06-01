@@ -53,7 +53,7 @@ internal sealed class RegistryBuilder(
 		IReadOnlyList<UploadTarget> bundleTargets,
 		Cancel ctx)
 	{
-		// Each upload target carries a "{product}/bundles/{file}" S3 key. Group by product
+		// Each upload target carries a "{product}/bundle/{file}" S3 key. Group by product
 		// so we can produce one manifest per affected product.
 		var byProduct = bundleTargets
 			.Select(t => (Target: t, Product: ExtractProduct(t.S3Key)))
@@ -95,7 +95,7 @@ internal sealed class RegistryBuilder(
 
 	/// <summary>
 	/// Extracts the leading <c>product</c> segment from an S3 key shaped like
-	/// <c>{product}/bundles/{file}</c>. Returns null on unrecognized shapes.
+	/// <c>{product}/bundle/{file}</c>. Returns null on unrecognized shapes.
 	/// </summary>
 	private static string? ExtractProduct(string s3Key)
 	{

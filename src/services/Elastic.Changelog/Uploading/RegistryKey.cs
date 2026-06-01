@@ -21,7 +21,7 @@ public static class RegistryKey
 	/// <remarks>
 	/// Used by the changelog scrubber Lambda to decide whether to pass an incoming
 	/// <c>*.json</c> object through to the public bucket. Anything else (e.g. nested
-	/// under a bundles/ prefix, or a multi-segment product) is rejected, which keeps
+	/// under a bundle/ prefix, or a multi-segment product) is rejected, which keeps
 	/// arbitrary JSON out of the public surface.
 	/// </remarks>
 	public static bool IsRegistry(string key)

@@ -46,7 +46,7 @@ public sealed record RegistryBundle
 {
 	/// <summary>
 	/// Bundle file name (e.g. <c>9.3.0.yaml</c> or <c>2025-11.yaml</c>),
-	/// resolved at <c>{product}/bundles/{file}</c>.
+	/// resolved at <c>{product}/bundle/{file}</c>.
 	/// </summary>
 	public required string File { get; init; }
 

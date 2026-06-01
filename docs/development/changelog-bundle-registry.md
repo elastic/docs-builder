@@ -34,7 +34,7 @@ copies, no cross-repo file syncing.
 │  Client CI   │  --artifact-type      │  Private bundles   │ ───────────────────▶ │ Changelog scrubber │
 │ (docs-actions)│  bundle  ───────────▶ │  S3 bucket         │                       │ Lambda             │
 └──────────────┘                       │                    │                       └─────────┬─────────┘
-       │                               │  {product}/bundles/*.yaml                            │ scrub + copy
+       │                               │  {product}/bundle/*.yaml                             │ scrub + copy
        │ also refreshes                │  {product}/registry.json                       │ (pass-through for
        └──────────────────────────────▶                    │                                  │  registry.json)
                                        └────────────────────┘                                 ▼
@@ -46,7 +46,7 @@ copies, no cross-repo file syncing.
 
 1. **Producer** — `changelog upload --artifact-type bundle --target s3` (invoked by the
    docs-actions changelog upload workflow) uploads each bundle to
-   `{product}/bundles/{file}` in the **private** bucket, then refreshes
+   `{product}/bundle/{file}` in the **private** bucket, then refreshes
    `{product}/registry.json` for every product the run touched.
 2. **Scrubber Lambda** — triggered by `s3:ObjectCreated` on the private bucket, it scrubs
    private repository references out of bundle YAML and writes the sanitized copy to the
@@ -57,7 +57,7 @@ copies, no cross-repo file syncing.
 ### Why a registry instead of an S3 listing
 
 The public surface is a CDN (CloudFront) in front of S3. CloudFront does not expose bucket
-listing, so the consumer cannot enumerate `{product}/bundles/`. The registry is a stable,
+listing, so the consumer cannot enumerate `{product}/bundle/`. The registry is a stable,
 cacheable manifest at a predictable key that lists exactly which bundles exist for a product.
 
 ## `registry.json` format
@@ -81,7 +81,7 @@ Stored at `{product}/registry.json`. Serialized with `snake_case` keys.
 | `schema_version` | Bumped when consumers must change their parser. |
 | `product` | Product identifier; matches the first S3 key segment. |
 | `generated_at` | UTC timestamp of the last regeneration. |
-| `bundles[].file` | Bundle file name, resolved at `{product}/bundles/{file}`. |
+| `bundles[].file` | Bundle file name, resolved at `{product}/bundle/{file}`. |
 | `bundles[].target` | Target version/date from the bundle's declaration of **this** product (may be null). |
 | `bundles[].etag` | See the ETag caveat below. |
 
@@ -104,7 +104,7 @@ reads of the same bucket).
 The refresh runs inside `ChangelogUploadService` after a successful **bundle** upload (it is
 skipped for `--artifact-type changelog`). `RegistryBuilder`:
 
-- Groups the run's upload targets by product (from the `{product}/bundles/{file}` key).
+- Groups the run's upload targets by product (from the `{product}/bundle/{file}` key).
 - For each product, derives one `registry` entry per bundle (file name, that product's
   target, locally-computed S3 ETag).
 - Reads the existing manifest from S3, merges by file name (re-uploads replace their entry;
@@ -187,7 +187,7 @@ also given) and the directive sources bundles from the CDN instead.
 ### Fetch flow
 
 1. `GET {cdnBase}/{product}/registry.json`.
-2. Parse it; for each `bundles[].file`, `GET {cdnBase}/{product}/bundles/{file}`.
+2. Parse it; for each `bundles[].file`, `GET {cdnBase}/{product}/bundle/{file}`.
 3. Feed the downloaded YAML into the existing `BundleLoader` → `MergeBundlesByTarget` →
    render pipeline. **Rendering is unchanged**; only the source of the bundle bytes differs.
 
@@ -216,7 +216,7 @@ entry files; the existing private-repo link and description visibility logic sti
   uses it to download only the matching registry entry instead of every listed bundle.
 - **Security.** The base URL is trusted configuration; the product and registry-supplied bundle
   file names are validated to single path segments so neither can traverse outside
-  `{product}/bundles/`.
+  `{product}/bundle/`.
 
 ### Follow-ups (not yet implemented) [implementation-notes]
 

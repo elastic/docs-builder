@@ -28,7 +28,7 @@ public sealed record ChangelogRegistry
 /// <summary>One entry in <see cref="ChangelogRegistry.Bundles"/>.</summary>
 public sealed record ChangelogRegistryBundle
 {
-	/// <summary>Bundle file name, resolved at <c>{product}/bundles/{file}</c> on the CDN.</summary>
+	/// <summary>Bundle file name, resolved at <c>{product}/bundle/{file}</c> on the CDN.</summary>
 	public string? File { get; init; }
 
 	/// <summary>Target version or release date declared by the bundle (e.g. <c>9.3.0</c>).</summary>

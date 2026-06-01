@@ -492,7 +492,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundles/9.3.0.yaml"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundle/9.3.0.yaml"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 

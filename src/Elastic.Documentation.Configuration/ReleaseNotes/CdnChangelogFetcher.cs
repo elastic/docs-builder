@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// <summary>
 /// Fetches changelog bundles for a single product from the public CDN at build time, for the
 /// <c>changelog</c> directive in <c>cdn:</c> mode. It reads <c>{base}/{product}/registry.json</c>
-/// to enumerate bundles, downloads each <c>{base}/{product}/bundles/{file}</c>, and parses them via
+/// to enumerate bundles, downloads each <c>{base}/{product}/bundle/{file}</c>, and parses them via
 /// <see cref="BundleLoader.LoadBundlesFromContent"/>.
 /// </summary>
 /// <remarks>
@@ -156,7 +156,7 @@ public sealed class CdnChangelogFetcher(ILoggerFactory logFactory, IFileSystem f
 				continue;
 			}
 
-			var bundleUri = Combine(baseUri, product, "bundles", fileName);
+			var bundleUri = Combine(baseUri, product, "bundle", fileName);
 			try
 			{
 				contents.Add((fileName, FetchText(bundleUri, ctx)));
@@ -190,7 +190,7 @@ public sealed class CdnChangelogFetcher(ILoggerFactory logFactory, IFileSystem f
 
 	/// <summary>
 	/// Guards against path traversal or nested keys sneaking in via the registry: a bundle file name
-	/// must be a single path segment (the producer always writes <c>{product}/bundles/{file}</c>).
+	/// must be a single path segment (the producer always writes <c>{product}/bundle/{file}</c>).
 	/// </summary>
 	private static bool IsSafeBundleFileName(string fileName) =>
 		!fileName.Contains('/', StringComparison.Ordinal)

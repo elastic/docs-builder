@@ -105,7 +105,7 @@ public class RegistryBuilderTests
 	public async Task Refresh_NoExistingManifest_CreatesManifestWithIfNoneMatch()
 	{
 		var path = AddBundle("9.3.0.yaml", "elasticsearch", "9.3.0");
-		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundles/9.3.0.yaml") };
+		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundle/9.3.0.yaml") };
 		StubExistingManifestNotFound();
 
 		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
@@ -145,8 +145,8 @@ public class RegistryBuilderTests
 		var ten = AddBundle("9.4.0.yaml", "elasticsearch", "9.4.0");
 		var targets = new List<UploadTarget>
 		{
-			new(newer, "elasticsearch/bundles/9.3.0.yaml"),
-			new(ten,   "elasticsearch/bundles/9.4.0.yaml")
+			new(newer, "elasticsearch/bundle/9.3.0.yaml"),
+			new(ten,   "elasticsearch/bundle/9.4.0.yaml")
 		};
 
 		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
@@ -174,8 +174,8 @@ public class RegistryBuilderTests
 		var kb = AddBundle("kb-9.3.0.yaml", "kibana", "9.3.0");
 		var targets = new List<UploadTarget>
 		{
-			new(es, "elasticsearch/bundles/9.3.0.yaml"),
-			new(kb, "kibana/bundles/kb-9.3.0.yaml")
+			new(es, "elasticsearch/bundle/9.3.0.yaml"),
+			new(kb, "kibana/bundle/kb-9.3.0.yaml")
 		};
 		StubExistingManifestNotFound();
 
@@ -212,8 +212,8 @@ public class RegistryBuilderTests
 			"""));
 		var targets = new List<UploadTarget>
 		{
-			new(path, "elasticsearch/bundles/multi.yaml"),
-			new(path, "kibana/bundles/multi.yaml")
+			new(path, "elasticsearch/bundle/multi.yaml"),
+			new(path, "kibana/bundle/multi.yaml")
 		};
 		StubExistingManifestNotFound();
 
@@ -237,7 +237,7 @@ public class RegistryBuilderTests
 			});
 
 		var path = AddBundle("9.3.0.yaml", "elasticsearch", "9.3.0");
-		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundles/9.3.0.yaml") };
+		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundle/9.3.0.yaml") };
 
 		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
 
@@ -257,7 +257,7 @@ public class RegistryBuilderTests
 		_mockFileSystem.AddFile(path, new MockFileData("""
 			entries: []
 			"""));
-		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundles/no-target.yaml") };
+		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundle/no-target.yaml") };
 		StubExistingManifestNotFound();
 
 		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
@@ -285,7 +285,7 @@ public class RegistryBuilderTests
 		};
 		StubExistingManifest("elasticsearch", existing, "\"manifest-v1\"");
 
-		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundles/9.3.0.yaml") };
+		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundle/9.3.0.yaml") };
 		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
 
 		result.Unchanged.Should().Be(1);
@@ -324,7 +324,7 @@ public class RegistryBuilderTests
 			.Once();
 
 		var path = AddBundle("9.4.0.yaml", "elasticsearch", "9.4.0");
-		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundles/9.4.0.yaml") };
+		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundle/9.4.0.yaml") };
 
 		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
 
@@ -357,7 +357,7 @@ public class RegistryBuilderTests
 			.Throws(new AmazonS3Exception("Precondition Failed") { StatusCode = HttpStatusCode.PreconditionFailed });
 
 		var path = AddBundle("9.4.0.yaml", "elasticsearch", "9.4.0");
-		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundles/9.4.0.yaml") };
+		var targets = new List<UploadTarget> { new(path, "elasticsearch/bundle/9.4.0.yaml") };
 
 		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
 
