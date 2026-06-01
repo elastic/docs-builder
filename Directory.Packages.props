@@ -68,7 +68,7 @@
     <PackageVersion Include="Proc.Fs" Version="0.13.0" />
     <PackageVersion Include="Fake.Tools.Git" Version="6.1.4" />
     <PackageVersion Include="Fake.IO.Zip" Version="6.1.4" />
-    <PackageVersion Include="FSharp.Core" Version="10.1.201" />
+    <PackageVersion Include="FSharp.Core" Version="10.1.300" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Nullean.Argh" Version="0.16.4" />
