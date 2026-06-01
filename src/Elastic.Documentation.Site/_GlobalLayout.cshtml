@@ -15,6 +15,13 @@
 	data-root-path="@(Model.Htmx.GetRootPath())"
 	hx-boost="true" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator"
 	>
+<svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+	<defs>
+		<symbol id="icon-chevron-down" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+		</symbol>
+	</defs>
+</svg>
 @if (Model.GoogleTagManager.Enabled)
 {
 	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=@(Model.GoogleTagManager.Id)@(new HtmlString(Model.GoogleTagManager.QueryString()))"
