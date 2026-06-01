@@ -27,6 +27,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Bootstrap Action Workspace
         uses: ./.github/actions/bootstrap
         
@@ -34,6 +36,7 @@ jobs:
         with:
           repository: ${{ matrix.repository }}
           path: test-repo
+          persist-credentials: false
 
       - name: Build documentation
         id: docs-build
@@ -41,7 +44,9 @@ jobs:
           dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "/docs" -p test-repo
       
       - name: Verify landing-page-path output
-        run: test ${{ steps.docs-build.outputs.landing-page-path }} == ${{ matrix.landing-page-path-output }}
+        run: test "${STEPS_DOCS_BUILD_OUTPUTS_LANDING_PAGE_PATH}" = "${{ matrix.landing-page-path-output }}"
+        env:
+          STEPS_DOCS_BUILD_OUTPUTS_LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path }}
 
       - name: Verify link validation
         run: |
