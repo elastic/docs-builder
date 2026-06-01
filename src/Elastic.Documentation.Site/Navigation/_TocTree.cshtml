@@ -38,14 +38,14 @@
 							</div>
 						</button>
 					<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
-						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md">
+						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md"
+						@Model.Htmx.GetNavHxAttributes(false, "mouseover")>
 				@foreach (var item in Model.TopLevelItems)
 				{
 								<li class="block">
 									<a
 										class="block py-2 px-4 hover:underline hover:text-black hover:bg-grey-10 active:bg-blue-elastic-70 active:text-white font-semibold @(item.NavigationRoot.Id == Model.Tree.Id ? "text-blue-elastic" : "")"
-										href="@item.Url"
-										@Model.Htmx.GetNavHxAttributes(false, "mouseover")>
+										href="@item.Url">
 							@item.NavigationTitle
 						</a>
 					</li>
@@ -62,7 +62,7 @@
 		</div>
 	</div>
 
-	<ul class="block px-4" id="nav-tree">
+	<ul class="block px-4" id="nav-tree" @Model.Htmx.GetNavHxAttributes(true)>
 		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 		{
 			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
