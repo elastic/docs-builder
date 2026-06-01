@@ -44,7 +44,7 @@ jobs:
           dotnet run --project src/tooling/docs-builder -- --strict --path-prefix "/docs" -p test-repo
       
       - name: Verify landing-page-path output
-        run: test ${STEPS_DOCS_BUILD_OUTPUTS_LANDING_PAGE_PATH} == ${{ matrix.landing-page-path-output }}
+        run: test "${STEPS_DOCS_BUILD_OUTPUTS_LANDING_PAGE_PATH}" = "${{ matrix.landing-page-path-output }}"
         env:
           STEPS_DOCS_BUILD_OUTPUTS_LANDING_PAGE_PATH: ${{ steps.docs-build.outputs.landing-page-path }}
 
