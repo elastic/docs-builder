@@ -1,0 +1,22 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # Official GitHub and Elastic actions may use tag/branch refs.
+        actions/*: ref-pin
+        elastic/*: ref-pin
+        # All other actions must be pinned to a commit SHA (implicit "*": hash-pin).
+
+  # Intentional pull_request_target for fork PRs / label automation / preview cleanup.
+  dangerous-triggers:
+    ignore:
+      - assembler-preview-cleanup.yml
+      - docs-preview-cleanup-local.yml
+      - required-labels.yml
+
+  # Low-confidence expansions in trusted workflow contexts (github.event, step outputs).
+  template-injection:
+    ignore:
+      - assembler-preview.yml
+      - docs-preview-local.yml
+      - release.yml
