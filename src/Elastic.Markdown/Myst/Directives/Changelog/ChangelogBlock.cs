@@ -213,10 +213,23 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		DropdownsEnabled = PropBool("dropdowns");
 		VersionFilter = Prop("version") is { Length: > 0 } v ? v.Trim() : null;
 
-		CdnProduct = Prop("cdn");
-		if (!string.IsNullOrWhiteSpace(CdnProduct))
+		if (Properties?.ContainsKey("cdn") == true)
 		{
-			LoadCdnBundles(CdnProduct);
+			// :cdn: takes an explicit product, or may be valueless to infer the product from the
+			// repository that holds the doc (the common case where the repo name is the product id).
+			var product = Prop("cdn") is { Length: > 0 } explicitProduct
+				? explicitProduct.Trim()
+				: InferCdnProductFromRepository();
+
+			if (string.IsNullOrWhiteSpace(product))
+			{
+				this.EmitError(
+					"The :cdn: product could not be inferred from the repository; specify it explicitly, e.g. ':cdn: elasticsearch'.");
+				return;
+			}
+
+			CdnProduct = product;
+			LoadCdnBundles(product);
 			return;
 		}
 
@@ -464,7 +477,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// Default public CDN base for changelog bundles (CloudFront in front of the public S3 bucket).
 	/// Overridable via <see cref="CdnBaseUrlEnvironmentVariable"/>.
 	/// </summary>
-	private const string DefaultCdnBaseUrl = "https://d10xozp44eyz7q.cloudfront.net";
+	internal const string DefaultCdnBaseUrl = "https://d10xozp44eyz7q.cloudfront.net";
 
 	private void LoadAndCacheBundles()
 	{
@@ -552,6 +565,19 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private static bool IsValidCdnProduct(string product) =>
 		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+
+	/// <summary>
+	/// Infers the CDN product for a valueless <c>:cdn:</c> from the current repository name (e.g. the
+	/// <c>elasticsearch</c> repo publishes the <c>elasticsearch</c> product). Returns null when git
+	/// information is unavailable or for multi-product repos that must name the product explicitly.
+	/// </summary>
+	private string? InferCdnProductFromRepository()
+	{
+		var repository = Build.Git.RepositoryName;
+		return string.IsNullOrWhiteSpace(repository) || repository == "unavailable"
+			? null
+			: repository;
+	}
 
 	private static Uri? ResolveCdnBaseUri()
 	{

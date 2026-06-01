@@ -62,8 +62,21 @@ public sealed class CdnChangelogFetcher(ILoggerFactory logFactory, IFileSystem f
 			return cached;
 		}
 
-		var bundles = FetchUncached(baseUri, product, version, emitError, emitWarning, ctx);
-		_ = Cache.TryAdd(cacheKey, bundles);
+		// Track whether the fetch was clean: a registry/bundle failure (or any skipped bundle) may be a
+		// transient CDN hiccup or replication lag, and memoizing it would pin an empty/partial result for
+		// the process lifetime (notably under `serve`). Only a clean, non-empty fetch is cached.
+		var clean = true;
+		var bundles = FetchUncached(
+			baseUri,
+			product,
+			version,
+			msg => { clean = false; emitError(msg); },
+			msg => { clean = false; emitWarning(msg); },
+			ctx);
+
+		if (clean && bundles.Count > 0)
+			_ = Cache.TryAdd(cacheKey, bundles);
+
 		return bundles;
 	}
 

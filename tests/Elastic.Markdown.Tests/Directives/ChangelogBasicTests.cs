@@ -319,10 +319,11 @@ public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : Directi
 
 /// <summary>
 /// Verifies CDN-sourced bundles render into the page body (not just the page TOC). The directive
-/// builds its own fetcher with a real <c>HttpClient</c>, so the test points the CDN base at an
-/// unreachable sentinel and primes the fetcher's process cache with parsed bundles; no network call
-/// occurs. Regression guard: the HTML renderer previously gated on the (CDN-null) local bundles
-/// folder path and silently emitted an empty body.
+/// builds its own fetcher with a real <c>HttpClient</c>, so the test primes the fetcher's process
+/// cache for the base the directive resolves to by default; the primed entry short-circuits the
+/// fetch and no network call occurs. Priming the cache (rather than mutating the process-wide CDN
+/// env var) keeps the test from racing with other tests. Regression guard: the HTML renderer
+/// previously gated on the (CDN-null) local bundles folder path and silently emitted an empty body.
 /// </summary>
 public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
 	// language=markdown
@@ -332,8 +333,6 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 	:::
 	""")
 {
-	private const string EnvVar = "DOCS_BUILDER_CHANGELOG_CDN";
-	private const string CdnBase = "https://changelog-cdn.invalid";
 	private const string Product = "cdn-render-test";
 
 	public override async ValueTask InitializeAsync()
@@ -358,18 +357,9 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 				  - "999"
 				""")
 		], _ => { });
-		CdnChangelogFetcher.PrimeCacheForTesting(new Uri(CdnBase), Product, null, bundles);
+		CdnChangelogFetcher.PrimeCacheForTesting(new Uri(ChangelogBlock.DefaultCdnBaseUrl), Product, null, bundles);
 
-		var original = Environment.GetEnvironmentVariable(EnvVar);
-		Environment.SetEnvironmentVariable(EnvVar, CdnBase);
-		try
-		{
-			await base.InitializeAsync();
-		}
-		finally
-		{
-			Environment.SetEnvironmentVariable(EnvVar, original);
-		}
+		await base.InitializeAsync();
 	}
 
 	[Fact]
@@ -381,6 +371,85 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 		Html.Should().Contain("9.4.0");
 		Html.Should().Contain("Features and enhancements");
 		Html.Should().Contain("Faster vector search on the CDN");
+	}
+}
+
+/// <summary>
+/// Verifies a valueless <c>:cdn:</c> infers the product from the current repository name. With a
+/// <c>.git</c> marker present the mock git checkout reports the repository as <c>docs-builder</c>, so
+/// the directive fetches that product; the cache is primed for it (default base) so no network call
+/// occurs.
+/// </summary>
+public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+	:::{changelog}
+	:cdn:
+	:::
+	""")
+{
+	private const string InferredProduct = "docs-builder";
+
+	// A .git marker makes FindGitRoot resolve a checkout directory, which lets the mock-aware
+	// GitCheckoutInformationFactory report the repository name (docs-builder) for inference.
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddDirectory(Path.Combine(Elastic.Documentation.Configuration.Paths.WorkingDirectoryRoot.FullName, ".git"));
+
+	public override async ValueTask InitializeAsync()
+	{
+		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(
+		[
+			("9.4.0.yaml",
+				// language=yaml
+				"""
+				products:
+				- product: docs-builder
+				  target: 9.4.0
+				  repo: docs-builder
+				  owner: elastic
+				entries:
+				- title: Inferred product from the repository
+				  type: enhancement
+				  products:
+				  - product: docs-builder
+				    target: 9.4.0
+				  prs:
+				  - "999"
+				""")
+		], _ => { });
+		CdnChangelogFetcher.PrimeCacheForTesting(new Uri(ChangelogBlock.DefaultCdnBaseUrl), InferredProduct, null, bundles);
+
+		await base.InitializeAsync();
+	}
+
+	[Fact]
+	public void InfersProductFromRepository() => Block!.CdnProduct.Should().Be(InferredProduct);
+
+	[Fact]
+	public void RendersInferredCdnBundleBody()
+	{
+		Block!.Found.Should().BeTrue();
+		Html.Should().Contain("Inferred product from the repository");
+	}
+}
+
+/// <summary>
+/// A valueless <c>:cdn:</c> must fail with a clear error when the product cannot be inferred (no git
+/// information available), rather than silently rendering empty.
+/// </summary>
+public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+	:::{changelog}
+	:cdn:
+	:::
+	""")
+{
+	[Fact]
+	public void EmitsErrorWhenProductCannotBeInferred()
+	{
+		Block!.Found.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be inferred"));
 	}
 }
 

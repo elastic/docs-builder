@@ -31,7 +31,7 @@ The `bootstrap` binary should be available under:
 ## Event handling
 
 - **`s3:ObjectCreated:*`** on `.yaml`/`.yml` files: read from private bucket, scrub private references, write to public bucket
-- **`s3:ObjectCreated:*`** on `.json` files: copy as-is (pass-through for `registry.json`)
+- **`s3:ObjectCreated:*`** on `.json` files: only per-product registry manifests (keys matching `RegistryKey.IsRegistry`, i.e. `{product}/registry.json`) are passed through as-is; any other `.json` key is skipped
 - **`s3:ObjectRemoved:*`**: delete the same key from the public bucket
 - Other keys are silently skipped
 

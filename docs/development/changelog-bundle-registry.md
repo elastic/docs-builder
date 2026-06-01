@@ -176,7 +176,14 @@ Consumers must therefore treat a missing bundle as non-fatal (skip + warn), not 
 ```
 
 The directive accepts a `:cdn:` option naming the **product** to fetch (validated against
-`[a-zA-Z0-9_-]+`). The CDN base URL is environment configuration, not authored per page: it
+`[a-zA-Z0-9_-]+`). The product is optional: a valueless `:cdn:` infers the product from the
+current repository name (`BuildContext.Git.RepositoryName`), which is the common case where the
+repository name is the product id (for example the `elasticsearch` repo → `elasticsearch`
+product). Multi-product repositories (for example `cloud`, which publishes `cloud-hosted`,
+`cloud-serverless`, and `cloud-enterprise`) must name the product explicitly; when the product
+cannot be inferred (git information unavailable) the directive emits an error.
+
+The CDN base URL is environment configuration, not authored per page: it
 defaults to the public changelog bundles distribution and is overridable via the
 `DOCS_BUILDER_CHANGELOG_CDN` environment variable (absolute `http`/`https` URL) for
 staging, local development, and testing.

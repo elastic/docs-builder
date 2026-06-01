@@ -28,7 +28,7 @@ The directive supports the following options:
 | `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
 | `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
-| `:cdn: product` | Source bundles for a product from the public changelog CDN instead of a local folder | (local folder) |
+| `:cdn: [product]` | Source bundles from the public changelog CDN instead of a local folder. The product is optional and inferred from the current repository when omitted | (local folder) |
 | `:version: target` | Render only the single bundle matching this target/version | (all versions) |
 
 ### Example with options
@@ -165,7 +165,7 @@ Both explicit and auto-discovered paths must resolve within the repository check
 
 #### `:cdn:` [cdn]
 
-Sources bundles for a single **product** from the public changelog CDN instead of a local folder, so a docset can render another product's release notes without vendoring bundle YAML.
+Sources bundles for a single **product** from the public changelog CDN instead of a local folder, so a docset can render release notes without vendoring bundle YAML.
 
 ```markdown
 :::{changelog}
@@ -173,7 +173,15 @@ Sources bundles for a single **product** from the public changelog CDN instead o
 :::
 ```
 
-The value names the product (must match `[a-zA-Z0-9_-]+`) and maps to `{product}/registry.json` plus the bundles it lists on the CDN. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
+The value names the product (must match `[a-zA-Z0-9_-]+`) and maps to `{product}/registry.json` plus the bundles it lists on the CDN. The value is **optional**: leave it blank to infer the product from the repository that holds the doc (the common case where the repository name is the product id, for example the `elasticsearch` repo renders the `elasticsearch` product).
+
+```markdown
+:::{changelog}
+:cdn:
+:::
+```
+
+Inference only works for repositories whose name matches the product id. Repositories that publish multiple products (for example `cloud`, which publishes `cloud-hosted`, `cloud-serverless`, and `cloud-enterprise`) must name the product explicitly; if a product cannot be inferred the block emits an error. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
 
 The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
 

@@ -248,10 +248,13 @@ internal sealed class RegistryBuilder(
 		{
 			return ([], null);
 		}
-		catch (Exception ex)
+		catch (JsonException ex)
 		{
-			// Don't fail the whole upload because the existing manifest is corrupt; rebuild from this run.
-			// When we captured an ETag the conditional write still overwrites the corrupt object safely.
+			// Only a genuinely corrupt (unparseable) manifest is rebuilt from this run; the captured ETag
+			// then lets the conditional write overwrite it safely. Transient S3/IO errors must NOT be
+			// treated as corruption — otherwise the If-Match PUT would replace a valid manifest with only
+			// this run's bundles and drop previously published entries. Let those bubble up to the
+			// best-effort handler in ChangelogUploadService instead.
 			_logger.LogWarning(ex, "Existing manifest for {Product} could not be parsed; recreating", product);
 			return ([], etag);
 		}
