@@ -1329,85 +1329,9 @@
             "assembler"
           ],
           "name": "serve",
-          "summary": "Serve assembled documentation with live reload and on-demand per-request rendering. Requires assembler clone to have been run first. No prior build is needed. Pages are rendered on demand; file changes invalidate the repo and trigger a live reload.",
-          "notes": null,
-          "usage": "docs-builder assembler serve [options]",
-          "examples": [],
-          "parameters": [
-            {
-              "role": "flag",
-              "name": "port",
-              "shortName": null,
-              "type": "integer",
-              "required": false,
-              "summary": "Port to listen on. Default: 4000.",
-              "defaultValue": "4000"
-            },
-            {
-              "role": "flag",
-              "name": "environment",
-              "shortName": null,
-              "type": "string",
-              "required": false,
-              "summary": "Named deployment target. Determines which repositories are used."
-            },
-            {
-              "role": "flag",
-              "name": "no-watch-md",
-              "shortName": null,
-              "type": "boolean",
-              "required": false,
-              "summary": "Disable watching checkout directories for markdown changes. Static asset live reload still works. Useful when doing frontend (CSS/JS) work.",
-              "defaultValue": "false"
-            },
-            {
-              "role": "flag",
-              "name": "log-level",
-              "shortName": "l",
-              "type": "enum",
-              "required": false,
-              "summary": "Minimum log level. Default: information",
-              "enumValues": [
-                "trace",
-                "debug",
-                "information",
-                "warning",
-                "error",
-                "critical",
-                "none"
-              ]
-            },
-            {
-              "role": "flag",
-              "name": "config-source",
-              "shortName": "c",
-              "type": "enum",
-              "required": false,
-              "summary": "Override the configuration source: local, remote",
-              "enumValues": [
-                "local",
-                "remote",
-                "embedded"
-              ]
-            },
-            {
-              "role": "flag",
-              "name": "skip-private-repositories",
-              "shortName": null,
-              "type": "boolean",
-              "required": false,
-              "summary": "Skip cloning private repositories"
-            }
-          ]
-        },
-        {
-          "path": [
-            "assembler"
-          ],
-          "name": "serve-static",
           "summary": "Serve the output of a completed assembler build at http://localhost:4000.",
           "notes": "Run after assembler build. Does not watch for file changes.",
-          "usage": "docs-builder assembler serve-static [options]",
+          "usage": "docs-builder assembler serve [options]",
           "examples": [],
           "parameters": [
             {
@@ -1423,7 +1347,7 @@
               "name": "path",
               "type": "string",
               "required": false,
-              "summary": "Path to the built site. Defaults to .artifacts/assembly/.",
+              "summary": "Path to the built site. Defaults to .artifacts/docs/.",
               "validations": [
                 {
                   "kind": "rejectSymbolicLinks"
