@@ -56,8 +56,8 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public bool IsInGroup { get; private set; }
 
-	// Regex to match a Markdown link: [text](url)
-	[GeneratedRegex(@"^\s*\[[^\]]+\]\([^\)]+\)\s*$", RegexOptions.Singleline)]
+	// Regex to match a single Markdown link, including reference-style links.
+	[GeneratedRegex(@"^\s*\[[^\]]*\](?:\([^\)]+\)|\[[^\]]+\]|\[\])\s*$", RegexOptions.Singleline)]
 	private static partial Regex LinkPattern();
 
 	public override void FinalizeAndValidate(ParserContext context)
@@ -94,14 +94,14 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 
 		if (string.IsNullOrWhiteSpace(content))
 		{
-			this.EmitError("Button directive requires a link. Use: :::{button}\n[text](url)\n:::");
+			this.EmitError("Button directive requires a link. Use: :::{button}\n[text](url)\n:::\nOr: :::{button}\n[text][ref]\n:::");
 			return;
 		}
 
 		// Check if content matches the link pattern
 		if (!LinkPattern().IsMatch(content))
 		{
-			this.EmitError("Button directive must contain only a single Markdown link. Use: :::{button}\n[text](url)\n:::");
+			this.EmitError("Button directive must contain only a single Markdown link. Use: :::{button}\n[text](url)\n:::\nOr: :::{button}\n[text][ref]\n:::");
 		}
 	}
 
