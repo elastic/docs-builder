@@ -32,7 +32,7 @@ const mockSearchResults = {
             title: 'Elasticsearch Guide',
             description: 'Learn about Elasticsearch',
             score: 0.95,
-            content_type: 'docs' as const,
+            type: 'docs' as const,
             parents: [{ title: 'Docs' }, { title: 'Elasticsearch' }],
         },
         {
@@ -40,7 +40,7 @@ const mockSearchResults = {
             title: 'Kibana Dashboard',
             description: 'Create dashboards',
             score: 0.85,
-            content_type: 'docs' as const,
+            type: 'docs' as const,
             parents: [{ title: 'Docs' }, { title: 'Kibana' }],
         },
     ],
