@@ -40,7 +40,7 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
-    type: z.enum(['docs']),
+    content_type: z.enum(['docs']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
