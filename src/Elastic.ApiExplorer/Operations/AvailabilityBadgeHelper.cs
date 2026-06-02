@@ -91,6 +91,7 @@ public static partial class AvailabilityBadgeHelper
 			_ when lower.Contains("removed") => "removed",
 			_ when lower.Contains("deprecated") => "deprecated",
 			_ when lower.Contains("beta") => "beta",
+			_ when lower.Contains("experimental") => "experimental",
 			_ when lower.Contains("preview") => "preview",
 			_ when lower.Contains("generally available") => "ga",
 			_ => null

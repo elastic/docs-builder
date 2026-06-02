@@ -308,6 +308,22 @@ public class ApplicableToJsonConverterRoundTripTests
 	}
 
 	[Fact]
+	public void DeserializeExperimentalLifecycle()
+	{
+		var json = """
+			[
+				{ "type": "stack", "sub_type": "stack", "lifecycle": "experimental", "version": "9.1.0" }
+			]
+			""";
+
+		var deserialized = JsonSerializer.Deserialize<ApplicableTo>(json, _options);
+
+		deserialized.Should().NotBeNull();
+		deserialized.Stack.Should().NotBeNull();
+		deserialized.Stack.First().Lifecycle.Should().Be(ProductLifecycle.Experimental);
+	}
+
+	[Fact]
 	public void RoundTripAllLifecycles()
 	{
 		var lifecycles = Enum.GetValues<ProductLifecycle>();

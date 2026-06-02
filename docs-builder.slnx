@@ -76,7 +76,6 @@
   </Folder>
   <Folder Name="/src/services/search/">
     <Project Path="src/services/search/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
-    <Project Path="src/services/search/Elastic.Documentation.Search.Contract/Elastic.Documentation.Search.Contract.csproj" />
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />

@@ -12,6 +12,7 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Internal.Search;
 using Elastic.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;

@@ -295,8 +295,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Url = block.Url,
+			InstallCommand = block.InstallCommand,
 			HasBody = block.Count > 0,
-			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills"
+			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills#available-skills"
 		});
 		RenderRazorSlice(slice, renderer);
 	}

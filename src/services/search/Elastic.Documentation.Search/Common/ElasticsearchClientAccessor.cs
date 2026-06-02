@@ -6,7 +6,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Search;
+using Elastic.Internal.Search;
 using Elastic.Transport;
 
 namespace Elastic.Documentation.Search.Common;
@@ -66,8 +66,10 @@ public class ElasticsearchClientAccessor : IDisposable
 
 		_clientSettings = new ElasticsearchClientSettings(
 				_nodePool,
-				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, EsJsonContext.Default)
-			)
+				sourceSerializer: (_, settings) => new DefaultSourceSerializer(
+					settings,
+					ElasticsearchClientJsonResolver.Default,
+					static jsonOptions => jsonOptions.Converters.Add(RuleQueryMatchCriteriaJsonConverterFactory.Instance)))
 			.DefaultIndex(SearchIndex)
 			.Authentication(auth);
 
