@@ -66,6 +66,7 @@ _ = builder.Services.AddArgh(args, app =>
 	{
 		_ = g.Map<CodexIndexCommand>();
 		_ = g.Map<CodexUpdateRedirectsCommand>();
+		_ = g.MapNamespace<CodexSyncCommand>("sync");
 	});
 });
 

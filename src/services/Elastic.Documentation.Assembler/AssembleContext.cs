@@ -9,12 +9,13 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler;
 
-public class AssembleContext : IDocumentationConfigurationContext
+public class AssembleContext : IDocumentationConfigurationContext, IDocsSyncContext
 {
 	public ScopedFileSystem ReadFileSystem { get; }
 	public ScopedFileSystem WriteFileSystem { get; }
@@ -56,6 +57,9 @@ public class AssembleContext : IDocumentationConfigurationContext
 	public BuildType BuildType => BuildType.Assembler;
 
 	public PublishEnvironment Environment { get; }
+
+	/// <inheritdoc cref="IDocsSyncContext.EnvironmentName"/>
+	public string EnvironmentName => Environment.Name;
 
 	public AssembleContext(
 		AssemblyConfiguration configuration,

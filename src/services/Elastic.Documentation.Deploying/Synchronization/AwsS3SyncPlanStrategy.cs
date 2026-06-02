@@ -8,13 +8,13 @@ using Amazon.S3.Model;
 using Elastic.Documentation.Integrations.S3;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Assembler.Deploying.Synchronization;
+namespace Elastic.Documentation.Deploying.Synchronization;
 
 public class AwsS3SyncPlanStrategy(
 	ILoggerFactory logFactory,
 	IAmazonS3 s3Client,
 	string bucketName,
-	AssembleContext context,
+	IDocsSyncContext context,
 	IS3EtagCalculator? calculator = null
 )
 	: IDocsSyncPlanStrategy

@@ -11,14 +11,14 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Assembler.Deploying.Synchronization;
+namespace Elastic.Documentation.Deploying.Synchronization;
 
 public partial class AwsS3SyncApplyStrategy(
 	ILoggerFactory logFactory,
 	IAmazonS3 s3Client,
 	ITransferUtility transferUtility,
 	string bucketName,
-	AssembleContext context,
+	IDocsSyncContext context,
 	IDiagnosticsCollector collector
 ) : IDocsSyncApplyStrategy
 {
@@ -137,7 +137,7 @@ public partial class AwsS3SyncApplyStrategy(
 
 		_logger.LogInformation(
 			"Deployment sync: {TotalFiles} files ({AddCount} added, {UpdateCount} updated, {DeleteCount} deleted, {SkipCount} skipped) in {Environment}",
-			totalFiles, addCount, updateCount, deleteCount, skipCount, context.Environment.Name);
+			totalFiles, addCount, updateCount, deleteCount, skipCount, context.EnvironmentName);
 
 		await Upload(plan, ctx);
 		await Delete(plan, ctx);

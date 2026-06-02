@@ -9,7 +9,7 @@ using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
-using Elastic.Documentation.Assembler.Deploying.Synchronization;
+using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
