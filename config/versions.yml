@@ -158,7 +158,7 @@ versioning_systems:
     current: 9.4.2
   elasticsearch-client-dotnet:
     base: 9.0
-    current: 9.4.1
+    current: 9.4.2
   elasticsearch-client-php:
     base: 9.0
     current: 9.4.0
