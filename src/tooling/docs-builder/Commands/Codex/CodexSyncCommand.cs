@@ -60,8 +60,13 @@ internal sealed class CodexSyncCommand(
 		var codexConfig = CodexConfiguration.Load(configFile);
 		var resolvedEnvironment = environment
 			?? codexConfig.Environment
-			?? Environment.GetEnvironmentVariable("ENVIRONMENT")
-			?? "internal";
+			?? Environment.GetEnvironmentVariable("ENVIRONMENT");
+
+		if (string.IsNullOrEmpty(resolvedEnvironment))
+		{
+			collector.EmitGlobalError("Environment must be specified via --environment, the 'environment' field in codex.yml, or the ENVIRONMENT env var.");
+			return 1;
+		}
 
 		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null, resolvedEnvironment);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
@@ -103,8 +108,13 @@ internal sealed class CodexSyncCommand(
 		var codexConfig = CodexConfiguration.Load(configFile);
 		var resolvedEnvironment = environment
 			?? codexConfig.Environment
-			?? Environment.GetEnvironmentVariable("ENVIRONMENT")
-			?? "internal";
+			?? Environment.GetEnvironmentVariable("ENVIRONMENT");
+
+		if (string.IsNullOrEmpty(resolvedEnvironment))
+		{
+			collector.EmitGlobalError("Environment must be specified via --environment, the 'environment' field in codex.yml, or the ENVIRONMENT env var.");
+			return 1;
+		}
 
 		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null, resolvedEnvironment);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
