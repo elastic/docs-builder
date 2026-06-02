@@ -31,7 +31,6 @@ internal sealed class CodexSyncCommand(
 	/// </remarks>
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
-	/// <param name="environment">Named deployment target. Defaults to the value in <c>codex.yml</c> or the <c>ENVIRONMENT</c> env var.</param>
 	/// <param name="out">Path to write the plan file. Defaults to <c>stdout</c>.</param>
 	/// <param name="deleteThreshold">Abort if the plan would delete more than this percentage of objects (0–100).</param>
 	[RequiresAuth]
@@ -41,7 +40,6 @@ internal sealed class CodexSyncCommand(
 		GlobalCliOptions _,
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string s3BucketName,
-		string? environment = null,
 		[ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null,
 		float? deleteThreshold = null,
 		CancellationToken ct = default)
@@ -58,17 +56,7 @@ internal sealed class CodexSyncCommand(
 		}
 
 		var codexConfig = CodexConfiguration.Load(configFile);
-		var resolvedEnvironment = environment
-			?? codexConfig.Environment
-			?? Environment.GetEnvironmentVariable("ENVIRONMENT");
-
-		if (string.IsNullOrEmpty(resolvedEnvironment))
-		{
-			collector.EmitGlobalError("Environment must be specified via --environment, the 'environment' field in codex.yml, or the ENVIRONMENT env var.");
-			return 1;
-		}
-
-		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null, resolvedEnvironment);
+		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
 			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, ctx)
@@ -81,7 +69,6 @@ internal sealed class CodexSyncCommand(
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
 	/// <param name="planFile">Path to the plan file produced by <c>codex sync plan</c>.</param>
-	/// <param name="environment">Named deployment target. Defaults to the value in <c>codex.yml</c> or the <c>ENVIRONMENT</c> env var.</param>
 	[RequiresAuth]
 	[CommandIntent(Intent.Destructive)]
 	[MutationScope(MutationScope.Global)]
@@ -91,7 +78,6 @@ internal sealed class CodexSyncCommand(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string s3BucketName,
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile,
-		string? environment = null,
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
@@ -106,17 +92,7 @@ internal sealed class CodexSyncCommand(
 		}
 
 		var codexConfig = CodexConfiguration.Load(configFile);
-		var resolvedEnvironment = environment
-			?? codexConfig.Environment
-			?? Environment.GetEnvironmentVariable("ENVIRONMENT");
-
-		if (string.IsNullOrEmpty(resolvedEnvironment))
-		{
-			collector.EmitGlobalError("Environment must be specified via --environment, the 'environment' field in codex.yml, or the ENVIRONMENT env var.");
-			return 1;
-		}
-
-		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null, resolvedEnvironment);
+		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
 			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)

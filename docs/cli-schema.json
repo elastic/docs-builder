@@ -4768,7 +4768,7 @@
               "name": "apply",
               "summary": "Upload the changes described in a plan file to S3.",
               "notes": "Run after codex sync plan. Applies the pre-computed diff to the S3 bucket.",
-              "usage": "docs-builder codex sync apply \u003Cconfig\u003E --s3-bucket-name \u003Cstring\u003E --plan-file \u003Cfile\u003E [options]",
+              "usage": "docs-builder codex sync apply \u003Cconfig\u003E --s3-bucket-name \u003Cstring\u003E --plan-file \u003Cfile\u003E",
               "examples": [],
               "parameters": [
                 {
@@ -4821,13 +4821,6 @@
                       ]
                     }
                   ]
-                },
-                {
-                  "role": "flag",
-                  "name": "environment",
-                  "type": "string",
-                  "required": false,
-                  "summary": "Named deployment target. Defaults to the value in codex.yml or the ENVIRONMENT env var."
                 },
                 {
                   "role": "flag",
@@ -4912,13 +4905,6 @@
                   "type": "string",
                   "required": true,
                   "summary": "S3 bucket to deploy to."
-                },
-                {
-                  "role": "flag",
-                  "name": "environment",
-                  "type": "string",
-                  "required": false,
-                  "summary": "Named deployment target. Defaults to the value in codex.yml or the ENVIRONMENT env var."
                 },
                 {
                   "role": "flag",

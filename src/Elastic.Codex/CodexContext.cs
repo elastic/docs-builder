@@ -42,8 +42,7 @@ public class CodexContext : IDocsSyncContext
 		ScopedFileSystem readFileSystem,
 		ScopedFileSystem writeFileSystem,
 		string? checkoutDirectory,
-		string? outputDirectory,
-		string? environmentOverride = null)
+		string? outputDirectory)
 	{
 		Configuration = configuration;
 		ConfigurationPath = configurationPath;
@@ -51,10 +50,7 @@ public class CodexContext : IDocsSyncContext
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
 
-		var env = !string.IsNullOrEmpty(environmentOverride)
-			? environmentOverride
-			: configuration.Environment;
-		EnvironmentName = string.IsNullOrEmpty(env) ? "codex" : env;
+		EnvironmentName = string.IsNullOrEmpty(configuration.Environment) ? "codex" : configuration.Environment;
 
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
 		CheckoutDirectory = checkoutDirectory is null
