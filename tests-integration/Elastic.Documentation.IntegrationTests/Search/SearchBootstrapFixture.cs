@@ -13,6 +13,7 @@ using Elastic.Documentation.ServiceDefaults;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Internal.Search;
+using Elastic.Internal.Search.Mapping;
 using Elastic.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
@@ -155,7 +156,7 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			// Create semantic type context to check channel hash (index namespace is 'dev' for tests)
 			var semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler") with
 			{
-				ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, "docs-assembler", [])
+				ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, "docs-assembler", [])
 			};
 
 			var options = new IngestChannelOptions<DocumentationDocument>(transport, semanticTypeContext);
