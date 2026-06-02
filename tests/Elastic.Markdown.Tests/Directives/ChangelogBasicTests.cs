@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Markdown.Myst.Directives.Changelog;
@@ -393,7 +394,7 @@ public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : Direct
 	// A .git marker makes FindGitRoot resolve a checkout directory, which lets the mock-aware
 	// GitCheckoutInformationFactory report the repository name (docs-builder) for inference.
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddDirectory(Path.Combine(Elastic.Documentation.Configuration.Paths.WorkingDirectoryRoot.FullName, ".git"));
+		fileSystem.AddDirectory(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".git"));
 
 	public override async ValueTask InitializeAsync()
 	{
