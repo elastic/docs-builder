@@ -26,7 +26,7 @@ A regular paragraph.
 	public void SetsSkillName() => Block!.SkillName.Should().Be("elasticsearch-esql");
 
 	[Fact]
-	public void SetsInstallCommand() => Block!.InstallCommand.Should().Be("npx skills add @elasticsearch-esql");
+	public void SetsInstallCommand() => Block!.InstallCommand.Should().Be("npx skills add elastic/agent-skills@elasticsearch-esql");
 
 	[Fact]
 	public void SetsDirective() => Block!.Directive.Should().Be("agent-skill");
@@ -59,7 +59,7 @@ A regular paragraph.
 	{
 		Html.Should().Contain("class=\"agent-skill-button\"");
 		Html.Should().Contain("Copy install command");
-		Html.Should().Contain("data-copy-text=\"npx skills add @elasticsearch-esql\"");
+		Html.Should().Contain("data-copy-text=\"npx skills add elastic/agent-skills@elasticsearch-esql\"");
 	}
 
 	[Fact]
