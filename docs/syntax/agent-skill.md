@@ -1,6 +1,6 @@
 # Agent skill
 
-The `{agent-skill}` directive renders a standardized callout that points readers to an [Elastic AI agent skill](https://github.com/elastic/agent-skills). When the URL includes a skill name (after `@`), it shows a "Copy install command" button that copies the `npx skills add @skill-name` command to clipboard. Otherwise, it falls back to a "Get the skill" link.
+The `{agent-skill}` directive renders a standardized callout that points readers to an [Elastic AI agent skill](https://github.com/elastic/agent-skills). When the URL includes a skill name (after `@`), it shows a "Copy install command" button that copies the `npx skills add owner/repo@skill-name` command to clipboard. Otherwise, it falls back to a "Get the skill" link.
 
 ## Usage
 
@@ -64,4 +64,4 @@ This skill helps agents write and optimize ES|QL queries.
 
 The `:url:` property must be an absolute URL. Relative paths are not accepted, and the directive will emit a build error if the URL is missing or relative.
 
-The skill name is extracted from the URL as the segment after the final `@`. For example, `https://github.com/elastic/agent-skills@elasticsearch-esql` produces the install command `npx skills add @elasticsearch-esql`.
+The skill name is extracted from the URL as the segment after the final `@`, and the repository prefix is extracted from the URL path. For example, `https://github.com/elastic/agent-skills@elasticsearch-esql` produces the install command `npx skills add elastic/agent-skills@elasticsearch-esql`.
