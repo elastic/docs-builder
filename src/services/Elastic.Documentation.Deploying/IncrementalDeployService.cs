@@ -79,7 +79,7 @@ public class IncrementalDeployService(
 		if (plan.TotalSyncRequests == 0)
 		{
 			_logger.LogInformation("Plan has no files to sync, skipping incremental synchronization");
-			return false;
+			return true;
 		}
 		var validator = new DocsSyncPlanValidator(logFactory);
 		var validationResult = validator.Validate(plan);

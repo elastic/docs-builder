@@ -33,7 +33,7 @@ public class CodexContext : IDocsSyncContext
 		: $"codex-{Configuration.Environment}";
 
 	/// <inheritdoc cref="IDocsSyncContext.EnvironmentName"/>
-	public string EnvironmentName => Configuration.Environment ?? "codex";
+	public string EnvironmentName { get; }
 
 	public CodexContext(
 		CodexConfiguration configuration,
@@ -42,13 +42,19 @@ public class CodexContext : IDocsSyncContext
 		ScopedFileSystem readFileSystem,
 		ScopedFileSystem writeFileSystem,
 		string? checkoutDirectory,
-		string? outputDirectory)
+		string? outputDirectory,
+		string? environmentOverride = null)
 	{
 		Configuration = configuration;
 		ConfigurationPath = configurationPath;
 		Collector = collector;
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
+
+		var env = !string.IsNullOrEmpty(environmentOverride)
+			? environmentOverride
+			: configuration.Environment;
+		EnvironmentName = string.IsNullOrEmpty(env) ? "codex" : env;
 
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
 		CheckoutDirectory = checkoutDirectory is null

@@ -63,9 +63,9 @@ internal sealed class CodexSyncCommand(
 			?? Environment.GetEnvironmentVariable("ENVIRONMENT")
 			?? "internal";
 
-		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
+		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null, resolvedEnvironment);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
-		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold, resolvedEnvironment),
+		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
 			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
@@ -75,8 +75,8 @@ internal sealed class CodexSyncCommand(
 	/// <remarks>Run after <c>codex sync plan</c>. Applies the pre-computed diff to the S3 bucket.</remarks>
 	/// <param name="config">Path to the <c>codex.yml</c> configuration file.</param>
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
-	/// <param name="environment">Named deployment target. Defaults to the value in <c>codex.yml</c> or the <c>ENVIRONMENT</c> env var.</param>
 	/// <param name="plan">Path to the plan file produced by <c>codex sync plan</c>.</param>
+	/// <param name="environment">Named deployment target. Defaults to the value in <c>codex.yml</c> or the <c>ENVIRONMENT</c> env var.</param>
 	[RequiresAuth]
 	[CommandIntent(Intent.Destructive)]
 	[MutationScope(MutationScope.Global)]
@@ -85,8 +85,8 @@ internal sealed class CodexSyncCommand(
 		GlobalCliOptions _,
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string s3BucketName,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo plan,
 		string? environment = null,
-		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo? plan = null,
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
@@ -100,19 +100,13 @@ internal sealed class CodexSyncCommand(
 			return 1;
 		}
 
-		if (plan is null)
-		{
-			collector.EmitGlobalError("A plan file is required. Run 'codex sync plan' first and pass the output with --plan.");
-			return 1;
-		}
-
 		var codexConfig = CodexConfiguration.Load(configFile);
 		var resolvedEnvironment = environment
 			?? codexConfig.Environment
 			?? Environment.GetEnvironmentVariable("ENVIRONMENT")
 			?? "internal";
 
-		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
+		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null, resolvedEnvironment);
 		var service = new IncrementalDeployService(logFactory, githubActionsService);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, plan),
 			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.plan.FullName, ctx)
