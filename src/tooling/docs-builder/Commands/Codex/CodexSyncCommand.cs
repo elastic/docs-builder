@@ -45,19 +45,7 @@ internal sealed class CodexSyncCommand(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-
-		var fs = FileSystemFactory.RealRead;
-		var configFile = fs.FileInfo.New(config.FullName);
-
-		if (!configFile.Exists)
-		{
-			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
-			return 1;
-		}
-
-		var codexConfig = CodexConfiguration.Load(configFile);
-		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
-		var service = new IncrementalDeployService(logFactory, githubActionsService);
+		var (context, service) = LoadContext(config);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
 			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, ctx)
 		);
@@ -81,22 +69,19 @@ internal sealed class CodexSyncCommand(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-
-		var fs = FileSystemFactory.RealRead;
-		var configFile = fs.FileInfo.New(config.FullName);
-
-		if (!configFile.Exists)
-		{
-			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
-			return 1;
-		}
-
-		var codexConfig = CodexConfiguration.Load(configFile);
-		var context = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
-		var service = new IncrementalDeployService(logFactory, githubActionsService);
+		var (context, service) = LoadContext(config);
 		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
 			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
+	}
+
+	private (CodexContext context, IncrementalDeployService service) LoadContext(FileInfo config)
+	{
+		var fs = FileSystemFactory.RealRead;
+		var configFile = fs.FileInfo.New(config.FullName);
+		var codexConfig = CodexConfiguration.Load(configFile);
+		return (new CodexContext(codexConfig, configFile, collector, fs, fs, null, null),
+			new IncrementalDeployService(logFactory, githubActionsService));
 	}
 }

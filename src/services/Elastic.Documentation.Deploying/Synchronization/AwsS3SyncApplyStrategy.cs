@@ -161,28 +161,7 @@ public partial class AwsS3SyncApplyStrategy(
 
 			_logger.LogInformation("Starting to process {AddCount} new files and {UpdateCount} updated files", addCount, updateCount);
 
-			// Emit file-level metrics (low cardinality) and logs for each file
-			foreach (var upload in uploadRequests)
-			{
-				var operation = plan.AddRequests.Contains(upload) ? "add" : "update";
-				var fileSize = context.WriteFileSystem.FileInfo.New(upload.LocalPath).Length;
-				var extension = Path.GetExtension(upload.DestinationPath).ToLowerInvariant();
-
-				// Record file size distribution (histogram for p50, p95, p99 analysis)
-				FileSizeHistogram.Record(fileSize);
-
-				// Record by extension (low cardinality)
-				if (!string.IsNullOrEmpty(extension))
-				{
-					FilesByExtensionCounter.Add(1,
-						new("operation", operation),
-						new("extension", extension));
-				}
-
-				// Log individual file operations for detailed analysis
-				LogFileOperation(_logger, operation, upload.DestinationPath, fileSize);
-			}
-
+			var addPaths = plan.AddRequests.Select(r => r.LocalPath).ToHashSet();
 			var tempDir = Path.Join(context.WriteFileSystem.Path.GetTempPath(), context.WriteFileSystem.Path.GetRandomFileName());
 			_ = context.WriteFileSystem.Directory.CreateDirectory(tempDir);
 			try
@@ -190,6 +169,15 @@ public partial class AwsS3SyncApplyStrategy(
 				_logger.LogInformation("Copying {Count} files to temp directory", uploadRequests.Count);
 				foreach (var upload in uploadRequests)
 				{
+					var operation = addPaths.Contains(upload.LocalPath) ? "add" : "update";
+					var fileSize = context.WriteFileSystem.FileInfo.New(upload.LocalPath).Length;
+					var extension = Path.GetExtension(upload.DestinationPath).ToLowerInvariant();
+
+					FileSizeHistogram.Record(fileSize);
+					if (!string.IsNullOrEmpty(extension))
+						FilesByExtensionCounter.Add(1, new("operation", operation), new("extension", extension));
+					LogFileOperation(_logger, operation, upload.DestinationPath, fileSize);
+
 					var destPath = context.WriteFileSystem.Path.Join(tempDir, upload.DestinationPath);
 					var destDirPath = context.WriteFileSystem.Path.GetDirectoryName(destPath)!;
 					_ = context.WriteFileSystem.Directory.CreateDirectory(destDirPath);
@@ -222,7 +210,7 @@ public partial class AwsS3SyncApplyStrategy(
 	private async Task Delete(SyncPlan plan, Cancel ctx)
 	{
 		var deleteCount = 0;
-		var deleteRequests = plan.DeleteRequests.ToList();
+		var deleteRequests = plan.DeleteRequests;
 
 		// Always create activity span (even if 0 files) for consistent tracing
 		using var deleteActivity = ApplyStrategyActivitySource.StartActivity("delete files", ActivityKind.Client);

@@ -29,10 +29,12 @@ public class AwsS3SyncPlanStrategy(
 
 	public async Task<SyncPlan> Plan(float? deleteThreshold, Cancel ctx = default)
 	{
-		var (readToCompletion, remoteObjects) = await ListObjects(ctx);
+		// Start S3 listing in background while scanning local files concurrently
+		var listTask = ListObjects(ctx);
 		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories)
 			.Where(f => !IsSymlink(f.FullName))
 			.ToArray();
+		var (readToCompletion, remoteObjects) = await listTask;
 		var deleteRequests = new ConcurrentBag<DeleteRequest>();
 		var addRequests = new ConcurrentBag<AddRequest>();
 		var updateRequests = new ConcurrentBag<UpdateRequest>();

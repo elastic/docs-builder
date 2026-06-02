@@ -28,9 +28,7 @@ public class CodexContext : IDocsSyncContext
 	/// The Elasticsearch index namespace for this codex, derived from the environment name.
 	/// Falls back to "codex" when no environment is specified.
 	/// </summary>
-	public string IndexNamespace => string.IsNullOrEmpty(Configuration.Environment)
-		? "codex"
-		: $"codex-{Configuration.Environment}";
+	public string IndexNamespace => string.IsNullOrEmpty(Configuration.Environment) ? "codex" : $"codex-{EnvironmentName}";
 
 	/// <inheritdoc cref="IDocsSyncContext.EnvironmentName"/>
 	public string EnvironmentName { get; }

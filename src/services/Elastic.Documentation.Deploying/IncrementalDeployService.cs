@@ -61,11 +61,6 @@ public class IncrementalDeployService(
 			ConcurrentServiceRequests = Environment.ProcessorCount * 2,
 			MinSizeBeforePartUpload = S3EtagCalculator.PartSize
 		});
-		if (!context.ReadFileSystem.File.Exists(planFile))
-		{
-			collector.EmitError(planFile, "Plan file does not exist.");
-			return false;
-		}
 		var planJson = await context.ReadFileSystem.File.ReadAllTextAsync(planFile, ctx);
 		var plan = SyncPlan.Deserialize(planJson);
 		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
