@@ -15,6 +15,7 @@ using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Internal.Search;
+using Elastic.Internal.Search.Mapping;
 using Elastic.Mapping;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
@@ -94,7 +95,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_lexicalTypeContext = DocumentationMappingContext.DocumentationDocument
 			.CreateContext(type: _buildType, env: endpoints.Environment) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
 			IndexSettings = new Dictionary<string, string>
 			{
 				["index.default_pipeline"] = _contentDateEnrichment.PipelineName
@@ -104,7 +105,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_semanticTypeContext = DocumentationMappingContext.DocumentationDocumentSemantic
 			.CreateContext(type: _buildType, env: endpoints.Environment) with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
+			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, indexTimeSynonyms),
 			IndexSettings = new Dictionary<string, string>
 			{
 				["index.final_pipeline"] = _contentDateEnrichment.PipelineName
