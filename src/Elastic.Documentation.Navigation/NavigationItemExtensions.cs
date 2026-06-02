@@ -16,7 +16,9 @@ public static class NavigationItemExtensions
 	)
 		where TModel : class, IDocumentationFile
 	{
-		var index = LookupIndex(preferVisible: true) ?? LookupIndex(preferVisible: false);
+		var index = LookupIndex(preferVisible: true);
+		index ??= LookupIndex(preferVisible: false);
+		ArgumentNullException.ThrowIfNull(index);
 
 		children = items.Except([index]).ToArray();
 

@@ -132,10 +132,9 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
+		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
 
-		folder.Should().NotBeNull();
-		folder!.Hidden.Should().BeFalse();
+		folder.Hidden.Should().BeFalse();
 		folder.NavigationTitle.Should().Be("getting-started");
 		folder.Url.Should().Be("/guides/getting-started");
 		folder.NavigationItems.Should().ContainSingle().Which.Hidden.Should().BeTrue();
@@ -159,10 +158,9 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
-		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
+		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
 
-		folder.Should().NotBeNull();
-		folder!.Hidden.Should().BeTrue();
+		folder.Hidden.Should().BeTrue();
 		folder.Index.Hidden.Should().BeTrue();
 		folder.NavigationItems.Should().BeEmpty();
 	}
