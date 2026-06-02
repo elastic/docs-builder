@@ -16,16 +16,21 @@ public static class NavigationItemExtensions
 	)
 		where TModel : class, IDocumentationFile
 	{
-		var index = LookupIndex();
+		var index = LookupIndex(preferVisible: true);
+		index ??= LookupIndex(preferVisible: false);
+		ArgumentNullException.ThrowIfNull(index);
 
 		children = items.Except([index]).ToArray();
 
 		return index;
 
-		ILeafNavigationItem<TModel> LookupIndex()
+		ILeafNavigationItem<TModel>? LookupIndex(bool preferVisible)
 		{
 			foreach (var item in items)
 			{
+				if (preferVisible && item.Hidden)
+					continue;
+
 				// Check for the exact type match
 				if (item is ILeafNavigationItem<TModel> leaf)
 					return leaf;
@@ -34,6 +39,9 @@ public static class NavigationItemExtensions
 				if (item is INodeNavigationItem<TModel, INavigationItem> nodeItem)
 					return nodeItem.Index;
 			}
+
+			if (preferVisible)
+				return null;
 
 			// If no index is found, throw an exception
 			throw new InvalidOperationException($"No index found for navigation node '{node.GetType().Name}' at path '{fallbackPath}'");
