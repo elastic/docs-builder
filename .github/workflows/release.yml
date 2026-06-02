@@ -72,6 +72,8 @@ jobs:
         run: ./build.sh publishcontainers
         
   build-link-index-lambda:
+    permissions: 
+      contents: read
     needs: 
       - release-drafter
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
