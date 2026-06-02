@@ -1,5 +1,5 @@
 import { config } from '../../config'
-import { logInfo, logWarn } from '../../telemetry/logging'
+import { logError, logInfo, logWarn } from '../../telemetry/logging'
 import {
     ATTR_NAVIGATION_SEARCH_QUERY,
     ATTR_NAVIGATION_SEARCH_QUERY_LENGTH,
@@ -36,7 +36,7 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
-    type: z.enum(['doc', 'api']),
+    content_type: z.enum(['docs']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
@@ -189,6 +189,14 @@ export const useModalSearchQuery = () => {
                     'error.message': query.error.message,
                 })
             }
+        } else if (query.error) {
+            const err = query.error as Error
+            logError('modal_search_parse_error', {
+                [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                [ATTR_ERROR_TYPE]: err.name,
+                'error.message': err.message,
+            })
+            console.error('[modal-search] failed to parse search response', err)
         }
     }, [query.error, debouncedSearchTerm])
 
