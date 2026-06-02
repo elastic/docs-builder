@@ -114,6 +114,60 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 	}
 
 	[Fact]
+	public void FolderWithoutIndexUsesFirstVisibleChildUrlWhenHiddenChildComesFirst()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - hidden: autopilot.md
+		                 - file: getting-started.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext();
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
+
+		folder.Should().NotBeNull();
+		folder!.Hidden.Should().BeFalse();
+		folder.NavigationTitle.Should().Be("getting-started");
+		folder.Url.Should().Be("/guides/getting-started");
+		folder.NavigationItems.Should().ContainSingle().Which.Hidden.Should().BeTrue();
+	}
+
+	[Fact]
+	public void FolderWithoutIndexAndOnlyHiddenChildrenIsHidden()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - hidden: autopilot.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext();
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First() as FolderNavigation<IDocumentationFile>;
+
+		folder.Should().NotBeNull();
+		folder!.Hidden.Should().BeTrue();
+		folder.Index.Hidden.Should().BeTrue();
+		folder.NavigationItems.Should().BeEmpty();
+	}
+
+	[Fact]
 	public void FolderWithNestedChildren()
 	{
 		// language=yaml
