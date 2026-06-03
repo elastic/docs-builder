@@ -25,6 +25,10 @@ internal sealed class ElasticsearchHealthCheck(ElasticsearchClientAccessor acces
 				? HealthCheckResult.Healthy()
 				: HealthCheckResult.Unhealthy("Elasticsearch ping failed");
 		}
+		catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+		{
+			throw;
+		}
 		catch (Exception ex)
 		{
 			return HealthCheckResult.Unhealthy("Elasticsearch unreachable", ex);

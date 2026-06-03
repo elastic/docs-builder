@@ -28,9 +28,10 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		var result = await searchTools.SemanticSearch(
 			"elasticsearch getting started",
 			cancellationToken: TestContext.Current.CancellationToken);
-		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 
 		// Assert
+		result.IsError.Should().BeFalse("SemanticSearch should not return an error result");
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 		Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.SemanticSearchResponse);
 
@@ -59,9 +60,10 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 			"getting started",
 			productFilter: "elasticsearch",
 			cancellationToken: TestContext.Current.CancellationToken);
-		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 
 		// Assert
+		result.IsError.Should().BeFalse("SemanticSearch with product filter should not return an error result");
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 		Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.SemanticSearchResponse);
 
@@ -88,9 +90,10 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 			"data streams",
 			limit: 5,
 			cancellationToken: TestContext.Current.CancellationToken);
-		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 
 		// Assert
+		result.IsError.Should().BeFalse("FindRelatedDocs should not return an error result");
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 		Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.RelatedDocsResponse);
 
