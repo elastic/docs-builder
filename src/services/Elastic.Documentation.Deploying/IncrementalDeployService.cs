@@ -15,15 +15,18 @@ namespace Elastic.Documentation.Deploying;
 
 public class IncrementalDeployService(
 	ILoggerFactory logFactory,
-	ICoreService githubActionsService
+	ICoreService githubActionsService,
+	IAmazonS3? s3Client = null,
+	ITransferUtility? transferUtility = null,
+	IS3EtagCalculator? etagCalculator = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IncrementalDeployService>();
 
 	public async Task<bool> Plan(IDiagnosticsCollector collector, IDocsSyncContext context, string s3BucketName, string @out, float? deleteThreshold, Cancel ctx)
 	{
-		var s3Client = new AmazonS3Client();
-		var planner = new AwsS3SyncPlanStrategy(logFactory, s3Client, s3BucketName, context);
+		var s3 = s3Client ?? new AmazonS3Client();
+		var planner = new AwsS3SyncPlanStrategy(logFactory, s3, s3BucketName, context, etagCalculator);
 		var plan = await planner.Plan(deleteThreshold, ctx);
 		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
 		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
@@ -55,8 +58,8 @@ public class IncrementalDeployService(
 
 	public async Task<bool> Apply(IDiagnosticsCollector collector, IDocsSyncContext context, string s3BucketName, string planFile, Cancel ctx)
 	{
-		var s3Client = new AmazonS3Client();
-		var transferUtility = new TransferUtility(s3Client, new TransferUtilityConfig
+		var s3 = s3Client ?? new AmazonS3Client();
+		var xfer = transferUtility ?? new TransferUtility(s3, new TransferUtilityConfig
 		{
 			ConcurrentServiceRequests = Environment.ProcessorCount * 2,
 			MinSizeBeforePartUpload = S3EtagCalculator.PartSize
@@ -83,7 +86,7 @@ public class IncrementalDeployService(
 			collector.EmitError(planFile, $"Plan is invalid, {validationResult}, delete ratio: {validationResult.DeleteRatio}, remote listing completed: {plan.RemoteListingCompleted}");
 			return false;
 		}
-		var applier = new AwsS3SyncApplyStrategy(logFactory, s3Client, transferUtility, s3BucketName, context, collector);
+		var applier = new AwsS3SyncApplyStrategy(logFactory, s3, xfer, s3BucketName, context, collector);
 		await applier.Apply(plan, ctx);
 		return true;
 	}
