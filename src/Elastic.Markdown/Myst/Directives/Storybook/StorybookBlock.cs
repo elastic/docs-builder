@@ -14,6 +14,16 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	private static readonly TimeSpan RegistryFetchTimeout = TimeSpan.FromSeconds(30);
 
+	// Shared across all storybook directives to pool connections; PooledConnectionLifetime bounds DNS staleness in long-lived serve/watch runs.
+	private static readonly HttpClient RegistryHttpClient = new(
+		new SocketsHttpHandler
+		{
+			AutomaticDecompression = DecompressionMethods.All,
+			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+		}
+	)
+	{ Timeout = RegistryFetchTimeout };
+
 	public override string Directive => "storybook";
 
 	public string? Project { get; private set; }
@@ -163,10 +173,8 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 		{
 			// FinalizeAndValidate is synchronous across all directives, so the fetch is sync-over-async here.
 			// Bound it with an explicit timeout so an unresponsive registry host can never stall the build.
-			using var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All };
-			using var http = new HttpClient(handler) { Timeout = RegistryFetchTimeout };
 			using var cts = new CancellationTokenSource(RegistryFetchTimeout);
-			return http.GetStringAsync(uri, cts.Token).GetAwaiter().GetResult();
+			return RegistryHttpClient.GetStringAsync(uri, cts.Token).GetAwaiter().GetResult();
 		}
 
 		var registryPath = Path.IsPathRooted(rawRegistry)
