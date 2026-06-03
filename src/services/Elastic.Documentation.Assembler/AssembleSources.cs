@@ -42,13 +42,16 @@ public class AssembleSources
 	{
 		var logger = logFactory.CreateLogger<AssembleSources>();
 
-		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var navigationTocMappings = GetTocMappings(context);
 		var uriResolver = new PublishEnvironmentUriResolver(navigationTocMappings, context.Environment);
 
 		var sw = System.Diagnostics.Stopwatch.StartNew();
-		var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexProvider);
-		var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
+		FetchedCrossLinks crossLinks;
+		// Use a separate using for the reader so ownership is explicit: the caller (this method)
+		// disposes it, not the fetcher (ownsReader stays false/default on AssemblerCrossLinkFetcher).
+		using var linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
+		using (var crossLinkFetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader))
+			crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		logger.LogInformation("  AssembleAsync: FetchCrossLinks in {Elapsed:mm\\:ss\\.fff}", sw.Elapsed);
 
