@@ -46,13 +46,12 @@ public class IncrementalDeployRoundTripTests
 		var (fs, s3, xfer, gh, svc) = Arrange(outputDir);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
-		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var collector = new DiagnosticsCollector([]);
 		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
 		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, scopedFs, scopedWriteFs, null, outputDir);
 
-		await RunRoundTrip(fs, s3, xfer, gh, svc, context, collector, outputDir);
+		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
 	}
 
 	[Fact]
@@ -60,8 +59,7 @@ public class IncrementalDeployRoundTripTests
 	{
 		var outputDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
 		var (fs, s3, xfer, gh, svc) = Arrange(outputDir);
-		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
-		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var collector = new DiagnosticsCollector([]);
 		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
 		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
 		// CodexContext only stores configurationPath — it never reads from it —
@@ -70,7 +68,7 @@ public class IncrementalDeployRoundTripTests
 		var configFile = fs.FileInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
 		var context = new CodexContext(codexConfig, configFile, collector, scopedFs, scopedWriteFs, null, outputDir);
 
-		await RunRoundTrip(fs, s3, xfer, gh, svc, context, collector, outputDir);
+		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
 	}
 
 	/// <summary>
@@ -136,7 +134,6 @@ public class IncrementalDeployRoundTripTests
 		ICoreService gh,
 		IncrementalDeployService svc,
 		IDocsSyncContext context,
-		IDiagnosticsCollector collector,
 		string outputDir)
 	{
 		// Capture the files passed to the upload call
@@ -152,12 +149,12 @@ public class IncrementalDeployRoundTripTests
 		// Act — Plan
 		// deleteThreshold: 1.0 permits any delete ratio (needed because the validator
 		// enforces a 0.8 floor for small sync sets where TotalSyncRequests < 100)
-		var planOk = await svc.Plan(collector, context, "fake-bucket", planPath, deleteThreshold: 1.0f, Cancel.None);
+		var planOk = await svc.Plan(context.Collector, context, "fake-bucket", planPath, deleteThreshold: 1.0f, Cancel.None);
 		planOk.Should().BeTrue("plan should succeed with valid file mix");
 		fs.File.Exists(planPath).Should().BeTrue("plan JSON must be written to the mock filesystem");
 
 		// Act — Apply (reads plan.json from the same mock filesystem)
-		var applyOk = await svc.Apply(collector, context, "fake-bucket", planPath, Cancel.None);
+		var applyOk = await svc.Apply(context.Collector, context, "fake-bucket", planPath, Cancel.None);
 		applyOk.Should().BeTrue("apply should succeed");
 
 		// Assert — GitHub Actions output
