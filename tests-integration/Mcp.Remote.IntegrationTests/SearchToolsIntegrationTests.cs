@@ -5,6 +5,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using ModelContextProtocol.Protocol;
 
 namespace Mcp.Remote.IntegrationTests;
 
@@ -24,9 +25,10 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson = await searchTools.SemanticSearch(
+		var result = await searchTools.SemanticSearch(
 			"elasticsearch getting started",
 			cancellationToken: TestContext.Current.CancellationToken);
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -53,10 +55,11 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson = await searchTools.SemanticSearch(
+		var result = await searchTools.SemanticSearch(
 			"getting started",
 			productFilter: "elasticsearch",
 			cancellationToken: TestContext.Current.CancellationToken);
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
@@ -81,10 +84,11 @@ public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsInt
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
 		// Act
-		var resultJson = await searchTools.FindRelatedDocs(
+		var result = await searchTools.FindRelatedDocs(
 			"data streams",
 			limit: 5,
 			cancellationToken: TestContext.Current.CancellationToken);
+		var resultJson = ((TextContentBlock)result.Content[0]).Text;
 
 		// Assert
 		Output.WriteLine($"Result: {resultJson}");
