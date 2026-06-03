@@ -162,7 +162,11 @@ const loadBootstrap = async (bootstrap: StoryBootstrap | null) => {
 
   setKibanaGlobals(bootstrap.publicPath)
 
-  const cacheKey = bootstrap.publicPath || JSON.stringify(bootstrap)
+  const cacheKey = JSON.stringify({
+    publicPath: bootstrap.publicPath ?? '',
+    scripts: bootstrap.scripts ?? [],
+    styles: bootstrap.styles ?? [],
+  })
   if (!bootstrapCache.has(cacheKey)) {
     bootstrapCache.set(
       cacheKey,

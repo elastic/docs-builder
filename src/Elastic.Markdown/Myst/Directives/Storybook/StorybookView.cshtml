@@ -14,6 +14,7 @@ else
 		src="@Model.StoryUrl"
 		title="@Model.IframeTitle"
 		style="width:100%;height:@Model.HeightStyle;border:none;"
+		sandbox="allow-scripts allow-same-origin"
 		loading="lazy"></iframe>
 }
 	@if (Model.HasBody)

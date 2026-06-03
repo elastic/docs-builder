@@ -12,6 +12,8 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 {
 	private const string SupportedRegistrySchemaVersion = "1";
 
+	private static readonly TimeSpan RegistryFetchTimeout = TimeSpan.FromSeconds(30);
+
 	public override string Directive => "storybook";
 
 	public string? Project { get; private set; }
@@ -159,9 +161,12 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 	{
 		if (Uri.TryCreate(rawRegistry, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
 		{
+			// FinalizeAndValidate is synchronous across all directives, so the fetch is sync-over-async here.
+			// Bound it with an explicit timeout so an unresponsive registry host can never stall the build.
 			using var handler = new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All };
-			using var http = new HttpClient(handler);
-			return http.GetStringAsync(uri).GetAwaiter().GetResult();
+			using var http = new HttpClient(handler) { Timeout = RegistryFetchTimeout };
+			using var cts = new CancellationTokenSource(RegistryFetchTimeout);
+			return http.GetStringAsync(uri, cts.Token).GetAwaiter().GetResult();
 		}
 
 		var registryPath = Path.IsPathRooted(rawRegistry)

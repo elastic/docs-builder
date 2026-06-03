@@ -5,7 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Storybook;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
