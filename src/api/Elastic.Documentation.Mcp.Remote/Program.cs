@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
+using Elastic.Documentation.Mcp.Remote.Health;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
@@ -26,6 +27,10 @@ try
 	var builder = WebApplication.CreateSlimBuilder(args);
 	_ = builder.AddDocumentationServiceDefaults();
 	_ = builder.AddDefaultHealthChecks();
+	// Readiness check: pings Elasticsearch so /health returns 503 during an ES outage.
+	// Excluded from /alive (liveness) to avoid pod crash-loops.
+	_ = builder.Services.AddHealthChecks()
+		.AddCheck<ElasticsearchHealthCheck>("elasticsearch", tags: ["ready"]);
 	_ = builder.AddEuidEnrichment();
 	_ = builder.Services.ConfigureOpenTelemetryTracerProvider(t =>
 		t.AddSource(McpToolTelemetry.McpToolSourceName));
