@@ -882,6 +882,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			renderer.Writer.Write($" storybook=\"{WebUtility.HtmlEncode(block.Storybook)}\"");
 		if (!string.IsNullOrWhiteSpace(block.StoryId))
 			renderer.Writer.Write($" story-id=\"{WebUtility.HtmlEncode(block.StoryId)}\"");
+		renderer.Writer.Write($" src=\"{WebUtility.HtmlEncode(LlmRenderingHelpers.MakeAbsoluteUrl(renderer, block.StoryUrl) ?? block.StoryUrl)}\"");
 		renderer.Writer.WriteLine(">");
 		if (block.Count > 0)
 			WriteChildrenWithIndentation(renderer, block, "  ");
