@@ -874,11 +874,14 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			return;
 
 		renderer.EnsureBlockSpacing();
-		var src = WebUtility.HtmlEncode(LlmRenderingHelpers.MakeAbsoluteUrl(renderer, block.StoryUrl));
 		renderer.Writer.Write("<storybook");
-		renderer.Writer.Write($" src=\"{src}\"");
-		renderer.Writer.Write($" height=\"{block.Height}\"");
 		renderer.Writer.Write($" title=\"{WebUtility.HtmlEncode(block.IframeTitle)}\"");
+		if (!string.IsNullOrWhiteSpace(block.Project))
+			renderer.Writer.Write($" project=\"{WebUtility.HtmlEncode(block.Project)}\"");
+		if (!string.IsNullOrWhiteSpace(block.Storybook))
+			renderer.Writer.Write($" storybook=\"{WebUtility.HtmlEncode(block.Storybook)}\"");
+		if (!string.IsNullOrWhiteSpace(block.StoryId))
+			renderer.Writer.Write($" story-id=\"{WebUtility.HtmlEncode(block.StoryId)}\"");
 		renderer.Writer.WriteLine(">");
 		if (block.Count > 0)
 			WriteChildrenWithIndentation(renderer, block, "  ");
