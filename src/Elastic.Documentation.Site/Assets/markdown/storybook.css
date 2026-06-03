@@ -1,0 +1,32 @@
+.storybook-embed {
+  border: 1px solid #E3E8F2;
+  border-radius: 6px;
+  margin-block: 1.5rem;
+  overflow: hidden;
+}
+
+.storybook-embed iframe {
+  display: block;
+}
+
+.storybook-embed storybook-story {
+  display: block;
+  padding: 24px;
+}
+
+.storybook-embed-body {
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid #E3E8F2;
+  background: #F7F8FC;
+}
+
+.storybook-embed-error {
+  padding: 1rem;
+  color: #BD271E;
+  font-size: 14px;
+}
+
+.storybook-embed-error strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}

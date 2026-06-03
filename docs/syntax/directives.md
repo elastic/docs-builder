@@ -77,6 +77,7 @@ The following directives are available:
 - [Math](math.md) - Mathematical expressions and equations
 - [Page cards](page-card.md) - Full-width clickable navigation rows
 - [Settings](automated_settings.md) - Configuration blocks
+- [Storybook](storybook.md) - Embedded Storybook stories
 - [Stepper](stepper.md) - Step-by-step content
 - [Tabs](tabs.md) - Tabbed content organization
 - [Tables](tables.md) - Data tables
