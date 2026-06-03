@@ -61,9 +61,7 @@ If a bare `:id:` is used, it must match exactly one story in the configured regi
 :::
 ```
 
-:::{storybook}
-:id: ai-components-aibutton--default
-:::
+In the PR 272388 registry this bare ID is ambiguous — it resolves to both `kibana:presentation:ai-components-aibutton--default` and `kibana:shared_ux:ai-components-aibutton--default` — so it is not rendered live here. Use the fully-qualified `project:storybook:docsId` form when a docs ID is not unique.
 
 ## Properties
 

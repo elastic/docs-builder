@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Storybook;
-using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -21,7 +21,8 @@ storybook:
 """;
 
 	private const string RegistryJson =
-		"""
+							 /*lang=json,strict*/
+							 """
 		{
 		  "schemaVersion": 1,
 		  "producer": "kibana-storybook",
