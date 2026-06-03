@@ -78,9 +78,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		return (coherenceTools, clientAccessor);
 	}
 
-	private static FullSearchService BuildFullSearchAdapter(
-		ElasticsearchClientAccessor clientAccessor,
-		Elastic.Documentation.Configuration.Products.ProductsConfiguration productsConfig)
+	private static FullSearchService BuildFullSearchAdapter(ElasticsearchClientAccessor clientAccessor, ProductsConfiguration productsConfig)
 	{
 		var sharedConfig = new Elastic.Internal.Search.Configuration.SearchConfiguration
 		{
@@ -101,7 +99,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// </summary>
 	private static ElasticsearchClientAccessor CreateElasticsearchClientAccessor()
 	{
-		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
+		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler");
 
 		var searchConfig = new SearchConfiguration
 		{
