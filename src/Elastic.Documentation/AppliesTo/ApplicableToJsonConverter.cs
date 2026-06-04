@@ -5,7 +5,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using YamlDotNet.Serialization;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.AppliesTo;
 
@@ -154,9 +154,8 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 
 			foreach (var (key, items) in productProps)
 			{
-				// Find the property by YamlMember alias
 				var property = productType.GetProperties()
-					.FirstOrDefault(p => p.GetCustomAttribute<YamlMemberAttribute>()?.Alias == key);
+					.FirstOrDefault(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name == key);
 
 				property?.SetValue(productApplicability, new AppliesCollection(items.ToArray()));
 			}
@@ -209,11 +208,11 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			var productType = typeof(ProductApplicability);
 			foreach (var property in productType.GetProperties())
 			{
-				var yamlAlias = property.GetCustomAttribute<YamlMemberAttribute>()?.Alias;
-				if (yamlAlias != null)
+				var jsonName = property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name;
+				if (jsonName != null)
 				{
 					if (property.GetValue(value.ProductApplicability) is AppliesCollection propertyValue)
-						WriteApplicabilityEntries(writer, "product", yamlAlias, propertyValue);
+						WriteApplicabilityEntries(writer, "product", jsonName, propertyValue);
 				}
 			}
 		}
@@ -224,6 +223,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 	private static ProductLifecycle ParseLifecycle(string lifecycleStr) => lifecycleStr.ToLowerInvariant() switch
 	{
 		"preview" => ProductLifecycle.TechnicalPreview,
+		"experimental" => ProductLifecycle.Experimental,
 		"beta" => ProductLifecycle.Beta,
 		"ga" => ProductLifecycle.GenerallyAvailable,
 		"deprecated" => ProductLifecycle.Deprecated,
@@ -247,6 +247,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			var lifecycleName = applicability.Lifecycle switch
 			{
 				ProductLifecycle.TechnicalPreview => "preview",
+				ProductLifecycle.Experimental => "experimental",
 				ProductLifecycle.Beta => "beta",
 				ProductLifecycle.GenerallyAvailable => "ga",
 				ProductLifecycle.Deprecated => "deprecated",

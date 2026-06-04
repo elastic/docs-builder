@@ -1,0 +1,459 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Versions;
+using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
+using YamlDotNet.Serialization;
+
+// ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
+#pragma warning disable IDE0130
+namespace Elastic.Documentation.AppliesTo;
+
+public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) : IYamlTypeConverter
+{
+	private readonly string[] _knownKeys =
+	[
+		"stack", "deployment", "serverless", "product", // Applicability categories
+		"ece", "eck", "ess", "ech", "self", // Deployment options ("ech" aliasing to "ess")
+		"elasticsearch", "observability", "security", // Serverless flavors
+		.. productKeys
+	];
+
+	public bool Accepts(Type type) => type == typeof(ApplicableTo);
+
+	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	{
+		var diagnostics = new List<(Severity, string)>();
+
+		if (parser.TryConsume<Scalar>(out var value))
+		{
+			if (string.IsNullOrWhiteSpace(value.Value))
+			{
+				diagnostics.Add((Severity.Warning, "The 'applies_to' field is present but empty. No applicability will be assumed."));
+				return null;
+			}
+
+			if (string.Equals(value.Value, "all", StringComparison.OrdinalIgnoreCase))
+				return ApplicableTo.All;
+		}
+
+		if (parser.TryConsume<SequenceStart>(out _))
+		{
+			var merged = new Dictionary<object, object?>();
+			while (!parser.TryConsume<SequenceEnd>(out _))
+			{
+				if (parser.Current is MappingStart)
+				{
+					var item = rootDeserializer.Invoke(typeof(Dictionary<object, object?>)) as Dictionary<object, object?>;
+					if (item is not null)
+					{
+						foreach (var kv in item)
+							merged[kv.Key] = merged.TryGetValue(kv.Key, out var existing)
+								? DeepMergeAppliesToNode(existing, kv.Value)
+								: kv.Value;
+					}
+				}
+				else if (parser.TryConsume<Scalar>(out var row))
+					MergeAppliesToListScalarLine(merged, row.Value, diagnostics);
+				else
+					_ = parser.MoveNext();
+			}
+
+			return merged.Count > 0
+				? FinalizeApplicableTo(merged, diagnostics)
+				: null;
+		}
+
+		var deserialized = rootDeserializer.Invoke(typeof(Dictionary<object, object?>));
+		if (deserialized is not Dictionary<object, object?> { Count: > 0 } dictionary)
+			return null;
+
+		return FinalizeApplicableTo(dictionary, diagnostics);
+	}
+
+	private static object? DeepMergeAppliesToNode(object? existing, object? incoming)
+	{
+		if (incoming is not Dictionary<object, object?> incomingDict)
+			return incoming;
+
+		if (existing is Dictionary<object, object?> existingDict)
+		{
+			foreach (var kv in incomingDict)
+				existingDict[kv.Key] = existingDict.TryGetValue(kv.Key, out var childExisting)
+					? DeepMergeAppliesToNode(childExisting, kv.Value)
+					: kv.Value;
+
+			return existingDict;
+		}
+
+		return incoming;
+	}
+
+	private static void MergeAppliesToListScalarLine(
+		Dictionary<object, object?> dictionary,
+		string line,
+		List<(Severity, string)> diagnostics)
+	{
+		var trimmed = line.Trim();
+		var colon = trimmed.IndexOf(':');
+		if (colon <= 0 || colon >= trimmed.Length - 1)
+		{
+			diagnostics.Add((Severity.Warning, $"Applies list item '{line}' could not be parsed as 'key: value'."));
+			return;
+		}
+
+		var key = trimmed[..colon].Trim();
+		var val = trimmed[(colon + 1)..].Trim();
+		dictionary[key] = string.IsNullOrEmpty(val) ? null : val;
+	}
+
+	private ApplicableTo FinalizeApplicableTo(Dictionary<object, object?> dictionary, List<(Severity, string)> diagnostics)
+	{
+		var applicableTo = new ApplicableTo();
+
+		var keys = dictionary.Keys.OfType<string>().Select(x => x.Replace('_', '-')).ToArray();
+		var oldStyleKeys = keys.Where(k => k.StartsWith(':')).ToList();
+		if (oldStyleKeys.Count > 0)
+			diagnostics.Add((Severity.Warning, $"Applies block does not use valid yaml keys: {string.Join(", ", oldStyleKeys)}"));
+		var unknownKeys = keys.Except(_knownKeys).Except(oldStyleKeys).ToList();
+		if (unknownKeys.Count > 0)
+			diagnostics.Add((Severity.Warning, $"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}"));
+
+		if (TryGetApplicabilityOverTime(dictionary, "stack", diagnostics, out var stackAvailability))
+			applicableTo.Stack = stackAvailability;
+
+		AssignProduct(dictionary, applicableTo, diagnostics);
+		AssignServerless(dictionary, applicableTo, diagnostics);
+		AssignDeploymentType(dictionary, applicableTo, diagnostics);
+
+		if (TryGetDeployment(dictionary, diagnostics, out var deployment))
+			applicableTo.Deployment = deployment;
+
+		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
+			applicableTo.Serverless = serverless;
+
+		if (TryGetProductApplicability(dictionary, diagnostics, out var product))
+			applicableTo.ProductApplicability = product;
+
+		if (diagnostics.Count > 0)
+			applicableTo.Diagnostics = new ApplicabilityDiagnosticsCollection(diagnostics);
+		return applicableTo;
+	}
+
+	private static void AssignDeploymentType(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
+	{
+		if (!dictionary.TryGetValue("deployment", out var deploymentType))
+			return;
+
+		if (deploymentType is null || (deploymentType is string s && string.IsNullOrWhiteSpace(s)))
+			applicableTo.Deployment = DeploymentApplicability.All;
+		else if (deploymentType is string deploymentTypeString)
+		{
+			var applies = AppliesCollection.TryParse(deploymentTypeString, diagnostics, out var a) ? a : null;
+			if (applies is not null)
+				ValidateApplicabilityCollection("ess", applies, diagnostics);
+			applicableTo.Deployment = new DeploymentApplicability
+			{
+				Ece = applies,
+				Eck = applies,
+				Ess = applies,
+				Self = applies
+			};
+		}
+		else if (deploymentType is Dictionary<object, object?> deploymentDictionary)
+		{
+			if (TryGetDeployment(deploymentDictionary, diagnostics, out var applicability))
+				applicableTo.Deployment = applicability;
+		}
+	}
+
+	private static void AssignProduct(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
+	{
+		if (!dictionary.TryGetValue("product", out var productValue))
+			return;
+
+		// This handles string, null, and empty string cases.
+		if (productValue is not Dictionary<object, object?> productDictionary)
+		{
+			if (TryGetApplicabilityOverTime(dictionary, "product", diagnostics, out var productAvailability))
+				applicableTo.Product = productAvailability;
+			return;
+		}
+
+		// Handle dictionary case
+		if (TryGetProductApplicability(productDictionary, diagnostics, out var applicability))
+			applicableTo.ProductApplicability = applicability;
+	}
+
+	private static void AssignServerless(Dictionary<object, object?> dictionary, ApplicableTo applicableTo, List<(Severity, string)> diagnostics)
+	{
+		if (!dictionary.TryGetValue("serverless", out var serverless))
+			return;
+
+		if (serverless is null || (serverless is string s && string.IsNullOrWhiteSpace(s)))
+			applicableTo.Serverless = ServerlessProjectApplicability.All;
+		else if (serverless is string serverlessString)
+		{
+			var applies = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
+			if (applies is not null)
+				ValidateApplicabilityCollection("serverless", applies, diagnostics);
+			applicableTo.Serverless = new ServerlessProjectApplicability
+			{
+				Elasticsearch = applies,
+				Observability = applies,
+				Security = applies
+			};
+		}
+		else if (serverless is Dictionary<object, object?> serverlessDictionary)
+		{
+			if (TryGetProjectApplicability(serverlessDictionary, diagnostics, out var applicability))
+				applicableTo.Serverless = applicability;
+		}
+	}
+
+	private static bool TryGetDeployment(Dictionary<object, object?> dictionary, List<(Severity, string)> diagnostics,
+		[NotNullWhen(true)] out DeploymentApplicability? applicability)
+	{
+		applicability = null;
+		var d = new DeploymentApplicability();
+		var assigned = false;
+
+		var hasEss = dictionary.ContainsKey("ess");
+		var hasEch = dictionary.ContainsKey("ech");
+		if (hasEss && hasEch)
+			diagnostics.Add((Severity.Warning, "Both 'ess' and 'ech' are defined. Move 'ess' content into 'ech' to avoid information loss."));
+
+		var mapping = new Dictionary<string, Action<AppliesCollection?>>
+		{
+			{ "ece", a => d.Ece = a },
+			{ "eck", a => d.Eck = a },
+			{ "ess", a => d.Ess = a },
+			{ "ech", a => d.Ess = a },
+			{ "self", a => d.Self = a }
+		};
+
+		foreach (var (key, action) in mapping)
+		{
+			if (!TryGetApplicabilityOverTime(dictionary, key, diagnostics, out var collection))
+				continue;
+			action(collection);
+			assigned = true;
+		}
+
+		if (!assigned)
+			return false;
+		applicability = d;
+		return true;
+	}
+
+	private static bool TryGetProjectApplicability(Dictionary<object, object?> dictionary,
+		List<(Severity, string)> diagnostics,
+		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability)
+	{
+		applicability = null;
+		var serverlessAvailability = new ServerlessProjectApplicability();
+		var assigned = false;
+
+		var mapping = new Dictionary<string, Action<AppliesCollection?>>
+		{
+			["elasticsearch"] = a => serverlessAvailability.Elasticsearch = a,
+			["observability"] = a => serverlessAvailability.Observability = a,
+			["security"] = a => serverlessAvailability.Security = a
+		};
+
+		foreach (var (key, action) in mapping)
+		{
+			if (!TryGetApplicabilityOverTime(dictionary, key, diagnostics, out var collection))
+				continue;
+			action(collection);
+			assigned = true;
+		}
+
+		if (!assigned)
+			return false;
+		applicability = serverlessAvailability;
+		return true;
+	}
+
+	private static bool TryGetProductApplicability(Dictionary<object, object?> dictionary,
+		List<(Severity, string)> diagnostics,
+		[NotNullWhen(true)] out ProductApplicability? applicability)
+	{
+		applicability = null;
+		var productAvailability = new ProductApplicability();
+		var assigned = false;
+
+		var mapping = new Dictionary<string, Action<AppliesCollection?>>
+		{
+			{ "ecctl", a => productAvailability.Ecctl = a },
+			{ "curator", a => productAvailability.Curator = a },
+			{ "apm_agent_android", a => productAvailability.ApmAgentAndroid = a },
+			{ "apm_agent_dotnet", a => productAvailability.ApmAgentDotnet = a },
+			{ "apm_agent_go", a => productAvailability.ApmAgentGo = a },
+			{ "apm_agent_ios", a => productAvailability.ApmAgentIos = a },
+			{ "apm_agent_java", a => productAvailability.ApmAgentJava = a },
+			{ "apm_agent_node", a => productAvailability.ApmAgentNode = a },
+			{ "apm_agent_php", a => productAvailability.ApmAgentPhp = a },
+			{ "apm_agent_python", a => productAvailability.ApmAgentPython = a },
+			{ "apm_agent_ruby", a => productAvailability.ApmAgentRuby = a },
+			{ "apm_agent_rum_js", a => productAvailability.ApmAgentRumJs = a },
+			{ "edot_ios", a => productAvailability.EdotIos = a },
+			{ "edot_android", a => productAvailability.EdotAndroid = a },
+			{ "edot_collector", a => productAvailability.EdotCollector = a },
+			{ "edot_dotnet", a => productAvailability.EdotDotnet = a },
+			{ "edot_java", a => productAvailability.EdotJava = a },
+			{ "edot_node", a => productAvailability.EdotNode = a },
+			{ "edot_browser", a => productAvailability.EdotBrowser = a },
+			{ "edot_php", a => productAvailability.EdotPhp = a },
+			{ "edot_python", a => productAvailability.EdotPython = a },
+			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a },
+			{ "edot_cf_azure", a => productAvailability.EdotCfAzure = a },
+			{ "edot_cf_gcp", a => productAvailability.EdotCfGcp = a }
+		};
+
+		foreach (var (key, action) in mapping)
+		{
+			if (!TryGetApplicabilityOverTime(dictionary, key, diagnostics, out var collection))
+				continue;
+			action(collection);
+			assigned = true;
+		}
+
+		if (!assigned)
+			return false;
+		applicability = productAvailability;
+		return true;
+	}
+
+	private static readonly HashSet<string> VersionlessKeys =
+		["ess", "ech", "serverless", "elasticsearch", "observability", "security"];
+
+	private static bool TryGetApplicabilityOverTime(Dictionary<object, object?> dictionary, string key, List<(Severity, string)> diagnostics,
+		out AppliesCollection? availability)
+	{
+		availability = null;
+		if (!dictionary.TryGetValue(key, out var target))
+			return false;
+
+		if (target is null || (target is string s && string.IsNullOrWhiteSpace(s)))
+			availability = AppliesCollection.GenerallyAvailable;
+		else if (target is string stackString)
+		{
+			availability = AppliesCollection.TryParse(stackString, diagnostics, out var a) ? a : null;
+
+			if (availability is not null)
+				ValidateApplicabilityCollection(key, availability, diagnostics);
+		}
+		return availability is not null;
+	}
+
+	private static void ValidateApplicabilityCollection(string key, AppliesCollection collection, List<(Severity, string)> diagnostics)
+	{
+		var items = collection.ToList();
+
+		// Rule: Versionless products cannot have version specifications
+		if (VersionlessKeys.Contains(key))
+		{
+			if (items.Any(a => a.Version is not null && a.Version != AllVersionsSpec.Instance))
+				diagnostics.Add((Severity.Error,
+					$"Can't specify a version for '{key}' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements."));
+			return;
+		}
+
+		// Rule: Only one version declaration per lifecycle
+		var lifecycleGroups = items.GroupBy(a => a.Lifecycle).ToList();
+		var lifecyclesWithMultipleVersions = lifecycleGroups
+			.Where(group => group.Count(a => a.Version is not null && a.Version != AllVersionsSpec.Instance) > 1)
+			.Select(g => g.Key)
+			.ToList();
+
+		if (lifecyclesWithMultipleVersions.Count > 0)
+		{
+			var lifecycleNames = string.Join(", ", lifecyclesWithMultipleVersions);
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
+				$"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed."));
+		}
+
+		// Rule: Only one item per key can use greater-than syntax
+		var greaterThanItems = items.Where(a =>
+			a.Version is { Kind: VersionSpecKind.GreaterThanOrEqual } &&
+			a.Version != AllVersionsSpec.Instance).ToList();
+
+		if (greaterThanItems.Count > 1)
+		{
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
+				$"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax."));
+		}
+
+		// Rule: In a range, the first version must be less than or equal the last version
+		var invalidRanges = items
+			.Where(a => a.Version is { Kind: VersionSpecKind.Range } && a.Version!.Min.CompareTo(a.Version.Max!) > 0)
+			.ToList();
+
+		if (invalidRanges.Count > 0)
+		{
+			var rangeDescriptions = invalidRanges.Select(item =>
+				$"{item.Lifecycle} ({item.Version!.Min.Major}.{item.Version.Min.Minor}-{item.Version.Max!.Major}.{item.Version.Max.Minor})");
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
+				$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}."));
+		}
+
+		// Rule: No overlapping version ranges
+		var versionedItems = items
+			.Where(a => a.Version is not null && a.Version != AllVersionsSpec.Instance)
+			.ToList();
+
+		var hasOverlaps = false;
+		for (var i = 0; i < versionedItems.Count && !hasOverlaps; i++)
+		{
+			for (var j = i + 1; j < versionedItems.Count && !hasOverlaps; j++)
+			{
+				if (CheckVersionOverlap(versionedItems[i].Version!, versionedItems[j].Version!))
+					hasOverlaps = true;
+			}
+		}
+
+		if (hasOverlaps)
+		{
+			diagnostics.Add((Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
+				$"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key."));
+		}
+	}
+
+	private static bool CheckVersionOverlap(VersionSpec v1, VersionSpec v2)
+	{
+		// Allow overlap in case there is a version bump
+		if (v1.Kind == VersionSpecKind.Range && v2.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			v1.Max is not null && v1.Max.CompareTo(v2.Min) <= 0)
+			return false;
+		if (v2.Kind == VersionSpecKind.Range && v1.Kind == VersionSpecKind.GreaterThanOrEqual &&
+			v2.Max is not null && v2.Max.CompareTo(v1.Min) <= 0)
+			return false;
+
+		// Get the effective ranges for each version spec
+		// For GreaterThanOrEqual: [min, infinity)
+		// For Range: [min, max]
+		// For Exact: [exact, exact]
+
+		var (v1Min, v1Max) = GetEffectiveRange(v1);
+		var (v2Min, v2Max) = GetEffectiveRange(v2);
+
+		return v1Min.CompareTo(v2Max ?? AllVersions.Instance) <= 0 &&
+			   v2Min.CompareTo(v1Max ?? AllVersions.Instance) <= 0;
+	}
+
+	private static (SemVersion min, SemVersion? max) GetEffectiveRange(VersionSpec spec) => spec.Kind switch
+	{
+		VersionSpecKind.Exact => (spec.Min, spec.Min),
+		VersionSpecKind.Range => (spec.Min, spec.Max),
+		VersionSpecKind.GreaterThanOrEqual => (spec.Min, null),
+		_ => throw new ArgumentOutOfRangeException(nameof(spec), spec.Kind, "Unknown VersionSpecKind")
+	};
+
+	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
+		serializer.Invoke(value, type);
+}

@@ -5,6 +5,7 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
+using Elastic.Internal.Search;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Mcp.Remote.Gateways;
@@ -70,7 +71,7 @@ public class DocumentGateway(
 					Url = p.Url
 				}).ToArray(),
 				Headings = doc.Headings,
-				Links = doc.Links,
+				Links = doc.Links ?? [],
 				AiShortSummary = doc.AiShortSummary,
 				AiRagOptimizedSummary = doc.AiRagOptimizedSummary,
 				AiQuestions = doc.AiQuestions,
@@ -134,7 +135,7 @@ public class DocumentGateway(
 				Url = doc.Url,
 				Title = doc.Title,
 				HeadingCount = doc.Headings.Length,
-				LinkCount = doc.Links.Length,
+				LinkCount = doc.Links?.Length ?? 0,
 				ParentCount = doc.Parents.Length,
 				BodyLength = doc.Body?.Length ?? 0,
 				Headings = doc.Headings,

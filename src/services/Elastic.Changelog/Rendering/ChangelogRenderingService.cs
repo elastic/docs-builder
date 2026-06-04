@@ -5,13 +5,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
-using Elastic.Changelog.Configuration;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
 using Nullean.ScopedFileSystem;
@@ -28,9 +28,11 @@ public record RenderChangelogsArguments
 	public string? Output { get; init; }
 	public string? Title { get; init; }
 	public bool Subsections { get; init; }
+	public bool Dropdowns { get; init; }
 	public string[]? HideFeatures { get; init; }
 	public string? Config { get; init; }
 	public ChangelogFileType FileType { get; init; } = ChangelogFileType.Markdown;
+	public bool HideDescriptions { get; init; }
 
 }
 
@@ -58,11 +60,14 @@ public enum ChangelogFileType
 	Markdown,
 	[Display(Name = "asciidoc")]
 	[JsonStringEnumMemberName("asciidoc")]
-	Asciidoc
+	Asciidoc,
+	[Display(Name = "gfm")]
+	[JsonStringEnumMemberName("gfm")]
+	Gfm
 }
 
 /// <summary>
-/// Service for rendering changelog output (markdown or asciidoc)
+/// Service for rendering changelog output (markdown, asciidoc, or gfm)
 /// </summary>
 public class ChangelogRenderingService(
 	ILoggerFactory logFactory,
@@ -226,9 +231,23 @@ public class ChangelogRenderingService(
 		if (string.IsNullOrWhiteSpace(input.Title) && version == "unknown")
 			collector.EmitWarning(string.Empty, "No --title option provided and bundle files do not contain 'target' values. Output folder and markdown titles will default to 'unknown'. Consider using --title to specify a custom title.");
 
-		// Use title from input or default to version
-		var title = input.Title ?? version;
-		var titleSlug = ChangelogTextUtilities.TitleToSlug(title);
+		// Determine title and slug
+		string title;
+		string titleSlug;
+
+		if (string.IsNullOrWhiteSpace(input.Title))
+		{
+			// Default title: format dates like the changelog directive
+			title = VersionOrDate.FormatDisplayVersion(version);
+			// Slug always uses raw version to maintain consistent paths/anchors
+			titleSlug = ChangelogTextUtilities.TitleToSlug(version);
+		}
+		else
+		{
+			// Explicit title provided: use as-is for both title and slug
+			title = input.Title;
+			titleSlug = ChangelogTextUtilities.TitleToSlug(input.Title);
+		}
 
 		return new OutputSetup(outputDir, title, titleSlug);
 	}
@@ -325,6 +344,8 @@ public class ChangelogRenderingService(
 			Owner = ownerForAnchors,
 			EntriesByType = entriesByType,
 			Subsections = input.Subsections,
+			Dropdowns = input.Dropdowns,
+			HideDescriptions = input.HideDescriptions,
 			FeatureIdsToHide = featureIdsToHide,
 			EntryToBundleProducts = entryToBundleProducts,
 			EntryToRepo = entryToRepo,

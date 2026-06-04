@@ -35,6 +35,12 @@ public class IndexViewModel
 	public required INavigationItem? NextDocument { get; init; }
 	public required INavigationItem[] Breadcrumbs { get; init; }
 
+	/// <summary>
+	/// When the current page is a hidden nav item, the URL of its nearest visible ancestor.
+	/// Emitted as a meta tag so JavaScript can highlight the correct nav entry.
+	/// </summary>
+	public string? NavigationActiveUrl { get; init; }
+
 	public required string NavigationHtml { get; init; }
 
 	public required string? CurrentVersion { get; init; }
@@ -82,6 +88,9 @@ public class IndexViewModel
 
 	/// <summary>Pre-computed site root path for HTMX. When set (codex builds), used as data-root-path.</summary>
 	public string? SiteRootPath { get; set; }
+
+	/// <summary>When set, the page performs a client-side redirect to this URL (used for alias pages).</summary>
+	public string? RedirectUrl { get; init; }
 }
 
 public class VersionDropDownItemViewModel

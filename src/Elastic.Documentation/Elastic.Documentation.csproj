@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -11,18 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.Glob" />
-    <PackageReference Include="Elastic.Mapping" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Elastic.Internal.Search.Contract" />
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
-    <PackageReference Include="Nullean.Argh.Interfaces" />
-    <PackageReference Include="Proc" />
-    <PackageReference Include="SoftCircuits.IniFileParser" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
-    <PackageReference Include="System.IO.Abstractions" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
-    <PackageReference Include="YamlDotNet"/>
   </ItemGroup>
 
 </Project>

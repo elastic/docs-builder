@@ -315,6 +315,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		Diagnostics: GetStoredDiagnostics()
 	);
 
+
 	public void Dispose()
 	{
 		_currentBuildCts?.Cancel();

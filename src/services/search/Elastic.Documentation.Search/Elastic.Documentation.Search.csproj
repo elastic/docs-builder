@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Elastic.Documentation.Search</AssemblyName>
+        <RootNamespace>Elastic.Documentation.Search</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
+      <ProjectReference Include="..\..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Elastic.Clients.Elasticsearch" />
+      <PackageReference Include="Elastic.Internal.Search.Contract" />
+      <PackageReference Include="Elastic.Internal.Search.Elasticsearch" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+      <PackageReference Include="Microsoft.Extensions.Logging" />
+    </ItemGroup>
+
+</Project>

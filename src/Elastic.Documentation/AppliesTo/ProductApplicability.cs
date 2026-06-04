@@ -3,83 +3,82 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
-using YamlDotNet.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
-[YamlSerializable]
 public record ProductApplicability
 {
-	[YamlMember(Alias = "ecctl")]
+	[JsonPropertyName("ecctl")]
 	public AppliesCollection? Ecctl { get; set; }
 
-	[YamlMember(Alias = "curator")]
+	[JsonPropertyName("curator")]
 	public AppliesCollection? Curator { get; set; }
 
-	[YamlMember(Alias = "apm-agent-android")]
+	[JsonPropertyName("apm-agent-android")]
 	public AppliesCollection? ApmAgentAndroid { get; set; }
 
-	[YamlMember(Alias = "apm-agent-dotnet")]
+	[JsonPropertyName("apm-agent-dotnet")]
 	public AppliesCollection? ApmAgentDotnet { get; set; }
 
-	[YamlMember(Alias = "apm-agent-go")]
+	[JsonPropertyName("apm-agent-go")]
 	public AppliesCollection? ApmAgentGo { get; set; }
 
-	[YamlMember(Alias = "apm-agent-ios")]
+	[JsonPropertyName("apm-agent-ios")]
 	public AppliesCollection? ApmAgentIos { get; set; }
 
-	[YamlMember(Alias = "apm-agent-java")]
+	[JsonPropertyName("apm-agent-java")]
 	public AppliesCollection? ApmAgentJava { get; set; }
 
-	[YamlMember(Alias = "apm-agent-node")]
+	[JsonPropertyName("apm-agent-node")]
 	public AppliesCollection? ApmAgentNode { get; set; }
 
-	[YamlMember(Alias = "apm-agent-php")]
+	[JsonPropertyName("apm-agent-php")]
 	public AppliesCollection? ApmAgentPhp { get; set; }
 
-	[YamlMember(Alias = "apm-agent-python")]
+	[JsonPropertyName("apm-agent-python")]
 	public AppliesCollection? ApmAgentPython { get; set; }
 
-	[YamlMember(Alias = "apm-agent-ruby")]
+	[JsonPropertyName("apm-agent-ruby")]
 	public AppliesCollection? ApmAgentRuby { get; set; }
 
-	[YamlMember(Alias = "apm-agent-rum-js")]
+	[JsonPropertyName("apm-agent-rum-js")]
 	public AppliesCollection? ApmAgentRumJs { get; set; }
 
-	[YamlMember(Alias = "edot-ios")]
+	[JsonPropertyName("edot-ios")]
 	public AppliesCollection? EdotIos { get; set; }
 
-	[YamlMember(Alias = "edot-android")]
+	[JsonPropertyName("edot-android")]
 	public AppliesCollection? EdotAndroid { get; set; }
 
-	[YamlMember(Alias = "edot-dotnet")]
+	[JsonPropertyName("edot-dotnet")]
 	public AppliesCollection? EdotDotnet { get; set; }
 
-	[YamlMember(Alias = "edot-java")]
+	[JsonPropertyName("edot-java")]
 	public AppliesCollection? EdotJava { get; set; }
 
-	[YamlMember(Alias = "edot-node")]
+	[JsonPropertyName("edot-node")]
 	public AppliesCollection? EdotNode { get; set; }
 
-	[YamlMember(Alias = "edot-browser")]
+	[JsonPropertyName("edot-browser")]
 	public AppliesCollection? EdotBrowser { get; set; }
 
-	[YamlMember(Alias = "edot-php")]
+	[JsonPropertyName("edot-php")]
 	public AppliesCollection? EdotPhp { get; set; }
 
-	[YamlMember(Alias = "edot-python")]
+	[JsonPropertyName("edot-python")]
 	public AppliesCollection? EdotPython { get; set; }
 
-	[YamlMember(Alias = "edot-cf-aws")]
+	[JsonPropertyName("edot-cf-aws")]
 	public AppliesCollection? EdotCfAws { get; set; }
 
-	[YamlMember(Alias = "edot-cf-azure")]
+	[JsonPropertyName("edot-cf-azure")]
 	public AppliesCollection? EdotCfAzure { get; set; }
 
-	[YamlMember(Alias = "edot-cf-gcp")]
+	[JsonPropertyName("edot-cf-gcp")]
 	public AppliesCollection? EdotCfGcp { get; set; }
 
-	[YamlMember(Alias = "edot-collector")]
+	[JsonPropertyName("edot-collector")]
 	public AppliesCollection? EdotCollector { get; set; }
 
 	/// <inheritdoc />

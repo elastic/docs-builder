@@ -143,11 +143,42 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			Action = input.Action,
 			FeatureId = input.FeatureId,
 			Highlight = input.Highlight,
-			Prs = input.Prs is { Length: > 0 } ? input.Prs.ToList() : null,
+			Prs = NormalizeReferences(input.Prs, input.Owner, input.Repo, "pull"),
 			Products = input.Products.Select(p => p.ToProductReference()).ToList(),
 			Areas = input.Areas is { Length: > 0 } ? input.Areas.ToList() : null,
-			Issues = input.Issues is { Length: > 0 } ? input.Issues.ToList() : null
+			Issues = NormalizeReferences(input.Issues, input.Owner, input.Repo, "issues")
 		};
+	}
+
+	/// <summary>
+	/// Expands bare numeric PR/issue references to full <c>https://github.com/owner/repo/{pull|issues}/N</c>
+	/// URLs when owner and repo are available, so the written YAML is self-describing — readers (including the
+	/// changelog scrubber Lambda, which has no per-entry repo context) can resolve the target repository without
+	/// extra arguments. References that are already full URLs or <c>owner/repo#N</c> short-forms are returned
+	/// unchanged. Returns <c>null</c> when there is nothing to write, preserving the previous omit-on-empty
+	/// serialization behaviour.
+	/// </summary>
+	internal static List<string>? NormalizeReferences(string[]? refs, string? owner, string? repo, string pathSegment)
+	{
+		if (refs is not { Length: > 0 })
+			return null;
+
+		// Only expand when we have an unambiguous single-repo context. Bundle-style multi-repo strings
+		// (e.g. "elasticsearch+kibana") or pre-qualified "org/repo" values would expand to the wrong URL.
+		var hasContext = !string.IsNullOrWhiteSpace(owner)
+			&& !string.IsNullOrWhiteSpace(repo)
+			&& !repo.Contains('/', StringComparison.Ordinal)
+			&& !repo.Contains('+', StringComparison.Ordinal);
+
+		var list = new List<string>(refs.Length);
+		foreach (var r in refs)
+		{
+			if (hasContext && !string.IsNullOrWhiteSpace(r) && uint.TryParse(r.Trim(), out _))
+				list.Add($"https://github.com/{owner}/{repo}/{pathSegment}/{r.Trim()}");
+			else
+				list.Add(r);
+		}
+		return list;
 	}
 
 	private static string GenerateYaml(ChangelogEntry data, ChangelogConfiguration config, bool titleMissing, bool typeMissing)

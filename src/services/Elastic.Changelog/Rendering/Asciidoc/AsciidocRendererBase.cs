@@ -61,40 +61,48 @@ public abstract class AsciidocRendererBase
 	}
 
 	/// <summary>
-	/// Renders an entry's description with optional comment handling
+	/// Renders an entry's description with optional comment handling and list continuation
 	/// </summary>
-	private static void RenderEntryDescription(StringBuilder sb, ChangelogEntry entry, bool shouldHide)
+	private static void RenderEntryDescription(StringBuilder sb, ChangelogEntry entry, ChangelogRenderContext context, bool shouldHide, bool needsContinuation = true)
 	{
-		if (string.IsNullOrWhiteSpace(entry.Description))
+		if (context.HideDescriptions || string.IsNullOrWhiteSpace(entry.Description))
 			return;
 
 		_ = sb.AppendLine();
-		var indented = ChangelogTextUtilities.Indent(entry.Description);
+
+		// Add list continuation marker for multi-block list items
+		if (needsContinuation)
+		{
+			_ = sb.AppendLine("+");
+		}
+
 		if (shouldHide)
 		{
-			var indentedLines = indented.Split('\n');
-			foreach (var line in indentedLines)
+			var descriptionLines = entry.Description.Split('\n');
+			foreach (var line in descriptionLines)
 				_ = sb.AppendLine(CultureInfo.InvariantCulture, $"// {line}");
 		}
 		else
-			_ = sb.AppendLine(indented);
+			_ = sb.AppendLine(entry.Description);
 	}
 
 	/// <summary>
-	/// Renders Impact and Action fields for breaking changes, deprecations, and known issues
+	/// Renders Impact and Action fields for breaking changes, deprecations, and known issues with list continuation
 	/// </summary>
 	private static void RenderImpactAndAction(StringBuilder sb, ChangelogEntry entry)
 	{
 		if (!string.IsNullOrWhiteSpace(entry.Impact))
 		{
 			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**Impact:** {entry.Impact}");
+			_ = sb.AppendLine("+");
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"*Impact:* {entry.Impact}");
 		}
 
 		if (!string.IsNullOrWhiteSpace(entry.Action))
 		{
 			_ = sb.AppendLine();
-			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"**Action:** {entry.Action}");
+			_ = sb.AppendLine("+");
+			_ = sb.AppendLine(CultureInfo.InvariantCulture, $"*Action:* {entry.Action}");
 		}
 	}
 
@@ -105,7 +113,7 @@ public abstract class AsciidocRendererBase
 	{
 		var (entryRepo, _, hideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
-		RenderEntryDescription(sb, entry, shouldHide);
+		RenderEntryDescription(sb, entry, context, shouldHide, needsContinuation: !string.IsNullOrWhiteSpace(entry.Description));
 		_ = sb.AppendLine();
 	}
 
@@ -116,7 +124,11 @@ public abstract class AsciidocRendererBase
 	{
 		var (entryRepo, _, hideLinks, shouldHide) = ChangelogRenderUtilities.GetEntryContext(entry, context);
 		RenderEntryTitleAndLinks(sb, entry, entryRepo, hideLinks, shouldHide);
-		RenderEntryDescription(sb, entry, shouldHide);
+
+		// Description needs continuation when it exists
+		var hasDescription = !string.IsNullOrWhiteSpace(entry.Description);
+		RenderEntryDescription(sb, entry, context, shouldHide, needsContinuation: hasDescription);
+
 		RenderImpactAndAction(sb, entry);
 		_ = sb.AppendLine();
 	}

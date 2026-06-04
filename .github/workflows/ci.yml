@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -41,6 +43,8 @@ jobs:
       MSBuildNoWarn: IDE0032
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
         
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -74,6 +78,8 @@ jobs:
         working-directory: src/Elastic.Documentation.Site
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v6
         with:
@@ -109,6 +115,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -128,6 +136,8 @@ jobs:
          - windows-latest
     steps:          
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: 'Windows only, set TEMP to the same drive'
         if: ${{ matrix.os == 'windows-latest' }}
         #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
@@ -149,7 +159,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           dotnet run --project src/tooling/docs-builder -c release --no-build -- __schema > docs/cli-schema.json.tmp
-          diff docs/cli-schema.json docs/cli-schema.json.tmp || (echo "docs/cli-schema.json is out of date — run: dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json" && exit 1)
+          diff <(jq 'del(.version)' docs/cli-schema.json) <(jq 'del(.version)' docs/cli-schema.json.tmp) || (echo "docs/cli-schema.json is out of date — run: dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json" && exit 1)
           rm docs/cli-schema.json.tmp
 
       - name: Test
@@ -171,9 +181,16 @@ jobs:
         
 
   integration:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: docs-builder-latest-16
+    environment: integration-tests
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Bootstrap Action Workspace
         id: bootstrap
@@ -182,5 +199,22 @@ jobs:
       - name: Install Aspire workload
         run: dotnet workload install aspire
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-integration-tests
+          aws-region: us-east-1
+
+      - name: Fetch ES credentials
+        run: |
+          ES_URL=$(aws ssm get-parameter --name /elastic-docs-v3/prod/docs-elasticsearch-github-actions-readonly-url --with-decryption --query Parameter.Value --output text)
+          ES_KEY=$(aws ssm get-parameter --name /elastic-docs-v3/prod/docs-elasticsearch-github-actions-readonly-api-key --with-decryption --query Parameter.Value --output text)
+          echo "::add-mask::$ES_URL"
+          echo "::add-mask::$ES_KEY"
+          dotnet user-secrets set "DocumentationElasticUrl" "$ES_URL" --project aspire
+          dotnet user-secrets set "DocumentationElasticApiKey" "$ES_KEY" --project aspire
+
       - name: Integration Tests
+        env:
+          ENVIRONMENT: prod
         run: dotnet run --project build -c release -- integrate
