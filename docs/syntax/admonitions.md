@@ -4,7 +4,8 @@ Admonitions allow you to highlight important information with varying levels of 
 
 ## Basic admonitions
 
-Admonitions can span multiple lines and support inline formatting.
+Admonitions can span multiple lines and support inline formatting. To split the content into separate paragraphs, separate them with a blank line — adjacent lines collapse into a single paragraph.
+
 Available admonition types include:
 
 - [Note](#note)
@@ -135,6 +136,8 @@ A plain admonition is a callout with no further styling. Useful to create a call
 ::::{tab-item} Output
 
 :::{admonition} This is my callout
+This is a plain callout.
+
 It can *span* multiple lines and supports inline formatting.
 :::
 
@@ -144,6 +147,8 @@ It can *span* multiple lines and supports inline formatting.
 
 ```markdown
 :::{admonition} This is my callout
+This is a plain callout.
+
 It can *span* multiple lines and supports inline formatting.
 :::
 ```
