@@ -85,7 +85,7 @@ public class ReleaseNotesSerializationTests
 	[InlineData("Title with > folded marker")]
 	[InlineData("Title with newline\nthen colon: injected: true")]
 	[InlineData("title:\nmalicious: true")]
-	[InlineData("\\u202E right-to-left override")]
+	[InlineData("\u202E right-to-left override")]
 	public void SerializeEntry_AdversarialTitle_RoundTripsWithoutInjection(string adversarialTitle)
 	{
 		var entry = new ChangelogEntry
