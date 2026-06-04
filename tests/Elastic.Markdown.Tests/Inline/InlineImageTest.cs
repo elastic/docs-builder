@@ -1,7 +1,7 @@
 // Licensed to Elasticsearch B.V under one or more agreements.
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
-using FluentAssertions;
+using AwesomeAssertions;
 using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -19,7 +19,7 @@ public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>"""
 		);
 }
 
@@ -36,7 +36,7 @@ public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<Link
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>"""
 		);
 }
 
@@ -54,7 +54,7 @@ public class InlineImageWithSizingSpaceBeforeTest(ITestOutputHelper output) : In
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>"""
 		);
 }
 
@@ -72,7 +72,7 @@ public class InlineImageWithSizingNoSpaceBeforeTest(ITestOutputHelper output) : 
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>"""
 		);
 }
 
@@ -90,11 +90,11 @@ public class InlineImageWithPixelSizingTest(ITestOutputHelper output) : InlineTe
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="250px" height="330px" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="250px" height="330px" title="Elasticsearch" /></p>"""
 		);
 }
 
-// Test image sizing with title and sizing
+// Test image sizing with title and sizing — explicit title in markdown is ignored; alt text is always used as title
 public class InlineImageWithTitleAndSizingTest(ITestOutputHelper output) : InlineTest<LinkInline>(output,
 """
 ![Elasticsearch](/_static/img/observability.png "My Title =50%")
@@ -108,7 +108,7 @@ public class InlineImageWithTitleAndSizingTest(ITestOutputHelper output) : Inlin
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="My Title" width="50%" height="50%" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>"""
 		);
 }
 
@@ -126,6 +126,6 @@ public class InlineImageWithWidthOnlyTest(ITestOutputHelper output) : InlineTest
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="250px" height="250px" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="250px" height="250px" title="Elasticsearch" /></p>"""
 		);
 }

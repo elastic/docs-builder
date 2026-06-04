@@ -1,4 +1,4 @@
-# Directives
+# How directives work
 
 Directives extend Markdown with additional features:
 
@@ -73,7 +73,9 @@ The following directives are available:
 - [Dropdowns](dropdowns.md) - Collapsible content
 - [Images](images.md) - Enhanced image handling
 - [Include](file_inclusion.md) - Include content from other files
+- [List sub-pages](list-sub-pages.md) - List sibling pages in the current section
 - [Math](math.md) - Mathematical expressions and equations
+- [Page cards](page-card.md) - Full-width clickable navigation rows
 - [Settings](automated_settings.md) - Configuration blocks
 - [Stepper](stepper.md) - Step-by-step content
 - [Tabs](tabs.md) - Tabbed content organization

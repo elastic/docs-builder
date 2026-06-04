@@ -204,9 +204,11 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		}
 
 		// Track PRs for duplicate detection
-		if (!string.IsNullOrWhiteSpace(entry.Pr))
+		foreach (var pr in entry.Prs ?? [])
 		{
-			var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(entry.Pr, null, null);
+			if (string.IsNullOrWhiteSpace(pr))
+				continue;
+			var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(pr, null, null);
 			if (!seenPrs.TryGetValue(normalizedPr, out var prBundleList))
 			{
 				prBundleList = [];
@@ -238,7 +240,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			return false;
 		}
 
-		var filePath = fileSystem.Path.Combine(bundleDirectory, entry.File.Name);
+		var filePath = fileSystem.Path.Join(bundleDirectory, entry.File.Name);
 		if (!fileSystem.File.Exists(filePath))
 		{
 			collector.EmitError(bundleFile, $"Referenced changelog file '{entry.File.Name}' does not exist at path: {filePath}");
@@ -281,9 +283,11 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			}
 
 			// Track PRs for duplicate detection
-			if (!string.IsNullOrWhiteSpace(entryData.Pr))
+			foreach (var pr in entryData.Prs ?? [])
 			{
-				var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(entryData.Pr, null, null);
+				if (string.IsNullOrWhiteSpace(pr))
+					continue;
+				var normalizedPr = ChangelogBundlingService.NormalizePrForComparison(pr, null, null);
 				if (!seenPrs.TryGetValue(normalizedPr, out var prBundleList))
 				{
 					prBundleList = [];

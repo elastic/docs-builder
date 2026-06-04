@@ -4,13 +4,21 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Internal.Search;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
-public record ProductsConfiguration
+public record ProductsConfiguration : IProductNameLookup
 {
 	public required FrozenDictionary<string, Product> Products { get; init; }
+
+	/// <summary>
+	/// Products with the <c>public-reference</c> feature enabled. These can appear in
+	/// applies_to blocks, page frontmatter, and get display-name substitutions.
+	/// When a product has no explicit <c>features</c> map, it is included here by default.
+	/// </summary>
+	public required FrozenDictionary<string, Product> PublicReferenceProducts { get; init; }
 
 	/// <summary>
 	/// Product id to display name mappings for fast lookups.
@@ -46,12 +54,39 @@ public record ProductsConfiguration
 	/// </summary>
 	public string GetDisplayName(ReadOnlySpan<char> productId) =>
 		DisplayNameLookup.TryGetValue(productId, out var displayName) ? displayName : productId.ToString();
+
+	/// <inheritdoc />
+	public bool TryGetProductName(string productId, out string displayName)
+	{
+		if (ProductDisplayNames.TryGetValue(productId, out var name))
+		{
+			displayName = name;
+			return true;
+		}
+		displayName = productId;
+		return false;
+	}
 }
 
 [YamlSerializable]
 public record ProductLink
 {
 	public string Id { get; set; } = string.Empty;
+}
+
+/// <summary>Declares which docs-builder subsystems a product participates in.</summary>
+public record ProductFeatures
+{
+	/// <summary>Product can be referenced in applies_to blocks, page frontmatter, and gets display-name substitutions.</summary>
+	public bool PublicReference { get; init; }
+
+	/// <summary>Product participates in the changelog / release-notes system.</summary>
+	public bool ReleaseNotes { get; init; }
+
+	/// <summary>All features enabled -- the implicit default when no <c>features</c> map is present in YAML.</summary>
+	public static ProductFeatures All => new() { PublicReference = true, ReleaseNotes = true };
+
+	public static readonly FrozenSet<string> KnownKeys = FrozenSet.ToFrozenSet(["public-reference", "release-notes"], StringComparer.OrdinalIgnoreCase);
 }
 
 [YamlSerializable]
@@ -61,5 +96,6 @@ public record Product
 	public required string DisplayName { get; init; }
 	public VersioningSystem? VersioningSystem { get; init; }
 	public string? Repository { get; init; }
+	public ProductFeatures Features { get; init; } = ProductFeatures.All;
 }
 

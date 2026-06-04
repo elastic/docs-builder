@@ -22,10 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleAppFramework">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Nullean.Argh.Hosting" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
     <PackageReference Include="Westwind.AspNetCore.LiveReload" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
@@ -35,8 +32,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <ProjectReference Include="..\..\api\Elastic.Documentation.Api.Core\Elastic.Documentation.Api.Core.csproj" />
-    <ProjectReference Include="..\..\api\Elastic.Documentation.Api.Infrastructure\Elastic.Documentation.Api.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\config\changelog.example.yml" Link="changelog.example.yml" LogicalName="Documentation.Builder.changelog.example.yml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -53,4 +53,5 @@
     <ProjectReference Include="..\..\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
   </ItemGroup>
+  
 </Project>

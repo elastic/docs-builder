@@ -69,7 +69,14 @@ public class CategoryNavigation(
 /// <summary>
 /// Represents a virtual index page for a category.
 /// </summary>
-public record CategoryIndexPage(string NavigationTitle) : IDocumentationFile;
+public record CategoryIndexPage(string NavigationTitle) : IDocumentationFile
+{
+	/// <inheritdoc />
+	public string Title => NavigationTitle;
+
+	/// <inheritdoc />
+	public string? Description => null;
+}
 
 /// <summary>
 /// Represents the leaf navigation item for a category's index.

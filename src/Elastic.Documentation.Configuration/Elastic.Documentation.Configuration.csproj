@@ -1,20 +1,29 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- CS0618: Obsolete members - DisplayName is deprecated but still used by YAML deserialization -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <IsAotCompatible>true</IsAotCompatible>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj"/>
+    <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
-    <PackageReference Include="Samboy063.Tomlet" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
-    <PackageReference Include="YamlDotNet"/>
+    <PackageReference Include="NetEscapades.EnumGenerators" />
+    <PackageReference Include="Nullean.Argh.Interfaces" />
+    <PackageReference Include="Nullean.ScopedFileSystem" />
+    <PackageReference Include="Tomlyn" />
+    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>

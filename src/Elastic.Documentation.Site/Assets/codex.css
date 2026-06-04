@@ -1,10 +1,20 @@
 /* Codex build type specific styles */
 
 :root {
-	/* Codex uses elastic-docs-header web component - fixed 48px height */
+	/* Codex uses custom header with grid layout - fixed 48px height */
 	--header-height: 48px;
-	--sub-header-height: 40px;
+	--sub-header-height: 37px;
 	--offset-top: calc(var(--header-height) + var(--sub-header-height));
+}
+
+#htmx-indicator {
+	top: var(--header-height);
+}
+
+body:has(.codex-root-landing) {
+	#htmx-indicator {
+		top: 0;
+	}
 }
 
 /* Codex header specific styles - only apply on lg screens (matches --breakpoint-lg) */
@@ -31,6 +41,20 @@
 				top: 0 !important;
 				max-height: 100%;
 			}
+		}
+	}
+}
+
+.icon-mono path {
+	fill: currentColor !important;
+}
+
+.codex-hero {
+	navigation-search > div {
+		position: static;
+		padding: 0;
+		& > hr.euiHorizontalRule {
+			display: none;
 		}
 	}
 }

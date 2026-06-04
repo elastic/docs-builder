@@ -54,6 +54,9 @@ type Build =
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishContainers
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PublishZip
 
+    | [<CliPrefix(CliPrefix.None);SubCommand>] Air_Gapped_Build
+    | [<CliPrefix(CliPrefix.None);SubCommand>] Air_Gapped_Run
+
     | [<CliPrefix(CliPrefix.None);SubCommand>] Release
     
     | [<Inherit;AltCommandLine("-s")>] Single_Target
@@ -72,6 +75,9 @@ with
             | Unit_Test -> "alias to providing: test --test-suite=unit"
             | Integrate -> "alias to providing: test --test-suite=integration"
             | Test -> "runs a clean build and then runs all the tests unless --test-suite is provided"
+
+            | Air_Gapped_Build -> "Clones, builds docs with html exporter, and packages into an air-gapped Docker container"
+            | Air_Gapped_Run -> "Runs the air-gapped docs container on port 8080"
 
             | Release -> "runs build, tests, and create and validates the packages shy of publishing them"
             | Publish -> "Publishes artifacts"

@@ -42,6 +42,9 @@ public class StepViewModel : DirectiveViewModel
 
 		/// <inheritdoc />
 		public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
+
+		/// <inheritdoc />
+		public bool IsDeclaredCrossLinkScheme(string scheme) => false;
 	}
 
 	/// <summary>
@@ -60,8 +63,8 @@ public class StepViewModel : DirectiveViewModel
 		{
 			MarkdownSourcePath = directiveBlock.CurrentFile,
 			YamlFrontMatter = yamlFrontMatter,
-			TryFindDocument = _ => null!,
-			TryFindDocumentByRelativePath = _ => null!,
+			TryFindDocument = _ => null,
+			TryFindDocumentByRelativePath = _ => null,
 			CrossLinkResolver = StepCrossLinkResolver.Instance,
 			NavigationTraversable = StepCrossNavigationLookupProvider.Instance
 		});

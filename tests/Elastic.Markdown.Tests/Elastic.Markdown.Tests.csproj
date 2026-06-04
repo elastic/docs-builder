@@ -7,11 +7,13 @@
   <ItemGroup>
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="AngleSharp.Diffing" />
+    <PackageReference Include="Nullean.ScopedFileSystem" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\authoring\Elastic.Documentation.Refactor\Elastic.Documentation.Refactor.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj"/>
+    <ProjectReference Include="..\..\src\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj"/>
   </ItemGroup>
 
 </Project>

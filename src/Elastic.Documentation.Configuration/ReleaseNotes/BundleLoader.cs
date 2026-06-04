@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Versions;
 using YamlDotNet.Core;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
@@ -39,6 +40,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(bundleFile);
 			var repo = GetRepoFromBundle(bundleData);
+			var owner = GetOwnerFromBundle(bundleData);
 
 			// Bundle directory is the directory containing the bundle file
 			var bundleDirectory = fileSystem.Path.GetDirectoryName(bundleFile) ?? bundlesFolderPath;
@@ -47,7 +49,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 			var entries = ResolveEntries(bundleData, changelogDirectory, emitWarning);
 
-			loadedBundles.Add(new LoadedBundle(version, repo, bundleData, bundleFile, entries));
+			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, bundleFile, entries));
 		}
 
 		// Merge amend files with their parent bundles
@@ -80,7 +82,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			else if (!string.IsNullOrWhiteSpace(entry.File?.Name))
 			{
 				// Load from file reference - look in changelog directory (parent of bundles)
-				var filePath = fileSystem.Path.Combine(changelogDirectory, entry.File.Name);
+				var filePath = fileSystem.Path.Join(changelogDirectory, entry.File.Name);
 
 				if (!fileSystem.File.Exists(filePath))
 				{
@@ -183,6 +185,21 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	}
 
 	/// <summary>
+	/// Gets the GitHub owner from a bundle's first product.
+	/// Uses the explicit Owner field if set, otherwise falls back to "elastic".
+	/// </summary>
+	private static string GetOwnerFromBundle(Bundle bundledData)
+	{
+		if (bundledData.Products.Count == 0)
+			return "elastic";
+
+		var firstProduct = bundledData.Products[0];
+		return !string.IsNullOrWhiteSpace(firstProduct.Owner)
+			? firstProduct.Owner
+			: "elastic";
+	}
+
+	/// <summary>
 	/// Merges a group of bundles with the same target version into a single bundle.
 	/// </summary>
 	private static LoadedBundle MergeBundleGroup(IGrouping<string, LoadedBundle> group)
@@ -201,10 +218,40 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		// Use the first bundle's metadata as the base
 		var first = bundlesList[0];
 
+		var descriptions = bundlesList
+			.Select(b => b.Data?.Description)
+			.Where(d => !string.IsNullOrEmpty(d))
+			.ToList();
+
+		var mergedDescription = descriptions.Count switch
+		{
+			0 => null,
+			1 => descriptions[0],
+			_ => string.Join("\n\n", descriptions)
+		};
+
+		var releaseDates = bundlesList
+			.Select(b => b.Data?.ReleaseDate)
+			.Where(d => d.HasValue)
+			.Select(d => d!.Value)
+			.Distinct()
+			.ToList();
+
+		var mergedReleaseDate = releaseDates.Count switch
+		{
+			0 => (DateOnly?)null,
+			_ => releaseDates[0]
+		};
+
+		var mergedData = first.Data != null
+			? first.Data with { Description = mergedDescription, ReleaseDate = mergedReleaseDate }
+			: new Bundle { Description = mergedDescription, ReleaseDate = mergedReleaseDate };
+
 		return new LoadedBundle(
 			first.Version,
 			combinedRepo,
-			first.Data,
+			first.Owner,
+			mergedData,
 			first.FilePath,
 			mergedEntries
 		);
@@ -253,6 +300,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			mergedParents[parentPath] = new LoadedBundle(
 				mergedParent.Version,
 				mergedParent.Repo,
+				mergedParent.Owner,
 				mergedParent.Data,
 				mergedParent.FilePath,
 				combinedEntries
@@ -300,7 +348,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		// Remove the .amend-N part from the filename
 		var parentFileName = AmendFileRegex().Replace(fileName, extension);
 
-		return fileSystem.Path.Combine(directory, parentFileName);
+		return fileSystem.Path.Join(directory, parentFileName);
 	}
 
 	[GeneratedRegex(@"\.amend-\d+\.ya?ml$", RegexOptions.IgnoreCase)]

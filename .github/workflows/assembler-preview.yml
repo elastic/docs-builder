@@ -1,12 +1,7 @@
 name: assembler-preview
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
+  pull_request: ~
   workflow_dispatch:
     inputs:
       pr_number:
@@ -26,6 +21,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: docs-internal-latest-16
     env:
       PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
@@ -34,7 +30,7 @@ jobs:
       - name: Get PR details
         if: github.event_name == 'workflow_dispatch'
         id: pr-details
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ inputs.pr_number }}
         with:
@@ -67,7 +63,7 @@ jobs:
           persist-credentials: false
 
       - name: Create Deployment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: deployment
         env:
           PR_SHA: ${{ steps.pr-details.outputs.result || github.event.pull_request.head.sha }}
@@ -120,9 +116,9 @@ jobs:
 
       - name: Update Deployment Status
         if: always() && steps.deployment.outputs.result
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
-          script: |
+          script: | # zizmor: ignore[template-injection] deployment_id from prior step output
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,

@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -19,22 +20,27 @@ namespace Elastic.Changelog.Creation;
 public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 {
 	/// <summary>
+	/// UTF-8 encoding without BOM for writing YAML files.
+	/// </summary>
+	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+	/// <summary>
 	/// Writes a changelog file with the given data.
 	/// </summary>
 	public async Task<bool> WriteChangelogAsync(
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
-		string? prUrl,
 		bool titleMissing,
 		bool typeMissing,
 		Cancel ctx)
 	{
 		// Build changelog data from input
-		var changelogData = BuildChangelogData(input, prUrl);
+		var changelogData = BuildChangelogData(input);
 
 		// Generate YAML file
-		var yamlContent = GenerateYaml(changelogData, config, titleMissing, typeMissing);
+		var yamlContent = input.Concise
+			? GenerateConciseYaml(changelogData)
+			: GenerateYaml(changelogData, config, titleMissing, typeMissing);
 
 		// Determine output path
 		var outputDir = input.Output ?? fileSystem.Directory.GetCurrentDirectory();
@@ -42,40 +48,80 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			_ = fileSystem.Directory.CreateDirectory(outputDir);
 
 		// Generate filename
-		var filename = GenerateFilename(collector, input, prUrl);
-		var filePath = fileSystem.Path.Combine(outputDir, filename);
+		var filename = GenerateFilename(collector, input);
+		var filePath = fileSystem.Path.Join(outputDir, filename);
 
-		// Write file with explicit UTF-8 encoding to ensure proper character handling
-		await fileSystem.File.WriteAllTextAsync(filePath, yamlContent, Encoding.UTF8, ctx);
+		// Write UTF-8 text without BOM using explicit encoding instance.
+		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
+		await fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
 		logger.LogInformation("Created changelog fragment: {FilePath}", filePath);
 
 		return true;
 	}
 
-	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input, string? prUrl)
-	{
-		if (input.UsePrNumber && !string.IsNullOrWhiteSpace(prUrl))
-		{
-			// Use PR number as filename when --use-pr-number is specified
-			var prNumber = ChangelogTextUtilities.ExtractPrNumber(prUrl, input.Owner, input.Repo);
-			if (prNumber.HasValue)
-				return $"{prNumber.Value}.yaml";
+	/// <summary>Maximum filename length before extension to avoid filesystem path-too-long errors.</summary>
+	private const int MaxFilenameLength = 200;
 
-			// Fall back to timestamp-slug format if PR number extraction fails
-			collector.EmitWarning(string.Empty, $"Failed to extract PR number from '{prUrl}'. Falling back to timestamp-based filename.");
+	private string GenerateFilename(IDiagnosticsCollector collector, CreateChangelogArguments input)
+	{
+		if (input.UsePrNumber && input.Prs is { Length: > 0 })
+		{
+			var numbers = input.Prs
+				.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr, input.Owner, input.Repo))
+				.Where(n => n.HasValue)
+				.Select(n => n!.Value)
+				.Distinct()
+				.OrderBy(n => n)
+				.ToList();
+
+			if (numbers.Count > 0)
+			{
+				var joined = $"{string.Join("-", numbers)}.yaml";
+				if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
+					return joined;
+				// Too many PRs: use compact format to avoid path-too-long errors
+				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
+			}
+
+			collector.EmitWarning(string.Empty, $"Failed to extract PR numbers from PRs. Falling back to timestamp-based filename.");
+		}
+
+		if (input.UseIssueNumber && input.Issues is { Length: > 0 })
+		{
+			var numbers = input.Issues
+				.Select(issue => ChangelogTextUtilities.ExtractIssueNumber(issue, input.Owner, input.Repo))
+				.Where(n => n.HasValue)
+				.Select(n => n!.Value)
+				.Distinct()
+				.OrderBy(n => n)
+				.ToList();
+
+			if (numbers.Count > 0)
+			{
+				var joined = $"{string.Join("-", numbers)}.yaml";
+				if (joined.Length <= MaxFilenameLength + 5)
+					return joined;
+				return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-issues.yaml";
+			}
+
+			collector.EmitWarning(string.Empty, "Failed to extract issue numbers from issues. Falling back to timestamp-based filename.");
 		}
 
 		// Default: timestamp-slug.yaml
 		var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+		var firstPr = input.Prs is { Length: > 0 } ? input.Prs[0] : null;
+		var firstIssue = input.Issues is { Length: > 0 } ? input.Issues[0] : null;
 		var slug = string.IsNullOrWhiteSpace(input.Title)
-			? string.IsNullOrWhiteSpace(prUrl)
-				? "changelog"
-				: $"pr-{prUrl.Replace("/", "-").Replace(":", "-")}"
+			? firstPr != null
+				? $"pr-{firstPr.Replace("/", "-").Replace(":", "-")}"
+				: firstIssue != null
+					? $"issue-{firstIssue.Replace("/", "-").Replace(":", "-")}"
+					: "changelog"
 			: ChangelogTextUtilities.SanitizeFilename(input.Title);
 		return $"{timestamp}-{slug}.yaml";
 	}
 
-	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input, string? prUrl)
+	private static ChangelogEntry BuildChangelogData(CreateChangelogArguments input)
 	{
 		var entryType = ChangelogEntryTypeExtensions.TryParse(input.Type, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
 			? parsed
@@ -97,11 +143,42 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			Action = input.Action,
 			FeatureId = input.FeatureId,
 			Highlight = input.Highlight,
-			Pr = prUrl ?? (input.Prs != null && input.Prs.Length > 0 ? input.Prs[0] : null),
+			Prs = NormalizeReferences(input.Prs, input.Owner, input.Repo, "pull"),
 			Products = input.Products.Select(p => p.ToProductReference()).ToList(),
 			Areas = input.Areas is { Length: > 0 } ? input.Areas.ToList() : null,
-			Issues = input.Issues is { Length: > 0 } ? input.Issues.ToList() : null
+			Issues = NormalizeReferences(input.Issues, input.Owner, input.Repo, "issues")
 		};
+	}
+
+	/// <summary>
+	/// Expands bare numeric PR/issue references to full <c>https://github.com/owner/repo/{pull|issues}/N</c>
+	/// URLs when owner and repo are available, so the written YAML is self-describing — readers (including the
+	/// changelog scrubber Lambda, which has no per-entry repo context) can resolve the target repository without
+	/// extra arguments. References that are already full URLs or <c>owner/repo#N</c> short-forms are returned
+	/// unchanged. Returns <c>null</c> when there is nothing to write, preserving the previous omit-on-empty
+	/// serialization behaviour.
+	/// </summary>
+	internal static List<string>? NormalizeReferences(string[]? refs, string? owner, string? repo, string pathSegment)
+	{
+		if (refs is not { Length: > 0 })
+			return null;
+
+		// Only expand when we have an unambiguous single-repo context. Bundle-style multi-repo strings
+		// (e.g. "elasticsearch+kibana") or pre-qualified "org/repo" values would expand to the wrong URL.
+		var hasContext = !string.IsNullOrWhiteSpace(owner)
+			&& !string.IsNullOrWhiteSpace(repo)
+			&& !repo.Contains('/', StringComparison.Ordinal)
+			&& !repo.Contains('+', StringComparison.Ordinal);
+
+		var list = new List<string>(refs.Length);
+		foreach (var r in refs)
+		{
+			if (hasContext && !string.IsNullOrWhiteSpace(r) && uint.TryParse(r.Trim(), out _))
+				list.Add($"https://github.com/{owner}/{repo}/{pathSegment}/{r.Trim()}");
+			else
+				list.Add(r);
+		}
+		return list;
 	}
 
 	private static string GenerateYaml(ChangelogEntry data, ChangelogConfiguration config, bool titleMissing, bool typeMissing)
@@ -216,8 +293,8 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			#   An optional array of strings that contain the issues that are
 			#   relevant to the PR.
 
-			# pr:
-			#   An optional string that contains the pull request number.
+			# prs:
+			#   An optional array of strings that contain the pull request numbers.
 
 			# subtype:
 			#   An optional string that applies only to breaking changes.
@@ -228,5 +305,16 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 			""";
 
 		return result;
+	}
+
+	private static string GenerateConciseYaml(ChangelogEntry data)
+	{
+		var serializeData = data with
+		{
+			Areas = data.Areas is { Count: 0 } ? null : data.Areas,
+			Issues = data.Issues is { Count: 0 } ? null : data.Issues
+		};
+
+		return ReleaseNotesSerialization.SerializeEntry(serializeData);
 	}
 }

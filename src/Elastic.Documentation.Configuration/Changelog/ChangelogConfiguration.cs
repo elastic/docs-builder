@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -45,7 +46,8 @@ public record ChangelogConfiguration
 	[
 		Lifecycle.Preview,
 		Lifecycle.Beta,
-		Lifecycle.Ga
+		Lifecycle.Ga,
+		Lifecycle.Experimental
 	];
 
 	/// <summary>
@@ -85,9 +87,16 @@ public record ChangelogConfiguration
 
 	/// <summary>
 	/// Mapping from GitHub label names to changelog area values (computed from Pivot.Areas)
-	/// Multiple labels can map to the same area, and a single label can map to multiple areas (comma-separated)
+	/// Multiple labels can map to the same area. To map one label to multiple areas, repeat the label under each area in pivot.areas.
 	/// </summary>
-	public IReadOnlyDictionary<string, string>? LabelToAreas { get; init; }
+	public IReadOnlyDictionary<string, IReadOnlyList<string>>? LabelToAreas { get; init; }
+
+	/// <summary>
+	/// Mapping from GitHub label names to product spec strings (computed from Pivot.Products).
+	/// Each label maps to a product spec string (e.g., "elasticsearch", "kibana 9.2.0").
+	/// When a PR has labels matching multiple entries, all matching products are collected.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? LabelToProducts { get; init; }
 
 	/// <summary>
 	/// Rules configuration for create and publish blockers
@@ -103,6 +112,12 @@ public record ChangelogConfiguration
 	/// Products configuration with available and default products.
 	/// </summary>
 	public ProductsConfig? ProductsConfiguration { get; init; }
+
+	/// <summary>
+	/// Filename strategy for generated changelog files.
+	/// Controls how files created by 'changelog add' are named.
+	/// </summary>
+	public FilenameStrategy Filename { get; init; } = FilenameStrategy.Timestamp;
 
 	/// <summary>
 	/// Bundle configuration with profiles and defaults.

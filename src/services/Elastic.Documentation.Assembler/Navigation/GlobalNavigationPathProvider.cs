@@ -110,16 +110,16 @@ public record GlobalNavigationPathProvider : IDocumentationFileOutputProvider
 					return null;
 			}
 
-			var fallBack = fs.Path.Combine(outputDirectory.FullName, "_failed", repositoryName, relativePath);
+			var fallBack = fs.Path.Join(outputDirectory.FullName, "_failed", repositoryName, relativePath);
 			_context.Collector.EmitError(_context.ConfigurationFileProvider.NavigationFile, $"No toc for output path: '{lookup}' falling back to: '{fallBack}'");
 			return fs.FileInfo.New(fallBack);
 		}
 
-		var originalPath = Path.Combine(match.Host, match.AbsolutePath.Trim('/')).TrimStart('/');
+		var originalPath = Path.Join(match.Host, match.AbsolutePath.Trim('/')).TrimStart('/');
 		var relativePathSpan = relativePath.AsSpan();
 		var newRelativePath = relativePathSpan.GetTrimmedRelativePath(originalPath);
 
-		var path = fs.Path.Combine(outputDirectory.FullName, toc.SourcePathPrefix, newRelativePath);
+		var path = fs.Path.Join(outputDirectory.FullName, toc.SourcePathPrefix, newRelativePath);
 
 		return fs.FileInfo.New(path);
 	}

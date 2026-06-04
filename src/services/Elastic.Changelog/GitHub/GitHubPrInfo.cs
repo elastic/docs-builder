@@ -9,13 +9,18 @@ namespace Elastic.Changelog.GitHub;
 /// </summary>
 public record GitHubPrInfo
 {
-	public string Title { get; set; } = "";
-	public string Body { get; set; } = "";
+	public string Title { get; set; } = string.Empty;
+	public string Body { get; set; } = string.Empty;
 	public IReadOnlyList<string> Labels { get; set; } = [];
+	public string? HeadSha { get; set; }
+	public string? HeadRef { get; set; }
 
 	/// <summary>
 	/// Linked issues extracted from PR body.
 	/// Contains issue URLs or references (e.g., "#123", "owner/repo#456").
 	/// </summary>
 	public IReadOnlyList<string> LinkedIssues { get; set; } = [];
+
+	/// <summary>Whether the PR originates from a forked repository.</summary>
+	public bool IsFork { get; set; }
 }

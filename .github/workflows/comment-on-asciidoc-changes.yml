@@ -22,14 +22,14 @@ jobs:
         #  - https://github.com/tj-actions/changed-files?tab=readme-ov-file#using-githubs-api-octocat
       - name: Get changed files
         id: check-files
-        uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
             **/*.asciidoc
 
       - name: Add a comment if .asciidoc files changed
         if: steps.check-files.outputs.any_changed == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({

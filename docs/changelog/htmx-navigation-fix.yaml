@@ -5,7 +5,8 @@ products:
     target: 0.100.0
 areas:
   - UI
-pr: https://github.com/elastic/docs-builder/pull/2470
+prs:
+  - https://github.com/elastic/docs-builder/pull/2470
 description: |
   Fixes an issue where HTMX navigation was not working correctly
   when selecting pages from the "Find Pages" dropdown menu.

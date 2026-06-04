@@ -1,4 +1,5 @@
 import { ElasticAiAssistantButtonIcon } from './ElasticAiAssistantButton'
+import { askAiConfig } from './askAi.config'
 import { euiShadow, useEuiScrollBar, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useCallback, useEffect, useRef } from 'react'
@@ -28,7 +29,7 @@ export const ChatInput = ({
     onSubmit,
     onAbort,
     disabled = false,
-    placeholder = 'Ask the Elastic Docs AI Assistant',
+    placeholder = askAiConfig.inputPlaceholder,
     inputRef,
     isStreaming = false,
     onMetaSemicolon,

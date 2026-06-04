@@ -6,9 +6,6 @@
   <Folder Name="/actions/diff-validate/">
     <File Path="actions/diff-validate/action.yml" />
   </Folder>
-  <Folder Name="/actions/publish-vercel/">
-    <File Path="actions/publish-vercel/action.yml" />
-  </Folder>
   <Folder Name="/actions/publish/">
     <File Path="actions/publish/action.yml" />
     <File Path="actions/publish/github-pages.png" />
@@ -56,27 +53,29 @@
     <Project Path="src/Elastic.Documentation.Site/Elastic.Documentation.Site.csproj" />
     <Project Path="src/Elastic.Documentation.Svg/Elastic.Documentation.Svg.csproj" />
     <Project Path="src/Elastic.Documentation/Elastic.Documentation.csproj" />
+    <Project Path="src/Elastic.Documentation.Tooling/Elastic.Documentation.Tooling.csproj" />
     <Project Path="src/Elastic.Markdown/Elastic.Markdown.csproj" />
   </Folder>
   <Folder Name="/src/api/">
-    <Project Path="src/api/Elastic.Documentation.Api.Core/Elastic.Documentation.Api.Core.csproj" />
-    <Project Path="src/api/Elastic.Documentation.Api.Infrastructure/Elastic.Documentation.Api.Infrastructure.csproj" />
-    <Project Path="src/api/Elastic.Documentation.Api.Lambda/Elastic.Documentation.Api.Lambda.csproj" />
-	<Project Path="src/api/Elastic.Documentation.Api.App/Elastic.Documentation.Api.App.csproj" />
+    <Project Path="src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" />
 	<Project Path="src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" />
   </Folder>
   <Folder Name="/src/authoring/">
     <Project Path="src/authoring/Elastic.Documentation.Refactor/Elastic.Documentation.Refactor.csproj" />
   </Folder>
   <Folder Name="/src/infra/">
-    <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
+	  <Project Path="src/infra/docs-lambda-index-publisher/docs-lambda-index-publisher.csproj" />
+	  <Project Path="src/infra/docs-lambda-changelog-scrubber/docs-lambda-changelog-scrubber.csproj" />
   </Folder>
   <Folder Name="/src/services/">
     <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
     <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
+    <Project Path="src/services/Elastic.Documentation.Integrations/Elastic.Documentation.Integrations.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
-	<Project Path="src/services/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
+  </Folder>
+  <Folder Name="/src/services/search/">
+    <Project Path="src/services/search/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />
@@ -84,21 +83,24 @@
   </Folder>
   <Folder Name="/tests-integration/">
     <File Path="tests-integration/Directory.Build.props" />
-    <Project Path="tests-integration/Elastic.Assembler.IntegrationTests/Elastic.Assembler.IntegrationTests.csproj" />
-	<Project Path="tests-integration/Elastic.Documentation.Api.IntegrationTests/Elastic.Documentation.Api.IntegrationTests.csproj" />
+    <Project Path="tests-integration/Elastic.Documentation.IntegrationTests/Elastic.Documentation.IntegrationTests.csproj" />
     <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
 	  <Project Path="tests-integration/Mcp.Remote.IntegrationTests/Mcp.Remote.IntegrationTests.csproj" />
+	  <Project Path="tests-integration/Elastic.ContentDateEnrichment.IntegrationTests/Elastic.ContentDateEnrichment.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />
     <Project Path="tests/authoring/authoring.fsproj" />
     <Project Path="tests/Elastic.ApiExplorer.Tests/Elastic.ApiExplorer.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Api.Infrastructure.Tests/Elastic.Documentation.Api.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Api.Tests/Elastic.Documentation.Api.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Build.Tests/Elastic.Documentation.Build.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Configuration.Tests/Elastic.Documentation.Configuration.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
     <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
+    <Project Path="tests/Elastic.Documentation.Integrations.Tests/Elastic.Documentation.Integrations.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />

@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
+using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
 
@@ -27,6 +28,16 @@ public record ConfigurationFile
 
 	public string[] CrossLinkRepositories { get; } = [];
 
+	/// <summary>
+	/// Registry for this documentation set. <c>Public</c> uses S3 link index; other values use codex-link-index.
+	/// </summary>
+	public DocSetRegistry Registry { get; } = DocSetRegistry.Public;
+
+	/// <summary>
+	/// Parsed cross-link entries with registry for each target.
+	/// </summary>
+	public CrossLinkEntry[] CrossLinkEntries { get; } = [];
+
 	/// The maximum depth `toc.yml` files may appear
 	public int MaxTocDepth { get; } = 1;
 
@@ -36,10 +47,10 @@ public record ConfigurationFile
 
 	public HashSet<Product> Products { get; private set; } = [];
 
-	private readonly Dictionary<string, string> _substitutions = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, string> _substitutions = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlyDictionary<string, string> Substitutions => _substitutions;
 
-	private readonly Dictionary<string, bool> _features = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, bool> _features = [with(StringComparer.OrdinalIgnoreCase)];
 
 	[field: AllowNull, MaybeNull]
 	public FeatureFlags Features => field ??= new FeatureFlags(_features);
@@ -49,18 +60,34 @@ public record ConfigurationFile
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
 	/// <summary>
+	/// Resolved API configurations with template and specification file information.
+	/// </summary>
+	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
+
+	/// <summary>
 	/// Set of diagnostic hint types to suppress for this documentation set.
 	/// </summary>
 	public HashSet<HintType> SuppressDiagnostics { get; } = [];
+
+	/// <summary>
+	/// White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.
+	/// </summary>
+	public BrandingConfiguration? Branding { get; private set; }
 
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
 
+	// Files excluded via folder-level `exclude` in toc.yml need to be excluded from processing too,
+	// otherwise the builder crashes with "Could not find current in navigation" when rendering them.
+	private HashSet<string> FolderExcludedFiles { get; } = [];
+
 	public bool IsExcluded(string relativePath)
 	{
 		if (Include.Length > 0 && Include.Any(i => i.Equals(relativePath.OptionalWindowsReplace(), StringComparison.OrdinalIgnoreCase)))
 			return false;
+		if (FolderExcludedFiles.Contains(relativePath.OptionalWindowsReplace()))
+			return true;
 		return Exclude.Any(g => g.IsMatch(relativePath));
 	}
 
@@ -89,9 +116,25 @@ public record ConfigurationFile
 			// Convert exclude patterns to Glob
 			Exclude = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && !s.StartsWith('!')).Select(Glob.Parse)];
 			Include = [.. docSetFile.Exclude.Where(s => !string.IsNullOrEmpty(s) && s.StartsWith('!')).Select(s => s.TrimStart('!'))];
+			FolderExcludedFiles = docSetFile.FolderExcludedFiles;
 
-			// Set cross link repositories
-			CrossLinkRepositories = [.. docSetFile.CrossLinks];
+			// Parse registry (null/empty/"public" -> Public)
+			var registry = DocSetRegistry.Public;
+			if (!string.IsNullOrWhiteSpace(docSetFile.Registry) &&
+				DocSetRegistryExtensions.TryParse(docSetFile.Registry.Trim(), out var parsedRegistry, true))
+				registry = parsedRegistry;
+
+			Registry = registry;
+
+			// Parse cross-link entries with optional registry prefix (e.g. public://elasticsearch)
+			CrossLinkEntries = docSetFile.CrossLinks
+				.Where(raw => !string.IsNullOrWhiteSpace(raw))
+				.Select(raw => ParseCrossLinkEntry(raw.Trim(), registry, context.ConfigurationPath, context))
+				.Where(entry => entry is not null)
+				.Select(entry => entry!)
+				.ToArray();
+
+			CrossLinkRepositories = CrossLinkEntries.Select(e => e.Repository).ToArray();
 
 			// Extensions - assuming they're not in DocumentationSetFile yet
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
@@ -102,17 +145,104 @@ public record ConfigurationFile
 			// Read substitutions
 			_substitutions = new(docSetFile.Subs, StringComparer.OrdinalIgnoreCase);
 
-			// Process API specifications
+			// Process API configurations
 			if (docSetFile.Api.Count > 0)
 			{
 				var specs = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
-				foreach (var (k, v) in docSetFile.Api)
+				var apiConfigs = new Dictionary<string, ResolvedApiConfiguration>(StringComparer.OrdinalIgnoreCase);
+
+				foreach (var (productKey, apiSequence) in docSetFile.Api)
 				{
-					var path = Path.Combine(context.DocumentationSourceDirectory.FullName, v);
-					var fi = context.ReadFileSystem.FileInfo.New(path);
-					specs[k] = fi;
+					if (!apiSequence.IsValid)
+					{
+						context.EmitError(
+							context.ConfigurationPath,
+							$"API configuration for '{productKey}' is invalid. Must have at least one spec and all entries must be valid."
+						);
+						continue;
+					}
+
+					// Resolve intro markdown files
+					var introMarkdownFiles = new List<IFileInfo>();
+					foreach (var introPath in apiSequence.GetIntroMarkdownFiles())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, introPath);
+						var introFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!introFile.Exists)
+						{
+							context.EmitWarning(
+								context.ConfigurationPath,
+								$"Intro markdown file '{introPath}' for API '{productKey}' does not exist."
+							);
+						}
+						else
+						{
+							introMarkdownFiles.Add(introFile);
+						}
+					}
+
+					// Resolve outro markdown files
+					var outroMarkdownFiles = new List<IFileInfo>();
+					foreach (var outroPath in apiSequence.GetOutroMarkdownFiles())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, outroPath);
+						var outroFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!outroFile.Exists)
+						{
+							context.EmitWarning(
+								context.ConfigurationPath,
+								$"Outro markdown file '{outroPath}' for API '{productKey}' does not exist."
+							);
+						}
+						else
+						{
+							outroMarkdownFiles.Add(outroFile);
+						}
+					}
+
+					// Resolve specification files
+					var specFiles = new List<IFileInfo>();
+					foreach (var specPath in apiSequence.GetSpecPaths())
+					{
+						var fullPath = Path.Join(context.DocumentationSourceDirectory.FullName, specPath);
+						var specFile = context.ReadFileSystem.FileInfo.New(fullPath);
+						if (!specFile.Exists)
+						{
+							context.EmitError(
+								context.ConfigurationPath,
+								$"API specification file '{specPath}' for product '{productKey}' does not exist."
+							);
+							continue;
+						}
+						specFiles.Add(specFile);
+					}
+
+					if (specFiles.Count == 0)
+					{
+						context.EmitError(
+							context.ConfigurationPath,
+							$"No valid specification files found for API product '{productKey}'."
+						);
+						continue;
+					}
+
+					// Create resolved configuration
+					var resolvedConfig = new ResolvedApiConfiguration
+					{
+						ProductKey = productKey,
+						IntroMarkdownFiles = introMarkdownFiles,
+						SpecFiles = specFiles,
+						OutroMarkdownFiles = outroMarkdownFiles
+					};
+
+					apiConfigs[productKey] = resolvedConfig;
+
+					// For backward compatibility, populate OpenApiSpecifications with primary spec
+					specs[productKey] = resolvedConfig.PrimarySpecFile;
 				}
-				OpenApiSpecifications = specs;
+
+				OpenApiSpecifications = specs.Count > 0 ? specs : null;
+				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
 			}
 
 			// Process products from docset - resolve ProductLinks to Product objects
@@ -124,12 +254,20 @@ public record ConfigurationFile
 					.ToHashSet()!;
 			}
 
+			// Process branding with validation
+			if (docSetFile.Branding is not null)
+				Branding = ValidateBranding(docSetFile.Branding, context);
+
 			// Process features
-			_features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+			_features = [with(StringComparer.OrdinalIgnoreCase)];
 			if (docSetFile.Features.PrimaryNav.HasValue)
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
 			if (docSetFile.Features.DisableGithubEditLink.HasValue)
 				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
+
+			// primary-nav requires the Elastic global navigation which is not available for white-label builds
+			if (Branding is not null && docSetFile.Features.PrimaryNav is true)
+				context.EmitError(context.ConfigurationPath, "'features.primary-nav' cannot be used together with 'branding': the primary nav requires Elastic global navigation.");
 
 			// Add version substitutions
 			foreach (var (id, system) in versionsConfig.VersioningSystems)
@@ -142,8 +280,8 @@ public record ConfigurationFile
 				_substitutions[$"version.{alternativeName}.base"] = system.Base;
 			}
 
-			// Add product substitutions
-			foreach (var product in productsConfig.Products.Values)
+			// Add product substitutions (only for products with public-reference feature)
+			foreach (var product in productsConfig.PublicReferenceProducts.Values)
 			{
 				var alternativeProductId = product.Id.Replace('-', '_');
 				_substitutions[$"product.{product.Id}"] = product.DisplayName;
@@ -159,4 +297,108 @@ public record ConfigurationFile
 		}
 	}
 
+	private static readonly HashSet<string> AllowedImageExtensions =
+		[".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico"];
+
+	private static BrandingConfiguration ValidateBranding(BrandingConfiguration branding, IDocumentationSetContext context)
+	{
+		branding.Icon = ValidateBrandingImage(branding.Icon, "branding.icon", context);
+		branding.OgImage = ValidateBrandingImage(branding.OgImage, "branding.og-image", context);
+		branding.Favicon = string.IsNullOrEmpty(branding.Favicon)
+			? DiscoverBrandingFile(["favicon.ico", "favicon.png", "favicon.svg"], context)
+			: ValidateBrandingImage(branding.Favicon, "branding.favicon", context);
+		branding.AppleTouchIcon = string.IsNullOrEmpty(branding.AppleTouchIcon)
+			? DiscoverBrandingFile(["apple-touch-icon.png"], context)
+			: ValidateBrandingImage(branding.AppleTouchIcon, "branding.apple-touch-icon", context);
+		return branding;
+	}
+
+	private static string? DiscoverBrandingFile(string[] candidates, IDocumentationSetContext context)
+	{
+		foreach (var name in candidates)
+		{
+			var f = context.ReadFileSystem.FileInfo.New(
+				Path.Join(context.DocumentationSourceDirectory.FullName, name));
+			if (f.Exists && f.LinkTarget is null)
+				return name;
+		}
+		return null;
+	}
+
+	private static string? ValidateBrandingImage(string? imagePath, string fieldName, IDocumentationSetContext context)
+	{
+		if (string.IsNullOrEmpty(imagePath))
+			return null;
+
+		var ext = Path.GetExtension(imagePath).ToLowerInvariant();
+		if (!AllowedImageExtensions.Contains(ext))
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' has unsupported extension '{ext}'. Allowed: {string.Join(", ", AllowedImageExtensions)}");
+			return null;
+		}
+
+		var resolved = context.ReadFileSystem.FileInfo.New(
+			Path.GetFullPath(Path.Join(context.DocumentationSourceDirectory.FullName, imagePath))
+		);
+
+		if (!resolved.IsSubPathOf(context.DocumentationSourceDirectory))
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' path '{imagePath}' escapes the documentation source directory.");
+			return null;
+		}
+
+		var symlinkError = ValidateFileAccess(resolved, context.DocumentationSourceDirectory);
+		if (symlinkError is not null)
+		{
+			context.EmitError(context.ConfigurationPath,
+				$"'{fieldName}' path '{imagePath}' is unsafe: {symlinkError}");
+			return null;
+		}
+
+		if (!resolved.Exists)
+		{
+			context.EmitError(context.ConfigurationPath, $"'{fieldName}' file '{imagePath}' does not exist.");
+			return null;
+		}
+
+		return imagePath;
+	}
+
+	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
+	{
+		DocSetRegistry entryRegistry;
+		string repository;
+
+		var colonSlash = raw.IndexOf("://", StringComparison.Ordinal);
+		if (colonSlash >= 0)
+		{
+			var prefix = raw[..colonSlash];
+			repository = raw[(colonSlash + 3)..];
+			if (string.IsNullOrWhiteSpace(repository))
+			{
+				context.EmitError(configPath, $"Cross-link '{raw}' has empty repository after registry prefix.");
+				return null;
+			}
+			if (!DocSetRegistryExtensions.TryParse(prefix, out entryRegistry, true))
+			{
+				context.EmitError(configPath, $"Cross-link '{raw}' uses unknown registry '{prefix}'. Use 'public' or 'internal'.");
+				return null;
+			}
+		}
+		else
+		{
+			repository = raw;
+			entryRegistry = docsetRegistry;
+		}
+
+		if (docsetRegistry == DocSetRegistry.Public && entryRegistry != DocSetRegistry.Public)
+		{
+			context.EmitError(configPath, $"Public documentation cannot link to codex docs. Cross-link '{raw}' targets registry '{entryRegistry.ToStringFast()}'. Remove it or use a public docset.");
+			return null;
+		}
+
+		return new CrossLinkEntry(repository, entryRegistry);
+	}
 }

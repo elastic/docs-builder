@@ -2,9 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using FluentAssertions;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -20,7 +21,8 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/100
+		prs:
+		- "100"
 		""";
 
 	// language=yaml
@@ -31,7 +33,8 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		products:
 		  - product: elasticsearch
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/100
+		prs:
+		- "100"
 		""";
 
 	// language=yaml
@@ -42,7 +45,8 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		products:
 		  - product: kibana
 		    target: 9.2.0
-		pr: https://github.com/elastic/elasticsearch/pull/999
+		prs:
+		- "999"
 		""";
 
 	[Fact]
@@ -115,10 +119,10 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 	public async Task ValidateBundle_ResolvedEntry_SkipsChecksumValidation()
 	{
 		// Arrange — resolved entry has inline data, no file reference needed
-		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			"""
@@ -131,7 +135,8 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 			    products:
 			      - product: elasticsearch
 			        target: 9.2.0
-			    pr: https://github.com/elastic/elasticsearch/pull/100
+			    prs:
+			    - "100"
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
@@ -160,17 +165,17 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		string fileOnDisk,
 		string storedChecksum)
 	{
-		var changelogDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(changelogDir);
 
 		var changelogFileName = "1755268130-feature.yaml";
-		var changelogFile = FileSystem.Path.Combine(changelogDir, changelogFileName);
+		var changelogFile = FileSystem.Path.Join(changelogDir, changelogFileName);
 		await FileSystem.File.WriteAllTextAsync(changelogFile, fileOnDisk, TestContext.Current.CancellationToken);
 
-		var bundleDir = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString());
+		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		var bundleFile = FileSystem.Path.Combine(bundleDir, "bundle.yaml");
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
 			$"""
@@ -191,7 +196,7 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		new()
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
-			Output = FileSystem.Path.Combine(FileSystem.Path.GetTempPath(), Guid.NewGuid().ToString()),
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString()),
 			Title = "9.2.0"
 		};
 }

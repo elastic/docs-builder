@@ -39,6 +39,7 @@ public static class ApplicabilityMappings
 	public static readonly ApplicabilityDefinition EdotIos = new("EDOT iOS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;iOS", VersioningSystemId.EdotIos);
 	public static readonly ApplicabilityDefinition EdotJava = new("EDOT Java", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Java", VersioningSystemId.EdotJava);
 	public static readonly ApplicabilityDefinition EdotNode = new("EDOT Node.js", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Node.js", VersioningSystemId.EdotNode);
+	public static readonly ApplicabilityDefinition EdotBrowser = new("EDOT Browser", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Browser (RUM)", VersioningSystemId.EdotBrowser);
 	public static readonly ApplicabilityDefinition EdotPhp = new("EDOT PHP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;PHP", VersioningSystemId.EdotPhp);
 	public static readonly ApplicabilityDefinition EdotPython = new("EDOT Python", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Python", VersioningSystemId.EdotPython);
 

@@ -2,70 +2,251 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Linq;
-using ConsoleAppFramework;
+using System.Text;
+using System.Text.RegularExpressions;
+using Actions.Core.Services;
 using Documentation.Builder.Arguments;
 using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Creation;
+using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Changelog.Rendering;
+using Elastic.Changelog.Uploading;
+using Elastic.Changelog.Utilities;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
+using Nullean.Argh.Documentation;
 
 namespace Documentation.Builder.Commands;
 
-internal sealed class ChangelogCommand(
+/// <summary>Create, bundle, and publish changelog entries.</summary>
+internal sealed partial class ChangelogCommands(
 	ILoggerFactory logFactory,
 	IDiagnosticsCollector collector,
-	IConfigurationContext configurationContext
+	IConfigurationContext configurationContext,
+	ICoreService githubActionsService,
+	IEnvironmentVariables environmentVariables
 )
 {
-	private readonly IFileSystem _fileSystem = new FileSystem();
-	/// <summary>
-	/// Changelog commands. Use 'changelog add' to create a new changelog or 'changelog bundle' to create a consolidated list of changelogs.
-	/// </summary>
-	[Command("")]
-	public Task<int> Default()
+	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
+	private static partial Regex BundleDirectoryRegex();
+
+	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
+	private static partial Regex BundleOutputDirectoryRegex();
+
+	private readonly IFileSystem _fileSystem = FileSystemFactory.RealRead;
+	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCommands>();
+	/// <summary>Create <c>changelog.yml</c> and the changelog/releases directory structure.</summary>
+	/// <remarks>
+	/// Discovers the docs folder via <c>docset.yml</c>; falls back to creating <c>PATH/docs</c>.
+	/// When <c>changelog.yml</c> already exists, updates only the paths specified via <see paramref="changelogDir"/> or <see paramref="bundlesDir"/>.
+	/// Seeds <c>bundle.owner</c>, <c>bundle.repo</c>, and <c>bundle.link_allow_repos</c> from the git remote origin when available.
+	/// </remarks>
+	/// <param name="path">Repository root. Defaults to <c>cwd</c>.</param>
+	/// <param name="changelogDir">Changelog entry directory. Defaults to <c>docs/changelog</c>.</param>
+	/// <param name="bundlesDir">Bundle output directory. Defaults to <c>docs/releases</c>.</param>
+	/// <param name="owner">GitHub owner for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
+	/// <param name="repo">GitHub repository name for seeding bundle defaults. Overrides the value inferred from git remote origin.</param>
+	[NoOptionsInjection]
+	public Task<int> Init(
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? changelogDir = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null,
+		string? owner = null,
+		string? repo = null
+	)
 	{
-		collector.EmitError(string.Empty, "Please specify a subcommand. Available subcommands:\n  - 'changelog add': Create a new changelog from command-line input\n  - 'changelog bundle': Create a consolidated list of changelog files\n  - 'changelog render': Render a bundled changelog to markdown or asciidoc files\n  - 'changelog gh-release': Create changelogs from a GitHub release\n\nRun 'changelog add --help', 'changelog bundle --help', 'changelog render --help', or 'changelog gh-release --help' for usage information.");
-		return Task.FromResult(1);
+		var rootPath = path?.FullName ?? Path.GetFullPath(".");
+		var rootDir = _fileSystem.DirectoryInfo.New(rootPath);
+
+		IDirectoryInfo docsFolder;
+		if (Paths.TryFindDocsFolderFromKnownLocationsOnly(_fileSystem, rootDir, out var foundDocsFolder, out _))
+		{
+			docsFolder = foundDocsFolder;
+		}
+		else
+		{
+			var docsFolderPath = Path.Join(rootPath, "docs");
+			if (!_fileSystem.Directory.Exists(docsFolderPath))
+			{
+				_logger.LogInformation("Creating docs folder at {DocsFolderPath}", docsFolderPath);
+				_ = _fileSystem.Directory.CreateDirectory(docsFolderPath);
+			}
+
+			docsFolder = _fileSystem.DirectoryInfo.New(docsFolderPath);
+		}
+
+		var configPath = _fileSystem.Path.Join(docsFolder.FullName, "changelog.yml");
+		var changelogPath = changelogDir?.FullName ?? _fileSystem.Path.Join(docsFolder.FullName, "changelog");
+		var bundlesPath = bundlesDir?.FullName ?? _fileSystem.Path.Join(docsFolder.FullName, "releases");
+
+		var useNonDefaultChangelogDir = changelogDir != null;
+		var useNonDefaultBundlesDir = bundlesDir != null;
+		var repoRoot = Paths.FindGitRoot(docsFolder)?.FullName ?? docsFolder.FullName;
+
+		// Create changelog.yml from example if it does not exist
+		if (!_fileSystem.File.Exists(configPath))
+		{
+			byte[]? templateBytes = null;
+			using (var stream = typeof(ChangelogCommands).Assembly.GetManifestResourceStream("Documentation.Builder.changelog.example.yml"))
+			{
+				if (stream == null)
+				{
+					// Fallback: try config relative to current directory (for development)
+					var localConfigDir = _fileSystem.Path.Join(Directory.GetCurrentDirectory(), "config");
+					var localConfigPath = _fileSystem.Path.Join(localConfigDir, "changelog.example.yml");
+					if (_fileSystem.File.Exists(localConfigPath))
+					{
+						templateBytes = _fileSystem.File.ReadAllBytes(localConfigPath);
+					}
+				}
+				else
+				{
+					using var ms = new MemoryStream();
+					stream.CopyTo(ms);
+					templateBytes = ms.ToArray();
+				}
+			}
+
+			if (templateBytes == null || templateBytes.Length == 0)
+			{
+				collector.EmitError(string.Empty, "Could not find changelog.example.yml template. Ensure docs-builder is built correctly.");
+				return Task.FromResult(1);
+			}
+
+			var content = Encoding.UTF8.GetString(templateBytes);
+
+			// Update bundle.directory and bundle.output_directory when non-default paths are specified
+			if (useNonDefaultChangelogDir)
+			{
+				var directoryValue = GetPathForConfig(repoRoot, changelogPath);
+				content = content.Replace("directory: docs/changelog", $"directory: {directoryValue}");
+			}
+
+			if (useNonDefaultBundlesDir)
+			{
+				var outputValue = GetPathForConfig(repoRoot, bundlesPath);
+				content = content.Replace("output_directory: docs/releases", $"output_directory: {outputValue}");
+			}
+
+			content = ApplyChangelogInitBundleRepoSeed(content, owner, repo, repoRoot);
+
+			try
+			{
+				_fileSystem.File.WriteAllBytes(configPath, Encoding.UTF8.GetBytes(content));
+				_logger.LogInformation("Created changelog configuration: {ConfigPath}", configPath);
+			}
+			catch (IOException ex)
+			{
+				collector.EmitError(string.Empty, $"Failed to write changelog configuration to '{configPath}': {ex.Message}", ex);
+				return Task.FromResult(1);
+			}
+		}
+		else if (useNonDefaultChangelogDir || useNonDefaultBundlesDir)
+		{
+			try
+			{
+				var content = _fileSystem.File.ReadAllText(configPath);
+				// Strip any leading BOM that might be present after reading
+				content = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(content);
+
+				if (useNonDefaultChangelogDir)
+				{
+					var directoryValue = GetPathForConfig(repoRoot, changelogPath);
+					content = BundleDirectoryRegex().Replace(content, "$1" + directoryValue);
+				}
+
+				if (useNonDefaultBundlesDir)
+				{
+					var outputValue = GetPathForConfig(repoRoot, bundlesPath);
+					content = BundleOutputDirectoryRegex().Replace(content, "$1" + outputValue);
+				}
+
+				// Ensure normalized content is written without BOM
+				var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(content);
+				_fileSystem.File.WriteAllText(configPath, normalizedContent);
+				_logger.LogInformation("Updated bundle paths in changelog configuration: {ConfigPath}", configPath);
+			}
+			catch (IOException ex)
+			{
+				collector.EmitError(string.Empty, $"Failed to update changelog configuration at '{configPath}': {ex.Message}", ex);
+				return Task.FromResult(1);
+			}
+		}
+		else
+		{
+			_logger.LogInformation("Changelog configuration already exists: {ConfigPath}", configPath);
+		}
+
+		// Create docs/changelog and docs/releases if they do not exist
+		foreach (var dir in new[] { changelogPath, bundlesPath })
+		{
+			if (!_fileSystem.Directory.Exists(dir))
+			{
+				try
+				{
+					_ = _fileSystem.Directory.CreateDirectory(dir);
+					_logger.LogInformation("Created directory: {Directory}", dir);
+				}
+				catch (IOException ex)
+				{
+					collector.EmitError(string.Empty, $"Failed to create directory '{dir}': {ex.Message}", ex);
+					return Task.FromResult(1);
+				}
+			}
+			else
+			{
+				_logger.LogInformation("Directory already exists: {Directory}", dir);
+			}
+		}
+
+		return Task.FromResult(0);
 	}
 
-	/// <summary>
-	/// Add a new changelog from command-line input
-	/// </summary>
+	/// <summary>Create a new changelog entry YAML file.</summary>
 	/// <param name="products">Optional: Products affected in format "product target lifecycle, ..." (e.g., "elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"). If not specified, will be inferred from repository or config defaults.</param>
 	/// <param name="action">Optional: What users must do to mitigate</param>
 	/// <param name="areas">Optional: Area(s) affected (comma-separated or specify multiple times)</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="description">Optional: Additional information about the change (max 600 characters)</param>
-	/// <param name="noExtractReleaseNotes">Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Short release notes (≤120 characters, single line) are used as the title, long release notes (>120 characters or multi-line) are used as the description.</param>
-	/// <param name="noExtractIssues">Optional: Turn off extraction of linked issues from PR body (e.g., "Fixes #123"). By default, linked issues are extracted when using --prs.</param>
+	/// <param name="noExtractReleaseNotes">Optional: Turn off extraction of release notes from PR descriptions. By default, release notes are extracted when using --prs. Matched release note text is used as the changelog description (only if --description is not explicitly provided). The changelog title comes from --title or the PR title, not from the release note section.</param>
+	/// <param name="noExtractIssues">Optional: Turn off extraction of linked references. When using --prs: turns off extraction of linked issues from the PR body (e.g., "Fixes #123"). When using --issues: turns off extraction of linked PRs from the issue body (e.g., "Fixed by #123"). By default, linked references are extracted in both cases.</param>
 	/// <param name="featureId">Optional: Feature flag ID</param>
 	/// <param name="highlight">Optional: Include in release highlights</param>
 	/// <param name="impact">Optional: How the user's environment is affected</param>
-	/// <param name="issues">Optional: Issue URL(s) (comma-separated or specify multiple times)</param>
-	/// <param name="owner">Optional: GitHub repository owner (used when --prs contains just numbers)</param>
-	/// <param name="output">Optional: Output directory for the changelog. Defaults to current directory</param>
-	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR.</param>
-	/// <param name="repo">Optional: GitHub repository name (used when --prs contains just numbers)</param>
-	/// <param name="stripTitlePrefix">Optional: When used with --prs, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
+	/// <param name="issues">Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.</param>
+	/// <param name="owner">Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
+	/// <param name="output">Optional: Output directory for the changelog. Falls back to bundle.directory in changelog.yml when not specified. Defaults to current directory.</param>
+	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.</param>
+	/// <param name="report">Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as `changelog bundle --report`). Mutually exclusive with --prs, --issues, and --release-version.</param>
+	/// <param name="repo">Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified.</param>
+	/// <param name="stripTitlePrefix">Optional: When used with --prs or --report, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
-	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if --pr is not specified. If --pr and --title are specified, the latter value is used instead of what exists in the PR.</param>
-	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if --pr is not specified. If mappings are configured, type can be derived from the PR.</param>
-	/// <param name="usePrNumber">Optional: Use the PR number as the filename instead of generating it from a unique ID and title</param>
-	/// <param name="ctx"></param>
-	[Command("add")]
-	public async Task<int> Create(
-		[ProductInfoParser] List<ProductArgument>? products = null,
+	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if neither --prs, --issues, nor --report is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
+	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs, --issues, nor --report is specified. If mappings are configured, type can be derived from the PR or issue.</param>
+	/// <param name="concise">Optional: Omit schema reference comments from generated YAML files. Useful in CI to produce compact output.</param>
+	/// <param name="usePrNumber">Optional: Use PR numbers for filenames instead of timestamp-slug. With --prs, --report, or --issues (where PRs are resolved), each changelog filename will be derived from its PR numbers. Requires --prs, --report, or --issues. Mutually exclusive with --use-issue-number.</param>
+	/// <param name="useIssueNumber">Optional: Use issue numbers for filenames instead of timestamp-slug. With both --prs (which creates one changelog per specified PR) and --issues (which creates one changelog per specified issue), each changelog filename will be derived from its issues. Requires --prs or --issues. Mutually exclusive with --use-pr-number.</param>
+	/// <param name="releaseVersion">Optional: GitHub release tag to fetch PRs from (e.g., "v9.2.0" or "latest"). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs, --issues, and --report. Does not create a bundle; use 'changelog gh-release' for that.</param>
+	/// <param name="ctx">Cancellation token</param>
+	[NoOptionsInjection]
+	public async Task<int> Add(
+		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? products = null,
 		string? action = null,
 		string[]? areas = null,
-		string? config = null,
+		bool concise = false,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? description = null,
 		bool noExtractReleaseNotes = false,
 		bool noExtractIssues = false,
@@ -76,23 +257,143 @@ internal sealed class ChangelogCommand(
 		string? owner = null,
 		string? output = null,
 		string[]? prs = null,
+		string? report = null,
+		string? releaseVersion = null,
 		string? repo = null,
 		bool stripTitlePrefix = false,
 		string? subtype = null,
 		string? title = null,
 		string? type = null,
 		bool usePrNumber = false,
-		Cancel ctx = default
+		bool useIssueNumber = false,
+		CancellationToken ct = default
 	)
 	{
+		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
-		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService);
+		var hasReport = !string.IsNullOrWhiteSpace(report);
+		if (hasReport)
+		{
+			if (prs is { Length: > 0 })
+			{
+				collector.EmitError(string.Empty, "--report and --prs cannot be specified together.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
 
-		// Parse PRs: handle both comma-separated values and file paths
+			if (issues is { Length: > 0 })
+			{
+				collector.EmitError(string.Empty, "--report and --issues cannot be specified together.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+		}
+
+		// Mutual exclusivity: --release-version cannot be combined with --prs, --issues, or --report
+		if (releaseVersion != null)
+		{
+			if (hasReport)
+			{
+				collector.EmitError(string.Empty, "--release-version and --report are mutually exclusive.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			if (prs is { Length: > 0 })
+			{
+				collector.EmitError(string.Empty, "--release-version and --prs are mutually exclusive.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			if (issues is { Length: > 0 })
+			{
+				collector.EmitError(string.Empty, "--release-version and --issues are mutually exclusive.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+		}
+
+		// Load changelog config and apply fallbacks for all modes.
+		// Precedence: CLI option > bundle section in changelog.yml > built-in default.
+		// This applies to --prs, --issues, --release-version, and --report alike.
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+			.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+		var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
+		var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
+
+		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
+		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
+
+		// --release-version mode: delegate entirely to GitHubReleaseChangelogService without creating a bundle
+		if (releaseVersion != null)
+		{
+			if (string.IsNullOrWhiteSpace(resolvedRepo))
+			{
+				collector.EmitError(string.Empty, "--release-version requires --repo to be specified (or bundle.repo set in changelog.yml).");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			var repoArg = resolvedRepo.Contains('/') ? resolvedRepo : $"{resolvedOwner}/{resolvedRepo}";
+			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+			IGitHubPrService prService = new GitHubPrService(logFactory);
+			var releaseChangelogService = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
+
+			var releaseInput = new CreateChangelogsFromReleaseArguments
+			{
+				Repository = repoArg,
+				Version = releaseVersion,
+				Config = config?.FullName,
+				Output = resolvedOutput,
+				StripTitlePrefix = stripTitlePrefixResolved,
+				CreateBundle = false
+			};
+
+			serviceInvoker.AddCommand(releaseChangelogService, releaseInput,
+				async static (s, collector, state, ctx) => await s.CreateChangelogsFromRelease(collector, state, ctx)
+			);
+
+			return await serviceInvoker.InvokeAsync(ctx);
+		}
+
+		IGitHubPrService githubPrService = new GitHubPrService(logFactory);
+		var service = new ChangelogCreationService(logFactory, configurationContext, githubPrService, env: SystemEnvironmentVariables.Instance);
+
+		// Parse PRs: promotion report (--report), or comma-separated values and file paths (--prs)
 		string[]? parsedPrs = null;
-		if (prs is { Length: > 0 })
+		if (hasReport)
+		{
+			var reportSource = report!.Trim();
+			if (!reportSource.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+				!reportSource.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+				reportSource = NormalizePath(reportSource);
+
+			var reportParser = new PromotionReportParser(logFactory, null);
+			parsedPrs = await reportParser.ParseReportToPrUrlsAsync(collector, reportSource, ctx);
+			if (parsedPrs == null)
+			{
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+		}
+		else if (prs is { Length: > 0 })
 		{
 			var allPrs = new List<string>();
 			var validPrs = prs.Where(prValue => !string.IsNullOrWhiteSpace(prValue));
@@ -132,11 +433,76 @@ internal sealed class ChangelogCommand(
 			parsedPrs = allPrs.ToArray();
 		}
 
-		var shouldExtractReleaseNotes = !noExtractReleaseNotes;
-		var shouldExtractIssues = !noExtractIssues;
+		// null = use config default; explicit false when --no-extract-* passed
+		var extractReleaseNotes = noExtractReleaseNotes ? false : (bool?)null;
+		var extractIssues = noExtractIssues ? false : (bool?)null;
+
+		// Parse issues: handle both comma-separated values and file paths (mirrors PR parsing)
+		string[]? parsedIssues = null;
+		if (issues is { Length: > 0 })
+		{
+			var allIssues = new List<string>();
+			var validIssues = issues.Where(i => !string.IsNullOrWhiteSpace(i));
+			foreach (var trimmedValue in validIssues.Select(i => i.Trim()))
+			{
+				var normalizedPath = NormalizePath(trimmedValue);
+				if (_fileSystem.File.Exists(normalizedPath))
+				{
+					try
+					{
+						var fileLines = await _fileSystem.File.ReadAllLinesAsync(normalizedPath, ctx);
+						foreach (var line in fileLines)
+						{
+							if (!string.IsNullOrWhiteSpace(line))
+								allIssues.Add(line.Trim());
+						}
+					}
+					catch (IOException ex)
+					{
+						collector.EmitError(string.Empty, $"Failed to read issues from file '{normalizedPath}': {ex.Message}", ex);
+						return 1;
+					}
+				}
+				else
+				{
+					var commaSeparated = trimmedValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+					allIssues.AddRange(commaSeparated);
+				}
+			}
+			parsedIssues = allIssues.ToArray();
+		}
 
 		// Use provided products or empty list (service will infer from repo/config if empty)
-		var resolvedProducts = products ?? [];
+		var resolvedProducts = (IReadOnlyList<ProductArgument>?)products ?? [];
+
+		if (usePrNumber && useIssueNumber)
+		{
+			collector.EmitError(string.Empty, "--use-pr-number and --use-issue-number are mutually exclusive; specify only one.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		// --use-pr-number with --issues is allowed: PRs can be extracted from the issue body (Fixed by #123, etc.)
+		if (usePrNumber && (parsedPrs == null || parsedPrs.Length == 0) && (parsedIssues == null || parsedIssues.Length == 0))
+		{
+			collector.EmitError(string.Empty, "--use-pr-number requires --prs, --issues, or --report to be specified.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		// --use-issue-number with --prs is allowed: issues can be extracted from the PR body (Fixes #123, etc.)
+		if (useIssueNumber && (parsedIssues == null || parsedIssues.Length == 0) && (parsedPrs == null || parsedPrs.Length == 0))
+		{
+			collector.EmitError(string.Empty, "--use-issue-number requires --prs or --issues to be specified.");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
 
 		var input = new CreateChangelogArguments
 		{
@@ -146,20 +512,22 @@ internal sealed class ChangelogCommand(
 			Subtype = subtype,
 			Areas = areas ?? [],
 			Prs = parsedPrs,
-			Owner = owner,
-			Repo = repo,
-			Issues = issues ?? [],
+			Owner = resolvedOwner,
+			Repo = resolvedRepo,
+			Issues = parsedIssues ?? [],
 			Description = description,
 			Impact = impact,
 			Action = action,
 			FeatureId = featureId,
 			Highlight = highlight,
-			Output = output,
-			Config = config,
+			Output = resolvedOutput,
+			Config = config?.FullName,
 			UsePrNumber = usePrNumber,
-			StripTitlePrefix = stripTitlePrefix,
-			ExtractReleaseNotes = shouldExtractReleaseNotes,
-			ExtractIssues = shouldExtractIssues
+			UseIssueNumber = useIssueNumber,
+			StripTitlePrefix = stripTitlePrefixResolved,
+			ExtractReleaseNotes = extractReleaseNotes,
+			ExtractIssues = extractIssues,
+			Concise = concise
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -169,95 +537,158 @@ internal sealed class ChangelogCommand(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Bundle changelog files. Can use either profile-based bundling (e.g., "bundle elasticsearch-release 9.2.0") or raw flags (e.g., "bundle --all").
-	/// </summary>
-	/// <param name="profile">Optional: Profile name from bundle.profiles in config (e.g., "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
-	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (e.g., "9.2.0" or "https://buildkite.../promotion-report.html")</param>
-	/// <param name="all">Include all changelogs in the directory. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
+	/// <summary>Aggregate changelog entries matching a filter into a single bundle YAML.</summary>
+	/// <remarks>
+	/// Accepts either a named profile from <c>changelog.yml</c> (e.g. <c>bundle my-release 9.2.0</c>) or
+	/// an explicit filter flag. Exactly one filter must be specified: <c>--all</c>, <c>--input-products</c>,
+	/// <c>--prs</c>, <c>--issues</c>, <c>--release-version</c>, or <c>--report</c>.
+	/// </remarks>
+	/// <param name="profile">Optional: Profile name from bundle.profiles in config (for example, "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
+	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html")</param>
+	/// <param name="profileReport">Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source (for example, "bundle serverless-release 2026-02 ./report.html").</param>
+	/// <param name="all">Include all changelogs in the directory.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
-	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or {changelog} directive).</param>
-	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (e.g., "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all). Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
+	/// <param name="description">Optional: Bundle description text with placeholder support. Supports VERSION, LIFECYCLE, OWNER, and REPO placeholders. Overrides bundle.description from config. In option-based mode, placeholders require --output-products to be explicitly specified.</param>
+	/// <param name="hideFeatures">Optional: Filter by feature IDs (comma-separated) or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or changelog directive).</param>
+	/// <param name="noReleaseDate">Optional: Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. Not available in profile mode.</param>
+	/// <param name="releaseDate">Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behavior. Mutually exclusive with --no-release-date. Not available in profile mode.</param>
+	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all).</param>
+	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
-	/// <param name="owner">GitHub repository owner (required only when PRs are specified as numbers)</param>
-	/// <param name="prs">Filter by pull request URLs or numbers (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Only one filter option can be specified: `--all`, `--input-products`, or `--prs`.</param>
-	/// <param name="repo">GitHub repository name. Used for PR filtering when PRs are specified as numbers, and also sets the repo field in the bundle output for generating correct PR/issue links. If not specified, the product ID is used as the repo name in links.</param>
+	/// <param name="owner">GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
+	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
+	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
+	/// <param name="report">A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter.</param>
+	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
-	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides config).</param>
+	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>) describing network requirements and the resolved output path, then exit without generating the bundle. Intended for CI actions.</param>
 	/// <param name="ctx"></param>
-	[Command("bundle")]
+	[NoOptionsInjection]
 	public async Task<int> Bundle(
 		[Argument] string? profile = null,
 		[Argument] string? profileArg = null,
+		[Argument] string? profileReport = null,
 		bool all = false,
-		string? config = null,
-		string? directory = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
+		string? description = null,
 		string[]? hideFeatures = null,
-		[ProductInfoParser] List<ProductArgument>? inputProducts = null,
+		bool noReleaseDate = false,
+		string? releaseDate = null,
+		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? inputProducts = null,
 		string? output = null,
-		[ProductInfoParser] List<ProductArgument>? outputProducts = null,
+		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? outputProducts = null,
+		string[]? issues = null,
 		string? owner = null,
+		bool plan = false,
 		string[]? prs = null,
+		string? releaseVersion = null,
 		string? repo = null,
+		string? report = null,
 		bool? resolve = null,
-		bool noResolve = false,
-		Cancel ctx = default
+		CancellationToken ct = default
 	)
 	{
+		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new ChangelogBundlingService(logFactory, configurationContext);
 
-		// Check if using profile mode vs raw flag mode
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
-		// Process each --prs occurrence: each can be comma-separated PRs or a file path
-		var allPrs = new List<string>();
-		if (prs is { Length: > 0 })
+		// --release-version mode: resolve the release into a PR list and proceed as if --prs was specified
+		if (releaseVersion != null)
 		{
-			foreach (var prsValue in prs.Where(p => !string.IsNullOrWhiteSpace(p)))
+			if (all || (inputProducts is { Count: > 0 }) || (prs is { Length: > 0 }) || (issues is { Length: > 0 }))
 			{
-				// Check if it contains commas - if so, split and add each as a PR
-				if (prsValue.Contains(','))
-				{
-					var commaSeparatedPrs = prsValue
-						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-						.Where(p => !string.IsNullOrWhiteSpace(p));
-					allPrs.AddRange(commaSeparatedPrs);
-				}
-				else
-				{
-					// Single value - pass as-is (will be handled by service layer as file path or PR)
-					allPrs.Add(prsValue);
-				}
-			}
-		}
-
-		// In raw mode (no profile), validate filter options
-		if (!isProfileMode)
-		{
-			var specifiedFilters = new List<string>();
-			if (all)
-				specifiedFilters.Add("--all");
-			if (inputProducts != null && inputProducts.Count > 0)
-				specifiedFilters.Add("--input-products");
-			if (allPrs.Count > 0)
-				specifiedFilters.Add("--prs");
-
-			if (specifiedFilters.Count == 0)
-			{
-				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
-				_ = collector.StartAsync(ctx);
-				await collector.WaitForDrain();
-				await collector.StopAsync(ctx);
+				collector.EmitError(string.Empty,
+					"--release-version is mutually exclusive with --all, --input-products, --prs, and --issues.");
 				return 1;
 			}
 
-			if (specifiedFilters.Count > 1)
+			if (!plan)
 			{
-				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, or --prs");
+				// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
+				var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+					.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+				var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
+				var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+
+				if (string.IsNullOrWhiteSpace(resolvedRepo))
+				{
+					collector.EmitError(string.Empty, "--release-version requires --repo to be specified (or bundle.repo set in changelog.yml).");
+					return 1;
+				}
+
+				IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+				var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
+				if (release == null)
+				{
+					collector.EmitError(string.Empty,
+						$"Failed to fetch release '{releaseVersion}' for {resolvedOwner}/{resolvedRepo}. Ensure the tag exists and credentials are set.");
+					return 1;
+				}
+
+				var parsedNotes = ReleaseNoteParser.Parse(release.Body);
+				if (parsedNotes.PrReferences.Count == 0)
+				{
+					collector.EmitWarning(string.Empty,
+						$"No PR references found in release notes for {resolvedOwner}/{resolvedRepo}@{release.TagName}. No bundle will be created.");
+					return 0;
+				}
+
+				// Build full PR URLs and inject them as the PR filter
+				prs = parsedNotes.PrReferences
+					.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
+					.ToArray();
+			}
+		}
+
+		var allPrs = ExpandCommaSeparated(prs);
+		var allIssues = ExpandCommaSeparated(issues);
+
+		// Validate filter/output options against profile mode
+		if (isProfileMode)
+		{
+			var forbidden = new List<string>();
+			if (all)
+				forbidden.Add("--all");
+			if (inputProducts is { Count: > 0 })
+				forbidden.Add("--input-products");
+			if (outputProducts is { Count: > 0 })
+				forbidden.Add("--output-products");
+			if (allPrs.Count > 0)
+				forbidden.Add("--prs");
+			if (allIssues.Count > 0)
+				forbidden.Add("--issues");
+			if (!string.IsNullOrWhiteSpace(report))
+				forbidden.Add("--report");
+			if (!string.IsNullOrWhiteSpace(output))
+				forbidden.Add("--output");
+			if (!string.IsNullOrWhiteSpace(repo))
+				forbidden.Add("--repo");
+			if (!string.IsNullOrWhiteSpace(owner))
+				forbidden.Add("--owner");
+			if (resolve.HasValue)
+				forbidden.Add("--resolve / --no-resolve");
+			if (hideFeatures is { Length: > 0 })
+				forbidden.Add("--hide-features");
+			if (config != null)
+				forbidden.Add("--config");
+			if (directory != null)
+				forbidden.Add("--directory");
+			if (!string.IsNullOrWhiteSpace(description))
+				forbidden.Add("--description");
+
+			if (forbidden.Count > 0)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"When using a profile, the following options are not allowed: {string.Join(", ", forbidden)}. " +
+					"All paths and filters are derived from the changelog configuration file."
+				);
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -266,10 +697,44 @@ internal sealed class ChangelogCommand(
 		}
 		else
 		{
-			// In profile mode, validate that no raw flags are used
-			if (all || (inputProducts != null && inputProducts.Count > 0) || allPrs.Count > 0)
+			// profileReport (3rd positional arg) is only valid in profile mode
+			if (!string.IsNullOrWhiteSpace(profileReport))
 			{
-				collector.EmitError(string.Empty, "When using a profile, do not specify --all, --input-products, or --prs. The profile configuration determines the filter.");
+				collector.EmitError(
+					string.Empty,
+					"A third positional argument is only valid in profile mode (e.g., 'bundle my-profile 2026-02 ./report.html')."
+				);
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			// Raw mode: require exactly one filter option
+			var specifiedFilters = new List<string>();
+			if (all)
+				specifiedFilters.Add("--all");
+			if (inputProducts != null && inputProducts.Count > 0)
+				specifiedFilters.Add("--input-products");
+			if (allPrs.Count > 0)
+				specifiedFilters.Add("--prs");
+			if (allIssues.Count > 0)
+				specifiedFilters.Add("--issues");
+			if (!string.IsNullOrWhiteSpace(report))
+				specifiedFilters.Add("--report");
+
+			if (specifiedFilters.Count == 0)
+			{
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, --report, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			if (specifiedFilters.Count > 1)
+			{
+				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, --issues, or --report");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -354,50 +819,87 @@ internal sealed class ChangelogCommand(
 				}
 
 				// It's a directory path - append default filename
-				processedOutput = Path.Combine(output, "changelog-bundle.yaml");
+				processedOutput = Path.Join(output, "changelog-bundle.yaml");
 			}
 		}
 
-		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then config default
-		var shouldResolve = noResolve ? false : resolve;
-
-		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
-		var allFeatureIdsForBundle = new List<string>();
-		if (hideFeatures is { Length: > 0 })
+		// --plan mode: resolve config/profile metadata and set CI outputs without executing
+		if (plan)
 		{
-			foreach (var hideFeaturesValue in hideFeatures.Where(v => !string.IsNullOrWhiteSpace(v)))
+			var planInput = new BundleChangelogsArguments
 			{
-				// Check if it contains commas - if so, split and add each as a feature ID
-				if (hideFeaturesValue.Contains(','))
-				{
-					var commaSeparatedFeatureIds = hideFeaturesValue
-						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-						.Where(f => !string.IsNullOrWhiteSpace(f));
-					allFeatureIdsForBundle.AddRange(commaSeparatedFeatureIds);
-				}
-				else
-				{
-					// Single value - pass as-is (will be handled by service layer as file path or feature ID)
-					allFeatureIdsForBundle.Add(hideFeaturesValue);
-				}
-			}
+				Output = processedOutput,
+				Profile = profile,
+				ProfileArgument = profileArg,
+				Config = config?.FullName,
+				Description = description
+			};
+			var planResult = await service.PlanBundleAsync(collector, planInput, releaseVersion != null, ctx);
+			if (planResult == null)
+				return 1;
+
+			await githubActionsService.SetOutputAsync("needs_network", planResult.NeedsNetwork ? "true" : "false");
+			await githubActionsService.SetOutputAsync("needs_github_token", planResult.NeedsGithubToken ? "true" : "false");
+			if (planResult.OutputPath != null)
+				await githubActionsService.SetOutputAsync("output_path", planResult.OutputPath);
+			return 0;
 		}
+
+		// Validate release date flags
+		if (noReleaseDate && !string.IsNullOrWhiteSpace(releaseDate))
+		{
+			collector.EmitError(string.Empty, "--no-release-date and --release-date are mutually exclusive.");
+			return 1;
+		}
+
+		// Profile mode doesn't support release date CLI flags (use YAML configuration instead)
+		if (isProfileMode && (noReleaseDate || !string.IsNullOrWhiteSpace(releaseDate)))
+		{
+			var forbidden = new List<string>();
+			if (noReleaseDate)
+				forbidden.Add("--no-release-date");
+			if (!string.IsNullOrWhiteSpace(releaseDate))
+				forbidden.Add("--release-date");
+
+			collector.EmitError(string.Empty,
+				$"Profile mode does not support {string.Join(" and ", forbidden)}. " +
+				"Use bundle.release_dates or bundle.profiles.<name>.release_dates in changelog.yml instead.");
+			return 1;
+		}
+
+		// Validate release date format if provided
+		if (!string.IsNullOrWhiteSpace(releaseDate) && !DateOnly.TryParseExact(releaseDate, "yyyy-MM-dd", out _))
+		{
+			collector.EmitError(string.Empty, $"Invalid --release-date format '{releaseDate}'. Expected YYYY-MM-DD format.");
+			return 1;
+		}
+
+		// Determine resolve: CLI --no-resolve and --resolve override config. null = use config default.
+		var shouldResolve = resolve;
+
+		var allFeatureIdsForBundle = ExpandCommaSeparated(hideFeatures);
 
 		var input = new BundleChangelogsArguments
 		{
-			Directory = directory ?? Directory.GetCurrentDirectory(),
+			Directory = directory?.FullName,
 			Output = processedOutput,
 			All = all,
 			InputProducts = inputProducts,
 			OutputProducts = outputProducts,
-			Resolve = shouldResolve ?? false, // Will be overridden by config if null
+			Resolve = shouldResolve,
 			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
+			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
 			Owner = owner,
 			Repo = repo,
 			Profile = profile,
 			ProfileArgument = profileArg,
-			Config = config,
-			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null
+			ProfileReport = isProfileMode ? profileReport : null,
+			Report = !isProfileMode ? report : null,
+			Config = config?.FullName,
+			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
+			Description = description,
+			ReleaseDate = releaseDate,
+			SuppressReleaseDate = noReleaseDate
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -407,64 +909,282 @@ internal sealed class ChangelogCommand(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Render bundled changelog(s) to markdown or asciidoc files
-	/// </summary>
-	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Paths support tilde (~) expansion and relative paths.</param>
+	/// <summary>Delete changelog entry files matching a filter.</summary>
+	/// <remarks>
+	/// Blocks when a file is referenced by an unresolved bundle to avoid breaking the <c>{changelog}</c>
+	/// directive in published documentation. Pass <c>--force</c> to override.
+	/// </remarks>
+	/// <param name="profile">Optional: Profile name from bundle.profiles in config (for example, "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
+	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html")</param>
+	/// <param name="profileReport">Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source.</param>
+	/// <param name="all">Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, or --report.</param>
+	/// <param name="bundlesDir">Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
-	/// <param name="fileType">Optional: Output file type. Valid values: "markdown" or "asciidoc". Defaults to "markdown"</param>
+	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
+	/// <param name="dryRun">Print the files that would be removed without deleting them. Valid in both profile and raw mode.</param>
+	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.</param>
+	/// <param name="issues">Filter by issue URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
+	/// <param name="owner">Optional: GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
+	/// <param name="products">Filter by products in format "product target lifecycle, ..." (for example, "elasticsearch 9.3.0 ga"). All three parts are required but can be wildcards (*).</param>
+	/// <param name="prs">Filter by pull request URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
+	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches the release, parses PR references from the release notes, and removes changelogs whose PR URLs match — equivalent to passing the PR list using --prs.</param>
+	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when --release-version is used. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
+	/// <param name="report">Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, and --issues.</param>
+	/// <param name="ctx"></param>
+	[CommandIntent(Intent.Destructive | Intent.RequiresConfirmation)]
+	[MutationScope(MutationScope.Directory)]
+	[NoOptionsInjection]
+	public async Task<int> Remove(
+		[Argument] string? profile = null,
+		[Argument] string? profileArg = null,
+		[Argument] string? profileReport = null,
+		bool all = false,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
+		[DryRun] bool dryRun = false,
+		[ConfirmationSkip] bool force = false,
+		string[]? issues = null,
+		string? owner = null,
+		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? products = null,
+		string[]? prs = null,
+		string? releaseVersion = null,
+		string? repo = null,
+		string? report = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var service = new ChangelogRemoveService(logFactory, configurationContext);
+
+		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
+
+		// --release-version mode: resolve the release into a PR list and proceed as if --prs was specified
+		if (releaseVersion != null)
+		{
+			if (all || (products is { Count: > 0 }) || (prs is { Length: > 0 }) || (issues is { Length: > 0 }))
+			{
+				collector.EmitError(string.Empty,
+					"--release-version is mutually exclusive with --all, --products, --prs, and --issues.");
+				return 1;
+			}
+
+			// Precedence: --repo CLI > bundle.repo config; --owner CLI > bundle.owner config > "elastic"
+			var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+				.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+			var resolvedRepo = !string.IsNullOrWhiteSpace(repo) ? repo : bundleConfig?.Bundle?.Repo;
+			var resolvedOwner = owner ?? bundleConfig?.Bundle?.Owner ?? "elastic";
+
+			if (string.IsNullOrWhiteSpace(resolvedRepo))
+			{
+				collector.EmitError(string.Empty, "--release-version requires --repo to be specified (or bundle.repo set in changelog.yml).");
+				return 1;
+			}
+
+			IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
+			var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
+			if (release == null)
+			{
+				collector.EmitError(string.Empty,
+					$"Failed to fetch release '{releaseVersion}' for {resolvedOwner}/{resolvedRepo}. Ensure the tag exists and credentials are set.");
+				return 1;
+			}
+
+			var parsedNotes = ReleaseNoteParser.Parse(release.Body);
+			if (parsedNotes.PrReferences.Count == 0)
+			{
+				collector.EmitWarning(string.Empty,
+					$"No PR references found in release notes for {resolvedOwner}/{resolvedRepo}@{release.TagName}. No changelogs will be removed.");
+				return 0;
+			}
+
+			// Build full PR URLs and inject them as the PR filter
+			prs = parsedNotes.PrReferences
+				.Select(r => $"https://github.com/{resolvedOwner}/{resolvedRepo}/pull/{r.PrNumber}")
+				.ToArray();
+		}
+
+		var allPrs = ExpandCommaSeparated(prs);
+		var allIssues = ExpandCommaSeparated(issues);
+
+		if (isProfileMode)
+		{
+			// Profile mode: filter options and --repo/--owner must not be used; all paths and filters come from config
+			var forbidden = new List<string>();
+			if (all)
+				forbidden.Add("--all");
+			if (products is { Count: > 0 })
+				forbidden.Add("--products");
+			if (allPrs.Count > 0)
+				forbidden.Add("--prs");
+			if (allIssues.Count > 0)
+				forbidden.Add("--issues");
+			if (releaseVersion != null)
+				forbidden.Add("--release-version");
+			if (!string.IsNullOrWhiteSpace(repo))
+				forbidden.Add("--repo");
+			if (!string.IsNullOrWhiteSpace(owner))
+				forbidden.Add("--owner");
+
+			if (forbidden.Count > 0)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"When using a profile, the following options are not allowed: {string.Join(", ", forbidden)}. " +
+					"All paths and filters are derived from the changelog configuration file.");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			// profileArg is required when profile is specified
+			if (string.IsNullOrWhiteSpace(profileArg))
+			{
+				collector.EmitError(string.Empty, $"Profile '{profile}' requires a version number or promotion report URL as the second argument");
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+		}
+		else
+		{
+			// profileReport (3rd positional arg) is only valid in profile mode
+			if (!string.IsNullOrWhiteSpace(profileReport))
+			{
+				collector.EmitError(
+					string.Empty,
+					"A third positional argument is only valid in profile mode (e.g., 'remove my-profile 2026-02 ./report.html')."
+				);
+				_ = collector.StartAsync(ctx);
+				await collector.WaitForDrain();
+				await collector.StopAsync(ctx);
+				return 1;
+			}
+
+			// Raw mode: validate product filter parts and apply wildcard shortcut
+			if (products is { Count: > 0 })
+			{
+				foreach (var product in products)
+				{
+					if (string.IsNullOrWhiteSpace(product.Product))
+					{
+						collector.EmitError(string.Empty, "--products: product is required (use '*' for wildcard)");
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+
+					if (product.Target == null)
+					{
+						collector.EmitError(string.Empty, $"--products: target is required for product '{product.Product}' (use '*' for wildcard)");
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+
+					if (product.Lifecycle == null)
+					{
+						collector.EmitError(string.Empty, $"--products: lifecycle is required for product '{product.Product}' (use '*' for wildcard)");
+						_ = collector.StartAsync(ctx);
+						await collector.WaitForDrain();
+						await collector.StopAsync(ctx);
+						return 1;
+					}
+				}
+
+				// --products * * * is equivalent to --all
+				var isAllWildcard = products.Count == 1 &&
+					products[0].Product == "*" &&
+					products[0].Target == "*" &&
+					products[0].Lifecycle == "*";
+
+				if (isAllWildcard)
+				{
+					all = true;
+					products = null;
+				}
+			}
+		}
+
+		// In profile mode, directory is derived from the changelog config (not from CLI).
+		// In raw mode, pass null when --directory is not specified so ApplyConfigDefaults can consult
+		// bundle.directory before falling back to CWD.
+		var resolvedDirectory = isProfileMode ? null : directory?.FullName;
+
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = resolvedDirectory,
+			All = all,
+			Products = products,
+			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
+			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
+			Owner = owner,
+			Repo = repo,
+			DryRun = dryRun,
+			BundlesDir = bundlesDir?.FullName,
+			Force = force,
+			Config = config?.FullName,
+			Profile = isProfileMode ? profile : null,
+			ProfileArgument = isProfileMode ? profileArg : null,
+			ProfileReport = isProfileMode ? profileReport : null,
+			Report = !isProfileMode ? report : null
+		};
+
+		serviceInvoker.AddCommand(service, input,
+			async static (s, collector, state, ctx) => await s.RemoveChangelogs(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>Render one or more changelog bundles to Markdown or AsciiDoc.</summary>
+	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Use "hide-links" for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.</param>
+	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
+	/// <param name="fileType">Optional: Output file type. Valid values: "markdown", "asciidoc", or "gfm". Defaults to "markdown"</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.</param>
 	/// <param name="output">Optional: Output directory for rendered files. Defaults to current directory</param>
 	/// <param name="subsections">Optional: Group entries by area/component in subsections. For breaking changes with a subtype, groups by subtype instead of area. Defaults to false</param>
+	/// <param name="dropdowns">Optional: Render separated types (breaking changes, deprecations, known issues, highlights) as MyST dropdowns. When false (default), renders as flattened bulleted lists. Defaults to false</param>
+	/// <param name="noDescriptions">Optional: Hide changelog record descriptions from output. When enabled, entry titles, PR/issue links, Impact and Action sections remain visible. Bundle-level descriptions are unaffected. Defaults to false</param>
 	/// <param name="title">Optional: Title to use for section headers in output files. Defaults to version from first bundle</param>
 	/// <param name="ctx"></param>
-	[Command("render")]
+	[NoOptionsInjection]
 	public async Task<int> Render(
 		string[]? input = null,
-		string? config = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		string? fileType = "markdown",
 		string[]? hideFeatures = null,
 		string? output = null,
 		bool subsections = false,
+		bool dropdowns = false,
+		bool noDescriptions = false,
 		string? title = null,
-		Cancel ctx = default
+		CancellationToken ct = default
 	)
 	{
+		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var service = new ChangelogRenderingService(logFactory, configurationContext);
 
-		// Process each --hide-features occurrence: each can be comma-separated feature IDs or a file path
-		var allFeatureIds = new List<string>();
-		if (hideFeatures is { Length: > 0 })
-		{
-			foreach (var hideFeaturesValue in hideFeatures.Where(v => !string.IsNullOrWhiteSpace(v)))
-			{
-				// Check if it contains commas - if so, split and add each as a feature ID
-				if (hideFeaturesValue.Contains(','))
-				{
-					var commaSeparatedFeatureIds = hideFeaturesValue
-						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-						.Where(f => !string.IsNullOrWhiteSpace(f));
-					allFeatureIds.AddRange(commaSeparatedFeatureIds);
-				}
-				else
-				{
-					// Single value - pass as-is (will be handled by service layer as file path or feature ID)
-					allFeatureIds.Add(hideFeaturesValue);
-				}
-			}
-		}
+		var allFeatureIds = ExpandCommaSeparated(hideFeatures);
 
 		ChangelogFileType? ft = fileType?.ToLowerInvariant() switch
 		{
 			"markdown" => ChangelogFileType.Markdown,
 			"asciidoc" => ChangelogFileType.Asciidoc,
+			"gfm" => ChangelogFileType.Gfm,
 			_ => null
 		};
 		if (ft is null)
 		{
-			collector.EmitError(string.Empty, $"Invalid file-type '{fileType}'. Valid values are 'markdown' or 'asciidoc'.");
+			collector.EmitError(string.Empty, $"Invalid file-type '{fileType}'. Valid values are 'markdown', 'asciidoc', or 'gfm'.");
 			return 1;
 		}
 
@@ -477,9 +1197,11 @@ internal sealed class ChangelogCommand(
 			Output = output,
 			Title = title,
 			Subsections = subsections,
+			Dropdowns = dropdowns,
+			HideDescriptions = noDescriptions,
 			HideFeatures = allFeatureIds.Count > 0 ? allFeatureIds.ToArray() : null,
 			FileType = ft.Value,
-			Config = config
+			Config = config?.FullName
 		};
 
 		serviceInvoker.AddCommand(service, renderInput,
@@ -489,41 +1211,61 @@ internal sealed class ChangelogCommand(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Create changelogs from a GitHub release
-	/// </summary>
+	/// <summary>Create changelog entries from the PRs referenced in a GitHub release.</summary>
 	/// <param name="repo">Required: GitHub repository in owner/repo format (e.g., "elastic/elasticsearch" or just "elasticsearch" which defaults to elastic/elasticsearch)</param>
 	/// <param name="version">Optional: Version tag to fetch (e.g., "v9.0.0", "9.0.0"). Defaults to "latest"</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
-	/// <param name="output">Optional: Output directory for changelog files. Defaults to './changelogs'</param>
+	/// <param name="description">Optional: Bundle description text with placeholder support. Supports VERSION, LIFECYCLE, OWNER, and REPO placeholders. Overrides bundle.description from config.</param>
+	/// <param name="output">Optional: Output directory for changelog files. Falls back to bundle.directory in changelog.yml when not specified. Defaults to './changelogs'</param>
+	/// <param name="releaseDate">Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides GitHub release published date.</param>
 	/// <param name="stripTitlePrefix">Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., "[Inference API] Title" becomes "Title")</param>
 	/// <param name="warnOnTypeMismatch">Optional: Warn when the type inferred from release notes section headers doesn't match the type derived from PR labels. Defaults to true</param>
 	/// <param name="ctx"></param>
-	[Command("gh-release")]
-	public async Task<int> GitHubRelease(
+	[NoOptionsInjection]
+	public async Task<int> GhRelease(
 		[Argument] string repo,
 		[Argument] string version = "latest",
-		string? config = null,
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		string? description = null,
 		string? output = null,
+		string? releaseDate = null,
 		bool stripTitlePrefix = false,
 		bool warnOnTypeMismatch = true,
-		Cancel ctx = default
+		CancellationToken ct = default
 	)
 	{
+		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		// --output CLI > bundle.directory config > ./changelogs (service default)
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+			.LoadChangelogConfiguration(collector, config?.FullName, ctx);
+		var resolvedOutput = !string.IsNullOrWhiteSpace(output) ? output : bundleConfig?.Bundle?.Directory;
 
 		IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new GitHubReleaseChangelogService(logFactory, configurationContext, releaseService, prService);
 
+		// Validate release date format if provided
+		if (!string.IsNullOrWhiteSpace(releaseDate) && !DateOnly.TryParseExact(releaseDate, "yyyy-MM-dd", out _))
+		{
+			collector.EmitError(string.Empty, $"Invalid --release-date format '{releaseDate}'. Expected YYYY-MM-DD format.");
+			return 1;
+		}
+
+		// Resolve stripTitlePrefix: CLI flag true → explicit true; otherwise null (use config default)
+		var stripTitlePrefixResolved = stripTitlePrefix ? true : (bool?)null;
+
 		var input = new CreateChangelogsFromReleaseArguments
 		{
 			Repository = repo,
 			Version = version,
-			Config = config,
-			Output = output,
-			StripTitlePrefix = stripTitlePrefix,
-			WarnOnTypeMismatch = warnOnTypeMismatch
+			Config = config?.FullName,
+			Output = resolvedOutput,
+			StripTitlePrefix = stripTitlePrefixResolved,
+			WarnOnTypeMismatch = warnOnTypeMismatch,
+			Description = description,
+			ReleaseDate = releaseDate
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -533,26 +1275,23 @@ internal sealed class ChangelogCommand(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Amend a bundle with additional changelog entries, creating an immutable .amend-N.yaml file.
-	/// </summary>
+	/// <summary>Append additional changelog entries to a published bundle without modifying it.</summary>
+	/// <remarks>Creates an immutable <c>.amend-N.yaml</c> sidecar file alongside the original bundle.</remarks>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
 	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. When not specified, inferred from the original bundle.</param>
-	/// <param name="noResolve">Optional: Explicitly turn off resolve (overrides inference from original bundle).</param>
-	/// <param name="ctx"></param>
-	[Command("bundle-amend")]
+	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).</param>
+	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
-		[Argument] string bundlePath,
+		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
 		string[]? add = null,
 		bool? resolve = null,
-		bool noResolve = false,
-		Cancel ctx = default
+		CancellationToken ct = default
 	)
 	{
+		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundleAmendService(logFactory);
+		var service = new ChangelogBundleAmendService(logFactory, configurationContext: configurationContext);
 
 		if (add == null || add.Length == 0)
 		{
@@ -564,30 +1303,14 @@ internal sealed class ChangelogCommand(
 		}
 
 		// Normalize the bundle path
-		var normalizedBundlePath = NormalizePath(bundlePath);
+		var normalizedBundlePath = bundlePath.FullName;
 
-		// Process and normalize all add file paths (handles comma-separated values)
-		var normalizedAddFiles = new List<string>();
-		foreach (var addValue in add.Where(a => !string.IsNullOrWhiteSpace(a)))
-		{
-			// Check if it contains commas - if so, split and normalize each path
-			if (addValue.Contains(','))
-			{
-				var commaSeparatedPaths = addValue
-					.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-					.Where(p => !string.IsNullOrWhiteSpace(p))
-					.Select(NormalizePath);
-				normalizedAddFiles.AddRange(commaSeparatedPaths);
-			}
-			else
-			{
-				// Single path - normalize it
-				normalizedAddFiles.Add(NormalizePath(addValue));
-			}
-		}
+		var normalizedAddFiles = ExpandCommaSeparated(add)
+			.Select(NormalizePath)
+			.ToList();
 
 		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then infer from bundle
-		var shouldResolve = noResolve ? false : resolve;
+		var shouldResolve = resolve;
 
 		var input = new AmendBundleArguments
 		{
@@ -600,6 +1323,301 @@ internal sealed class ChangelogCommand(
 			async static (s, collector, state, ctx) => await s.AmendBundle(collector, state, ctx)
 		);
 
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI) Evaluate a pull request for changelog generation eligibility and set GitHub Actions outputs.</summary>
+	/// <remarks>
+	/// Runs pre-flight checks (body-only edit, bot loop, manual edit), applies label rules from
+	/// <c>changelog.yml</c>, and resolves the entry type and title. Designed to be called from a
+	/// GitHub Actions workflow step.
+	/// </remarks>
+	/// <param name="config">Path to the changelog.yml configuration file</param>
+	/// <param name="owner">GitHub repository owner</param>
+	/// <param name="repo">GitHub repository name</param>
+	/// <param name="prNumber">Pull request number</param>
+	/// <param name="prTitle">Pull request title</param>
+	/// <param name="prLabels">Comma-separated PR labels</param>
+	/// <param name="headRef">PR head branch ref</param>
+	/// <param name="headSha">PR head commit SHA</param>
+	/// <param name="eventAction">Optional: GitHub event action (e.g., opened, synchronize, edited). When omitted, body-only-edit and bot-loop checks are skipped.</param>
+	/// <param name="titleChanged">Whether the PR title changed (for edited events)</param>
+	/// <param name="bodyChanged">Whether the PR body changed (for edited events)</param>
+	/// <param name="stripTitlePrefix">Remove square-bracket prefixes from the PR title</param>
+	/// <param name="botName">Bot login name for loop detection</param>
+	/// <param name="ctx"></param>
+	[NoOptionsInjection]
+	public async Task<int> EvaluatePr(
+		[FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		string owner,
+		string repo,
+		int prNumber,
+		string prTitle,
+		string prLabels,
+		string headRef,
+		string headSha,
+		string? eventAction = null,
+		bool titleChanged = false,
+		bool bodyChanged = false,
+		bool stripTitlePrefix = false,
+		string botName = "github-actions[bot]",
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		IGitHubPrService prService = new GitHubPrService(logFactory);
+		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService);
+
+		var prBody = environmentVariables.GetEnvironmentVariable("PR_BODY");
+
+		var args = new EvaluatePrArguments
+		{
+			Config = config.FullName,
+			Owner = owner,
+			Repo = repo,
+			PrNumber = prNumber,
+			PrTitle = prTitle,
+			PrBody = prBody,
+			PrLabels = prLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+			HeadRef = headRef,
+			HeadSha = headSha,
+			EventAction = eventAction,
+			TitleChanged = titleChanged,
+			BodyChanged = bodyChanged,
+			StripTitlePrefix = stripTitlePrefix,
+			BotName = botName
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			async static (s, collector, state, ctx) => await s.EvaluatePr(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI) Package changelog artifact for cross-workflow transfer.</summary>
+	/// <remarks>
+	/// Resolves final status from evaluate-pr + changelog add outcomes, copies generated YAML,
+	/// writes metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.
+	///
+	/// <para>
+	/// The <c>isFork</c>, <c>canCommit</c> and <c>maintainerCanModify</c> parameters are declared
+	/// as <c>bool?</c> so the generated CLI emits both <c>--flag</c> and <c>--no-flag</c> pairs
+	/// (Argh convention). A plain <c>bool</c> would expose presence-only switches: passing
+	/// <c>--can-commit "false"</c> would set <c>canCommit = true</c> (the flag is present) and
+	/// silently discard the literal <c>"false"</c> as a stray positional. Callers that forward a
+	/// dynamic value (<c>--can-commit "$VAR"</c>) would then misroute fork PRs into the
+	/// commit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172
+	/// for the workflow-side fix.
+	/// </para>
+	/// </remarks>
+	/// <param name="stagingDir">Directory where changelog add wrote the generated YAML</param>
+	/// <param name="outputDir">Directory to write the artifact (metadata.json + YAML)</param>
+	/// <param name="evaluateStatus">Status output from the evaluate-pr step</param>
+	/// <param name="generateOutcome">Outcome of the changelog add step (success/failure)</param>
+	/// <param name="prNumber">Pull request number</param>
+	/// <param name="headRef">PR head branch ref</param>
+	/// <param name="headSha">PR head commit SHA</param>
+	/// <param name="isFork">Whether the PR is from a fork (pass --is-fork / --no-is-fork; omit to leave null which is treated as false)</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing (pass --can-commit / --no-can-commit; omit to leave null which is treated as false)</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits (pass --maintainer-can-modify / --no-maintainer-can-modify; omit to leave null which is treated as false)</param>
+	/// <param name="headRepo">Fork repository full name (owner/repo)</param>
+	/// <param name="labelTable">Optional: markdown label table from evaluate-pr</param>
+	/// <param name="productLabelTable">Optional: markdown product label table from evaluate-pr</param>
+	/// <param name="skipLabels">Optional: comma-separated skip labels from evaluate-pr</param>
+	/// <param name="config">Optional: path to changelog.yml</param>
+	/// <param name="existingChangelogFilename">Optional: filename of a previously committed changelog for this PR</param>
+	[NoOptionsInjection]
+	public async Task<int> PrepareArtifact(
+		string stagingDir,
+		string outputDir,
+		string evaluateStatus,
+		string generateOutcome,
+		int prNumber,
+		string headRef,
+		string headSha,
+		bool? isFork = null,
+		bool? canCommit = null,
+		bool? maintainerCanModify = null,
+		string? headRepo = null,
+		string? labelTable = null,
+		string? productLabelTable = null,
+		string? skipLabels = null,
+		string? config = null,
+		string? existingChangelogFilename = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fs = FileSystemFactory.RealGitRootForPathWrite(null, outputDir);
+		var service = new ChangelogPrepareArtifactService(logFactory, configurationContext, githubActionsService, fs);
+
+		var args = new PrepareArtifactArguments
+		{
+			StagingDir = stagingDir,
+			OutputDir = outputDir,
+			EvaluateStatus = evaluateStatus,
+			GenerateOutcome = generateOutcome,
+			PrNumber = prNumber,
+			HeadRef = headRef,
+			HeadSha = headSha,
+			IsFork = isFork,
+			HeadRepo = headRepo,
+			CanCommit = canCommit,
+			MaintainerCanModify = maintainerCanModify,
+			LabelTable = labelTable,
+			ProductLabelTable = productLabelTable,
+			SkipLabels = skipLabels,
+			Config = config,
+			ExistingChangelogFilename = existingChangelogFilename
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			async static (s, collector, state, ctx) => await s.PrepareArtifact(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>(CI) Evaluate downloaded artifact in the resolving workflow.</summary>
+	/// <remarks>
+	/// Reads metadata, validates PR state (SHA, labels), and sets GitHub Actions outputs
+	/// for downstream steps (commit, comment).
+	/// </remarks>
+	/// <param name="metadata">Path to the downloaded metadata.json file</param>
+	/// <param name="owner">GitHub repository owner</param>
+	/// <param name="repo">GitHub repository name</param>
+	[NoOptionsInjection]
+	public async Task<int> EvaluateArtifact(
+		string metadata,
+		string owner,
+		string repo,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		var fs = FileSystemFactory.RealGitRootForPathWrite(null, metadata);
+		IGitHubPrService prService = new GitHubPrService(logFactory);
+		var service = new ChangelogArtifactEvaluationService(logFactory, prService, githubActionsService, fs);
+
+		var args = new EvaluateArtifactArguments
+		{
+			MetadataPath = metadata,
+			Owner = owner,
+			Repo = repo
+		};
+
+		serviceInvoker.AddCommand(service, args,
+			async static (s, collector, state, ctx) => await s.EvaluateArtifact(collector, state, ctx)
+		);
+
+		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+
+	private static List<string> ExpandCommaSeparated(string[]? values)
+	{
+		if (values is not { Length: > 0 })
+			return [];
+
+		var result = new List<string>();
+		foreach (var value in values.Where(v => !string.IsNullOrWhiteSpace(v)))
+		{
+			if (value.Contains(','))
+				result.AddRange(value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+			else
+				result.Add(value);
+		}
+		return result;
+	}
+
+	private static string GetPathForConfig(string repoPath, string targetPath)
+	{
+		var relativePath = Path.GetRelativePath(repoPath, targetPath);
+
+		// Prefer relative path when it does not escape the repo (e.g. not ".." or "..\..")
+		var useRelative = !relativePath.StartsWith("..", StringComparison.Ordinal) &&
+			!Path.IsPathRooted(relativePath) &&
+			relativePath != targetPath;
+
+		var pathForConfig = useRelative ? relativePath : targetPath;
+		pathForConfig = pathForConfig.Replace('\\', '/');
+
+		// Quote if path contains characters that need escaping in YAML
+		if (pathForConfig.Contains(':') || pathForConfig.Contains(' ') || pathForConfig.Contains('#'))
+			return $"\"{pathForConfig.Replace("\"", "\\\"")}\"";
+
+		return pathForConfig;
+	}
+
+	private string ApplyChangelogInitBundleRepoSeed(string content, string? ownerCli, string? repoCli, string repoRoot)
+	{
+		string? gitOwner = null;
+		string? gitRepo = null;
+		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
+			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
+
+		return ChangelogTemplateSeeder.ApplyBundleRepoSeed(content, ownerCli, repoCli, gitOwner, gitRepo);
+	}
+
+	/// <summary>Upload changelog entries or bundle artifacts to S3 or Elasticsearch.</summary>
+	/// <remarks>Uses content-hash–based incremental transfer — only changed files are uploaded.</remarks>
+	/// <param name="artifactType">Artifact type to upload: 'changelog' (individual entries) or 'bundle' (consolidated bundles).</param>
+	/// <param name="target">Upload destination: 's3' or 'elasticsearch'.</param>
+	/// <param name="s3BucketName">S3 bucket name (required when target is 's3').</param>
+	/// <param name="config">Path to changelog.yml configuration file. Defaults to docs/changelog.yml.</param>
+	/// <param name="directory">Override changelog directory instead of reading it from config.</param>
+	[NoOptionsInjection]
+	public async Task<int> Upload(
+		string artifactType,
+		string target,
+		string s3BucketName = "",
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
+		CancellationToken ct = default
+	)
+	{
+		var ctx = ct;
+		if (!Enum.TryParse<ArtifactType>(artifactType, ignoreCase: true, out var parsedArtifactType))
+		{
+			collector.EmitError(string.Empty, $"Invalid artifact type '{artifactType}'. Valid values: changelog, bundle");
+			return 1;
+		}
+
+		if (!Enum.TryParse<UploadTargetKind>(target, ignoreCase: true, out var parsedTarget))
+		{
+			collector.EmitError(string.Empty, $"Invalid target '{target}'. Valid values: s3, elasticsearch");
+			return 1;
+		}
+
+		if (parsedTarget == UploadTargetKind.S3 && string.IsNullOrWhiteSpace(s3BucketName))
+		{
+			collector.EmitError(string.Empty, "--s3-bucket-name is required when target is 's3'");
+			return 1;
+		}
+
+		var resolvedDirectory = directory != null ? directory?.FullName : null;
+		var resolvedConfig = config != null ? config?.FullName : null;
+
+		await using var serviceInvoker = new ServiceInvoker(collector);
+		var service = new ChangelogUploadService(logFactory, configurationContext);
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = parsedArtifactType,
+			Target = parsedTarget,
+			S3BucketName = s3BucketName,
+			Config = resolvedConfig,
+			Directory = resolvedDirectory
+		};
+		serviceInvoker.AddCommand(service, args,
+			static async (s, c, state, ct) => await s.Upload(c, state, ct)
+		);
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
@@ -631,5 +1649,6 @@ internal sealed class ChangelogCommand(
 		// Convert to absolute path (handles relative paths like ./file or ../file)
 		return Path.GetFullPath(trimmedPath);
 	}
+
 }
 

@@ -6,6 +6,22 @@
 @{
 	var isTopLevel = Model.Level == 0;
 }
+@functions {
+	static (string? badge, string label) ParseNavTitle(string raw)
+	{
+		if (raw.StartsWith("[ns]", StringComparison.Ordinal)) return ("ns", raw[4..]);
+		if (raw.StartsWith("[cmd]", StringComparison.Ordinal)) return ("cmd", raw[5..]);
+		if (raw.StartsWith("[alias]", StringComparison.Ordinal)) return ("alias", raw[7..]);
+		return (null, raw);
+	}
+}
+@if (isTopLevel && !Model.IsGlobalAssemblyBuild && !Model.IsPrimaryNavEnabled && !Model.SubTree.Index.Hidden)
+{
+	var idx = Model.SubTree.Index;
+	<li class="flex group/li pr-8 mt-6">
+		<a href="@idx.Url" class="sidebar-link nav-link">@idx.NavigationTitle</a>
+	</li>
+}
 @foreach (var item in Model.SubTree.NavigationItems)
 {
 	if (item.Hidden)
@@ -19,13 +35,13 @@
 	}
 	if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: 0 } group)
 	{
+		var (groupBadge, groupLabel) = ParseNavTitle(group.NavigationTitle);
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
-			<a
-				href="@group.Url"
-				@Model.Htmx.GetNavHxAttributes(true)
-				class="sidebar-link group-[.current]/li:text-blue-elastic!"
-			>
-				@group.NavigationTitle
+			<a href="@group.Url" class="sidebar-link nav-link">
+				<span>@groupLabel</span>
+				@if (groupBadge == "ns") { <span class="nav-badge nav-badge-ns">ns</span> }
+				else if (groupBadge == "cmd") { <span class="nav-badge nav-badge-cmd">cmd</span> }
+				else if (groupBadge == "alias") { <span class="nav-badge nav-badge-alias">alias</span> }
 			</a>
 		</li>
 	}
@@ -33,27 +49,20 @@
 	{
 		var g = folder;
 		var allHidden = folder.NavigationItems.All(n => n.Hidden);
-		<li class="flex flex-wrap group-navigation @(isTopLevel ? "mt-6" : "mt-4") relative">
+		var (folderBadge, folderLabel) = ParseNavTitle(g.NavigationTitle);
+		<li class="nav-folder @(isTopLevel ? "mt-6" : "mt-4")">
 			<div class="peer grid grid-cols-[1fr_auto] w-full">
-				<a
-					href="@(g.Url)"
-					@Model.Htmx.GetNavHxAttributes(true)
-					class="sidebar-link pr-2 content-center @(isTopLevel ? "font-semibold" : "") group-[.current]/li:text-blue-elastic!">
-					@(g.NavigationTitle)
+				<a href="@(g.Url)" class="sidebar-link nav-folder-link@(isTopLevel ? " font-semibold" : "")">
+					<span>@folderLabel</span>
+					@if (folderBadge == "ns") { <span class="nav-badge nav-badge-ns">ns</span> }
+					else if (folderBadge == "cmd") { <span class="nav-badge nav-badge-cmd">cmd</span> }
+					else if (folderBadge == "alias") { <span class="nav-badge nav-badge-alias">alias</span> }
 				</a>
 				@if (!allHidden)
 				{
 					<label for="@folder.Id" class="group/label flex mr-2 items-start">
-						<div class="hover:bg-grey-20 rounded-sm p-1 cursor-pointer">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="1.5"
-								stroke="currentColor"
-								class="shrink-0 -rotate-90 group-has-checked/label:rotate-0 w-3.5">
-								<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
-							</svg>
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
 						</div>
 						<input
 							id="@folder.Id"
@@ -65,7 +74,7 @@
 			</div>
 			@if (g.NavigationItems.Count > 0)
 			{
-				<ul class="w-full hidden peer-has-checked:block ml-4 relative before:content-[''] before:absolute before:-left-[calc(var(--spacing)*4-1px)] before:top-0 before:bottom-0 before:w-px before:bg-grey-20 before:peer-has-checked:block peer-has-[.current]:before:bg-grey-40 has-[.current]:before:bg-grey-40">
+				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 					{
 						IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
@@ -81,14 +90,13 @@
 	}
 	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
-		var hasSameTopLevelGroup = true;
+		var (leafBadge, leafLabel) = ParseNavTitle(leaf.NavigationTitle);
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
-			<a
-				href="@leaf.Url"
-				@Model.Htmx.GetNavHxAttributes(hasSameTopLevelGroup)
-				class="sidebar-link grow group-[.current]/li:text-blue-elastic!"
-			>
-				@leaf.NavigationTitle
+			<a href="@leaf.Url" class="sidebar-link nav-link">
+				<span>@leafLabel</span>
+				@if (leafBadge == "ns") { <span class="nav-badge nav-badge-ns">ns</span> }
+				else if (leafBadge == "cmd") { <span class="nav-badge nav-badge-cmd">cmd</span> }
+				else if (leafBadge == "alias") { <span class="nav-badge nav-badge-alias">alias</span> }
 			</a>
 		</li>
 	}

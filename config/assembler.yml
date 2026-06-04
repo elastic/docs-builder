@@ -8,7 +8,7 @@ environments:
       enabled: true
       id: GTM-KNJMG2M
     optimizely:
-      enabled: true
+      enabled: false
       id: "18132920325"
     feature_flags:
       SEARCH_OR_ASK_AI: true
@@ -24,6 +24,8 @@ environments:
       cookies_win: x
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      WEBSITE_SEARCH: true
+    website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
   edge:
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
@@ -38,6 +40,8 @@ environments:
     path_prefix: docs
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      WEBSITE_SEARCH: true
+    website_search_url: http://localhost:4078/elastic-website-search.js
   preview:
     uri: https://docs-v3-preview.elastic.dev
     path_prefix: ${ASSEMBLER_PREVIEW_PATH_PREFIX}
@@ -46,10 +50,17 @@ environments:
       enabled: false
     feature_flags:
       SEARCH_OR_ASK_AI: true
+  air-gapped:
+    uri: http://localhost:8080
+    path_prefix: docs
+    content_source: current
+    allow_indexing: false
+    feature_flags:
+      AIR_GAPPED: true
 
 shared_configuration:
   stack: &stack
-    current:  9.3
+    current:  9.4
     next: main
     edge: main
 
@@ -92,7 +103,7 @@ references:
   apm-aws-lambda:
   apm-k8s-attacher:
   ecs:
-    current: 9.3 # releases do not always align with the Stack version
+    current: 9.4 # releases do not always align with the Stack version
     next: main
   ecs-dotnet:
   ecs-logging-go-logrus:
@@ -115,6 +126,7 @@ references:
   elastic-otel-node:
   elastic-otel-php:
   elastic-otel-python:
+  elastic-otel-rum-js:
   elastic-serverless-forwarder:
   fleet-server:
   integration-docs:
@@ -145,8 +157,41 @@ references:
   # @elastic/admin-docs and @elastic/experience-docs
   kibana:
 
+  # Private Kibana team repo (changelog link filtering; does not publish docs here)
+  kibana-team:
+    private: true
+    skip: true
+  obs-ai-team:
+    private: true
+    skip: true
+  obs-ai-assistant-team:
+    private: true
+    skip: true
+  observability-error-backlog:
+    private: true
+    skip: true
+  response-ops-team:
+    private: true
+    skip: true
+  roadmap:
+    private: false
+    skip: true
+  search-team:
+    private: true
+    skip: true
+  security-team:
+    private: true
+    skip: true
+  sdh-synthetics:
+    private: true
+    skip: true
+  streams-program:
+    private: true
+    skip: true
+
   # @elastic/developer-docs
   eland:
+  elasticsearch-dsl-js:
   elasticsearch-hadoop:
   elasticsearch-java:
   elasticsearch-js:

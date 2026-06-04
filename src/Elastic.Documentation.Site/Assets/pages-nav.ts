@@ -1,6 +1,35 @@
 import { throttle } from 'lodash'
 import { $, $$ } from 'select-dom'
 
+const NAV_STATE_KEY = 'nav-expanded'
+
+function isDevMode() {
+    return !!document.querySelector('diagnostics-panel')
+}
+
+function saveNavState(nav: HTMLElement) {
+    const expanded = $$('input[type="checkbox"]:checked', nav)
+        .map((el) => el.id)
+        .filter(Boolean)
+    sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify(expanded))
+}
+
+function restoreNavState(nav: HTMLElement) {
+    const raw = sessionStorage.getItem(NAV_STATE_KEY)
+    if (!raw) return
+    try {
+        const ids: string[] = JSON.parse(raw)
+        for (const id of ids) {
+            const input = $(`#${CSS.escape(id)}`, nav)
+            if (input instanceof HTMLInputElement) {
+                input.checked = true
+            }
+        }
+    } catch {
+        /* ignore corrupt storage */
+    }
+}
+
 function expandAllParents(navItem: HTMLElement) {
     let parent: HTMLLIElement | null | undefined = navItem?.closest('li')
     while (parent) {
@@ -93,6 +122,10 @@ export function initNav() {
         preventFocusLossOnLinkClick(dropdownActiveAnchor)
     }
 
+    if (isDevMode()) {
+        restoreNavState(pagesNav)
+    }
+
     // Remove current class from all nav items before marking new ones
     const currentNavItems = $$('.current', pagesNav)
     currentNavItems.forEach((el) => {
@@ -101,12 +134,27 @@ export function initNav() {
 
     // Normalize pathname by removing trailing slash to handle both URL variants
     const pathname = window.location.pathname.replace(/\/$/, '')
+
+    // When the page is a hidden nav item (e.g. an individual detection rule), the server
+    // emits docs:nav-active pointing to the nearest visible ancestor so we can highlight it.
+    const navActiveMeta = document.querySelector<HTMLMetaElement>(
+        'meta[name="docs:nav-active"]'
+    )
+    const activePathname = navActiveMeta?.content ?? pathname
+
     const navItems = $$(
-        'a[href="' + pathname + '"], a[href="' + pathname + '/"]',
+        'a[href="' + activePathname + '"], a[href="' + activePathname + '/"]',
         pagesNav
     )
     navItems.forEach((el) => {
         el.classList.add('current')
     })
     scrollCurrentNaviItemIntoView(pagesNav)
+
+    if (isDevMode()) {
+        saveNavState(pagesNav)
+        for (const cb of $$('input[type="checkbox"]', pagesNav)) {
+            cb.addEventListener('change', () => saveNavState(pagesNav))
+        }
+    }
 }

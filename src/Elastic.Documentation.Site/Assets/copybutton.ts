@@ -3,20 +3,6 @@
 // This is copied from legacy. It works, but we should rework this if we ever need to change it
 import { $$ } from 'select-dom'
 
-const DOCUMENTATION_OPTIONS = {
-    VERSION: '',
-    LANGUAGE: 'en',
-    COLLAPSE_INDEX: false,
-    BUILDER: 'html',
-    FILE_SUFFIX: '.html',
-    LINK_SUFFIX: '.html',
-    HAS_SOURCE: true,
-    SOURCELINK_SUFFIX: '.txt',
-    NAVIGATION_WITH_KEYS: false,
-    SHOW_SEARCH_SUMMARY: true,
-    ENABLE_SEARCH_SHORTCUTS: true,
-}
-
 const messages = {
     en: {
         copy: 'Copy',
@@ -68,12 +54,6 @@ if (
     messages[document.documentElement.lang] !== undefined
 ) {
     locale = document.documentElement.lang
-}
-
-let doc_url_root =
-    'URL_ROOT' in DOCUMENTATION_OPTIONS ? DOCUMENTATION_OPTIONS.URL_ROOT : ''
-if (doc_url_root == '#') {
-    doc_url_root = ''
 }
 
 /**
@@ -200,14 +180,13 @@ const addCopyButtonToCodeCells = (
         }
 
         const outputLines = []
-        let promptFound = false
         let gotLineCont = false
         let gotHereDoc = false
         const lineGotPrompt = []
         for (const line of textContent.split('\n')) {
             match = line.match(regexp)
             if (match || gotLineCont || gotHereDoc) {
-                promptFound = regexp.test(line)
+                const promptFound = regexp.test(line)
                 lineGotPrompt.push(promptFound)
                 if (removePrompts && promptFound) {
                     outputLines.push(match[2])

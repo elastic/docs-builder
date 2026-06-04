@@ -12,15 +12,41 @@ import {
     useGeneratedHtmlId,
     IconType,
     EuiThemeComputed,
-    EuiButton,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useState } from 'react'
 
+export const headerButtonCss = (euiTheme: EuiThemeComputed) => css`
+    background: linear-gradient(to bottom, #f5f7fa 0%, #ffffff 100%);
+    border: 1px solid ${euiTheme.colors.lightShade};
+    border-radius: ${euiTheme.border.radius.small};
+    color: ${euiTheme.colors.textInk};
+    font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        'Liberation Mono', 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 400;
+    padding: ${euiTheme.size.xs} ${euiTheme.size.m};
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: ${euiTheme.size.s};
+    text-decoration: none;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+    &:hover {
+        background: ${euiTheme.colors.primary};
+        border-color: ${euiTheme.colors.primary};
+        color: white;
+    }
+`
+
 interface DeploymentInfoProps {
     gitBranch: string
     gitCommit: string
-    githubRepository: string
+    githubRepository?: string
     githubRef?: string
 }
 
@@ -43,45 +69,35 @@ export const DeploymentInfo = ({
 
     const popoverButton = (
         <EuiHeaderSectionItem>
-            <EuiButton
-                size="s"
-                fill
-                color="primary"
-                // onClickAriaLabel="Show deployment info"
+            <button
+                type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
                 css={css`
+                    ${headerButtonCss(euiTheme)};
                     margin-inline: ${euiTheme.size.s};
-                    font-family: ${euiTheme.font.familyCode};
                 `}
             >
-                <div
+                <span
                     css={css`
-                        display: flex;
-                        gap: ${euiTheme.size.s};
+                        display: inline-flex;
+                        align-items: center;
+                        gap: ${euiTheme.size.xs};
                     `}
                 >
-                    <span
-                        css={css`
-                            display: inline-flex;
-                            align-items: center;
-                            gap: ${euiTheme.size.xs};
-                        `}
-                    >
-                        <EuiIcon type="branch" />
-                        {gitBranch}
-                    </span>
-                    <span
-                        css={css`
-                            display: inline-flex;
-                            align-items: center;
-                            gap: ${euiTheme.size.xs};
-                        `}
-                    >
-                        <EuiIcon type={commitSvg} />
-                        {gitCommit}
-                    </span>
-                </div>
-            </EuiButton>
+                    <EuiIcon type="branch" color="inherit" />
+                    {gitBranch}
+                </span>
+                <span
+                    css={css`
+                        display: inline-flex;
+                        align-items: center;
+                        gap: ${euiTheme.size.xs};
+                    `}
+                >
+                    <EuiIcon type={commitSvg} color="inherit" />
+                    {gitCommit}
+                </span>
+            </button>
         </EuiHeaderSectionItem>
     )
 
@@ -125,12 +141,14 @@ export const DeploymentInfo = ({
                     icon={commitSvg}
                     href={links.commit}
                 />
-                <DeploymentInfoRow
-                    label="Repository"
-                    value={githubRepository}
-                    icon={githubSvg}
-                    href={links.repository}
-                />
+                {githubRepository != null && (
+                    <DeploymentInfoRow
+                        label="Repository"
+                        value={githubRepository}
+                        icon={githubSvg}
+                        href={links.repository}
+                    />
+                )}
             </div>
         </EuiPopover>
     )
@@ -180,8 +198,10 @@ const DeploymentInfoRow = ({
             <EuiText
                 size="xs"
                 css={css`
-                    color: ${euiTheme.colors.ink};
-                    font-family: ${euiTheme.font.familyCode};
+                    color: ${euiTheme.colors.textInk};
+                    font-family:
+                        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                        'Liberation Mono', 'Courier New', monospace;
                 `}
             >
                 {value}
@@ -252,12 +272,21 @@ function getDeploymentSubtitle(githubRef?: string): string {
 const GITHUB_BASE = 'https://github.com'
 
 function getDeploymentLinks(
-    githubRepository: string,
+    githubRepository: string | undefined,
     gitBranch: string,
     gitCommit: string,
     githubRef?: string
-): { ref?: string; branch: string; commit: string; repository: string } {
-    const repo = githubRepository.startsWith('elastic/')
+): { ref?: string; branch?: string; commit?: string; repository?: string } {
+    if (!githubRepository) {
+        return {
+            ref: undefined,
+            branch: undefined,
+            commit: undefined,
+            repository: undefined,
+        }
+    }
+    // Backend passes full org/repo; fallback only fires for bare names (shouldn't occur)
+    const repo = githubRepository.includes('/')
         ? githubRepository
         : `elastic/${githubRepository}`
     const base = `${GITHUB_BASE}/${repo}`

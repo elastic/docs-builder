@@ -10,12 +10,15 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
+using Elastic.Markdown.Extensions.CliReference;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
@@ -83,8 +86,8 @@ public class DocumentationSet : INavigationTraversable
 		Name = Context.Git != GitCheckoutInformation.Unavailable
 			? Context.Git.RepositoryName
 			: Context.DocumentationCheckoutDirectory?.Name ?? $"unknown-{Context.DocumentationSourceDirectory.Name}";
-		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, ".doc.state"));
-		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Combine(OutputDirectory.FullName, "links.json"));
+		OutputStateFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, ".doc.state"));
+		LinkReferenceFile = OutputDirectory.FileSystem.FileInfo.New(Path.Join(OutputDirectory.FullName, "links.json"));
 
 		Files = fileFactory.Files;
 		var files = Files.Values.ToArray();
@@ -97,6 +100,20 @@ public class DocumentationSet : INavigationTraversable
 		NavigationIndexedByOrder = Navigation.BuildNavigationLookups(NavigationDocumentationFileLookup);
 
 		ValidateRedirectsExists();
+		ValidateRootIndexExists();
+	}
+
+	private void ValidateRootIndexExists()
+	{
+		if (Context.BuildType != BuildType.Isolated || Configuration.Registry == DocSetRegistry.Public)
+			return;
+
+		var indexFile = Context.ReadFileSystem.FileInfo.New(
+			Path.Join(SourceDirectory.FullName, "index.md"));
+
+		if (!indexFile.Exists)
+			Context.EmitError(Configuration.SourceFile,
+				"Non-public documentation sets require a root index.md file");
 	}
 
 	public DocumentationSetNavigation<MarkdownFile> Navigation { get; }
@@ -282,6 +299,30 @@ public class DocumentationSet : INavigationTraversable
 			}
 		}
 
+		// Auto-enable CLI reference extension when the TOC contains a cli: entry
+		if (HasCliReferenceRef(Context.ConfigurationYaml.TableOfContents))
+			list.Add(new CliReferenceDocsBuilderExtension(Context));
+
 		return list.AsReadOnly();
+	}
+
+	private static bool HasCliReferenceRef(IReadOnlyCollection<ITableOfContentsItem> items)
+	{
+		foreach (var item in items)
+		{
+			if (item is CliReferenceRef)
+				return true;
+
+			var children = item switch
+			{
+				FileRef f => f.Children,
+				FolderRef f => f.Children,
+				IsolatedTableOfContentsRef t => t.Children,
+				_ => null
+			};
+			if (children is { Count: > 0 } && HasCliReferenceRef(children))
+				return true;
+		}
+		return false;
 	}
 }

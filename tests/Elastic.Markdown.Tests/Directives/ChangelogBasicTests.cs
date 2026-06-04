@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Markdown.Myst.Directives.Changelog;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -32,7 +32,8 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Search
-			  pr: "123456"
+			  prs:
+			  - "123456"
 			  description: This is a great new feature.
 			- title: Fix important bug
 			  type: bug-fix
@@ -41,7 +42,8 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  areas:
 			  - Indexing
-			  pr: "123457"
+			  prs:
+			  - "123457"
 			"""));
 
 	[Fact]
@@ -92,7 +94,8 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			  pr: "111111"
+			  prs:
+			  - "111111"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
@@ -107,7 +110,8 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  pr: "222222"
+			  prs:
+			  - "222222"
 			"""));
 
 		FileSystem.AddFile("docs/changelog/bundles/9.10.0.yaml", new MockFileData(
@@ -122,7 +126,8 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			  products:
 			  - product: elasticsearch
 			    target: 9.10.0
-			  pr: "333333"
+			  prs:
+			  - "333333"
 			"""));
 	}
 
@@ -169,7 +174,8 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: my-product
 		    target: 1.0.0
-		  pr: "1"
+		  prs:
+		  - "1"
 		"""));
 
 	[Fact]
@@ -247,7 +253,8 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 		  description: The API has changed significantly.
 		  impact: Users must update their code.
 		  action: Follow the migration guide.
-		  pr: "222222"
+		  prs:
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -294,7 +301,8 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 		  description: The old API is deprecated.
 		  impact: The API will be removed in a future version.
 		  action: Use the new API instead.
-		  pr: "333333"
+		  prs:
+		  - "333333"
 		"""));
 
 	[Fact]
@@ -322,9 +330,10 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 		"""));
 
 	[Fact]
-	public void HandlesEmptyBundle()
+	public void OmitsEmptyVersionBlock()
 	{
-		Html.Should().Contain("No new features, enhancements, or fixes");
+		Html.Should().NotContain("No new features, enhancements, or fixes");
+		Html.Should().NotContain("9.3.0");
 	}
 }
 
@@ -369,7 +378,8 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "444444"
+		  prs:
+		  - "444444"
 		"""));
 
 	[Fact]
@@ -403,13 +413,15 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		- title: Security fix
 		  type: security
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "222222"
+		  prs:
+		  - "222222"
 		- title: Breaking API change
 		  type: breaking-change
 		  products:
@@ -418,7 +430,8 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  description: API changed.
 		  impact: Users must update.
 		  action: Follow guide.
-		  pr: "333333"
+		  prs:
+		  - "333333"
 		- title: Known issue
 		  type: known-issue
 		  products:
@@ -427,7 +440,8 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  description: Issue exists.
 		  impact: Some impact.
 		  action: Workaround available.
-		  pr: "444444"
+		  prs:
+		  - "444444"
 		- title: Deprecated feature
 		  type: deprecation
 		  products:
@@ -436,13 +450,15 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		  description: Feature deprecated.
 		  impact: Will be removed.
 		  action: Use new feature.
-		  pr: "555555"
+		  prs:
+		  - "555555"
 		- title: Bug fix
 		  type: bug-fix
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "666666"
+		  prs:
+		  - "666666"
 		"""));
 
 	[Fact]
@@ -506,13 +522,15 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "111111"
+		  prs:
+		  - "111111"
 		- title: Bug fix
 		  type: bug-fix
 		  products:
 		  - product: elasticsearch
 		    target: 9.3.0
-		  pr: "222222"
+		  prs:
+		  - "222222"
 		"""));
 
 	[Fact]
@@ -552,4 +570,154 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		}
 		return count;
 	}
+}
+
+/// <summary>
+/// Verifies that when a changelog entry has both a title and a description,
+/// the rendered output does not concatenate them without a separator.
+/// Regression test for: "allowlist.This PR introduces..." (no space between title and description).
+/// </summary>
+public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogTitleDescriptionSpacingTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:description-visibility: keep-descriptions
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Added missing banner-related Kibana settings to the settings allowlist
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: This PR introduces the following settings.
+		"""));
+
+	[Fact]
+	public void RendersTitleText() =>
+		Html.Should().Contain("Added missing banner-related Kibana settings to the settings allowlist");
+
+	[Fact]
+	public void RendersDescriptionText() =>
+		Html.Should().Contain("This PR introduces the following settings");
+
+	[Fact]
+	public void DoesNotConcatenateTitleAndDescriptionWithoutSeparator() =>
+		Html.Should().NotContain("allowlist.This PR introduces");
+}
+
+/// <summary>
+/// Verifies that when a bundle has a release-date field, it is rendered in the output.
+/// </summary>
+public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogReleaseDateTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: apm-agent-dotnet
+			  target: 1.34.0
+			release-date: "2026-04-09"
+			entries:
+			- title: Add tracing improvements
+			  type: feature
+			  products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			  prs:
+			  - "500"
+			"""));
+
+	[Fact]
+	public void RendersReleaseDate() =>
+		Html.Should().Contain("Released: April 9, 2026");
+
+	[Fact]
+	public void RendersEntries() =>
+		Html.Should().Contain("Add tracing improvements");
+}
+
+/// <summary>
+/// Verifies that when a bundle has no release-date field, no "Released:" text appears.
+/// </summary>
+public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogNoReleaseDateTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: New feature
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "100"
+		"""));
+
+	[Fact]
+	public void DoesNotRenderReleaseDate() =>
+		Html.Should().NotContain("Released:");
+}
+
+/// <summary>
+/// Verifies that both release-date and description render together.
+/// </summary>
+public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogReleaseDateWithDescriptionTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: apm-agent-dotnet
+			  target: 1.34.0
+			release-date: "2026-04-09"
+			description: |
+			  This release includes tracing improvements and bug fixes.
+			entries:
+			- title: Add tracing improvements
+			  type: feature
+			  products:
+			  - product: apm-agent-dotnet
+			    target: 1.34.0
+			  prs:
+			  - "500"
+			"""));
+
+	[Fact]
+	public void RendersReleaseDate() =>
+		Html.Should().Contain("Released: April 9, 2026");
+
+	[Fact]
+	public void RendersDescription() =>
+		Html.Should().Contain("This release includes tracing improvements and bug fixes.");
+
+	[Fact]
+	public void RendersEntries() =>
+		Html.Should().Contain("Add tracing improvements");
 }

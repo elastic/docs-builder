@@ -4,14 +4,17 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <IsAotCompatible>true</IsAotCompatible>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="AWSSDK.S3" />
+      <PackageReference Include="System.IO.Abstractions" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
+      <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
     </ItemGroup>
 
 </Project>

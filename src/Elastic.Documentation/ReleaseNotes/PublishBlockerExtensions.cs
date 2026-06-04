@@ -29,7 +29,28 @@ public static class PublishBlockerExtensions
 		blocker.Types.Any(t => t.Equals(entryTypeName, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>
-	/// Checks if entry areas match the blocker's area list using the configured match mode.
+	/// Gets the preferred area for subsection grouping when publish rules with areas are active.
+	/// With include_areas: returns the first entry area that is in the include list.
+	/// With exclude_areas: returns the first entry area that is not in the exclude list.
+	/// When no relevant rules exist, returns the first area.
+	/// </summary>
+	public static string GetPreferredArea(this PublishBlocker? publishBlocker, ChangelogEntry entry)
+	{
+		if (entry.Areas is not { Count: > 0 })
+			return string.Empty;
+		if (publishBlocker?.Areas is not { Count: > 0 })
+			return entry.Areas[0];
+		return publishBlocker.AreasMode switch
+		{
+			FieldMode.Include => entry.Areas.FirstOrDefault(a => IsAreaListed(publishBlocker, a)) ?? entry.Areas[0],
+			FieldMode.Exclude => entry.Areas.FirstOrDefault(a => !IsAreaListed(publishBlocker, a)) ?? entry.Areas[0],
+			_ => entry.Areas[0]
+		};
+	}
+
+	/// <summary>
+	/// Checks if entry areas match the blocker's area list using the configured match mode
+	/// (<see cref="MatchMode.Any"/>, <see cref="MatchMode.All"/>, or <see cref="MatchMode.Conjunction"/>).
 	/// </summary>
 	public static bool MatchesArea(this PublishBlocker blocker, IReadOnlyList<string>? entryAreas)
 	{
@@ -40,6 +61,8 @@ public static class PublishBlockerExtensions
 		{
 			MatchMode.All => entryAreas.All(area =>
 				blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase))),
+			MatchMode.Conjunction => blocker.Areas.All(listed =>
+				entryAreas.Any(e => e.Equals(listed, StringComparison.OrdinalIgnoreCase))),
 			_ => entryAreas.Any(area =>
 				blocker.Areas.Any(listed => listed.Equals(area, StringComparison.OrdinalIgnoreCase)))
 		};
@@ -82,4 +105,7 @@ public static class PublishBlockerExtensions
 			_ => false
 		};
 	}
+
+	private static bool IsAreaListed(PublishBlocker blocker, string area) =>
+		blocker.Areas?.Any(l => l.Equals(area, StringComparison.OrdinalIgnoreCase)) ?? false;
 }

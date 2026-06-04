@@ -2,8 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
-using FluentAssertions;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -12,7 +13,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
@@ -36,9 +37,10 @@ public class PhysicalDocsetTests
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
 		// Assert API configuration
-		docSet.Api.Should().HaveCount(2);
-		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.Should().Be("elasticsearch-openapi.json");
-		docSet.Api.Should().ContainKey("kibana").WhoseValue.Should().Be("kibana-openapi.json");
+		docSet.Api.Should().HaveCount(3);
+		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.GetSpecPaths().Should().Contain("elasticsearch-openapi.json");
+		docSet.Api.Should().ContainKey("kibana").WhoseValue.GetSpecPaths().Should().Contain("kibana-openapi.json");
+		docSet.Api.Should().ContainKey("dashboard").WhoseValue.GetSpecPaths().Should().Contain("dashboard-openapi.json");
 
 		// Assert TOC structure
 		docSet.TableOfContents.Should().NotBeEmpty();
@@ -73,7 +75,7 @@ public class PhysicalDocsetTests
 	[Fact]
 	public void PhysicalDocsetContainsExpectedFolders()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
@@ -85,15 +87,18 @@ public class PhysicalDocsetTests
 		folderNames.Should().Contain("building-blocks");
 		folderNames.Should().Contain("configure");
 		folderNames.Should().Contain("syntax");
-		folderNames.Should().Contain("cli");
 		folderNames.Should().Contain("migration");
 		folderNames.Should().Contain("testing");
+
+		// cli is a CliReferenceRef (schema-driven), not a FolderRef
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
+		cliRef.Should().NotBeNull();
 	}
 
 	[Fact]
 	public void PhysicalDocsetHasValidNestedStructure()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
@@ -107,18 +112,15 @@ public class PhysicalDocsetTests
 		nestedFolders.Should().Contain("site");
 		nestedFolders.Should().Contain("content-set");
 
-		// Test the cli folder has nested folders
-		var cliFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "cli");
-		var cliNestedFolders = cliFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
-		cliNestedFolders.Should().Contain("docset");
-		cliNestedFolders.Should().Contain("assembler");
-		cliNestedFolders.Should().Contain("links");
+		// cli is a CliReferenceRef (schema-driven), not a FolderRef — verify it has children
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().First();
+		cliRef.Children.Should().NotBeEmpty();
 	}
 
 	[Fact]
 	public void PhysicalDocsetContainsFileReferencesWithChildren()
 	{
-		var docsetPath = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
+		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
 		// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
 		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);

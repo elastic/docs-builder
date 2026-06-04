@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Links;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -35,7 +35,7 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 	public void Create()
 	{
 		var root = ReadFileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var git = GitCheckoutInformation.Create(root, ReadFileSystem, LoggerFactory.CreateLogger(nameof(GitCheckoutInformation)));
+		var git = GitCheckoutInformationFactory.Create(root, ReadFileSystem, LoggerFactory.CreateLogger(nameof(GitCheckoutInformation)));
 
 		git.Should().NotBeNull();
 		git.Branch.Should().NotBeNullOrWhiteSpace();

@@ -12,18 +12,34 @@ using Elastic.Markdown.Extensions.DetectionRules;
 
 namespace Elastic.Documentation.Assembler.Building;
 
-// TODO rewrite as real exporter
-public class SitemapBuilder(
-	IReadOnlyCollection<INavigationItem> navigationItems,
-	IFileSystem fileSystem,
-	IDirectoryInfo pathPrefixedOutputFolder
-)
+public record SitemapResult(int EntryCount, long FileSizeBytes);
+
+public static class SitemapBuilder
 {
+	public const int MaxEntries = 50_000;
+	public const int WarningEntryThreshold = 40_000;
+	public const long MaxFileSizeBytes = 50L * 1024 * 1024;
+	public const long WarningFileSizeBytes = 40L * 1024 * 1024;
+
 	private static readonly Uri BaseUri = new("https://www.elastic.co");
 
-	public void Generate()
+	/// <summary>Generates sitemap.xml with per-URL last_updated dates.</summary>
+	public static SitemapResult Generate(
+		IReadOnlyDictionary<string, DateTimeOffset> entries,
+		IFileSystem fileSystem,
+		IDirectoryInfo outputFolder
+	)
 	{
-		var flattenedNavigationItems = GetNavigationItems(navigationItems);
+		// TODO: Remove this exclusion when API docs are ready for sitemap inclusion
+		var filtered = entries
+			.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal))
+			.ToList();
+
+		if (filtered.Count > MaxEntries)
+			throw new InvalidOperationException(
+				$"Sitemap contains {filtered.Count:N0} URLs, which exceeds the sitemap protocol limit of {MaxEntries:N0}. " +
+				"Consider implementing sitemap index files to split entries across multiple sitemaps."
+			);
 
 		var doc = new XDocument
 		{
@@ -32,58 +48,54 @@ public class SitemapBuilder(
 
 		XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
-		var currentDate = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
 		var root = new XElement(
 			ns + "urlset",
 			new XAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"),
-			flattenedNavigationItems
-				.Select(n => n switch
-				{
-					INodeNavigationItem<INavigationModel, INavigationItem> group => (group.Url, NavigationItem: group),
-					ILeafNavigationItem<INavigationModel> file => (file.Url, NavigationItem: file as INavigationItem),
-					_ => throw new Exception($"{nameof(SitemapBuilder)}.{nameof(Generate)}: Unhandled navigation item type: {n.GetType()}")
-				})
-				.Select(n => n.Url)
-				.Distinct()
-				.Select(u => new Uri(BaseUri, u))
-				.Select(u => new XElement(ns + "url", [
-					new XElement(ns + "loc", u),
-					new XElement(ns + "lastmod", currentDate)
+			filtered
+				.OrderBy(e => e.Key, StringComparer.Ordinal)
+				.Select(e => new XElement(ns + "url", [
+					new XElement(ns + "loc", new Uri(BaseUri, e.Key)),
+					new XElement(ns + "lastmod", e.Value.ToString("o", CultureInfo.InvariantCulture))
 				]))
 		);
 
 		doc.Add(root);
 
-		using var fileStream = fileSystem.File.Create(fileSystem.Path.Combine(pathPrefixedOutputFolder.FullName, "sitemap.xml"));
-		doc.Save(fileStream);
-	}
+		using var buffer = new MemoryStream();
+		doc.Save(buffer);
 
-	private static IReadOnlyCollection<INavigationItem> GetNavigationItems(IReadOnlyCollection<INavigationItem> items)
-	{
-		var result = new List<INavigationItem>();
-		foreach (var item in items)
+		var fileSize = buffer.Length;
+		if (fileSize > MaxFileSizeBytes)
+			throw new InvalidOperationException(
+				$"Sitemap file size is {fileSize / (1024.0 * 1024.0):F1} MB, which exceeds the sitemap protocol limit of 50 MB. " +
+				"Consider implementing sitemap index files to split entries across multiple sitemaps."
+			);
+
+		if (!outputFolder.Exists)
+			_ = fileSystem.Directory.CreateDirectory(outputFolder.FullName);
+
+		var sitemapPath = fileSystem.Path.Join(outputFolder.FullName, "sitemap.xml");
+		using var fileStream = fileSystem.File.Create(sitemapPath);
+		buffer.Position = 0;
+		buffer.CopyTo(fileStream);
+
+		return new SitemapResult(filtered.Count, fileSize);
+	}
+}
+
+/// <summary>Extracts URLs from navigation items for sitemap generation.</summary>
+public static class SitemapNavigationHelper
+{
+	public static IEnumerable<INavigationItem> Flatten(INavigationItem item) =>
+		item switch
 		{
-			switch (item)
-			{
-				case ILeafNavigationItem<CrossLinkModel>:
-				case ILeafNavigationItem<DetectionRuleFile>:
-				case ILeafNavigationItem<INavigationModel> { Hidden: true }:
-					continue;
-				case ILeafNavigationItem<INavigationModel> file:
-					result.Add(file);
-					break;
-				case INodeNavigationItem<INavigationModel, INavigationItem> group:
-					if (item.Hidden)
-						continue;
-
-					result.AddRange(GetNavigationItems(group.NavigationItems));
-					result.Add(group);
-					break;
-				default:
-					throw new Exception($"{nameof(SitemapBuilder)}.{nameof(GetNavigationItems)}: Unhandled navigation item type: {item.GetType()}");
-			}
-		}
-
-		return result;
-	}
+			ILeafNavigationItem<CrossLinkModel> => [],
+			ILeafNavigationItem<DetectionRuleFile> => [],
+			ILeafNavigationItem<INavigationModel> { Hidden: true } => [],
+			ILeafNavigationItem<INavigationModel> file => [file],
+			INodeNavigationItem<INavigationModel, INavigationItem> { Hidden: true } => [],
+			INodeNavigationItem<INavigationModel, INavigationItem> group =>
+				group.NavigationItems.SelectMany(Flatten).Append(group),
+			_ => []
+		};
 }

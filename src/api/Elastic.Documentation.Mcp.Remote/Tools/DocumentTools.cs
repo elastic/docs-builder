@@ -3,9 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text.Json;
+using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Responses;
+using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
@@ -20,9 +23,9 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Gets a document by its URL.
 	/// </summary>
-	[McpServerTool, Description(
-		"Retrieves a specific Elastic documentation page by its URL. " +
-		"Use when the user provides an elastic.co/docs URL, references a known page, " +
+	[McpServerTool, McpToolName("get_{scope}document_by_url"), Description(
+		"Retrieves a specific {docs} page by its URL. " +
+		"Use when the user provides a documentation URL, references a known page, " +
 		"or you need the full content and metadata of a specific doc. " +
 		"Returns title, AI summaries, headings, navigation context, and optionally the full body.")]
 	public async Task<string> GetDocumentByUrl(
@@ -30,12 +33,24 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 		[Description("Include full body content (default: false, set true for detailed analysis)")] bool includeBody = false,
 		CancellationToken cancellationToken = default)
 	{
+		var toolName = McpToolTelemetry.ResolveToolName("get_{scope}document_by_url");
+		using var activity = McpToolTelemetry.StartActivity(toolName);
+		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
+		{
+			["url"] = url,
+			["includeBody"] = includeBody
+		});
+		McpToolTelemetry.LogStart(logger, toolName, payload);
+		var duration = Stopwatch.StartNew();
+		var outcome = "failure";
+
 		try
 		{
 			var result = await documentGateway.GetByUrlAsync(url, cancellationToken);
 
 			if (result == null)
 			{
+				McpToolTelemetry.MarkFailure(activity, "document_not_found", "Document not found for the requested URL");
 				return JsonSerializer.Serialize(
 					new ErrorResponse($"Document not found for URL: {url}"),
 					McpJsonContext.Default.ErrorResponse);
@@ -73,36 +88,57 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				BodyLength = result.Body?.Length ?? 0
 			};
 
+			McpToolTelemetry.MarkSuccess(activity);
+			outcome = "success";
 			return JsonSerializer.Serialize(response, McpJsonContext.Default.DocumentResponse);
 		}
 		catch (OperationCanceledException)
 		{
+			McpToolTelemetry.MarkCancelled(activity);
+			outcome = "cancelled";
 			throw;
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			McpToolTelemetry.MarkFailure(activity, ex);
 			logger.LogError(ex, "GetDocumentByUrl failed for URL '{Url}'", url);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+		}
+		finally
+		{
+			duration.Stop();
+			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
 		}
 	}
 
 	/// <summary>
 	/// Analyzes the structure of a document.
 	/// </summary>
-	[McpServerTool, Description(
-		"Analyzes the structure of an Elastic documentation page. " +
+	[McpServerTool, McpToolName("analyze_{scope}document_structure"), Description(
+		"Analyzes the structure of a {docs} page. " +
 		"Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. " +
 		"Returns heading count, link count, parent pages, and whether AI summaries are present.")]
 	public async Task<string> AnalyzeDocumentStructure(
 		[Description("The URL of the document to analyze. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
 		CancellationToken cancellationToken = default)
 	{
+		var toolName = McpToolTelemetry.ResolveToolName("analyze_{scope}document_structure");
+		using var activity = McpToolTelemetry.StartActivity(toolName);
+		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
+		{
+			["url"] = url
+		});
+		McpToolTelemetry.LogStart(logger, toolName, payload);
+		var duration = Stopwatch.StartNew();
+		var outcome = "failure";
+
 		try
 		{
 			var result = await documentGateway.GetStructureAsync(url, cancellationToken);
 
 			if (result == null)
 			{
+				McpToolTelemetry.MarkFailure(activity, "document_not_found", "Document not found for the requested URL");
 				return JsonSerializer.Serialize(
 					new ErrorResponse($"Document not found for URL: {url}"),
 					McpJsonContext.Default.ErrorResponse);
@@ -130,16 +166,26 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				}
 			};
 
+			McpToolTelemetry.MarkSuccess(activity);
+			outcome = "success";
 			return JsonSerializer.Serialize(response, McpJsonContext.Default.DocumentStructureResponse);
 		}
 		catch (OperationCanceledException)
 		{
+			McpToolTelemetry.MarkCancelled(activity);
+			outcome = "cancelled";
 			throw;
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
+			McpToolTelemetry.MarkFailure(activity, ex);
 			logger.LogError(ex, "AnalyzeDocumentStructure failed for URL '{Url}'", url);
 			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+		}
+		finally
+		{
+			duration.Stop();
+			McpToolTelemetry.LogCompletion(logger, toolName, duration.ElapsedMilliseconds, outcome);
 		}
 	}
 }

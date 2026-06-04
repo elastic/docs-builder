@@ -3,10 +3,8 @@ name: Release
 on:
   workflow_dispatch: 
     
-permissions:
-  contents: read
-  packages: write
-    
+permissions: {}
+
 concurrency:
   group: release-drafter
 
@@ -22,20 +20,20 @@ jobs:
     steps:
       - name: Verify branch
         run: |
-          if [[ "${{ github.ref }}" != refs/heads/main ]]; then
+          if [[ "${GITHUB_REF}" != refs/heads/main ]]; then
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@6db134d15f3909ccc9eefd369f02bd1e9cffdf97 # v6.2.0
+      - uses: release-drafter/release-drafter@693d20e7c1ce1a81d3a41962f85914253b518449 # v7.3.1
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           commitish: ${{ github.sha }}
       - name: Create tag
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
-          script: |
+          script: | # zizmor: ignore[template-injection] tag_name from release-drafter on main
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -47,6 +45,9 @@ jobs:
     needs: 
       - release-drafter
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
@@ -55,12 +56,13 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
         
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -69,30 +71,30 @@ jobs:
       - name: Publish Containers
         run: ./build.sh publishcontainers
         
-  build-lambda:
+  build-link-index-lambda:
+    permissions: 
+      contents: read
     needs: 
       - release-drafter
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
-      
-  deploy-api-lambda-staging:
-    needs: 
-      - release-drafter
-    uses: ./.github/workflows/deploy-api-lambda.yml
+
+  build-changelog-scrubber-lambda:
     permissions:
-      id-token: write
       contents: read
+    needs:
+      - release-drafter
+    uses: ./.github/workflows/build-changelog-scrubber-lambda.yml
     with:
-      environment: staging
-      ref: refs/tags/${{ needs.release-drafter.outputs.tag_name }}
+      ref: ${{ needs.release-drafter.outputs.tag_name }}
 
   deploy-link-index-updater-lambda-prod:
     environment: 
       name: link-index-updater-prod
     runs-on: ubuntu-latest
     needs:
-      - build-lambda
+      - build-link-index-lambda
       - release-drafter
     permissions:
       contents: write
@@ -102,15 +104,15 @@ jobs:
     steps:
 
       - name: Download bootstrap binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with: 
-          name: link-index-updater-lambda-binary # Defined in build-link-index-updater-lambda.yml
-          
+          name: link-index-updater-lambda-binary
+
       - name: Create zip
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -124,11 +126,53 @@ jobs:
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload --repo ${{ github.repository }} ${{ needs.release-drafter.outputs.tag_name }} "${ZIP_FILE}"
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+          REPO: ${{ github.repository }}
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+
+  deploy-changelog-scrubber-lambda-prod:
+    environment:
+      name: changelog-scrubber-prod
+    runs-on: ubuntu-latest
+    needs:
+      - build-changelog-scrubber-lambda
+      - release-drafter
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      ZIP_FILE: changelog-scrubber-lambda.zip
+    steps:
+
+      - name: Download bootstrap binary
+        uses: actions/download-artifact@v8
+        with:
+          name: changelog-scrubber-lambda-binary
+
+      - name: Create zip
+        run: |
+          zip -j "${ZIP_FILE}" ./bootstrap
+
+      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+        with:
+          role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-changelog-scrubber-deployer
+          aws-region: us-east-1
+
+      - name: Upload Lambda function
+        run: |
+          aws lambda update-function-code \
+            --function-name elastic-docs-v3-changelog-scrubber \
+            --zip-file "fileb://${ZIP_FILE}"
+
+      - name: Attach Distribution to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+          REPO: ${{ github.repository }}
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
 
   release:
     needs: 
-      - containers
       - release-drafter
     strategy:
       fail-fast: false
@@ -147,6 +191,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
       - name: 'Windows only, set TEMP to the same drive'
         if: ${{ matrix.os == 'windows-latest' }}
         #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
@@ -163,7 +208,7 @@ jobs:
         shell: bash
         
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             .artifacts/publish/docs-builder/release/*.zip
@@ -171,16 +216,18 @@ jobs:
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
         run: |
-          gh release upload ${{ needs.release-drafter.outputs.tag_name }} .artifacts/publish/docs-builder/release/*.zip
+          gh release upload "$TAG_NAME" .artifacts/publish/docs-builder/release/*.zip
         shell: bash
 
   publish-release:
     needs:
       - release
+      - containers
       - release-drafter
-      - deploy-api-lambda-staging
       - deploy-link-index-updater-lambda-prod
+      - deploy-changelog-scrubber-lambda-prod
     runs-on: ubuntu-latest
     permissions: 
       contents: write
@@ -189,5 +236,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+          REPO: ${{ github.repository }}
         run: |
-          gh release edit ${{ needs.release-drafter.outputs.tag_name }} --draft=false --latest --repo ${{ github.repository }}
+          gh release edit "$TAG_NAME" --draft=false --latest --repo "$REPO"

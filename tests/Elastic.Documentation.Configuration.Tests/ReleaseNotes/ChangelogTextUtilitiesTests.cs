@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Documentation.ReleaseNotes;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 
@@ -52,10 +52,30 @@ public class ChangelogTextUtilitiesTests
 	[InlineData("[Test] Title", "Title")]
 	[InlineData("No bracket prefix", "No bracket prefix")]
 	[InlineData("[Unclosed bracket", "[Unclosed bracket")]
+	[InlineData("[Cases] - Enable cases numerical id service", "Enable cases numerical id service")]
+	[InlineData("[Team] - Leading", "Leading")]
+	[InlineData("- Leading dash without brackets", "- Leading dash without brackets")]
+	[InlineData("[Team]-NoSpace", "-NoSpace")]
 	public void StripSquareBracketPrefix_RemovesPrefix(string input, string expected)
 	{
 		var result = ChangelogTextUtilities.StripSquareBracketPrefix(input);
 		result.Should().Be(expected);
+	}
+
+	[Theory]
+	[InlineData(null, false)]
+	[InlineData("", false)]
+	[InlineData("  ", false)]
+	[InlineData("Plain title", false)]
+	[InlineData("- Leading dash", true)]
+	[InlineData("  - Leading dash", true)]
+	[InlineData("* Star", true)]
+	[InlineData("+ Plus", true)]
+	[InlineData("\u2013 En dash", true)]
+	[InlineData("\u2014 Em dash", true)]
+	public void TitleNeedsDefensiveYamlQuoting_DetectsBulletLikeScalars(string? input, bool expected)
+	{
+		ChangelogTextUtilities.TitleNeedsDefensiveYamlQuoting(input).Should().Be(expected);
 	}
 
 	[Theory]
@@ -72,6 +92,24 @@ public class ChangelogTextUtilitiesTests
 	public void ExtractPrNumber_WithDefaultOwnerRepo_ExtractsNumber()
 	{
 		var result = ChangelogTextUtilities.ExtractPrNumber("123", "elastic", "elasticsearch");
+		result.Should().Be(123);
+	}
+
+	[Theory]
+	[InlineData("https://github.com/elastic/elasticsearch/issues/123", 123)]
+	[InlineData("https://github.com/owner/repo/issues/456", 456)]
+	[InlineData("elastic/elasticsearch#789", 789)]
+	[InlineData("123", null)]
+	public void ExtractIssueNumber_ExtractsNumber(string input, int? expected)
+	{
+		var result = ChangelogTextUtilities.ExtractIssueNumber(input);
+		result.Should().Be(expected);
+	}
+
+	[Fact]
+	public void ExtractIssueNumber_WithDefaultOwnerRepo_ExtractsNumber()
+	{
+		var result = ChangelogTextUtilities.ExtractIssueNumber("123", "elastic", "elasticsearch");
 		result.Should().Be(123);
 	}
 
@@ -117,5 +155,89 @@ public class ChangelogTextUtilitiesTests
 	{
 		var result = ChangelogTextUtilities.GenerateSlug(input);
 		result.Should().Be(expected);
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithOnlyPrivateLinks_ReturnsFalse()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["# PRIVATE: https://github.com/elastic/cloud/pull/123"],
+			Issues = ["# PRIVATE: https://github.com/elastic/cloud/issues/456"]
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithMixedLinks_ReturnsTrue()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["# PRIVATE: https://github.com/elastic/cloud/pull/123", "456"],
+			Issues = ["# PRIVATE: https://github.com/elastic/cloud/issues/789"]
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithPublicLinks_ReturnsTrue()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["123"],
+			Issues = ["456"]
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeTrue();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithNoLinks_ReturnsFalse()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = null,
+			Issues = null
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithEmptyArrays_ReturnsFalse()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = [],
+			Issues = []
+		};
+
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", false);
+
+		result.Should().BeFalse();
+	}
+
+	[Fact]
+	public void HasVisibleLinks_WithHidePrivateLinks_ChecksCommentedFormat()
+	{
+		var entry = new ChangelogEntry
+		{
+			Prs = ["123"] // This should format as "% [#123](url)" when hidePrivateLinks=true
+		};
+
+		// When hidePrivateLinks is true, links are commented out but still "visible" (non-empty)
+		var result = ChangelogTextUtilities.HasVisibleLinks(entry, "elasticsearch", true);
+
+		result.Should().BeTrue();
 	}
 }

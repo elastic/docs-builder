@@ -1,3 +1,4 @@
+import { config } from '../../config'
 import { useQuery } from '@tanstack/react-query'
 
 // Demo mode: Read fail parameter once at module load
@@ -20,13 +21,18 @@ export const useSearchAvailability = (): AvailabilityResult => {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['search-availability', FAIL_MODE],
         queryFn: async () => {
+            // Air-gapped: no API available
+            if (config.airGapped) {
+                return { available: false }
+            }
+
             // Demo mode: fail=unavailable simulates service unavailability
             if (FAIL_MODE === 'unavailable') {
                 return { available: false }
             }
 
             try {
-                const response = await fetch('/docs/_api/v1/')
+                const response = await fetch(`${config.apiBasePath}/v1/`)
 
                 if (response.status === 403 || response.status >= 500) {
                     return { available: false }

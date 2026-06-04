@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links.CrossLinks;
@@ -13,6 +14,7 @@ using Markdig;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests;
 
@@ -63,6 +65,9 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	/// <inheritdoc />
 	public IUriEnvironmentResolver UriResolver { get; } = new IsolatedBuildEnvironmentUriResolver();
 
+	/// <inheritdoc />
+	public bool IsDeclaredCrossLinkScheme(string scheme) => true;
+
 	private TestCrossLinkResolver() { }
 
 }
@@ -78,8 +83,8 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		TestDiagnosticsCollector? collector = null
 	)
 	{
-		ReadFileSystem = fileSystem;
-		WriteFileSystem = fileSystem;
+		ReadFileSystem = FileSystemFactory.ScopeSourceDirectory(fileSystem, sourceDirectory.FullName);
+		WriteFileSystem = FileSystemFactory.ScopeSourceDirectoryForWrite(fileSystem, outputDirectory.FullName);
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;
 		ConfigurationPath = configPath;
@@ -97,8 +102,8 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	}
 
 	public IDiagnosticsCollector Collector { get; }
-	public IFileSystem ReadFileSystem { get; }
-	public IFileSystem WriteFileSystem { get; }
+	public ScopedFileSystem ReadFileSystem { get; }
+	public ScopedFileSystem WriteFileSystem { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public GitCheckoutInformation Git { get; }
@@ -110,10 +115,16 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public IReadOnlyCollection<Diagnostic> Diagnostics => ((TestDiagnosticsCollector)Collector).Diagnostics;
 }
 
-public class TestDocumentationFile(string navigationTitle) : IDocumentationFile
+public class TestDocumentationFile(string title, string? navigationTitle = null, string? description = null) : IDocumentationFile
 {
 	/// <inheritdoc />
-	public string NavigationTitle { get; } = navigationTitle;
+	public string Title { get; } = title;
+
+	/// <inheritdoc />
+	public string? Description { get; } = description;
+
+	/// <inheritdoc />
+	public string NavigationTitle { get; } = navigationTitle ?? title;
 }
 
 public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>
@@ -129,6 +140,33 @@ public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocume
 		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
 			? fileName[..^3]
 			: fileName;
+		return new TestDocumentationFile(title);
+	}
+}
+
+/// <summary>
+/// Factory for Codex tests that parses markdown to extract the h1 as the navigation title.
+/// Used when testing that index.md h1 is used as the docset title.
+/// </summary>
+public class CodexTestDocumentationFileFactory : IDocumentationFileFactory<TestDocumentationFile>
+{
+	public static CodexTestDocumentationFileFactory Instance { get; } = new();
+
+	public TestDocumentationFile TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
+	{
+		var fileName = path.Name;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			? fileName[..^3]
+			: fileName;
+		if (path.Exists)
+		{
+			var text = readFileSystem.File.ReadAllText(path.FullName);
+			var md = MarkdownParser.Parse(text);
+			var header = md.OfType<HeadingBlock>().FirstOrDefault();
+			var inline = header?.Inline?.OfType<LiteralInline>().FirstOrDefault()?.Content.Text;
+			if (inline != null)
+				title = inline.Trim(['#', ' ']);
+		}
 		return new TestDocumentationFile(title);
 	}
 }

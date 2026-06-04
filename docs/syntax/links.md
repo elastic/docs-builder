@@ -95,6 +95,13 @@ The syntax follows the format `<scheme>://<path>`, where:
 
 Never use a full URL for links across documentation repositories.
 
+Cross-repository validation only applies to schemes declared in `cross_links` in your `docset.yml`.
+If a scheme is not declared:
+
+- `cursor://...` links pass through as custom protocol links.
+- `vscode:...` links pass through as custom protocol links.
+- Other undeclared schemes are treated as invalid cross-repository links and produce build errors.
+
 ### External links
 
 Link to websites and resources outside the Elastic docs:
@@ -103,6 +110,22 @@ Link to websites and resources outside the Elastic docs:
 [Elastic Cloud](https://cloud.elastic.co)
 [Elastic Documentation](https://www.elastic.co/guide)
 ```
+
+External links display an arrow indicator next to the link text.
+
+### Linked images
+
+Wrap an image in a link to make the image itself clickable. Combine the image syntax with the link syntax:
+
+```markdown
+[![A bear](/syntax/images/bear.png "bear =300x")](https://example.com)
+```
+
+Rendered:
+
+[![A bear](/syntax/images/bear.png "bear =300x")](https://example.com)
+
+When an external link wraps an image (for example, a screenshot or badge), the arrow indicator is omitted because the image already conveys the target.
 
 ### Autolinks
 

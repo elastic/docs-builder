@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Codex.Navigation;
-using FluentAssertions;
+using Elastic.Documentation.Configuration;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
@@ -113,7 +115,7 @@ public class GroupNavigationTests
 
 		var indexLeaf = groupNav.Index as GroupIndexLeaf;
 		indexLeaf.Should().NotBeNull();
-		indexLeaf!.Url.Should().Be("/docs/g/observability");
+		indexLeaf.Url.Should().Be("/docs/g/observability");
 		indexLeaf.NavigationTitle.Should().Be("Observability");
 		indexLeaf.NavigationRoot.Should().BeSameAs(groupNav);
 		indexLeaf.Parent.Should().BeSameAs(groupNav);
@@ -125,11 +127,10 @@ public class GroupNavigationTests
 		var config = new Documentation.Configuration.Codex.CodexConfiguration
 		{
 			Title = "Test Codex",
-			SitePrefix = "/docs",
-			DocumentationSets = []
+			SitePrefix = "/docs"
 		};
 
-		return new CodexNavigation(config, new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
+		return new CodexNavigation(config, [], new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
 	}
 
 	private sealed class MinimalCodexContext : ICodexDocumentationContext
@@ -137,8 +138,8 @@ public class GroupNavigationTests
 		private readonly System.IO.Abstractions.TestingHelpers.MockFileSystem _fs = new();
 		public System.IO.Abstractions.IFileInfo ConfigurationPath => _fs.FileInfo.New("/codex.yml");
 		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector => new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
-		public System.IO.Abstractions.IFileSystem ReadFileSystem => _fs;
-		public System.IO.Abstractions.IFileSystem WriteFileSystem => _fs;
+		public ScopedFileSystem ReadFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectory(_fs);
+		public ScopedFileSystem WriteFileSystem => FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(_fs);
 		public System.IO.Abstractions.IDirectoryInfo OutputDirectory => _fs.DirectoryInfo.New("/output");
 		public BuildType BuildType => BuildType.Codex;
 		public void EmitError(string message) { }

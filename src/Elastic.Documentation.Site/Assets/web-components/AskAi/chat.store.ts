@@ -4,13 +4,13 @@ import { cooldownStore } from '../shared/cooldown.store'
 import { ApiError, isApiError, isRateLimitError } from '../shared/errorHandling'
 import { AskAiEvent } from './AskAiEvent'
 import { MessageThrottler } from './MessageThrottler'
+import { askAiConfig } from './askAi.config'
 import {
     get as idbGet,
     set as idbSet,
     del as idbDel,
     createStore as createIdbStore,
 } from 'idb-keyval'
-import { v4 as uuidv4 } from 'uuid'
 import { createStore } from 'zustand'
 import { persist, PersistStorage, StorageValue } from 'zustand/middleware'
 import { useStore } from 'zustand/react'
@@ -126,7 +126,10 @@ async function loadConversationData(conversationId: ConversationId): Promise<{
                 totalMessageCount:
                     stored.state.totalMessageCount ?? messages.length,
                 messageFeedback: stored.state.messageFeedback ?? {},
-                aiProvider: stored.state.aiProvider ?? 'LlmGateway',
+                aiProvider: askAiConfig.forceAiProvider
+                    ? askAiConfig.defaultAiProvider
+                    : (stored.state.aiProvider ??
+                      askAiConfig.defaultAiProvider),
             }
         }
     } catch {
@@ -175,6 +178,10 @@ interface ActiveStream {
 const activeStreams = new Map<string, ActiveStream>()
 
 const sentAiMessageIds = new Set<string>()
+
+const createMessageId = () =>
+    globalThis.crypto?.randomUUID?.() ??
+    `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`
 
 // Maximum number of conversations to keep (oldest are deleted when exceeded)
 // This is a temporary limit to prevent the IndexedDB from growing too large
@@ -232,7 +239,7 @@ export const chatStore = createStore<ChatState>()(
             chatMessages: [],
             totalMessageCount: 0,
             // Other state
-            aiProvider: 'LlmGateway', // Default to LLM Gateway
+            aiProvider: askAiConfig.defaultAiProvider,
             messageFeedback: {},
             hasHydrated: false, // Will be set to true after IndexedDB hydration
             scrollPosition: 0,
@@ -240,10 +247,10 @@ export const chatStore = createStore<ChatState>()(
             actions: {
                 submitQuestion: (question: string) => {
                     const state = get()
-                    const aiMessageId = uuidv4()
+                    const aiMessageId = createMessageId()
 
                     const userMessage: ChatMessage = {
-                        id: uuidv4(),
+                        id: createMessageId(),
                         type: 'user',
                         content: question,
                         conversationId: state.activeConversationId ?? '',
@@ -633,7 +640,7 @@ if (typeof window !== 'undefined') {
 
             let conversations: Record<ConversationId, ConversationMeta> = {}
             let activeConversationId: ConversationId | null = null
-            let aiProvider: AiProvider = 'LlmGateway'
+            let aiProvider: AiProvider = askAiConfig.defaultAiProvider
             let scrollPosition = 0
             let inputValue = ''
 
@@ -647,8 +654,11 @@ if (typeof window !== 'undefined') {
                     persistedState.activeConversationId ?? null
                 scrollPosition = persistedState.scrollPosition ?? 0
                 inputValue = persistedState.inputValue ?? ''
-                // Use stored aiProvider as fallback (will be overridden by conversation data if available)
-                aiProvider = persistedState.aiProvider ?? 'LlmGateway'
+                // For Codex always use AgentBuilder; ignore persisted value from Assembler
+                aiProvider = askAiConfig.forceAiProvider
+                    ? askAiConfig.defaultAiProvider
+                    : (persistedState.aiProvider ??
+                      askAiConfig.defaultAiProvider)
             }
 
             // Phase 2: Load active conversation's data (if any)
@@ -662,6 +672,7 @@ if (typeof window !== 'undefined') {
                     chatMessages = loaded.chatMessages
                     totalMessageCount = loaded.totalMessageCount
                     messageFeedback = loaded.messageFeedback
+                    // loadConversationData already returns AgentBuilder for Codex
                     aiProvider = loaded.aiProvider
                 }
             }

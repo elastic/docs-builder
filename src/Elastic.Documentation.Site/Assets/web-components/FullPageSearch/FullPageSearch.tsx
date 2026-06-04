@@ -100,7 +100,7 @@ const ErrorState = ({
                         onClick={onGoToLanding}
                         css={css`
                             background: ${euiTheme.colors.primary};
-                            color: ${euiTheme.colors.ghost};
+                            color: ${euiTheme.colors.textGhost};
                             border: none;
                             border-radius: ${euiTheme.border.radius.medium};
                             padding: ${euiTheme.size.s} ${euiTheme.size.l};
@@ -416,7 +416,7 @@ export const FullPageSearch = () => {
                     bottom: ${euiTheme.size.l};
                     right: ${euiTheme.size.l};
                     background: ${euiTheme.colors.darkestShade};
-                    color: ${euiTheme.colors.ghost};
+                    color: ${euiTheme.colors.textGhost};
                     border-radius: 50%;
                     width: 48px;
                     height: 48px;

@@ -38,10 +38,7 @@ repositories:
 
 ::::{step} Add the workflow actions to the repository
 
-Add the following actions to the `.github/workflows` directory of your repo:
-
-- https://github.com/elastic/docs-builder/blob/main/.github%2Fworkflows%2Fpreview-build.yml
-- https://github.com/elastic/docs-builder/blob/main/.github/workflows/preview-cleanup.yml
+Add the documentation CI workflows to the `.github/workflows` directory. Reusable workflows are maintained in [`elastic/docs-actions`](https://github.com/elastic/docs-actions); consumer repos add **`docs-build.yml`**, **`docs-deploy.yml`**, and **`docs-preview-cleanup.yml`** that call those workflows at `@v1`. Follow [How to set up docs previews](../migration/guide/how-to-set-up-docs-previews.md) for full YAML and permissions.
 
 Then, successfully run a docs build on the `main` branch. This is a requirement. For example, you can merge a docs pull request to `main` after adding the workflow actions.
 

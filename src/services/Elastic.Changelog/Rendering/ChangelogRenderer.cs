@@ -6,13 +6,14 @@ using System.IO.Abstractions;
 using Elastic.Changelog.Rendering.Asciidoc;
 using Elastic.Changelog.Rendering.Markdown;
 using Microsoft.Extensions.Logging;
+using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Rendering;
 
 /// <summary>
 /// Coordinates rendering of changelog output to different formats.
 /// </summary>
-public class ChangelogRenderer(IFileSystem fileSystem, ILogger logger)
+public class ChangelogRenderer(ScopedFileSystem fileSystem, ILogger logger)
 {
 	/// <summary>
 	/// Renders changelog output based on the specified file type.
@@ -32,6 +33,10 @@ public class ChangelogRenderer(IFileSystem fileSystem, ILogger logger)
 				await RenderMarkdownAsync(context, ctx);
 				break;
 
+			case ChangelogFileType.Gfm:
+				await RenderGfmAsync(context, ctx);
+				break;
+
 			default:
 				throw new ArgumentException($"Unknown changelog file type: {fileType}", nameof(fileType));
 		}
@@ -49,5 +54,12 @@ public class ChangelogRenderer(IFileSystem fileSystem, ILogger logger)
 		var markdownRenderer = new ChangelogMarkdownRenderer(fileSystem);
 		await markdownRenderer.RenderAsync(context, ctx);
 		logger.LogInformation("Rendered changelog markdown files to {OutputDir}", context.OutputDir);
+	}
+
+	private async Task RenderGfmAsync(ChangelogRenderContext context, Cancel ctx)
+	{
+		var gfmRenderer = new ChangelogGfmRenderer(fileSystem);
+		await gfmRenderer.RenderAsync(context, ctx);
+		logger.LogInformation("Rendered changelog GFM file to {OutputDir}", context.OutputDir);
 	}
 }

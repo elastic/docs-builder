@@ -1,4 +1,5 @@
-import { logInfo, logWarn } from '../../telemetry/logging'
+import { config } from '../../config'
+import { logError, logInfo, logWarn } from '../../telemetry/logging'
 import {
     ATTR_NAVIGATION_SEARCH_QUERY,
     ATTR_NAVIGATION_SEARCH_QUERY_LENGTH,
@@ -39,7 +40,7 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
-    type: z.enum(['doc', 'api']),
+    type: z.enum(['docs']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
@@ -128,7 +129,8 @@ export const useNavigationSearchQuery = () => {
                 }
 
                 const response = await fetch(
-                    '/docs/_api/v1/navigation-search?' + params.toString(),
+                    `${config.apiBasePath}/v1/navigation-search?` +
+                        params.toString(),
                     { signal }
                 )
                 if (!response.ok) {
@@ -201,6 +203,17 @@ export const useNavigationSearchQuery = () => {
                     'error.message': query.error.message,
                 })
             }
+        } else if (query.error) {
+            const err = query.error as Error
+            logError('navigation_search_parse_error', {
+                [ATTR_NAVIGATION_SEARCH_QUERY]: debouncedSearchTerm,
+                [ATTR_ERROR_TYPE]: err.name,
+                'error.message': err.message,
+            })
+            console.error(
+                '[navigation-search] failed to parse search response',
+                err
+            )
         }
     }, [query.error, debouncedSearchTerm])
 

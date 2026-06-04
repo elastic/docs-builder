@@ -13,7 +13,10 @@ public enum MatchMode
 	Any,
 
 	/// <summary>Match only if ALL items match the list.</summary>
-	All
+	All,
+
+	/// <summary>Match if every configured item appears on the entry (logical AND over the list). See documentation.</summary>
+	Conjunction
 }
 
 /// <summary>
@@ -55,7 +58,7 @@ public record PublishBlocker
 	public FieldMode AreasMode { get; init; } = FieldMode.Exclude;
 
 	/// <summary>
-	/// How to match areas: Any (default) or All.
+	/// How to match areas: Any (default), All, or Conjunction.
 	/// </summary>
 	public MatchMode MatchAreas { get; init; } = MatchMode.Any;
 

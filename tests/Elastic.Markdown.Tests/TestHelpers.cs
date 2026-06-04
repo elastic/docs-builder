@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Tests;
 
@@ -25,6 +26,38 @@ public static class TestHelpers
 					VersioningSystemId.Stack, new VersioningSystem
 					{
 						Id = VersioningSystemId.Stack,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				},
+				{
+					VersioningSystemId.Self, new VersioningSystem
+					{
+						Id = VersioningSystemId.Self,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				},
+				{
+					VersioningSystemId.Ess, new VersioningSystem
+					{
+						Id = VersioningSystemId.Ess,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				},
+				{
+					VersioningSystemId.Eck, new VersioningSystem
+					{
+						Id = VersioningSystemId.Eck,
+						Current = new SemVersion(8, 0, 0),
+						Base = new SemVersion(8, 0, 0)
+					}
+				},
+				{
+					VersioningSystemId.Ece, new VersioningSystem
+					{
+						Id = VersioningSystemId.Ece,
 						Current = new SemVersion(8, 0, 0),
 						Base = new SemVersion(8, 0, 0)
 					}
@@ -71,10 +104,11 @@ public static class TestHelpers
 			productsConfiguration = new ProductsConfiguration
 			{
 				Products = products.ToFrozenDictionary(),
+				PublicReferenceProducts = products.ToFrozenDictionary(),
 				ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
 			};
 		}
-		var search = new SearchConfiguration { Synonyms = new Dictionary<string, string[]>(), Rules = [], DiminishTerms = [] };
+		var search = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 		return new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints

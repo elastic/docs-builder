@@ -2,10 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Text;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -29,17 +32,6 @@ public static partial class ReleaseNotesSerialization
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
 			.Build();
 
-	/// <summary>
-	/// Used for loading minimal changelog configuration (publish blocker).
-	/// Includes LenientStringListConverter so List&lt;string&gt; fields accept both comma-separated strings and YAML lists.
-	/// </summary>
-	private static readonly IDeserializer IgnoreUnmatchedDeserializer =
-		new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.WithTypeConverter(new LenientStringListConverter())
-			.IgnoreUnmatchedProperties()
-			.Build();
-
 	private static readonly ISerializer YamlSerializer =
 		new StaticSerializerBuilder(new YamlStaticContext())
 			.WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -59,6 +51,7 @@ public static partial class ReleaseNotesSerialization
 	/// </summary>
 	public static ChangelogEntry DeserializeEntry(string yaml)
 	{
+		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
 		var yamlDto = YamlDeserializer.Deserialize<ChangelogEntryDto>(yaml);
 		return ToEntry(yamlDto);
 	}
@@ -80,6 +73,7 @@ public static partial class ReleaseNotesSerialization
 	/// </summary>
 	public static Bundle DeserializeBundle(string yaml)
 	{
+		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
 		var yamlDto = YamlDeserializer.Deserialize<BundleDto>(yaml);
 		return ToBundle(yamlDto);
 	}
@@ -90,7 +84,8 @@ public static partial class ReleaseNotesSerialization
 	public static string SerializeEntry(ChangelogEntry entry)
 	{
 		var dto = ToDto(entry);
-		return YamlSerializer.Serialize(dto);
+		var yaml = YamlSerializer.Serialize(dto);
+		return ApplyDefensiveTitleQuotingIfNeeded(yaml, entry.Title);
 	}
 
 	/// <summary>
@@ -102,11 +97,64 @@ public static partial class ReleaseNotesSerialization
 		return YamlSerializer.Serialize(dto);
 	}
 
+	private static string ApplyDefensiveTitleQuotingIfNeeded(string yaml, string? title)
+	{
+		if (!ChangelogTextUtilities.TitleNeedsDefensiveYamlQuoting(title))
+			return yaml;
+
+		var lines = yaml.Split('\n');
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var line = lines[i];
+			var trimmedStart = line.TrimStart();
+			if (!trimmedStart.StartsWith("title:", StringComparison.Ordinal))
+				continue;
+
+			var colonIdx = line.IndexOf(':');
+			if (colonIdx < 0)
+				continue;
+
+			var valuePart = line[(colonIdx + 1)..].TrimStart();
+			if (valuePart.Length > 0 && (valuePart[0] == '"' || valuePart[0] == '\''))
+				return yaml;
+
+			// Block literals (| / >) span following lines; rewriting only the header orphans continuations.
+			if (valuePart.Length > 0 && (valuePart[0] == '|' || valuePart[0] == '>'))
+				return yaml;
+
+			lines[i] = string.Concat(line.AsSpan(0, colonIdx + 1), " ", ToYamlDoubleQuotedString(title!));
+			break;
+		}
+
+		return string.Join('\n', lines);
+	}
+
+	private static string ToYamlDoubleQuotedString(string s)
+	{
+		var sb = new StringBuilder(s.Length + 2);
+		_ = sb.Append('"');
+		foreach (var c in s)
+		{
+			_ = c switch
+			{
+				'\\' => sb.Append("\\\\"),
+				'"' => sb.Append("\\\""),
+				'\n' => sb.Append("\\n"),
+				'\r' => sb.Append("\\r"),
+				'\t' => sb.Append("\\t"),
+				_ => c < 0x20 ? sb.AppendFormat(CultureInfo.InvariantCulture, "\\u{0:X4}", (int)c) : sb.Append(c),
+			};
+		}
+
+		_ = sb.Append('"');
+		return sb.ToString();
+	}
+
 	#region Manual Mapping Methods
 
 	private static ChangelogEntry ToEntry(ChangelogEntryDto dto) => new()
 	{
-		Pr = dto.Pr,
+		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
 		Issues = dto.Issues,
 		Type = ParseEntryType(dto.Type),
 		Subtype = ParseEntrySubtype(dto.Subtype),
@@ -122,7 +170,7 @@ public static partial class ReleaseNotesSerialization
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) => new()
 	{
-		Pr = entry.Pr,
+		Prs = entry.Prs,
 		Issues = entry.Issues,
 		Type = entry.Type ?? ChangelogEntryType.Invalid,
 		Subtype = entry.Subtype,
@@ -146,6 +194,8 @@ public static partial class ReleaseNotesSerialization
 	private static Bundle ToBundle(BundleDto dto) => new()
 	{
 		Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
+		Description = dto.Description,
+		ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
 		HideFeatures = dto.HideFeatures ?? [],
 		Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? []
 	};
@@ -155,7 +205,8 @@ public static partial class ReleaseNotesSerialization
 		ProductId = dto.Product ?? "",
 		Target = dto.Target,
 		Lifecycle = ParseLifecycle(dto.Lifecycle),
-		Repo = dto.Repo
+		Repo = dto.Repo,
+		Owner = dto.Owner
 	};
 
 	private static BundledEntry ToBundledEntry(BundledEntryDto dto) => new()
@@ -171,7 +222,7 @@ public static partial class ReleaseNotesSerialization
 		Highlight = dto.Highlight,
 		Subtype = ParseEntrySubtype(dto.Subtype),
 		Areas = dto.Areas,
-		Pr = dto.Pr,
+		Prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : null),
 		Issues = dto.Issues
 	};
 
@@ -221,11 +272,16 @@ public static partial class ReleaseNotesSerialization
 			: null;
 	}
 
+	private static DateOnly? ParseReleaseDate(string? value) =>
+		DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+			? date
+			: null;
+
 	// Reverse mappings (Domain → DTO) for serialization
 
 	private static ChangelogEntryDto ToDto(ChangelogEntry entry) => new()
 	{
-		Pr = entry.Pr,
+		Prs = entry.Prs?.ToList(),
 		Issues = entry.Issues?.ToList(),
 		Type = EntryTypeToString(entry.Type),
 		Subtype = EntrySubtypeToString(entry.Subtype),
@@ -249,6 +305,8 @@ public static partial class ReleaseNotesSerialization
 	private static BundleDto ToDto(Bundle bundle) => new()
 	{
 		Products = bundle.Products.Select(ToDto).ToList(),
+		Description = bundle.Description,
+		ReleaseDate = bundle.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
 		HideFeatures = bundle.HideFeatures.Count > 0 ? bundle.HideFeatures.ToList() : null,
 		Entries = bundle.Entries.Select(ToDto).ToList()
 	};
@@ -258,7 +316,8 @@ public static partial class ReleaseNotesSerialization
 		Product = product.ProductId,
 		Target = product.Target,
 		Lifecycle = LifecycleToString(product.Lifecycle),
-		Repo = product.Repo
+		Repo = product.Repo,
+		Owner = product.Owner
 	};
 
 	private static BundledEntryDto ToDto(BundledEntry entry) => new()
@@ -274,7 +333,7 @@ public static partial class ReleaseNotesSerialization
 		Highlight = entry.Highlight,
 		Subtype = EntrySubtypeToString(entry.Subtype),
 		Areas = entry.Areas?.ToList(),
-		Pr = entry.Pr,
+		Prs = entry.Prs?.ToList(),
 		Issues = entry.Issues?.ToList()
 	};
 
@@ -308,6 +367,7 @@ public static partial class ReleaseNotesSerialization
 	/// <returns>The normalized YAML content.</returns>
 	public static string NormalizeYaml(string yaml)
 	{
+		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
 		// Skip comment lines
 		var yamlLines = yaml.Split('\n');
 		var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
@@ -325,52 +385,6 @@ public static partial class ReleaseNotesSerialization
 	/// <param name="configPath">The path to the changelog.yml configuration file.</param>
 	/// <param name="productId">Optional product ID to load product-specific blocker.</param>
 	/// <returns>The publish blocker configuration, or null if not found or not configured.</returns>
-	public static PublishBlocker? LoadPublishBlocker(IFileSystem fileSystem, string configPath, string? productId = null)
-	{
-		if (!fileSystem.File.Exists(configPath))
-			return null;
-
-		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		if (string.IsNullOrWhiteSpace(yamlContent))
-			return null;
-
-		var yamlConfig = IgnoreUnmatchedDeserializer.Deserialize<ChangelogConfigMinimalDto>(yamlContent);
-		if (yamlConfig.Rules is null)
-			return null;
-
-		var publish = yamlConfig.Rules.Publish;
-		if (publish is null)
-			return null;
-
-		// Parse global match mode
-		var globalMatch = ParseMatchMode(yamlConfig.Rules.Match);
-		var publishMatchAreas = ParseMatchMode(publish.MatchAreas) ?? globalMatch ?? MatchMode.Any;
-
-		// Check product-specific blocker first if productId is specified
-		if (!string.IsNullOrWhiteSpace(productId) && publish.Products is { Count: > 0 })
-		{
-			// Try exact match first, then fall back to case-insensitive match
-			if (!publish.Products.TryGetValue(productId, out var productPublish))
-			{
-				var found = publish.Products.FirstOrDefault(kvp =>
-					kvp.Key.Equals(productId, StringComparison.OrdinalIgnoreCase));
-				productPublish = found.Value;
-			}
-
-			if (productPublish != null)
-			{
-				var productMatchAreas = ParseMatchMode(productPublish.MatchAreas) ?? publishMatchAreas;
-				return ParsePublishBlocker(productPublish, productMatchAreas);
-			}
-		}
-
-		// Fall back to global publish blocker
-		return ParsePublishBlocker(publish, publishMatchAreas);
-	}
-
-	/// <summary>
-	/// Parses a PublishRulesMinimalDto into a PublishBlocker domain type.
-	/// </summary>
 	private static PublishBlocker? ParsePublishBlocker(PublishRulesMinimalDto? dto, MatchMode matchAreas)
 	{
 		if (dto == null)
@@ -402,6 +416,7 @@ public static partial class ReleaseNotesSerialization
 		{
 			"any" => MatchMode.Any,
 			"all" => MatchMode.All,
+			"conjunction" => MatchMode.Conjunction,
 			_ => null
 		};
 }

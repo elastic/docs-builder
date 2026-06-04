@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
-using FluentAssertions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
@@ -111,6 +111,58 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		// Folder has no index.md, so URL should be the first child's URL
 		folder!.Url.Should().Be("/guides/getting-started");
+	}
+
+	[Fact]
+	public void FolderWithoutIndexUsesFirstVisibleChildUrlWhenHiddenChildComesFirst()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - hidden: autopilot.md
+		                 - file: getting-started.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext();
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
+
+		folder.Hidden.Should().BeFalse();
+		folder.NavigationTitle.Should().Be("getting-started");
+		folder.Url.Should().Be("/guides/getting-started");
+		folder.NavigationItems.Should().ContainSingle().Which.Hidden.Should().BeTrue();
+	}
+
+	[Fact]
+	public void FolderWithoutIndexAndOnlyHiddenChildrenIsHidden()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - hidden: autopilot.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext();
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
+
+		folder.Hidden.Should().BeTrue();
+		folder.Index.Hidden.Should().BeTrue();
+		folder.NavigationItems.Should().BeEmpty();
 	}
 
 	[Fact]

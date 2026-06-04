@@ -17,7 +17,9 @@ type ``cross-link makes it into html`` () =
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
             <p><a
-                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary">
+                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary"
+                target="_blank"
+                rel="noopener noreferrer">
                 APM Server binary
                 </a>
             </p>
@@ -67,11 +69,25 @@ type ``link to valid anchor`` () =
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
             <p><a
-                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb">
+                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb"
+                target="_blank"
+                rel="noopener noreferrer">
                 APM Server binary
                 </a>
             </p>
         """
+
+    [<Fact>]
+    let ``has no errors`` () = markdown |> hasNoErrors
+
+    [<Fact>]
+    let ``has no warning`` () = markdown |> hasNoWarnings
+
+type ``link to anchor with different casing`` () =
+
+    static let markdown = Setup.Markdown """
+[Whitelist](docs-content:/solutions/observability/apps/apm-server-binary.md#elasticsearch-requestheaderswhitelist)
+"""
 
     [<Fact>]
     let ``has no errors`` () = markdown |> hasNoErrors
@@ -135,7 +151,9 @@ type ``Using double forward slashes`` () =
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
             <p><a
-                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb">
+                href="https://docs-v3-preview.elastic.dev/elastic/docs-content/tree/main/solutions/observability/apps/apm-server-binary#apm-deb"
+                target="_blank"
+                rel="noopener noreferrer">
                 APM Server binary
                 </a>
             </p>

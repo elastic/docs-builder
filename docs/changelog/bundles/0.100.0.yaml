@@ -10,7 +10,8 @@ entries:
         target: 0.100.0
     areas:
       - CLI
-    pr: https://github.com/elastic/docs-builder/pull/2350
+    prs:
+      - https://github.com/elastic/docs-builder/pull/2350
     highlight: true
     description: |
       Adds support for configuring PR labels that block changelog creation.
@@ -25,7 +26,8 @@ entries:
         target: 0.100.0
     areas:
       - UI
-    pr: https://github.com/elastic/docs-builder/pull/2470
+    prs:
+      - https://github.com/elastic/docs-builder/pull/2470
     description: |
       Fixes an issue where HTMX navigation was not working correctly
       when selecting pages from the "Find Pages" dropdown menu.
@@ -36,7 +38,8 @@ entries:
         target: 0.100.0
     areas:
       - Build
-    pr: https://github.com/elastic/docs-builder/pull/2473
+    prs:
+      - https://github.com/elastic/docs-builder/pull/2473
     description: |
       Addresses F# nullability warnings in the codebase to improve
       code quality and reduce potential null reference issues.
@@ -47,7 +50,8 @@ entries:
         target: 0.100.0
     areas:
       - Assembler
-    pr: https://github.com/elastic/docs-builder/pull/2471
+    prs:
+      - https://github.com/elastic/docs-builder/pull/2471
     description: |
       Prevents speculative builds from running for repositories that are
       already publishing with non-versioned branches, avoiding unnecessary

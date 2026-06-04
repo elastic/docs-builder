@@ -17,7 +17,7 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 
 	public EmbeddedOrPhysicalFileProvider(IDocumentationSetContext context)
 	{
-		var documentationStaticFiles = Path.Combine(context.DocumentationSourceDirectory.FullName, "_static");
+		var documentationStaticFiles = Path.Join(context.DocumentationSourceDirectory.FullName, "_static");
 #if DEBUG
 		// this attempts to serve files directly from their source rather than the embedded resources during development.
 		// this allows us to change js/css files without restarting the webserver
@@ -25,7 +25,7 @@ public sealed class EmbeddedOrPhysicalFileProvider : IFileProvider, IDisposable
 		if (solutionRoot != null)
 		{
 
-			var debugWebFiles = Path.Combine(solutionRoot.FullName, "src", "Elastic.Documentation.Site", "_static");
+			var debugWebFiles = Path.Join(solutionRoot.FullName, "src", "Elastic.Documentation.Site", "_static");
 			_staticWebFilesDuringDebug = new PhysicalFileProvider(debugWebFiles);
 		}
 #else

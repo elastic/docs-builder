@@ -139,12 +139,16 @@ public partial class DocumentationGenerator
 
 		await ResolveDirectoryTree(ctx);
 
-		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, ctx);
+		await ProcessDocumentationFiles(offendingFiles, outputSeenChanges, mode, ctx);
 
 		if (mode == CompilationMode.Full)
 			HintUnusedSubstitutionKeys();
 
-		await ExtractEmbeddedStaticResources(ctx);
+		if (Context.AvailableExporters.Contains(Exporter.Html))
+		{
+			await ExtractEmbeddedStaticResources(ctx);
+			CopyBrandingResources();
+		}
 
 		if (generateState)
 		{
@@ -165,7 +169,7 @@ public partial class DocumentationGenerator
 		};
 	}
 
-	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, Cancel ctx)
+	private async Task ProcessDocumentationFiles(HashSet<string> offendingFiles, DateTimeOffset outputSeenChanges, CompilationMode mode, Cancel ctx)
 	{
 		var processedFileCount = 0;
 		var exceptionCount = 0;
@@ -176,7 +180,7 @@ public partial class DocumentationGenerator
 			var (fp, doc) = file;
 			try
 			{
-				await ProcessFile(offendingFiles, doc, outputSeenChanges, token);
+				await ProcessFile(offendingFiles, doc, outputSeenChanges, mode, token);
 			}
 			catch (Exception e)
 			{
@@ -194,6 +198,43 @@ public partial class DocumentationGenerator
 		});
 		_logger.LogInformation(" {Name} -> Processed {ProcessedFileCount}/{TotalFileCount} files", Context.Git.RepositoryName, processedFileCount, totalFileCount);
 
+	}
+
+	private void CopyBrandingResources()
+	{
+		var branding = Context.Configuration.Branding;
+		if (branding is null)
+			return;
+
+		var sourceDir = DocumentationSet.Context.DocumentationSourceDirectory.FullName;
+		var outputStaticDir = Path.Join(DocumentationSet.OutputDirectory.FullName, "_static");
+		_ = _writeFileSystem.Directory.CreateDirectory(outputStaticDir);
+
+		// Track destination basenames to catch collisions between icon and og-image
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var imagePath in new[] { branding.Icon, branding.OgImage, branding.Favicon, branding.AppleTouchIcon })
+		{
+			if (string.IsNullOrEmpty(imagePath))
+				continue;
+
+			var source = Context.ReadFileSystem.FileInfo.New(Path.Join(sourceDir, imagePath));
+			if (!source.Exists)
+			{
+				Context.Collector.EmitError(Context.ConfigurationPath.FullName, $"Branding image '{imagePath}' does not exist.");
+				continue;
+			}
+
+			if (!seen.Add(source.Name))
+			{
+				Context.Collector.EmitError(Context.ConfigurationPath.FullName,
+					$"Branding image '{imagePath}' has the same filename as another branding image — use unique filenames to avoid overwriting.");
+				continue;
+			}
+
+			var destination = _writeFileSystem.FileInfo.New(Path.Join(outputStaticDir, source.Name));
+			_ = source.CopyTo(destination.FullName, overwrite: true);
+			_logger.LogInformation("Copied branding asset {Source} -> {Destination}", source.FullName, destination.FullName);
+		}
 	}
 
 	private void HintUnusedSubstitutionKeys()
@@ -280,17 +321,36 @@ public partial class DocumentationGenerator
 			_ => FilePathRegex().IsMatch(strToCheck) && FileNameRegex().IsMatch(Path.GetFileName(strToCheck))
 		};
 
-	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, Cancel ctx)
+	private async Task ProcessFile(HashSet<string> offendingFiles, DocumentationFile file, DateTimeOffset outputSeenChanges, CompilationMode mode, Cancel ctx)
 	{
+		// Full builds run HintUnusedSubstitutionKeys(), which needs substitution usage from every file.
+		// CI forces Full mode while still supplying outputSeenChanges from state; skipping unchanged files would miss keys and produce false hints.
 		if (!Context.Force)
 		{
 			if (offendingFiles.Contains(file.SourceFile.FullName))
 				_logger.LogInformation("Re-evaluating {FileName}", file.SourceFile.FullName);
-			else if (file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
+			else if (mode == CompilationMode.Incremental && file.SourceFile.LastWriteTimeUtc <= outputSeenChanges)
 				return;
 		}
 
 		_logger.LogTrace("--> {FileFullPath}", file.SourceFile.FullName);
+
+		// Skip normal HTML generation for intro/outro files that will be rendered via API pipeline
+		if (IsApiMarkdownFile(file.RelativePath))
+		{
+			_logger.LogTrace("Skipping HTML generation for API intro/outro file: {RelativePath}", file.RelativePath);
+
+			// Still allow Myst processing for cross-links and diagnostics, but skip HTML output
+			if (file is MarkdownFile markdown)
+			{
+				// Parse the markdown for cross-link resolution and diagnostics only
+				var document = await markdown.ParseFullAsync(DocumentationSet.TryFindDocumentByRelativePath, ctx);
+				// Cross-links and diagnostics are handled during parsing, so we're done
+			}
+
+			return;
+		}
+
 		var outputFile = OutputFile(file.RelativePath);
 
 		if (outputFile is not null)
@@ -336,7 +396,7 @@ public partial class DocumentationGenerator
 
 	private IFileInfo? OutputFile(string relativePath)
 	{
-		var outputFile = _writeFileSystem.FileInfo.New(Path.Combine(DocumentationSet.OutputDirectory.FullName, relativePath));
+		var outputFile = _writeFileSystem.FileInfo.New(Path.Join(DocumentationSet.OutputDirectory.FullName, relativePath));
 		if (relativePath.StartsWith("_static"))
 			return outputFile;
 
@@ -435,6 +495,41 @@ public partial class DocumentationGenerator
 	{
 		await DocumentationSet.ResolveDirectoryTree(ctx);
 		return await HtmlWriter.RenderLayout(markdown, ctx);
+	}
+
+	/// <summary>
+	/// Checks if a file path is registered as an intro/outro file in any API configuration.
+	/// These files should be rendered via the API pipeline rather than normal HTML generation.
+	/// </summary>
+	private bool IsApiMarkdownFile(string relativePath)
+	{
+		var normalized = relativePath.Replace(Path.DirectorySeparatorChar, '/');
+
+		if (Context.Configuration.ApiConfigurations == null)
+			return false;
+
+		foreach (var apiConfig in Context.Configuration.ApiConfigurations.Values)
+		{
+			// Check intro files
+			foreach (var introFile in apiConfig.IntroMarkdownFiles)
+			{
+				var introRelativePath = Path.GetRelativePath(Context.DocumentationSourceDirectory.FullName, introFile.FullName)
+					.Replace(Path.DirectorySeparatorChar, '/');
+				if (string.Equals(normalized, introRelativePath, StringComparison.OrdinalIgnoreCase))
+					return true;
+			}
+
+			// Check outro files
+			foreach (var outroFile in apiConfig.OutroMarkdownFiles)
+			{
+				var outroRelativePath = Path.GetRelativePath(Context.DocumentationSourceDirectory.FullName, outroFile.FullName)
+					.Replace(Path.DirectorySeparatorChar, '/');
+				if (string.Equals(normalized, outroRelativePath, StringComparison.OrdinalIgnoreCase))
+					return true;
+			}
+		}
+
+		return false;
 	}
 
 }

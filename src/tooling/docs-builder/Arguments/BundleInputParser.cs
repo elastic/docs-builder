@@ -84,7 +84,7 @@ public static class BundleInputParser
 			// Ensure that combining with homeDirectory cannot drop the base path if the segment is rooted
 			trimmedPath = Path.IsPathRooted(relativeFromHome)
 				? homeDirectory
-				: Path.Combine(homeDirectory, relativeFromHome);
+				: Path.Join(homeDirectory, relativeFromHome);
 		}
 		else if (trimmedPath == "~")
 		{

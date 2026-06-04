@@ -2,13 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using AwesomeAssertions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Markdown.IO;
-using FluentAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
@@ -17,7 +17,7 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 	[Fact]
 	public void InjectsNestedTocsIntoDocumentationSet()
 	{
-		var doc = Generator.DocumentationSet.MarkdownFiles.FirstOrDefault(f => f.RelativePath == Path.Combine("development", "index.md"));
+		var doc = Generator.DocumentationSet.MarkdownFiles.FirstOrDefault(f => f.RelativePath == Path.Join("development", "index.md"));
 
 		doc.Should().NotBeNull();
 		INavigationTraversable navigationTraversable = Generator.DocumentationSet;
