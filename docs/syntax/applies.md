@@ -8,7 +8,7 @@ You can use the [applies-to-tagging](https://github.com/elastic/elastic-docs-ski
 
 ## Quick reference
 
-When documenting a new feature or behavior:
+When documenting a new feature or behavior, answer these two questions:
 
 1. **Where should I add `applies_to` metadata?** Find where your changes sit on the page and match to a type below.
 2. **What keys and values do I use?** Refer to the [key-value reference](#key-value-reference) for the full list of valid keys, lifecycles, and version formats.
