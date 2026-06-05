@@ -167,7 +167,7 @@ versioning_systems:
     current: 9.4.0
   elasticsearch-client-ruby:
     base: 9.0
-    current: 9.4.0
+    current: 9.4.1
   elasticsearch-client-rust:
     base: 9.0
     current: 9.1.0-alpha.1
