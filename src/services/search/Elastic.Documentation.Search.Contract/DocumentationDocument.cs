@@ -99,6 +99,11 @@ public record DocumentationDocument
 	[JsonPropertyName("navigation_section")]
 	public string? NavigationSection { get; set; }
 
+	[Keyword]
+	[JsonPropertyName("source_url")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? SourceUrl { get; set; }
+
 	/// The date of the batch update this document was part of last.
 	/// This date could be higher than the date_last_updated.
 	[BatchIndexDate]

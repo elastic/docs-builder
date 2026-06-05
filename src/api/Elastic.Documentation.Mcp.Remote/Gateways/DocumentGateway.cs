@@ -44,6 +44,7 @@ public class DocumentGateway(
 				e => e.AiQuestions,
 				e => e.AiUseCases,
 				e => e.LastUpdated,
+				e => e.SourceUrl,
 				e => e.Product,
 				e => e.RelatedProducts
 			))),
@@ -76,6 +77,7 @@ public class DocumentGateway(
 				AiQuestions = doc.AiQuestions,
 				AiUseCases = doc.AiUseCases,
 				LastUpdated = doc.LastUpdated,
+				SourceUrl = doc.SourceUrl,
 				Product = doc.Product?.Id != null ? new DocumentProduct
 				{
 					Id = doc.Product.Id,
