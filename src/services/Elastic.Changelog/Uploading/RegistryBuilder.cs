@@ -15,10 +15,24 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Changelog.Uploading;
 
 /// <summary>
-/// Refreshes the per-product <c>{product}/registry.json</c> manifest in the private bundles
-/// bucket after a bundle upload run. Each product touched in the run gets its manifest merged with
-/// the bundles already known on S3 (read back, merged by file name, written with an optimistic
-/// concurrency guard so parallel uploads for the same product cannot clobber each other).
+/// Which per-product manifest a <see cref="RegistryBuilder"/> run refreshes.
+/// </summary>
+internal enum RegistryScope
+{
+	/// <summary>The bundle index at <c>{product}/registry.json</c>, listing scrubbed bundle files.</summary>
+	Bundle,
+
+	/// <summary>The changelog-entry index at <c>{product}/changelog/registry.json</c>, listing individual entry files.</summary>
+	Changelog
+}
+
+/// <summary>
+/// Refreshes a per-product <c>registry.json</c> manifest in the private bucket after an upload run.
+/// Depending on <see cref="RegistryScope"/> this is either the bundle index
+/// (<c>{product}/registry.json</c>) or the changelog-entry index
+/// (<c>{product}/changelog/registry.json</c>). Each product touched in the run gets its manifest
+/// merged with what is already known on S3 (read back, merged by file name, written with an
+/// optimistic concurrency guard so parallel uploads for the same product cannot clobber each other).
 /// </summary>
 internal sealed class RegistryBuilder(
 	ILoggerFactory logFactory,
@@ -46,16 +60,18 @@ internal sealed class RegistryBuilder(
 	/// concurrent writer won the race, so we re-read, re-merge, and retry.
 	/// </summary>
 	/// <param name="collector">Diagnostics sink for non-fatal warnings.</param>
-	/// <param name="bundleTargets">Upload targets produced by <c>DiscoverBundleUploadTargets</c>.</param>
+	/// <param name="uploadTargets">Upload targets produced by <c>DiscoverBundleUploadTargets</c> or <c>DiscoverUploadTargets</c>.</param>
 	/// <param name="ctx">Cancellation token.</param>
+	/// <param name="scope">Which per-product manifest to refresh (bundle index or changelog-entry index).</param>
 	public async Task<RefreshResult> RefreshAsync(
 		IDiagnosticsCollector collector,
-		IReadOnlyList<UploadTarget> bundleTargets,
-		Cancel ctx)
+		IReadOnlyList<UploadTarget> uploadTargets,
+		Cancel ctx,
+		RegistryScope scope = RegistryScope.Bundle)
 	{
-		// Each upload target carries a "{product}/bundle/{file}" S3 key. Group by product
+		// Each upload target carries a "{product}/{bundle|changelog}/{file}" S3 key. Group by product
 		// so we can produce one manifest per affected product.
-		var byProduct = bundleTargets
+		var byProduct = uploadTargets
 			.Select(t => (Target: t, Product: ExtractProduct(t.S3Key)))
 			.Where(x => x.Product is not null)
 			.GroupBy(x => x.Product!, StringComparer.Ordinal);
@@ -69,14 +85,14 @@ internal sealed class RegistryBuilder(
 			ctx.ThrowIfCancellationRequested();
 
 			var product = group.Key;
-			var localEntries = await BuildLocalEntries(collector, product, group.Select(x => x.Target).ToList(), ctx);
+			var localEntries = await BuildLocalEntries(collector, product, group.Select(x => x.Target).ToList(), scope, ctx);
 			if (localEntries.Count == 0)
 			{
 				_logger.LogDebug("No usable manifest entries derived for product {Product}; skipping", product);
 				continue;
 			}
 
-			switch (await WriteManifest(collector, product, localEntries, ctx))
+			switch (await WriteManifest(collector, product, localEntries, scope, ctx))
 			{
 				case WriteOutcome.Updated:
 					updated++;
@@ -95,7 +111,8 @@ internal sealed class RegistryBuilder(
 
 	/// <summary>
 	/// Extracts the leading <c>product</c> segment from an S3 key shaped like
-	/// <c>{product}/bundle/{file}</c>. Returns null on unrecognized shapes.
+	/// <c>{product}/bundle/{file}</c> or <c>{product}/changelog/{file}</c>. Returns null on
+	/// unrecognized shapes.
 	/// </summary>
 	private static string? ExtractProduct(string s3Key)
 	{
@@ -104,6 +121,15 @@ internal sealed class RegistryBuilder(
 			return null;
 		return s3Key.AsSpan(0, firstSlash).ToString();
 	}
+
+	/// <summary>
+	/// The S3 key of the per-product manifest for the given <paramref name="scope"/>.
+	/// </summary>
+	private static string RegistryKeyFor(string product, RegistryScope scope) => scope switch
+	{
+		RegistryScope.Changelog => $"{product}/changelog/registry.json",
+		_ => $"{product}/registry.json"
+	};
 
 	/// <summary>
 	/// Computes manifest entries for the bundles uploaded in this run by reading their YAML
@@ -115,6 +141,7 @@ internal sealed class RegistryBuilder(
 		IDiagnosticsCollector collector,
 		string product,
 		IReadOnlyList<UploadTarget> targets,
+		RegistryScope scope,
 		Cancel ctx)
 	{
 		var entries = new List<RegistryBundle>(targets.Count);
@@ -122,7 +149,11 @@ internal sealed class RegistryBuilder(
 		{
 			ctx.ThrowIfCancellationRequested();
 
-			var targetVersion = ReadTargetForProduct(collector, target.LocalPath, product);
+			// The changelog-entry index only needs to enumerate files (consumers re-read each entry
+			// to filter), so target is left unset there; the bundle index records the per-product target.
+			var targetVersion = scope == RegistryScope.Bundle
+				? ReadTargetForProduct(collector, target.LocalPath, product)
+				: null;
 
 			string etag;
 			try
@@ -173,15 +204,16 @@ internal sealed class RegistryBuilder(
 		IDiagnosticsCollector collector,
 		string product,
 		IReadOnlyList<RegistryBundle> localEntries,
+		RegistryScope scope,
 		Cancel ctx)
 	{
-		var key = $"{product}/registry.json";
+		var key = RegistryKeyFor(product, scope);
 
 		for (var attempt = 1; attempt <= MaxWriteAttempts; attempt++)
 		{
 			ctx.ThrowIfCancellationRequested();
 
-			var (existing, etag) = await TryFetchExistingManifest(product, ctx);
+			var (existing, etag) = await TryFetchExistingManifest(product, scope, ctx);
 			var merged = Merge(existing, localEntries);
 
 			// Re-uploading the same bundles must not churn the manifest (keeps reruns idempotent).
@@ -223,9 +255,9 @@ internal sealed class RegistryBuilder(
 	/// write). Returns an empty list with a null ETag when the object does not exist. A corrupt object
 	/// returns an empty list with the live ETag so the retry loop can conditionally overwrite it.
 	/// </summary>
-	private async Task<(IReadOnlyList<RegistryBundle> Bundles, string? ETag)> TryFetchExistingManifest(string product, Cancel ctx)
+	private async Task<(IReadOnlyList<RegistryBundle> Bundles, string? ETag)> TryFetchExistingManifest(string product, RegistryScope scope, Cancel ctx)
 	{
-		var key = $"{product}/registry.json";
+		var key = RegistryKeyFor(product, scope);
 		string? etag = null;
 		try
 		{
