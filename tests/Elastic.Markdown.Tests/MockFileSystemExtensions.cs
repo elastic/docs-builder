@@ -34,7 +34,7 @@ public static class MockFileSystemExtensions
 			.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories);
 		foreach (var markdownFile in markdownFiles)
 		{
-			if (markdownFile.Contains("_snippet"))
+			if (markdownFile.Contains($"{Path.DirectorySeparatorChar}_snippets{Path.DirectorySeparatorChar}"))
 				continue;
 			var relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
 			yaml.WriteLine($" - file: {relative}");
