@@ -6,17 +6,19 @@ namespace Elastic.Changelog.Uploading;
 
 /// <summary>
 /// Helpers for validating S3 object keys related to the per-product
-/// <see cref="Registry"/> manifest.
+/// <see cref="Registry"/> manifests (the bundle index and the changelog-entry index).
 /// </summary>
 public static class RegistryKey
 {
-	private const string Suffix = "/registry.json";
+	private const string BundleSuffix = "/registry.json";
+	private const string ChangelogSuffix = "/changelog/registry.json";
 
 	/// <summary>
-	/// Returns true when <paramref name="key"/> is a top-level per-product manifest of the
-	/// form <c>{product}/registry.json</c>, where <c>{product}</c> matches the same
-	/// character class enforced by <c>ChangelogUploadService.ProductNameRegex</c>
-	/// (<c>[a-zA-Z0-9_-]+</c>).
+	/// Returns true when <paramref name="key"/> is a per-product manifest of either form
+	/// <c>{product}/registry.json</c> (the bundle index) or
+	/// <c>{product}/changelog/registry.json</c> (the changelog-entry index), where
+	/// <c>{product}</c> matches the same character class enforced by
+	/// <c>ChangelogUploadService.ProductNameRegex</c> (<c>[a-zA-Z0-9_-]+</c>).
 	/// </summary>
 	/// <remarks>
 	/// Used by the changelog scrubber Lambda to decide whether to pass an incoming
@@ -29,10 +31,17 @@ public static class RegistryKey
 		if (string.IsNullOrEmpty(key))
 			return false;
 
-		if (!key.EndsWith(Suffix, StringComparison.Ordinal))
-			return false;
+		if (key.EndsWith(ChangelogSuffix, StringComparison.Ordinal))
+			return IsValidProduct(key.AsSpan(0, key.Length - ChangelogSuffix.Length));
 
-		var product = key.AsSpan(0, key.Length - Suffix.Length);
+		if (key.EndsWith(BundleSuffix, StringComparison.Ordinal))
+			return IsValidProduct(key.AsSpan(0, key.Length - BundleSuffix.Length));
+
+		return false;
+	}
+
+	private static bool IsValidProduct(ReadOnlySpan<char> product)
+	{
 		if (product.IsEmpty || product.Contains('/'))
 			return false;
 

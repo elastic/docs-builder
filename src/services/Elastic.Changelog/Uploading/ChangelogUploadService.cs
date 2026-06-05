@@ -94,11 +94,16 @@ public partial class ChangelogUploadService(
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
 
-		// On a successful bundle upload, refresh the per-product registry.json so consumers
-		// (e.g. the changelog directive in cdn: mode) can enumerate bundles without an S3 listing.
-		// Failures here are logged but don't fail the upload — the bundles themselves are already in S3.
-		if (result.Failed == 0 && args.ArtifactType == ArtifactType.Bundle && targets.Count > 0)
-			await RefreshRegistries(collector, client, etagCalculator, args, targets, ctx);
+		// On a successful upload, refresh the per-product registry.json so consumers can enumerate
+		// content without an S3 listing: the bundle index (consumed by the changelog directive in
+		// cdn: mode) for bundle uploads, and the changelog-entry index (consumed by `changelog
+		// bundle` when sourcing entries from the CDN) for changelog uploads.
+		// Failures here are logged but don't fail the upload — the objects themselves are already in S3.
+		if (result.Failed == 0 && targets.Count > 0)
+		{
+			var scope = args.ArtifactType == ArtifactType.Bundle ? RegistryScope.Bundle : RegistryScope.Changelog;
+			await RefreshRegistries(collector, client, etagCalculator, args, targets, scope, ctx);
+		}
 
 		return result.Failed == 0;
 	}
@@ -108,15 +113,16 @@ public partial class ChangelogUploadService(
 		IAmazonS3 client,
 		IS3EtagCalculator etagCalculator,
 		ChangelogUploadArguments args,
-		IReadOnlyList<UploadTarget> bundleTargets,
+		IReadOnlyList<UploadTarget> uploadTargets,
+		RegistryScope scope,
 		Cancel ctx)
 	{
 		try
 		{
 			var builder = new RegistryBuilder(logFactory, _fileSystem, client, etagCalculator, args.S3BucketName);
-			var result = await builder.RefreshAsync(collector, bundleTargets, ctx);
-			_logger.LogInformation("Registry refresh: {Updated} updated, {Unchanged} unchanged, {Failed} failed",
-				result.Updated, result.Unchanged, result.Failed);
+			var result = await builder.RefreshAsync(collector, uploadTargets, ctx, scope);
+			_logger.LogInformation("Registry refresh ({Scope}): {Updated} updated, {Unchanged} unchanged, {Failed} failed",
+				scope, result.Updated, result.Unchanged, result.Failed);
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{

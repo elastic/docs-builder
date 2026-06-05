@@ -469,15 +469,10 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	}
 
 	/// <summary>
-	/// Environment variable that overrides the changelog CDN base URL (staging/local/testing).
-	/// </summary>
-	private const string CdnBaseUrlEnvironmentVariable = "DOCS_BUILDER_CHANGELOG_CDN";
-
-	/// <summary>
 	/// Default public CDN base for changelog bundles (CloudFront in front of the public S3 bucket).
-	/// Overridable via <see cref="CdnBaseUrlEnvironmentVariable"/>.
+	/// Overridable via <see cref="ChangelogCdn.BaseUrlEnvironmentVariable"/>.
 	/// </summary>
-	internal const string DefaultCdnBaseUrl = "https://d10xozp44eyz7q.cloudfront.net";
+	internal const string DefaultCdnBaseUrl = ChangelogCdn.DefaultBaseUrl;
 
 	private void LoadAndCacheBundles()
 	{
@@ -507,10 +502,10 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (!string.IsNullOrWhiteSpace(Arguments))
 			this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
 
-		if (ResolveCdnBaseUri() is not { } baseUri)
+		if (ChangelogCdn.ResolveBaseUri() is not { } baseUri)
 		{
 			this.EmitError(
-				$"No valid changelog CDN base URL is configured. Set the {CdnBaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+				$"No valid changelog CDN base URL is configured. Set the {ChangelogCdn.BaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
 			return;
 		}
 
@@ -577,16 +572,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		return string.IsNullOrWhiteSpace(repository) || repository == "unavailable"
 			? null
 			: repository;
-	}
-
-	private static Uri? ResolveCdnBaseUri()
-	{
-		var configured = Environment.GetEnvironmentVariable(CdnBaseUrlEnvironmentVariable);
-		var raw = string.IsNullOrWhiteSpace(configured) ? DefaultCdnBaseUrl : configured;
-		return Uri.TryCreate(raw, UriKind.Absolute, out var uri)
-			&& uri.Scheme is "http" or "https"
-			? uri
-			: null;
 	}
 
 	private IEnumerable<string> ComputeGeneratedAnchors()
