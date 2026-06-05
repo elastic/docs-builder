@@ -100,6 +100,30 @@ toc:
 
 When `children` is defined, all markdown files in the folder must be listed.
 
+### Deep-linked `index.md` files
+
+A `file` entry without `children` that points at an `index.md` inside a subdirectory is treated as its own single-page subsection for that directory:
+
+```yaml
+toc:
+  - file: reference/1password/index.md
+  - file: reference/activemq/index.md
+```
+
+This is shorthand for:
+
+```yaml
+toc:
+  - folder: reference/1password
+    children:
+      - file: index.md
+  - folder: reference/activemq
+    children:
+      - file: index.md
+```
+
+If the entry declares `children`, it keeps the virtual grouping behavior instead.
+
 ### Nested toc reference
 
 Include a dedicated `toc.yml` for large sections:
