@@ -4,7 +4,7 @@ Admonitions allow you to highlight important information with varying levels of 
 
 ## Basic admonitions
 
-Admonitions can span multiple lines and support inline formatting. To split the content into separate paragraphs, separate them with a blank line — adjacent lines collapse into a single paragraph.
+Admonitions can span multiple lines and support inline formatting. 
 
 Available admonition types include:
 
