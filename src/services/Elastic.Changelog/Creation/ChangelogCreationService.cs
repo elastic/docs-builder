@@ -56,6 +56,13 @@ public record CreateChangelogArguments
 	/// When true, omit schema reference comments from generated YAML files.
 	/// </summary>
 	public bool Concise { get; init; }
+
+	/// <summary>
+	/// When true, a failure to fetch any PR or issue from GitHub during bulk creation is treated as
+	/// an error (non-zero exit) instead of a warning. Use in CI to fail fast when a missing or
+	/// unauthorized GITHUB_TOKEN would otherwise silently produce unfiltered, title-less changelogs.
+	/// </summary>
+	public bool StrictFetch { get; init; }
 }
 
 /// <summary>
@@ -206,11 +213,12 @@ IEnvironmentVariables? env = null
 
 		var successCount = 0;
 		var skippedCount = 0;
+		var fetchFailedCount = 0;
 
 		foreach (var prTrimmed in input.Prs.Select(pr => pr.Trim()).Where(prTrimmed => !string.IsNullOrWhiteSpace(prTrimmed)))
 		{
 			// Check PR for blockers
-			var (shouldSkip, _) = await _prProcessor.CheckPrForBlockersAsync(
+			var (shouldSkip, prInfo) = await _prProcessor.CheckPrForBlockersAsync(
 				collector, prTrimmed, input.Owner, input.Repo, input.Products, config, ctx);
 
 			if (shouldSkip)
@@ -219,19 +227,27 @@ IEnvironmentVariables? env = null
 				continue;
 			}
 
+			// A null prInfo here means the GitHub fetch failed: this PR bypasses rules.create
+			// label filtering and is written without a derived title/type. Track it so the failure
+			// is surfaced as a single summary rather than buried among per-PR warnings.
+			if (prInfo == null)
+				fetchFailedCount++;
+
 			// Create a copy of input for this PR
 			var prInput = CreateInputForSinglePr(input, prTrimmed);
 
-			// Process this PR (treat as single PR)
-			var result = await CreateSingleChangelogAsync(collector, prInput, config, ctx);
+			// Process this PR (treat as single PR); the loop owns fetch-failure reporting
+			var result = await CreateSingleChangelogAsync(collector, prInput, config, ctx, reportFetchFailure: false);
 			if (result)
 				successCount++;
 		}
 
+		ReportBulkFetchFailures(collector, fetchFailedCount, input.Prs.Length, input.StrictFetch, "pull request");
+
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation("Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s)", successCount, skippedCount);
+		_logger.LogInformation("Processed {SuccessCount} PR(s) successfully, skipped {SkippedCount} PR(s), {FetchFailedCount} PR(s) could not be fetched", successCount, skippedCount, fetchFailedCount);
 		return successCount > 0;
 	}
 
@@ -239,7 +255,8 @@ IEnvironmentVariables? env = null
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
-		Cancel ctx)
+		Cancel ctx,
+		bool reportFetchFailure = true)
 	{
 		// Get the PR URL if Prs is provided (for single PR processing)
 		var prUrl = input.Prs is { Length: > 0 } ? input.Prs[0] : null;
@@ -261,6 +278,9 @@ IEnvironmentVariables? env = null
 				return true;
 
 			prFetchFailed = prResult.FetchFailed;
+
+			if (reportFetchFailure && prFetchFailed && input.StrictFetch)
+				EmitStrictFetchError(collector, "pull request", prUrl);
 
 			if (prResult.DerivedFields != null)
 				input = ApplyDerivedFields(input, prResult.DerivedFields);
@@ -310,10 +330,11 @@ IEnvironmentVariables? env = null
 
 		var successCount = 0;
 		var skippedCount = 0;
+		var fetchFailedCount = 0;
 
 		foreach (var issueUrl in input.Issues.Select(i => i.Trim()).Where(i => !string.IsNullOrWhiteSpace(i)))
 		{
-			var (shouldSkip, _) = await _issueProcessor.CheckIssueForBlockersAsync(
+			var (shouldSkip, issueInfo) = await _issueProcessor.CheckIssueForBlockersAsync(
 				collector, issueUrl, input.Owner, input.Repo, input.Products, config, ctx);
 
 			if (shouldSkip)
@@ -322,16 +343,23 @@ IEnvironmentVariables? env = null
 				continue;
 			}
 
+			// A null issueInfo means the GitHub fetch failed: the entry bypasses rules.create
+			// filtering and is written without a derived title/type. Track it for a summary report.
+			if (issueInfo == null)
+				fetchFailedCount++;
+
 			var issueInput = input with { Issues = [issueUrl] };
-			var result = await CreateSingleChangelogFromIssueAsync(collector, issueInput, config, ctx);
+			var result = await CreateSingleChangelogFromIssueAsync(collector, issueInput, config, ctx, reportFetchFailure: false);
 			if (result)
 				successCount++;
 		}
 
+		ReportBulkFetchFailures(collector, fetchFailedCount, input.Issues.Length, input.StrictFetch, "issue");
+
 		if (successCount == 0 && skippedCount == 0)
 			return false;
 
-		_logger.LogInformation("Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s)", successCount, skippedCount);
+		_logger.LogInformation("Processed {SuccessCount} issue(s) successfully, skipped {SkippedCount} issue(s), {FetchFailedCount} issue(s) could not be fetched", successCount, skippedCount, fetchFailedCount);
 		return successCount > 0;
 	}
 
@@ -339,7 +367,8 @@ IEnvironmentVariables? env = null
 		IDiagnosticsCollector collector,
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
-		Cancel ctx)
+		Cancel ctx,
+		bool reportFetchFailure = true)
 	{
 		var issueUrl = input.Issues is { Length: > 0 } ? input.Issues[0] : null;
 
@@ -350,6 +379,9 @@ IEnvironmentVariables? env = null
 
 		if (issueResult.ShouldSkip)
 			return true;
+
+		if (reportFetchFailure && issueResult.FetchFailed && input.StrictFetch)
+			EmitStrictFetchError(collector, "issue", issueUrl);
 
 		if (issueResult.DerivedFields != null)
 			input = ApplyDerivedFields(input, issueResult.DerivedFields);
@@ -378,6 +410,33 @@ IEnvironmentVariables? env = null
 			string.IsNullOrWhiteSpace(input.Type),
 			ctx);
 	}
+
+	/// <summary>
+	/// Emits a single aggregate diagnostic when one or more items could not be fetched from GitHub during
+	/// bulk creation. These items bypass <c>rules.create</c> label filtering and are written without a
+	/// derived title/type, so the failure is escalated to an error under strict mode (non-zero exit).
+	/// </summary>
+	private static void ReportBulkFetchFailures(IDiagnosticsCollector collector, int fetchFailedCount, int total, bool strict, string itemKind)
+	{
+		if (fetchFailedCount <= 0)
+			return;
+
+		var message =
+			$"{fetchFailedCount} of {total} {itemKind}(s) could not be fetched from GitHub. " +
+			$"Their changelogs were created without rules.create label filtering and may be missing title or type, " +
+			$"which will cause 'changelog bundle' to fail. Verify GITHUB_TOKEN is set and can access the referenced " +
+			$"repositories, then delete the generated changelog files and re-run.";
+
+		if (strict)
+			collector.EmitError(string.Empty, message);
+		else
+			collector.EmitWarning(string.Empty, message);
+	}
+
+	private static void EmitStrictFetchError(IDiagnosticsCollector collector, string itemKind, string? url) =>
+		collector.EmitError(string.Empty,
+			$"Could not fetch {itemKind} '{url}' from GitHub and --strict-fetch is set. " +
+			"Verify GITHUB_TOKEN is set and can access the repository, then re-run.");
 
 	private static CreateChangelogArguments CreateInputForSinglePr(CreateChangelogArguments input, string prUrl) =>
 		input with { Prs = [prUrl] };

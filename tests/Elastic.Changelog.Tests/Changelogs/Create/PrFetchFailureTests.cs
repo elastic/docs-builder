@@ -153,4 +153,101 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		yamlContent.Should().Contain("prs:");
 		yamlContent.Should().MatchRegex(@"(https://github\.com/elastic/elasticsearch/pull/12345|https://github\.com/elastic/elasticsearch/pull/67890)");
 	}
+
+	[Fact]
+	public async Task CreateChangelog_WithMultiplePrsFetchFails_EmitsAggregateWarningSummary()
+	{
+		// Arrange
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
+				A<CancellationToken>._))
+			.Returns((GitHubPrInfo?)null);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert: by default the bulk fetch failure is a single, loud summary warning (not an error).
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning &&
+			d.Message.Contains("2 of 2") &&
+			d.Message.Contains("could not be fetched from GitHub"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithMultiplePrsFetchFailsAndStrictFetch_EmitsError()
+	{
+		// Arrange
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
+				A<CancellationToken>._))
+			.Returns((GitHubPrInfo?)null);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345", "https://github.com/elastic/elasticsearch/pull/67890"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			StrictFetch = true,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert: under --strict-fetch the bulk fetch failure escalates to an error (non-zero exit),
+		// but the best-effort files are still written so they can be inspected.
+		result.Should().BeTrue();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("could not be fetched from GitHub"));
+	}
+
+	[Fact]
+	public async Task CreateChangelog_WithSinglePrFetchFailsAndStrictFetch_EmitsError()
+	{
+		// Arrange
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<string>._,
+				A<string?>._,
+				A<string?>._,
+				A<CancellationToken>._))
+			.Returns((GitHubPrInfo?)null);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			StrictFetch = true,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("--strict-fetch"));
+	}
 }
