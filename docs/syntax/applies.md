@@ -1,17 +1,29 @@
 # Applies to
 
-Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
+Elastic documentation on [elastic.co/docs](https://www.elastic.co/docs) follows a [cumulative](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) model. We don't maintain versioned branches or separate copies of a page for each release. Instead, every page covers all supported versions, and writers use `applies_to` metadata to tag content with the versions, products, deployment models, and lifecycle states it applies to.
 
-To support this, source files use a tagging system to indicate:
-
-* Which Elastic products and deployment models the content applies to.
-* When a feature changes state relative to the base version.
-
-This is what the `applies_to` metadata is for. It can be used at the [page](#page-level), [section](#section-level), or [inline](#inline-level) level to specify applicability with precision.
-
-:::{note}
-For detailed guidance, refer to [Write cumulative documentation](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs).
+:::{tip}
+You can use the [applies-to-tagging](https://github.com/elastic/elastic-docs-skills/tree/main/skills/authoring/applies-to-tagging) skill in Claude Code to validate and generate `applies_to` tags. [**Learn more**](https://github.com/elastic/elastic-docs-skills/tree/main#elastic-docs-skills)
 :::
+
+## Quick reference
+
+When documenting a new feature or behavior:
+
+1. **Where should I add `applies_to` metadata?** Find where your changes sit on the page and match to a type below.
+2. **What keys and values do I use?** Refer to the [key-value reference](#key-value-reference) for the full list of valid keys, lifecycles, and version formats.
+
+### Where should I put the `applies_to` metadata?
+
+| When | Use |
+|------|-----|
+| You're creating a new page | [Frontmatter](#page-level) |
+| You're adding a new section to an existing page | [Section-level annotation](#section-level) |
+| You're adding a single new item to a list or definition term | [Inline annotation](#inline-level) |
+| You're marking a single item as a technical preview | [Preview shorthand](#inline-level) |
+| You need to show entirely different content for each variant, not just tag the same content | [Versioned tabs](applies-switch.md) |
+| You're adding a version-specific note, tip, or warning | [Admonition annotation](admonitions.md) |
+| You're adding a version-specific dropdown | [Dropdown annotation](dropdowns.md) |
 
 ## Syntax reference
 
