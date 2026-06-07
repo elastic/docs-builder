@@ -1,0 +1,690 @@
+/* Host: custom elements are inline by default; ensure layout and visible footprint. */
+vector-sizing-calculator {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	/* Permite que el grid/flex del layout padre encoja por debajo del min-content de los hijos (p. ej. EUI + CTA). */
+	min-width: 0;
+	min-height: 1px;
+	margin-top: 16px;
+}
+
+vector-sizing-calculator:not(:defined) {
+	min-height: 120px;
+	border-radius: 8px;
+	background: var(--euiColorEmptyShade, #f5f7fa);
+}
+
+/* Layout: una columna (filas) hasta lg; dos columnas desde lg (~1024px), alineado con el rail derecho del layout Markdown. */
+.vectorSizingCalc {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	margin: 0 auto;
+	box-sizing: border-box;
+	border-radius: 10px;
+	overflow: visible;
+	background: #fff;
+}
+
+.vectorSizingCalc__grid {
+	display: grid;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	grid-template-columns: 1fr;
+	align-items: stretch;
+	border: 1px solid #e3e8f2;
+	border-bottom: none;
+	border-radius: 8px 8px 0 0;
+	overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+	.vectorSizingCalc__grid {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	}
+}
+
+.vectorSizingCalc__panel {
+	box-sizing: border-box;
+	padding: 40px;
+	min-width: 0;
+	min-height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.vectorSizingCalc__panel--left {
+	background: #fff;
+}
+
+.vectorSizingCalc__panel--right {
+	background: #f6f9fc;
+}
+
+.vectorSizingCalc__summary {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+}
+
+.vectorSizingCalc__summaryMain {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.vectorSizingCalc__summaryLabel {
+	color: #1d2a3e;
+	font-weight: 500;
+}
+
+.vectorSizingCalc .vectorSizingCalc__summaryLabel.euiText {
+	font-weight: 500 !important;
+}
+
+.vectorSizingCalc__heroTotals {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	justify-content: flex-start;
+	gap: 24px;
+	margin-top: 16px;
+}
+
+.vectorSizingCalc__heroSizeColumn {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	text-align: left;
+	margin: 0;
+	color: #111c2c;
+}
+
+.vectorSizingCalc__heroSizeValue {
+	font-size: 40px;
+	line-height: 40px;
+	font-weight: 800;
+}
+
+.vectorSizingCalc__heroSizeUnit {
+	font-size: 16px;
+	line-height: 20px;
+	font-weight: 700;
+}
+
+.vectorSizingCalc__resultsDetail {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	width: 100%;
+}
+
+.vectorSizingCalc__resultsDetailLabels,
+.vectorSizingCalc__resultsDetailValues {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.vectorSizingCalc__resultsDetailLabels {
+	flex: 0 0 auto;
+}
+
+.vectorSizingCalc__resultsDetailValues {
+	flex: 1 1 0;
+	min-width: 0;
+	align-items: flex-end;
+	text-align: right;
+}
+
+.vectorSizingCalc__detailLabel {
+	color: #1d2a3e !important;
+	font-weight: 500 !important;
+}
+
+.vectorSizingCalc__detailValue {
+	color: #516381 !important;
+	font-weight: 400 !important;
+	font-size: 14px !important;
+	line-height: 20px !important;
+}
+
+.vectorSizingCalc__disclaimerFooter {
+	margin-top: auto;
+	padding-top: 16px;
+}
+
+.vectorSizingCalc__byteSizeValue {
+	display: inline-block;
+	max-width: 100%;
+	text-align: right;
+}
+
+.vectorSizingCalc__byteSizeValue--hero {
+	text-align: left;
+}
+
+.vectorSizingCalc__byteSizeRow--kv.vectorSizingCalc__labelRow {
+	font-weight: inherit;
+	font-size: inherit;
+	color: inherit;
+}
+
+.vectorSizingCalc__byteSizeRow--hero.vectorSizingCalc__labelRow {
+	font-weight: inherit;
+	font-size: inherit;
+	color: inherit;
+	align-items: flex-start;
+}
+
+.vectorSizingCalc__byteSizeValue--hero .vectorSizingCalc__byteSizeValuePrimary {
+	color: var(--euiTextColor, #343741);
+	font-size: clamp(2.25rem, 6vw, 3.3rem);
+	font-weight: 800;
+	line-height: 1.05;
+	letter-spacing: -0.02em;
+}
+
+.vectorSizingCalc__byteSizeValuePrimary {
+	font-weight: 400;
+}
+
+.vectorSizingCalc__tooltipBody {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-width: 16rem;
+}
+
+/* Misma tipografía que EuiText size="xs" en CalcToolTip (tooltip body). */
+.vectorSizingCalc__binaryPrefixNote,
+.vectorSizingCalc__disclaimer {
+	display: block;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+	color: #798eaf !important;
+}
+
+.vectorSizingCalc__disclaimer .euiLink {
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+}
+
+.vectorSizingCalc__sectionTitle {
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 500;
+	margin-bottom: 16px;
+	color: #798eaf;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.vectorSizingCalc__sectionDesc {
+	font-size: 14px;
+	line-height: 17px;
+	margin: 0 0 18px;
+	color: #5b6f8a;
+}
+
+.vectorSizingCalc .euiLink {
+	font-weight: 600;
+}
+
+.vectorSizingCalc a[target='_blank']::after,
+.vectorSizingCalc a[href^='http']::after {
+	display: none !important;
+	content: none !important;
+}
+
+.vectorSizingCalc__fieldGrid2 {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
+}
+
+@media (min-width: 480px) {
+	.vectorSizingCalc__fieldGrid2 {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.vectorSizingCalc__labelRow {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: #24334b;
+	font-size: 1rem;
+	line-height: 16px;
+	font-weight: 600;
+	cursor: default;
+}
+
+.vectorSizingCalc__labelTip {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	cursor: default;
+	color: #516381;
+}
+
+/* Mismo pictograma «info» que el callout; forzar 12×12 y color del label. */
+.vectorSizingCalc__labelTip .euiIcon {
+	flex-shrink: 0;
+	width: 12px !important;
+	height: 12px !important;
+	color: inherit;
+}
+
+.vectorSizingCalc__labelTip .euiIcon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.vectorSizingCalc .euiFormRow {
+	width: 100%;
+	max-width: 100%;
+	margin-bottom: 16px;
+}
+
+.vectorSizingCalc .euiFormRow__fieldWrapper {
+	width: 100%;
+}
+
+.vectorSizingCalc .euiComboBox,
+.vectorSizingCalc .euiSelect {
+	width: 100%;
+	max-width: 100%;
+}
+
+.vectorSizingCalc .euiFormRow + .euiFormRow,
+.vectorSizingCalc .css-1ylwq6x-euiFormRow + .euiFormRow {
+	margin-block-start: 0;
+}
+
+.vectorSizingCalc .vectorSizingCalc__row--dimensions {
+	margin-bottom: 0;
+}
+
+.vectorSizingCalc .euiFormLabel {
+	color: #24334b;
+	margin-bottom: 0;
+}
+
+.vectorSizingCalc .euiSelect,
+.vectorSizingCalc .euiSelect__input {
+	cursor: pointer;
+}
+
+/* Combo: mano en cáscara y chevron; texto solo en el input editable. */
+.vectorSizingCalc .euiComboBox .euiFormControlLayout,
+.vectorSizingCalc .euiComboBox .euiFormControlLayoutIcons,
+.vectorSizingCalc .euiComboBox .euiFormControlLayoutIcons button,
+.vectorSizingCalc .euiComboBox [data-test-subj='comboBoxToggleListButton'],
+.vectorSizingCalc .euiComboBox .euiComboBox__inputWrap,
+.vectorSizingCalc .euiComboBox .euiComboBox__inputWrap--plainText {
+	cursor: pointer;
+}
+
+.vectorSizingCalc .euiComboBox .euiComboBox__input,
+.vectorSizingCalc .euiComboBox [data-test-subj='comboBoxSearchInput'] {
+	cursor: text;
+}
+
+.vectorSizingCalc .euiFormControlLayout,
+.vectorSizingCalc .euiFieldText,
+.vectorSizingCalc .euiFieldNumber,
+.vectorSizingCalc .euiSelect,
+.vectorSizingCalc .euiComboBox .euiFormControlLayout {
+	border-radius: 6px;
+}
+
+.vectorSizingCalc .euiFieldText,
+.vectorSizingCalc .euiFieldNumber,
+.vectorSizingCalc .euiSelect,
+.vectorSizingCalc .euiComboBox .euiComboBox__inputWrap {
+	min-height: 42px;
+	background: #fff;
+	border-color: #b6c2d4;
+}
+
+.vectorSizingCalc .euiFormControlLayout__append,
+.vectorSizingCalc .euiFormControlLayout__childrenWrapper {
+	background: #fff;
+}
+
+.vectorSizingCalc .euiFieldText:focus,
+.vectorSizingCalc .euiFieldNumber:focus,
+.vectorSizingCalc .euiSelect:focus {
+	border-color: #1a73e8;
+	box-shadow: 0 0 0 1px #1a73e8 inset;
+}
+
+.vectorSizingCalc .euiCallOut {
+	border-radius: 8px;
+}
+
+.vectorSizingCalc .euiCallOutHeader__title,
+.vectorSizingCalc .euiCallOut .euiText {
+	font-size: 0.95rem;
+	line-height: 1.45;
+}
+
+.vectorSizingCalc__sectionDivider {
+	width: 100%;
+	height: 1px;
+	background: #e3e8f2;
+}
+
+.vectorSizingCalc__infoCallout {
+	padding: 12px !important;
+	border-radius: 8px !important;
+	border: 1px solid #aee8d2 !important;
+	background: #e9fff7 !important;
+}
+
+.vectorSizingCalc__infoCalloutRow {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.vectorSizingCalc__infoCalloutIcon {
+	color: #008a5e !important;
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+.vectorSizingCalc__infoCalloutText {
+	color: #008a5e !important;
+	font-size: 0.95rem;
+	line-height: 1.45;
+}
+
+.vectorSizingCalc .vectorSizingCalc__fieldGrid2 .euiFormRow {
+	margin: 0 !important;
+}
+
+/* Etiqueta a ancho completo; fila siguiente: slider + input al final. */
+.vectorSizingCalc__graphConnectionsBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	width: 100%;
+	margin-bottom: 14px;
+}
+
+.vectorSizingCalc__graphConnectionsControlsRow {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	width: 100%;
+	min-width: 0;
+}
+
+.vectorSizingCalc__graphConnectionsSlider {
+	--vsc-range-track-h: 6px;
+	--vsc-range-track-bg: #dde4ef;
+	--vsc-range-active: #5a6d8c;
+	--vsc-range-thumb: #516381;
+	--vsc-range-thumb-focus-ring: #3d6ecc;
+
+	flex: 1 1 0;
+	display: flex;
+	align-items: center;
+	width: 100%;
+	min-width: 0;
+	min-height: 40px;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeWrapper,
+.vectorSizingCalc__graphConnectionsSlider .euiFormControlLayout {
+	width: 100%;
+	margin: 0;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeInput {
+	margin-block: 0;
+	padding-block: 0;
+}
+
+/* EuiRange + showRange: pista gruesa tipo “pill”, parte activa/inactiva y thumb con borde blanco + sombra. */
+.vectorSizingCalc__graphConnectionsSlider .euiRangeTrack::after {
+	block-size: var(--vsc-range-track-h) !important;
+	inset-block-start: calc(50% - (var(--vsc-range-track-h) / 2)) !important;
+	background: var(--vsc-range-track-bg) !important;
+	border-radius: 9999px !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeHighlight {
+	block-size: var(--vsc-range-track-h) !important;
+	inset-block-start: calc(50% - (var(--vsc-range-track-h) / 2)) !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeHighlight__progress {
+	block-size: var(--vsc-range-track-h) !important;
+	border-radius: 9999px !important;
+	background-color: var(--vsc-range-active) !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider
+	.euiRangeSlider:focus-visible
+	~ .euiRangeHighlight
+	.euiRangeHighlight__progress {
+	background-color: #6b7fa3 !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider
+	.euiRangeSlider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	inline-size: 18px !important;
+	block-size: 18px !important;
+	border-radius: 50% !important;
+	box-sizing: border-box !important;
+	background-color: var(--vsc-range-thumb) !important;
+	border: 2px solid #fff !important;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.95),
+		0 1px 2px rgba(17, 43, 84, 0.2),
+		0 3px 8px rgba(17, 43, 84, 0.18) !important;
+	cursor: pointer;
+}
+
+.vectorSizingCalc__graphConnectionsSlider .euiRangeSlider::-moz-range-thumb {
+	inline-size: 18px !important;
+	block-size: 18px !important;
+	border-radius: 50% !important;
+	box-sizing: border-box !important;
+	background-color: var(--vsc-range-thumb) !important;
+	border: 2px solid #fff !important;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.95),
+		0 1px 2px rgba(17, 43, 84, 0.2),
+		0 3px 8px rgba(17, 43, 84, 0.18) !important;
+	cursor: pointer;
+}
+
+.vectorSizingCalc__graphConnectionsSlider
+	.euiRangeSlider:focus-visible::-webkit-slider-thumb {
+	outline: 2px solid var(--vsc-range-thumb-focus-ring) !important;
+	outline-offset: 2px !important;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.95),
+		0 1px 2px rgba(17, 43, 84, 0.22),
+		0 3px 10px rgba(17, 43, 84, 0.2) !important;
+}
+
+.vectorSizingCalc__graphConnectionsSlider
+	.euiRangeSlider:focus-visible::-moz-range-thumb {
+	outline: 2px solid var(--vsc-range-thumb-focus-ring) !important;
+	outline-offset: 2px !important;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.95),
+		0 1px 2px rgba(17, 43, 84, 0.22),
+		0 3px 10px rgba(17, 43, 84, 0.2) !important;
+}
+
+.vectorSizingCalc__graphConnectionsValueCell {
+	flex-shrink: 0;
+	width: 64px;
+}
+
+.vectorSizingCalc__rangeNumberInput,
+.vectorSizingCalc__graphConnectionsValueCell .euiFormControlLayout {
+	width: 64px;
+	max-width: 64px;
+}
+
+.vectorSizingCalc__graphConnectionsValueCell .euiFormControlLayout--group {
+	min-height: 40px;
+}
+
+.vectorSizingCalc__graphConnectionsValueCell .euiFieldNumber {
+	width: 64px;
+}
+
+.vectorSizingCalc__sectionToggle {
+	width: 100%;
+	padding-inline: 0 !important;
+	margin-inline-start: 0 !important;
+	align-self: stretch;
+	color: #0b64dd !important;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__sectionToggle:hover:not(:disabled),
+.vectorSizingCalc__sectionToggle:focus,
+.vectorSizingCalc__sectionToggle:active {
+	text-decoration: none !important;
+	background-color: transparent !important;
+}
+
+.vectorSizingCalc__sectionToggle .euiButtonEmpty__content {
+	width: 100%;
+	justify-content: flex-end;
+	padding-inline: 0 !important;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__sectionToggle .euiButtonEmpty__text {
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__sectionToggle:hover:not(:disabled) .euiButtonEmpty__text,
+.vectorSizingCalc__sectionToggle:focus .euiButtonEmpty__text {
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__formulasPanel {
+	background: #2b394f;
+	border: 1px solid #2b394f;
+	border-radius: 0 0 8px 8px;
+	overflow: hidden;
+}
+
+.vectorSizingCalc__formulasHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	width: 100%;
+	padding: 16px 24px;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+	text-align: left;
+}
+
+.vectorSizingCalc__formulasHeader:hover,
+.vectorSizingCalc__formulasHeader:focus {
+	outline: none;
+}
+
+.vectorSizingCalc__formulasHeader:focus-visible {
+	outline: 2px solid #798eaf;
+	outline-offset: -2px;
+}
+
+.vectorSizingCalc__formulasTitle {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: #798eaf !important;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 400 !important;
+}
+
+.vectorSizingCalc__formulasTitle .euiIcon {
+	color: #798eaf;
+	flex-shrink: 0;
+}
+
+.vectorSizingCalc__formulasToggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	color: #798eaf !important;
+	text-decoration: none !important;
+}
+
+.vectorSizingCalc__formulasToggle .euiIcon {
+	color: #798eaf;
+}
+
+.vectorSizingCalc__formulasBody {
+	padding: 0 24px 24px;
+}
+
+.vectorSizingCalc__formulasSections {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.vectorSizingCalc__formulasPre {
+	margin: 0;
+	padding: 0;
+	max-width: 100%;
+	overflow-x: auto;
+	font-family: var(--euiCodeFontFamily, 'Menlo', 'Consolas', monospace);
+	font-size: 12px;
+	line-height: 16px;
+	color: #e3e8f2;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.vectorSizingCalc__formulasLine {
+	display: block;
+	line-height: 16px;
+	color: #e3e8f2;
+}
+
+.vectorSizingCalc__formulasLine--total {
+	color: #b8d4ff;
+}
+
+@media (max-width: 1023px) {
+	.vectorSizingCalc__panel--right {
+		border-top: none;
+	}
+}
