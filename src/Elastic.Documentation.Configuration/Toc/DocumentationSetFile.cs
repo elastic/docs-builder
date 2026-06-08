@@ -73,6 +73,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "branding")]
 	public BrandingConfiguration? Branding { get; set; }
 
+	[YamlMember(Alias = "storybook")]
+	public DocumentationSetStorybook? Storybook { get; set; }
+
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
 	{
 		if (item is FileRef fileRef)
@@ -738,6 +741,13 @@ public class DocumentationSetFeatures
 	public bool? PrimaryNav { get; set; }
 	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
 	public bool? DisableGithubEditLink { get; set; }
+}
+
+[YamlSerializable]
+public class DocumentationSetStorybook
+{
+	[YamlMember(Alias = "registry")]
+	public string? Registry { get; set; }
 }
 
 /// <summary>

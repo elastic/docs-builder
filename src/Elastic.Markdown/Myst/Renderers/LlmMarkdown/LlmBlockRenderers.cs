@@ -15,6 +15,7 @@ using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.Settings;
+using Elastic.Markdown.Myst.Directives.Storybook;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.Yaml;
@@ -496,6 +497,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkillBlock(renderer, agentSkillBlock);
 				return;
+			case StorybookBlock storybookBlock:
+				WriteStorybookBlock(renderer, storybookBlock);
+				return;
 		}
 
 		// Ensure single empty line before directive
@@ -861,6 +865,28 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		if (block.Count > 0)
 			WriteChildrenWithIndentation(renderer, block, "  ");
 		renderer.Writer.WriteLine("</agent-skill>");
+		renderer.EnsureLine();
+	}
+
+	private static void WriteStorybookBlock(LlmMarkdownRenderer renderer, StorybookBlock block)
+	{
+		if (string.IsNullOrEmpty(block.StoryUrl))
+			return;
+
+		renderer.EnsureBlockSpacing();
+		renderer.Writer.Write("<storybook");
+		renderer.Writer.Write($" title=\"{WebUtility.HtmlEncode(block.IframeTitle)}\"");
+		if (!string.IsNullOrWhiteSpace(block.Project))
+			renderer.Writer.Write($" project=\"{WebUtility.HtmlEncode(block.Project)}\"");
+		if (!string.IsNullOrWhiteSpace(block.Storybook))
+			renderer.Writer.Write($" storybook=\"{WebUtility.HtmlEncode(block.Storybook)}\"");
+		if (!string.IsNullOrWhiteSpace(block.StoryId))
+			renderer.Writer.Write($" story-id=\"{WebUtility.HtmlEncode(block.StoryId)}\"");
+		renderer.Writer.Write($" src=\"{WebUtility.HtmlEncode(LlmRenderingHelpers.MakeAbsoluteUrl(renderer, block.StoryUrl) ?? block.StoryUrl)}\"");
+		renderer.Writer.WriteLine(">");
+		if (block.Count > 0)
+			WriteChildrenWithIndentation(renderer, block, "  ");
+		renderer.Writer.WriteLine("</storybook>");
 		renderer.EnsureLine();
 	}
 

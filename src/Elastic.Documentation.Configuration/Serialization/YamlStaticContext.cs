@@ -39,6 +39,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 // Table of contents
 [YamlSerializable(typeof(DocumentationSetFile))]
 [YamlSerializable(typeof(DocumentationSetFeatures))]
+[YamlSerializable(typeof(DocumentationSetStorybook))]
 [YamlSerializable(typeof(CodexDocSetMetadata))]
 [YamlSerializable(typeof(TableOfContentsFile))]
 [YamlSerializable(typeof(SiteNavigationFile))]
