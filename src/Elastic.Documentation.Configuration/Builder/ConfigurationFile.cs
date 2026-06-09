@@ -69,6 +69,13 @@ public record ConfigurationFile
 	public string? StorybookRegistry { get; }
 
 	/// <summary>
+	/// Environment-independent <c>storybook.registry</c> value (committed default). Non-null only when an allow-listed
+	/// environment variable changed <see cref="StorybookRegistry"/>, so the directive can degrade to the committed
+	/// registry when the environment-supplied one is unreachable (e.g. an ephemeral PR registry that is not yet published).
+	/// </summary>
+	public string? StorybookRegistryFallback { get; }
+
+	/// <summary>
 	/// Resolved API configurations with template and specification file information.
 	/// </summary>
 	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
@@ -258,7 +265,18 @@ public record ConfigurationFile
 			}
 
 			if (docSetFile.Storybook is not null)
-				StorybookRegistry = docSetFile.Storybook.Registry?.Trim();
+			{
+				var interpolated = EnvironmentInterpolation.Interpolate(
+					docSetFile.Storybook.Registry?.Trim(),
+					context.Environment,
+					name => context.EmitWarning(
+						context.ConfigurationPath,
+						$"'storybook.registry' references environment variable '{name}' which is not allow-listed for interpolation and is left literal. Allowed: {string.Join(", ", EnvironmentInterpolation.AllowedVariables)}."
+					)
+				);
+				StorybookRegistry = interpolated.Value;
+				StorybookRegistryFallback = interpolated.Fallback;
+			}
 
 			// Process products from docset - resolve ProductLinks to Product objects
 			if (docSetFile.Products.Count > 0)
