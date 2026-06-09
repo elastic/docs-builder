@@ -47,6 +47,7 @@ public class ConfigurationFileStorybookRegistryTests
 
 		config.StorybookRegistry.Should().Be("${AWS_SECRET_ACCESS_KEY:-fallback}");
 		config.StorybookRegistry.Should().NotContain("super-secret");
+		collector.Warnings.Should().Be(1, "a disallowed interpolation variable must emit exactly one warning");
 	}
 
 	private static ConfigurationFile CreateConfiguration(string registry, IEnvironmentVariables environment, DiagnosticsCollector? collector = null)
