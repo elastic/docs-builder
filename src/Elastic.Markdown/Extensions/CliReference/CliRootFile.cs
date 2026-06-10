@@ -14,6 +14,8 @@ public record CliRootFile : IO.MarkdownFile
 {
 	private readonly CliSchema _schema;
 	private readonly IFileInfo? _supplementalDoc;
+	private readonly string _title;
+	private readonly string _navigationTitle;
 
 	public CliRootFile(
 		IFileInfo sourceFile,
@@ -21,19 +23,23 @@ public record CliRootFile : IO.MarkdownFile
 		MarkdownParser parser,
 		BuildContext build,
 		CliSchema schema,
-		IFileInfo? supplementalDoc
+		IFileInfo? supplementalDoc,
+		string? title = null,
+		string? navigationTitle = null
 	) : base(sourceFile, rootPath, parser, build)
 	{
 		_schema = schema;
 		_supplementalDoc = supplementalDoc;
-		Title = schema.Name;
+		_title = string.IsNullOrWhiteSpace(title) ? schema.Name : title;
+		_navigationTitle = string.IsNullOrWhiteSpace(navigationTitle) ? $"{schema.Name} CLI" : navigationTitle;
+		Title = _title;
 	}
 
-	public override string NavigationTitle => $"{_schema.Name} CLI";
+	public override string NavigationTitle => _navigationTitle;
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
-		Title = _schema.Name;
+		Title = _title;
 		var markdown = BuildMarkdown();
 		return Task.FromResult(MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null));
 	}
@@ -50,6 +56,6 @@ public record CliRootFile : IO.MarkdownFile
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
 		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
-		return CliMarkdownGenerator.RootPage(_schema, supplemental);
+		return CliMarkdownGenerator.RootPage(_schema, supplemental, _title);
 	}
 }

@@ -548,7 +548,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			? ResolveTableOfContents(collector, cliRef.Children, baseDirectory, fileSystem, fullVirtualRoot, containerPath, context)
 			: [];
 
-		return new CliReferenceRef(schemaFullPath, cliRef.SupplementalFolder, fullVirtualRoot, pathRelativeToContainer, context, resolvedChildren);
+		return new CliReferenceRef(schemaFullPath, cliRef.SupplementalFolder, cliRef.Title, cliRef.NavigationTitle, fullVirtualRoot, pathRelativeToContainer, context, resolvedChildren);
 	}
 
 	/// <summary>
