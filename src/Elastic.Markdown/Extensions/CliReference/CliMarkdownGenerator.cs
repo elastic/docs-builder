@@ -13,6 +13,7 @@ internal static partial class CliMarkdownGenerator
 	public static string RootPage(CliSchema schema, CliSupplementalDoc? supplemental, string? title = null)
 	{
 		var sb = new StringBuilder();
+		AppendFrontMatter(sb, supplemental);
 		_ = sb.AppendLine($"# {title ?? schema.Name}");
 		_ = sb.AppendLine();
 
@@ -108,6 +109,7 @@ internal static partial class CliMarkdownGenerator
 		List<CliShortcutSchema>? shortcuts = null)
 	{
 		var sb = new StringBuilder();
+		AppendFrontMatter(sb, supplemental);
 		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : ns.Segment;
 		_ = sb.AppendLine($"# {heading} <span class=\"cli-badge-ns\">cli namespace</span>");
 		_ = sb.AppendLine();
@@ -198,6 +200,7 @@ internal static partial class CliMarkdownGenerator
 		List<CliShortcutSchema>? shortcuts = null)
 	{
 		var sb = new StringBuilder();
+		AppendFrontMatter(sb, supplemental);
 		var heading = fullPath is { Length: > 0 } ? string.Join(" ", fullPath) : cmd.Name;
 		_ = sb.AppendLine($"# {heading} <span class=\"cli-badge-cmd\">cli command</span>");
 		_ = sb.AppendLine();
@@ -320,6 +323,15 @@ internal static partial class CliMarkdownGenerator
 		}
 
 		return sb.ToString();
+	}
+
+	private static void AppendFrontMatter(StringBuilder sb, CliSupplementalDoc? supplemental)
+	{
+		if (string.IsNullOrWhiteSpace(supplemental?.FrontMatter))
+			return;
+
+		_ = sb.AppendLine(supplemental.FrontMatter);
+		_ = sb.AppendLine();
 	}
 
 	private static void AppendCommandModifiers(StringBuilder sb, CliCommandSchema cmd)
