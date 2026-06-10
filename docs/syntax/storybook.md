@@ -17,6 +17,25 @@ For local Kibana testing, `yarn storybook_docs shared_ux --serve` serves the reg
 http://127.0.0.1:6007/storybook-docs/docs_registry.json
 ```
 
+## Environment-dependent registry
+
+The registry URL is often environment-dependent (a local server, a per-PR preview bucket, or the published `main` artifact). Rather than hand-editing `docset.yml` per environment, `registry` supports shell-style environment-variable interpolation with a committed default:
+
+```yaml
+storybook:
+  registry: ${KIBANA_STORYBOOK_REGISTRY:-https://ci-artifacts.kibana.dev/storybooks/main/storybook-docs/docs_registry.json}
+```
+
+The committed value is then identical across all environments:
+
+- `${VAR}` resolves to the value of `VAR`, or empty when unset.
+- `${VAR:-default}` resolves to `VAR` when set and non-empty, otherwise to `default`.
+- With no environment variable set (for example a `main` build), the committed `default` is used. To target a different registry, export the variable before building, for example `KIBANA_STORYBOOK_REGISTRY=http://127.0.0.1:6007/storybook-docs/docs_registry.json docs-builder serve`.
+
+Because docs-builder renders untrusted branches, only an explicit allow-list of variable names is interpolated. Currently that is `KIBANA_STORYBOOK_REGISTRY`. Any other variable is left literal and a warning is emitted, so a `docset.yml` can never read arbitrary build secrets such as `${AWS_SECRET_ACCESS_KEY}`.
+
+When the interpolated registry is unreachable (for example an ephemeral per-PR registry that has not been published yet), docs-builder falls back to the committed default. If the committed default cannot be read either, the build reports an error.
+
 ## Usage
 
 Use a registry ID directly:
