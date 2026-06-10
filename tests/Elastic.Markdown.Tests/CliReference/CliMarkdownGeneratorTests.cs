@@ -28,4 +28,24 @@ public class CliMarkdownGeneratorTests
 		markdown.Should().StartWith("# Elastic CLI reference");
 		markdown.Should().Contain("Interact with Elastic from the command line.");
 	}
+
+	[Theory]
+	[InlineData("")]
+	[InlineData("   ")]
+	public void RootPage_FallsBackToSchemaNameForBlankTitleOverride(string title)
+	{
+		var schema = new CliSchema(
+			SchemaVersion: 1,
+			Name: "elastic",
+			Description: "Interact with Elastic from the command line.",
+			GlobalOptions: [],
+			RootDefault: null,
+			Commands: [],
+			Namespaces: []
+		);
+
+		var markdown = CliMarkdownGenerator.RootPage(schema, null, title);
+
+		markdown.Should().StartWith("# elastic");
+	}
 }

@@ -14,7 +14,8 @@ internal static partial class CliMarkdownGenerator
 	{
 		var sb = new StringBuilder();
 		AppendFrontMatter(sb, supplemental);
-		_ = sb.AppendLine($"# {title ?? schema.Name}");
+		var pageTitle = string.IsNullOrWhiteSpace(title) ? schema.Name : title.Trim();
+		_ = sb.AppendLine($"# {pageTitle}");
 		_ = sb.AppendLine();
 
 		var description = supplemental?.Description ?? schema.Description?.Trim();
