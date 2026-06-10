@@ -10,11 +10,12 @@ namespace Elastic.Markdown.Extensions.CliReference;
 
 internal static partial class CliMarkdownGenerator
 {
-	public static string RootPage(CliSchema schema, CliSupplementalDoc? supplemental)
+	public static string RootPage(CliSchema schema, CliSupplementalDoc? supplemental, string? title = null)
 	{
 		var sb = new StringBuilder();
 		AppendFrontMatter(sb, supplemental);
-		_ = sb.AppendLine($"# {schema.Name}");
+		var pageTitle = string.IsNullOrWhiteSpace(title) ? schema.Name : title.Trim();
+		_ = sb.AppendLine($"# {pageTitle}");
 		_ = sb.AppendLine();
 
 		var description = supplemental?.Description ?? schema.Description?.Trim();

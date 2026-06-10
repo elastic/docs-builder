@@ -62,6 +62,16 @@ toc:
     folder: cli-reference
 ```
 
+Use `title:` to customize the generated CLI root page title, and `navigation_title:` to customize the sidebar and breadcrumb label without changing generated command examples:
+
+```yaml
+toc:
+  - cli: cli-schema.json
+    folder: cli-reference
+    title: Elastic CLI reference
+    navigation_title: CLI reference
+```
+
 Use `children:` to prepend hand-written pages — installation guides, conceptual overviews, or quick-start tutorials — before the auto-generated reference. All schema-generated pages follow the listed children:
 
 ```yaml
@@ -101,4 +111,6 @@ Your CLI reference section is live. As your CLI evolves, regenerate the schema a
 |---|---|
 | `cli: <path>` | Path to the schema JSON, relative to `docset.yml` |
 | `folder: <path>` | Supplemental docs folder; also sets the URL prefix |
+| `title: <title>` | Optional generated CLI root page title |
+| `navigation_title: <title>` | Optional generated CLI root navigation label |
 | `children:` | Regular toc items prepended before generated pages |
