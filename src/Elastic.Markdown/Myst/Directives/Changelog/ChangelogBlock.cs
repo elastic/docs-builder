@@ -12,6 +12,7 @@ using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
@@ -99,6 +100,20 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	public bool Found { get; private set; }
 
 	/// <summary>
+	/// Product to source bundles for from the public CDN (the <c>:cdn:</c> option). When set, the
+	/// directive fetches <c>{cdnBase}/{product}/registry.json</c> and the bundles it lists
+	/// instead of reading a local folder; any folder argument is ignored.
+	/// </summary>
+	public string? CdnProduct { get; private set; }
+
+	/// <summary>
+	/// Optional single target to render (the <c>:version:</c> option, e.g. <c>9.4.0</c> or a release
+	/// date). When set, only the bundle whose target/file matches is rendered; applies to both local
+	/// folder and CDN sources. In CDN mode it also limits which bundles are downloaded.
+	/// </summary>
+	public string? VersionFilter { get; private set; }
+
+	/// <summary>
 	/// Loaded and parsed bundles, sorted by version (semver descending).
 	/// </summary>
 	public IReadOnlyList<LoadedBundle> LoadedBundles { get; private set; } = [];
@@ -184,7 +199,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
-		ExtractBundlesFolderPath();
 		Subsections = PropBool("subsections");
 		ConfigPath = Prop("config");
 		var productOpt = Prop("product");
@@ -197,6 +211,29 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		LinkVisibility = ParseLinkVisibility();
 		DescriptionVisibility = ParseDescriptionVisibility();
 		DropdownsEnabled = PropBool("dropdowns");
+		VersionFilter = Prop("version") is { Length: > 0 } v ? v.Trim() : null;
+
+		if (Properties?.ContainsKey("cdn") == true)
+		{
+			// :cdn: takes an explicit product, or may be valueless to infer the product from the
+			// repository that holds the doc (the common case where the repo name is the product id).
+			var product = Prop("cdn") is { Length: > 0 } explicitProduct
+				? explicitProduct.Trim()
+				: InferCdnProductFromRepository();
+
+			if (string.IsNullOrWhiteSpace(product))
+			{
+				this.EmitError(
+					"The :cdn: product could not be inferred from the repository; specify it explicitly, e.g. ':cdn: elasticsearch'.");
+				return;
+			}
+
+			CdnProduct = product;
+			LoadCdnBundles(product);
+			return;
+		}
+
+		ExtractBundlesFolderPath();
 		if (Found)
 			LoadAndCacheBundles();
 	}
@@ -431,6 +468,17 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		}
 	}
 
+	/// <summary>
+	/// Environment variable that overrides the changelog CDN base URL (staging/local/testing).
+	/// </summary>
+	private const string CdnBaseUrlEnvironmentVariable = "DOCS_BUILDER_CHANGELOG_CDN";
+
+	/// <summary>
+	/// Default public CDN base for changelog bundles (CloudFront in front of the public S3 bucket).
+	/// Overridable via <see cref="CdnBaseUrlEnvironmentVariable"/>.
+	/// </summary>
+	internal const string DefaultCdnBaseUrl = "https://d10xozp44eyz7q.cloudfront.net";
+
 	private void LoadAndCacheBundles()
 	{
 		if (BundlesFolderPath is null)
@@ -445,9 +493,41 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			BundlesFolderPath,
 			msg => this.EmitError(msg));
 
+		ApplyLoadedBundles(loader, loadedBundles);
+	}
+
+	private void LoadCdnBundles(string product)
+	{
+		if (!IsValidCdnProduct(product))
+		{
+			this.EmitError($"Invalid :cdn: product '{product}'. Product names must match [a-zA-Z0-9_-]+.");
+			return;
+		}
+
+		if (!string.IsNullOrWhiteSpace(Arguments))
+			this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
+
+		if (ResolveCdnBaseUri() is not { } baseUri)
+		{
+			this.EmitError(
+				$"No valid changelog CDN base URL is configured. Set the {CdnBaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+			return;
+		}
+
+		var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, Build.ReadFileSystem);
+		var loadedBundles = fetcher.Fetch(baseUri, product, VersionFilter, msg => this.EmitError(msg), msg => this.EmitWarning(msg), Cancel.None);
+
+		ApplyLoadedBundles(new BundleLoader(Build.ReadFileSystem), loadedBundles);
+		Found = LoadedBundles.Count > 0;
+	}
+
+	private void ApplyLoadedBundles(BundleLoader loader, IReadOnlyList<LoadedBundle> loadedBundles)
+	{
+		var filteredBundles = FilterByVersion(loadedBundles);
+
 		// Sort by version (descending - newest first)
 		// Supports both semver (e.g., "9.3.0") and date-based (e.g., "2025-08-05") versions
-		var sortedBundles = loadedBundles
+		var sortedBundles = filteredBundles
 			.OrderByDescending(b => VersionOrDate.Parse(b.Version))
 			.ToList();
 
@@ -461,6 +541,52 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			foreach (var featureId in bundle.HideFeatures)
 				_ = HideFeatures.Add(featureId);
 		}
+	}
+
+	/// <summary>
+	/// Applies the optional <c>:version:</c> filter to loaded bundles. A bundle matches when its
+	/// target version or its file stem equals the requested value. If nothing matches a warning is
+	/// emitted and the block renders empty (rather than silently falling back to all versions).
+	/// </summary>
+	private IReadOnlyList<LoadedBundle> FilterByVersion(IReadOnlyList<LoadedBundle> bundles)
+	{
+		if (VersionFilter is not { Length: > 0 } version)
+			return bundles;
+
+		var matched = bundles
+			.Where(b => ChangelogVersionMatch.Matches(version, b.Version, b.FilePath))
+			.ToList();
+
+		if (matched.Count == 0 && bundles.Count > 0)
+			this.EmitWarning($"No changelog bundle matches :version: '{version}'.");
+
+		return matched;
+	}
+
+	private static bool IsValidCdnProduct(string product) =>
+		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+
+	/// <summary>
+	/// Infers the CDN product for a valueless <c>:cdn:</c> from the current repository name (e.g. the
+	/// <c>elasticsearch</c> repo publishes the <c>elasticsearch</c> product). Returns null when git
+	/// information is unavailable or for multi-product repos that must name the product explicitly.
+	/// </summary>
+	private string? InferCdnProductFromRepository()
+	{
+		var repository = Build.Git.RepositoryName;
+		return string.IsNullOrWhiteSpace(repository) || repository == "unavailable"
+			? null
+			: repository;
+	}
+
+	private static Uri? ResolveCdnBaseUri()
+	{
+		var configured = Environment.GetEnvironmentVariable(CdnBaseUrlEnvironmentVariable);
+		var raw = string.IsNullOrWhiteSpace(configured) ? DefaultCdnBaseUrl : configured;
+		return Uri.TryCreate(raw, UriKind.Absolute, out var uri)
+			&& uri.Scheme is "http" or "https"
+			? uri
+			: null;
 	}
 
 	private IEnumerable<string> ComputeGeneratedAnchors()

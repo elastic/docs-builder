@@ -4,6 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -155,6 +158,103 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+/// <summary>
+/// Verifies the <c>:version:</c> option filters local-folder bundles down to the single matching
+/// target, leaving the others out of both the loaded set and the rendered output.
+/// </summary>
+public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogVersionFilterTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:version: 9.3.0
+		:::
+		""")
+	{
+		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.2.0
+			entries:
+			- title: Feature in 9.2.0
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  prs:
+			  - "111111"
+			"""));
+
+		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Feature in 9.3.0
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  prs:
+			  - "222222"
+			"""));
+	}
+
+	[Fact]
+	public void CapturesVersionOption() => Block!.VersionFilter.Should().Be("9.3.0");
+
+	[Fact]
+	public void LoadsOnlyMatchingBundle() => Block!.LoadedBundles.Should().ContainSingle().Which.Version.Should().Be("9.3.0");
+
+	[Fact]
+	public void RendersOnlyMatchingVersion()
+	{
+		Html.Should().Contain("Feature in 9.3.0");
+		Html.Should().NotContain("Feature in 9.2.0");
+	}
+}
+
+/// <summary>
+/// Verifies a <c>:version:</c> value that matches no bundle renders nothing and warns instead of
+/// silently falling back to all versions.
+/// </summary>
+public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogVersionFilterNoMatchTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:version: 1.2.3
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: Feature in 9.3.0
+		  type: feature
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  prs:
+		  - "222222"
+		"""));
+
+	[Fact]
+	public void LoadsNoBundles() => Block!.LoadedBundles.Should().BeEmpty();
+
+	[Fact]
+	public void EmitsWarningForUnmatchedVersion() =>
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog bundle matches :version:"));
+}
+
 public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogCustomPathTests(ITestOutputHelper output) : base(output,
@@ -189,6 +289,168 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 	{
 		Html.Should().Contain("1.0.0");
 		Html.Should().Contain("First release");
+	}
+}
+
+/// <summary>
+/// Verifies the <c>:cdn:</c> option is captured and validated. An invalid product name is rejected
+/// before any network access, so this test exercises the wiring without touching the CDN.
+/// </summary>
+public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+	:::{changelog}
+	:cdn: invalid$product
+	:::
+	""")
+{
+	[Fact]
+	public void CapturesCdnProductOption() => Block!.CdnProduct.Should().Be("invalid$product");
+
+	[Fact]
+	public void DoesNotSourceFromLocalFolder() => Block!.BundlesFolderPath.Should().BeNull();
+
+	[Fact]
+	public void EmitsErrorForInvalidProduct()
+	{
+		Collector.Diagnostics.Should().NotBeNullOrEmpty();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid :cdn: product"));
+	}
+}
+
+/// <summary>
+/// Verifies CDN-sourced bundles render into the page body (not just the page TOC). The directive
+/// builds its own fetcher with a real <c>HttpClient</c>, so the test primes the fetcher's process
+/// cache for the base the directive resolves to by default; the primed entry short-circuits the
+/// fetch and no network call occurs. Priming the cache (rather than mutating the process-wide CDN
+/// env var) keeps the test from racing with other tests. Regression guard: the HTML renderer
+/// previously gated on the (CDN-null) local bundles folder path and silently emitted an empty body.
+/// </summary>
+public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+	:::{changelog}
+	:cdn: cdn-render-test
+	:::
+	""")
+{
+	private const string Product = "cdn-render-test";
+
+	public override async ValueTask InitializeAsync()
+	{
+		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(
+		[
+			("9.4.0.yaml",
+				// language=yaml
+				"""
+				products:
+				- product: cdn-render-test
+				  target: 9.4.0
+				  repo: elasticsearch
+				  owner: elastic
+				entries:
+				- title: Faster vector search on the CDN
+				  type: enhancement
+				  products:
+				  - product: cdn-render-test
+				    target: 9.4.0
+				  prs:
+				  - "999"
+				""")
+		], _ => { });
+		CdnChangelogFetcher.PrimeCacheForTesting(new Uri(ChangelogBlock.DefaultCdnBaseUrl), Product, null, bundles);
+
+		await base.InitializeAsync();
+	}
+
+	[Fact]
+	public void FoundFromCdn() => Block!.Found.Should().BeTrue();
+
+	[Fact]
+	public void RendersCdnBundleBody()
+	{
+		Html.Should().Contain("9.4.0");
+		Html.Should().Contain("Features and enhancements");
+		Html.Should().Contain("Faster vector search on the CDN");
+	}
+}
+
+/// <summary>
+/// Verifies a valueless <c>:cdn:</c> infers the product from the current repository name. With a
+/// <c>.git</c> marker present the mock git checkout reports the repository as <c>docs-builder</c>, so
+/// the directive fetches that product; the cache is primed for it (default base) so no network call
+/// occurs.
+/// </summary>
+public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+	:::{changelog}
+	:cdn:
+	:::
+	""")
+{
+	private const string InferredProduct = "docs-builder";
+
+	// A .git marker makes FindGitRoot resolve a checkout directory, which lets the mock-aware
+	// GitCheckoutInformationFactory report the repository name (docs-builder) for inference.
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddDirectory(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".git"));
+
+	public override async ValueTask InitializeAsync()
+	{
+		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(
+		[
+			("9.4.0.yaml",
+				// language=yaml
+				"""
+				products:
+				- product: docs-builder
+				  target: 9.4.0
+				  repo: docs-builder
+				  owner: elastic
+				entries:
+				- title: Inferred product from the repository
+				  type: enhancement
+				  products:
+				  - product: docs-builder
+				    target: 9.4.0
+				  prs:
+				  - "999"
+				""")
+		], _ => { });
+		CdnChangelogFetcher.PrimeCacheForTesting(new Uri(ChangelogBlock.DefaultCdnBaseUrl), InferredProduct, null, bundles);
+
+		await base.InitializeAsync();
+	}
+
+	[Fact]
+	public void InfersProductFromRepository() => Block!.CdnProduct.Should().Be(InferredProduct);
+
+	[Fact]
+	public void RendersInferredCdnBundleBody()
+	{
+		Block!.Found.Should().BeTrue();
+		Html.Should().Contain("Inferred product from the repository");
+	}
+}
+
+/// <summary>
+/// A valueless <c>:cdn:</c> must fail with a clear error when the product cannot be inferred (no git
+/// information available), rather than silently rendering empty.
+/// </summary>
+public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+	:::{changelog}
+	:cdn:
+	:::
+	""")
+{
+	[Fact]
+	public void EmitsErrorWhenProductCannotBeInferred()
+	{
+		Block!.Found.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be inferred"));
 	}
 }
 
