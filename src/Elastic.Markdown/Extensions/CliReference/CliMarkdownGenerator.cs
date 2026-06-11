@@ -46,7 +46,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Namespaces");
 			_ = sb.AppendLine();
 			foreach (var ns in schema.Namespaces)
-				AppendPageCard(sb, ns.Segment, $"./{ns.Segment}/index.md", ns.Summary);
+				AppendPageCard(sb, ns.Segment, $"./{ns.Segment}", ns.Summary);
 		}
 
 		if (schema.Environment?.Variables is { Count: > 0 } envVars)
@@ -129,7 +129,7 @@ internal static partial class CliMarkdownGenerator
 		{
 			var depth = fullPath?.Length ?? 1;
 			var upPrefix = string.Concat(Enumerable.Repeat("../", depth));
-			var links = nsAliases.Select(a => $"[`{binaryName ?? a} {a}`]({upPrefix}{a}/index.md)");
+			var links = nsAliases.Select(a => $"[`{binaryName ?? a} {a}`]({upPrefix}{a})");
 			_ = sb.AppendLine($"Also accessible as {string.Join(", ", links)}.");
 			_ = sb.AppendLine();
 		}
@@ -159,7 +159,7 @@ internal static partial class CliMarkdownGenerator
 			_ = sb.AppendLine("## Sub-namespaces");
 			_ = sb.AppendLine();
 			foreach (var sub in subNamespaces)
-				AppendPageCard(sb, sub.Segment, $"./{sub.Segment}/index.md", sub.Summary);
+				AppendPageCard(sb, sub.Segment, $"./{sub.Segment}", sub.Summary);
 		}
 
 		var options = ns.Options ?? [];
