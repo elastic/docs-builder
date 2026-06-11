@@ -154,9 +154,22 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
 		{
-			return fileOnly == "index.md"
-				? new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext)
-				: new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
+			if (fileOnly == "index.md")
+				return new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext);
+
+			// A childless deep-linked index file (e.g. "file: reference/1password/index.md") is treated as
+			// sugar for "folder: reference/1password, file: index.md". Otherwise it resolves to a bare leaf
+			// that competes with its siblings for the parent's index slot and gets silently dropped from the
+			// navigation. Entries that declare explicit children keep the existing virtual-file (deep-linking)
+			// semantics, so this remains backward compatible.
+			if (children.Count == 0 && fileOnly.EndsWith("/index.md", StringComparison.Ordinal))
+			{
+				var indexFolderPath = fileOnly[..^"/index.md".Length];
+				var indexFile = new FolderIndexFileRef("index.md", "index.md", false, [], placeholderContext);
+				return new FolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext);
+			}
+
+			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
 		}
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
