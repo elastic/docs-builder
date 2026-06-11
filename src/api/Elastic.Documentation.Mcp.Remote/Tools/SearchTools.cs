@@ -10,6 +10,7 @@ using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -28,7 +29,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 		"Use when the user asks about Elastic product features, needs to find existing docs pages, " +
 		"verify published content, or research what documentation exists on a topic. " +
 		"Returns relevant documents with AI summaries, relevance scores, and navigation context.")]
-	public async Task<string> SemanticSearch(
+	public async Task<CallToolResult> SemanticSearch(
 		[Description("The search query - can be a question or keywords")] string query,
 		[Description("Page number (1-based, default: 1)")] int pageNumber = 1,
 		[Description("Number of results per page (default: 10, max: 50)")] int pageSize = 10,
@@ -87,7 +88,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 
 			McpToolTelemetry.MarkSuccess(activity);
 			outcome = "success";
-			return JsonSerializer.Serialize(response, McpJsonContext.Default.SemanticSearchResponse);
+			return McpToolResults.Ok(JsonSerializer.Serialize(response, McpJsonContext.Default.SemanticSearchResponse));
 		}
 		catch (OperationCanceledException)
 		{
@@ -99,7 +100,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 		{
 			McpToolTelemetry.MarkFailure(activity, ex);
 			logger.LogError(ex, "SemanticSearch failed for query '{Query}'", query);
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return McpToolResults.Error(JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse));
 		}
 		finally
 		{
@@ -115,7 +116,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 		"Finds {docs} pages related to a given topic. " +
 		"Use when exploring what documentation exists around a subject, building context for writing, " +
 		"or discovering related content the user should be aware of.")]
-	public async Task<string> FindRelatedDocs(
+	public async Task<CallToolResult> FindRelatedDocs(
 		[Description("Topic or search terms to find related documents for")] string topic,
 		[Description("Maximum number of related documents to return (default: 10)")] int limit = 10,
 		[Description("Filter by product ID (e.g., 'elasticsearch', 'kibana')")] string? productFilter = null,
@@ -165,7 +166,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 
 			McpToolTelemetry.MarkSuccess(activity);
 			outcome = "success";
-			return JsonSerializer.Serialize(response, McpJsonContext.Default.RelatedDocsResponse);
+			return McpToolResults.Ok(JsonSerializer.Serialize(response, McpJsonContext.Default.RelatedDocsResponse));
 		}
 		catch (OperationCanceledException)
 		{
@@ -177,7 +178,7 @@ public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchToo
 		{
 			McpToolTelemetry.MarkFailure(activity, ex);
 			logger.LogError(ex, "FindRelatedDocs failed for topic '{Topic}'", topic);
-			return JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse);
+			return McpToolResults.Error(JsonSerializer.Serialize(new ErrorResponse(ex.Message), McpJsonContext.Default.ErrorResponse));
 		}
 		finally
 		{

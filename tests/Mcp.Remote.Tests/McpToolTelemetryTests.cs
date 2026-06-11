@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Mcp.Remote;
@@ -91,6 +92,52 @@ public class McpToolTelemetryTests
 		tags["error.message"].Should().Be("gateway failed");
 		activity.Status.Should().Be(ActivityStatusCode.Error);
 		activity.StatusDescription.Should().Be("gateway failed");
+		activity.Events.Should().Contain(e => e.Name == "exception");
+	}
+
+	[Fact]
+	public void MarkFailure_PropagatesErrorStatusToServerAncestor()
+	{
+		using var serverSource = new ActivitySource("Test.McpServer");
+		using var listener = CreateListenerForSources(McpToolTelemetry.McpToolSourceName, "Test.McpServer");
+
+		// Simulate the ASP.NET Core server span (the HTTP transaction in APM).
+		using var serverActivity = serverSource.StartActivity("POST /mcp", ActivityKind.Server);
+		serverActivity.Should().NotBeNull();
+
+		// Tool span is a child of the server span (matches runtime Activity parenting).
+		using var toolActivity = McpToolTelemetry.StartActivity("test_tool");
+		toolActivity.Should().NotBeNull();
+		toolActivity!.Parent.Should().Be(serverActivity);
+
+		var ex = new InvalidOperationException("ES is down");
+		McpToolTelemetry.MarkFailure(toolActivity, ex);
+
+		// Tool span carries the error and exception event.
+		toolActivity.Status.Should().Be(ActivityStatusCode.Error);
+		toolActivity.Events.Should().Contain(e => e.Name == "exception");
+
+		// Server/transaction span is also marked Error — this makes the HTTP transaction
+		// appear as a failing transaction in APM despite the 200 response code.
+		serverActivity!.Status.Should().Be(ActivityStatusCode.Error);
+		serverActivity.StatusDescription.Should().Be("ES is down");
+		serverActivity.Events.Should().Contain(e => e.Name == "exception");
+	}
+
+	[Fact]
+	public void MarkFailure_NoServerAncestor_DoesNotThrow()
+	{
+		// In unit tests (and any context without an active server span) FailServerSpan
+		// should be a no-op rather than failing.
+		using var listener = CreateListener();
+		using var activity = McpToolTelemetry.StartActivity("test_tool");
+		activity.Should().NotBeNull();
+
+		var ex = new InvalidOperationException("isolated failure");
+		var act = () => McpToolTelemetry.MarkFailure(activity, ex);
+
+		act.Should().NotThrow();
+		activity!.Status.Should().Be(ActivityStatusCode.Error);
 	}
 
 	[Fact]
@@ -109,14 +156,17 @@ public class McpToolTelemetryTests
 		activity.StatusDescription.Should().Be("cancelled");
 	}
 
-	private static ActivityListener CreateListener()
+	private static ActivityListener CreateListener() =>
+		CreateListenerForSources(McpToolTelemetry.McpToolSourceName);
+
+	private static ActivityListener CreateListenerForSources(params string[] sourceNames)
 	{
+		var nameSet = new HashSet<string>(sourceNames, StringComparer.Ordinal);
 		var listener = new ActivityListener
 		{
-			ShouldListenTo = source => source.Name == "Elastic.Documentation.Api.McpTools",
+			ShouldListenTo = source => nameSet.Contains(source.Name),
 			Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded
 		};
-
 		ActivitySource.AddActivityListener(listener);
 		return listener;
 	}

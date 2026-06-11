@@ -61,7 +61,25 @@ public static class McpToolTelemetry
 		_ = activity?.SetTag("mcp.call.success", false);
 		_ = activity?.SetTag("mcp.call.error_type", ex.GetType().FullName);
 		_ = activity?.SetTag("error.message", ex.Message);
+		_ = activity?.AddException(ex);
 		_ = activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+		FailServerSpan(ex);
+	}
+
+	// Walk up to the ASP.NET Core server (transaction) span and mark it failed so that
+	// the HTTP transaction appears as a failing transaction in APM even though the HTTP
+	// response is 200 (correct per MCP/JSON-RPC spec). No-ops when there is no server
+	// ancestor, e.g. in unit tests.
+	private static void FailServerSpan(Exception ex)
+	{
+		for (var a = Activity.Current; a is not null; a = a.Parent)
+		{
+			if (a.Kind != ActivityKind.Server)
+				continue;
+			_ = a.SetStatus(ActivityStatusCode.Error, ex.Message);
+			_ = a.AddException(ex);
+			return;
+		}
 	}
 
 	public static void MarkFailure(Activity? activity, string errorType, string message)
