@@ -236,7 +236,7 @@ Also controls how the `changelog add` command maps GitHub labels to various chan
 
 | Setting           | Description                                |
 | ----------------- | ------------------------------------------ |
-| `pivot.areas`     | Lists the valid area values. Optionally maps area names to GitHub labels (for example, `"Search": ":Search/Search"`). |
+| `pivot.areas`     | Lists the valid area values. Optionally maps area names to GitHub labels (for example, `"Search Relevance": ":Search Relevance/Search"`). |
 | `pivot.highlight` | Defines labels that set the `highlight` flag on changelogs. |
 | `pivot.products`  | Maps product IDs (and optionally version and lifecycle) to GitHub labels. |
 | `pivot.types`     | Lists the valid type values (at a minimum, `feature`, `bug-fix`, and `breaking-change`). Optionally maps types to GitHub labels (for example, `bug-fix: ">bug"`). You can also optionally define breaking change subtypes. |
@@ -354,7 +354,6 @@ For more context, go to [](/contribute/create-changelogs.md#rules).
 
 Controls which changelogs are included in bundles.
 These rules are applied by the `docs-builder changelog bundle` and `docs-builder changelog gh-release` commands **after** the primary filter (`--prs`, `--issues`, `--all`, or `--input-products`) has identified the relevant changelogs and **before** the bundle is written.
-
 :::{tip}
 The input stage (gathering entries) and bundle filtering stage (filtering for output) are conceptually separate.
 :::
