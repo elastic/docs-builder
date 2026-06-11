@@ -197,6 +197,16 @@
 	height: 1.125rem;
 }
 
+/* Error fallback for diagrams that failed to render server-side */
+.mermaid-error {
+	padding: 1rem;
+	border: 1px solid #e5e5e5;
+	border-radius: 0.5rem;
+	background-color: #fafafa;
+	color: #69707d;
+	font-size: 0.875rem;
+}
+
 /* Hide controls when printing */
 @media print {
 	.mermaid-controls {
