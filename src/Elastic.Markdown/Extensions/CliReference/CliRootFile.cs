@@ -30,8 +30,8 @@ public record CliRootFile : IO.MarkdownFile
 	{
 		_schema = schema;
 		_supplementalDoc = supplementalDoc;
-		_title = string.IsNullOrWhiteSpace(title) ? schema.Name : title;
-		_navigationTitle = string.IsNullOrWhiteSpace(navigationTitle) ? $"{schema.Name} CLI" : navigationTitle;
+		_title = string.IsNullOrWhiteSpace(title) ? schema.Name : title.Trim();
+		_navigationTitle = string.IsNullOrWhiteSpace(navigationTitle) ? $"{schema.Name} CLI" : navigationTitle.Trim();
 		Title = _title;
 	}
 
