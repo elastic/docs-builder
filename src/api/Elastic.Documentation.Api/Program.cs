@@ -8,19 +8,25 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 try
 {
-	var builder = WebApplication.CreateSlimBuilder(args);
-	_ = builder.AddDocumentationServiceDefaults((s, p) =>
-	{
-		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
-	});
+	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
+	Console.WriteLine($"Docs Environment: {environment}");
 
-	_ = builder.AddDefaultHealthChecks();
-	_ = builder.AddDocsApiOpenTelemetry();
+	var builder = WebApplication.CreateSlimBuilder(args)
+		.AddDocumentationServiceDefaults((s, p) =>
+		{
+			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+		})
+		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api")
+		{
+			Tracing = (_, t) => t.AddDocsApiTracing()
+		})
+		.HealthCheckBuilderExtensions();
 
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
@@ -33,9 +39,6 @@ try
 			serverOptions.ListenAnyIP(8080);
 		});
 	}
-
-	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
-	Console.WriteLine($"Docs Environment: {environment}");
 
 	builder.Services.AddElasticDocsApiServices(environment);
 	var app = builder.Build();
@@ -109,5 +112,7 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 
 // Make the Program class accessible for integration testing
 #pragma warning disable ASP0027
-public partial class Program { }
+public partial class Program
+{
+}
 #pragma warning restore ASP0027

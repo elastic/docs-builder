@@ -2,33 +2,33 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Assembler.Links;
-using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.LinkIndex;
-using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using ModelContextProtocol;
+using OpenTelemetry;
 using OpenTelemetry.Trace;
 
 try
 {
-	var builder = WebApplication.CreateSlimBuilder(args);
-	_ = builder.AddDocumentationServiceDefaults();
-	_ = builder.AddDefaultHealthChecks();
-	_ = builder.AddEuidEnrichment();
-	_ = builder.Services.ConfigureOpenTelemetryTracerProvider(t =>
-		t.AddSource(McpToolTelemetry.McpToolSourceName));
+	var builder = WebApplication.CreateSlimBuilder(args)
+		.AddDocumentationServiceDefaults()
+		.HealthCheckBuilderExtensions()
+		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-mcp")
+		{
+			Tracing = (_, t) => t
+				.WithElasticDefaults()
+				.AddSource(McpToolTelemetry.McpToolSourceName)
+				.AddProcessor(new McpSpanRenameProcessor()),
+			Metrics = (_, m) => m
+				.WithElasticDefaults()
+				.AddMeter(McpToolTelemetry.McpMeterName)
+		});
 
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
@@ -67,7 +67,7 @@ try
 		.WithHttpTransport(o => o.Stateless = true);
 
 	var prefixedTools = McpToolRegistration.CreatePrefixedTools(profile);
-	mcpBuilder = mcpBuilder.WithTools(prefixedTools);
+	_ = mcpBuilder.WithTools(prefixedTools);
 
 	var app = builder.Build();
 
@@ -142,5 +142,7 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 
 // Make the Program class accessible for integration testing
 #pragma warning disable ASP0027
-public partial class Program { }
+public partial class Program
+{
+}
 #pragma warning restore ASP0027
