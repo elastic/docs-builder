@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 
@@ -36,7 +37,10 @@ public static class AppDefaultsExtensions
 			.AddElasticDocumentationLogging(cliOptions.LogLevel)
 			.ConfigureHttpClientDefaults(http =>
 			{
-				_ = http.AddStandardResilienceHandler();
+				_ = http.AddStandardResilienceHandler(options =>
+				{
+					options.Retry.DisableForUnsafeHttpMethods();
+				});
 			})
 			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
 			{
