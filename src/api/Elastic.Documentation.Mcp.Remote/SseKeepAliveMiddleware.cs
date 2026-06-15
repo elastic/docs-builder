@@ -53,7 +53,7 @@ public class SseKeepAliveMiddleware(RequestDelegate next, ILogger<SseKeepAliveMi
 /// </summary>
 internal sealed class SseKeepAliveStream(Stream inner, TimeSpan interval, ILogger logger) : Stream
 {
-	private static readonly byte[] KeepAliveBytes = Encoding.UTF8.GetBytes(": keepalive\n\n");
+	private static readonly byte[] KeepAliveBytes = ": keepalive\n\n"u8.ToArray();
 
 	// Used as an async mutex to synchronize writes between the MCP SDK and the keepalive timer
 	private readonly SemaphoreSlim _writeLock = new(1, 1);

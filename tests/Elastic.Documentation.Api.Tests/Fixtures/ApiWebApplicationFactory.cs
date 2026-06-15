@@ -6,12 +6,14 @@ using System.Diagnostics;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.Aws;
 using Elastic.Documentation.Api.OpenTelemetry;
+using Elastic.Documentation.ServiceDefaults;
 using FakeItEasy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
@@ -92,10 +94,10 @@ public class ApiWebApplicationFactory : WebApplicationFactory<Program>
 					.AddDocsApiTracing() // Reuses production configuration
 					.AddInMemoryExporter(ExportedActivities);
 			});
+			services.AddElasticDocumentationLogging(LogLevel.Information);
 			_ = otelBuilder.WithLogging(logging =>
 			{
 				_ = logging
-					.AddDocsApiLogging() // Reuses production configuration
 					.AddInMemoryExporter(ExportedLogRecords);
 			});
 
