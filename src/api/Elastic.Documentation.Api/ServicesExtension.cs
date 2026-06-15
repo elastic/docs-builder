@@ -205,12 +205,18 @@ public static class ServicesExtension
 			return new OtlpProxyOptions(config);
 		});
 
-		// Register named HttpClient for OTLP proxy
+		// Register named HttpClient for OTLP proxy.
+		// 1s timeout: the collector is a localhost sidecar and should answer in single-digit ms.
+		// RemoveAllResilienceHandlers opts this client out of the global standard resilience handler
+		// (retries + 10s/30s timeouts) so a dead collector fails fast instead of blocking ~9s.
+#pragma warning disable EXTEXP0001 // RemoveAllResilienceHandlers is experimental
 		_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 			.ConfigureHttpClient(client =>
 			{
-				client.Timeout = TimeSpan.FromSeconds(30);
-			});
+				client.Timeout = TimeSpan.FromSeconds(1);
+			})
+			.RemoveAllResilienceHandlers();
+#pragma warning restore EXTEXP0001
 
 		_ = services.AddScoped<IOtlpService, AdotOtlpService>();
 		logger?.LogInformation("OTLP proxy configured to forward to ADOT Lambda Layer collector");
