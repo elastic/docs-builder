@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.ServiceDefaults.Logging;
+using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -33,6 +34,21 @@ public static class AppDefaultsExtensions
 		Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
 		where TBuilder : IHostApplicationBuilder
 	{
+		// Map ENVIRONMENT (dev/edge/staging/prod) to the .NET hosting environment so
+		// IsDevelopment()/IsStaging()/IsProduction() reflect the real deployment environment.
+		// Guarded on non-null so unset (local serve, test factory) leaves the host default untouched.
+		var dotnetEnv = DeploymentEnvironment.ToDotnetEnvironment(builder.Configuration["ENVIRONMENT"]);
+		if (dotnetEnv is not null)
+			builder.Environment.EnvironmentName = dotnetEnv;
+
+		// We do not use appsettings.json — all config comes from env vars / user secrets / code.
+		var jsonSources = builder.Configuration.Sources
+			.OfType<JsonConfigurationSource>()
+			.Where(s => s.Path is not null && s.Path.StartsWith("appsettings", StringComparison.OrdinalIgnoreCase))
+			.ToList();
+		foreach (var s in jsonSources)
+			_ = builder.Configuration.Sources.Remove(s);
+
 		var services = builder.Services
 			.AddElasticDocumentationLogging(cliOptions.LogLevel)
 			.ConfigureHttpClientDefaults(http =>
