@@ -260,9 +260,9 @@ public partial class AwsS3SyncApplyStrategy(
 				}
 				else
 				{
-					var newCount = Interlocked.Add(ref deleteCount, batch.Length);
+					deleteCount += batch.Length;
 					_logger.LogInformation("Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
-						batch.Length, newCount, deleteRequests.Count);
+						batch.Length, deleteCount, deleteRequests.Count);
 				}
 			}
 

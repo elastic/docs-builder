@@ -28,13 +28,7 @@ public class IncrementalDeployService(
 	{
 		var planner = new AwsS3SyncPlanStrategy(logFactory, _s3, s3BucketName, context, etagCalculator);
 		var plan = await planner.Plan(deleteThreshold, ctx);
-		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
-		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
-		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
-		_logger.LogInformation("Total files to update: {UpdateCount}", plan.UpdateRequests.Count);
-		_logger.LogInformation("Total files to skip: {SkipCount}", plan.SkipRequests.Count);
-		_logger.LogInformation("Total local source files: {TotalSourceFiles}", plan.TotalSourceFiles);
-		_logger.LogInformation("Total remote source files: {TotalSourceFiles}", plan.TotalRemoteFiles);
+		LogPlanSummary(plan);
 		var validator = new DocsSyncPlanValidator(logFactory);
 		var validationResult = validator.Validate(plan);
 		if (!validationResult.Valid)
@@ -70,14 +64,8 @@ public class IncrementalDeployService(
 		}
 		var planJson = await context.ReadFileSystem.File.ReadAllTextAsync(planFile, ctx);
 		var plan = SyncPlan.Deserialize(planJson);
-		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
 		_logger.LogInformation("Total files to sync: {TotalFiles}", plan.TotalSyncRequests);
-		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
-		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
-		_logger.LogInformation("Total files to update: {UpdateCount}", plan.UpdateRequests.Count);
-		_logger.LogInformation("Total files to skip: {SkipCount}", plan.SkipRequests.Count);
-		_logger.LogInformation("Total local source files: {TotalSourceFiles}", plan.TotalSourceFiles);
-		_logger.LogInformation("Total remote source files: {TotalSourceFiles}", plan.TotalRemoteFiles);
+		LogPlanSummary(plan);
 		if (plan.TotalSyncRequests == 0)
 		{
 			_logger.LogInformation("Plan has no files to sync, skipping incremental synchronization");
@@ -93,5 +81,16 @@ public class IncrementalDeployService(
 		var applier = new AwsS3SyncApplyStrategy(logFactory, _s3, xfer, s3BucketName, context, collector);
 		await applier.Apply(plan, ctx);
 		return true;
+	}
+
+	private void LogPlanSummary(SyncPlan plan)
+	{
+		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
+		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
+		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
+		_logger.LogInformation("Total files to update: {UpdateCount}", plan.UpdateRequests.Count);
+		_logger.LogInformation("Total files to skip: {SkipCount}", plan.SkipRequests.Count);
+		_logger.LogInformation("Total local source files: {TotalSourceFiles}", plan.TotalSourceFiles);
+		_logger.LogInformation("Total remote source files: {TotalRemoteFiles}", plan.TotalRemoteFiles);
 	}
 }
