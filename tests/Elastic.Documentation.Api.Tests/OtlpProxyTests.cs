@@ -234,6 +234,37 @@ public class OtlpProxyTests
 	}
 
 	[Fact]
+	public async Task OtlpProxy_CollectorUnavailable_FailsFastWithoutRetries()
+	{
+		// Arrange
+		var callCount = 0;
+		var mockHandler = A.Fake<HttpMessageHandler>();
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Invokes((HttpRequestMessage _, CancellationToken _) => callCount++)
+			.Throws(new HttpRequestException("Connection refused",
+				new System.Net.Sockets.SocketException((int)System.Net.Sockets.SocketError.ConnectionRefused)));
+
+		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		{
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		}, otlpEndpoint: OtlpEndpoint);
+
+		var client = factory.CreateClient();
+		using var content = new StringContent("{}", Encoding.UTF8, "application/json");
+
+		// Act
+		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
+
+		// Assert — exactly one attempt, no retries
+		callCount.Should().Be(1, "telemetry forwarding must fail fast with no retries");
+		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+	}
+
+	[Fact]
 	public async Task OtlpProxyInvalidSignalTypeReturns404()
 	{
 		// Arrange
