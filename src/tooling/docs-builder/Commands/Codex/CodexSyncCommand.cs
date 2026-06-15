@@ -81,7 +81,7 @@ internal sealed class CodexSyncCommand(
 		var fs = FileSystemFactory.RealRead;
 		var configFile = fs.FileInfo.New(config.FullName);
 		var codexConfig = CodexConfiguration.Load(configFile);
-		return (new CodexContext(codexConfig, configFile, collector, fs, fs, null, null),
+		return (new CodexContext(codexConfig, configFile, collector, fs, FileSystemFactory.RealWrite, null, null),
 			new IncrementalDeployService(logFactory, githubActionsService));
 	}
 }
