@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
@@ -14,6 +15,8 @@ using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
+using Mermaider;
+using Mermaider.Models;
 using Microsoft.AspNetCore.Html;
 using RazorSlices;
 
@@ -134,7 +137,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			return;
 		}
 
-		// Render Mermaid diagrams as pre.mermaid for client-side rendering
 		if (block.Language == "mermaid")
 		{
 			RenderMermaidBlock(renderer, block);
@@ -310,32 +312,61 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		RenderRazorSlice(slice, renderer);
 	}
 
-	/// <summary>
-	/// Renders a Mermaid code block as a pre.mermaid element for client-side rendering by Mermaid.js.
-	/// </summary>
+	private static readonly RenderOptions MermaidRenderOptions = new()
+	{
+		Bg = "#FFFFFF",
+		Fg = "#000000"
+	};
+
+	/// <summary>Renders a Mermaid code block as an inline SVG using Mermaider.</summary>
 	private static void RenderMermaidBlock(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
-		_ = renderer.Write("<pre class=\"mermaid\">");
+		var mermaidText = ExtractMermaidText(block);
 
+		string svg;
+		try
+		{
+			svg = MermaidRenderer.RenderSvg(mermaidText, MermaidRenderOptions);
+			// Keep Mermaid style directives compatible with existing docs while stripping unsafe SVG output.
+			svg = SvgSanitizer.Sanitize(svg).Svg;
+		}
+		catch (SystemException e)
+		{
+			block.EmitWarning($"Failed to render Mermaid diagram: {e.Message}");
+			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
+			_ = renderer.WriteEscape(mermaidText);
+			_ = renderer.Write("</code></pre>");
+			return;
+		}
+
+		_ = renderer.Write("<div class=\"mermaid-container\">");
+		_ = renderer.Write("<div class=\"mermaid-viewport\">");
+		_ = renderer.Write("<div class=\"mermaid-rendered\">");
+		_ = renderer.Write(svg);
+		_ = renderer.Write("</div></div></div>");
+	}
+
+	private static string ExtractMermaidText(EnhancedCodeBlock block)
+	{
 		var commonIndent = GetCommonIndent(block);
+		var sb = new StringBuilder();
+
 		for (var i = 0; i < block.Lines.Count; i++)
 		{
 			var line = block.Lines.Lines[i];
 			var slice = line.Slice;
 
-			// Skip empty lines at beginning and end
 			if ((i == 0 || i == block.Lines.Count - 1) && slice.IsEmptyOrWhitespace())
 				continue;
 
-			// Remove common indentation
 			var indent = CountIndentation(slice);
 			if (indent >= commonIndent)
 				slice.Start += commonIndent;
 
-			_ = renderer.WriteEscape(slice);
-			_ = renderer.WriteLine();
+			_ = sb.Append(slice.Text, slice.Start, slice.Length);
+			_ = sb.AppendLine();
 		}
 
-		_ = renderer.Write("</pre>");
+		return sb.ToString().TrimEnd();
 	}
 }
