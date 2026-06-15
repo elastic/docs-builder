@@ -11,6 +11,25 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class PhysicalDocsetTests
 {
 	[Fact]
+	public void CliReferenceRefReadsTitleOverrides()
+	{
+		const string yaml = """
+			project: test
+			toc:
+			  - cli: cli/schema.json
+			    folder: cli
+			    title: Elastic CLI reference
+			    navigation_title: CLI reference
+			""";
+
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().Single();
+
+		cliRef.Title.Should().Be("Elastic CLI reference");
+		cliRef.NavigationTitle.Should().Be("CLI reference");
+	}
+
+	[Fact]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");

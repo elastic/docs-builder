@@ -16,12 +16,10 @@ internal static class ElasticsearchClientJsonResolver
 {
 	public static IJsonTypeInfoResolver Default { get; } = Create();
 
-	private static IJsonTypeInfoResolver Create()
-	{
-		var combined = JsonTypeInfoResolver.Combine(
+	private static IJsonTypeInfoResolver Create() =>
+		JsonTypeInfoResolver.Combine(
 			InternalSearch.SourceGenerationContext.Default,
-			SourceGenerationContext.Default);
-
-		return new RuleQueryMatchCriteriaTypeInfoResolver(combined);
-	}
+			InternalSearch.Elasticsearch.SourceGenerationContext.Default,
+			SourceGenerationContext.Default
+		);
 }
