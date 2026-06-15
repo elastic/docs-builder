@@ -23,6 +23,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 	// Cache the parsed signing key — PEM and key ID are immutable for process lifetime.
 	private static RsaSecurityKey? CachedKey;
 	private static string? CachedKeyPem;
+	private static string? CachedKeyId;
 	private static readonly Lock KeyLock = new();
 
 	public async Task InvokeAsync(HttpContext context)
@@ -214,17 +215,18 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 
 	private static RsaSecurityKey GetOrCreateSigningKey(string publicKeyPem, string? keyId)
 	{
-		if (CachedKey is not null && CachedKeyPem == publicKeyPem)
+		if (CachedKey is not null && CachedKeyPem == publicKeyPem && CachedKeyId == keyId)
 			return CachedKey;
 		lock (KeyLock)
 		{
-			if (CachedKey is not null && CachedKeyPem == publicKeyPem)
+			if (CachedKey is not null && CachedKeyPem == publicKeyPem && CachedKeyId == keyId)
 				return CachedKey;
 			using var rsa = RSA.Create();
 			rsa.ImportFromPem(publicKeyPem);
 			var key = new RsaSecurityKey(rsa.ExportParameters(includePrivateParameters: false)) { KeyId = keyId };
 			CachedKey = key;
 			CachedKeyPem = publicKeyPem;
+			CachedKeyId = keyId;
 			return key;
 		}
 	}
