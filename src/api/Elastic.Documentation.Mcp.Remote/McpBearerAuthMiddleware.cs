@@ -20,6 +20,11 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 	private const string ExpectedAlg = "RS256";
 	private static readonly JwtSecurityTokenHandler TokenHandler = new() { MapInboundClaims = false };
 
+	// Cache the parsed signing key — PEM and key ID are immutable for process lifetime.
+	private static RsaSecurityKey? CachedKey;
+	private static string? CachedKeyPem;
+	private static readonly Lock KeyLock = new();
+
 	public async Task InvokeAsync(HttpContext context)
 	{
 		var env = SystemEnvironmentVariables.Instance;
@@ -130,12 +135,10 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			return (null, 401);
 		}
 
-		RSAParameters rsaParams;
+		RsaSecurityKey signingKey;
 		try
 		{
-			using var rsa = RSA.Create();
-			rsa.ImportFromPem(env.McpJwtPublicKey);
-			rsaParams = rsa.ExportParameters(includePrivateParameters: false);
+			signingKey = GetOrCreateSigningKey(env.McpJwtPublicKey, env.McpJwtKeyId);
 		}
 		catch (CryptographicException)
 		{
@@ -152,7 +155,7 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 
 		var validationParams = new TokenValidationParameters
 		{
-			IssuerSigningKey = new RsaSecurityKey(rsaParams) { KeyId = env.McpJwtKeyId },
+			IssuerSigningKey = signingKey,
 			ValidateIssuerSigningKey = true,
 			ValidateIssuer = env.McpOAuthIssuer is not null,
 			ValidIssuer = env.McpOAuthIssuer,
@@ -206,6 +209,23 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 			logger.LogWarning("MCP auth validation failed: {Type} (kid={Kid}, jti={Jti}, err={Err})",
 				ex.GetType().Name, jwt.Header.Kid, jwt.Payload.Jti, ex.Message);
 			return (null, 401);
+		}
+	}
+
+	private static RsaSecurityKey GetOrCreateSigningKey(string publicKeyPem, string? keyId)
+	{
+		if (CachedKey is not null && CachedKeyPem == publicKeyPem)
+			return CachedKey;
+		lock (KeyLock)
+		{
+			if (CachedKey is not null && CachedKeyPem == publicKeyPem)
+				return CachedKey;
+			using var rsa = RSA.Create();
+			rsa.ImportFromPem(publicKeyPem);
+			var key = new RsaSecurityKey(rsa.ExportParameters(includePrivateParameters: false)) { KeyId = keyId };
+			CachedKey = key;
+			CachedKeyPem = publicKeyPem;
+			return key;
 		}
 	}
 
