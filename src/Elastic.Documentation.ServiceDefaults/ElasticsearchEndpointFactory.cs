@@ -73,22 +73,24 @@ public static class ElasticsearchEndpointFactory
 	}
 
 	/// <summary>
-	/// Resolves the environment name using this priority:
-	/// 1. <c>DOTNET_ENVIRONMENT</c> env var
-	/// 2. <c>ENVIRONMENT</c> env var
-	/// 3. Fallback: <c>"dev"</c>
+	/// Resolves the domain environment name using this priority:
+	/// 1. <c>ENVIRONMENT</c> env var (our deployment env: dev, edge, staging, prod)
+	/// 2. Fallback: <c>"dev"</c>
 	/// </summary>
+	/// <remarks>
+	/// Deliberately reads only <c>ENVIRONMENT</c>, not <c>DOTNET_ENVIRONMENT</c>.
+	/// <c>DOTNET_ENVIRONMENT</c> is set by <c>AddDocumentationServiceDefaults</c> to the
+	/// mapped .NET hosting name (Development/Staging/Production) and must not be used as the
+	/// domain environment for index naming or telemetry.
+	/// </remarks>
 	private static string ResolveEnvironment(IConfiguration config, IConfiguration? appConfiguration)
 	{
-		var envVar = appConfiguration?["DOTNET_ENVIRONMENT"]
-			?? appConfiguration?["ENVIRONMENT"]
-			?? config["DOTNET_ENVIRONMENT"]
-			?? config["ENVIRONMENT"];
+		var envVar = appConfiguration?["ENVIRONMENT"] ?? config["ENVIRONMENT"];
 
-		string[] allowedEnvironements = ["dev", "prod", "staging"];
-		if (!allowedEnvironements.Contains(envVar))
+		string[] allowedEnvironments = ["dev", "edge", "staging", "prod"];
+		if (!allowedEnvironments.Contains(envVar?.ToLowerInvariant()))
 			envVar = "dev";
 
-		return !string.IsNullOrEmpty(envVar) ? envVar.ToLowerInvariant() : "dev";
+		return envVar!.ToLowerInvariant();
 	}
 }
