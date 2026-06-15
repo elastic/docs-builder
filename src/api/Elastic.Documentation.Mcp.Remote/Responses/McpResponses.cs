@@ -151,7 +151,7 @@ public sealed record AiEnrichmentStatusDto
 	public required bool HasUseCases { get; init; }
 }
 
-[JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ErrorResponse))]
 [JsonSerializable(typeof(SemanticSearchResponse))]
 [JsonSerializable(typeof(SearchResultDto))]
