@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +19,10 @@ public class AdotOtlpService(
 {
 	public const string HttpClientName = "OtlpProxy";
 	private static readonly ActivitySource ActivitySource = new(TelemetryConstants.OtlpProxySourceName);
+	private static readonly Meter Meter = new(TelemetryConstants.OtlpProxySourceName);
+	internal static readonly Counter<int> StaleConnectionDrops =
+		Meter.CreateCounter<int>("otlp.proxy.stale_connection.dropped",
+			description: "OTLP batches silently dropped due to a stale pooled connection to the ADOT collector");
 	private readonly HttpClient _httpClient = httpClientFactory.CreateClient(HttpClientName);
 
 	/// <inheritdoc />
@@ -34,17 +39,8 @@ public class AdotOtlpService(
 			var targetUrl = $"{options.Endpoint.TrimEnd('/')}/v1/{signalType.ToStringFast(true)}";
 			logger.LogDebug("Forwarding OTLP {SignalType} to ADOT collector at {TargetUrl}", signalType, targetUrl);
 
-			// Buffer the body so SocketsHttpHandler's transparent connection retry can replay it.
-			// The raw request body is forward-only; a stale pooled connection to the localhost
-			// collector triggers a silent resend that otherwise throws "stream was already consumed".
-			using var buffer = new MemoryStream();
-			await requestBody.CopyToAsync(buffer, ctx);
-			buffer.Position = 0;
-
-			using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
-			{
-				Content = new StreamContent(buffer) // seekable — SocketsHttpHandler can replay on retry
-			};
+			using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl);
+			request.Content = new StreamContent(requestBody);
 			_ = request.Content.Headers.TryAddWithoutValidation("Content-Type", contentType);
 
 			using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, ctx);
@@ -71,12 +67,14 @@ public class AdotOtlpService(
 		catch (Exception ex)
 		{
 			var (statusCode, message) = MapExceptionToStatusCode(ex);
-			logger.LogError(ex, "Error forwarding OTLP {SignalType}: {ErrorMessage}", signalType, message);
-			return new OtlpForwardResult
+			if (statusCode == 204)
 			{
-				StatusCode = statusCode,
-				Content = message
-			};
+				StaleConnectionDrops.Add(1);
+				logger.LogDebug("Dropped OTLP {SignalType} batch on stale connection; collector will reconnect", signalType);
+			}
+			else
+				logger.LogError(ex, "Error forwarding OTLP {SignalType}: {ErrorMessage}", signalType, message);
+			return new OtlpForwardResult { StatusCode = statusCode, Content = message };
 		}
 	}
 
@@ -93,6 +91,12 @@ public class AdotOtlpService(
 
 			TaskCanceledException or OperationCanceledException
 				=> (504, "Request to telemetry collector timed out"),
+
+			// Stale pooled connection — SocketsHttpHandler sets AllowRetry=false for non-seekable
+			// StreamContent, so it throws rather than retrying. OTLP is best-effort; return 204
+			// so the browser exporter doesn't treat this as a retryable 502.
+			HttpRequestException { InnerException: IOException }
+				=> (204, string.Empty),
 
 			// Other HTTP/network errors - bad gateway
 			HttpRequestException

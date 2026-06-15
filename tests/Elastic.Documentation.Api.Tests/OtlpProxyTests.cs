@@ -306,13 +306,8 @@ public class OtlpProxyTests
 	}
 
 	[Fact]
-	public async Task OtlpProxy_SendAsyncThrows_MapsToGatewayError()
+	public async Task OtlpProxy_SendAsyncThrowsNonIo_MapsToGatewayError()
 	{
-		// SocketsHttpHandler's transparent stale-connection retry happens below the
-		// HttpMessageHandler mock layer and cannot be exercised here. This test verifies
-		// the adjacent property: when SendAsync throws HttpRequestException the service
-		// handles it gracefully (no InvalidOperationException escapes, exactly one attempt
-		// is made, and the error is mapped to 502).
 		var callCount = 0;
 		var mockHandler = A.Fake<HttpMessageHandler>();
 
@@ -320,7 +315,7 @@ public class OtlpProxyTests
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Invokes((HttpRequestMessage _, CancellationToken _) => callCount++)
-			.Throws(new HttpRequestException("Connection reset (stale pooled connection)"));
+			.Throws(new HttpRequestException("Some non-IO network error"));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -335,6 +330,34 @@ public class OtlpProxyTests
 
 		callCount.Should().Be(1);
 		response.StatusCode.Should().Be(HttpStatusCode.BadGateway);
+	}
+
+	[Fact]
+	public async Task OtlpProxy_StaleConnection_DropsWithNoContent()
+	{
+		// SocketsHttpHandler detects a stale pooled connection and throws
+		// HttpRequestException { InnerException: IOException } (AllowRetry=false on non-seekable
+		// StreamContent). The proxy maps this to 204 so the browser OTLP exporter doesn't
+		// interpret it as a retryable 502.
+		var mockHandler = A.Fake<HttpMessageHandler>();
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Throws(new HttpRequestException("Stale connection", new IOException("Connection reset by peer")));
+
+		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		{
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		}, otlpEndpoint: OtlpEndpoint);
+
+		var client = factory.CreateClient();
+		using var content = new StringContent(/*lang=json,strict*/ """{"resourceSpans":[]}""", Encoding.UTF8, "application/json");
+
+		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 	}
 
 	[Fact]
