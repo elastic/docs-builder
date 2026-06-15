@@ -306,29 +306,21 @@ public class OtlpProxyTests
 	}
 
 	[Fact]
-	public async Task OtlpProxy_StaleConnectionRetry_DoesNotThrow()
+	public async Task OtlpProxy_SendAsyncThrows_MapsToGatewayError()
 	{
-		// Arrange: first call fails with a stale-connection-style error; second succeeds.
-		// This simulates SocketsHttpHandler's transparent retry when a pooled keep-alive
-		// connection has been closed by the server. With a non-seekable StreamContent the
-		// retry would throw "stream was already consumed"; with a buffered MemoryStream it
-		// must succeed.
+		// SocketsHttpHandler's transparent stale-connection retry happens below the
+		// HttpMessageHandler mock layer and cannot be exercised here. This test verifies
+		// the adjacent property: when SendAsync throws HttpRequestException the service
+		// handles it gracefully (no InvalidOperationException escapes, exactly one attempt
+		// is made, and the error is mapped to 502).
 		var callCount = 0;
 		var mockHandler = A.Fake<HttpMessageHandler>();
 
 		A.CallTo(mockHandler)
 			.Where(call => call.Method.Name == "SendAsync")
 			.WithReturnType<Task<HttpResponseMessage>>()
-			.ReturnsLazily((HttpRequestMessage _, CancellationToken _) =>
-			{
-				callCount++;
-				if (callCount == 1)
-					throw new HttpRequestException("Connection reset (stale pooled connection)");
-				return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-				{
-					Content = new StringContent("{}")
-				});
-			});
+			.Invokes((HttpRequestMessage _, CancellationToken _) => callCount++)
+			.Throws(new HttpRequestException("Connection reset (stale pooled connection)"));
 
 		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
 		{
@@ -339,14 +331,10 @@ public class OtlpProxyTests
 		var client = factory.CreateClient();
 		using var content = new StringContent(/*lang=json,strict*/ """{"resourceSpans":[]}""", Encoding.UTF8, "application/json");
 
-		// Act — should not throw; the buffered body is replayable
 		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
 
-		// First attempt threw HttpRequestException → mapped to 502 by the service.
-		// The retry here is at the application level (service catches the exception);
-		// the point is no InvalidOperationException escapes.
-		response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.BadGateway);
-		callCount.Should().BeGreaterThan(0);
+		callCount.Should().Be(1);
+		response.StatusCode.Should().Be(HttpStatusCode.BadGateway);
 	}
 
 	[Fact]
