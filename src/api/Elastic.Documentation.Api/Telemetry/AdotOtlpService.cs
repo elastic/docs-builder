@@ -34,8 +34,17 @@ public class AdotOtlpService(
 			var targetUrl = $"{options.Endpoint.TrimEnd('/')}/v1/{signalType.ToStringFast(true)}";
 			logger.LogDebug("Forwarding OTLP {SignalType} to ADOT collector at {TargetUrl}", signalType, targetUrl);
 
-			using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl);
-			request.Content = new StreamContent(requestBody);
+			// Buffer the body so SocketsHttpHandler's transparent connection retry can replay it.
+			// The raw request body is forward-only; a stale pooled connection to the localhost
+			// collector triggers a silent resend that otherwise throws "stream was already consumed".
+			using var buffer = new MemoryStream();
+			await requestBody.CopyToAsync(buffer, ctx);
+			buffer.Position = 0;
+
+			using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+			{
+				Content = new StreamContent(buffer) // seekable — SocketsHttpHandler can replay on retry
+			};
 			_ = request.Content.Headers.TryAddWithoutValidation("Content-Type", contentType);
 
 			using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, ctx);
