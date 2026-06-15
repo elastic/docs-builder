@@ -11,7 +11,9 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 
@@ -25,12 +27,21 @@ public static class AppDefaultsExtensions
 	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, Action<IServiceCollection, ConfigurationFileProvider>? configure)
 		where TBuilder : IHostApplicationBuilder => builder.AddDocumentationServiceDefaults(new GlobalCliOptions(), configure);
 
-	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(this TBuilder builder, GlobalCliOptions cliOptions, Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
+	public static TBuilder AddDocumentationServiceDefaults<TBuilder>(
+		this TBuilder builder,
+		GlobalCliOptions cliOptions,
+		Action<IServiceCollection, ConfigurationFileProvider>? configure = null)
 		where TBuilder : IHostApplicationBuilder
 	{
-		var services = builder.Services;
-		_ = services.AddElasticDocumentationLogging(cliOptions.LogLevel);
-		_ = services
+		var services = builder.Services
+			.AddElasticDocumentationLogging(cliOptions.LogLevel)
+			.ConfigureHttpClientDefaults(http =>
+			{
+				_ = http.AddStandardResilienceHandler(options =>
+				{
+					options.Retry.DisableForUnsafeHttpMethods();
+				});
+			})
 			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
 			{
 				var versionConfiguration = p.CreateVersionConfiguration();
@@ -41,13 +52,13 @@ public static class AppDefaultsExtensions
 				_ = s.AddSingleton(versionConfiguration);
 				_ = s.AddSingleton(search);
 				configure?.Invoke(s, p);
-			});
-		_ = services.AddSingleton(cliOptions);
+			})
+			.AddSingleton(cliOptions);
 
 		var endpoints = ElasticsearchEndpointFactory.Create(builder.Configuration);
 		_ = services.AddSingleton(endpoints);
 
-		return builder.AddServiceDefaults();
+		return builder;
 	}
 
 	public static TServiceCollection AddElasticDocumentationLogging<TServiceCollection>(this TServiceCollection services, LogLevel logLevel)
@@ -60,5 +71,13 @@ public static class AppDefaultsExtensions
 			_ = x.AddConsole(c => c.FormatterName = "condensed");
 		});
 		return services;
+	}
+
+	public static TBuilder HealthCheckBuilderExtensions<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+	{
+		_ = builder.Services.AddHealthChecks()
+			.AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+
+		return builder;
 	}
 }
