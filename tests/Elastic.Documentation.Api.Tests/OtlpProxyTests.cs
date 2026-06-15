@@ -290,7 +290,7 @@ public class OtlpProxyTests
 		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
-		var originalPayload = Encoding.UTF8.GetBytes("""{"resourceSpans":[]}""");
+		var originalPayload = Encoding.UTF8.GetBytes(/*lang=json,strict*/ """{"resourceSpans":[]}""");
 		using var content = new ByteArrayContent(originalPayload);
 		content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
@@ -337,7 +337,7 @@ public class OtlpProxyTests
 		}, otlpEndpoint: OtlpEndpoint);
 
 		var client = factory.CreateClient();
-		using var content = new StringContent("""{"resourceSpans":[]}""", Encoding.UTF8, "application/json");
+		using var content = new StringContent(/*lang=json,strict*/ """{"resourceSpans":[]}""", Encoding.UTF8, "application/json");
 
 		// Act — should not throw; the buffered body is replayable
 		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
