@@ -2,24 +2,21 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using AwesomeAssertions;
 using Documentation.Builder.Diagnostics.Console;
 using Elastic.Documentation.Aspire;
-using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Ingest.Elasticsearch;
-using Elastic.Ingest.Elasticsearch.Indices;
 using Elastic.Internal.Search;
 using Elastic.Internal.Search.Mapping;
-using Elastic.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
-using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.IntegrationTests.Search;
 
@@ -87,6 +84,8 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 			// Execute the start command using ResourceCommandAnnotation
 			var startCommand = resource.Annotations.OfType<ResourceCommandAnnotation>()
 				.FirstOrDefault(a => a.Name == "resource-start");
+			var logger = fixture.DistributedApplication.Services.GetService<ILogger<ExecuteCommandContext>>()
+				?? NullLoggerFactory.Instance.CreateLogger<ExecuteCommandContext>();
 
 			if (startCommand != null)
 			{
@@ -95,9 +94,13 @@ public class SearchBootstrapFixture(DocumentationFixture fixture) : IAsyncLifeti
 				// Create ExecuteCommandContext for the start command
 				var commandContext = new ExecuteCommandContext
 				{
+					Logger = logger,
 					ResourceName = resourceEvent.ResourceId,
 					ServiceProvider = fixture.DistributedApplication.Services,
-					CancellationToken = TestContext.Current.CancellationToken
+					CancellationToken = TestContext.Current.CancellationToken,
+#pragma warning disable ASPIREINTERACTION001
+					Arguments = new InteractionInputCollection([])
+#pragma warning restore ASPIREINTERACTION001
 				};
 
 				await startCommand.ExecuteCommand(commandContext);

@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Search.Common;
 using Elastic.Internal.Search;
+using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Search;
@@ -23,24 +24,36 @@ public partial class FullSearchService(
 {
 	public async Task<FullSearchResponse> SearchAsync(FullSearchRequest request, Cancel ctx = default)
 	{
-		var resp = await inner.SearchAsync(new SearchRequest
+		SearchResponse<DocumentationDocument> resp;
+		try
 		{
-			Query = request.Query,
-			PageNumber = request.PageNumber,
-			PageSize = request.PageSize,
-			TypeFilter = request.TypeFilter ?? [],
-			SectionFilter = request.SectionFilter ?? [],
-			ProductFilter = request.ProductFilter ?? [],
-			DeploymentFilter = request.DeploymentFilter ?? [],
-			VersionFilter = request.VersionFilter,
-			SortBy = request.SortBy.ToLowerInvariant() switch
+			resp = await inner.SearchAsync(new SearchRequest
 			{
-				"recent" => SortMode.Recent,
-				"alpha" => SortMode.Alpha,
-				_ => SortMode.Relevance
-			},
-			IncludeHighlighting = request.IncludeHighlighting
-		}, ctx);
+				Query = request.Query,
+				PageNumber = request.PageNumber,
+				PageSize = request.PageSize,
+				TypeFilter = request.TypeFilter ?? [],
+				SectionFilter = request.SectionFilter ?? [],
+				ProductFilter = request.ProductFilter ?? [],
+				DeploymentFilter = request.DeploymentFilter ?? [],
+				VersionFilter = request.VersionFilter,
+				SortBy = request.SortBy.ToLowerInvariant() switch
+				{
+					"recent" => SortMode.Recent,
+					"alpha" => SortMode.Alpha,
+					_ => SortMode.Relevance
+				},
+				IncludeHighlighting = request.IncludeHighlighting
+			}, ctx);
+		}
+		catch (TransportException ex) when (IsTransient(ex))
+		{
+			// Surface transient ES backend failures (timeout, overload, 429/503) as a typed exception
+			// so callers (e.g. MCP tools) can signal "retry in a few seconds" to their clients.
+			throw new SearchUnavailableException(
+				$"Search backend is temporarily unavailable ({ex.FailureReason}). Transient — retry in a few seconds.",
+				ex);
+		}
 
 		var response = new FullSearchResponse
 		{
@@ -62,6 +75,13 @@ public partial class FullSearchService(
 
 		return response;
 	}
+
+	// True for transport failures that are inherently transient: request timeout, retry exhaustion
+	// on a single-node pool, or server-side overload (HTTP 429 / 503).
+	private static bool IsTransient(TransportException ex) =>
+		ex.FailureReason is PipelineFailure.MaxTimeoutReached or PipelineFailure.MaxRetriesReached
+		|| (ex.FailureReason is PipelineFailure.BadResponse
+			&& ex.ApiCallDetails?.HttpStatusCode is 429 or 503);
 
 	[LoggerMessage(Level = LogLevel.Information, Message = "Full search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}' (semantic: {IsSemantic}): {Urls}")]
 	private static partial void LogFullSearchResults(

@@ -10,6 +10,8 @@ Supplemental files let you enrich any auto-generated CLI reference page with con
 
 **Validation is strict.** Any supplemental file whose name does not match a known namespace or command produces a build error, so renamed or removed commands can never leave orphaned docs behind silently.
 
+**Frontmatter is preserved as metadata.** Add YAML frontmatter to set page metadata such as `description`, `applies_to`, or `navigation_title`. It is passed through to the generated page and is not rendered as supplemental description text.
+
 ## File naming
 
 Two naming styles are supported and can coexist in the same folder.
@@ -47,6 +49,24 @@ cli/
 ## Heading rules
 
 The heading structure of a supplemental file controls what it contributes to the generated page.
+
+### Frontmatter
+
+Use frontmatter for page metadata:
+
+```markdown
+---
+description: Use the Elastic CLI to call Elasticsearch REST APIs from the command line.
+applies_to:
+  stack: preview
+---
+
+## Description
+
+The `elastic stack es` command group exposes Elasticsearch REST APIs as CLI commands.
+```
+
+The metadata remains metadata. The generated page uses the `## Description` section, or the schema description if the file only contains frontmatter.
 
 ### No headings
 
