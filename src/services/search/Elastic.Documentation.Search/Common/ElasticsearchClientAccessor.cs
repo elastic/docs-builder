@@ -68,10 +68,18 @@ public class ElasticsearchClientAccessor : IDisposable
 				_nodePool,
 				sourceSerializer: (_, settings) => new DefaultSourceSerializer(
 					settings,
-					ElasticsearchClientJsonResolver.Default,
-					static jsonOptions => jsonOptions.Converters.Add(RuleQueryMatchCriteriaJsonConverterFactory.Instance)))
+					ElasticsearchClientJsonResolver.Default
+					)
+				)
 			.DefaultIndex(SearchIndex)
-			.Authentication(auth);
+			.Authentication(auth)
+			// Unlimited connections so a load surge actually reaches the (serverless) cluster and lets it
+			// autoscale, instead of self-throttling to the transport default (80) and parking requests in
+			// connection-pool wait. The RequestTimeout below is what bounds peak in-flight sockets.
+			.ConnectionLimit(-1)
+			// Fail-fast: the transport default (60s) lets a cold/slow query hang and hold a connection;
+			// 20s sheds genuinely stuck requests while still allowing for serverless cold-start latency.
+			.RequestTimeout(TimeSpan.FromSeconds(20));
 
 		Client = new ElasticsearchClient(_clientSettings);
 	}
