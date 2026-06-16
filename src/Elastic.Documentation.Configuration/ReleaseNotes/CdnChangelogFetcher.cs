@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using System.Net;
 using System.Text.Json;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
@@ -31,15 +32,60 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// yet on the public bucket.
 /// </para>
 /// </remarks>
-public sealed class CdnChangelogFetcher(ILoggerFactory logFactory, IFileSystem fileSystem, HttpMessageHandler? handler = null)
+public sealed class CdnChangelogFetcher : IDisposable
 {
 	private const int SupportedSchemaVersion = 1;
 
+	/// <summary>
+	/// Bounds an individual registry/bundle HTTP request. The fetch runs synchronously inside the Markdig
+	/// finalize pass (see <see cref="Fetch"/>), so without a timeout a stalled CDN connection could hang a
+	/// build — or a long-lived <c>serve</c> process — indefinitely.
+	/// </summary>
+	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(30);
+
+	/// <summary>
+	/// Process-wide client shared by every fetcher built for the production (no injected handler) path.
+	/// <see cref="HttpClient"/> is thread-safe and intended to be long-lived; a single static instance avoids
+	/// leaking a socket handle per directive, and <see cref="SocketsHttpHandler.PooledConnectionLifetime"/>
+	/// bounds DNS staleness in long-lived <c>serve</c>/watch runs. It is intentionally never disposed — it
+	/// lives for the lifetime of the process. (Most fetcher instances never touch it: the static
+	/// <see cref="Cache"/> short-circuits repeated fetches.)
+	/// </summary>
+	private static readonly HttpClient SharedHttpClient = new(
+		new SocketsHttpHandler
+		{
+			AutomaticDecompression = DecompressionMethods.All,
+			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+		})
+	{ Timeout = FetchTimeout };
+
 	private static readonly ConcurrentDictionary<string, IReadOnlyList<LoadedBundle>> Cache = new(StringComparer.Ordinal);
 
-	private readonly ILogger _logger = logFactory.CreateLogger<CdnChangelogFetcher>();
-	private readonly HttpClient _httpClient = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
-	private readonly BundleLoader _bundleLoader = new(fileSystem);
+	private readonly ILogger _logger;
+	private readonly HttpClient _httpClient;
+	private readonly BundleLoader _bundleLoader;
+
+	/// <summary>
+	/// Non-null only when a caller injects its own <see cref="HttpMessageHandler"/> (tests): in that case we
+	/// own a per-instance client and must dispose it. On the production path <see cref="_httpClient"/> points
+	/// at <see cref="SharedHttpClient"/>, which is never disposed.
+	/// </summary>
+	private readonly HttpClient? _ownedHttpClient;
+
+	public CdnChangelogFetcher(ILoggerFactory logFactory, IFileSystem fileSystem, HttpMessageHandler? handler = null)
+	{
+		_logger = logFactory.CreateLogger<CdnChangelogFetcher>();
+		_bundleLoader = new BundleLoader(fileSystem);
+
+		if (handler is null)
+			_httpClient = SharedHttpClient;
+		else
+		{
+			// disposeHandler: false — the injected handler is owned by the caller (tests), not by us.
+			_ownedHttpClient = new HttpClient(handler, disposeHandler: false) { Timeout = FetchTimeout };
+			_httpClient = _ownedHttpClient;
+		}
+	}
 
 	/// <summary>
 	/// Returns the loaded bundles for <paramref name="product"/> from the CDN at <paramref name="baseUri"/>.
@@ -209,4 +255,14 @@ public sealed class CdnChangelogFetcher(ILoggerFactory logFactory, IFileSystem f
 		!fileName.Contains('/', StringComparison.Ordinal)
 		&& !fileName.Contains('\\', StringComparison.Ordinal)
 		&& fileName is not ("." or "..");
+
+	/// <summary>
+	/// Disposes the per-instance <see cref="HttpClient"/> created for an injected handler. The shared
+	/// production client (<see cref="SharedHttpClient"/>) is process-lived and intentionally not disposed.
+	/// </summary>
+	public void Dispose()
+	{
+		_ownedHttpClient?.Dispose();
+		GC.SuppressFinalize(this);
+	}
 }

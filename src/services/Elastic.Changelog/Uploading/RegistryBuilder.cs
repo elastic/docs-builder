@@ -10,6 +10,7 @@ using Amazon.S3.Model;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Integrations.S3;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Uploading;
@@ -280,8 +281,10 @@ internal sealed class RegistryBuilder(
 	}
 
 	/// <summary>
-	/// Replaces existing entries by file name, then appends new ones. Sort is target-desc with a
-	/// deterministic tiebreak on file name to keep the on-disk JSON stable across reruns.
+	/// Replaces existing entries by file name, then appends new ones. Sort is newest-target-first using
+	/// the same <see cref="VersionOrDate"/> comparator the consumer applies (so the on-disk manifest's
+	/// order matches the documented "newest first" claim even for mixed-width semvers like 9.10.0 vs
+	/// 9.9.0), with a deterministic tiebreak on file name to keep the JSON stable across reruns.
 	/// </summary>
 	private static List<RegistryBundle> Merge(
 		IReadOnlyList<RegistryBundle> existing,
@@ -292,7 +295,7 @@ internal sealed class RegistryBuilder(
 			byFile[entry.File] = entry;
 
 		return byFile.Values
-			.OrderByDescending(b => b.Target ?? string.Empty, StringComparer.Ordinal)
+			.OrderByDescending(b => VersionOrDate.Parse(b.Target ?? string.Empty))
 			.ThenBy(b => b.File, StringComparer.Ordinal)
 			.ToList();
 	}

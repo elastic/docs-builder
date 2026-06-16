@@ -46,7 +46,8 @@ public class CdnChangelogFetcherTests
 				: Yaml(SampleBundle));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
-		var bundles = CreateFetcher(handler).Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -64,7 +65,8 @@ public class CdnChangelogFetcherTests
 				: Yaml(SampleBundle));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
-		var bundles = CreateFetcher(handler).Fetch(UniqueBase(), "elasticsearch", version: "9.3.0", emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: "9.3.0", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -80,7 +82,8 @@ public class CdnChangelogFetcherTests
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
-		var bundles = CreateFetcher(handler).Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		bundles.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
@@ -95,7 +98,8 @@ public class CdnChangelogFetcherTests
 				: new HttpResponseMessage(HttpStatusCode.NotFound));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
-		var bundles = CreateFetcher(handler).Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		bundles.Should().BeEmpty();
 		errors.Should().BeEmpty();
@@ -109,7 +113,8 @@ public class CdnChangelogFetcherTests
 			Json(/*lang=json,strict*/ """{ "schema_version": 999, "product": "elasticsearch", "bundles": [] }"""));
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
-		var bundles = CreateFetcher(handler).Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		bundles.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
@@ -123,7 +128,7 @@ public class CdnChangelogFetcherTests
 				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0" } ] }""")
 				: Yaml(SampleBundle));
 		var (_, _, emitError, emitWarning) = Diagnostics();
-		var fetcher = CreateFetcher(handler);
+		using var fetcher = CreateFetcher(handler);
 		var baseUri = UniqueBase();
 
 		_ = fetcher.Fetch(baseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);

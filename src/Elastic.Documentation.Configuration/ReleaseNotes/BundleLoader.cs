@@ -193,7 +193,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// </summary>
 	/// <param name="bundles">The sorted list of bundles to merge.</param>
 	/// <returns>A list of bundles where same-target bundles are merged.</returns>
-	public IReadOnlyList<LoadedBundle> MergeBundlesByTarget(IReadOnlyList<LoadedBundle> bundles)
+	public static IReadOnlyList<LoadedBundle> MergeBundlesByTarget(IReadOnlyList<LoadedBundle> bundles)
 	{
 		if (bundles.Count <= 1)
 			return bundles;

@@ -168,6 +168,26 @@ public class RegistryBuilderTests
 	}
 
 	[Fact]
+	public async Task Refresh_SortsManifestByVersionNotLexicographically()
+	{
+		StubExistingManifestNotFound();
+
+		// Version order (not byte order): 9.10.0 must come before 9.9.0 in the written manifest.
+		var v910 = AddBundle("9.10.0.yaml", "elasticsearch", "9.10.0");
+		var v99 = AddBundle("9.9.0.yaml", "elasticsearch", "9.9.0");
+		var targets = new List<UploadTarget>
+		{
+			new(v99, "elasticsearch/bundle/9.9.0.yaml"),
+			new(v910, "elasticsearch/bundle/9.10.0.yaml")
+		};
+
+		_ = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
+
+		var manifest = Deserialize(_puts[0].ContentBody);
+		manifest.Bundles.Select(b => b.Target).Should().Equal("9.10.0", "9.9.0");
+	}
+
+	[Fact]
 	public async Task Refresh_MultipleProducts_WritesOneManifestPerProduct()
 	{
 		var es = AddBundle("9.3.0.yaml", "elasticsearch", "9.3.0");
@@ -334,7 +354,9 @@ public class RegistryBuilderTests
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
 			.MustHaveHappenedTwiceExactly();
 
-		// The successful (second) PUT used the re-read ETag and merged both the concurrent and local entries.
+		// Two PUTs were attempted (asserted above); the first threw on the precondition failure before
+		// _puts.Add ran, so only the successful retry is captured here. It used the re-read ETag and
+		// merged both the concurrent and local entries.
 		_puts.Should().ContainSingle();
 		_puts[0].IfMatch.Should().Be("\"manifest-v2\"");
 		var manifest = Deserialize(_puts[0].ContentBody);

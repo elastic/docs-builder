@@ -293,8 +293,9 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 }
 
 /// <summary>
-/// Verifies the <c>:cdn:</c> option is captured and validated. An invalid product name is rejected
-/// before any network access, so this test exercises the wiring without touching the CDN.
+/// Verifies <c>:cdn:</c> product validation. An invalid product name is rejected before it is
+/// assigned to the block and before any network access, so this test exercises the wiring without
+/// touching the CDN.
 /// </summary>
 public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
 	// language=markdown
@@ -305,7 +306,7 @@ public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : Directi
 	""")
 {
 	[Fact]
-	public void CapturesCdnProductOption() => Block!.CdnProduct.Should().Be("invalid$product");
+	public void DoesNotCaptureInvalidCdnProduct() => Block!.CdnProduct.Should().BeNull();
 
 	[Fact]
 	public void DoesNotSourceFromLocalFolder() => Block!.BundlesFolderPath.Should().BeNull();
@@ -358,6 +359,9 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 				  - "999"
 				""")
 		], _ => { });
+		// The fetcher keys its cache by base URL, and with DOCS_BUILDER_CHANGELOG_CDN unset the directive
+		// resolves DefaultCdnBaseUrl. The primed entry must therefore use that same constant, otherwise
+		// the cache key won't match and the directive would attempt a real network fetch.
 		CdnChangelogFetcher.PrimeCacheForTesting(new Uri(ChangelogBlock.DefaultCdnBaseUrl), Product, null, bundles);
 
 		await base.InitializeAsync();

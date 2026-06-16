@@ -228,6 +228,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				return;
 			}
 
+			// Validate before assigning so an invalid product name is never stored on the block.
+			if (!IsValidCdnProduct(product))
+			{
+				this.EmitError($"Invalid :cdn: product '{product}'. Product names must match [a-zA-Z0-9_-]+.");
+				return;
+			}
+
 			CdnProduct = product;
 			LoadCdnBundles(product);
 			return;
@@ -493,17 +500,12 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			BundlesFolderPath,
 			msg => this.EmitError(msg));
 
-		ApplyLoadedBundles(loader, loadedBundles);
+		ApplyLoadedBundles(loadedBundles);
 	}
 
 	private void LoadCdnBundles(string product)
 	{
-		if (!IsValidCdnProduct(product))
-		{
-			this.EmitError($"Invalid :cdn: product '{product}'. Product names must match [a-zA-Z0-9_-]+.");
-			return;
-		}
-
+		// Product validity is checked by the caller before CdnProduct is assigned.
 		if (!string.IsNullOrWhiteSpace(Arguments))
 			this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
 
@@ -514,14 +516,16 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return;
 		}
 
-		var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, Build.ReadFileSystem);
+		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, Build.ReadFileSystem);
+		// Cancel.None: directive finalization runs inside the synchronous Markdig block parser, which
+		// has no cancellation token to thread through; the fetch is bounded by HTTP timeouts instead.
 		var loadedBundles = fetcher.Fetch(baseUri, product, VersionFilter, msg => this.EmitError(msg), msg => this.EmitWarning(msg), Cancel.None);
 
-		ApplyLoadedBundles(new BundleLoader(Build.ReadFileSystem), loadedBundles);
+		ApplyLoadedBundles(loadedBundles);
 		Found = LoadedBundles.Count > 0;
 	}
 
-	private void ApplyLoadedBundles(BundleLoader loader, IReadOnlyList<LoadedBundle> loadedBundles)
+	private void ApplyLoadedBundles(IReadOnlyList<LoadedBundle> loadedBundles)
 	{
 		var filteredBundles = FilterByVersion(loadedBundles);
 
@@ -533,7 +537,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 		// Always merge bundles with the same target version
 		// (e.g., Cloud Serverless with multiple repos contributing to a single dated release)
-		LoadedBundles = loader.MergeBundlesByTarget(sortedBundles);
+		LoadedBundles = BundleLoader.MergeBundlesByTarget(sortedBundles);
 
 		// Collect hide-features from all loaded bundles
 		foreach (var bundle in LoadedBundles)
