@@ -173,7 +173,7 @@ Sources bundles for a single **product** from the public changelog CDN instead o
 :::
 ```
 
-The value names the product (must match `[a-zA-Z0-9_-]+`) and maps to `{product}/registry.json` plus the bundles it lists on the CDN. The value is **optional**: leave it blank to infer the product from the repository that holds the doc (the common case where the repository name is the product id, for example the `elasticsearch` repo renders the `elasticsearch` product).
+The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`) and maps to `{product}/registry.json` plus the bundles it lists on the CDN. The value is **optional**: leave it blank to infer the product from the repository that holds the doc (the common case where the repository name is the product id, for example the `elasticsearch` repo renders the `elasticsearch` product).
 
 ```markdown
 :::{changelog}
@@ -181,7 +181,7 @@ The value names the product (must match `[a-zA-Z0-9_-]+`) and maps to `{product}
 :::
 ```
 
-Inference only works for repositories whose name matches the product id. Repositories that publish multiple products (for example `cloud`, which publishes `cloud-hosted`, `cloud-serverless`, and `cloud-enterprise`) must name the product explicitly; if a product cannot be inferred the block emits an error. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
+Inference only works for repositories whose name matches the product ID. For example, the `cloud-serverless` product release notes are published from the `docs-content` repo and therefore must specify the product explicitly. If a product cannot be inferred the block emits an error. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
 
 The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
 
