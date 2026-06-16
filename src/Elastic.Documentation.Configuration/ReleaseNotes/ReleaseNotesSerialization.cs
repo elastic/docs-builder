@@ -197,7 +197,8 @@ public static partial class ReleaseNotesSerialization
 		Description = dto.Description,
 		ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
 		HideFeatures = dto.HideFeatures ?? [],
-		Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? []
+		Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? [],
+		ExcludeEntries = dto.ExcludeEntries?.Select(ToBundledEntry).ToList() ?? []
 	};
 
 	private static BundledProduct ToBundledProduct(BundledProductDto dto) => new()
@@ -308,7 +309,8 @@ public static partial class ReleaseNotesSerialization
 		Description = bundle.Description,
 		ReleaseDate = bundle.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
 		HideFeatures = bundle.HideFeatures.Count > 0 ? bundle.HideFeatures.ToList() : null,
-		Entries = bundle.Entries.Select(ToDto).ToList()
+		Entries = bundle.Entries.Count > 0 ? bundle.Entries.Select(ToDto).ToList() : null,
+		ExcludeEntries = bundle.ExcludeEntries.Count > 0 ? bundle.ExcludeEntries.Select(ToDto).ToList() : null
 	};
 
 	private static BundledProductDto ToDto(BundledProduct product) => new()

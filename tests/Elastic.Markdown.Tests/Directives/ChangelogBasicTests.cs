@@ -72,6 +72,70 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogExcludeAmendTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:::
+		""")
+	{
+		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+			// language=yaml
+			"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			  lifecycle: ga
+			entries:
+			- title: Keep this feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  file:
+			    name: keep.yaml
+			    checksum: keep-checksum
+			  prs:
+			  - "123456"
+			- title: Remove this feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  file:
+			    name: removed.yaml
+			    checksum: excluded
+			  prs:
+			  - "123457"
+			"""));
+		FileSystem.AddFile("docs/changelog/bundles/9.3.0.amend-1.yaml", new MockFileData(
+			// language=yaml
+			"""
+			exclude-entries:
+			- file:
+			    name: removed.yaml
+			    checksum: excluded
+			"""));
+	}
+
+	[Fact]
+	public void RendersWithoutExcludedEntry()
+	{
+		Html.Should().Contain("Keep this feature");
+		Html.Should().NotContain("Remove this feature");
+	}
+
+	[Fact]
+	public void LoadsMergedEntryCount()
+	{
+		Block!.LoadedBundles.Should().HaveCount(1);
+		Block.LoadedBundles[0].Entries.Should().HaveCount(1);
+		Block.LoadedBundles[0].Entries[0].Title.Should().Be("Keep this feature");
+	}
+}
+
 public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 {
 	public ChangelogMultipleBundlesTests(ITestOutputHelper output) : base(output,

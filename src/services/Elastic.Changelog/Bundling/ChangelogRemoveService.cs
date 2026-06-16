@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
@@ -349,16 +350,26 @@ public class ChangelogRemoveService(
 
 		var dependencies = new List<BundleDependency>();
 
-		foreach (var bundleFile in bundleFiles)
+		foreach (var bundleFile in bundleFiles.Where(file => !BundleAmendMerger.IsAmendFile(file)))
 		{
 			try
 			{
 				var content = await _fileSystem.File.ReadAllTextAsync(bundleFile, ctx);
 				var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
 
+				var amendPaths = ChangelogBundleAmendService.DiscoverAmendFiles(_fileSystem, bundleFile);
+				var amendBundles = new List<Bundle>();
+				foreach (var amendPath in amendPaths)
+				{
+					var amendContent = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
+					amendBundles.Add(ReleaseNotesSerialization.DeserializeBundle(amendContent));
+				}
+
+				var effectiveEntries = BundleAmendMerger.MergeEntries(bundle.Entries, amendBundles);
+
 				// Only treat as unresolved when the entry would need to load from file.
 				// Resolved entries have inline data (Title+Type) and don't need the file even if they have a File block.
-				var entryFileNames = bundle.Entries
+				var entryFileNames = effectiveEntries
 					.Where(entry =>
 						!string.IsNullOrWhiteSpace(entry.File?.Name) &&
 						(string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null))

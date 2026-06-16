@@ -95,7 +95,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		IReadOnlyList<string> amendFiles,
 		Cancel ctx)
 	{
-		var mergedEntries = new List<BundledEntry>(mainBundle.Entries);
+		var amendBundles = new List<Bundle>();
 
 		foreach (var amendFile in amendFiles)
 		{
@@ -103,9 +103,12 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			{
 				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
 				var amendBundle = ReleaseNotesSerialization.DeserializeBundle(amendContent);
-
-				_logger.LogInformation("Merging {Count} entries from amend file {AmendFile}", amendBundle.Entries.Count, amendFile);
-				mergedEntries.AddRange(amendBundle.Entries);
+				amendBundles.Add(amendBundle);
+				_logger.LogInformation(
+					"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+					amendFile,
+					amendBundle.Entries.Count,
+					amendBundle.ExcludeEntries.Count);
 			}
 			catch (YamlException yamlEx)
 			{
@@ -114,9 +117,14 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			}
 		}
 
+		var mergedEntries = BundleAmendMerger.MergeEntries(mainBundle.Entries, amendBundles);
+
 		return new Bundle
 		{
 			Products = mainBundle.Products,
+			Description = mainBundle.Description,
+			ReleaseDate = mainBundle.ReleaseDate,
+			HideFeatures = mainBundle.HideFeatures,
 			Entries = mergedEntries
 		};
 	}
