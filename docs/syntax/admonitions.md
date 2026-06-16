@@ -4,7 +4,33 @@ Admonitions allow you to highlight important information with varying levels of 
 
 ## Basic admonitions
 
-Admonitions can span multiple lines and support inline formatting. 
+Admonitions can span multiple lines and support inline formatting.
+
+:::::{tab-set}
+
+::::{tab-item} Output
+
+:::{admonition} Multiple paragraphs
+Separate paragraphs with a blank line, just like regular Markdown.
+
+Adjacent lines without a blank line between them render as a single paragraph.
+:::
+
+::::
+
+::::{tab-item} Markdown
+
+```markdown
+:::{admonition} Multiple paragraphs
+Separate paragraphs with a blank line, just like regular Markdown.
+
+Adjacent lines without a blank line between them render as a single paragraph.
+:::
+```
+
+::::
+
+:::::
 
 Available admonition types include:
 
