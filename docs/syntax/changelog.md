@@ -322,8 +322,9 @@ This prevents silent data loss where changelog entries would be quietly omitted 
 To fix this, either:
 
 - Restore the missing changelog files, or
-- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained), or
-- Remove the unresolvable entry from the bundle file with `changelog bundle-amend --remove`.
+- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained).
+
+`bundle-amend --remove` only applies when the source changelog file is still available (for example, to drop an entry from the effective bundle before you delete the file with `changelog remove`).
 
 :::{tip}
 In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.

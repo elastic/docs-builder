@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -394,5 +395,35 @@ public class BundleAmendTests : ChangelogTestBase
 		amendContent.Should().Contain("name: 1755268130-existing.yaml");
 		amendContent.Should().Contain("entries:");
 		amendContent.Should().Contain("name: 1755268200-new-feature.yaml");
+	}
+
+	[Fact]
+	public async Task AmendBundle_CorruptExistingAmend_FailsWithoutWritingNewAmend()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateUnresolvedBundle(ct);
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.ChangeExtension(bundlePath, ".amend-1.yaml"),
+			"exclude-entries:\n  - file: [invalid yaml",
+			ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [changelogFile]
+		};
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeFalse();
+		amendCollector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("Failed to deserialize amend file"));
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1, "corrupt amend should not produce a second amend file");
 	}
 }

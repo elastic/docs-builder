@@ -118,7 +118,13 @@ public partial class ChangelogBundleAmendService(
 			if (!parentOk || parentBundle == null)
 				return false;
 
-			var existingAmendBundles = await LoadExistingAmendBundlesAsync(input.BundlePath, ctx);
+			var (amendsOk, existingAmendBundles) = await LoadExistingAmendBundlesAsync(
+				input.BundlePath,
+				collector,
+				ctx);
+			if (!amendsOk)
+				return false;
+
 			var effectiveEntries = BundleAmendMerger.MergeEntries(parentBundle.Entries, existingAmendBundles);
 			var appliedExclusionKeys = BundleAmendMerger.CollectAppliedExclusionKeys(existingAmendBundles);
 
@@ -338,16 +344,30 @@ public partial class ChangelogBundleAmendService(
 		return validatedPaths;
 	}
 
-	private async Task<List<Bundle>> LoadExistingAmendBundlesAsync(string bundlePath, Cancel ctx)
+	private async Task<(bool Ok, List<Bundle> Bundles)> LoadExistingAmendBundlesAsync(
+		string bundlePath,
+		IDiagnosticsCollector collector,
+		Cancel ctx)
 	{
 		var amendPaths = DiscoverAmendFiles(_fileSystem, bundlePath);
 		var amendBundles = new List<Bundle>();
 		foreach (var amendPath in amendPaths)
 		{
-			var content = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
-			amendBundles.Add(ReleaseNotesSerialization.DeserializeBundle(content));
+			try
+			{
+				var content = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
+				amendBundles.Add(ReleaseNotesSerialization.DeserializeBundle(content));
+			}
+			catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
+			{
+				collector.EmitError(
+					amendPath,
+					$"Failed to deserialize amend file: {ex.Message}",
+					ex);
+				return (false, []);
+			}
 		}
-		return amendBundles;
+		return (true, amendBundles);
 	}
 
 	private async Task<RemoveExclusionResult?> BuildExclusionEntryAsync(

@@ -361,8 +361,17 @@ public class ChangelogRemoveService(
 				var amendBundles = new List<Bundle>();
 				foreach (var amendPath in amendPaths)
 				{
-					var amendContent = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
-					amendBundles.Add(ReleaseNotesSerialization.DeserializeBundle(amendContent));
+					try
+					{
+						var amendContent = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
+						amendBundles.Add(ReleaseNotesSerialization.DeserializeBundle(amendContent));
+					}
+					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
+					{
+						_logger.LogWarning(ex,
+							"Could not parse amend file {AmendFile} for dependency check; using parent bundle entries only",
+							amendPath);
+					}
 				}
 
 				var effectiveEntries = BundleAmendMerger.MergeEntries(bundle.Entries, amendBundles);
