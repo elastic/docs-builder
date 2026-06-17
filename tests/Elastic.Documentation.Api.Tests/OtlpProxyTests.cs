@@ -335,10 +335,11 @@ public class OtlpProxyTests
 	[Fact]
 	public async Task OtlpProxy_StaleConnection_DropsWithNoContent()
 	{
-		// SocketsHttpHandler detects a stale pooled connection and throws
-		// HttpRequestException { InnerException: IOException } (AllowRetry=false on non-seekable
-		// StreamContent). The proxy maps this to 204 so the browser OTLP exporter doesn't
-		// interpret it as a retryable 502.
+		// The proxy streams the body zero-copy (no buffering), so a stale connection cannot be
+		// recovered by replaying the request. The batch is dropped best-effort and the proxy
+		// returns 204 so the browser OTLP exporter doesn't interpret it as a retryable 502.
+		// In practice this path is rare because PooledConnectionIdleTimeout closes idle sockets
+		// before the ADOT sidecar can reset them.
 		var mockHandler = A.Fake<HttpMessageHandler>();
 
 		A.CallTo(mockHandler)

@@ -20,6 +20,13 @@ public record OtelRegistration(string ServiceName)
 	public Action<ElasticOpenTelemetryOptions, TracerProviderBuilder>? Tracing { get; init; }
 	public Action<ElasticOpenTelemetryOptions, MeterProviderBuilder>? Metrics { get; init; }
 	public Action<ElasticOpenTelemetryOptions, LoggerProviderBuilder>? Logging { get; init; }
+	/// <summary>
+	/// Optional filter for HttpClient tracing instrumentation.
+	/// Return <c>false</c> to exclude a request from tracing.
+	/// Use to suppress internal sidecar traffic (e.g. a localhost OTLP proxy hop)
+	/// that is already covered by an app-level span.
+	/// </summary>
+	public Func<HttpRequestMessage, bool>? HttpClientTracingFilter { get; init; }
 }
 
 public static class OpenTelemetryRegistrationExtensions
@@ -91,7 +98,11 @@ public static class OpenTelemetryRegistrationExtensions
 							};
 						})
 						.AddProcessor<EuidSpanProcessor>() // Automatically add euid to all child spans
-						.AddHttpClientInstrumentation();
+						.AddHttpClientInstrumentation(opts =>
+						{
+							if (registration.HttpClientTracingFilter is { } filter)
+								opts.FilterHttpRequestMessage = filter;
+						});
 					registration.Tracing?.Invoke(options, tracing);
 				})
 				.WithMetrics(metrics =>

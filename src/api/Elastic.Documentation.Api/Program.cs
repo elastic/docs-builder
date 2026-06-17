@@ -24,7 +24,16 @@ try
 		})
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api")
 		{
-			Tracing = (_, t) => t.AddDocsApiTracing()
+			Tracing = (_, t) => t.AddDocsApiTracing(),
+			// Exclude the OtlpProxy's own forwarding hops from auto-instrumentation: these requests
+			// to the localhost ADOT sidecar are already covered by the app-level "forward otlp" span
+			// in AdotOtlpService, with correct status semantics. The raw HttpClient span would surface
+			// expected transient resets as error spans.
+			// Match on loopback host + OTLP HTTP path prefix; port-agnostic so it works whether the
+			// sidecar listens on 4318 (HTTP) or 4317 (gRPC-HTTP/1.1) or a custom OTEL_EXPORTER_OTLP_ENDPOINT.
+			HttpClientTracingFilter = req =>
+				req.RequestUri is not { Host: "localhost" or "127.0.0.1" } otlpUri
+				|| !otlpUri.AbsolutePath.StartsWith("/v1/", StringComparison.Ordinal)
 		})
 		.HealthCheckBuilderExtensions();
 

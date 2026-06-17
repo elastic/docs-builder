@@ -209,8 +209,9 @@ public static class ServicesExtension
 		// 1s timeout: the collector is a localhost sidecar and should answer in single-digit ms.
 		// RemoveAllResilienceHandlers opts this client out of the global standard resilience handler
 		// (retries + 10s/30s timeouts) so a dead collector fails fast instead of blocking ~9s.
-		// PooledConnectionLifetime=30s proactively recycles connections before the sidecar closes them,
-		// keeping the stale-connection drop rate negligible.
+		// PooledConnectionIdleTimeout=2s: close idle sockets before the ADOT sidecar closes them
+		// server-side, preventing stale-connection reuse across Lambda freeze/thaw cycles.
+		// PooledConnectionLifetime=30s: cap long-lived busy connections.
 #pragma warning disable EXTEXP0001 // RemoveAllResilienceHandlers is experimental
 		_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
 			.ConfigureHttpClient(client =>
@@ -219,6 +220,7 @@ public static class ServicesExtension
 			})
 			.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
 			{
+				PooledConnectionIdleTimeout = TimeSpan.FromSeconds(2),
 				PooledConnectionLifetime = TimeSpan.FromSeconds(30),
 			})
 			.RemoveAllResilienceHandlers();
