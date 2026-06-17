@@ -28,6 +28,16 @@ my-tool export-schema > docs/cli-schema.json
 
 Commit that file. It is the source of truth for the generated reference section.
 
+:::{note}
+**Maintaining docs-builder itself:** after changing CLI options in `src/tooling/docs-builder/Commands/`, regenerate this repository's schema with:
+
+```bash
+dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+```
+
+Commit the updated file with your code changes. See [CONTRIBUTING.md](https://github.com/elastic/docs-builder/blob/main/CONTRIBUTING.md#cli-reference-maintenance) for the full workflow, including when to update supplemental files under `docs/cli/`.
+:::
+
 :::{tip}
 Add a CI step that regenerates the schema and fails if the checked-in copy has drifted:
 

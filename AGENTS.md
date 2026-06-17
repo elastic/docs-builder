@@ -30,6 +30,14 @@ dotnet format                                   # auto-fix C# formatting
 dotnet test tests/Elastic.Markdown.Tests/       # single test project
 ```
 
+**CLI changes:** after editing `src/tooling/docs-builder/Commands/`, regenerate `docs/cli-schema.json`:
+
+```bash
+dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplemental CLI docs under `docs/cli/`.
+
 ### TypeScript frontend
 
 ```bash
