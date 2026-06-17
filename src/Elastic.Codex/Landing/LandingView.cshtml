@@ -123,28 +123,67 @@
 		</div>
 	</div>
 
+	@{
+		var sortedSections = Model.Groups
+			.Select(g => (sortKey: g.DisplayTitle, group: (GroupNavigation?)g, docSet: (CodexDocumentationSetInfo?)null))
+			.Concat(Model.UngroupedDocumentationSets
+				.Select(ds => (sortKey: ds.Title ?? ds.Name, group: (GroupNavigation?)null, docSet: (CodexDocumentationSetInfo?)ds)))
+			.OrderBy(x => x.sortKey, StringComparer.OrdinalIgnoreCase)
+			.ToList();
+	}
 	<div id="codex-grid" class="pt-8 pb-8 max-w-7xl p-4 mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style="position: relative; z-index: 1;">
-		@foreach (var group in Model.Groups)
+		@foreach (var item in sortedSections)
 		{
-			@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel
+			@if (item.group is { } group)
 			{
-				Url = group.Url,
-				Title = group.DisplayTitle,
-				Description = group.Description,
-				Icon = group.Icon,
-				PageCount = group.DocumentationSetInfos.Sum(ds => ds.PageCount)
-			})))
-		}
-		@foreach (var docSet in Model.UngroupedDocumentationSets)
-		{
-			@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel
+				var repoCount = group.DocumentationSetInfos.Count;
+				var colSpan = repoCount >= 5 || repoCount == 3 ? "col-span-full" : repoCount >= 2 ? "col-span-1 md:col-span-2" : "col-span-1";
+				var innerCols = repoCount >= 5 || repoCount == 3 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : repoCount >= 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1";
+				<div class="@colSpan border border-dashed border-grey-40 rounded-xl p-3">
+					<a href="@group.Url"
+					   hx-select-oob="#main-container"
+					   preload="mousedown"
+					   class="flex items-center gap-3 group bg-white docset-card rounded-lg border border-grey-20 p-4 mb-3 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
+						<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-lg p-3 shrink-0">
+							@GetIconSvg(group.Icon, "w-6 h-6 fill-current")
+						</div>
+						<div>
+							<div class="text-sm font-semibold group-hover:text-blue-elastic-90 transition-colors">@group.DisplayTitle</div>
+							<div class="text-xs text-subdued font-mono mt-0.5">/g/@group.GroupSlug</div>
+							@if (!string.IsNullOrEmpty(group.Description))
+							{
+								<p class="text-xs text-subdued mt-0.5">@group.Description</p>
+							}
+						</div>
+					</a>
+					<div class="grid @innerCols gap-3">
+						@foreach (var docSet in group.DocumentationSetInfos.OrderBy(ds => ds.Title))
+						{
+							@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel
+							{
+								Url = docSet.Url,
+								Title = docSet.Title ?? docSet.Name,
+								Description = docSet.Description,
+								Icon = docSet.Icon,
+								PageCount = docSet.PageCount,
+								RepoPath = $"/r/{docSet.Name}"
+							})))
+						}
+					</div>
+				</div>
+			}
+			else if (item.docSet is { } docSet)
 			{
-				Url = docSet.Url,
-				Title = docSet.Title ?? docSet.Name,
-				Description = docSet.Description,
-				Icon = docSet.Icon,
-				PageCount = docSet.PageCount
-			})))
+				@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel
+				{
+					Url = docSet.Url,
+					Title = docSet.Title ?? docSet.Name,
+					Description = docSet.Description,
+					Icon = docSet.Icon,
+					PageCount = docSet.PageCount,
+					RepoPath = $"/r/{docSet.Name}"
+				})))
+			}
 		}
 	</div>
 </section>

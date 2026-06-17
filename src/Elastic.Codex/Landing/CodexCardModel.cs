@@ -14,4 +14,10 @@ public record CodexCardModel
 	public string? Description { get; init; }
 	public string? Icon { get; init; }
 	public int PageCount { get; init; }
+
+	/// <summary>
+	/// The repo path (e.g. "/r/beacon") shown on docset cards so it is findable via browser ctrl+F. Null for group cards.
+	/// </summary>
+	public string? RepoPath { get; init; }
+
 }
