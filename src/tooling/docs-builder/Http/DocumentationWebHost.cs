@@ -76,11 +76,6 @@ public class DocumentationWebHost
 
 		// Enable diagnostics panel in serve mode
 		Context.Configuration.Features.DiagnosticsPanelEnabled = true;
-		if (Environment.GetEnvironmentVariable("WEBSITE_SEARCH_SCRIPT_URL") is { } searchScriptUrl)
-		{
-			Context.Configuration.Features.WebsiteSearchEnabled = true;
-			Context.Configuration.Features.WebsiteSearchScriptUrl = searchScriptUrl;
-		}
 
 		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);

@@ -144,7 +144,5 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 			: new DocumentationSetFile();
 		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
 		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
-		Configuration.Features.WebsiteSearchEnabled = previousFeatures.WebsiteSearchEnabled;
-		Configuration.Features.WebsiteSearchScriptUrl = previousFeatures.WebsiteSearchScriptUrl;
 	}
 }
