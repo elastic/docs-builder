@@ -9,6 +9,8 @@ updates:
       time: '08:00'
     labels:
       - chore
+    cooldown:
+      default-days: 14
   - package-ecosystem: npm
     directories:
       - '**/*'
@@ -47,3 +49,5 @@ updates:
           - 'System.IO.Abstractions.*'
     labels:
       - chore
+    cooldown:
+      default-days: 14

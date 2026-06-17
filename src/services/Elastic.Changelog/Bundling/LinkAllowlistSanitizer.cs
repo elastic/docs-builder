@@ -366,6 +366,21 @@ public static partial class LinkAllowlistSanitizer
 
 			if (!ChangelogTextUtilities.TryGetGitHubRepo(r, defaultOwner, defaultBundleRepo ?? string.Empty, out var owner, out var repo))
 			{
+				// A bare numeric reference with no repo context (e.g. `prs: ['155500']` loaded by the
+				// scrubber Lambda, which doesn't know which repo a per-entry YAML belongs to) carries no
+				// repository identity, so it cannot leak a private reference on its own. Keep it as-is —
+				// downstream rendering supplies the owner/repo from runtime context — and emit a warning so
+				// the diagnostic is still visible without failing the whole entry. Anything that still
+				// encodes a repo (URL / owner/repo#N short-form) hits the explicit error branch below.
+				if (!string.IsNullOrWhiteSpace(r) && uint.TryParse(r.Trim(), out _))
+				{
+					list.Add(r);
+					collector.EmitWarning(
+						string.Empty,
+						$"Bare {referenceKind} reference '{r}' has no embedded owner/repo and no default repo was supplied; keeping as-is for downstream rendering to resolve.");
+					continue;
+				}
+
 				collector.EmitError(
 					string.Empty,
 					$"Link allowlist filtering could not parse {referenceKind} reference '{r}'. " +

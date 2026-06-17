@@ -28,6 +28,16 @@ my-tool export-schema > docs/cli-schema.json
 
 Commit that file. It is the source of truth for the generated reference section.
 
+:::{note}
+**Maintaining docs-builder itself:** after changing CLI options in `src/tooling/docs-builder/Commands/`, regenerate this repository's schema with:
+
+```bash
+dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+```
+
+Commit the updated file with your code changes. See [CONTRIBUTING.md](https://github.com/elastic/docs-builder/blob/main/CONTRIBUTING.md#cli-reference-maintenance) for the full workflow, including when to update supplemental files under `docs/cli/`.
+:::
+
 :::{tip}
 Add a CI step that regenerates the schema and fails if the checked-in copy has drifted:
 
@@ -60,6 +70,16 @@ To give the section a stable URL prefix and a home for supplemental docs, also s
 toc:
   - cli: cli-schema.json
     folder: cli-reference
+```
+
+Use `title:` to customize the generated CLI root page title, and `navigation_title:` to customize the sidebar and breadcrumb label without changing generated command examples:
+
+```yaml
+toc:
+  - cli: cli-schema.json
+    folder: cli-reference
+    title: Elastic CLI reference
+    navigation_title: CLI reference
 ```
 
 Use `children:` to prepend hand-written pages — installation guides, conceptual overviews, or quick-start tutorials — before the auto-generated reference. All schema-generated pages follow the listed children:
@@ -101,4 +121,6 @@ Your CLI reference section is live. As your CLI evolves, regenerate the schema a
 |---|---|
 | `cli: <path>` | Path to the schema JSON, relative to `docset.yml` |
 | `folder: <path>` | Supplemental docs folder; also sets the URL prefix |
+| `title: <title>` | Optional generated CLI root page title |
+| `navigation_title: <title>` | Optional generated CLI root navigation label |
 | `children:` | Regular toc items prepended before generated pages |

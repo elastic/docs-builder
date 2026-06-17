@@ -11,6 +11,68 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
+public record DeprecatedDetectionRuleOverviewFile : MarkdownFile
+{
+	public DeprecatedDetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
+		: base(sourceFile, rootPath, parser, build)
+	{
+	}
+
+	internal ILeafNavigationItem<IDocumentationFile>[] RuleNavigations { get; set; } = [];
+
+	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
+	{
+		var markdown = GetMarkdown();
+		var document = MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null);
+		return Task.FromResult(document);
+	}
+
+	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
+	{
+		var markdown = GetMarkdown();
+		var document = MarkdownParser.ParseStringAsync(markdown, SourceFile, null);
+		return Task.FromResult(document);
+	}
+
+	private string GetMarkdown()
+	{
+		var rules = RuleNavigations.Select(nav => (Navigation: nav, Model: (DetectionRuleFile)nav.Model)).ToList();
+
+		string intro;
+		if (SourceFile.Exists)
+		{
+			var content = SourceFile.FileSystem.File.ReadAllText(SourceFile.FullName);
+			// Extract H1 title from the file if present, use remainder as intro body
+			var lines = content.Split('\n');
+			var titleLine = lines.FirstOrDefault(l => l.TrimStart().StartsWith("# ", StringComparison.Ordinal));
+			if (titleLine != null)
+				Title = titleLine.TrimStart().Substring(2).Trim();
+			intro = content;
+		}
+		else
+		{
+			Title = "Deprecated prebuilt detection rules";
+			intro = "# Deprecated prebuilt detection rules\n\n";
+		}
+
+		var markdown = intro + "\n\n";
+
+		var groupedRules = rules
+			.GroupBy(r => r.Model.Rule.Domain ?? "Unspecified")
+			.OrderBy(g => g.Key)
+			.ToArray();
+
+		foreach (var group in groupedRules)
+		{
+			markdown += $"\n## {group.Key}\n\n";
+			foreach (var (navigation, model) in group.OrderBy(r => r.Model.Rule.Name))
+				markdown += $"[{model.Rule.Name}](!{navigation.Url}) <br>\n";
+		}
+
+		return markdown;
+	}
+}
+
 public record DetectionRuleOverviewFile : MarkdownFile
 {
 	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
@@ -102,7 +164,8 @@ public record DetectionRuleFile : MarkdownFile
 
 	private static IFileInfo SourcePath(IFileInfo rulePath, BuildContext build)
 	{
-		var relative = Path.GetRelativePath(build.DocumentationCheckoutDirectory!.FullName, rulePath.FullName);
+		var checkoutDir = build.DocumentationCheckoutDirectory ?? build.DocumentationSourceDirectory.Parent!;
+		var relative = Path.GetRelativePath(checkoutDir.FullName, rulePath.FullName);
 		var newPath = Path.Join(build.DocumentationSourceDirectory.FullName, relative);
 		var md = Path.ChangeExtension(newPath, ".md");
 		return rulePath.FileSystem.FileInfo.New(md);
@@ -136,12 +199,21 @@ public record DetectionRuleFile : MarkdownFile
 
 	private string GetMarkdown()
 	{
+		var deprecationNotice = Rule.Maturity == "deprecated"
+			? $"""
+			:::{"{warning}"}
+			This rule has been deprecated{(Rule.DeprecationDate != null ? $" as of {Rule.DeprecationDate}" : "")}.
+			:::
+
+			"""
+			: string.Empty;
+
 		// language=markdown
 		var markdown =
 $"""
 # {Rule.Name}
 
-{Rule.Description}
+{deprecationNotice}{Rule.Description}
 
 **Rule type**: {Rule.Type}<br>
 **Rule indices**: {RenderArray(Rule.Indices)}

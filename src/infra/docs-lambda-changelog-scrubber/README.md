@@ -37,6 +37,6 @@ The `bootstrap` binary should be available under:
 
 ## Scrubbing logic
 
-- **Bundle files** (`{product}/bundles/*.yaml`): `LinkAllowlistSanitizer.TryApplyBundle` scrubs `prs`/`issues` lists
-- **Changelog entries** (`{product}/changelogs/*.yaml`): `LinkAllowlistSanitizer.TryApplyChangelogEntry` scrubs `prs`, `issues`, `description`, `impact`, `action`
+- **Bundle files** (`{product}/bundle/*.yaml`): `LinkAllowlistSanitizer.TryApplyBundle` scrubs `prs`/`issues` lists
+- **Changelog entries** (`{product}/changelog/*.yaml`): `LinkAllowlistSanitizer.TryApplyChangelogEntry` scrubs `prs`, `issues`, `description`, `impact`, `action`
 - The allowlist is built once at cold start from the embedded `assembler.yml` via `BuildAllowReposFromAssembler`

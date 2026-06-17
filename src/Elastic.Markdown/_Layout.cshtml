@@ -47,6 +47,12 @@
 								@await RenderBodyAsync()
 							</article>
 							@await RenderPartialAsync(_PrevNextNav.Create(Model))
+							@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
+							{
+								<div id="elastic-website-search-input-container"
+								     class="sticky bottom-8 mt-8 z-40">
+								</div>
+							}
 						</div>
 						@await RenderPartialAsync(_TableOfContents.Create(Model))
 					</main>
@@ -89,6 +95,15 @@
 		break;
 }
 </div>
+@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
+{
+	<elastic-website-search
+		nav-mode="on"
+		chat-enabled="true"
+		chat-mode="input"
+		chat-input-container="#elastic-website-search-input-container">
+	</elastic-website-search>
+}
 @if (RenderHeaderAndFooter)
 {
 	if (Model.BuildType == BuildType.Assembler)

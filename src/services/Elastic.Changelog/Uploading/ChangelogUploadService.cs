@@ -133,7 +133,7 @@ public partial class ChangelogUploadService(
 					continue;
 				}
 
-				var s3Key = $"{product}/changelogs/{fileName}";
+				var s3Key = $"{product}/changelog/{fileName}";
 				targets.Add(new UploadTarget(filePath, s3Key));
 			}
 		}
@@ -200,7 +200,7 @@ public partial class ChangelogUploadService(
 					continue;
 				}
 
-				var s3Key = $"{product}/bundles/{fileName}";
+				var s3Key = $"{product}/bundle/{fileName}";
 				targets.Add(new UploadTarget(filePath, s3Key));
 			}
 		}

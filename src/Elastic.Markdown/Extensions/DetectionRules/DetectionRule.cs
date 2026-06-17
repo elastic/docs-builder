@@ -9,8 +9,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Cysharp.IO;
-using Tomlet;
-using Tomlet.Models;
+using Tomlyn;
+using Tomlyn.Model;
+using Tomlyn.Serialization;
 
 namespace Elastic.Markdown.Extensions.DetectionRules;
 
@@ -34,6 +35,9 @@ public record VersionLockEntry
 
 [JsonSerializable(typeof(Dictionary<string, VersionLockEntry>))]
 internal sealed partial class VersionLockJsonContext : JsonSerializerContext;
+
+[TomlSerializable(typeof(TomlTable))]
+internal sealed partial class DetectionRuleTomlContext : TomlSerializerContext;
 
 public record DetectionRuleThreat
 {
@@ -63,9 +67,6 @@ public record DetectionRuleTechnique : DetectionRuleSubTechnique
 
 public record DetectionRule
 {
-	// Reuse a single TomlParser instance for better performance
-	private static readonly TomlParser Parser = new();
-
 	// Cached version lock data, loaded once per build
 	private static FrozenDictionary<string, VersionLockEntry>? VersionLock;
 
@@ -103,6 +104,9 @@ public record DetectionRule
 
 	public required DetectionRuleThreat[] Threats { get; init; } = [];
 
+	public required string? DeprecationDate { get; init; }
+	public required string? Maturity { get; init; }
+
 	/// <summary>
 	/// Initializes the version lock cache from the version.lock.json file.
 	/// This should be called once before processing detection rules.
@@ -139,27 +143,46 @@ public record DetectionRule
 	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
 	public static DetectionRule From(IFileInfo source)
 	{
-		TomlDocument model;
+		TomlTable model;
 		try
 		{
-			// Use optimized Utf8StreamReader for better I/O performance
 			using var reader = new Utf8StreamReader(source.FullName, fileOpenMode: FileOpenMode.Throughput);
 			var sourceText = Encoding.UTF8.GetString(reader.ReadToEndAsync().GetAwaiter().GetResult());
-			model = Parser.Parse(sourceText);
+			model = TomlSerializer.Deserialize(sourceText, DetectionRuleTomlContext.Default.TomlTable)!;
 		}
 		catch (Exception e)
 		{
 			throw new Exception($"Could not parse toml in: {source.FullName}", e);
 		}
 
-		if (!model.TryGetValue("metadata", out var node) || node is not TomlTable)
+		if (!model.TryGetValue("metadata", out var metadataObj) || metadataObj is not TomlTable metadata)
 			throw new Exception($"Could not find metadata section in {source.FullName}");
 
-		if (!model.TryGetValue("rule", out node) || node is not TomlTable rule)
+		if (!model.TryGetValue("rule", out var ruleObj) || ruleObj is not TomlTable rule)
 			throw new Exception($"Could not find rule section in {source.FullName}");
 
+		try
+		{
+			return BuildRule(metadata, rule);
+		}
+		catch (Exception e)
+		{
+			throw new Exception($"Could not read fields from: {source.FullName}", e);
+		}
+	}
+
+	internal static DetectionRule FromToml(string toml)
+	{
+		var model = TomlSerializer.Deserialize(toml, DetectionRuleTomlContext.Default.TomlTable)!;
+		var metadata = (TomlTable)model["metadata"]!;
+		var rule = (TomlTable)model["rule"]!;
+		return BuildRule(metadata, rule);
+	}
+
+	private static DetectionRule BuildRule(TomlTable metadata, TomlTable rule)
+	{
 		var threats = GetThreats(rule);
-		var ruleId = rule.GetString("rule_id");
+		var ruleId = GetString(rule, "rule_id");
 
 		// Get max_signals from TOML, default to 100 if not specified
 		var maxSignals = TryGetInt(rule, "max_signals") ?? 100;
@@ -172,13 +195,13 @@ public record DetectionRule
 		return new DetectionRule
 		{
 			Authors = TryGetStringArray(rule, "author"),
-			Description = rule.GetString("description"),
-			Type = rule.GetString("type"),
+			Description = GetString(rule, "description"),
+			Type = GetString(rule, "type"),
 			Language = TryGetString(rule, "language"),
-			License = rule.GetString("license"),
+			License = GetString(rule, "license"),
 			RiskScore = TryGetInt(rule, "risk_score") ?? 0,
 			RuleId = ruleId,
-			Severity = rule.GetString("severity"),
+			Severity = GetString(rule, "severity"),
 			Tags = TryGetStringArray(rule, "tags"),
 			Indices = TryGetStringArray(rule, "index"),
 			References = TryGetStringArray(rule, "references"),
@@ -186,107 +209,97 @@ public record DetectionRule
 			Setup = TryGetString(rule, "setup"),
 			Query = TryGetString(rule, "query"),
 			Note = TryGetString(rule, "note"),
-			Name = rule.GetString("name"),
+			Name = GetString(rule, "name"),
 			RunsEvery = TryGetString(rule, "interval"),
 			MaximumAlertsPerExecution = maxSignals,
 			Version = version,
-			Threats = threats
+			Threats = threats,
+			DeprecationDate = TryGetString(metadata, "deprecation_date"),
+			Maturity = TryGetString(metadata, "maturity")
 		};
 	}
 
 	private static DetectionRuleThreat[] GetThreats(TomlTable model)
 	{
-		if (!model.TryGetValue("threat", out var node) || node is not TomlArray threats)
+		if (!model.TryGetValue("threat", out var node) || node is not TomlTableArray threats)
 			return [];
 
-		var threatsList = new List<DetectionRuleThreat>(threats.ArrayValues.Count);
-		foreach (var value in threats)
+		var threatsList = new List<DetectionRuleThreat>(threats.Count);
+		foreach (var threatTable in threats.OfType<TomlTable>())
 		{
-			if (value is not TomlTable threatTable)
-				continue;
-
-			var framework = threatTable.GetString("framework");
+			var framework = GetString(threatTable, "framework");
 			var techniques = ReadTechniques(threatTable);
-
 			var tactic = ReadTactic(threatTable);
-			var threat = new DetectionRuleThreat
+			threatsList.Add(new DetectionRuleThreat
 			{
 				Framework = framework,
-				Techniques = techniques.ToArray(),
+				Techniques = techniques,
 				Tactic = tactic
-			};
-			threatsList.Add(threat);
+			});
 		}
 
-		return threatsList.ToArray();
+		return [.. threatsList];
 	}
 
-	private static IReadOnlyCollection<DetectionRuleTechnique> ReadTechniques(TomlTable threatTable)
+	private static DetectionRuleTechnique[] ReadTechniques(TomlTable threatTable)
 	{
-		var techniquesArray = threatTable.TryGetValue("technique", out var node) && node is TomlArray ta ? ta : null;
-		if (techniquesArray is null)
+		if (!threatTable.TryGetValue("technique", out var node) || node is not TomlTableArray techniquesArray)
 			return [];
+
 		var techniques = new List<DetectionRuleTechnique>(techniquesArray.Count);
-		foreach (var t in techniquesArray)
+		foreach (var techniqueTable in techniquesArray.OfType<TomlTable>())
 		{
-			if (t is not TomlTable techniqueTable)
-				continue;
-			var id = techniqueTable.GetString("id");
-			var name = techniqueTable.GetString("name");
-			var reference = techniqueTable.GetString("reference");
 			techniques.Add(new DetectionRuleTechnique
 			{
-				Id = id,
-				Name = name,
-				Reference = reference,
-				SubTechniques = ReadSubTechniques(techniqueTable).ToArray()
+				Id = GetString(techniqueTable, "id"),
+				Name = GetString(techniqueTable, "name"),
+				Reference = GetString(techniqueTable, "reference"),
+				SubTechniques = ReadSubTechniques(techniqueTable)
 			});
 		}
-		return techniques;
+		return [.. techniques];
 	}
-	private static IReadOnlyCollection<DetectionRuleSubTechnique> ReadSubTechniques(TomlTable techniqueTable)
+
+	private static DetectionRuleSubTechnique[] ReadSubTechniques(TomlTable techniqueTable)
 	{
-		var subArray = techniqueTable.TryGetValue("subtechnique", out var node) && node is TomlArray ta ? ta : null;
-		if (subArray is null)
+		if (!techniqueTable.TryGetValue("subtechnique", out var node) || node is not TomlTableArray subArray)
 			return [];
+
 		var subTechniques = new List<DetectionRuleSubTechnique>(subArray.Count);
-		foreach (var t in subArray)
+		foreach (var subTable in subArray.OfType<TomlTable>())
 		{
-			if (t is not TomlTable subTechniqueTable)
-				continue;
-			var id = subTechniqueTable.GetString("id");
-			var name = subTechniqueTable.GetString("name");
-			var reference = subTechniqueTable.GetString("reference");
 			subTechniques.Add(new DetectionRuleSubTechnique
 			{
-				Id = id,
-				Name = name,
-				Reference = reference
+				Id = GetString(subTable, "id"),
+				Name = GetString(subTable, "name"),
+				Reference = GetString(subTable, "reference")
 			});
 		}
-		return subTechniques;
+		return [.. subTechniques];
 	}
 
 	private static DetectionRuleTactic ReadTactic(TomlTable threatTable)
 	{
-		var tacticTable = threatTable.GetSubTable("tactic");
-		var id = tacticTable.GetString("id");
-		var name = tacticTable.GetString("name");
-		var reference = tacticTable.GetString("reference");
+		if (!threatTable.TryGetValue("tactic", out var tacticObj) || tacticObj is not TomlTable tacticTable)
+			throw new InvalidOperationException("Threat entry is missing required 'tactic' section");
+
 		return new DetectionRuleTactic
 		{
-			Id = id,
-			Name = name,
-			Reference = reference
+			Id = GetString(tacticTable, "id"),
+			Name = GetString(tacticTable, "name"),
+			Reference = GetString(tacticTable, "reference")
 		};
 	}
 
+	private static string GetString(TomlTable table, string key) =>
+		(string)table[key];
+
 	private static string[]? TryGetStringArray(TomlTable table, string key) =>
-		table.TryGetValue(key, out var node) && node is TomlArray t ? t.ArrayValues.Select(value => value.StringValue).ToArray() : null;
+		table.TryGetValue(key, out var node) && node is TomlArray t ? t.OfType<string>().ToArray() : null;
 
 	private static string? TryGetString(TomlTable table, string key) =>
-		table.TryGetValue(key, out var node) && node is TomlString t ? t.Value : null;
+		table.TryGetValue(key, out var node) && node is string s ? s : null;
 
 	private static int? TryGetInt(TomlTable table, string key) =>
-		table.TryGetValue(key, out var node) && node is TomlLong t ? (int)t.Value : null;
+		table.TryGetValue(key, out var node) && node is long l ? (int)l : null;
 }

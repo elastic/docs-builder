@@ -59,6 +59,8 @@ public record ConfigurationFile
 
 	public IReadOnlyDictionary<string, IFileInfo>? OpenApiSpecifications { get; }
 
+	public string? StorybookRegistry { get; }
+
 	/// <summary>
 	/// Resolved API configurations with template and specification file information.
 	/// </summary>
@@ -244,6 +246,9 @@ public record ConfigurationFile
 				OpenApiSpecifications = specs.Count > 0 ? specs : null;
 				ApiConfigurations = apiConfigs.Count > 0 ? apiConfigs : null;
 			}
+
+			if (docSetFile.Storybook is not null)
+				StorybookRegistry = docSetFile.Storybook.Registry?.Trim();
 
 			// Process products from docset - resolve ProductLinks to Product objects
 			if (docSetFile.Products.Count > 0)
