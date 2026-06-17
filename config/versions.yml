@@ -91,7 +91,7 @@ versioning_systems:
     current: 1.11.0
   edot-node:
     base: 1.0
-    current: 1.14.0
+    current: 1.15.0
   edot-php:
     base: 1.0
     current: 1.6.0
