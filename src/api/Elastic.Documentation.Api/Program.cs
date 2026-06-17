@@ -24,7 +24,7 @@ try
 		})
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api")
 		{
-			Tracing = (_, t) => t.AddDocsApiTracing()
+			Tracing = (_, t) => t.AddDocsApiTracing(),
 		})
 		.HealthCheckBuilderExtensions();
 
@@ -70,8 +70,7 @@ try
 
 	var v1 = api.MapGroup("/v1");
 
-	var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-	v1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
+	v1.MapElasticDocsApiEndpoints();
 	Console.WriteLine("API endpoints mapped");
 
 	Console.WriteLine("Application startup completed successfully");
