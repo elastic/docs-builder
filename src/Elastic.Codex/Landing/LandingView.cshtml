@@ -159,30 +159,14 @@
 					<div class="grid @innerCols gap-3">
 						@foreach (var docSet in group.DocumentationSetInfos.OrderBy(ds => ds.Title))
 						{
-							@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel
-							{
-								Url = docSet.Url,
-								Title = docSet.Title ?? docSet.Name,
-								Description = docSet.Description,
-								Icon = docSet.Icon,
-								PageCount = docSet.PageCount,
-								RepoPath = $"/r/{docSet.Name}"
-							})))
+							@(await RenderPartialAsync(_CodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
 						}
 					</div>
 				</div>
 			}
 			else if (item.docSet is { } docSet)
 			{
-				@(await RenderPartialAsync(_CodexCard.Create(new CodexCardModel
-				{
-					Url = docSet.Url,
-					Title = docSet.Title ?? docSet.Name,
-					Description = docSet.Description,
-					Icon = docSet.Icon,
-					PageCount = docSet.PageCount,
-					RepoPath = $"/r/{docSet.Name}"
-				})))
+				@(await RenderPartialAsync(_CodexCard.Create(CodexCardModel.FromDocumentationSet(docSet))))
 			}
 		}
 	</div>

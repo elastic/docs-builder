@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Codex.Navigation;
+
 namespace Elastic.Codex.Landing;
 
 /// <summary>
@@ -20,4 +22,16 @@ public record CodexCardModel
 	/// </summary>
 	public string? RepoPath { get; init; }
 
+	/// <summary>
+	/// Builds the card model for a documentation set, so every docset card renders the same fields.
+	/// </summary>
+	public static CodexCardModel FromDocumentationSet(CodexDocumentationSetInfo docSet) => new()
+	{
+		Url = docSet.Url,
+		Title = docSet.Title ?? docSet.Name,
+		Description = docSet.Description,
+		Icon = docSet.Icon,
+		PageCount = docSet.PageCount,
+		RepoPath = docSet.RepoPath,
+	};
 }
