@@ -265,6 +265,102 @@ public class OtlpProxyTests
 	}
 
 	[Fact]
+	public async Task OtlpProxy_ForwardedBodyMatchesInput()
+	{
+		// Arrange
+		var mockHandler = A.Fake<HttpMessageHandler>();
+		var capturedBody = (byte[]?)null;
+
+		var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
+		{
+			Content = new StringContent("{}")
+		};
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Invokes(async (HttpRequestMessage req, CancellationToken ct) =>
+				capturedBody = await req.Content!.ReadAsByteArrayAsync(ct))
+			.Returns(Task.FromResult(mockResponse));
+
+		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		{
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		}, otlpEndpoint: OtlpEndpoint);
+
+		var client = factory.CreateClient();
+		var originalPayload = Encoding.UTF8.GetBytes(/*lang=json,strict*/ """{"resourceSpans":[]}""");
+		using var content = new ByteArrayContent(originalPayload);
+		content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+		// Act
+		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
+
+		// Assert — bytes arriving at the collector must exactly match the original payload
+		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+		capturedBody.Should().NotBeNull();
+		capturedBody.Should().BeEquivalentTo(originalPayload);
+
+		mockResponse.Dispose();
+	}
+
+	[Fact]
+	public async Task OtlpProxy_SendAsyncThrowsNonIo_MapsToGatewayError()
+	{
+		var callCount = 0;
+		var mockHandler = A.Fake<HttpMessageHandler>();
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Invokes((HttpRequestMessage _, CancellationToken _) => callCount++)
+			.Throws(new HttpRequestException("Some non-IO network error"));
+
+		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		{
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		}, otlpEndpoint: OtlpEndpoint);
+
+		var client = factory.CreateClient();
+		using var content = new StringContent(/*lang=json,strict*/ """{"resourceSpans":[]}""", Encoding.UTF8, "application/json");
+
+		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
+
+		callCount.Should().Be(1);
+		response.StatusCode.Should().Be(HttpStatusCode.BadGateway);
+	}
+
+	[Fact]
+	public async Task OtlpProxy_StaleConnection_DropsWithNoContent()
+	{
+		// SocketsHttpHandler detects a stale pooled connection and throws
+		// HttpRequestException { InnerException: IOException } (AllowRetry=false on non-seekable
+		// StreamContent). The proxy maps this to 204 so the browser OTLP exporter doesn't
+		// interpret it as a retryable 502.
+		var mockHandler = A.Fake<HttpMessageHandler>();
+
+		A.CallTo(mockHandler)
+			.Where(call => call.Method.Name == "SendAsync")
+			.WithReturnType<Task<HttpResponseMessage>>()
+			.Throws(new HttpRequestException("Stale connection", new IOException("Connection reset by peer")));
+
+		using var factory = ApiWebApplicationFactory.WithMockedServices(services =>
+		{
+			_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
+				.ConfigurePrimaryHttpMessageHandler(() => mockHandler);
+		}, otlpEndpoint: OtlpEndpoint);
+
+		var client = factory.CreateClient();
+		using var content = new StringContent(/*lang=json,strict*/ """{"resourceSpans":[]}""", Encoding.UTF8, "application/json");
+
+		using var response = await client.PostAsync("/docs/_api/v1/o/t", content, TestContext.Current.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+	}
+
+	[Fact]
 	public async Task OtlpProxyInvalidSignalTypeReturns404()
 	{
 		// Arrange
