@@ -9,9 +9,7 @@ using Elastic.Documentation.Api.Adapters.AskAi;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.Caching;
 using Elastic.Documentation.Api.Gcp;
-using Elastic.Documentation.Api.Telemetry;
 using Elastic.Documentation.Search;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
@@ -73,7 +71,6 @@ public static class ServicesExtension
 		AddDistributedCache(services, appEnv);
 		AddAskAiServices(services, appEnv);
 		AddSearchServices(services, appEnv);
-		AddOtlpProxyService(services, appEnv);
 	}
 
 	// Note: IParameterProvider is no longer needed - all options now read from IConfiguration (env vars)
@@ -194,39 +191,4 @@ public static class ServicesExtension
 		logger?.LogInformation("Full search service registered with hybrid RRF support");
 	}
 
-	private static void AddOtlpProxyService(IServiceCollection services, AppEnv appEnv)
-	{
-		var logger = GetLogger(services);
-		logger?.LogInformation("Configuring OTLP proxy service for environment {AppEnvironment}", appEnv);
-
-		_ = services.AddSingleton(sp =>
-		{
-			var config = sp.GetRequiredService<IConfiguration>();
-			return new OtlpProxyOptions(config);
-		});
-
-		// Register named HttpClient for OTLP proxy.
-		// 1s timeout: the collector is a localhost sidecar and should answer in single-digit ms.
-		// RemoveAllResilienceHandlers opts this client out of the global standard resilience handler
-		// (retries + 10s/30s timeouts) so a dead collector fails fast instead of blocking ~9s.
-		// PooledConnectionIdleTimeout=2s: close idle sockets before the ADOT sidecar closes them
-		// server-side, preventing stale-connection reuse across Lambda freeze/thaw cycles.
-		// PooledConnectionLifetime=30s: cap long-lived busy connections.
-#pragma warning disable EXTEXP0001 // RemoveAllResilienceHandlers is experimental
-		_ = services.AddHttpClient(AdotOtlpService.HttpClientName)
-			.ConfigureHttpClient(client =>
-			{
-				client.Timeout = TimeSpan.FromSeconds(1);
-			})
-			.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-			{
-				PooledConnectionIdleTimeout = TimeSpan.FromSeconds(2),
-				PooledConnectionLifetime = TimeSpan.FromSeconds(30),
-			})
-			.RemoveAllResilienceHandlers();
-#pragma warning restore EXTEXP0001
-
-		_ = services.AddScoped<IOtlpService, AdotOtlpService>();
-		logger?.LogInformation("OTLP proxy configured to forward to ADOT Lambda Layer collector");
-	}
 }
