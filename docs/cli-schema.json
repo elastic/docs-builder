@@ -4754,7 +4754,225 @@
           ]
         }
       ],
-      "namespaces": []
+      "namespaces": [
+        {
+          "segment": "sync",
+          "summary": "Sync built codex output to S3 using a two-step plan/apply workflow.",
+          "options": [],
+          "commands": [
+            {
+              "path": [
+                "codex",
+                "sync"
+              ],
+              "name": "apply",
+              "summary": "Upload the changes described in a plan file to S3.",
+              "notes": "Run after codex sync plan. Applies the pre-computed diff to the S3 bucket.",
+              "usage": "docs-builder codex sync apply \u003Cconfig\u003E --s3-bucket-name \u003Cstring\u003E --plan-file \u003Cfile\u003E",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "positional",
+                  "name": "config",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Path to the codex.yml configuration file.",
+                  "validations": [
+                    {
+                      "kind": "rejectSymbolicLinks"
+                    },
+                    {
+                      "kind": "existing"
+                    },
+                    {
+                      "kind": "fileExtensions",
+                      "values": [
+                        "yml",
+                        "yaml"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "S3 bucket to deploy to."
+                },
+                {
+                  "role": "flag",
+                  "name": "plan-file",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Path to the plan file produced by codex sync plan.",
+                  "validations": [
+                    {
+                      "kind": "rejectSymbolicLinks"
+                    },
+                    {
+                      "kind": "existing"
+                    },
+                    {
+                      "kind": "fileExtensions",
+                      "values": [
+                        "json",
+                        "plan"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "intent": {
+                "destructive": true,
+                "scope": "global",
+                "requiresAuth": true
+              }
+            },
+            {
+              "path": [
+                "codex",
+                "sync"
+              ],
+              "name": "plan",
+              "summary": "Compute a diff of what would change when deploying to S3 and write it to a plan file.",
+              "notes": "Two-step deployment: plan computes the diff and writes a plan file; apply executes it.\nReview the plan before applying to avoid accidental mass deletions.",
+              "usage": "docs-builder codex sync plan \u003Cconfig\u003E --s3-bucket-name \u003Cstring\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "positional",
+                  "name": "config",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Path to the codex.yml configuration file.",
+                  "validations": [
+                    {
+                      "kind": "rejectSymbolicLinks"
+                    },
+                    {
+                      "kind": "existing"
+                    },
+                    {
+                      "kind": "fileExtensions",
+                      "values": [
+                        "yml",
+                        "yaml"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "S3 bucket to deploy to."
+                },
+                {
+                  "role": "flag",
+                  "name": "out",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Path to write the plan file. Defaults to stdout.",
+                  "validations": [
+                    {
+                      "kind": "rejectSymbolicLinks"
+                    }
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "delete-threshold",
+                  "type": "number",
+                  "required": false,
+                  "summary": "Abort if the plan would delete more than this percentage of objects (0\u2013100).",
+                  "defaultValue": "default"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "intent": {
+                "scope": "global",
+                "requiresAuth": true
+              }
+            }
+          ],
+          "namespaces": []
+        }
+      ]
     },
     {
       "segment": "inbound-links",

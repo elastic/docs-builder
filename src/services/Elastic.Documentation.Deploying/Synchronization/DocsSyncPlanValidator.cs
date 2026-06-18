@@ -4,11 +4,11 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace Elastic.Documentation.Assembler.Deploying.Synchronization;
+namespace Elastic.Documentation.Deploying.Synchronization;
 
 public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 {
-	private readonly ILogger<AwsS3SyncPlanStrategy> _logger = logFactory.CreateLogger<AwsS3SyncPlanStrategy>();
+	private readonly ILogger<DocsSyncPlanValidator> _logger = logFactory.CreateLogger<DocsSyncPlanValidator>();
 
 	public PlanValidationResult Validate(SyncPlan plan)
 	{
@@ -58,6 +58,4 @@ public class DocsSyncPlanValidator(ILoggerFactory logFactory)
 
 		return new(true, deleteRatio, deleteThreshold);
 	}
-
-
 }

@@ -70,6 +70,7 @@
   <Folder Name="/src/services/">
     <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
     <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
+    <Project Path="src/services/Elastic.Documentation.Deploying/Elastic.Documentation.Deploying.csproj" />
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
     <Project Path="src/services/Elastic.Documentation.Integrations/Elastic.Documentation.Integrations.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />

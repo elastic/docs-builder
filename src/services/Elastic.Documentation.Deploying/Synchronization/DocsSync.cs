@@ -5,13 +5,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Elastic.Documentation.Assembler.Deploying.Synchronization;
+namespace Elastic.Documentation.Deploying.Synchronization;
 
 public interface IDocsSyncPlanStrategy
 {
 	Task<SyncPlan> Plan(float? deleteThreshold, Cancel ctx = default);
-
 }
+
 public record PlanValidationResult(bool Valid, float DeleteRatio, float DeleteThreshold);
 
 public interface IDocsSyncApplyStrategy
