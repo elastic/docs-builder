@@ -14,6 +14,10 @@ For details and examples, go to [](/contribute/create-changelogs.md).
   The valid product identifiers are listed in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
   For more information about valid product and lifecycle values, go to [Product format](#product-format-and-resolution).
 
+: `--strict-fetch`
+  Treat a failure to fetch any PR or issue from GitHub (when using `--prs`, `--issues`, or `--report`) as an error that exits non-zero, instead of a warning.
+  Refer to [Fetch failures](#fetch-failures).
+
 : `--use-pr-number`
   Use PR numbers for filenames instead of the configured `filename` strategy.
   Requires `--prs`, `--issues`, or `--report`. Mutually exclusive with `--use-issue-number`.
@@ -97,6 +101,27 @@ In each of these cases where validation fails, a changelog file is not created.
 
 If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
 For more information, refer to [](/contribute/create-changelogs.md#rules).
+
+## Fetch failures
+
+`rules.create` label filtering and automatic `title`/`type` derivation both depend on fetching each PR or issue from GitHub.
+When a fetch fails (for example, a missing or unauthorized `GITHUB_TOKEN`, a private or cross-repository reference, or API rate limiting), the affected entry **bypasses `rules.create` filtering** and is written with its `title` and `type` commented out.
+Such entries later cause `changelog bundle` to fail with `missing required field: title`.
+
+By default, each fetch failure is a warning and a single summary is emitted at the end of bulk creation (for example, `3 of 225 pull request(s) could not be fetched from GitHub`).
+The command still exits `0` so a best-effort changelog is produced for offline or partial-access workflows.
+
+Pass `--strict-fetch` to escalate fetch failures to an error so the command exits non-zero.
+Use this in CI so a token or rate-limit problem fails the run loudly instead of silently producing unfiltered changelogs with missing titles.
+The generated files are still written so you can inspect them.
+
+```sh
+docs-builder changelog add --report ./promotion-report.html --strict-fetch
+```
+
+:::{tip}
+If you hit this, verify that `GITHUB_TOKEN` is set and can access every repository referenced by your PRs or promotion report, then delete the generated changelog files and re-run.
+:::
 
 ## CI auto-detection
 

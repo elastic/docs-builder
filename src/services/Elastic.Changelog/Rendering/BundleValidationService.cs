@@ -153,6 +153,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		Cancel ctx)
 	{
 		var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var allValid = true;
 
 		foreach (var entry in bundledData.Entries)
 		{
@@ -174,21 +175,17 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 				bundleList.Add(bundleInput.BundleFile);
 			}
 
-			// If entry has resolved data, validate it
-			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-			{
-				if (!ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
-					return false;
-			}
-			else
-			{
-				// Entry only has file reference - validate file exists
-				if (!await ValidateFileReferenceEntryAsync(collector, bundleInput.BundleFile, entry, bundleDirectory, seenPrs, ctx))
-					return false;
-			}
+			// If entry has resolved data, validate it; otherwise validate the file reference.
+			// Continue past invalid entries so every problem in the bundle is reported in one pass.
+			var entryValid = !string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null
+				? ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs)
+				: await ValidateFileReferenceEntryAsync(collector, bundleInput.BundleFile, entry, bundleDirectory, seenPrs, ctx);
+
+			if (!entryValid)
+				allValid = false;
 		}
 
-		return true;
+		return allValid;
 	}
 
 	private static bool ValidateResolvedEntry(
