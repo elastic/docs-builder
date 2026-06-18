@@ -129,8 +129,13 @@ public class DocumentationSet : INavigationTraversable
 					extension.VisitNavigation(item, markdownLeaf.Model);
 				break;
 			case INodeNavigationItem<IDocumentationFile, INavigationItem> node:
-				foreach (var extension in EnabledExtensions)
-					extension.VisitNavigation(node, node.Index.Model);
+				// Index is a null sentinel when this node's table of contents produced no items
+				// (a validation error is emitted upstream); skip visiting a missing index.
+				if (node.Index is { } nodeIndex)
+				{
+					foreach (var extension in EnabledExtensions)
+						extension.VisitNavigation(node, nodeIndex.Model);
+				}
 				foreach (var child in node.NavigationItems)
 					VisitNavigation(child);
 				break;
