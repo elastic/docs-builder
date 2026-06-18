@@ -64,7 +64,7 @@ public class CodeSampleTests
 	}
 
 	[Fact]
-	public void CodeSamples_PreservesOrderForNonConsole()
+	public void CodeSamples_IncludesAllLanguagesWithConsoleFirst()
 	{
 		var samples = new JsonArray(
 			new JsonObject { ["lang"] = "Python", ["source"] = "resp = client.search()" },
@@ -76,10 +76,9 @@ public class CodeSampleTests
 
 		var result = OperationViewModel.ParseCodeSamples(operation);
 
+		result.Should().HaveCount(4);
 		result[0].Language.Should().Be("Console");
-		result[1].Language.Should().Be("Python");
-		result[2].Language.Should().Be("curl");
-		result[3].Language.Should().Be("Ruby");
+		result.Skip(1).Select(s => s.Language).Should().BeEquivalentTo(["Python", "curl", "Ruby"]);
 	}
 
 	[Fact]
