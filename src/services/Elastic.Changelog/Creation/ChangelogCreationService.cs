@@ -411,11 +411,7 @@ IEnvironmentVariables? env = null
 			ctx);
 	}
 
-	/// <summary>
-	/// Emits a single aggregate diagnostic when one or more items could not be fetched from GitHub during
-	/// bulk creation. These items bypass <c>rules.create</c> label filtering and are written without a
-	/// derived title/type, so the failure is escalated to an error under strict mode (non-zero exit).
-	/// </summary>
+	/// <summary>Emits a single aggregate diagnostic (an error under strict mode) when items could not be fetched from GitHub during bulk creation.</summary>
 	private static void ReportBulkFetchFailures(IDiagnosticsCollector collector, int fetchFailedCount, int total, bool strict, string itemKind)
 	{
 		if (fetchFailedCount <= 0)
