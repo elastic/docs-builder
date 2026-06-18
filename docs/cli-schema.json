@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "docs-builder",
-  "version": "1",
+  "version": "0",
   "reservedMetaCommands": [
     "__complete",
     "__completion",
@@ -4925,6 +4925,15 @@
                   "required": false,
                   "summary": "Abort if the plan would delete more than this percentage of objects (0\u2013100).",
                   "defaultValue": "default"
+                },
+                {
+                  "role": "flag",
+                  "name": "exclude",
+                  "type": "array",
+                  "required": false,
+                  "summary": "Glob patterns to exclude from both upload and deletion (repeatable).\nFor example: --exclude \u0027_preview/*\u0027 --exclude \u0027403/*\u0027.\nMatched against the S3 key / relative path of each object.",
+                  "repeatable": true,
+                  "elementType": "string"
                 },
                 {
                   "role": "flag",
