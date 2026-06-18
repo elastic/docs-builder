@@ -70,7 +70,7 @@ public class DocsSyncTests
 		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
 
 		// Act
-		var plan = await planStrategy.Plan(null, Cancel.None);
+		var plan = await planStrategy.Plan(null, [], Cancel.None);
 
 		// Assert
 
@@ -214,7 +214,7 @@ public class DocsSyncTests
 		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context, mockEtagCalculator);
 
 		// Act
-		var plan = await planStrategy.Plan(deleteThreshold, Cancel.None);
+		var plan = await planStrategy.Plan(deleteThreshold, [], Cancel.None);
 		var validator = new DocsSyncPlanValidator(new LoggerFactory());
 		return (validator, planStrategy, plan);
 	}
@@ -248,6 +248,7 @@ public class DocsSyncTests
 		{
 			RemoteListingCompleted = true,
 			DeleteThresholdDefault = null,
+			ExcludePatterns = [],
 			TotalRemoteFiles = 0,
 			TotalSourceFiles = 5,
 			TotalSyncRequests = 6,
