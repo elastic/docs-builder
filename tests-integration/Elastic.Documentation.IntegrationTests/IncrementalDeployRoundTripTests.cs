@@ -149,7 +149,7 @@ public class IncrementalDeployRoundTripTests
 		// Act — Plan
 		// deleteThreshold: 1.0 permits any delete ratio (needed because the validator
 		// enforces a 0.8 floor for small sync sets where TotalSyncRequests < 100)
-		var planOk = await svc.Plan(context.Collector, context, "fake-bucket", planPath, deleteThreshold: 1.0f, Cancel.None);
+		var planOk = await svc.Plan(context.Collector, context, "fake-bucket", planPath, deleteThreshold: 1.0f, excludePatterns: [], Cancel.None);
 		planOk.Should().BeTrue("plan should succeed with valid file mix");
 		fs.File.Exists(planPath).Should().BeTrue("plan JSON must be written to the mock filesystem");
 
@@ -174,5 +174,103 @@ public class IncrementalDeployRoundTripTests
 		// Assert — uploads called once
 		A.CallTo(() => xfer.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._))
 			.MustHaveHappenedOnceExactly();
+	}
+}
+
+/// <summary>
+/// Verifies that <c>--exclude</c> patterns prevent matching objects from being uploaded or deleted.
+/// </summary>
+/// <remarks>
+/// Scenario: the S3 bucket contains a <c>_preview/pr-42/index.html</c> object written by a
+/// PR-preview workflow. The local build output does NOT contain that file. Without excludes the
+/// planner would queue it for deletion; with <c>_preview/*</c> excluded it must be untouched.
+/// Similarly a local file under an excluded prefix must not be added to the plan.
+/// </remarks>
+public class IncrementalDeployExcludeTests
+{
+	private const string SkipETag = "aaaa0000skip0000etag0000aaaa0000";
+	private const string AnyOtherETag = "bbbb1111other1111etag1111bbbb1111";
+
+	[Fact]
+	public async Task ExcludedRemoteObjectsAreNotDeleted()
+	{
+		var outputDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
+
+		// Local build output: one regular page, nothing under _preview/
+		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			{ Path.Join(outputDir, "docs/page.md"), new MockFileData("# Page") },
+		}, new MockFileSystemOptions { CurrentDirectory = outputDir });
+
+		var s3 = A.Fake<IAmazonS3>();
+		var xfer = A.Fake<ITransferUtility>();
+		var gh = A.Fake<ICoreService>();
+
+		var etagCalculator = A.Fake<IS3EtagCalculator>();
+		A.CallTo(() => etagCalculator.CalculateS3ETag(A<string>._, A<Cancel>._)).Returns(AnyOtherETag);
+
+		// Remote has both a regular page (stale) and a preview object that lives alongside codex output
+		A.CallTo(() => s3.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._))
+			.Returns(new ListObjectsV2Response
+			{
+				S3Objects =
+				[
+					new S3Object { Key = "docs/page.md", ETag = "\"stale-etag\"" },
+					new S3Object { Key = "_preview/pr-42/index.html" },
+					new S3Object { Key = "403/index.html" },
+					new S3Object { Key = "404/index.html" },
+				]
+			});
+
+		A.CallTo(() => s3.DeleteObjectsAsync(A<DeleteObjectsRequest>._, A<Cancel>._))
+			.Returns(new DeleteObjectsResponse { HttpStatusCode = System.Net.HttpStatusCode.OK });
+
+		var svc = new IncrementalDeployService(new LoggerFactory(), gh, s3, xfer, etagCalculator);
+		var collector = new DiagnosticsCollector([]);
+		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(fs);
+		var scopedWriteFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(fs);
+		var codexConfig = new CodexConfiguration { Environment = "dev" };
+		var configFile = fs.FileInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "codex.yml"));
+		var context = new CodexContext(codexConfig, configFile, collector, scopedFs, scopedWriteFs, null, outputDir);
+
+		var planPath = Path.Join(outputDir, "sync-plan.json");
+		var planOk = await svc.Plan(
+			context.Collector,
+			context,
+			"fake-bucket",
+			planPath,
+			deleteThreshold: 1.0f,
+			excludePatterns: ["_preview/*", "403/*", "404/*"],
+			Cancel.None);
+		planOk.Should().BeTrue("plan should succeed");
+
+		var applyOk = await svc.Apply(context.Collector, context, "fake-bucket", planPath, Cancel.None);
+		applyOk.Should().BeTrue("apply should succeed");
+
+		// The plan must not contain deletions for any excluded key
+		var planJson = fs.File.ReadAllText(planPath);
+		var plan = SyncPlan.Deserialize(planJson);
+		plan.DeleteRequests.Should().NotContain(r => r.DestinationPath.StartsWith("_preview/", StringComparison.Ordinal),
+			"excluded _preview/* objects must not be queued for deletion");
+		plan.DeleteRequests.Should().NotContain(r => r.DestinationPath.StartsWith("403/", StringComparison.Ordinal),
+			"excluded 403/* objects must not be queued for deletion");
+		plan.DeleteRequests.Should().NotContain(r => r.DestinationPath.StartsWith("404/", StringComparison.Ordinal),
+			"excluded 404/* objects must not be queued for deletion");
+
+		// docs/page.md is not excluded so it should be an update (stale ETag)
+		plan.UpdateRequests.Should().Contain(r => r.DestinationPath == "docs/page.md");
+
+		// No S3 delete calls should include excluded prefixes
+		A.CallTo(() => s3.DeleteObjectsAsync(
+				A<DeleteObjectsRequest>.That.Matches(r => r.Objects.Any(o =>
+					o.Key.StartsWith("_preview/", StringComparison.Ordinal) ||
+					o.Key.StartsWith("403/", StringComparison.Ordinal) ||
+					o.Key.StartsWith("404/", StringComparison.Ordinal))),
+				A<Cancel>._))
+			.MustNotHaveHappened();
+
+		// Excluded patterns are recorded in the plan file
+		plan.ExcludePatterns.Should().BeEquivalentTo(["_preview/*", "403/*", "404/*"],
+			"plan must record which patterns were excluded");
 	}
 }

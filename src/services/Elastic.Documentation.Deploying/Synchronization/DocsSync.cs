@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Deploying.Synchronization;
 
 public interface IDocsSyncPlanStrategy
 {
-	Task<SyncPlan> Plan(float? deleteThreshold, Cancel ctx = default);
+	Task<SyncPlan> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default);
 }
 
 public record PlanValidationResult(bool Valid, float DeleteRatio, float DeleteThreshold);
@@ -54,6 +54,10 @@ public record SyncPlan
 	/// The user-specified delete threshold
 	[JsonPropertyName("deletion_threshold_default")]
 	public required float? DeleteThresholdDefault { get; init; }
+
+	/// Glob patterns excluded from both local upload and remote deletion
+	[JsonPropertyName("exclude_patterns")]
+	public required string[] ExcludePatterns { get; init; }
 
 	/// The user-specified delete threshold
 	[JsonPropertyName("remote_listing_completed")]
