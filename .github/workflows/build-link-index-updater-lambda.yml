@@ -12,15 +12,20 @@ on:
         type: string
         default: ${{ github.ref }}
 
+permissions: {}
+
 jobs: 
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       BINARY_PATH: .artifacts/docs-lambda-index-publisher/release_linux-x64/bootstrap
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with: 
           ref: ${{ inputs.ref }}
+          persist-credentials: false
       - name: Amazon Linux 2023 build
         run: |
           docker build . -t publish-links-index:latest -f src/infra/docs-lambda-index-publisher/lambda.DockerFile

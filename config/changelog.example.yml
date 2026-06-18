@@ -52,6 +52,7 @@ lifecycles:
   - preview
   - beta
   - ga
+  - experimental
 
 # Pivot configuration for types, subtypes, and areas with label mappings.
 # By default we render changelogs grouped by type > subtype > area.

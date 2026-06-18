@@ -1,3 +1,4 @@
+import { initAgentSkillCopy } from './agent-skill'
 import { initApiDocs } from './api-docs'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
@@ -41,6 +42,7 @@ import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
+import('./web-components/StorybookStory/StorybookStoryComponent')
 
 if (config.buildType === 'isolated' || config.airGapped) {
     import('./isolated')
@@ -111,6 +113,7 @@ document.addEventListener('htmx:load', function () {
     initTocNav()
     initHighlight()
     initCopyButton()
+    initAgentSkillCopy()
     initTabs()
     initAppliesSwitch()
     initMath()
@@ -133,8 +136,19 @@ document.addEventListener('htmx:load', function () {
 document.addEventListener(
     'htmx:removingHeadElement',
     function (event: HtmxEvent) {
-        const tagName = event.detail.headElement.tagName
-        if (tagName === 'STYLE') {
+        const headElement = event.detail.headElement
+        if (headElement.tagName === 'STYLE') {
+            event.preventDefault()
+            return
+        }
+        // Keep the Storybook bootstrap assets that <storybook-story> injects into
+        // <head>; htmx would otherwise strip them on navigation, which both breaks an
+        // in-flight first load (the stylesheet's onload never fires) and leaves the
+        // module-level load caches pointing at elements that no longer exist.
+        if (
+            headElement.dataset?.storybookScript !== undefined ||
+            headElement.dataset?.storybookStyle !== undefined
+        ) {
             event.preventDefault()
         }
     }

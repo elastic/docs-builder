@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Documentation.Search;
+using Elastic.Internal.Search.Elasticsearch.Highlighting;
 using Xunit;
 
 namespace Elastic.Documentation.Api.Infrastructure.Tests.Adapters.Search;

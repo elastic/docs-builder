@@ -530,6 +530,76 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Description.Should().BeNull();
 	}
 
+	[Fact]
+	public void TryApplyChangelogEntry_BarePrNumberWithoutDefaultRepo_KeptWithWarning()
+	{
+		// The scrubber Lambda calls TryApplyChangelogEntry with defaultRepo=null because per-entry
+		// YAMLs uploaded under {product}/changelog/*.yaml carry no embedded repo context. A bare
+		// numeric PR ref ("155500") must be tolerated rather than failing the whole entry — the
+		// reference carries no repo identity so it cannot leak a private link, and downstream
+		// rendering supplies the owner/repo from runtime context.
+		var entry = new BundledEntry
+		{
+			Title = "Fork PR entry",
+			Prs = ["155500"],
+			Issues = null
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", null,
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+		sanitized.Prs.Should().BeEquivalentTo(["155500"]);
+		Collector.Errors.Should().Be(0);
+		Collector.Warnings.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public void TryApplyChangelogEntry_BareIssueNumberWithoutDefaultRepo_KeptWithWarning()
+	{
+		var entry = new BundledEntry
+		{
+			Title = "Entry with bare issue",
+			Prs = null,
+			Issues = ["4274"]
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", null,
+			out var sanitized, out var changed);
+
+		ok.Should().BeTrue();
+		changed.Should().BeFalse();
+		sanitized.Issues.Should().BeEquivalentTo(["4274"]);
+		Collector.Errors.Should().Be(0);
+		Collector.Warnings.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public void TryApplyChangelogEntry_UnparseableNonNumericRef_StillErrors()
+	{
+		// Genuinely unparseable references (not bare numbers and not URL/short-form) should still
+		// fail-closed so we surface schema regressions instead of silently dropping data.
+		var entry = new BundledEntry
+		{
+			Title = "Malformed entry",
+			Prs = ["not-a-pr-ref"],
+			Issues = null
+		};
+
+		var allow = new[] { "elastic/elasticsearch" };
+		var ok = LinkAllowlistSanitizer.TryApplyChangelogEntry(
+			Collector, entry, allow, "elastic", "elasticsearch",
+			out _, out _);
+
+		ok.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+	}
+
 	// --- ScrubText ---
 
 	[Fact]

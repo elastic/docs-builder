@@ -16,6 +16,7 @@ using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
@@ -141,6 +142,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{cli-modifiers}") > 0)
 			return new CliModifiersBlock(this, context);
+
+		if (info.IndexOf("{storybook}") > 0)
+			return new StorybookBlock(this, context);
 
 		foreach (var admonition in Admonitions)
 		{

@@ -5,9 +5,11 @@
 using System.ComponentModel.DataAnnotations;
 using Actions.Core.Services;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -41,9 +43,10 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, FileSystemFactory.RealRead, FileSystemFactory.RealWrite);
-		serviceInvoker.AddCommand(service, (environment, s3BucketName, @out, deleteThreshold),
-			static async (s, collector, state, ctx) => await s.Plan(collector, state.environment, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, ctx)
+		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, FileSystemFactory.RealRead, FileSystemFactory.RealWrite, null, null);
+		var service = new IncrementalDeployService(logFactory, githubActionsService);
+		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
+			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -61,9 +64,10 @@ internal sealed class DeployCommands(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new IncrementalDeployService(logFactory, assemblyConfiguration, configurationContext, githubActionsService, FileSystemFactory.RealRead, FileSystemFactory.RealWrite);
-		serviceInvoker.AddCommand(service, (environment, s3BucketName, planFile),
-			static async (s, collector, state, ctx) => await s.Apply(collector, state.environment, state.s3BucketName, state.planFile.FullName, ctx)
+		var context = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, FileSystemFactory.RealRead, FileSystemFactory.RealWrite, null, null);
+		var service = new IncrementalDeployService(logFactory, githubActionsService);
+		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
+			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

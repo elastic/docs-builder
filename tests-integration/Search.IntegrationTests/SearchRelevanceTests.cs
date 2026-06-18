@@ -88,15 +88,17 @@ public class SearchRelevanceTests(ITestOutputHelper output)
 		var canConnect = await gateway.CanConnect(TestContext.Current.CancellationToken);
 		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
 
-		// Act - Perform the search
-		var searchResult = await gateway.SearchImplementation(query, 1, 5, null, TestContext.Current.CancellationToken);
+		// Act - Perform the search via the adapter's autocomplete path
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5 },
+			TestContext.Current.CancellationToken);
 
 		// Log basic results
 		output.WriteLine($"Query: {query}");
-		output.WriteLine($"Total hits: {searchResult.TotalHits}");
-		output.WriteLine($"Results returned: {searchResult.Results.Count}");
+		output.WriteLine($"Total hits: {searchResult.TotalResults}");
+		output.WriteLine($"Results returned: {searchResult.Results.Count()}");
 
-		var results = searchResult.Results;
+		var results = searchResult.Results.ToList();
 
 		if (results.Count == 0)
 		{
@@ -241,12 +243,24 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	/// </summary>
 	private static (NavigationSearchService Gateway, ElasticsearchClientAccessor ClientAccessor) CreateFindPageGateway()
 	{
-		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
+		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler");
 		var configProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, new FileSystem(), configurationSource: ConfigurationSource.Embedded);
 		var searchConfig = configProvider.CreateSearchConfiguration();
 
 		var clientAccessor = new ElasticsearchClientAccessor(endpoints, searchConfig);
-		var gateway = new NavigationSearchService(clientAccessor, NullLogger<NavigationSearchService>.Instance);
+
+		var sharedConfig = new Elastic.Internal.Search.Configuration.SearchConfiguration
+		{
+			SynonymBiDirectional = clientAccessor.SynonymBiDirectional,
+			DiminishTerms = clientAccessor.DiminishTerms.ToArray(),
+			RulesetName = clientAccessor.RulesetName,
+			SemanticEnabled = true
+		};
+		var inner = new Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>(
+			clientAccessor.Client, clientAccessor.SearchIndex, sharedConfig,
+			NullLogger<Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>>.Instance);
+
+		var gateway = new NavigationSearchService(inner, clientAccessor, NullLogger<NavigationSearchService>.Instance);
 		return (gateway, clientAccessor);
 	}
 }

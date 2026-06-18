@@ -37,13 +37,17 @@ public class AwsCloudFrontKeyValueStoreProxy(IDiagnosticsCollector collector, IL
 		if (!listingSuccessful)
 			return;
 
-		var toPut = sourcedRedirects
-			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value })
-			.ToArray();
-		var toDelete = sourcedRedirects.Keys
-			.Except(existingRedirects)
-			.Select(k => new DeleteKeyRequestListItem { Key = k })
-			.ToArray();
+		if (RedirectKvsDiff.WouldWipeAllExisting(sourcedRedirects, existingRedirects))
+		{
+			Collector.EmitError("", $"Refusing to update redirects: sourced redirects are empty but the KVS contains {existingRedirects.Count} entries. " +
+				"This would wipe every redirect. Verify the assembler produced a non-empty redirects.json before retrying.");
+			return;
+		}
+
+		var (toPut, toDelete) = RedirectKvsDiff.ComputeBatchUpdates(sourcedRedirects, existingRedirects);
+
+		Logger.LogInformation("Computed redirect KVS diff: {ToPut} to put, {ToDelete} to delete (from {Existing} existing, {Sourced} sourced)",
+			toPut.Length, toDelete.Length, existingRedirects.Count, sourcedRedirects.Count);
 
 		eTag = ProcessBatchUpdates(kvsArn, eTag, toDelete, KvsOperation.Deletes);
 		_ = ProcessBatchUpdates(kvsArn, eTag, toPut, KvsOperation.Puts);

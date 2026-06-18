@@ -81,6 +81,26 @@ public class ButtonExternalTests(ITestOutputHelper output) : DirectiveTest<Butto
 	public void RendersNoopenerNoreferrer() => Html.Should().Contain("rel=\"noopener noreferrer\"");
 }
 
+public class ButtonReferenceLinkTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
+"""
+:::{button}
+[Open][kibana-url]
+:::
+
+[kibana-url]: <https://foo.example.com>
+"""
+)
+{
+	[Fact]
+	public void RendersReferencedLinkHref() => Html.Should().Contain("href=\"https://foo.example.com\"");
+
+	[Fact]
+	public void RendersButtonText() => Html.Should().Contain(">Open<");
+
+	[Fact]
+	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+}
+
 public class ButtonInvalidTypeTests(ITestOutputHelper output) : DirectiveTest<ButtonBlock>(output,
 """
 :::{button}

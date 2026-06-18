@@ -7,13 +7,14 @@ using Microsoft.Extensions.Configuration;
 
 namespace Elastic.Documentation.ServiceDefaults;
 
-/// <summary>Centralizes user-secrets + env-var reading for Elasticsearch configuration.</summary>
+/// <summary>Centralizes env-var + user-secrets reading for Elasticsearch configuration.</summary>
 public static class ElasticsearchEndpointFactory
 {
 	private const string UserSecretsId = "72f50f33-6fb9-4d08-bff3-39568fe370b3";
 
 	/// <summary>
 	/// Creates <see cref="DocumentationEndpoints"/> from user secrets and environment variables.
+	/// Environment variables take priority over user secrets.
 	/// </summary>
 	public static DocumentationEndpoints Create(IConfiguration? appConfiguration = null, string? buildType = null, string? environment = null)
 	{
@@ -23,20 +24,20 @@ public static class ElasticsearchEndpointFactory
 		var config = configBuilder.Build();
 
 		var url =
-			config["Parameters:DocumentationElasticUrl"]
-			?? config["DOCUMENTATION_ELASTIC_URL"];
+			config["DOCUMENTATION_ELASTIC_URL"]
+			?? config["Parameters:DocumentationElasticUrl"];
 
 		var apiKey =
-			config["Parameters:DocumentationElasticApiKey"]
-			?? config["DOCUMENTATION_ELASTIC_APIKEY"];
+			config["DOCUMENTATION_ELASTIC_APIKEY"]
+			?? config["Parameters:DocumentationElasticApiKey"];
 
 		var password =
-			config["Parameters:DocumentationElasticPassword"]
-			?? config["DOCUMENTATION_ELASTIC_PASSWORD"];
+			config["DOCUMENTATION_ELASTIC_PASSWORD"]
+			?? config["Parameters:DocumentationElasticPassword"];
 
 		var username =
-			config["Parameters:DocumentationElasticUsername"]
-			?? config["DOCUMENTATION_ELASTIC_USERNAME"]
+			config["DOCUMENTATION_ELASTIC_USERNAME"]
+			?? config["Parameters:DocumentationElasticUsername"]
 			?? "elastic";
 
 		if (string.IsNullOrEmpty(url))
@@ -59,8 +60,8 @@ public static class ElasticsearchEndpointFactory
 		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
 
 		var searchIndexOverride =
-			config["Parameters:DocumentationElasticIndexOverride"]
-			?? config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"];
+			config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"]
+			?? config["Parameters:DocumentationElasticIndexOverride"];
 
 		return new DocumentationEndpoints
 		{
@@ -72,18 +73,24 @@ public static class ElasticsearchEndpointFactory
 	}
 
 	/// <summary>
-	/// Resolves the environment name using this priority:
-	/// 1. <c>DOTNET_ENVIRONMENT</c> env var
-	/// 2. <c>ENVIRONMENT</c> env var
-	/// 3. Fallback: <c>"dev"</c>
+	/// Resolves the domain environment name using this priority:
+	/// 1. <c>ENVIRONMENT</c> env var (our deployment env: dev, edge, staging, prod)
+	/// 2. Fallback: <c>"dev"</c>
 	/// </summary>
+	/// <remarks>
+	/// Deliberately reads only <c>ENVIRONMENT</c>, not <c>DOTNET_ENVIRONMENT</c>.
+	/// <c>DOTNET_ENVIRONMENT</c> is set by <c>AddDocumentationServiceDefaults</c> to the
+	/// mapped .NET hosting name (Development/Staging/Production) and must not be used as the
+	/// domain environment for index naming or telemetry.
+	/// </remarks>
 	private static string ResolveEnvironment(IConfiguration config, IConfiguration? appConfiguration)
 	{
-		var envVar = appConfiguration?["DOTNET_ENVIRONMENT"]
-			?? appConfiguration?["ENVIRONMENT"]
-			?? config["DOTNET_ENVIRONMENT"]
-			?? config["ENVIRONMENT"];
+		var envVar = appConfiguration?["ENVIRONMENT"] ?? config["ENVIRONMENT"];
 
-		return !string.IsNullOrEmpty(envVar) ? envVar.ToLowerInvariant() : "dev";
+		string[] allowedEnvironments = ["dev", "edge", "staging", "prod"];
+		if (!allowedEnvironments.Contains(envVar?.ToLowerInvariant()))
+			envVar = "dev";
+
+		return envVar!.ToLowerInvariant();
 	}
 }

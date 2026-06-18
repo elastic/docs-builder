@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Internal.Search;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using static System.StringSplitOptions;
@@ -121,7 +122,6 @@ public partial class ElasticsearchMarkdownExporter
 		{
 			Url = url,
 			Title = file.Title,
-			Type = "doc",
 			SearchTitle = file.Title, //updated in CommonEnrichments
 			Body = body,
 			StrippedBody = strippedBody,
