@@ -56,10 +56,12 @@ const { getOS } = new UAParser()
 type HtmxEvent = any
 
 // Run each init step in isolation so a failure in one does not abort the rest.
-function runInitSteps(steps: Array<[string, () => void]>) {
+async function runInitSteps(
+    steps: Array<[string, () => void | Promise<void>]>
+) {
     for (const [name, init] of steps) {
         try {
-            init()
+            await init()
         } catch (error) {
             console.error(`Init step "${name}" failed:`, error)
             logError(`Init step failed: ${name}`, {
