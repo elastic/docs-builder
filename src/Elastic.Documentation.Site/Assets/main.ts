@@ -15,7 +15,7 @@ import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import * as katex from 'katex'
-import { $, $$ } from 'select-dom'
+import { $optional, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
 // Injected at build time from MinVer
@@ -58,7 +58,7 @@ type HtmxEvent = any
  * Initialize KaTeX math rendering for elements with class 'math'
  */
 function initMath() {
-    const mathElements = $$('.math:not([data-katex-processed])')
+    const mathElements = $$optional('.math:not([data-katex-processed])')
     mathElements.forEach((element) => {
         try {
             const content = element.textContent?.trim()
@@ -127,7 +127,7 @@ document.addEventListener('htmx:load', function () {
     const urlParams = new URLSearchParams(window.location.search)
     const editParam = urlParams.has('edit')
     if (editParam) {
-        $('.edit-this-page.hidden')?.classList.remove('hidden')
+        $optional('.edit-this-page.hidden')?.classList.remove('hidden')
     }
 })
 
@@ -202,7 +202,7 @@ document.body.addEventListener(
 )
 
 // We add a query string to the get request to make sure the requested page is up to date
-const docsBuilderVersion = $('body')?.dataset.docsBuilderVersion
+const docsBuilderVersion = $optional('body')?.dataset.docsBuilderVersion
 document.body.addEventListener(
     'htmx:configRequest',
     function (event: HtmxEvent) {
