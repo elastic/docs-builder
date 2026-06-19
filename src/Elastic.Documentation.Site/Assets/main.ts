@@ -11,6 +11,7 @@ import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
+import { logError } from './telemetry/logging'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -53,6 +54,31 @@ const { getOS } = new UAParser()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HtmxEvent = any
+
+// Run each init step in isolation so a failure in one does not abort the rest.
+async function runInitSteps(
+    steps: Array<[string, () => void | Promise<void>]>
+) {
+    for (const [name, init] of steps) {
+        try {
+            await init()
+        } catch (error) {
+            console.error(`Init step "${name}" failed:`, error)
+            logError(`Init step failed: ${name}`, {
+                'init.step': name,
+                'error.message':
+                    error instanceof Error ? error.message : String(error),
+            })
+        }
+    }
+}
+
+function applyEditParam() {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.has('edit')) {
+        $optional('.edit-this-page.hidden')?.classList.remove('hidden')
+    }
+}
 
 /**
  * Initialize KaTeX math rendering for elements with class 'math'
@@ -104,31 +130,29 @@ function initMath() {
 
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
-    initMath()
-    initMermaid()
+    runInitSteps([
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+    ])
 })
 
 document.addEventListener('htmx:load', function () {
-    initTocNav()
-    initHighlight()
-    initCopyButton()
-    initAgentSkillCopy()
-    initTabs()
-    initAppliesSwitch()
-    initMath()
-    initMermaid()
-    initNav()
-
-    initSmoothScroll()
-    openDetailsWithAnchor()
-    initImageCarousel()
-    initApiDocs()
-
-    const urlParams = new URLSearchParams(window.location.search)
-    const editParam = urlParams.has('edit')
-    if (editParam) {
-        $optional('.edit-this-page.hidden')?.classList.remove('hidden')
-    }
+    runInitSteps([
+        ['initTocNav', initTocNav],
+        ['initHighlight', initHighlight],
+        ['initCopyButton', initCopyButton],
+        ['initAgentSkillCopy', initAgentSkillCopy],
+        ['initTabs', initTabs],
+        ['initAppliesSwitch', initAppliesSwitch],
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+        ['initNav', initNav],
+        ['initSmoothScroll', initSmoothScroll],
+        ['openDetailsWithAnchor', openDetailsWithAnchor],
+        ['initImageCarousel', initImageCarousel],
+        ['initApiDocs', initApiDocs],
+        ['applyEditParam', applyEditParam],
+    ])
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
