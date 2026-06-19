@@ -4,6 +4,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using JetBrains.Annotations;
@@ -73,7 +74,8 @@ $"""
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext);
 		var linkResolver = new TestCrossLinkResolver();
-		Set = new DocumentationSet(context, logger, linkResolver);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
 		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
@@ -88,6 +90,12 @@ $"""
 	protected virtual IReadOnlyList<string>? GetDocsetProducts() => null;
 
 	protected virtual string? GetDocsetExtraYaml() => null;
+
+	/// <summary>
+	/// Override to inject a resolver of CDN-prefetched changelog bundles for the <c>{changelog}</c>
+	/// <c>:cdn:</c> directive. Returns null by default (no-op resolver), so non-CDN tests are unaffected.
+	/// </summary>
+	protected virtual IReleaseNotesResolver? GetReleaseNotesResolver() => null;
 
 	public virtual async ValueTask InitializeAsync()
 	{

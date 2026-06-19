@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Links;
@@ -50,6 +51,8 @@ public class DocumentationSet : INavigationTraversable
 
 	public ICrossLinkResolver CrossLinkResolver { get; }
 
+	public IReleaseNotesResolver ReleaseNotesResolver { get; }
+
 	public FrozenDictionary<FilePath, DocumentationFile> Files { get; }
 
 	public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; }
@@ -59,7 +62,8 @@ public class DocumentationSet : INavigationTraversable
 	public DocumentationSet(
 		BuildContext context,
 		ILoggerFactory logFactory,
-		ICrossLinkResolver linkResolver
+		ICrossLinkResolver linkResolver,
+		IReleaseNotesResolver? releaseNotesResolver = null
 	)
 	{
 		_logger = logFactory.CreateLogger<DocumentationSet>();
@@ -67,12 +71,14 @@ public class DocumentationSet : INavigationTraversable
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.OutputDirectory;
 		CrossLinkResolver = linkResolver;
+		ReleaseNotesResolver = releaseNotesResolver ?? NoopReleaseNotesResolver.Instance;
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
 
 		var resolver = new ParserResolvers
 		{
 			CrossLinkResolver = CrossLinkResolver,
+			ReleaseNotesResolver = ReleaseNotesResolver,
 			TryFindDocument = TryFindDocument,
 			TryFindDocumentByRelativePath = TryFindDocumentByRelativePath,
 			NavigationTraversable = this
