@@ -81,7 +81,6 @@ public static class ApplicabilityRenderer
 		// If we've exhausted all options (none had displayable data), pick a fallback.
 		// When the highest-version applicability is future/unreleased, prefer the "previous lifecycle"
 		// (a lower-version applicability that is current or has no version) over a synthesized "Planned" badge.
-		// This avoids weird renderings like "Removed Planned" for `deprecated, removed X` where X is unreleased.
 		if (badgeData is null && firstBadgeData is not null && firstApplicability is not null && versioningSystem.IsVersioned())
 		{
 			var versionSpec = firstApplicability.Version;
