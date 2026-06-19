@@ -156,16 +156,20 @@ public partial class ChangelogBundleAmendService(
 				shouldResolve = parentBundle.IsResolved;
 				_logger.LogInformation("Inferred resolve={Resolve} from original bundle", shouldResolve);
 			}
+
+			ChangelogConfiguration? changelogConfig = null;
+			IReadOnlyList<string>? linkAllowRepos = null;
+			var linkAllowlistActive = false;
+			if (_configLoader != null && addFilePaths!.Count > 0)
+			{
+				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
+				linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
+				linkAllowlistActive = linkAllowRepos != null;
+			}
+
 			var entries = new List<BundledEntry>();
 			if (addFilePaths!.Count > 0)
 			{
-				ChangelogConfiguration? changelogConfig = null;
-				if (_configLoader != null)
-					changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
-
-				var linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
-				var linkAllowlistActive = linkAllowRepos != null;
-
 				if (linkAllowlistActive && !parentBundle.IsResolved)
 				{
 					collector.EmitError(
@@ -250,40 +254,35 @@ public partial class ChangelogBundleAmendService(
 			};
 
 			var bundleForWrite = amendBundle;
-			if (entries.Count > 0 && shouldResolve && _configLoader != null)
+			if (entries.Count > 0 && shouldResolve && linkAllowRepos != null)
 			{
-				var changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
-				var linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
-				if (linkAllowRepos != null)
+				var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
+				var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
+
+				if (!LinkAllowlistSanitizer.TryApplyBundle(
+					collector,
+					amendBundle,
+					linkAllowRepos,
+					owner,
+					repo,
+					out var sanitized,
+					out _))
+					return false;
+				bundleForWrite = sanitized;
+
+				if (configurationContext != null && linkAllowRepos.Count > 0)
 				{
-					var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
-					var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
-
-					if (!LinkAllowlistSanitizer.TryApplyBundle(
-						collector,
-						amendBundle,
-						linkAllowRepos,
-						owner,
-						repo,
-						out var sanitized,
-						out _))
-						return false;
-					bundleForWrite = sanitized;
-
-					if (configurationContext != null && linkAllowRepos.Count > 0)
+					try
 					{
-						try
-						{
-							var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-							var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-							LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, linkAllowRepos, assembly);
-						}
-						catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-						{
-							collector.EmitWarning(
-								string.Empty,
-								$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
-						}
+						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
+						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
+						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, linkAllowRepos, assembly);
+					}
+					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
+					{
+						collector.EmitWarning(
+							string.Empty,
+							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}");
 					}
 				}
 			}

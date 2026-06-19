@@ -53,7 +53,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		}
 
 		// Merge amend files with their parent bundles
-		loadedBundles = MergeAmendFiles(loadedBundles, emitWarning);
+		loadedBundles = MergeAmendFiles(loadedBundles, bundlesFolderPath, emitWarning);
 
 		return loadedBundles;
 	}
@@ -94,7 +94,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, fileName, entries));
 		}
 
-		return MergeAmendFiles(loadedBundles);
+		return MergeAmendFiles(loadedBundles, string.Empty, emitWarning);
 	}
 
 	/// <summary>Resolves only inline entries; file-only references (unresolvable without the changelog dir) are skipped with a warning.</summary>
@@ -320,9 +320,13 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// Amend files follow the naming pattern: {baseName}.amend-{N}.yaml
 	/// </summary>
 	/// <param name="bundles">The list of loaded bundles including amend files.</param>
+	/// <param name="bundlesFolderPath">The absolute path to the bundles folder.</param>
 	/// <param name="emitWarning">Callback to emit warnings during entry resolution.</param>
 	/// <returns>A list of bundles with amend file entries merged into their parent bundles.</returns>
-	private List<LoadedBundle> MergeAmendFiles(List<LoadedBundle> bundles, Action<string> emitWarning)
+	private List<LoadedBundle> MergeAmendFiles(
+		List<LoadedBundle> bundles,
+		string bundlesFolderPath,
+		Action<string> emitWarning)
 	{
 		if (bundles.Count <= 1)
 			return bundles;
@@ -354,8 +358,8 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			var mergedEntryList = BundleAmendMerger.MergeEntries(parentBundle.Data.Entries, orderedAmendData);
 			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList };
 
-			var bundleDirectory = fileSystem.Path.GetDirectoryName(parentPath) ?? string.Empty;
-			var changelogDirectory = fileSystem.Path.GetDirectoryName(bundleDirectory) ?? bundleDirectory;
+			var bundleDirectory = fileSystem.Path.GetDirectoryName(parentPath) ?? bundlesFolderPath;
+			var changelogDirectory = fileSystem.Path.GetDirectoryName(bundleDirectory) ?? bundlesFolderPath;
 			var resolvedEntries = ResolveEntries(mergedBundleData, changelogDirectory, emitWarning);
 
 			mergedParents[parentPath] = new LoadedBundle(
