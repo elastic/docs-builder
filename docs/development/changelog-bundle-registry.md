@@ -166,6 +166,28 @@ build that includes this feature.
 
 Consumers must therefore treat a missing bundle as non-fatal (skip + warn), not an error.
 
+## `changelog bundle` entry sourcing (declared-gate)
+
+The `changelog bundle` command aggregates individual changelog **entries**. It can read those
+entries from the local folder or fetch a product's published entries from the CDN
+(`{product}/changelog/registry.json` → `{product}/changelog/{file}`, via `CdnChangelogEntryFetcher`).
+
+CDN entry sourcing is **opt-in per product** (a *declared-gate*): a product's entries are pulled from
+the CDN only when that product is declared under `release_notes` in the repo's `docset.yml` — the same
+declaration the directive consumes. The decision is made per run by `ChangelogBundlingService`:
+
+- **Local folder** when `bundle.use_local_changelogs: true`, when `--directory` is passed, when no
+  concrete product is in scope (for example `--all` or PR/issue-only filters), or when any in-scope
+  product is **not** declared under `release_notes`.
+- **CDN** only when every in-scope product is declared. The declared set is read with
+  `DocumentationSetFile.LoadMetadata` from the known docset locations (repo root or `docs/`).
+
+The same gate drives the `--plan` `needs_network` output, so a planning step and the actual bundle
+run agree on whether the Docker bundle needs network access. The registry-fetch is fail-fast and an
+entry still missing after its retry budget fails the bundle (an incomplete release would otherwise
+ship silently). `CdnChangelogEntryFetcher` reuses a shared `HttpClient` in production and disposes an
+owned client only when a test injects a handler, mirroring `CdnChangelogFetcher`.
+
 ## Consumer: `{changelog}` directive `cdn:` mode (implemented)
 
 ### Syntax

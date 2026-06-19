@@ -55,8 +55,9 @@ public class BundlePlanTests : ChangelogTestBase
 	[Fact]
 	public async Task Plan_ProfileMode_ResolvesOutputPath()
 	{
-		// A profile with a resolvable product sources entries from the CDN by default, so the plan
+		// A profile whose product is declared under release_notes sources entries from the CDN, so the plan
 		// reports needs_network (but not a GitHub token, since this is not a github_release profile).
+		DeclareReleaseNotesProducts("elasticsearch");
 		// language=yaml
 		var configContent =
 			"""
@@ -83,6 +84,38 @@ public class BundlePlanTests : ChangelogTestBase
 		result.NeedsGithubToken.Should().BeFalse();
 		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 		// The bundle-PR action polls this URL for the scrubbed copy: {base}/{product}/bundle/{file}.
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/elasticsearch/bundle/elasticsearch-9.2.0.yaml");
+	}
+
+	[Fact]
+	public async Task Plan_ProfileMode_UndeclaredProduct_ReturnsNoNetwork()
+	{
+		// Declared-gate at plan time: with the product absent from docset.yml release_notes, the bundle
+		// run will source locally, so the plan reports no network. The CDN URL is still resolved because
+		// it only describes where a (possibly local) bundle would be published, independent of the gate.
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  profiles:
+			    my-profile:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "my-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath
+		};
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.NeedsNetwork.Should().BeFalse();
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/elasticsearch/bundle/elasticsearch-9.2.0.yaml");
 	}
 

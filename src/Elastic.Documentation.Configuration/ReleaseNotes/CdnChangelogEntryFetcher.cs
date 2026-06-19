@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -30,11 +31,7 @@ public readonly record struct CdnChangelogEntry(string FileName, string Content)
 /// silently shipping an incomplete release bundle is worse than failing the run.
 /// </para>
 /// </remarks>
-public sealed class CdnChangelogEntryFetcher(
-	ILoggerFactory logFactory,
-	HttpMessageHandler? handler = null,
-	int maxAttempts = CdnChangelogEntryFetcher.DefaultMaxAttempts,
-	Action<TimeSpan, Cancel>? sleep = null)
+public sealed class CdnChangelogEntryFetcher : IDisposable
 {
 	private const int SupportedSchemaVersion = 1;
 
@@ -43,10 +40,56 @@ public sealed class CdnChangelogEntryFetcher(
 	private const int BaseRetryDelayMs = 500;
 	private const int MaxRetryDelayMs = 2000;
 
-	private readonly ILogger _logger = logFactory.CreateLogger<CdnChangelogEntryFetcher>();
-	private readonly HttpClient _httpClient = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
-	private readonly int _maxAttempts = maxAttempts < 1 ? DefaultMaxAttempts : maxAttempts;
-	private readonly Action<TimeSpan, Cancel> _sleep = sleep ?? DefaultSleep;
+	/// <summary>
+	/// Bounds an individual registry/entry HTTP request so a stalled CDN connection cannot hang a bundle run.
+	/// </summary>
+	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(30);
+
+	/// <summary>
+	/// Process-wide client shared by every fetcher built for the production (no injected handler) path.
+	/// <see cref="HttpClient"/> is thread-safe and intended to be long-lived; a single static instance avoids
+	/// leaking a socket handle per fetch, and <see cref="SocketsHttpHandler.PooledConnectionLifetime"/>
+	/// bounds DNS staleness. It is intentionally never disposed — it lives for the lifetime of the process.
+	/// </summary>
+	private static readonly HttpClient SharedHttpClient = new(
+		new SocketsHttpHandler
+		{
+			AutomaticDecompression = DecompressionMethods.All,
+			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+		})
+	{ Timeout = FetchTimeout };
+
+	private readonly ILogger _logger;
+	private readonly HttpClient _httpClient;
+	private readonly int _maxAttempts;
+	private readonly Func<TimeSpan, Cancel, Task> _sleep;
+
+	/// <summary>
+	/// Non-null only when a caller injects its own <see cref="HttpMessageHandler"/> (tests): in that case we
+	/// own a per-instance client and must dispose it. On the production path <see cref="_httpClient"/> points
+	/// at <see cref="SharedHttpClient"/>, which is never disposed.
+	/// </summary>
+	private readonly HttpClient? _ownedHttpClient;
+
+	public CdnChangelogEntryFetcher(
+		ILoggerFactory logFactory,
+		HttpMessageHandler? handler = null,
+		int maxAttempts = DefaultMaxAttempts,
+		Func<TimeSpan, Cancel, Task>? sleep = null)
+	{
+		_logger = logFactory.CreateLogger<CdnChangelogEntryFetcher>();
+		_maxAttempts = maxAttempts < 1 ? DefaultMaxAttempts : maxAttempts;
+		_sleep = sleep ?? DefaultSleepAsync;
+
+		if (handler is null)
+			_httpClient = SharedHttpClient;
+		else
+		{
+			// disposeHandler: false — the injected handler is owned by the caller (tests), not by us.
+			_ownedHttpClient = new HttpClient(handler, disposeHandler: false) { Timeout = FetchTimeout };
+			_httpClient = _ownedHttpClient;
+		}
+	}
 
 	/// <summary>
 	/// Downloads the changelog entries for <paramref name="product"/> from the CDN at
@@ -54,7 +97,7 @@ public sealed class CdnChangelogEntryFetcher(
 	/// be read or when a registry-listed entry cannot be fetched within the retry budget. Entries are
 	/// returned in registry order; the caller owns filtering and de-duplication.
 	/// </summary>
-	public IReadOnlyList<CdnChangelogEntry> Fetch(
+	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchAsync(
 		Uri baseUri,
 		string product,
 		Action<string> emitError,
@@ -66,7 +109,7 @@ public sealed class CdnChangelogEntryFetcher(
 		ChangelogRegistry? registry;
 		try
 		{
-			registry = FetchRegistry(registryUri, ctx);
+			registry = await FetchRegistryAsync(registryUri, ctx).ConfigureAwait(false);
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
@@ -100,7 +143,8 @@ public sealed class CdnChangelogEntryFetcher(
 			}
 
 			var entryUri = Combine(baseUri, product, "changelog", fileName);
-			if (TryFetchEntry(entryUri, fileName, product, ctx, out var content, out var lastError))
+			var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, product, ctx).ConfigureAwait(false);
+			if (fetched)
 			{
 				entries.Add(new CdnChangelogEntry(fileName, content));
 				continue;
@@ -124,20 +168,19 @@ public sealed class CdnChangelogEntryFetcher(
 	/// up to <see cref="_maxAttempts"/> times with exponential backoff. Retry requests are cache-busted
 	/// so a CloudFront-cached 404 cannot pin the result for the whole window.
 	/// </summary>
-	private bool TryFetchEntry(Uri uri, string fileName, string product, Cancel ctx, out string content, out string? lastError)
+	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchEntryAsync(Uri uri, string fileName, string product, Cancel ctx)
 	{
-		content = string.Empty;
-		lastError = null;
+		string? lastError = null;
 
 		for (var attempt = 1; attempt <= _maxAttempts; attempt++)
 		{
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				content = FetchText(uri, attempt, ctx);
+				var content = await FetchTextAsync(uri, attempt, ctx).ConfigureAwait(false);
 				if (attempt > 1)
 					_logger.LogInformation("Fetched changelog entry '{File}' for {Product} on attempt {Attempt}/{Max}", fileName, product, attempt, _maxAttempts);
-				return true;
+				return (true, content, null);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
@@ -149,24 +192,24 @@ public sealed class CdnChangelogEntryFetcher(
 				_logger.LogDebug(
 					"Changelog entry '{File}' for {Product} not yet available (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
 					fileName, product, attempt, _maxAttempts, ex.Message, delay);
-				_sleep(delay, ctx);
+				await _sleep(delay, ctx).ConfigureAwait(false);
 			}
 		}
 
-		return false;
+		return (false, string.Empty, lastError);
 	}
 
-	private ChangelogRegistry? FetchRegistry(Uri registryUri, Cancel ctx)
+	private async Task<ChangelogRegistry?> FetchRegistryAsync(Uri registryUri, Cancel ctx)
 	{
 		_logger.LogInformation("Fetching changelog entry registry {RegistryUri}", registryUri);
 		using var request = new HttpRequestMessage(HttpMethod.Get, registryUri);
-		using var response = _httpClient.Send(request, ctx);
+		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
 		_ = response.EnsureSuccessStatusCode();
-		using var stream = response.Content.ReadAsStream(ctx);
-		return JsonSerializer.Deserialize(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
+		await using var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
+		return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx).ConfigureAwait(false);
 	}
 
-	private string FetchText(Uri uri, int attempt, Cancel ctx)
+	private async Task<string> FetchTextAsync(Uri uri, int attempt, Cancel ctx)
 	{
 		// Only bust the cache on retries: the first hit should use the CDN cache normally (the common,
 		// already-propagated case); retries explicitly want to bypass any cached 404.
@@ -174,11 +217,9 @@ public sealed class CdnChangelogEntryFetcher(
 		using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
 		if (attempt > 1)
 			_ = request.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
-		using var response = _httpClient.Send(request, ctx);
+		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
 		_ = response.EnsureSuccessStatusCode();
-		using var stream = response.Content.ReadAsStream(ctx);
-		using var reader = new StreamReader(stream);
-		return reader.ReadToEnd();
+		return await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
 	}
 
 	private static TimeSpan RetryDelay(int attempt)
@@ -188,10 +229,10 @@ public sealed class CdnChangelogEntryFetcher(
 		return TimeSpan.FromMilliseconds(ms);
 	}
 
-	private static void DefaultSleep(TimeSpan delay, Cancel ctx)
+	private static async Task DefaultSleepAsync(TimeSpan delay, Cancel ctx)
 	{
 		if (delay > TimeSpan.Zero)
-			_ = ctx.WaitHandle.WaitOne(delay);
+			await Task.Delay(delay, ctx).ConfigureAwait(false);
 	}
 
 	private static Uri WithCacheBuster(Uri uri)
@@ -215,4 +256,14 @@ public sealed class CdnChangelogEntryFetcher(
 		!fileName.Contains('/', StringComparison.Ordinal)
 		&& !fileName.Contains('\\', StringComparison.Ordinal)
 		&& fileName is not ("." or "..");
+
+	/// <summary>
+	/// Disposes the per-instance <see cref="HttpClient"/> created for an injected handler. The shared
+	/// production client (<see cref="SharedHttpClient"/>) is process-lived and intentionally not disposed.
+	/// </summary>
+	public void Dispose()
+	{
+		_ownedHttpClient?.Dispose();
+		GC.SuppressFinalize(this);
+	}
 }

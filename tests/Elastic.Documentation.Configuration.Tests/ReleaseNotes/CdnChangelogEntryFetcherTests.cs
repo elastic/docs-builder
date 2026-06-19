@@ -20,11 +20,11 @@ public class CdnChangelogEntryFetcherTests
 		    target: 9.3.0
 		""";
 
-	private static Uri Base() => new($"https://cdn.example/{Guid.NewGuid():N}");
+	private static readonly Uri BaseUri = new("https://cdn.example");
 
-	// A no-op sleeper keeps retry-exercising tests instant; a small attempt budget keeps them deterministic.
-	private CdnChangelogEntryFetcher CreateFetcher(StubHandler handler, int maxAttempts = 3) =>
-		new(NullLoggerFactory.Instance, handler, maxAttempts, sleep: (_, _) => { });
+	// A no-op async sleeper keeps retry-exercising tests instant; a small attempt budget keeps them deterministic.
+	private static CdnChangelogEntryFetcher CreateFetcher(StubHandler handler, int maxAttempts = 3) =>
+		new(NullLoggerFactory.Instance, handler, maxAttempts, sleep: (_, _) => Task.CompletedTask);
 
 	private static (List<string> Errors, List<string> Warnings, Action<string> EmitError, Action<string> EmitWarning) Diagnostics()
 	{
@@ -34,7 +34,7 @@ public class CdnChangelogEntryFetcherTests
 	}
 
 	[Fact]
-	public void Fetch_HappyPath_ReturnsAllEntriesFromRegistry()
+	public async Task FetchAsync_HappyPath_ReturnsAllEntriesFromRegistry()
 	{
 		var handler = new StubHandler(req =>
 			req.RequestUri!.AbsolutePath.EndsWith("/changelog/registry.json", StringComparison.Ordinal)
@@ -42,7 +42,8 @@ public class CdnChangelogEntryFetcherTests
 				: Yaml(SampleEntry));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
-		var entries = CreateFetcher(handler).Fetch(Base(), "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -52,19 +53,20 @@ public class CdnChangelogEntryFetcherTests
 	}
 
 	[Fact]
-	public void Fetch_RegistryNotFound_EmitsErrorAndReturnsEmpty()
+	public async Task FetchAsync_RegistryNotFound_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
-		var entries = CreateFetcher(handler).Fetch(Base(), "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
 	}
 
 	[Fact]
-	public void Fetch_EntryMissingAfterRetries_EmitsErrorAndReturnsEmpty()
+	public async Task FetchAsync_EntryMissingAfterRetries_EmitsErrorAndReturnsEmpty()
 	{
 		// A registry-listed entry that never appears on the CDN is retried, then escalated to an error
 		// (not skipped) so the bundle fails rather than silently dropping a release entry.
@@ -78,7 +80,8 @@ public class CdnChangelogEntryFetcherTests
 		});
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
-		var entries = CreateFetcher(handler, maxAttempts: 3).Fetch(Base(), "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler, maxAttempts: 3);
+		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("2-missing.yaml");
@@ -87,7 +90,7 @@ public class CdnChangelogEntryFetcherTests
 	}
 
 	[Fact]
-	public void Fetch_EntryRecoversAfterRetry_ReturnsEntry()
+	public async Task FetchAsync_EntryRecoversAfterRetry_ReturnsEntry()
 	{
 		// The common scrub/propagation race: the first GET 404s, a retry succeeds. No error, no skip.
 		var entryAttempts = 0;
@@ -104,7 +107,8 @@ public class CdnChangelogEntryFetcherTests
 		});
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
-		var entries = CreateFetcher(handler).Fetch(Base(), "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -113,20 +117,21 @@ public class CdnChangelogEntryFetcherTests
 	}
 
 	[Fact]
-	public void Fetch_SchemaVersionTooNew_EmitsError()
+	public async Task FetchAsync_SchemaVersionTooNew_EmitsError()
 	{
 		var handler = new StubHandler(_ =>
 			Json(/*lang=json,strict*/ """{ "schema_version": 999, "product": "elasticsearch", "bundles": [] }"""));
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
-		var entries = CreateFetcher(handler).Fetch(Base(), "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
 	}
 
 	[Fact]
-	public void Fetch_UnsafeFileName_EmitsWarningAndSkips()
+	public async Task FetchAsync_UnsafeFileName_EmitsWarningAndSkips()
 	{
 		var handler = new StubHandler(req =>
 			req.RequestUri!.AbsolutePath.EndsWith("/changelog/registry.json", StringComparison.Ordinal)
@@ -134,7 +139,8 @@ public class CdnChangelogEntryFetcherTests
 				: Yaml(SampleEntry));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
-		var entries = CreateFetcher(handler).Fetch(Base(), "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("ok.yaml");
@@ -151,13 +157,10 @@ public class CdnChangelogEntryFetcherTests
 	{
 		public List<string> RequestedPaths { get; } = [];
 
-		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
 			RequestedPaths.Add(request.RequestUri!.AbsolutePath);
-			return responder(request);
+			return Task.FromResult(responder(request));
 		}
-
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(Send(request, cancellationToken));
 	}
 }
