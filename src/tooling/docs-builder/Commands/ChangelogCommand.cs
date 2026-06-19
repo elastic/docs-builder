@@ -566,7 +566,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="report">A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
-	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>) describing network requirements and the resolved output path, then exit without generating the bundle. Intended for CI actions.</param>
+	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>, and <c>cdn_url</c> when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions.</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> Bundle(
@@ -845,6 +845,8 @@ internal sealed partial class ChangelogCommands(
 			await githubActionsService.SetOutputAsync("needs_github_token", planResult.NeedsGithubToken ? "true" : "false");
 			if (planResult.OutputPath != null)
 				await githubActionsService.SetOutputAsync("output_path", planResult.OutputPath);
+			if (planResult.CdnUrl != null)
+				await githubActionsService.SetOutputAsync("cdn_url", planResult.CdnUrl);
 			return 0;
 		}
 

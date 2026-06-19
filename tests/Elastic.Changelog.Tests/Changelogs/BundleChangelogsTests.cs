@@ -2249,6 +2249,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			bundle:
 			  directory: "{_changelogDir.Replace("\\", "/")}"
 			  output_directory: "{outputDir.Replace("\\", "/")}"
+			  use_local_changelogs: true
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-dir", "changelog.yml");
@@ -3365,6 +3366,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$$"""
 			bundle:
 			  directory: {{Path.Join(root, "changelogs")}}
+			  use_local_changelogs: true
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
@@ -3424,6 +3426,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$$"""
 			bundle:
 			  directory: {{Path.Join(root, "changelogs")}}
+			  use_local_changelogs: true
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
@@ -3474,6 +3477,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var configContent = $"""
 			bundle:
 			  directory: {_changelogDir}
+			  use_local_changelogs: true
 			  profiles:
 			    release:
 			      output: "bundle.yaml"
@@ -3549,6 +3553,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var configContent = $"""
 			bundle:
 			  directory: {_changelogDir}
+			  use_local_changelogs: true
 			  profiles:
 			    release:
 			      output: "bundle.yaml"

@@ -396,6 +396,37 @@ public class RegistryBuilderTests
 		_puts.Should().BeEmpty();
 	}
 
+	[Fact]
+	public async Task Refresh_ChangelogScope_WritesEntryRegistryWithoutTarget()
+	{
+		var path = _mockFileSystem.Path.Join(_bundleDir, "1-feature.yaml");
+		// language=yaml
+		_mockFileSystem.AddFile(path, new MockFileData("""
+			title: Sample
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			"""));
+		var targets = new List<UploadTarget> { new(path, "elasticsearch/changelog/1-feature.yaml") };
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+
+		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken, RegistryScope.Changelog);
+
+		result.Updated.Should().Be(1);
+		_puts.Should().ContainSingle();
+		_puts[0].Key.Should().Be("elasticsearch/changelog/registry.json");
+
+		var manifest = Deserialize(_puts[0].ContentBody);
+		manifest.Product.Should().Be("elasticsearch");
+		manifest.Bundles.Should().ContainSingle();
+		manifest.Bundles[0].File.Should().Be("1-feature.yaml");
+		// The changelog-entry index only enumerates files; per-entry target is not recorded.
+		manifest.Bundles[0].Target.Should().BeNull();
+		manifest.Bundles[0].ETag.Should().NotBeNullOrEmpty();
+	}
+
 	private sealed class FakeTimeProvider(DateTimeOffset now) : TimeProvider
 	{
 		public override DateTimeOffset GetUtcNow() => now;
