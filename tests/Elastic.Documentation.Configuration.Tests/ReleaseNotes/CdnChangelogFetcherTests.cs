@@ -24,10 +24,9 @@ public class CdnChangelogFetcherTests
 		    title: Sample enhancement
 		""";
 
-	// A unique base per test keeps the fetcher's process-wide memoization cache from leaking between tests.
-	private static Uri UniqueBase() => new($"https://cdn.example/{Guid.NewGuid():N}");
+	private static readonly Uri BaseUri = new("https://cdn.example");
 
-	private CdnChangelogFetcher CreateFetcher(StubHandler handler) =>
+	private static CdnChangelogFetcher CreateFetcher(StubHandler handler) =>
 		new(NullLoggerFactory.Instance, new FileSystem(), handler);
 
 	private static (List<string> Errors, List<string> Warnings, Action<string> EmitError, Action<string> EmitWarning) Diagnostics()
@@ -38,7 +37,7 @@ public class CdnChangelogFetcherTests
 	}
 
 	[Fact]
-	public void Fetch_HappyPath_ReturnsBundlesFromRegistry()
+	public async Task FetchAsync_HappyPath_ReturnsBundlesFromRegistry()
 	{
 		var handler = new StubHandler(req =>
 			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
@@ -47,7 +46,7 @@ public class CdnChangelogFetcherTests
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -57,7 +56,7 @@ public class CdnChangelogFetcherTests
 	}
 
 	[Fact]
-	public void Fetch_WithVersion_OnlyDownloadsMatchingBundle()
+	public async Task FetchAsync_WithVersion_OnlyDownloadsMatchingBundle()
 	{
 		var handler = new StubHandler(req =>
 			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
@@ -66,7 +65,7 @@ public class CdnChangelogFetcherTests
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: "9.3.0", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: "9.3.0", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -77,20 +76,20 @@ public class CdnChangelogFetcherTests
 	}
 
 	[Fact]
-	public void Fetch_RegistryNotFound_EmitsErrorAndReturnsEmpty()
+	public async Task FetchAsync_RegistryNotFound_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		bundles.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
 	}
 
 	[Fact]
-	public void Fetch_BundleNotFound_EmitsWarningAndSkipsBundle()
+	public async Task FetchAsync_BundleNotFound_EmitsWarningAndSkipsBundle()
 	{
 		var handler = new StubHandler(req =>
 			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
@@ -99,7 +98,7 @@ public class CdnChangelogFetcherTests
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		bundles.Should().BeEmpty();
 		errors.Should().BeEmpty();
@@ -107,36 +106,17 @@ public class CdnChangelogFetcherTests
 	}
 
 	[Fact]
-	public void Fetch_SchemaVersionTooNew_EmitsError()
+	public async Task FetchAsync_SchemaVersionTooNew_EmitsError()
 	{
 		var handler = new StubHandler(_ =>
 			Json(/*lang=json,strict*/ """{ "schema_version": 999, "product": "elasticsearch", "bundles": [] }"""));
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var bundles = fetcher.Fetch(UniqueBase(), "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		bundles.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
-	}
-
-	[Fact]
-	public void Fetch_SecondCallForSameProduct_UsesCache()
-	{
-		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
-				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0" } ] }""")
-				: Yaml(SampleBundle));
-		var (_, _, emitError, emitWarning) = Diagnostics();
-		using var fetcher = CreateFetcher(handler);
-		var baseUri = UniqueBase();
-
-		_ = fetcher.Fetch(baseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
-		var callsAfterFirst = handler.CallCount;
-		_ = fetcher.Fetch(baseUri, "elasticsearch", version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
-
-		callsAfterFirst.Should().Be(2, "first fetch reads the registry and one bundle");
-		handler.CallCount.Should().Be(callsAfterFirst, "the second fetch is served from the in-memory cache");
 	}
 
 	private static HttpResponseMessage Json(string body) =>
@@ -151,14 +131,11 @@ public class CdnChangelogFetcherTests
 
 		public List<string> RequestedPaths { get; } = [];
 
-		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
 			CallCount++;
 			RequestedPaths.Add(request.RequestUri!.AbsolutePath);
-			return responder(request);
+			return Task.FromResult(responder(request));
 		}
-
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(Send(request, cancellationToken));
 	}
 }

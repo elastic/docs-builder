@@ -51,8 +51,9 @@ copies, no cross-repo file syncing.
 2. **Scrubber Lambda** — triggered by `s3:ObjectCreated` on the private bucket, it scrubs
    private repository references out of bundle YAML and writes the sanitized copy to the
    **public** bucket. The `registry.json` object is copied through **verbatim**.
-3. **Consumer** — the `{changelog}` directive in `cdn:` mode reads
-   `{product}/registry.json` from the CDN, then fetches each listed bundle.
+3. **Consumer** — for each product declared under `release_notes` in `docset.yml`, docs-builder
+   reads `{product}/registry.json` from the CDN at build startup and fetches each listed bundle;
+   the `{changelog}` directive in `cdn:` mode then renders from the prefetched result.
 
 ### Why a registry instead of an S3 listing
 
@@ -175,13 +176,16 @@ Consumers must therefore treat a missing bundle as non-fatal (skip + warn), not 
 :::
 ```
 
-The directive accepts a `:cdn:` option naming the **product** to fetch (validated against
-`[a-zA-Z0-9_-]+`). The product is optional: a valueless `:cdn:` infers the product from the
-current repository name (`BuildContext.Git.RepositoryName`), which is the common case where the
-repository name is the product id (for example the `elasticsearch` repo → `elasticsearch`
-product). Multi-product repositories (for example `cloud`, which publishes `cloud-hosted`,
-`cloud-serverless`, and `cloud-enterprise`) must name the product explicitly; when the product
-cannot be inferred (git information unavailable) the directive emits an error.
+The directive accepts a `:cdn:` option naming the **product** to render (validated against
+`[a-zA-Z0-9_-]+`). It is a *selector* over bundles that were prefetched at build startup, so the
+product must be declared under `release_notes` in `docset.yml` (see
+[Declaration and prefetch](#declaration-and-prefetch)). The product is optional: a valueless
+`:cdn:` infers the product from the current repository (`BuildContext.Git.RepositoryName`),
+mapped to its canonical product id via `products.yml` (for example the `elastic-otel-java` repo →
+`edot-java` product). Multi-product repositories (for example `cloud`, which publishes
+`cloud-hosted`, `cloud-serverless`, and `cloud-enterprise`) must name the product explicitly. When
+the product cannot be inferred (git information unavailable) or is not declared under
+`release_notes`, the directive emits an error.
 
 The CDN base URL is environment configuration, not authored per page: it
 defaults to the public changelog bundles distribution and is overridable via the
@@ -189,7 +193,27 @@ defaults to the public changelog bundles distribution and is overridable via the
 staging, local development, and testing.
 
 When `:cdn:` is set, the local-folder argument is ignored (a warning is emitted if one is
-also given) and the directive sources bundles from the CDN instead.
+also given) and the directive renders the prefetched CDN bundles instead.
+
+### Declaration and prefetch [declaration-and-prefetch]
+
+CDN-sourced products are declared once per docset under `release_notes` in `docset.yml`, mirroring
+the `cross_links` mechanism:
+
+```yaml
+# docset.yml
+release_notes:
+  - product: elasticsearch
+  - product: edot-java
+```
+
+Each entry is validated against `products.yml` (the id must exist and carry the `release-notes`
+feature). At build startup — before any markdown is parsed — `ReleaseNotesFetcher` fetches the
+registry and bundles for every declared product **concurrently**, stores the result in an immutable
+`FetchedReleaseNotes`, and exposes it through `IReleaseNotesResolver`. The resolver is threaded into
+the parser via `DocumentationSet`/`ParserContext`, so the `{changelog}` directive's `:cdn:` mode is
+a pure in-memory lookup with no network I/O at parse time. Build paths that do not source release
+notes use `NoopReleaseNotesResolver`.
 
 ### Fetch flow
 
@@ -198,42 +222,43 @@ also given) and the directive sources bundles from the CDN instead.
 3. Feed the downloaded YAML into the existing `BundleLoader` → `MergeBundlesByTarget` →
    render pipeline. **Rendering is unchanged**; only the source of the bundle bytes differs.
 
-Implemented by `CdnChangelogFetcher` (in `Elastic.Documentation.Configuration`) and
-`BundleLoader.LoadBundlesFromContent`. Because public bundles are already scrubbed and
-**resolved** (entries are inline/self-contained), the fetcher never needs to download separate
-entry files; the existing private-repo link and description visibility logic still applies via
-`assembler.yml`, exactly as for local bundles.
+Implemented by `CdnChangelogFetcher` (a stateless async fetch engine in
+`Elastic.Documentation.Configuration`) and `BundleLoader.LoadBundlesFromContent`. Because public
+bundles are already scrubbed and **resolved** (entries are inline/self-contained), the fetcher never
+needs to download separate entry files; the existing private-repo link and description visibility
+logic still applies via `assembler.yml`, exactly as for local bundles.
 
 ### Behavior and decisions
 
-- **Synchronous fetch at parse time.** Directive finalization runs inside the synchronous
-  Markdig block parser — the same place the local-folder loader does its file reads — so the
-  fetcher uses `HttpClient.Send` rather than introducing a separate async pre-parse phase.
-- **Per-build memoization.** Results are cached in-process keyed by base URL + product, so
-  repeated `{changelog}` blocks (across pages) fetch each product only once per build.
-- **Missing/partial bundles.** A registry that cannot be fetched or parsed is a hard error
-  (the block renders empty); an individual bundle that 404s or fails to parse is a warning and
-  is skipped, per the [consistency notes](#consistency-notes-the-consumer-must-tolerate).
+- **Async prefetch at startup.** Bundles are fetched once per declared product before parsing, via
+  `HttpClient.GetAsync`, rather than synchronously inside the Markdig block parser. The directive
+  then selects from the prefetched, immutable `FetchedReleaseNotes`.
+- **Fail-fast registry, tolerant bundles.** A declared product whose registry cannot be fetched or
+  parsed fails the build; an individual bundle that 404s or fails to parse is a warning and is
+  skipped, per the [consistency notes](#consistency-notes-the-consumer-must-tolerate).
+- **Undeclared product.** A `:cdn:` directive naming a product not declared under `release_notes`
+  is an error — its bundles were never prefetched — which keeps network sources auditable in one
+  place.
 - **Schema evolution.** A `schema_version` newer than the consumer understands produces a
   clear error rather than a silent mis-parse.
 - **Filtering.** `:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:` and
   `hide-features` apply identically to CDN-sourced bundles.
 - **Version selection.** `:version:` renders a single target and works in both modes (shared match
-  on registry `target` or bundle file name, see `ChangelogVersionMatch`). In CDN mode the fetcher
-  uses it to download only the matching registry entry instead of every listed bundle.
+  on registry `target` or bundle file name, see `ChangelogVersionMatch`). In CDN mode it filters the
+  prefetched bundles at render time.
 - **Security.** The base URL is trusted configuration; the product and registry-supplied bundle
   file names are validated to single path segments so neither can traverse outside
   `{product}/bundle/`.
 
 ### Follow-ups (not yet implemented) [implementation-notes]
 
-- **Persistent / offline cache.** The first iteration memoizes per build but does not persist a
-  disk cache, so a cold build always reaches the CDN and an unreachable CDN yields an empty
-  render plus an error diagnostic. A follow-up should add an ETag-keyed on-disk cache under the
+- **Persistent / offline cache.** Each build prefetches declared products once into memory but does
+  not persist a disk cache, so a cold build always reaches the CDN and an unreachable declared
+  product fails the build. A follow-up should add an ETag-keyed on-disk cache under the
   docs-builder app-data directory (mirroring `CrossLinkFetcher`) with offline fallback.
-- **`serve` mode staleness.** Because the in-process cache has no invalidation, a long-running
-  `serve` pins a product's CDN content for the process lifetime. Acceptable for now (serve
-  targets local markdown authoring, not changelog bundles); revisit alongside the disk cache.
+- **`serve` mode staleness.** The prefetch runs per reload, but within a single `serve` process a
+  product's CDN content is pinned until the next reload. Acceptable for now (serve targets local
+  markdown authoring, not changelog bundles); revisit alongside the disk cache.
 - **CDN staleness.** The distribution caches the manifest with a 1h default TTL (60s min), so a
   freshly uploaded bundle may not appear in the CDN-served `registry.json` for up to an
   hour. If faster propagation is needed the producer (or a docs-actions step) would issue a

@@ -28,7 +28,7 @@ The directive supports the following options:
 | `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
 | `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
-| `:cdn: [product]` | Source bundles from the public changelog CDN instead of a local folder. The product is optional and inferred from the current repository when omitted | (local folder) |
+| `:cdn: [product]` | Render bundles for a product that is declared under `release_notes` in `docset.yml` and prefetched from the public changelog CDN. The product is optional and inferred from the current repository when omitted | (local folder) |
 | `:version: target` | Render only the single bundle matching this target/version | (all versions) |
 
 ### Example with options
@@ -165,7 +165,13 @@ Both explicit and auto-discovered paths must resolve within the repository check
 
 #### `:cdn:` [cdn]
 
-Sources bundles for a single **product** from the public changelog CDN instead of a local folder, so a docset can render release notes without vendoring bundle YAML.
+Renders bundles for a single **product** that the docset sources from the public changelog CDN, so a docset can show release notes without vendoring bundle YAML. The directive is a *selector*: it renders bundles that docs-builder prefetched at startup, so the product must first be declared under [`release_notes`](#declaring-cdn-backed-products) in `docset.yml`.
+
+```yaml
+# docset.yml
+release_notes:
+  - product: elasticsearch
+```
 
 ```markdown
 :::{changelog}
@@ -173,7 +179,7 @@ Sources bundles for a single **product** from the public changelog CDN instead o
 :::
 ```
 
-The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`) and maps to `{product}/registry.json` plus the bundles it lists on the CDN. The value is **optional**: leave it blank to infer the product from the repository that holds the doc (the common case where the repository name is the product id, for example the `elasticsearch` repo renders the `elasticsearch` product).
+The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). The value is **optional**: leave it blank to infer the product from the repository that holds the doc. The repository name is mapped to its canonical product id via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product).
 
 ```markdown
 :::{changelog}
@@ -181,11 +187,24 @@ The value names a product defined in [`products.yml`](https://github.com/elastic
 :::
 ```
 
-Inference only works for repositories whose name matches the product ID. For example, the `cloud-serverless` product release notes are published from the `docs-content` repo and therefore must specify the product explicitly. If a product cannot be inferred the block emits an error. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
+If the product cannot be inferred, or is not declared under `release_notes`, the block emits an error rather than rendering empty. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
 
 The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
 
-Fetching happens at build time. If the registry cannot be fetched the block renders empty and an error is emitted; an individual bundle that is missing from the CDN is skipped with a warning. For the full design — including the manifest format and infrastructure — see [Changelog bundle registry and CDN delivery](/development/changelog-bundle-registry.md).
+Bundles are fetched **once at build startup** for every declared product, not per directive. If a declared product's registry cannot be fetched the build fails; an individual bundle that is missing from the CDN is skipped with a warning. For the full design — including the manifest format and infrastructure — see [Changelog bundle registry and CDN delivery](/development/changelog-bundle-registry.md).
+
+##### Declaring CDN-backed products [declaring-cdn-backed-products]
+
+List each CDN-sourced product under `release_notes` in `docset.yml`. Every entry must reference a product id from `products.yml` that participates in the release-notes system:
+
+```yaml
+# docset.yml
+release_notes:
+  - product: elasticsearch
+  - product: edot-java
+```
+
+docs-builder prefetches the registry and bundles for each declared product at startup. A `:cdn:` directive that names an undeclared product is an error, which keeps the set of network sources auditable in one place rather than discovered dynamically across pages.
 
 #### `:version:` [version]
 
@@ -197,7 +216,7 @@ Renders only the **single** bundle whose target matches the given value, instead
 :::
 ```
 
-This works for both local-folder and `:cdn:` sources. In `:cdn:` mode it is also an optimization: only the matching bundle is downloaded from the CDN rather than every file the registry lists.
+This works for both local-folder and `:cdn:` sources. In `:cdn:` mode it filters the prefetched bundles down to the matching target at render time.
 
 ```markdown
 :::{changelog}

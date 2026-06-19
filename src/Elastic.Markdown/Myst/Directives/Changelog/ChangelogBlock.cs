@@ -12,7 +12,6 @@ using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Markdown.Myst.Directives.Changelog;
 
@@ -475,17 +474,6 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		}
 	}
 
-	/// <summary>
-	/// Environment variable that overrides the changelog CDN base URL (staging/local/testing).
-	/// </summary>
-	private const string CdnBaseUrlEnvironmentVariable = "DOCS_BUILDER_CHANGELOG_CDN";
-
-	/// <summary>
-	/// Default public CDN base for changelog bundles (CloudFront in front of the public S3 bucket).
-	/// Overridable via <see cref="CdnBaseUrlEnvironmentVariable"/>.
-	/// </summary>
-	internal const string DefaultCdnBaseUrl = "https://d10xozp44eyz7q.cloudfront.net";
-
 	private void LoadAndCacheBundles()
 	{
 		if (BundlesFolderPath is null)
@@ -509,18 +497,16 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (!string.IsNullOrWhiteSpace(Arguments))
 			this.EmitWarning("The bundles folder argument is ignored when :cdn: is set; bundles are sourced from the CDN.");
 
-		if (ResolveCdnBaseUri() is not { } baseUri)
+		// :cdn: is a selector over release notes prefetched at build startup. A product must be declared
+		// under `release_notes` in docset.yml; otherwise its bundles were never fetched.
+		if (!Context.ReleaseNotesResolver.IsDeclared(product))
 		{
 			this.EmitError(
-				$"No valid changelog CDN base URL is configured. Set the {CdnBaseUrlEnvironmentVariable} environment variable to an absolute http(s) URL.");
+				$"The :cdn: product '{product}' is not declared in docset.yml. Add it under 'release_notes:', for example:\n  release_notes:\n    - product: {product}");
 			return;
 		}
 
-		using var fetcher = new CdnChangelogFetcher(NullLoggerFactory.Instance, Build.ReadFileSystem);
-		// Cancel.None: directive finalization runs inside the synchronous Markdig block parser, which
-		// has no cancellation token to thread through; the fetch is bounded by HTTP timeouts instead.
-		var loadedBundles = fetcher.Fetch(baseUri, product, VersionFilter, msg => this.EmitError(msg), msg => this.EmitWarning(msg), Cancel.None);
-
+		_ = Context.ReleaseNotesResolver.TryGetBundles(product, out var loadedBundles);
 		ApplyLoadedBundles(loadedBundles);
 		Found = LoadedBundles.Count > 0;
 	}
@@ -571,26 +557,18 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 
 	/// <summary>
-	/// Infers the CDN product for a valueless <c>:cdn:</c> from the current repository name (e.g. the
-	/// <c>elasticsearch</c> repo publishes the <c>elasticsearch</c> product). Returns null when git
-	/// information is unavailable or for multi-product repos that must name the product explicitly.
+	/// Infers the CDN product for a valueless <c>:cdn:</c> from the current repository. CDN registries are
+	/// keyed by the canonical product id, not the GitHub repository name (e.g. the <c>elastic-otel-java</c>
+	/// repo publishes the <c>edot-java</c> product), so the repository is mapped via products.yml. Returns
+	/// null when git information is unavailable.
 	/// </summary>
 	private string? InferCdnProductFromRepository()
 	{
 		var repository = Build.Git.RepositoryName;
-		return string.IsNullOrWhiteSpace(repository) || repository == "unavailable"
-			? null
-			: repository;
-	}
+		if (string.IsNullOrWhiteSpace(repository) || repository == "unavailable")
+			return null;
 
-	private static Uri? ResolveCdnBaseUri()
-	{
-		var configured = Environment.GetEnvironmentVariable(CdnBaseUrlEnvironmentVariable);
-		var raw = string.IsNullOrWhiteSpace(configured) ? DefaultCdnBaseUrl : configured;
-		return Uri.TryCreate(raw, UriKind.Absolute, out var uri)
-			&& uri.Scheme is "http" or "https"
-			? uri
-			: null;
+		return Build.ProductsConfiguration.GetProductByRepositoryName(repository)?.Id ?? repository;
 	}
 
 	private IEnumerable<string> ComputeGeneratedAnchors()

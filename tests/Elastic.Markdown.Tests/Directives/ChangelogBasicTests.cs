@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
@@ -320,12 +321,10 @@ public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : Directi
 }
 
 /// <summary>
-/// Verifies CDN-sourced bundles render into the page body (not just the page TOC). The directive
-/// builds its own fetcher with a real <c>HttpClient</c>, so the test primes the fetcher's process
-/// cache for the base the directive resolves to by default; the primed entry short-circuits the
-/// fetch and no network call occurs. Priming the cache (rather than mutating the process-wide CDN
-/// env var) keeps the test from racing with other tests. Regression guard: the HTML renderer
-/// previously gated on the (CDN-null) local bundles folder path and silently emitted an empty body.
+/// Verifies CDN-sourced bundles render into the page body (not just the page TOC). The directive is a
+/// selector over release notes prefetched at startup, so the test injects a resolver holding the bundle
+/// instead of hitting the network. Regression guard: the HTML renderer previously gated on the
+/// (CDN-null) local bundles folder path and silently emitted an empty body.
 /// </summary>
 public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
 	// language=markdown
@@ -337,10 +336,8 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 {
 	private const string Product = "cdn-render-test";
 
-	public override async ValueTask InitializeAsync()
-	{
-		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(
-		[
+	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
+		ChangelogCdnTestResolver.For(Product,
 			("9.4.0.yaml",
 				// language=yaml
 				"""
@@ -357,15 +354,7 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 				    target: 9.4.0
 				  prs:
 				  - "999"
-				""")
-		], _ => { });
-		// The fetcher keys its cache by base URL, and with DOCS_BUILDER_CHANGELOG_CDN unset the directive
-		// resolves DefaultCdnBaseUrl. The primed entry must therefore use that same constant, otherwise
-		// the cache key won't match and the directive would attempt a real network fetch.
-		CdnChangelogFetcher.PrimeCacheForTesting(new Uri(ChangelogBlock.DefaultCdnBaseUrl), Product, null, bundles);
-
-		await base.InitializeAsync();
-	}
+				"""));
 
 	[Fact]
 	public void FoundFromCdn() => Block!.Found.Should().BeTrue();
@@ -382,8 +371,7 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 /// <summary>
 /// Verifies a valueless <c>:cdn:</c> infers the product from the current repository name. With a
 /// <c>.git</c> marker present the mock git checkout reports the repository as <c>docs-builder</c>, so
-/// the directive fetches that product; the cache is primed for it (default base) so no network call
-/// occurs.
+/// the directive selects that product from the injected resolver.
 /// </summary>
 public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
 	// language=markdown
@@ -400,10 +388,8 @@ public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : Direct
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddDirectory(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".git"));
 
-	public override async ValueTask InitializeAsync()
-	{
-		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(
-		[
+	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
+		ChangelogCdnTestResolver.For(InferredProduct,
 			("9.4.0.yaml",
 				// language=yaml
 				"""
@@ -420,12 +406,7 @@ public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : Direct
 				    target: 9.4.0
 				  prs:
 				  - "999"
-				""")
-		], _ => { });
-		CdnChangelogFetcher.PrimeCacheForTesting(new Uri(ChangelogBlock.DefaultCdnBaseUrl), InferredProduct, null, bundles);
-
-		await base.InitializeAsync();
-	}
+				"""));
 
 	[Fact]
 	public void InfersProductFromRepository() => Block!.CdnProduct.Should().Be(InferredProduct);
@@ -455,6 +436,47 @@ public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper outpu
 	{
 		Block!.Found.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("could not be inferred"));
+	}
+}
+
+/// <summary>
+/// A <c>:cdn:</c> product that is not declared under <c>release_notes</c> in docset.yml must fail with a
+/// clear error (the bundles were never prefetched), pointing the author at the declaration to add.
+/// </summary>
+public class ChangelogCdnUndeclaredProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+	:::{changelog}
+	:cdn: not-declared
+	:::
+	""")
+{
+	[Fact]
+	public void EmitsErrorWhenProductIsNotDeclared()
+	{
+		Block!.Found.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Message.Contains("not declared in docset.yml") && d.Message.Contains("release_notes"));
+	}
+}
+
+/// <summary>
+/// Test helper that builds an <see cref="IReleaseNotesResolver"/> backed by in-memory bundle content,
+/// standing in for the startup CDN prefetch.
+/// </summary>
+internal static class ChangelogCdnTestResolver
+{
+	public static IReleaseNotesResolver For(string product, params (string FileName, string Content)[] bundleContents)
+	{
+		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(bundleContents, _ => { });
+		return new ReleaseNotesResolver(new FetchedReleaseNotes
+		{
+			BundlesByProduct = new Dictionary<string, IReadOnlyList<LoadedBundle>>(StringComparer.Ordinal)
+			{
+				[product] = bundles
+			}.ToFrozenDictionary(StringComparer.Ordinal),
+			DeclaredProducts = new[] { product }.ToFrozenSet(StringComparer.Ordinal)
+		});
 	}
 }
 

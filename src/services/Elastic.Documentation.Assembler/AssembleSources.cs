@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
@@ -52,6 +53,10 @@ public class AssembleSources
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		logger.LogInformation("  AssembleAsync: FetchCrossLinks in {Elapsed:mm\\:ss\\.fff}", sw.Elapsed);
 
+		// Shared, mutable resolver: every documentation set gets the same instance now and the prefetched
+		// bundles are populated once below, after each set's docset.yml (and its `release_notes`) is parsed.
+		var releaseNotesResolver = new ReleaseNotesResolver();
+
 		var sources = new AssembleSources(
 			logFactory,
 			context,
@@ -61,8 +66,21 @@ public class AssembleSources
 			configurationContext.LegacyUrlMappings,
 			uriResolver,
 			crossLinkResolver,
+			releaseNotesResolver,
 			availableExporters
 		);
+
+		var declaredProducts = sources.AssembleSets.Values
+			.SelectMany(s => s.BuildContext.Configuration.ReleaseNotesProducts)
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+		if (declaredProducts.Length > 0)
+		{
+			var releaseNotesFetcher = new ReleaseNotesFetcher(logFactory, context.ReadFileSystem);
+			var fetched = await releaseNotesFetcher.FetchAsync(context.Collector, declaredProducts, ctx);
+			releaseNotesResolver.Populate(fetched);
+			logger.LogInformation("  AssembleAsync: Fetched release notes for {Count} product(s)", declaredProducts.Length);
+		}
 
 		foreach (var (_, set) in sources.AssembleSets)
 		{
@@ -82,6 +100,7 @@ public class AssembleSources
 		LegacyUrlMappingConfiguration legacyUrlMappings,
 		PublishEnvironmentUriResolver uriResolver,
 		ICrossLinkResolver crossLinkResolver,
+		IReleaseNotesResolver releaseNotesResolver,
 		IReadOnlySet<Exporter> availableExporters
 	)
 	{
@@ -91,7 +110,7 @@ public class AssembleSources
 		AssembleContext = assembleContext;
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, configurationContext, availableExporters))
+			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, releaseNotesResolver, configurationContext, availableExporters))
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 	}

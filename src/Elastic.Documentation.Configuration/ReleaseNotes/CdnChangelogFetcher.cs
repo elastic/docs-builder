@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using System.Net;
 using System.Text.Json;
@@ -12,24 +11,22 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
-/// Fetches changelog bundles for a single product from the public CDN at build time, for the
-/// <c>changelog</c> directive in <c>cdn:</c> mode. It reads <c>{base}/{product}/registry.json</c>
-/// to enumerate bundles, downloads each <c>{base}/{product}/bundle/{file}</c>, and parses them via
+/// Fetches changelog bundles for a single product from the public CDN. It reads
+/// <c>{base}/{product}/registry.json</c> to enumerate bundles, downloads each
+/// <c>{base}/{product}/bundle/{file}</c>, and parses them via
 /// <see cref="BundleLoader.LoadBundlesFromContent"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Fetching is synchronous on purpose: directive finalization runs inside the (synchronous) Markdig
-/// block parser, exactly like the local-folder loader's file reads. Results are memoized per process
-/// keyed by base URL + product so repeated directives across pages don't refetch. In long-running
-/// <c>serve</c> mode this means CDN content is effectively pinned for the process lifetime, which is
-/// acceptable: release-note bundles change rarely and serve targets local markdown authoring.
+/// This is a pure async fetch engine: it owns no caching. Memoization is the caller's concern (see
+/// <see cref="ReleaseNotesFetcher"/>, which fetches all declared products once at startup and stores
+/// the result in an immutable <see cref="FetchedReleaseNotes"/>).
 /// </para>
 /// <para>
 /// Resilience follows the manifest's consistency model: a registry that cannot be fetched or parsed
-/// is a hard error (the block renders empty), while an individual bundle that 404s or fails to parse
-/// is a warning and is skipped — the index can legitimately list a bundle whose scrubbed copy is not
-/// yet on the public bucket.
+/// is a hard error (an empty list is returned and the caller's emit-error callback is invoked), while
+/// an individual bundle that 404s or fails to parse is a warning and is skipped — the index can
+/// legitimately list a bundle whose scrubbed copy is not yet on the public bucket.
 /// </para>
 /// </remarks>
 public sealed class CdnChangelogFetcher : IDisposable
@@ -37,19 +34,16 @@ public sealed class CdnChangelogFetcher : IDisposable
 	private const int SupportedSchemaVersion = 1;
 
 	/// <summary>
-	/// Bounds an individual registry/bundle HTTP request. The fetch runs synchronously inside the Markdig
-	/// finalize pass (see <see cref="Fetch"/>), so without a timeout a stalled CDN connection could hang a
-	/// build — or a long-lived <c>serve</c> process — indefinitely.
+	/// Bounds an individual registry/bundle HTTP request so a stalled CDN connection cannot hang a build.
 	/// </summary>
 	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(30);
 
 	/// <summary>
 	/// Process-wide client shared by every fetcher built for the production (no injected handler) path.
 	/// <see cref="HttpClient"/> is thread-safe and intended to be long-lived; a single static instance avoids
-	/// leaking a socket handle per directive, and <see cref="SocketsHttpHandler.PooledConnectionLifetime"/>
+	/// leaking a socket handle per fetch, and <see cref="SocketsHttpHandler.PooledConnectionLifetime"/>
 	/// bounds DNS staleness in long-lived <c>serve</c>/watch runs. It is intentionally never disposed — it
-	/// lives for the lifetime of the process. (Most fetcher instances never touch it: the static
-	/// <see cref="Cache"/> short-circuits repeated fetches.)
+	/// lives for the lifetime of the process.
 	/// </summary>
 	private static readonly HttpClient SharedHttpClient = new(
 		new SocketsHttpHandler
@@ -58,8 +52,6 @@ public sealed class CdnChangelogFetcher : IDisposable
 			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
 		})
 	{ Timeout = FetchTimeout };
-
-	private static readonly ConcurrentDictionary<string, IReadOnlyList<LoadedBundle>> Cache = new(StringComparer.Ordinal);
 
 	private readonly ILogger _logger;
 	private readonly HttpClient _httpClient;
@@ -93,50 +85,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 	/// When <paramref name="version"/> is set, only the matching registry entry is downloaded.
 	/// Returns an empty list on a registry-level failure.
 	/// </summary>
-	public IReadOnlyList<LoadedBundle> Fetch(
-		Uri baseUri,
-		string product,
-		string? version,
-		Action<string> emitError,
-		Action<string> emitWarning,
-		Cancel ctx)
-	{
-		var cacheKey = CacheKey(baseUri, product, version);
-		if (Cache.TryGetValue(cacheKey, out var cached))
-		{
-			_logger.LogTrace("Using cached CDN changelog bundles for {Product} from {BaseUri}", product, baseUri);
-			return cached;
-		}
-
-		// Track whether the fetch was clean: a registry/bundle failure (or any skipped bundle) may be a
-		// transient CDN hiccup or replication lag, and memoizing it would pin an empty/partial result for
-		// the process lifetime (notably under `serve`). Only a clean, non-empty fetch is cached.
-		var clean = true;
-		var bundles = FetchUncached(
-			baseUri,
-			product,
-			version,
-			msg => { clean = false; emitError(msg); },
-			msg => { clean = false; emitWarning(msg); },
-			ctx);
-
-		if (clean && bundles.Count > 0)
-			_ = Cache.TryAdd(cacheKey, bundles);
-
-		return bundles;
-	}
-
-	private static string CacheKey(Uri baseUri, string product, string? version) =>
-		$"{baseUri.AbsoluteUri}\n{product}\n{version}";
-
-	/// <summary>
-	/// Test-only: pre-populate the process cache so the directive's render path can be exercised
-	/// offline (the directive constructs its own fetcher, so there is no handler seam to inject).
-	/// </summary>
-	internal static void PrimeCacheForTesting(Uri baseUri, string product, string? version, IReadOnlyList<LoadedBundle> bundles) =>
-		Cache[CacheKey(baseUri, product, version)] = bundles;
-
-	private IReadOnlyList<LoadedBundle> FetchUncached(
+	public async Task<IReadOnlyList<LoadedBundle>> FetchAsync(
 		Uri baseUri,
 		string product,
 		string? version,
@@ -149,7 +98,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 		ChangelogRegistry? registry;
 		try
 		{
-			registry = FetchRegistry(registryUri, ctx);
+			registry = await FetchRegistryAsync(registryUri, ctx).ConfigureAwait(false);
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
@@ -170,7 +119,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 			return [];
 		}
 
-		var contents = DownloadBundles(baseUri, product, version, registry, emitWarning, ctx);
+		var contents = await DownloadBundlesAsync(baseUri, product, version, registry, emitWarning, ctx).ConfigureAwait(false);
 		if (contents.Count == 0)
 		{
 			_logger.LogInformation("No usable changelog bundles fetched for {Product} from {BaseUri}", product, baseUri);
@@ -180,17 +129,17 @@ public sealed class CdnChangelogFetcher : IDisposable
 		return _bundleLoader.LoadBundlesFromContent(contents, emitWarning);
 	}
 
-	private ChangelogRegistry? FetchRegistry(Uri registryUri, Cancel ctx)
+	private async Task<ChangelogRegistry?> FetchRegistryAsync(Uri registryUri, Cancel ctx)
 	{
 		_logger.LogInformation("Fetching changelog registry {RegistryUri}", registryUri);
 		using var request = new HttpRequestMessage(HttpMethod.Get, registryUri);
-		using var response = _httpClient.Send(request, ctx);
+		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
 		_ = response.EnsureSuccessStatusCode();
-		using var stream = response.Content.ReadAsStream(ctx);
-		return JsonSerializer.Deserialize(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry);
+		await using var stream = await response.Content.ReadAsStreamAsync(ctx).ConfigureAwait(false);
+		return await JsonSerializer.DeserializeAsync(stream, ChangelogRegistryJsonContext.Default.ChangelogRegistry, ctx).ConfigureAwait(false);
 	}
 
-	private List<(string FileName, string Content)> DownloadBundles(
+	private async Task<List<(string FileName, string Content)>> DownloadBundlesAsync(
 		Uri baseUri,
 		string product,
 		string? version,
@@ -218,7 +167,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 			var bundleUri = Combine(baseUri, product, "bundle", fileName);
 			try
 			{
-				contents.Add((fileName, FetchText(bundleUri, ctx)));
+				contents.Add((fileName, await FetchTextAsync(bundleUri, ctx).ConfigureAwait(false)));
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
@@ -230,14 +179,12 @@ public sealed class CdnChangelogFetcher : IDisposable
 		return contents;
 	}
 
-	private string FetchText(Uri uri, Cancel ctx)
+	private async Task<string> FetchTextAsync(Uri uri, Cancel ctx)
 	{
 		using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-		using var response = _httpClient.Send(request, ctx);
+		using var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
 		_ = response.EnsureSuccessStatusCode();
-		using var stream = response.Content.ReadAsStream(ctx);
-		using var reader = new StreamReader(stream);
-		return reader.ReadToEnd();
+		return await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
 	}
 
 	private static Uri Combine(Uri baseUri, params string[] segments)
