@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
@@ -71,7 +72,9 @@ $"""
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		var environment = GetEnvironment();
+		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext, environment);
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, logger, linkResolver);
 		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
@@ -88,6 +91,9 @@ $"""
 	protected virtual IReadOnlyList<string>? GetDocsetProducts() => null;
 
 	protected virtual string? GetDocsetExtraYaml() => null;
+
+	/// <summary>Override to inject a deterministic environment for env-dependent config (e.g. <c>storybook.registry</c>).</summary>
+	protected virtual IEnvironmentVariables? GetEnvironment() => null;
 
 	public virtual async ValueTask InitializeAsync()
 	{
