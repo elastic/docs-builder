@@ -94,7 +94,42 @@ public partial class ChangelogUploadService(
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
 
+		// On a successful upload, refresh the per-product registry.json so consumers can enumerate
+		// content without an S3 listing: the bundle index (consumed by the changelog directive in
+		// cdn: mode) for bundle uploads, and the changelog-entry index (consumed by `changelog
+		// bundle` when sourcing entries from the CDN) for changelog uploads.
+		// Failures here are logged but don't fail the upload — the objects themselves are already in S3.
+		if (result.Failed == 0 && targets.Count > 0)
+		{
+			var scope = args.ArtifactType == ArtifactType.Bundle ? RegistryScope.Bundle : RegistryScope.Changelog;
+			await RefreshRegistries(collector, client, etagCalculator, args, targets, scope, ctx);
+		}
+
 		return result.Failed == 0;
+	}
+
+	private async Task RefreshRegistries(
+		IDiagnosticsCollector collector,
+		IAmazonS3 client,
+		IS3EtagCalculator etagCalculator,
+		ChangelogUploadArguments args,
+		IReadOnlyList<UploadTarget> uploadTargets,
+		RegistryScope scope,
+		Cancel ctx)
+	{
+		try
+		{
+			var builder = new RegistryBuilder(logFactory, _fileSystem, client, etagCalculator, args.S3BucketName);
+			var result = await builder.RefreshAsync(collector, uploadTargets, ctx, scope);
+			_logger.LogInformation("Registry refresh ({Scope}): {Updated} updated, {Unchanged} unchanged, {Failed} failed",
+				scope, result.Updated, result.Unchanged, result.Failed);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			// Leaving the manifest stale is non-fatal — bundle objects are unaffected.
+			_logger.LogWarning(ex, "Registry refresh failed; bundles uploaded successfully but manifests may be stale");
+			collector.EmitWarning(string.Empty, $"Failed to refresh registry manifest(s): {ex.Message}");
+		}
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir)

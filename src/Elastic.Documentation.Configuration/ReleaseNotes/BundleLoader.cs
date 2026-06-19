@@ -59,6 +59,64 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	}
 
 	/// <summary>
+	/// Loads bundles from in-memory YAML content rather than a folder. Used by the <c>changelog</c>
+	/// directive in <c>cdn:</c> mode, where bundle files are fetched over HTTP. CDN bundles are
+	/// self-contained (entries are inline), so no entry-file resolution against the filesystem occurs;
+	/// any file-only entry reference is skipped with a warning. Amend files are still merged by name.
+	/// </summary>
+	/// <param name="bundles">Bundle file name and raw YAML content pairs.</param>
+	/// <param name="emitWarning">Callback to emit warnings during loading.</param>
+	/// <returns>A list of successfully loaded bundles.</returns>
+	public IReadOnlyList<LoadedBundle> LoadBundlesFromContent(
+		IReadOnlyList<(string FileName, string Content)> bundles,
+		Action<string> emitWarning)
+	{
+		var loadedBundles = new List<LoadedBundle>(bundles.Count);
+
+		foreach (var (fileName, content) in bundles)
+		{
+			Bundle bundleData;
+			try
+			{
+				bundleData = ReleaseNotesSerialization.DeserializeBundle(content);
+			}
+			catch (YamlException e)
+			{
+				emitWarning($"Failed to parse changelog bundle '{fileName}': {e.Message}");
+				continue;
+			}
+
+			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(fileName);
+			var repo = GetRepoFromBundle(bundleData);
+			var owner = GetOwnerFromBundle(bundleData);
+			var entries = ResolveInlineEntries(bundleData, fileName, emitWarning);
+
+			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, fileName, entries));
+		}
+
+		return MergeAmendFiles(loadedBundles);
+	}
+
+	/// <summary>Resolves only inline entries; file-only references (unresolvable without the changelog dir) are skipped with a warning.</summary>
+	private static List<ChangelogEntry> ResolveInlineEntries(Bundle bundleData, string fileName, Action<string> emitWarning)
+	{
+		var entries = new List<ChangelogEntry>(bundleData.Entries.Count);
+		foreach (var entry in bundleData.Entries)
+		{
+			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
+			{
+				entries.Add(ReleaseNotesSerialization.ConvertBundledEntry(entry));
+				continue;
+			}
+
+			emitWarning(
+				$"Bundle '{fileName}' has a non-self-contained entry (file '{entry.File?.Name}'); CDN bundles must inline their entries. Skipping.");
+		}
+
+		return entries;
+	}
+
+	/// <summary>
 	/// Resolves entries from a bundle, loading from file references if needed.
 	/// </summary>
 	/// <param name="bundledData">The parsed bundle data.</param>
@@ -132,7 +190,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// </summary>
 	/// <param name="bundles">The sorted list of bundles to merge.</param>
 	/// <returns>A list of bundles where same-target bundles are merged.</returns>
-	public IReadOnlyList<LoadedBundle> MergeBundlesByTarget(IReadOnlyList<LoadedBundle> bundles)
+	public static IReadOnlyList<LoadedBundle> MergeBundlesByTarget(IReadOnlyList<LoadedBundle> bundles)
 	{
 		if (bundles.Count <= 1)
 			return bundles;

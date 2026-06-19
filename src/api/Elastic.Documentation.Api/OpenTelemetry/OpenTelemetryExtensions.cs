@@ -17,7 +17,6 @@ public static class OpenTelemetryExtensions
 		_ = builder
 			.AddSource(TelemetryConstants.AskAiSourceName)
 			.AddSource(TelemetryConstants.StreamTransformerSourceName)
-			.AddSource(TelemetryConstants.OtlpProxySourceName)
 			.AddSource(TelemetryConstants.CacheSourceName)
 			.AddSource(TelemetryConstants.AskAiFeedbackSourceName)
 			.AddAspNetCoreInstrumentation(aspNetCoreOptions =>

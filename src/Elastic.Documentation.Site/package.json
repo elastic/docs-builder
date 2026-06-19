@@ -56,7 +56,7 @@
   },
   "private": true,
   "devDependencies": {
-    "@babel/core": "7.28.4",
+    "@babel/core": "7.29.6",
     "@babel/preset-env": "7.29.0",
     "@babel/preset-react": "7.28.5",
     "@babel/preset-typescript": "7.28.5",
@@ -120,7 +120,7 @@
     "@tanstack/react-query": "^5.100.9",
     "@uidotdev/usehooks": "2.4.1",
     "@theletterf/beautiful-mermaid": "0.1.5",
-    "dompurify": "3.4.2",
+    "dompurify": "3.4.11",
     "highlight.js": "11.11.1",
     "htmx-ext-head-support": "2.0.5",
     "htmx-ext-preload": "2.1.2",

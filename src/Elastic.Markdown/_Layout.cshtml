@@ -50,6 +50,7 @@
 							@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
 							{
 								<div id="elastic-website-search-input-container"
+								     hx-preserve="true"
 								     class="sticky bottom-8 mt-8 z-40">
 								</div>
 							}

@@ -68,7 +68,7 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 
 {
 	/// <inheritdoc />
-	public string Url => NavigationItems.First().Url;
+	public virtual string Url => NavigationItems.First().Url;
 
 	/// <inheritdoc />
 	public abstract string NavigationTitle { get; }
@@ -100,6 +100,9 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 public class ClassificationNavigationItem(ApiClassification classification, LandingNavigationItem rootNavigation, LandingNavigationItem parent)
 	: ApiGroupingNavigationItem<ApiClassification, INavigationItem>(classification, rootNavigation, parent), IRootNavigationItem<ApiClassification, INavigationItem>
 {
+	/// <summary>Section titles from <c>x-tagGroups</c> are not their own page; the sidebar link targets the main API overview for the product, not a tag (or the first child) page.</summary>
+	public override string Url => rootNavigation.Index.Url;
+
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = classification.Name;
 
@@ -113,9 +116,20 @@ public class ClassificationNavigationItem(ApiClassification classification, Land
 		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}");
 }
 
-public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
+public class TagNavigationItem(
+	ApiTag tag,
+	string? urlPathPrefix,
+	string apiUrlSuffix,
+	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+	INodeNavigationItem<INavigationModel, INavigationItem> parent
+)
 	: ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
 {
+	private readonly string _url = $"{urlPathPrefix?.TrimEnd('/')}/api/{apiUrlSuffix}/tags/{tag.TagUrlSegment}/";
+
+	/// <inheritdoc />
+	public override string Url => _url;
+
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = tag.DisplayName;
 
