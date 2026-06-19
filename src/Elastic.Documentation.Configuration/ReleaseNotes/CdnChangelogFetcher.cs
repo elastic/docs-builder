@@ -194,10 +194,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 		return new Uri($"{basePath}/{suffix}");
 	}
 
-	/// <summary>
-	/// Guards against path traversal or nested keys sneaking in via the registry: a bundle file name
-	/// must be a single path segment (the producer always writes <c>{product}/bundle/{file}</c>).
-	/// </summary>
+	/// <summary>Guards against registry-supplied path traversal: a bundle file name must be a single path segment.</summary>
 	private static bool IsSafeBundleFileName(string fileName) =>
 		!fileName.Contains('/', StringComparison.Ordinal)
 		&& !fileName.Contains('\\', StringComparison.Ordinal)

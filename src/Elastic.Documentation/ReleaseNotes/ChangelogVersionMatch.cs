@@ -17,6 +17,7 @@ public static class ChangelogVersionMatch
 	/// <param name="file">The bundle file name or path (may be null/empty).</param>
 	public static bool Matches(string requested, string? target, string? file)
 	{
+		// empty/whitespace → match all versions
 		if (string.IsNullOrWhiteSpace(requested))
 			return true;
 

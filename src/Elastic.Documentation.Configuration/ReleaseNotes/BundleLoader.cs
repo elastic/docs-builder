@@ -97,10 +97,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		return MergeAmendFiles(loadedBundles);
 	}
 
-	/// <summary>
-	/// Resolves only inline (self-describing) entries from a bundle. File-only references are not
-	/// resolvable without the surrounding changelog directory, so they are skipped with a warning.
-	/// </summary>
+	/// <summary>Resolves only inline entries; file-only references (unresolvable without the changelog dir) are skipped with a warning.</summary>
 	private static List<ChangelogEntry> ResolveInlineEntries(Bundle bundleData, string fileName, Action<string> emitWarning)
 	{
 		var entries = new List<ChangelogEntry>(bundleData.Entries.Count);

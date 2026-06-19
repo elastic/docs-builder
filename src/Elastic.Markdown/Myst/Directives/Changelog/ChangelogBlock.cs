@@ -533,11 +533,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		}
 	}
 
-	/// <summary>
-	/// Applies the optional <c>:version:</c> filter to loaded bundles. A bundle matches when its
-	/// target version or its file stem equals the requested value. If nothing matches a warning is
-	/// emitted and the block renders empty (rather than silently falling back to all versions).
-	/// </summary>
+	/// <summary>Filters bundles by the optional <c>:version:</c> value; warns and renders empty when nothing matches.</summary>
 	private IReadOnlyList<LoadedBundle> FilterByVersion(IReadOnlyList<LoadedBundle> bundles)
 	{
 		if (VersionFilter is not { Length: > 0 } version)
@@ -556,18 +552,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	private static bool IsValidCdnProduct(string product) =>
 		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 
-	/// <summary>
-	/// Infers the CDN product for a valueless <c>:cdn:</c> from the current repository. CDN registries are
-	/// keyed by the canonical product id, not the GitHub repository name (e.g. the <c>elastic-otel-java</c>
-	/// repo publishes the <c>edot-java</c> product), so the repository is mapped via products.yml. Returns
-	/// null when git information is unavailable.
-	/// </summary>
+	/// <summary>Infers the CDN product for a valueless <c>:cdn:</c> from the repo, mapped to its canonical id via products.yml.</summary>
 	private string? InferCdnProductFromRepository()
 	{
-		var repository = Build.Git.RepositoryName;
-		if (string.IsNullOrWhiteSpace(repository) || repository == "unavailable")
+		if (!Build.Git.IsAvailable)
 			return null;
 
+		var repository = Build.Git.RepositoryName;
 		return Build.ProductsConfiguration.GetProductByRepositoryName(repository)?.Id ?? repository;
 	}
 

@@ -369,6 +369,70 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 }
 
 /// <summary>
+/// Verifies <c>:cdn:</c> combined with <c>:version:</c> renders only the matching prefetched bundle.
+/// Version filtering is applied to the injected resolver's bundles, so no network access occurs.
+/// </summary>
+public class ChangelogCdnVersionFilterTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+	:::{changelog}
+	:cdn: cdn-version-test
+	:version: 9.4.0
+	:::
+	""")
+{
+	private const string Product = "cdn-version-test";
+
+	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
+		ChangelogCdnTestResolver.For(Product,
+			("9.4.0.yaml",
+				// language=yaml
+				"""
+				products:
+				- product: cdn-version-test
+				  target: 9.4.0
+				  repo: elasticsearch
+				  owner: elastic
+				entries:
+				- title: Selected version entry
+				  type: enhancement
+				  products:
+				  - product: cdn-version-test
+				    target: 9.4.0
+				  prs:
+				  - "999"
+				"""),
+			("9.3.0.yaml",
+				// language=yaml
+				"""
+				products:
+				- product: cdn-version-test
+				  target: 9.3.0
+				  repo: elasticsearch
+				  owner: elastic
+				entries:
+				- title: Filtered out entry
+				  type: enhancement
+				  products:
+				  - product: cdn-version-test
+				    target: 9.3.0
+				  prs:
+				  - "998"
+				"""));
+
+	[Fact]
+	public void CapturesVersionFilter() => Block!.VersionFilter.Should().Be("9.4.0");
+
+	[Fact]
+	public void RendersOnlyMatchingVersion()
+	{
+		Block!.Found.Should().BeTrue();
+		Html.Should().Contain("Selected version entry");
+		Html.Should().NotContain("Filtered out entry");
+	}
+}
+
+/// <summary>
 /// Verifies a valueless <c>:cdn:</c> infers the product from the current repository name. With a
 /// <c>.git</c> marker present the mock git checkout reports the repository as <c>docs-builder</c>, so
 /// the directive selects that product from the injected resolver.

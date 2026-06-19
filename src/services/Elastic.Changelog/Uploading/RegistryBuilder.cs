@@ -94,10 +94,7 @@ internal sealed class RegistryBuilder(
 		return new RefreshResult(updated, unchanged, failed);
 	}
 
-	/// <summary>
-	/// Extracts the leading <c>product</c> segment from an S3 key shaped like
-	/// <c>{product}/bundle/{file}</c>. Returns null on unrecognized shapes.
-	/// </summary>
+	/// <summary>Extracts the leading <c>product</c> segment from a <c>{product}/bundle/{file}</c> S3 key, or null.</summary>
 	private static string? ExtractProduct(string s3Key)
 	{
 		var firstSlash = s3Key.IndexOf('/');
@@ -106,12 +103,7 @@ internal sealed class RegistryBuilder(
 		return s3Key.AsSpan(0, firstSlash).ToString();
 	}
 
-	/// <summary>
-	/// Computes manifest entries for the bundles uploaded in this run by reading their YAML
-	/// and computing the S3 ETag locally. The target is taken from the bundle's declaration of
-	/// <paramref name="product"/> (not the first product) so multi-product bundles with differing
-	/// targets are recorded correctly per product.
-	/// </summary>
+	/// <summary>Builds manifest entries for this run's bundles, recording each bundle's target for <paramref name="product"/> (not the first product).</summary>
 	private async Task<List<RegistryBundle>> BuildLocalEntries(
 		IDiagnosticsCollector collector,
 		string product,
@@ -219,11 +211,7 @@ internal sealed class RegistryBuilder(
 		return WriteOutcome.Failed;
 	}
 
-	/// <summary>
-	/// Reads the existing per-product manifest from S3 together with its ETag (for the conditional
-	/// write). Returns an empty list with a null ETag when the object does not exist. A corrupt object
-	/// returns an empty list with the live ETag so the retry loop can conditionally overwrite it.
-	/// </summary>
+	/// <summary>Reads the existing manifest and its ETag (null ETag when absent; live ETag when corrupt, so the conditional write can overwrite).</summary>
 	private async Task<(IReadOnlyList<RegistryBundle> Bundles, string? ETag)> TryFetchExistingManifest(string product, Cancel ctx)
 	{
 		var key = $"{product}/registry.json";
@@ -280,12 +268,7 @@ internal sealed class RegistryBuilder(
 		_ = await s3Client.PutObjectAsync(request, ctx);
 	}
 
-	/// <summary>
-	/// Replaces existing entries by file name, then appends new ones. Sort is newest-target-first using
-	/// the same <see cref="VersionOrDate"/> comparator the consumer applies (so the on-disk manifest's
-	/// order matches the documented "newest first" claim even for mixed-width semvers like 9.10.0 vs
-	/// 9.9.0), with a deterministic tiebreak on file name to keep the JSON stable across reruns.
-	/// </summary>
+	/// <summary>Replaces existing entries by file name and sorts newest-target-first (with a file-name tiebreak) for a stable manifest.</summary>
 	private static List<RegistryBundle> Merge(
 		IReadOnlyList<RegistryBundle> existing,
 		IReadOnlyList<RegistryBundle> incoming)
