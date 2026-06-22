@@ -3,19 +3,18 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Diagnostics;
 using Elastic.Internal.Search;
-using Elastic.Internal.Search.Elasticsearch;
-using Elastic.Internal.Search.Elasticsearch.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Search;
 
 /// <summary>
-/// Adapter over the shared <see cref="ISearchService{TDocument}"/> from
-/// <c>Elastic.Internal.Search.Elasticsearch</c>. Translates the docs-builder-specific
+/// Adapter over <see cref="ISearchService{TDocument}"/>. Translates the docs-builder-specific
 /// <see cref="NavigationSearchRequest"/> / <see cref="NavigationSearchResponse"/> shapes into the
 /// shared <see cref="AutocompleteRequest"/> / <see cref="AutocompleteResponse{TDocument}"/> shapes
-/// and back. All query construction, highlighting, and ES interaction lives in the shared package.
+/// and back. All query construction, highlighting, and ES interaction lives in
+/// <see cref="DefaultSearchService{TDocument}"/>.
 /// </summary>
 public partial class NavigationSearchService(
 	ISearchService<DocumentationDocument> inner,
