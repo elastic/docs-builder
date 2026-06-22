@@ -35,7 +35,7 @@
     <PackageVersion Include="Aspire.Hosting" Version="13.4.3" />
     <PackageVersion Include="MessagePack" Version="2.5.302" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.4.3" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.7.4" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.8" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.18.5" />
     <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.33" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.23.4" />
