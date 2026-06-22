@@ -3,14 +3,15 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization.Metadata;
-using Elastic.Documentation.Serialization;
+using DocSerializationContext = Elastic.Documentation.Serialization.SourceGenerationContext;
+using QuerySerializationContext = Elastic.Documentation.Search.SourceGenerationContext;
 using InternalSearch = Elastic.Internal.Search;
 
 namespace Elastic.Documentation.Search.Common;
 
 /// <summary>
 /// Combined JSON type info resolver for the shared Elasticsearch client: external search contract types,
-/// docs-builder document metadata, and internal query-rule criteria from the Elasticsearch search package.
+/// docs-builder document metadata, and query-rule criteria.
 /// </summary>
 internal static class ElasticsearchClientJsonResolver
 {
@@ -19,7 +20,7 @@ internal static class ElasticsearchClientJsonResolver
 	private static IJsonTypeInfoResolver Create() =>
 		JsonTypeInfoResolver.Combine(
 			InternalSearch.SourceGenerationContext.Default,
-			InternalSearch.Elasticsearch.SourceGenerationContext.Default,
-			SourceGenerationContext.Default
+			QuerySerializationContext.Default,
+			DocSerializationContext.Default
 		);
 }
