@@ -132,7 +132,7 @@
     "select-dom": "10.1.0",
     "tailwindcss": "4.3.0",
     "tippy.js": "6.3.7",
-    "ua-parser-js": "2.0.9",
+    "ua-parser-js": "2.0.10",
     "uuid": "14.0.1",
     "zod": "4.4.3",
     "zustand": "5.0.13"
