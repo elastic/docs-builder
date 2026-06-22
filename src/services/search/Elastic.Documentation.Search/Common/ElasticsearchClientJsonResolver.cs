@@ -4,8 +4,8 @@
 
 using System.Text.Json.Serialization.Metadata;
 using DocSerializationContext = Elastic.Documentation.Serialization.SourceGenerationContext;
-using QuerySerializationContext = Elastic.Documentation.Search.SourceGenerationContext;
 using InternalSearch = Elastic.Internal.Search;
+using QuerySerializationContext = Elastic.Documentation.Search.SourceGenerationContext;
 
 namespace Elastic.Documentation.Search.Common;
 
