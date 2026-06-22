@@ -38,7 +38,7 @@ public static class SearchExplainExtensions
 		var getDocResponse = await service.Client.SearchAsync<TDocument>(s => s
 			.Indices(service.IndexAlias)
 			.Query(q => q.Term(t => t.Field("url").Value(documentUrl)))
-			.Size(1), ct);
+			.Size(1), ct).ConfigureAwait(false);
 
 		if (!getDocResponse.IsValidResponse || getDocResponse.Documents.Count == 0)
 		{
@@ -54,7 +54,7 @@ public static class SearchExplainExtensions
 		var documentId = getDocResponse.Hits.First().Id;
 
 		var explainResponse = await service.Client.ExplainAsync<TDocument>(
-			service.IndexAlias, documentId, e => e.Query(combinedQuery), ct);
+			service.IndexAlias, documentId, e => e.Query(combinedQuery), ct).ConfigureAwait(false);
 
 		if (!explainResponse.IsValidResponse)
 		{
@@ -86,7 +86,7 @@ public static class SearchExplainExtensions
 		CancellationToken ct = default)
 		where TDocument : SearchDocumentBase
 	{
-		var top = await service.AutocompleteAsync(new AutocompleteRequest { Query = query, PageNumber = 1, PageSize = 1 }, ct);
+		var top = await service.AutocompleteAsync(new AutocompleteRequest { Query = query, PageNumber = 1, PageSize = 1 }, ct).ConfigureAwait(false);
 		var topResultUrl = top.Results.Count > 0 ? top.Results[0].Document.Url : null;
 
 		if (string.IsNullOrEmpty(topResultUrl))
@@ -98,11 +98,11 @@ public static class SearchExplainExtensions
 				Found = false,
 				Explanation = "No search results returned"
 			};
-			return (emptyResult, await service.ExplainDocumentAsync(query, expectedDocumentUrl, ct));
+			return (emptyResult, await service.ExplainDocumentAsync(query, expectedDocumentUrl, ct).ConfigureAwait(false));
 		}
 
-		var topResultExplain = await service.ExplainDocumentAsync(query, topResultUrl, ct);
-		var expectedResultExplain = await service.ExplainDocumentAsync(query, expectedDocumentUrl, ct);
+		var topResultExplain = await service.ExplainDocumentAsync(query, topResultUrl, ct).ConfigureAwait(false);
+		var expectedResultExplain = await service.ExplainDocumentAsync(query, expectedDocumentUrl, ct).ConfigureAwait(false);
 
 		return (topResultExplain, expectedResultExplain);
 	}

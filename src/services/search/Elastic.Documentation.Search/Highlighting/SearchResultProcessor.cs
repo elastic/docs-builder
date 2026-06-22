@@ -35,10 +35,10 @@ public static class SearchResultProcessor
 
 		if (highlights != null)
 		{
-			if (highlights.TryGetValue("stripped_body", out var bodyHighlights) && bodyHighlights.Count > 0)
+			if (highlights.TryGetValue(QueryFieldNames.StrippedBody, out var bodyHighlights) && bodyHighlights.Count > 0)
 				highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 
-			if (highlights.TryGetValue("title", out var titleHighlights) && titleHighlights.Count > 0)
+			if (highlights.TryGetValue(QueryFieldNames.Title, out var titleHighlights) && titleHighlights.Count > 0)
 				highlightedTitle = string.Join(". ", titleHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 		}
 

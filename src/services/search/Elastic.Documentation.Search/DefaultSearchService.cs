@@ -224,7 +224,6 @@ public partial class DefaultSearchService<TDocument>(
 		{
 			Type = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "type"),
 			NavigationSection = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "navigation_section"),
-			DeploymentType = SearchResultProcessor.ExtractNestedTermsAggregation<TDocument>(response2, "applies_to_type", "types"),
 			Product = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response2, "product")
 				.ToDictionary(kvp => kvp.Key, kvp => new InternalSearch.ProductAggregationBucket
 				{
