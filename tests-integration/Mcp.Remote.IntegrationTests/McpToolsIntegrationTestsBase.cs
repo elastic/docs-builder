@@ -87,9 +87,9 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 			RulesetName = clientAccessor.RulesetName,
 			SemanticEnabled = true
 		};
-		var inner = new DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>(
+		var inner = new DefaultSearchService<DocumentationDocument>(
 			clientAccessor.Client, clientAccessor.SearchIndex, queryConfig,
-			NullLogger<DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>>.Instance,
+			NullLogger<DefaultSearchService<DocumentationDocument>>.Instance,
 			productsConfig);
 		return new FullSearchService(inner, productsConfig, NullLogger<FullSearchService>.Instance);
 	}

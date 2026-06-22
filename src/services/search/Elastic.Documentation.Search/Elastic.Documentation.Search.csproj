@@ -16,7 +16,8 @@
 
     <ItemGroup>
       <PackageReference Include="Elastic.Clients.Elasticsearch" />
-      <PackageReference Include="Elastic.Internal.Search.Contract" />
+      <!-- TODO: switch back to PackageReference once the new contract version is published -->
+      <ProjectReference Include="../../../../../../.supacode/repos/website-search-data/feature/contract-work-move-docs-out/src/Elastic.Internal.Search.Contract/Elastic.Internal.Search.Contract.csproj" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Logging" />
     </ItemGroup>
