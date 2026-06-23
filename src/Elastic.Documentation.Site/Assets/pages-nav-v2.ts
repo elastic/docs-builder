@@ -1,4 +1,4 @@
-import { $$ } from 'select-dom'
+import { $$, $$optional } from 'select-dom'
 import tippy from 'tippy.js'
 import type { Instance } from 'tippy.js'
 
@@ -734,7 +734,7 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
 }
 
 function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
-    $$('.current', nav).forEach((el) => el.classList.remove('current'))
+    $$optional('.current', nav).forEach((el) => el.classList.remove('current'))
 
     const current = pickAnchorMatchingPath(nav, pathnameRaw)
     current?.classList.add('current')
@@ -746,7 +746,7 @@ function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
  */
 function markCurrentPage(nav: HTMLElement) {
     if (isOnSectionRootPage(nav)) {
-        $$('.current', nav).forEach((el) => el.classList.remove('current'))
+        $$optional('.current', nav).forEach((el) => el.classList.remove('current'))
         return
     }
     markCurrentPageForPath(nav, window.location.pathname)
