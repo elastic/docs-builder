@@ -34,6 +34,7 @@ public class SiteNavigationV2 : SiteNavigation
 	{
 		var prefix = sitePrefix ?? string.Empty;
 		V2NavigationItems = BuildV2Items(v2File.Nav, Nodes, this, prefix);
+		RegisterV2PageLookups();
 		Sections = BuildSections(V2NavigationItems);
 		Islands = BuildIslands(Sections);
 		BuildUrlToSectionLookup();
@@ -96,7 +97,7 @@ public class SiteNavigationV2 : SiteNavigation
 	private static IReadOnlyList<NavigationSection> BuildSections(IReadOnlyList<INavigationItem> items) =>
 		items
 			.OfType<SectionNavigationNode>()
-			.Select(s => new NavigationSection(s.Id, s.NavigationTitle, s.Url, s.Isolated, [.. s.NavigationItems]))
+			.Select(s => new NavigationSection(s.Id, s.NavigationTitle, s.Url, s.Isolated, s.Dropdown, [.. s.NavigationItems]))
 			.ToList();
 
 	private static IReadOnlyList<NavigationIsland> BuildIslands(IReadOnlyList<NavigationSection> sections)
@@ -162,6 +163,179 @@ public class SiteNavigationV2 : SiteNavigation
 	{
 		foreach (var island in Islands)
 			_ = _tocRootToIsland.TryAdd(island.SourceTocRootId, island);
+	}
+
+	private void RegisterV2PageLookups()
+	{
+		var urlToFile = new Dictionary<string, IDocumentationFile>(StringComparer.OrdinalIgnoreCase);
+		foreach (var node in Nodes.Values)
+			CollectDocumentationFilesByUrl(node, urlToFile, Url);
+
+		RegisterV2PageLookups(V2NavigationItems, urlToFile);
+	}
+
+	private void RegisterV2PageLookups(
+		IEnumerable<INavigationItem> items,
+		IReadOnlyDictionary<string, IDocumentationFile> urlToFile
+	)
+	{
+		foreach (var item in items)
+		{
+			switch (item)
+			{
+				case PageCrossLinkLeaf pageCrossLink:
+					RegisterV2PageLookup(pageCrossLink.Page, pageCrossLink, urlToFile);
+					break;
+				case PageFolderNavigationNode pageFolder:
+					RegisterV2PageLookup(pageFolder.Page, pageFolder, urlToFile);
+					break;
+			}
+
+			if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+				RegisterV2PageLookups(node.NavigationItems, urlToFile);
+		}
+	}
+
+	private void RegisterV2PageLookup(
+		Uri page,
+		INavigationItem item,
+		IReadOnlyDictionary<string, IDocumentationFile> urlToFile
+	)
+	{
+		if (TryResolvePageSource(page, out var file) || urlToFile.TryGetValue(item.Url, out file))
+		{
+			_ = NavigationDocumentationFileLookup.Remove(file);
+			NavigationDocumentationFileLookup.Add(file, item);
+		}
+	}
+
+	private bool TryResolvePageSource(Uri page, out IDocumentationFile file)
+	{
+		file = null!;
+		var pagePath = GetUriPath(page);
+		if (string.IsNullOrEmpty(pagePath))
+			return false;
+
+		var segments = pagePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+		for (var length = segments.Length; length > 0; length--)
+		{
+			var tocPath = string.Join('/', segments.Take(length));
+			if (!Nodes.TryGetValue(CreateTocUri(page.Scheme, tocPath), out var node))
+				continue;
+
+			var remainingPath = string.Join('/', segments.Skip(length));
+			if (string.IsNullOrEmpty(remainingPath))
+			{
+				file = node.Index.Model;
+				return true;
+			}
+
+			if (TryFindDocumentationFile(node, remainingPath, out file))
+				return true;
+		}
+
+		return false;
+	}
+
+	private static bool TryFindDocumentationFile(
+		INavigationItem item,
+		string remainingPath,
+		out IDocumentationFile file
+	)
+	{
+		switch (item)
+		{
+			case ILeafNavigationItem<IDocumentationFile> leaf when MatchesRemainingPath(leaf.Url, remainingPath):
+				file = leaf.Model;
+				return true;
+			case INodeNavigationItem<IDocumentationFile, INavigationItem> node:
+				if (MatchesRemainingPath(node.Index.Url, remainingPath))
+				{
+					file = node.Index.Model;
+					return true;
+				}
+				foreach (var child in node.NavigationItems)
+				{
+					if (TryFindDocumentationFile(child, remainingPath, out file))
+						return true;
+				}
+				break;
+			case INodeNavigationItem<INavigationModel, INavigationItem> node:
+				foreach (var child in node.NavigationItems)
+				{
+					if (TryFindDocumentationFile(child, remainingPath, out file))
+						return true;
+				}
+				break;
+		}
+
+		file = null!;
+		return false;
+	}
+
+	private static bool MatchesRemainingPath(string url, string remainingPath)
+	{
+		var normalizedPath = NormalizePagePath(remainingPath);
+		return url.TrimEnd('/').EndsWith($"/{normalizedPath}", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static string NormalizePagePath(string path)
+	{
+		var normalized = path.Trim('/');
+		if (normalized.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+			normalized = normalized[..^3];
+		if (normalized.EndsWith("/index", StringComparison.OrdinalIgnoreCase))
+			normalized = normalized[..^6];
+		return normalized;
+	}
+
+	private static Uri CreateTocUri(string scheme, string path)
+	{
+		var slash = path.IndexOf('/');
+		return slash < 0
+			? new Uri($"{scheme}://{path}")
+			: new Uri($"{scheme}://{path[..slash]}/{path[(slash + 1)..]}");
+	}
+
+	private static string GetUriPath(Uri uri) => (uri.Host + uri.AbsolutePath).Trim('/');
+
+	private static void CollectDocumentationFilesByUrl(
+		INavigationItem item,
+		Dictionary<string, IDocumentationFile> urlToFile,
+		string sitePrefix
+	)
+	{
+		switch (item)
+		{
+			case ILeafNavigationItem<IDocumentationFile> leaf:
+				AddDocumentationFileUrl(urlToFile, leaf.Url, leaf.Model, sitePrefix);
+				break;
+			case INodeNavigationItem<IDocumentationFile, INavigationItem> node:
+				AddDocumentationFileUrl(urlToFile, node.Url, node.Index.Model, sitePrefix);
+				AddDocumentationFileUrl(urlToFile, node.Index.Url, node.Index.Model, sitePrefix);
+				foreach (var child in node.NavigationItems)
+					CollectDocumentationFilesByUrl(child, urlToFile, sitePrefix);
+				break;
+			case INodeNavigationItem<INavigationModel, INavigationItem> node:
+				foreach (var child in node.NavigationItems)
+					CollectDocumentationFilesByUrl(child, urlToFile, sitePrefix);
+				break;
+		}
+	}
+
+	private static void AddDocumentationFileUrl(
+		Dictionary<string, IDocumentationFile> urlToFile,
+		string url,
+		IDocumentationFile file,
+		string sitePrefix
+	)
+	{
+		_ = urlToFile.TryAdd(url, file);
+
+		if (sitePrefix == "/" || string.IsNullOrEmpty(url) || !url.StartsWith('/'))
+			return;
+
+		_ = urlToFile.TryAdd($"{sitePrefix.TrimEnd('/')}{url}", file);
 	}
 
 	private static IReadOnlyList<INavigationItem> BuildV2Items(
@@ -239,9 +413,9 @@ public class SiteNavigationV2 : SiteNavigation
 		string sitePrefix
 	)
 	{
-		var placeholder = new SectionNavigationNode(section.Label, section.Url, section.Isolated, [], parent);
+		var placeholder = new SectionNavigationNode(section.Label, section.Url, section.Isolated, section.Dropdown, [], parent);
 		var children = BuildV2Items(section.Children, nodes, placeholder, sitePrefix);
-		return new SectionNavigationNode(section.Label, section.Url, section.Isolated, children, parent);
+		return new SectionNavigationNode(section.Label, section.Url, section.Isolated, section.Dropdown, children, parent);
 	}
 
 	private static INavigationItem? CreateIsland(

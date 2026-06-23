@@ -102,6 +102,12 @@ public static class NavigationItemExtensions
 		return navigationByOrder.ToFrozenDictionary();
 	}
 
+	public static void AddNavigationFileLookups(
+		this INavigationItem rootItem,
+		ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup
+	) =>
+		AddNavigationFileLookupsRecursive(rootItem, navigationDocumentationFileLookup);
+
 	/// <summary>
 	/// Recursively builds both NavigationDocumentationFileLookup and NavigationIndexedByOrder in a single traversal,
 	/// also collecting a URL-to-file map used by the second pass to resolve V2 page: entries.
@@ -134,6 +140,7 @@ public static class NavigationItemExtensions
 					_ = navigationDocumentationFileLookup.TryAdd(documentationFileIndex.Model, documentationFileNode);
 					_ = navigationByOrder.TryAdd(documentationFileIndex.NavigationIndex, documentationFileIndex);
 					_ = urlToFile.TryAdd(documentationFileNode.Url, documentationFileIndex.Model);
+					_ = urlToFile.TryAdd(documentationFileIndex.Url, documentationFileIndex.Model);
 				}
 				foreach (var child in documentationFileNode.NavigationItems)
 					BuildNavigationLookupsRecursive(child, navigationDocumentationFileLookup, navigationByOrder, urlToFile);
@@ -142,6 +149,29 @@ public static class NavigationItemExtensions
 				_ = navigationByOrder.TryAdd(node.NavigationIndex, node);
 				foreach (var child in node.NavigationItems)
 					BuildNavigationLookupsRecursive(child, navigationDocumentationFileLookup, navigationByOrder, urlToFile);
+				break;
+		}
+	}
+
+	private static void AddNavigationFileLookupsRecursive(
+		INavigationItem item,
+		ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup)
+	{
+		switch (item)
+		{
+			case CrossLinkNavigationLeaf:
+				break;
+			case ILeafNavigationItem<IDocumentationFile> documentationFileLeaf:
+				_ = navigationDocumentationFileLookup.TryAdd(documentationFileLeaf.Model, documentationFileLeaf);
+				break;
+			case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationFileNode:
+				_ = navigationDocumentationFileLookup.TryAdd(documentationFileNode.Index.Model, documentationFileNode);
+				foreach (var child in documentationFileNode.NavigationItems)
+					AddNavigationFileLookupsRecursive(child, navigationDocumentationFileLookup);
+				break;
+			case INodeNavigationItem<INavigationModel, INavigationItem> node:
+				foreach (var child in node.NavigationItems)
+					AddNavigationFileLookupsRecursive(child, navigationDocumentationFileLookup);
 				break;
 		}
 	}

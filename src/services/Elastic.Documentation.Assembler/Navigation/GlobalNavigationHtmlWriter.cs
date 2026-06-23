@@ -140,7 +140,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			_logger.LogInformation("Rendering V2 island navigation: {IslandLabel} ({IslandId})", island.Label, island.Id);
 
 			var wrapper = new SectionNavigationV2Wrapper(
-				new NavigationSection(island.Id, island.Label, "", false, island.NavigationItems),
+				new NavigationSection(island.Id, island.Label, "", false, false, island.NavigationItems),
 				navV2
 			);
 			var model = new NavigationViewModel
