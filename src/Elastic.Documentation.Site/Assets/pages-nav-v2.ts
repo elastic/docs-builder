@@ -746,7 +746,9 @@ function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
  */
 function markCurrentPage(nav: HTMLElement) {
     if (isOnSectionRootPage(nav)) {
-        $$optional('.current', nav).forEach((el) => el.classList.remove('current'))
+        $$optional('.current', nav).forEach((el) =>
+            el.classList.remove('current')
+        )
         return
     }
     markCurrentPageForPath(nav, window.location.pathname)
