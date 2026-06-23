@@ -159,7 +159,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 				IsNavV2 = true,
 				IsIsolatedSection = true,
 				SectionUrl = null,
-				BackArrowUrl = backArrowUrl
+				BackArrowUrl = backArrowUrl,
+				BackArrowLabel = island.ParentSection.Label
 			};
 
 			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
