@@ -111,27 +111,47 @@ body {
 		}
 	}
 
-	.sidebar {
-		/* Pages nav: column layout; scroll lives in .pages-nav-menu (see _TocTree.cshtml). */
-		#pages-nav.sidebar-nav {
-			@apply sticky top-(--offset-top);
+	.sidebar:has(#pages-nav) {
+		@media (width >= 768px) {
 			display: flex;
 			flex-direction: column;
+			align-self: start;
 			min-height: 0;
 			max-height: calc(100vh - var(--offset-top));
 			overflow: hidden;
-			transition:
-				top 0.3s ease,
-				max-height 0.3s ease;
+		}
+	}
+
+	.sidebar:has(#toc-nav) {
+		@media (width >= 768px) {
+			display: flex;
+			flex-direction: column;
+			align-self: start;
+			min-height: 0;
+			max-height: calc(100vh - var(--offset-top));
+			overflow: hidden;
+		}
+	}
+
+	.sidebar {
+
+		/* Pages nav: sticky on aside; scroll clipped in .pages-nav-menu (not full tree height). */
+		#pages-nav.sidebar-nav {
+			display: flex;
+			flex: 1 1 auto;
+			flex-direction: column;
+			min-height: 0;
+			max-height: 100%;
+			overflow: hidden;
 		}
 
-		.sidebar-nav:not(#pages-nav) {
-			@apply sticky top-(--offset-top) overflow-y-auto;
-			max-height: calc(100vh - var(--offset-top));
+		/* In-page TOC: sticky on aside.sidebar (see _TableOfContents.cshtml); scroll here. */
+		#toc-nav.sidebar-nav {
+			min-height: 0;
+			height: 100%;
+			max-height: 100%;
+			overflow-y: auto;
 			scrollbar-gutter: stable;
-			transition:
-				top 0.3s ease,
-				max-height 0.3s ease;
 		}
 
 		/* Shared by V1 and V2 base. Hover ink: V1 pages tree + non-pages sidebars only — Nav V2 keeps color on hover (see #pages-nav nav[data-nav-v2]). */
@@ -141,7 +161,7 @@ body {
 		}
 
 		#pages-nav .pages-nav-menu > ul .sidebar-link:hover,
-		.sidebar-nav:not(#pages-nav) .sidebar-link:hover {
+		#toc-nav .sidebar-link:hover {
 			@apply text-black;
 		}
 
@@ -229,20 +249,83 @@ body {
 	}
 }
 
-/* Assembler nav V2: layout chrome (sidebar width). Border: default from aside (border-r-grey-20). */
+/* Assembler nav V2: layout chrome (sidebar width). Figma Nav column is 279px (260 content + 19 gutter). */
 @media (width >= 768px) {
-	body:has([data-nav-v2]) div.min-h-screen.grid {
-		grid-template-columns: minmax(0, 280px) 1fr;
+	body:has([data-nav-v2]) div.min-h-screen.grid:has(> .sidebar > #pages-nav) {
+		grid-template-columns: minmax(0, 279px) 1fr;
 	}
 
 	body:has([data-nav-v2])
-		div.grid.w-full.h-full:has(> aside.sidebar:first-child) {
-		grid-template-columns: minmax(0, 280px) 1fr;
+		div.grid.w-full.h-full:has(> aside.sidebar:first-child > #pages-nav) {
+		grid-template-columns: minmax(0, 279px) 1fr;
 	}
 }
 
-body:has([data-nav-v2]) aside.sidebar {
-	max-width: 280px;
+body:has([data-nav-v2]) aside.sidebar:has(#pages-nav) {
+	max-width: 279px;
+	align-self: start;
+	transition: none;
+}
+
+body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
+	align-self: start;
+	transition: none;
+}
+
+/* Figma Nav shell: Search / Back / Content (Top · Subtitle · List). */
+.pages-nav-v2-shell {
+	min-width: 279px;
+}
+
+.pages-nav-v2__search-inner {
+	border-bottom: 1px solid transparent;
+}
+
+.pages-nav-v2__search-inner[data-nav-scrolled] {
+	border-bottom-color: #e3e8f2;
+}
+
+.pages-nav-v2__scroll {
+	scrollbar-width: thin;
+	scrollbar-color: #e3e8f2 transparent;
+	scrollbar-gutter: stable;
+}
+
+.pages-nav-v2__scroll::-webkit-scrollbar {
+	width: 8px;
+}
+
+.pages-nav-v2__scroll::-webkit-scrollbar-thumb {
+	background-color: #e3e8f2;
+	border-radius: 9999px;
+}
+
+.pages-nav-v2__scroll::-webkit-scrollbar-thumb:hover {
+	background-color: #c5cedb;
+}
+
+.pages-nav-v2__content {
+	padding-top: 24px;
+}
+
+/* First Top / Subtitle in scroll: no extra top inset (Figma); siblings get pt-16. */
+.pages-nav-v2__content .docs-sidebar-nav-v2__tree > li > .docs-sidebar-nav-v2__block-top,
+.pages-nav-v2__content .docs-sidebar-nav-v2__tree > li > .docs-sidebar-nav-v2__block-subtitle {
+	margin: 0;
+}
+
+.pages-nav-v2__content .docs-sidebar-nav-v2__tree > li ~ li > .docs-sidebar-nav-v2__block-top {
+	padding-top: 16px;
+}
+
+.pages-nav-v2__content .docs-sidebar-nav-v2__tree > li ~ li > .docs-sidebar-nav-v2__block-subtitle {
+	padding-top: 16px;
+	padding-bottom: 8px;
+}
+
+.pages-nav-v2__content nav[data-nav-v2] ul.docs-sidebar-nav-v2__label-children,
+.pages-nav-v2__content nav[data-nav-v2] ul.docs-sidebar-nav-v2__subsection {
+	gap: 1px;
 }
 
 /* Nav V2: no motion on sidebar column (sticky offset / max-height). */
@@ -250,19 +333,10 @@ body:has([data-nav-v2]) aside.sidebar {
 	transition: none;
 }
 
-/* Sticky header: hairline under search row when nav list is scrolled. */
-#pages-nav #pages-nav-sticky-chrome {
-	border-bottom: 1px solid transparent;
-	transition: none;
-}
+/* Sticky chrome wrapper is unstyled; search row chrome lives on .pages-nav-v2__search-inner. */
 
-#pages-nav #pages-nav-sticky-chrome[data-nav-scrolled] {
-	border-bottom-color: #e3e8f2;
-}
-
-.sidebar #pages-nav .pages-nav-menu {
-	scrollbar-gutter: stable;
-	padding-right: 8px;
+.sidebar #pages-nav .pages-nav-menu.pages-nav-v2__scroll {
+	padding-right: 0;
 }
 
 /* Nav V2: stack list items vertically */
@@ -423,6 +497,11 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
 	line-height: 24px;
 	color: #1c1e23;
 	margin: 16px 0;
+}
+
+#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__block-top.docs-sidebar-nav-v2__label--top,
+#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__block-subtitle.docs-sidebar-nav-v2__label--nested {
+	margin: 0;
 }
 
 /*

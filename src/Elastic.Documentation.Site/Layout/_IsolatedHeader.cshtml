@@ -1,16 +1,19 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @* Fixed chrome + in-flow spacer: sticky was losing the strip under Nav V2 / grid stacking on isolated serve. *@
 <div class="fixed inset-x-0 top-0 z-[60] flex h-12 shrink-0 border-b border-grey-20 bg-ink-navy">
-	<elastic-docs-header title="@(Model.HeaderTitle ?? Model.DocSetName)"
-	                     logo-href="@(Model.Link("/"))"
-	                     github-repository="@(Model.GitRepository)"
-	                     github-link="@(Model.GitHubDocsUrl)"
-	                     git-branch="@(Model.GitBranch)"
-	                     git-commit="@(Model.GitCommitShort)"
-	                     github-ref="@(Model.GitHubRef)"
-	                     branded="@(Model.Branding != null ? "true" : "false")"
-	                     header-bg="@(Model.Branding?.HeaderBg)"
-	                     icon-src="@(Model.BrandingIconStaticPath)">
-	</elastic-docs-header>
+	@* Inner flex-1: the custom element is content-sized by default; unfilled space showed bg-ink-navy as a black bar. *@
+	<div class="min-w-0 flex-1">
+		<elastic-docs-header title="@(Model.HeaderTitle ?? Model.DocSetName)"
+		                     logo-href="@(Model.Link("/"))"
+		                     github-repository="@(Model.GitRepository)"
+		                     github-link="@(Model.GitHubDocsUrl)"
+		                     git-branch="@(Model.GitBranch)"
+		                     git-commit="@(Model.GitCommitShort)"
+		                     github-ref="@(Model.GitHubRef)"
+		                     branded="@(Model.Branding != null ? "true" : "false")"
+		                     header-bg="@(Model.Branding?.HeaderBg)"
+		                     icon-src="@(Model.BrandingIconStaticPath)">
+		</elastic-docs-header>
+	</div>
 </div>
 <div class="h-12 w-full shrink-0 pointer-events-none" aria-hidden="true"></div>

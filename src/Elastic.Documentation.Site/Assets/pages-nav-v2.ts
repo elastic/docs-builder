@@ -52,20 +52,55 @@ function normalizeDocPathname(pathname: string) {
 }
 
 /**
- * Returns true when the current page is the section root URL.
- * Section root pages should not get current-page highlighting in the sidebar
- * because the section URL is a tab target, not a page within the nav tree.
+ * True when the section tab URL is also a normal sidebar link (e.g. Reference index).
  */
-function isOnSectionRootPage(nav: HTMLElement): boolean {
+function sectionRootHasSidebarDestination(nav: HTMLElement): boolean {
     const sectionUrl = nav.dataset.sectionUrl
     if (!sectionUrl) {
         return false
     }
 
+    let pathname: string
+    try {
+        pathname = stripTrailingSlashForNavHref(
+            new URL(sectionUrl, window.location.href).pathname
+        )
+    } catch {
+        return false
+    }
+
     return (
+        nav.querySelector(
+            `a[href="${pathname}"], a[href="${pathname}/"]`
+        ) != null
+    )
+}
+
+/**
+ * Returns true when the current page is the section root URL with no sidebar row for it.
+ * Tab-only section roots stay unhighlighted; roots that appear in the tree (Reference, Extend)
+ * keep normal current-page styling.
+ */
+function isOnSectionRootPage(nav: HTMLElement): boolean {
+    const shell = nav.closest('.pages-nav-v2-shell')
+    if (shell?.dataset.navIsolated === 'true') {
+        return false
+    }
+
+    const sectionUrl = nav.dataset.sectionUrl
+    if (!sectionUrl) {
+        return false
+    }
+
+    const onRoot =
         normalizeDocPathname(window.location.pathname) ===
         normalizeDocPathname(sectionUrl)
-    )
+
+    if (!onRoot) {
+        return false
+    }
+
+    return !sectionRootHasSidebarDestination(nav)
 }
 
 /** Matches {@link markCurrentPage} / {@link expandToCurrentPage} href selectors (not root-normalized). */

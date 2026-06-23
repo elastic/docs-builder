@@ -28,7 +28,7 @@ public class NavigationViewModel
 	/// <summary>When true, the sidebar renders using the V2 nav partial with accordion behaviour.</summary>
 	public bool IsNavV2 { get; init; }
 
-	/// <summary>When true, the sidebar renders a back arrow instead of appearing in the top bar.</summary>
+	/// <summary>YAML <c>isolated: true</c> section (e.g. Extension points): no top-bar tab, no sidebar search.</summary>
 	public bool IsIsolatedSection { get; init; }
 
 	/// <summary>The section's own URL, used by JS to skip current-page highlighting on the section root.</summary>

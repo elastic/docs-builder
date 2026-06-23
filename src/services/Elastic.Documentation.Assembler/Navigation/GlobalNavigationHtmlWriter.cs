@@ -155,7 +155,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 				Htmx = new DefaultHtmxAttributeProvider("/"),
 				BuildType = BuildType.Assembler,
 				IsNavV2 = true,
-				IsIsolatedSection = true,
+				IsIsolatedSection = false,
 				SectionUrl = null,
 				BackArrowUrl = CombineWithSitePrefix(navV2, island.ParentSection.Url)
 			};

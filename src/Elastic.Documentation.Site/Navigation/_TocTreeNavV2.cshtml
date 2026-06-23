@@ -6,11 +6,9 @@
 @inherits RazorSlice<NavigationTreeItem>
 @{
 	var isTopLevel = Model.Level == 0 && Model.SubTree is not LabelNavigationNode;
-	// Inside an island subtree, every link must swap the full page chrome so the sidebar
-	// switches from the parent section's tree to the island's focused tree.
-	var navHxAttrs = Model.IsIslandSubtree
-		? Model.Htmx.GetHxAttributes(hxSwapOob: "#main-container,#secondary-nav", preload: null)
-		: Model.Htmx.GetNavHxAttributes(true, null);
+	// Within an island sidebar, only content + in-page TOC change — not #main-container (avoids flash).
+	// Entering an island from the parent section uses islandHxAttrs below (#pages-nav included once).
+	var navHxAttrs = Model.Htmx.GetNavHxAttributes(hasSameTopLevelGroup: true, preload: null);
 }
 @foreach (var item in Model.SubTree.NavigationItems)
 {
@@ -29,13 +27,13 @@
 		<li class="relative">
 			@if (isTopLevel)
 			{
-				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--top flex items-center px-[12px] py-0 text-sm leading-5 text-[#111C2C]">
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--top docs-sidebar-nav-v2__block-top flex items-center px-3 pb-2 text-base font-bold leading-6 text-[#1c1e23]">
 					<span class="docs-sidebar-nav-v2__nav-text min-w-0 flex-1">@label.NavigationTitle</span>
 				</span>
 			}
 			else
 			{
-				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--nested docs-sidebar-nav-v2__nav-text block px-[12px] py-0 text-xs leading-4 uppercase text-[#A2B1C9]">
+				<span class="docs-sidebar-nav-v2__label docs-sidebar-nav-v2__label--nested docs-sidebar-nav-v2__block-subtitle docs-sidebar-nav-v2__nav-text block px-3 py-2 text-xs font-bold uppercase leading-4 text-[#5a6d8c]">
 					@label.NavigationTitle
 				</span>
 			}
@@ -132,7 +130,9 @@
 	}
 	else if (item is IslandNavigationNode island)
 	{
-		var islandHxAttrs = Model.Htmx.GetHxAttributes(hxSwapOob: "#main-container,#secondary-nav", preload: null);
+		var islandHxAttrs = Model.Htmx.GetHxAttributes(
+			hxSwapOob: "#content-container,#toc-nav,#pages-nav",
+			preload: null);
 		var islandAllHidden = island.NavigationItems.All(n => n.Hidden);
 		<li class="flex flex-wrap group-navigation relative">
 			<div class="peer nav-folder-peer grid w-full grid-cols-1">
