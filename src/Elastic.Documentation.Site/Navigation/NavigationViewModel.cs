@@ -37,5 +37,8 @@ public class NavigationViewModel
 	/// <summary>Back arrow URL for islands — points to the parent section's landing page.</summary>
 	public string? BackArrowUrl { get; init; }
 
+	/// <summary>Back arrow label for islands — describes the parent section destination.</summary>
+	public string? BackArrowLabel { get; init; }
+
 	public BrandingConfiguration? Branding { get; init; }
 }

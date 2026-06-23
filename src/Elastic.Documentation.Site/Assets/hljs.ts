@@ -36,7 +36,7 @@ import swift from 'highlight.js/lib/languages/swift'
 import typescript from 'highlight.js/lib/languages/typescript'
 import xml from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
-import { $$ } from 'select-dom'
+import { $$optional } from 'select-dom'
 
 const languages: Array<{
     name: string
@@ -218,7 +218,7 @@ hljs.addPlugin(mergeHTMLPlugin)
 hljs.configure({ ignoreUnescapedHTML: true })
 
 export function initHighlight() {
-    $$('#markdown-content pre code:not([data-highlighted])').forEach(
+    $$optional('#markdown-content pre code:not([data-highlighted])').forEach(
         hljs.highlightElement
     )
 }

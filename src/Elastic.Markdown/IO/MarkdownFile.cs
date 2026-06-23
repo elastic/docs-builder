@@ -82,6 +82,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		private set => field = value.StripMarkdown();
 	}
 
+	public virtual string? RedirectUrl => null;
+
 
 	//indexed by slug
 	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = [with(StringComparer.OrdinalIgnoreCase)];

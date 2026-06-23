@@ -15,6 +15,7 @@ public class ApplicabilityTryParseTests
 	[InlineData("GA", ProductLifecycle.GenerallyAvailable)]
 	[InlineData("preview", ProductLifecycle.TechnicalPreview)]
 	[InlineData("tech-preview", ProductLifecycle.TechnicalPreview)]
+	[InlineData("experimental", ProductLifecycle.Experimental)]
 	[InlineData("beta", ProductLifecycle.Beta)]
 	[InlineData("deprecated", ProductLifecycle.Deprecated)]
 	[InlineData("removed", ProductLifecycle.Removed)]
@@ -33,6 +34,7 @@ public class ApplicabilityTryParseTests
 	[Theory]
 	[InlineData("ga 8.0", ProductLifecycle.GenerallyAvailable)]
 	[InlineData("beta 9.1.0", ProductLifecycle.Beta)]
+	[InlineData("experimental 9.1.0", ProductLifecycle.Experimental)]
 	[InlineData("preview 10.0+", ProductLifecycle.TechnicalPreview)]
 	public void ValidLifecycleWithVersionReturnsTrueAndParsesCorrectly(string input, ProductLifecycle expectedLifecycle)
 	{

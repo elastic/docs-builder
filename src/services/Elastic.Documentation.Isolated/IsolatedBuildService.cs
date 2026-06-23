@@ -9,6 +9,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
@@ -141,8 +142,11 @@ public class IsolatedBuildService(
 			crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		}
 
+		// Prefetch CDN-hosted release notes for products declared under `release_notes` in docset.yml.
+		var releaseNotesResolver = await ReleaseNotesFetcher.PrefetchAsync(context, logFactory, ctx);
+
 		// always delete output folder on CI
-		var set = new DocumentationSet(context, logFactory, crossLinkResolver);
+		var set = new DocumentationSet(context, logFactory, crossLinkResolver, releaseNotesResolver);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 

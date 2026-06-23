@@ -1729,6 +1729,48 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithMultipleInvalidEntries_ReportsAllInOnePass()
+	{
+		// Arrange: one entry missing its title, another missing its products.
+		// language=yaml
+		var changelog1 =
+			"""
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			""";
+
+		// language=yaml
+		var changelog2 =
+			"""
+			title: Second feature
+			type: feature
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-missing-title.yaml");
+		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-missing-products.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Resolve = true,
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert: both problems are reported in a single run instead of aborting on the first.
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: title"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithResolveAndInvalidProduct_ReturnsError()
 	{
 		// Arrange
@@ -2207,6 +2249,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			bundle:
 			  directory: "{_changelogDir.Replace("\\", "/")}"
 			  output_directory: "{outputDir.Replace("\\", "/")}"
+			  use_local_changelogs: true
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-dir", "changelog.yml");
@@ -3323,6 +3366,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$$"""
 			bundle:
 			  directory: {{Path.Join(root, "changelogs")}}
+			  use_local_changelogs: true
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
@@ -3382,6 +3426,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$$"""
 			bundle:
 			  directory: {{Path.Join(root, "changelogs")}}
+			  use_local_changelogs: true
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
@@ -3432,6 +3477,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var configContent = $"""
 			bundle:
 			  directory: {_changelogDir}
+			  use_local_changelogs: true
 			  profiles:
 			    release:
 			      output: "bundle.yaml"
@@ -3507,6 +3553,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var configContent = $"""
 			bundle:
 			  directory: {_changelogDir}
+			  use_local_changelogs: true
 			  profiles:
 			    release:
 			      output: "bundle.yaml"

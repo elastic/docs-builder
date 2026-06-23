@@ -13,6 +13,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
@@ -121,8 +122,7 @@ async Task ScrubAndCopyToPublicBucket(IAmazonS3 s3Client, string sourceBucket, s
 {
 	context.Logger.LogDebug("Scrubbing {Key} to public bucket", key);
 
-	var fileName = Path.GetFileName(key);
-	if (string.Equals(fileName, "registry-index.json", StringComparison.OrdinalIgnoreCase))
+	if (RegistryKey.IsRegistry(key))
 	{
 		await CopyPassThrough(s3Client, sourceBucket, key, context);
 		return;
@@ -181,7 +181,7 @@ async Task CopyPassThrough(IAmazonS3 s3Client, string sourceBucket, string key, 
 
 async Task<string> ScrubContent(string key, string content, ILambdaContext context)
 {
-	var isBundlePath = key.Contains("/bundles/", StringComparison.OrdinalIgnoreCase);
+	var isBundlePath = key.Contains("/bundle/", StringComparison.OrdinalIgnoreCase);
 
 	if (isBundlePath)
 		return await ScrubBundle(content, context);

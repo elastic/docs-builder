@@ -4283,99 +4283,123 @@ nav:
   - section: Reference
     url: /reference/
     children:
-    - toc: docs-content://reference/security
-    - toc: docs-content://reference/observability
-    - toc: docs-content://reference/elasticsearch-clients
-    - toc: docs-content://reference/ingestion-tools
-    - toc: docs-content://reference/fleet
-    - toc: docs-content://reference/apm
-    - toc: docs-content://reference/apm-agents
-    - toc: docs-content://reference/machine-learning
-    - toc: docs-content://reference/glossary
-    - toc: elasticsearch://reference/elasticsearch
-    - toc: elasticsearch://reference/elasticsearch-plugins
-    - toc: elasticsearch://reference/community-contributed
-    - toc: kibana://reference
-    - group: Cloud
+    - label: Elasticsearch
+      children:
+      - toc: elasticsearch://reference/elasticsearch
+      - toc: elasticsearch://reference/elasticsearch-plugins
+      - toc: elasticsearch://reference/community-contributed
+      - toc: elasticsearch://reference/aggregations
+      - toc: elasticsearch://reference/enrich-processor
+      - toc: elasticsearch://reference/query-languages
+      - toc: elasticsearch://reference/scripting-languages
+      - toc: elasticsearch://reference/text-analysis
+      - page: docs-content://explore-analyze/numeral-formatting.md
+        title: Numeral formatting
+
+    - label: Kibana
+      children:
+      - toc: kibana://reference
+
+    - label: Security
+      children:
+      - toc: docs-content://reference/security
+
+    - label: Observability
+      children:
+      - toc: docs-content://reference/observability
+      - toc: docs-content://reference/fleet
+      - toc: docs-content://reference/apm
+      - toc: docs-content://reference/apm-agents
+      - group: APM agents
+        children:
+        - toc: apm-k8s-attacher://reference
+        - toc: apm-aws-lambda://reference
+        - toc: apm-agent-dotnet://reference
+        - toc: apm-agent-go://reference
+        - toc: apm-agent-java://reference
+        - toc: apm-agent-nodejs://reference
+        - toc: apm-agent-php://reference
+        - toc: apm-agent-python://reference
+        - toc: apm-agent-ruby://reference
+        - toc: apm-agent-rum-js://reference
+      - group: OpenTelemetry
+        children:
+        - toc: opentelemetry://reference
+          children:
+          - toc: opentelemetry://reference/motlp
+          - toc: opentelemetry://reference/edot-cloud-forwarder
+            children:
+            - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
+            - toc: edot-cloud-forwarder-azure://reference/edot-cf-azure
+            - toc: opentelemetry://reference/edot-cloud-forwarder/gcp
+        - toc: elastic-agent://reference/edot-collector
+        - toc: apm-agent-android://reference/edot-android
+        - toc: elastic-otel-dotnet://reference/edot-dotnet
+        - toc: apm-agent-ios://reference/edot-ios
+        - toc: elastic-otel-java://reference/edot-java
+        - toc: elastic-otel-node://reference/edot-node
+        - toc: elastic-otel-php://reference/edot-php
+        - toc: elastic-otel-python://reference/edot-python
+        - toc: elastic-otel-rum-js://reference/edot-browser
+      - group: ECS Logging
+        children:
+        - toc: ecs-logging://reference
+          children:
+          - toc: ecs-dotnet://reference
+          - toc: ecs-logging-go-logrus://reference
+          - toc: ecs-logging-go-zap://reference
+          - toc: ecs-logging-go-zerolog://reference
+          - toc: ecs-logging-java://reference
+          - toc: ecs-logging-nodejs://reference
+          - toc: ecs-logging-php://reference
+          - toc: ecs-logging-python://reference
+          - toc: ecs-logging-ruby://reference
+
+    - label: Machine Learning
+      children:
+      - toc: docs-content://reference/machine-learning
+
+    - label: Ingest
+      children:
+      - toc: docs-content://reference/ingestion-tools
+      - toc: beats://reference
+      - toc: logstash://reference
+      - toc: integration-docs://reference
+      - toc: elasticsearch-hadoop://reference
+      - toc: elastic-serverless-forwarder://reference
+      - island: Logstash plugins
+        toc: logstash-docs-md://lsr
+      - island: Logstash versioned plugins
+        toc: logstash-docs-md://vpr
+
+    - label: Clients & SDKs
+      children:
+      - toc: docs-content://reference/elasticsearch-clients
+      - group: Elasticsearch clients
+        children:
+        - toc: elasticsearch-java://reference
+        - toc: elasticsearch-js://reference
+        - toc: elasticsearch-dsl-js://reference
+        - toc: elasticsearch-net://reference
+        - toc: elasticsearch-php://reference
+        - toc: elasticsearch-py://reference
+        - toc: elasticsearch-ruby://reference
+        - toc: elasticsearch-rs://reference
+        - toc: eland://reference
+        - toc: go-elasticsearch://reference
+        - toc: curator://reference
+      - toc: search-ui://reference
+
+    - label: Cloud & deployment
       children:
       - toc: cloud://reference
       - toc: cloud-on-k8s://reference
-    - group: Elasticsearch clients
+      - toc: ecctl://reference
+
+    - label: Standards
       children:
-      - toc: elasticsearch-java://reference
-      - toc: elasticsearch-js://reference
-      - toc: elasticsearch-dsl-js://reference
-      - toc: elasticsearch-net://reference
-      - toc: elasticsearch-php://reference
-      - toc: elasticsearch-py://reference
-      - toc: elasticsearch-ruby://reference
-      - toc: elasticsearch-rs://reference
-      - toc: eland://reference
-      - toc: go-elasticsearch://reference
-      - toc: curator://reference
-    - group: APM
-      children:
-      - toc: apm-k8s-attacher://reference
-      - toc: apm-aws-lambda://reference
-      - toc: apm-agent-dotnet://reference
-      - toc: apm-agent-go://reference
-      - toc: apm-agent-java://reference
-      - toc: apm-agent-nodejs://reference
-      - toc: apm-agent-php://reference
-      - toc: apm-agent-python://reference
-      - toc: apm-agent-ruby://reference
-      - toc: apm-agent-rum-js://reference
-    - group: OpenTelemetry
-      children:
-      - toc: opentelemetry://reference
-        children:
-        - toc: opentelemetry://reference/motlp
-        - toc: opentelemetry://reference/edot-cloud-forwarder
-          children:
-          - toc: edot-cloud-forwarder-aws://reference/edot-cf-aws
-          - toc: edot-cloud-forwarder-azure://reference/edot-cf-azure
-          - toc: opentelemetry://reference/edot-cloud-forwarder/gcp
-      - toc: elastic-agent://reference/edot-collector
-      - toc: apm-agent-android://reference/edot-android
-      - toc: elastic-otel-dotnet://reference/edot-dotnet
-      - toc: apm-agent-ios://reference/edot-ios
-      - toc: elastic-otel-java://reference/edot-java
-      - toc: elastic-otel-node://reference/edot-node
-      - toc: elastic-otel-php://reference/edot-php
-      - toc: elastic-otel-python://reference/edot-python
-      - toc: elastic-otel-rum-js://reference/edot-browser
-    - group: ECS Logging
-      children:
-      - toc: ecs-logging://reference
-        children:
-        - toc: ecs-dotnet://reference
-        - toc: ecs-logging-go-logrus://reference
-        - toc: ecs-logging-go-zap://reference
-        - toc: ecs-logging-go-zerolog://reference
-        - toc: ecs-logging-java://reference
-        - toc: ecs-logging-nodejs://reference
-        - toc: ecs-logging-php://reference
-        - toc: ecs-logging-python://reference
-        - toc: ecs-logging-ruby://reference
-    - toc: beats://reference
-    - toc: logstash://reference
-    - toc: integration-docs://reference
-    - toc: elasticsearch-hadoop://reference
-    - toc: elastic-serverless-forwarder://reference
-    - toc: ecs://reference
-    - toc: search-ui://reference
-    - toc: elasticsearch://reference/aggregations
-    - toc: ecctl://reference
-    - toc: elasticsearch://reference/enrich-processor
-    - toc: elasticsearch://reference/query-languages
-    - toc: elasticsearch://reference/scripting-languages
-    - page: docs-content://explore-analyze/numeral-formatting.md
-      title: Numeral formatting
-    - toc: elasticsearch://reference/text-analysis
-    - island: Logstash plugins
-      toc: logstash-docs-md://lsr
-    - island: Logstash versioned plugins
-      toc: logstash-docs-md://vpr
+      - toc: ecs://reference
+      - toc: docs-content://reference/glossary
 
   - section: Release notes
     url: /release-notes/
@@ -4450,9 +4474,8 @@ nav:
     children:
     - toc: docs-content://troubleshoot
 
-  - section: Extension points
+  - section: Extend
     url: /extend/
-    isolated: true
     children:
     - toc: docs-content://extend
       children:

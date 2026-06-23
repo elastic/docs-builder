@@ -78,14 +78,36 @@ public static class ApplicabilityRenderer
 			}
 		}
 
-		// If we've exhausted all options (none had displayable data), use the first one.
-		// Only show "Planned" when the first applicability is actually future/unreleased (has a version spec that is not yet released).
-		// When the first applicability has no version (null/AllVersionsSpec), it means GA for all versions - keep badge text empty.
+		// If we've exhausted all options (none had displayable data), pick a fallback.
+		// When the highest-version applicability is future/unreleased, prefer the "previous lifecycle"
+		// (a lower-version applicability that is current or has no version) over a synthesized "Planned" badge.
 		if (badgeData is null && firstBadgeData is not null && firstApplicability is not null && versioningSystem.IsVersioned())
 		{
 			var versionSpec = firstApplicability.Version;
 			var isFutureVersion = versionSpec is not null && versionSpec != AllVersionsSpec.Instance && versionSpec.Min > versioningSystem.Current;
-			badgeData = isFutureVersion ? firstBadgeData with { BadgeLifecycleText = "Planned" } : firstBadgeData;
+
+			if (isFutureVersion)
+			{
+				var previousLifecycle = sortedApplicabilities.FirstOrDefault(a =>
+					a != firstApplicability &&
+					(a.Version is null || a.Version == AllVersionsSpec.Instance ||
+					 a.Version.Min <= versioningSystem.Current));
+
+				if (previousLifecycle is not null)
+					badgeData = GetBadgeData(previousLifecycle, versioningSystem, allApplications);
+				else
+				{
+					var fallbackText = firstApplicability.Lifecycle switch
+					{
+						ProductLifecycle.Deprecated => "Deprecation planned",
+						ProductLifecycle.Removed => "Removal planned",
+						_ => "Planned"
+					};
+					badgeData = firstBadgeData with { BadgeLifecycleText = fallbackText, ShowLifecycleName = false };
+				}
+			}
+			else
+				badgeData = firstBadgeData;
 		}
 
 		badgeData ??= GetBadgeData(sortedApplicabilities.First(), versioningSystem, allApplications);
@@ -415,6 +437,7 @@ public static class ApplicabilityRenderer
 				badgeText = applicability.Lifecycle switch
 				{
 					ProductLifecycle.TechnicalPreview => "Planned",
+					ProductLifecycle.Experimental => "Planned",
 					ProductLifecycle.Beta => "Planned",
 					ProductLifecycle.GenerallyAvailable => "Planned",
 					ProductLifecycle.Deprecated => "Deprecation planned",

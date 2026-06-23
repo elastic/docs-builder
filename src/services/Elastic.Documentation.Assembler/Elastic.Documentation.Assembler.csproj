@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Integrations\Elastic.Documentation.Integrations.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Deploying\Elastic.Documentation.Deploying.csproj" />
   </ItemGroup>
 
 </Project>

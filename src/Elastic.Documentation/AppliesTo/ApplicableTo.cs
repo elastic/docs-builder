@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 
 namespace Elastic.Documentation.AppliesTo;
 
@@ -134,6 +135,7 @@ public record ApplicableTo
 	private static string LifecycleName(ProductLifecycle lc) => lc switch
 	{
 		ProductLifecycle.TechnicalPreview => "preview",
+		ProductLifecycle.Experimental => "experimental",
 		ProductLifecycle.Beta => "beta",
 		ProductLifecycle.GenerallyAvailable => "ga",
 		ProductLifecycle.Deprecated => "deprecated",

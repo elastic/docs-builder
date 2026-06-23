@@ -26,6 +26,8 @@ public class CodexGitRepository(ILoggerFactory logFactory, IDiagnosticsCollector
 
 	public string GetCurrentCommit() => Capture("git", "rev-parse", "HEAD");
 
+	public bool HasHead() => !string.IsNullOrEmpty(CaptureQuiet("git", "rev-parse", "--verify", "HEAD"));
+
 	public void Init() => ExecIn(EnvironmentVars, "git", "init");
 
 	public bool IsInitialized() => Directory.Exists(Path.Join(WorkingDirectory.FullName, ".git"));

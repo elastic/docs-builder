@@ -77,6 +77,124 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 	}
 
 	[Fact]
+	public async Task RenderChangelogs_WithMultipleTypes_DoesNotIncludeCrossFileLinksInIndex()
+	{
+		// Arrange
+		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(changelogDir);
+
+		// Create test changelog files with different types to trigger separated files
+		// language=yaml
+		var featureChangelog =
+			"""
+			title: Test feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			- "100"
+			""";
+
+		// language=yaml
+		var deprecationChangelog =
+			"""
+			title: Deprecated API
+			type: deprecation
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			- "200"
+			""";
+
+		// language=yaml
+		var highlightChangelog =
+			"""
+			title: Highlighted feature
+			type: feature
+			highlight: true
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			- "300"
+			""";
+
+		var featureFile = FileSystem.Path.Join(changelogDir, "feature.yaml");
+		var deprecationFile = FileSystem.Path.Join(changelogDir, "deprecation.yaml");
+		var highlightFile = FileSystem.Path.Join(changelogDir, "highlight.yaml");
+
+		await FileSystem.File.WriteAllTextAsync(featureFile, featureChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(deprecationFile, deprecationChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(highlightFile, highlightChangelog, TestContext.Current.CancellationToken);
+
+		// Create bundle file
+		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
+
+		// language=yaml
+		var bundleContent =
+			$"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - file:
+			      name: feature.yaml
+			      checksum: {ComputeSha1(featureChangelog)}
+			  - file:
+			      name: deprecation.yaml
+			      checksum: {ComputeSha1(deprecationChangelog)}
+			  - file:
+			      name: highlight.yaml
+			      checksum: {ComputeSha1(highlightChangelog)}
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+
+		var input = new RenderChangelogsArguments
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Output = outputDir,
+			Title = "9.3.0"
+		};
+
+		// Act
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		// Verify index.md exists but does NOT contain cross-file links
+		var indexFile = FileSystem.Path.Join(outputDir, "9.3.0", "index.md");
+		FileSystem.File.Exists(indexFile).Should().BeTrue();
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+
+		indexContent.Should().Contain("## 9.3.0");
+		indexContent.Should().Contain("Test feature");
+		indexContent.Should().Contain("Highlighted feature");
+
+		// Verify NO cross-file links are present
+		indexContent.Should().NotContain("[Highlights]");
+		indexContent.Should().NotContain("[Deprecations]");
+		indexContent.Should().NotContain("/release-notes/");
+
+		// Verify individual separated files are still generated
+		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.3.0", "deprecations.md");
+		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
+		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current.CancellationToken);
+		deprecationsContent.Should().Contain("Deprecated API");
+
+		var highlightsFile = FileSystem.Path.Join(outputDir, "9.3.0", "highlights.md");
+		FileSystem.File.Exists(highlightsFile).Should().BeTrue();
+		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current.CancellationToken);
+		highlightsContent.Should().Contain("Highlighted feature");
+	}
+
+	[Fact]
 	public async Task RenderChangelogs_WithMultipleBundles_MergesAndRenders()
 	{
 		// Arrange

@@ -46,7 +46,7 @@ export const headerButtonCss = (euiTheme: EuiThemeComputed) => css`
 interface DeploymentInfoProps {
     gitBranch: string
     gitCommit: string
-    githubRepository: string
+    githubRepository?: string
     githubRef?: string
 }
 
@@ -141,12 +141,14 @@ export const DeploymentInfo = ({
                     icon={commitSvg}
                     href={links.commit}
                 />
-                <DeploymentInfoRow
-                    label="Repository"
-                    value={githubRepository}
-                    icon={githubSvg}
-                    href={links.repository}
-                />
+                {githubRepository != null && (
+                    <DeploymentInfoRow
+                        label="Repository"
+                        value={githubRepository}
+                        icon={githubSvg}
+                        href={links.repository}
+                    />
+                )}
             </div>
         </EuiPopover>
     )

@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Versions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
@@ -44,6 +45,35 @@ public class SettingsViewModel
 
 	public string RenderSupportedOnBadges(ApplicableTo? appliesTo) =>
 		RenderAppliesToPlacement(appliesTo, ApplicabilityBadgePlacement.SupportedOnRow);
+
+	/// <summary>
+	/// Returns <c>true</c> when every entry in <c>applies_to.stack</c> targets a version greater
+	/// than the currently released stack version — i.e. the stack badge would render as
+	/// "Planned" because the setting does not exist in any released stack version yet.
+	/// In that case the "Supported on" line is suppressed: any deployment badge (ECH,
+	/// Self-managed, ECE, ECK) that claims general availability today is misleading,
+	/// since those surfaces run the stack and the setting has not shipped.
+	/// </summary>
+	public bool IsStackFullyPlanned(ApplicableTo? appliesTo)
+	{
+		if (appliesTo?.Stack is not { Count: > 0 } stack)
+			return false;
+
+		var stackVersion = VersionsConfig.GetVersioningSystem(VersioningSystemId.Stack);
+		if (!stackVersion.IsVersioned())
+			return false;
+
+		foreach (var applicability in stack)
+		{
+			var versionSpec = applicability.Version;
+			if (versionSpec is null || versionSpec == AllVersionsSpec.Instance)
+				return false;
+			if (versionSpec.Min <= stackVersion.Current)
+				return false;
+		}
+
+		return true;
+	}
 
 	private string RenderAppliesToPlacement(ApplicableTo? appliesTo, ApplicabilityBadgePlacement placement)
 	{

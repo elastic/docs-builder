@@ -196,14 +196,18 @@ public class DocumentationSetNavigation<TModel>
 	private TModel? CreateDocumentationFile(
 		IFileInfo fileInfo,
 		IFileSystem fileSystem,
-		IDocumentationSetContext context,
-		string fullPath
+		IDocumentationSetContext context
 	)
 	{
 		var relativePath = Path.GetRelativePath(context.DocumentationSourceDirectory.FullName, fileInfo.FullName);
 		var documentationFile = _factory.TryCreateDocumentationFile(fileInfo, fileSystem);
 		if (documentationFile == null)
-			context.EmitError(context.ConfigurationPath, $"File navigation '{relativePath}' could not be created. {fullPath}");
+		{
+			var reason = fileInfo.Exists
+				? "the file exists but is not a valid Markdown document"
+				: "the file does not exist on disk";
+			context.EmitError(context.ConfigurationPath, $"Table of contents references '{relativePath}' but {reason}.");
+		}
 
 		return documentationFile;
 	}
@@ -248,7 +252,7 @@ public class DocumentationSetNavigation<TModel>
 			DetectionRuleRef ruleRef => ruleRef.FileInfo,
 			_ => ResolveFileInfo(context, fullPath)
 		};
-		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context, fullPath);
+		var documentationFile = CreateDocumentationFile(fileInfo, context.ReadFileSystem, context);
 		if (documentationFile == null)
 			return null;
 
@@ -484,7 +488,14 @@ public class DocumentationSetNavigation<TModel>
 				children.Add(childNav);
 		}
 
-		// All root commands + namespaces from the schema always follow
+		// Shortcut alias pages first, then commands and namespaces
+		foreach (var shortcut in schema.Shortcuts ?? [])
+		{
+			var aliasNav = MakeFileLeaf(docSourceDir, virtualRoot, [shortcut.From], isNamespace: true, childIndex++, folderNavigation, homeAccessor, context);
+			if (aliasNav is not null)
+				children.Add(aliasNav);
+		}
+
 		foreach (var cmd in schema.Commands)
 		{
 			var cmdNav = MakeFileLeaf(docSourceDir, virtualRoot, [cmd.Name], isNamespace: false, childIndex++, folderNavigation, homeAccessor, context);
@@ -532,7 +543,7 @@ public class DocumentationSetNavigation<TModel>
 			children.Add(nsIndexNav);
 
 		// Namespace commands
-		foreach (var cmd in ns.Commands)
+		foreach (var cmd in ns.Commands ?? [])
 		{
 			var cmdSegments = segments.Append(cmd.Name).ToArray();
 			var cmdNav = MakeFileLeaf(docSourceDir, virtualRoot, cmdSegments, isNamespace: false, childIndex++, nsFolderNav, homeAccessor, context);
@@ -541,7 +552,7 @@ public class DocumentationSetNavigation<TModel>
 		}
 
 		// Sub-namespaces
-		foreach (var subNs in ns.Namespaces)
+		foreach (var subNs in ns.Namespaces ?? [])
 		{
 			var subSegments = segments.Append(subNs.Segment).ToArray();
 			var subNav = BuildNamespaceNavigation(docSourceDir, virtualRoot, subNs, subSegments, childIndex++, nsFolderNav, homeAccessor, context);

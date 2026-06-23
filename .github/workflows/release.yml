@@ -3,10 +3,8 @@ name: Release
 on:
   workflow_dispatch: 
     
-permissions:
-  contents: read
-  packages: write
-    
+permissions: {}
+
 concurrency:
   group: release-drafter
 
@@ -22,11 +20,11 @@ jobs:
     steps:
       - name: Verify branch
         run: |
-          if [[ "${{ github.ref }}" != refs/heads/main ]]; then
+          if [[ "${GITHUB_REF}" != refs/heads/main ]]; then
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@c2e2804cc59f45f57076a99af580d0fedb697927 # v7.3.0
+      - uses: release-drafter/release-drafter@693d20e7c1ce1a81d3a41962f85914253b518449 # v7.3.1
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -35,7 +33,7 @@ jobs:
       - name: Create tag
         uses: actions/github-script@v9
         with:
-          script: |
+          script: | # zizmor: ignore[template-injection] tag_name from release-drafter on main
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -47,20 +45,24 @@ jobs:
     needs: 
       - release-drafter
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
         
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -70,6 +72,8 @@ jobs:
         run: ./build.sh publishcontainers
         
   build-link-index-lambda:
+    permissions: 
+      contents: read
     needs: 
       - release-drafter
     uses: ./.github/workflows/build-link-index-updater-lambda.yml
@@ -77,6 +81,8 @@ jobs:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
   build-changelog-scrubber-lambda:
+    permissions:
+      contents: read
     needs:
       - release-drafter
     uses: ./.github/workflows/build-changelog-scrubber-lambda.yml
@@ -106,7 +112,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -147,7 +153,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-changelog-scrubber-deployer
           aws-region: us-east-1
@@ -182,9 +188,10 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
       - name: 'Windows only, set TEMP to the same drive'
         if: ${{ matrix.os == 'windows-latest' }}
         #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
