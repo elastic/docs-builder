@@ -79,7 +79,7 @@ versioning_systems:
     current: 2.0.1
   edot-android:
     base: 1.0
-    current: 1.6.0
+    current: 1.7.0
   edot-browser:
     base: 0.1
     current: 0.3.0
