@@ -97,6 +97,7 @@ public class CodexBuildService(
 		{
 			var firstContext = buildContexts[0].BuildContext;
 			firstContext.Endpoints.BuildType = "codex";
+			firstContext.Endpoints.Environment = environment; // from codex.yml; ensures the correct index (e.g. internal)
 			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext).ToArray();
 			var startTasks = sharedExporters.Select(async e => await e.StartAsync(ctx));
 			await Task.WhenAll(startTasks);
