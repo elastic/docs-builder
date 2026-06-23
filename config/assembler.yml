@@ -40,6 +40,7 @@ environments:
     path_prefix: docs
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      NAV_V2: true
       WEBSITE_SEARCH: true
     website_search_url: http://localhost:4078/elastic-website-search.js
   preview:
@@ -50,6 +51,7 @@ environments:
       enabled: false
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      NAV_V2: true
   air-gapped:
     uri: http://localhost:8080
     path_prefix: docs

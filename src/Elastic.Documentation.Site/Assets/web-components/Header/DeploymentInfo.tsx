@@ -273,11 +273,12 @@ const GITHUB_BASE = 'https://github.com'
 
 function getDeploymentLinks(
     githubRepository: string | undefined,
-    gitBranch: string,
-    gitCommit: string,
+    gitBranch: string | undefined,
+    gitCommit: string | undefined,
     githubRef?: string
 ): { ref?: string; branch?: string; commit?: string; repository?: string } {
-    if (!githubRepository) {
+    const raw = (githubRepository ?? '').trim()
+    if (!raw) {
         return {
             ref: undefined,
             branch: undefined,
@@ -285,18 +286,18 @@ function getDeploymentLinks(
             repository: undefined,
         }
     }
-    // Backend passes full org/repo; fallback only fires for bare names (shouldn't occur)
-    const repo = githubRepository.includes('/')
-        ? githubRepository
-        : `elastic/${githubRepository}`
+    const repo = raw.includes('/') ? raw : `elastic/${raw}`
     const base = `${GITHUB_BASE}/${repo}`
+    const branchName = (gitBranch ?? '').trim() || 'main'
+    const commitSha = (gitCommit ?? '').trim()
     const pull = githubRef != null ? parseGitHubRef(githubRef) : undefined
     const pullUrl =
         pull?.kind === 'pull' ? `${base}/pull/${pull.number}` : undefined
     return {
         ref: pullUrl,
-        branch: `${base}/tree/${gitBranch}`,
-        commit: `${base}/commit/${gitCommit}`,
+        branch: `${base}/tree/${encodeURIComponent(branchName)}`,
+        commit:
+            commitSha.length > 0 ? `${base}/commit/${commitSha}` : `${base}/commits`,
         repository: base,
     }
 }
