@@ -542,12 +542,12 @@ internal sealed partial class ChangelogCommands(
 
 	/// <summary>Aggregate changelog entries matching a filter into a single bundle YAML.</summary>
 	/// <remarks>
-	/// <para><b>Profile-based commands</b> (<c>bundle &lt;profile&gt; &lt;version|report&gt; [report] [--plan]</c>): filters, paths, repo metadata,
-	/// resolve, description, hide-features, and release-date behaviour come from <c>changelog.yml</c>. Only <c>--plan</c> is supported
+	/// <para><b>Profile-based commands</b> (<c>bundle &lt;profile&gt; &lt;version|report&gt; [report] [--plan] [--release-date YYYY-MM-DD]</c>): filters, paths, repo metadata,
+	/// resolve, description, hide-features, and release-date auto-population come from <c>changelog.yml</c>. Only <c>--plan</c> and <c>--release-date</c> are supported
 	/// alongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in
 	/// configuration instead. Config is auto-discovered from <c>./changelog.yml</c> or <c>./docs/changelog.yml</c>. Use
-	/// <c>bundle.release_dates</c> or <c>bundle.profiles.&lt;name&gt;.release_dates</c> to control auto-population;
-	/// <c>--release-date</c> and <c>--no-release-date</c> require option-based mode.</para>
+	/// <c>bundle.release_dates</c> or <c>bundle.profiles.&lt;name&gt;.release_dates</c> to suppress auto-population; pass <c>--release-date</c> to override with an explicit date.
+	/// <c>--no-release-date</c> is not supported in profile-based commands.</para>
 	/// <para><b>Option-based mode</b> (no profile argument): exactly one filter must be specified —
 	/// <c>--all</c>, <c>--input-products</c>, <c>--prs</c>, <c>--issues</c>, <c>--release-version</c>, or <c>--report</c>.</para>
 	/// </remarks>
@@ -560,7 +560,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="description">Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides <c>bundle.description</c> from config. In option-based mode, placeholders require --output-products. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.description</c> or <c>bundle.profiles.&lt;name&gt;.description</c>.</param>
 	/// <param name="hideFeatures">Feature IDs (comma-separated) or a path to a newline-delimited file. Entries with matching feature-id values are hidden when the bundle is rendered. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.hide_features</c>.</param>
 	/// <param name="noReleaseDate">Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.release_dates: false</c> or <c>bundle.profiles.&lt;name&gt;.release_dates: false</c>.</param>
-	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
+	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. Supported in profile-based commands as a runtime override; auto-population is controlled by <c>bundle.release_dates</c> or <c>bundle.profiles.&lt;name&gt;.release_dates</c> in configuration.</param>
 	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
 	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output</c>.</param>
@@ -862,17 +862,11 @@ internal sealed partial class ChangelogCommands(
 			return 1;
 		}
 
-		// Profile mode doesn't support release date CLI flags (use YAML configuration instead)
-		if (isProfileMode && (noReleaseDate || !string.IsNullOrWhiteSpace(releaseDate)))
+		// Profile mode doesn't support --no-release-date (use YAML configuration instead)
+		if (isProfileMode && noReleaseDate)
 		{
-			var forbidden = new List<string>();
-			if (noReleaseDate)
-				forbidden.Add("--no-release-date");
-			if (!string.IsNullOrWhiteSpace(releaseDate))
-				forbidden.Add("--release-date");
-
 			collector.EmitError(string.Empty,
-				$"Profile mode does not support {string.Join(" and ", forbidden)}. " +
+				"Profile mode does not support --no-release-date. " +
 				"Use bundle.release_dates or bundle.profiles.<name>.release_dates in changelog.yml instead.");
 			return 1;
 		}
