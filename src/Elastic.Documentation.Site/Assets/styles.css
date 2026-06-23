@@ -134,7 +134,6 @@ body {
 	}
 
 	.sidebar {
-
 		/* Pages nav: sticky on aside; scroll clipped in .pages-nav-menu (not full tree height). */
 		#pages-nav.sidebar-nav {
 			display: flex;
@@ -309,16 +308,30 @@ body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
 }
 
 /* First Top / Subtitle in scroll: no extra top inset (Figma); siblings get pt-16. */
-.pages-nav-v2__content .docs-sidebar-nav-v2__tree > li > .docs-sidebar-nav-v2__block-top,
-.pages-nav-v2__content .docs-sidebar-nav-v2__tree > li > .docs-sidebar-nav-v2__block-subtitle {
+.pages-nav-v2__content
+	.docs-sidebar-nav-v2__tree
+	> li
+	> .docs-sidebar-nav-v2__block-top,
+.pages-nav-v2__content
+	.docs-sidebar-nav-v2__tree
+	> li
+	> .docs-sidebar-nav-v2__block-subtitle {
 	margin: 0;
 }
 
-.pages-nav-v2__content .docs-sidebar-nav-v2__tree > li ~ li > .docs-sidebar-nav-v2__block-top {
+.pages-nav-v2__content
+	.docs-sidebar-nav-v2__tree
+	> li
+	~ li
+	> .docs-sidebar-nav-v2__block-top {
 	padding-top: 16px;
 }
 
-.pages-nav-v2__content .docs-sidebar-nav-v2__tree > li ~ li > .docs-sidebar-nav-v2__block-subtitle {
+.pages-nav-v2__content
+	.docs-sidebar-nav-v2__tree
+	> li
+	~ li
+	> .docs-sidebar-nav-v2__block-subtitle {
 	padding-top: 16px;
 	padding-bottom: 8px;
 }
@@ -499,8 +512,12 @@ nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
 	margin: 16px 0;
 }
 
-#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__block-top.docs-sidebar-nav-v2__label--top,
-#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__block-subtitle.docs-sidebar-nav-v2__label--nested {
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__block-top.docs-sidebar-nav-v2__label--top,
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__block-subtitle.docs-sidebar-nav-v2__label--nested {
 	margin: 0;
 }
 

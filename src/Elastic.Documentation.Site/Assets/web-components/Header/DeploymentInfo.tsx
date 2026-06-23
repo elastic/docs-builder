@@ -297,7 +297,9 @@ function getDeploymentLinks(
         ref: pullUrl,
         branch: `${base}/tree/${encodeURIComponent(branchName)}`,
         commit:
-            commitSha.length > 0 ? `${base}/commit/${commitSha}` : `${base}/commits`,
+            commitSha.length > 0
+                ? `${base}/commit/${commitSha}`
+                : `${base}/commits`,
         repository: base,
     }
 }

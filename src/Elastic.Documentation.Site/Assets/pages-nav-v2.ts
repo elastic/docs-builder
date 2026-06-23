@@ -70,9 +70,8 @@ function sectionRootHasSidebarDestination(nav: HTMLElement): boolean {
     }
 
     return (
-        nav.querySelector(
-            `a[href="${pathname}"], a[href="${pathname}/"]`
-        ) != null
+        nav.querySelector(`a[href="${pathname}"], a[href="${pathname}/"]`) !=
+        null
     )
 }
 
