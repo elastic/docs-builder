@@ -1,4 +1,4 @@
-import { $$, $$optional } from 'select-dom'
+import { $$optional } from 'select-dom'
 import tippy from 'tippy.js'
 import type { Instance } from 'tippy.js'
 
