@@ -17,16 +17,21 @@ public static class NavigationItemExtensions
 	)
 		where TModel : class, IDocumentationFile
 	{
-		var index = LookupIndex();
+		var index = LookupIndex(preferVisible: true);
+		index ??= LookupIndex(preferVisible: false);
+		ArgumentNullException.ThrowIfNull(index);
 
 		children = items.Except([index]).ToArray();
 
 		return index;
 
-		ILeafNavigationItem<TModel> LookupIndex()
+		ILeafNavigationItem<TModel>? LookupIndex(bool preferVisible)
 		{
 			foreach (var item in items)
 			{
+				if (preferVisible && item.Hidden)
+					continue;
+
 				// Check for the exact type match
 				if (item is ILeafNavigationItem<TModel> leaf)
 					return leaf;
@@ -35,6 +40,9 @@ public static class NavigationItemExtensions
 				if (item is INodeNavigationItem<TModel, INavigationItem> nodeItem)
 					return nodeItem.Index;
 			}
+
+			if (preferVisible)
+				return null;
 
 			// If no index is found, throw an exception
 			throw new InvalidOperationException($"No index found for navigation node '{node.GetType().Name}' at path '{fallbackPath}'");
@@ -94,12 +102,6 @@ public static class NavigationItemExtensions
 		return navigationByOrder.ToFrozenDictionary();
 	}
 
-	public static void AddNavigationFileLookups(
-		this INavigationItem rootItem,
-		ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup
-	) =>
-		AddNavigationFileLookupsRecursive(rootItem, navigationDocumentationFileLookup);
-
 	/// <summary>
 	/// Recursively builds both NavigationDocumentationFileLookup and NavigationIndexedByOrder in a single traversal,
 	/// also collecting a URL-to-file map used by the second pass to resolve V2 page: entries.
@@ -124,11 +126,14 @@ public static class NavigationItemExtensions
 				_ = navigationByOrder.TryAdd(leaf.NavigationIndex, leaf);
 				break;
 			case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationFileNode:
-				_ = navigationDocumentationFileLookup.TryAdd(documentationFileNode.Index.Model, documentationFileNode);
 				_ = navigationByOrder.TryAdd(documentationFileNode.NavigationIndex, documentationFileNode);
-				_ = navigationByOrder.TryAdd(documentationFileNode.Index.NavigationIndex, documentationFileNode.Index);
-				_ = urlToFile.TryAdd(documentationFileNode.Url, documentationFileNode.Index.Model);
-				_ = urlToFile.TryAdd(documentationFileNode.Index.Url, documentationFileNode.Index.Model);
+				// Index is a null sentinel when this node's table of contents produced no items; the
+				// validation error is emitted upstream, so skip registering a missing index here.
+				if (documentationFileNode.Index is { } documentationFileIndex)
+				{
+					_ = navigationDocumentationFileLookup.TryAdd(documentationFileIndex.Model, documentationFileNode);
+					_ = navigationByOrder.TryAdd(documentationFileIndex.NavigationIndex, documentationFileIndex);
+				}
 				foreach (var child in documentationFileNode.NavigationItems)
 					BuildNavigationLookupsRecursive(child, navigationDocumentationFileLookup, navigationByOrder, urlToFile);
 				break;
@@ -136,29 +141,6 @@ public static class NavigationItemExtensions
 				_ = navigationByOrder.TryAdd(node.NavigationIndex, node);
 				foreach (var child in node.NavigationItems)
 					BuildNavigationLookupsRecursive(child, navigationDocumentationFileLookup, navigationByOrder, urlToFile);
-				break;
-		}
-	}
-
-	private static void AddNavigationFileLookupsRecursive(
-		INavigationItem item,
-		ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup)
-	{
-		switch (item)
-		{
-			case CrossLinkNavigationLeaf:
-				break;
-			case ILeafNavigationItem<IDocumentationFile> documentationFileLeaf:
-				_ = navigationDocumentationFileLookup.TryAdd(documentationFileLeaf.Model, documentationFileLeaf);
-				break;
-			case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationFileNode:
-				_ = navigationDocumentationFileLookup.TryAdd(documentationFileNode.Index.Model, documentationFileNode);
-				foreach (var child in documentationFileNode.NavigationItems)
-					AddNavigationFileLookupsRecursive(child, navigationDocumentationFileLookup);
-				break;
-			case INodeNavigationItem<INavigationModel, INavigationItem> node:
-				foreach (var child in node.NavigationItems)
-					AddNavigationFileLookupsRecursive(child, navigationDocumentationFileLookup);
 				break;
 		}
 	}

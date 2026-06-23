@@ -70,13 +70,13 @@
   <Folder Name="/src/services/">
     <Project Path="src/services/Elastic.Changelog/Elastic.Changelog.csproj" />
     <Project Path="src/services/Elastic.Documentation.Assembler/Elastic.Documentation.Assembler.csproj" />
+    <Project Path="src/services/Elastic.Documentation.Deploying/Elastic.Documentation.Deploying.csproj" />
     <Project Path="src/services/Elastic.Documentation.Isolated/Elastic.Documentation.Isolated.csproj" />
     <Project Path="src/services/Elastic.Documentation.Integrations/Elastic.Documentation.Integrations.csproj" />
     <Project Path="src/services/Elastic.Documentation.Services/Elastic.Documentation.Services.csproj" />
   </Folder>
   <Folder Name="/src/services/search/">
     <Project Path="src/services/search/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
-    <Project Path="src/services/search/Elastic.Documentation.Search.Contract/Elastic.Documentation.Search.Contract.csproj" />
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />

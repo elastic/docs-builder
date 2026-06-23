@@ -12,6 +12,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
@@ -96,6 +97,7 @@ public class CodexBuildService(
 		{
 			var firstContext = buildContexts[0].BuildContext;
 			firstContext.Endpoints.BuildType = "codex";
+			firstContext.Endpoints.Environment = environment; // from codex.yml; ensures the correct index (e.g. internal)
 			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext).ToArray();
 			var startTasks = sharedExporters.Select(async e => await e.StartAsync(ctx));
 			await Task.WhenAll(startTasks);
@@ -221,8 +223,11 @@ public class CodexBuildService(
 				crossLinkResolver = new CrossLinkResolver(FetchedCrossLinks.Empty, uriResolver);
 			}
 
+			// Prefetch CDN-hosted release notes for products declared under `release_notes` in docset.yml.
+			var releaseNotesResolver = await ReleaseNotesFetcher.PrefetchAsync(buildContext, logFactory, ctx);
+
 			// Create documentation set
-			var documentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver);
+			var documentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver, releaseNotesResolver);
 			await documentationSet.ResolveDirectoryTree(ctx);
 
 			return new CodexDocumentationSetBuildContext(checkout, buildContext, documentationSet);

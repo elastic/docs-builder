@@ -39,6 +39,43 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 				changelogEntries.Add(entry);
 		}
 
+		return BuildResult(collector, changelogEntries, criteria, matchedPrs, matchedIssues);
+	}
+
+	/// <summary>
+	/// Parses and filters changelog entries supplied as in-memory (file name, content) pairs, e.g.
+	/// when sourcing entries from the CDN. Behaves identically to <see cref="MatchChangelogsAsync"/>
+	/// but reads no files; the file name is used as the entry's identity (path, name, and references).
+	/// </summary>
+	public ChangelogMatchResult MatchChangelogContents(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<(string FileName, string Content)> contents,
+		ChangelogFilterCriteria criteria,
+		Cancel ctx)
+	{
+		var changelogEntries = new List<MatchedChangelogFile>();
+		var matchedPrs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var matchedIssues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var seenChangelogs = new HashSet<string>();
+
+		foreach (var (fileName, content) in contents)
+		{
+			ctx.ThrowIfCancellationRequested();
+			var entry = ProcessContent(collector, fileName, fileName, content, criteria, seenChangelogs, matchedPrs, matchedIssues);
+			if (entry != null)
+				changelogEntries.Add(entry);
+		}
+
+		return BuildResult(collector, changelogEntries, criteria, matchedPrs, matchedIssues);
+	}
+
+	private static ChangelogMatchResult BuildResult(
+		IDiagnosticsCollector collector,
+		List<MatchedChangelogFile> changelogEntries,
+		ChangelogFilterCriteria criteria,
+		HashSet<string> matchedPrs,
+		HashSet<string> matchedIssues)
+	{
 		if (criteria.PrsToMatch.Count > 0)
 		{
 			foreach (var pr in criteria.PrsToMatch.Where(pr => !matchedPrs.Contains(pr)))
@@ -68,11 +105,34 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 		HashSet<string> matchedIssues,
 		Cancel ctx)
 	{
+		string fileContent;
 		try
 		{
-			var fileName = fileSystem.Path.GetFileName(filePath);
-			var fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
+			fileContent = await fileSystem.File.ReadAllTextAsync(filePath, ctx);
+		}
+		catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException or StackOverflowException or ThreadAbortException))
+		{
+			logger.LogWarning(ex, "Error reading file {FilePath}", filePath);
+			collector.EmitError(filePath, $"Error processing file: {ex.Message}");
+			return null;
+		}
 
+		var fileName = fileSystem.Path.GetFileName(filePath);
+		return ProcessContent(collector, filePath, fileName, fileContent, criteria, seenChangelogs, matchedPrs, matchedIssues);
+	}
+
+	private MatchedChangelogFile? ProcessContent(
+		IDiagnosticsCollector collector,
+		string filePath,
+		string fileName,
+		string fileContent,
+		ChangelogFilterCriteria criteria,
+		HashSet<string> seenChangelogs,
+		HashSet<string> matchedPrs,
+		HashSet<string> matchedIssues)
+	{
+		try
+		{
 			// Compute checksum (SHA1)
 			var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
 

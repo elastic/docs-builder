@@ -25,8 +25,6 @@ public class NavigationViewModel
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
-	public BrandingConfiguration? Branding { get; init; }
-
 	/// <summary>When true, the sidebar renders using the V2 nav partial with accordion behaviour.</summary>
 	public bool IsNavV2 { get; init; }
 
@@ -38,4 +36,9 @@ public class NavigationViewModel
 
 	/// <summary>Back arrow URL for islands — points to the parent section's landing page.</summary>
 	public string? BackArrowUrl { get; init; }
+
+	/// <summary>Back arrow label for islands — describes the parent section destination.</summary>
+	public string? BackArrowLabel { get; init; }
+
+	public BrandingConfiguration? Branding { get; init; }
 }

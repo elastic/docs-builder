@@ -44,6 +44,18 @@ Markdown files are refreshed automatically through livereload
 
 Code or layout changes will relaunch the server automatically
 
+## CLI reference maintenance
+
+When you add or change CLI options in `src/tooling/docs-builder/Commands/`, regenerate the checked-in schema so CI and the published CLI reference stay in sync:
+
+```bash
+dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+```
+
+Commit the updated `docs/cli-schema.json` with your code changes. CI compares the schema (ignoring the `version` field) and fails if it has drifted.
+
+The schema drives auto-generated parameter tables and usage synopses on CLI reference pages. For behavior, workflows, and examples that the schema cannot express, also update supplemental files under `docs/cli/` (see [Writing supplemental content](docs/cli/cli-supplemental-docs.md)).
+
 # Release Process
 
 This section outlines the process for releasing a new version of this project.

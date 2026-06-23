@@ -34,7 +34,7 @@ runs:
         
     - id: dotnet
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env]
         dotnet tool restore
         REPO_VERSION=$(dotnet minver -t=v -p=canary.0 -v=e -m=0.1)
         echo "Version Number: ${REPO_VERSION}"

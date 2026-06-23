@@ -24,6 +24,8 @@ environments:
       cookies_win: x
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      WEBSITE_SEARCH: true
+    website_search_url: https://staging-website.elastic.co/search/elastic-website-search.js
   edge:
     uri: https://d34ipnu52o64md.cloudfront.net
     path_prefix: docs
@@ -39,6 +41,8 @@ environments:
     feature_flags:
       SEARCH_OR_ASK_AI: true
       NAV_V2: true
+      WEBSITE_SEARCH: true
+    website_search_url: http://localhost:4078/elastic-website-search.js
   preview:
     uri: https://docs-v3-preview.elastic.dev
     path_prefix: ${ASSEMBLER_PREVIEW_PATH_PREFIX}

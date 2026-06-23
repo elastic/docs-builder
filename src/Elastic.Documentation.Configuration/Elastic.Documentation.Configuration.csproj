@@ -17,11 +17,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Elastic.Markdown.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Nullean.Argh.Interfaces" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
-    <PackageReference Include="Samboy063.Tomlet" />
+    <PackageReference Include="Tomlyn" />
     <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

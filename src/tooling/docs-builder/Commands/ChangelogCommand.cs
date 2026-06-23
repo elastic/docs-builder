@@ -232,6 +232,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="report">Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as `changelog bundle --report`). Mutually exclusive with --prs, --issues, and --release-version.</param>
 	/// <param name="repo">Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified.</param>
 	/// <param name="stripTitlePrefix">Optional: When used with --prs or --report, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
+	/// <param name="strictFetch">Optional: Treat a failure to fetch any PR or issue from GitHub (with --prs, --issues, or --report) as an error that exits non-zero, instead of a warning. Use in CI so a missing or unauthorized GITHUB_TOKEN fails the run rather than silently producing unfiltered changelogs with missing titles. Files are still written so they can be inspected.</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if neither --prs, --issues, nor --report is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
 	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs, --issues, nor --report is specified. If mappings are configured, type can be derived from the PR or issue.</param>
@@ -261,6 +262,7 @@ internal sealed partial class ChangelogCommands(
 		string? releaseVersion = null,
 		string? repo = null,
 		bool stripTitlePrefix = false,
+		bool strictFetch = false,
 		string? subtype = null,
 		string? title = null,
 		string? type = null,
@@ -527,7 +529,8 @@ internal sealed partial class ChangelogCommands(
 			StripTitlePrefix = stripTitlePrefixResolved,
 			ExtractReleaseNotes = extractReleaseNotes,
 			ExtractIssues = extractIssues,
-			Concise = concise
+			Concise = concise,
+			StrictFetch = strictFetch
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -563,7 +566,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="report">A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
-	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>) describing network requirements and the resolved output path, then exit without generating the bundle. Intended for CI actions.</param>
+	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>, and <c>cdn_url</c> when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions.</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> Bundle(
@@ -842,6 +845,8 @@ internal sealed partial class ChangelogCommands(
 			await githubActionsService.SetOutputAsync("needs_github_token", planResult.NeedsGithubToken ? "true" : "false");
 			if (planResult.OutputPath != null)
 				await githubActionsService.SetOutputAsync("output_path", planResult.OutputPath);
+			if (planResult.CdnUrl != null)
+				await githubActionsService.SetOutputAsync("cdn_url", planResult.CdnUrl);
 			return 0;
 		}
 
@@ -1401,6 +1406,17 @@ internal sealed partial class ChangelogCommands(
 	/// <remarks>
 	/// Resolves final status from evaluate-pr + changelog add outcomes, copies generated YAML,
 	/// writes metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.
+	///
+	/// <para>
+	/// The <c>isFork</c>, <c>canCommit</c> and <c>maintainerCanModify</c> parameters are declared
+	/// as <c>bool?</c> so the generated CLI emits both <c>--flag</c> and <c>--no-flag</c> pairs
+	/// (Argh convention). A plain <c>bool</c> would expose presence-only switches: passing
+	/// <c>--can-commit "false"</c> would set <c>canCommit = true</c> (the flag is present) and
+	/// silently discard the literal <c>"false"</c> as a stray positional. Callers that forward a
+	/// dynamic value (<c>--can-commit "$VAR"</c>) would then misroute fork PRs into the
+	/// commit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172
+	/// for the workflow-side fix.
+	/// </para>
 	/// </remarks>
 	/// <param name="stagingDir">Directory where changelog add wrote the generated YAML</param>
 	/// <param name="outputDir">Directory to write the artifact (metadata.json + YAML)</param>
@@ -1409,9 +1425,9 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="prNumber">Pull request number</param>
 	/// <param name="headRef">PR head branch ref</param>
 	/// <param name="headSha">PR head commit SHA</param>
-	/// <param name="isFork">Whether the PR is from a fork</param>
-	/// <param name="canCommit">Whether the commit strategy allows committing</param>
-	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits</param>
+	/// <param name="isFork">Whether the PR is from a fork (pass --is-fork / --no-is-fork; omit to leave null which is treated as false)</param>
+	/// <param name="canCommit">Whether the commit strategy allows committing (pass --can-commit / --no-can-commit; omit to leave null which is treated as false)</param>
+	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits (pass --maintainer-can-modify / --no-maintainer-can-modify; omit to leave null which is treated as false)</param>
 	/// <param name="headRepo">Fork repository full name (owner/repo)</param>
 	/// <param name="labelTable">Optional: markdown label table from evaluate-pr</param>
 	/// <param name="productLabelTable">Optional: markdown product label table from evaluate-pr</param>
@@ -1427,9 +1443,9 @@ internal sealed partial class ChangelogCommands(
 		int prNumber,
 		string headRef,
 		string headSha,
-		bool isFork = false,
-		bool canCommit = false,
-		bool maintainerCanModify = false,
+		bool? isFork = null,
+		bool? canCommit = null,
+		bool? maintainerCanModify = null,
 		string? headRepo = null,
 		string? labelTable = null,
 		string? productLabelTable = null,

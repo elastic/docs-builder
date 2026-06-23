@@ -6,6 +6,7 @@ using Elastic.ApiExplorer;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown;
@@ -94,7 +95,8 @@ public class ReloadableGeneratorState : IDisposable
 			? new CodexAwareUriResolver(crossLinks.CodexRepositories)
 			: null;
 		var crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
-		var docSet = new DocumentationSet(_context, _logFactory, crossLinkResolver);
+		var releaseNotesResolver = await ReleaseNotesFetcher.PrefetchAsync(_context, _logFactory, ctx);
+		var docSet = new DocumentationSet(_context, _logFactory, crossLinkResolver, releaseNotesResolver);
 
 		// Add LLM markdown export for dev server
 		var markdownExporters = new List<IMarkdownExporter>();
