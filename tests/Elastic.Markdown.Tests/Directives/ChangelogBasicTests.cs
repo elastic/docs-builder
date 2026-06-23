@@ -974,6 +974,7 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 		// language=markdown
 		"""
 		:::{changelog}
+		:release-dates:
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
 			// language=yaml
@@ -1041,6 +1042,7 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 		// language=markdown
 		"""
 		:::{changelog}
+		:release-dates:
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
 			// language=yaml

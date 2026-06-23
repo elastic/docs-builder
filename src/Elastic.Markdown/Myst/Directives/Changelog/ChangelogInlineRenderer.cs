@@ -37,7 +37,8 @@ public static class ChangelogInlineRenderer
 				typeFilter,
 				block.LinkVisibility,
 				block.DescriptionVisibility,
-				block.DropdownsEnabled);
+				block.DropdownsEnabled,
+				block.ReleaseDatesEnabled);
 
 			if (string.IsNullOrWhiteSpace(bundleMarkdown))
 				continue;
@@ -107,7 +108,8 @@ public static class ChangelogInlineRenderer
 		ChangelogTypeFilter typeFilter,
 		ChangelogLinkVisibility linkVisibility,
 		ChangelogDescriptionVisibility descriptionVisibility,
-		bool dropdownsEnabled)
+		bool dropdownsEnabled,
+		bool releaseDatesEnabled)
 	{
 		var titleSlug = ChangelogTextUtilities.TitleToSlug(bundle.Version);
 
@@ -135,6 +137,7 @@ public static class ChangelogInlineRenderer
 		var hideEntryDescriptions = ShouldHideEntryDescriptionsForRepo(bundle.Repo, privateRepositories, descriptionVisibility);
 
 		var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
+		var releaseDate = releaseDatesEnabled ? bundle.Data?.ReleaseDate : null;
 		return GenerateMarkdown(
 			displayVersion,
 			titleSlug,
@@ -148,7 +151,7 @@ public static class ChangelogInlineRenderer
 			typeFilter,
 			publishBlocker,
 			bundle.Data?.Description,
-			bundle.Data?.ReleaseDate);
+			releaseDate);
 	}
 
 	/// <summary>
