@@ -167,7 +167,9 @@ public record DetectionRule
 			MaximumAlertsPerExecution = 100,
 			References = null,
 			Version = 1,
-			Threats = []
+			Threats = [],
+			DeprecationDate = null,
+			Maturity = null
 		};
 	}
 
