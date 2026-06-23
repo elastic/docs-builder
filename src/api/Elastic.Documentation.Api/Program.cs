@@ -8,28 +8,37 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 try
 {
-	var builder = WebApplication.CreateSlimBuilder(args);
-	_ = builder.AddDocumentationServiceDefaults((s, p) =>
-	{
-		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
-	});
-
-	_ = builder.AddDefaultHealthChecks();
-	_ = builder.AddDocsApiOpenTelemetry();
-
-	// Configure Kestrel to listen on port 8080 (standard container port)
-	_ = builder.WebHost.ConfigureKestrel(serverOptions =>
-	{
-		serverOptions.ListenAnyIP(8080);
-	});
-
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
+
+	var builder = WebApplication.CreateSlimBuilder(args)
+		.AddDocumentationServiceDefaults((s, p) =>
+		{
+			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
+		})
+		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api")
+		{
+			Tracing = (_, t) => t.AddDocsApiTracing(),
+		})
+		.HealthCheckBuilderExtensions();
+
+	// Only hardcode port 8080 when not running under Aspire/orchestration.
+	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
+	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
+		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
+	{
+		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
+		{
+			serverOptions.ListenAnyIP(8080);
+		});
+	}
 
 	builder.Services.AddElasticDocsApiServices(environment);
 	var app = builder.Build();
@@ -61,8 +70,7 @@ try
 
 	var v1 = api.MapGroup("/v1");
 
-	var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-	v1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
+	v1.MapElasticDocsApiEndpoints();
 	Console.WriteLine("API endpoints mapped");
 
 	Console.WriteLine("Application startup completed successfully");
@@ -103,5 +111,7 @@ static void LogElasticsearchConfiguration(WebApplication app, ILogger logger)
 
 // Make the Program class accessible for integration testing
 #pragma warning disable ASP0027
-public partial class Program { }
+public partial class Program
+{
+}
 #pragma warning restore ASP0027

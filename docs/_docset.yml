@@ -41,13 +41,16 @@ subs:
 
 features:
   primary-nav: false
+
+storybook:
+  registry: https://ci-artifacts.kibana.dev/storybooks/pr-272388/storybook-docs/docs_registry.json
   
 suppress:
   - AutolinkElasticCoDocs
   - DeepLinkingVirtualFile
 
 api:
-   elasticsearch: elasticsearch-openapi.json
+   elasticsearch: elasticsearch-openapi-docs.json
    kibana:
      - file: kibana-api-overview.md
      - spec: kibana-openapi.json
@@ -147,7 +150,9 @@ toc:
       - file: math.md
       - file: diagrams.md
       - file: lists.md
+      - file: task-lists.md
       - file: line_breaks.md
+      - file: storybook.md
       - file: links.md
       - file: list-sub-pages.md
       - file: page-card.md

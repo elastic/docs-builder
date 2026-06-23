@@ -8,6 +8,7 @@ using Elastic.Documentation.Links;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.State;
 using Elastic.Documentation.Versions;
+using Elastic.Internal.Search;
 
 namespace Elastic.Documentation.Serialization;
 

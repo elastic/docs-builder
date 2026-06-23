@@ -32,23 +32,6 @@ public class IndexMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRender
 		var regressions = entriesByType.GetValueOrDefault(Regression, []);
 		var other = entriesByType.GetValueOrDefault(Other, []);
 
-		var hasBreakingChanges = entriesByType.ContainsKey(BreakingChange);
-		var hasDeprecations = entriesByType.ContainsKey(Deprecation);
-		var hasKnownIssues = entriesByType.ContainsKey(KnownIssue);
-		var hasHighlights = entriesByType.Values
-			.SelectMany(e => e)
-			.Any(e => e.Highlight == true);
-
-		var otherLinks = new List<string>();
-		if (hasHighlights)
-			otherLinks.Add($"[Highlights](/release-notes/highlights.md#{context.Repo}-{context.TitleSlug}-highlights)");
-		if (hasKnownIssues)
-			otherLinks.Add($"[Known issues](/release-notes/known-issues.md#{context.Repo}-{context.TitleSlug}-known-issues)");
-		if (hasBreakingChanges)
-			otherLinks.Add($"[Breaking changes](/release-notes/breaking-changes.md#{context.Repo}-{context.TitleSlug}-breaking-changes)");
-		if (hasDeprecations)
-			otherLinks.Add($"[Deprecations](/release-notes/deprecations.md#{context.Repo}-{context.TitleSlug}-deprecations)");
-
 		var sb = new StringBuilder();
 		_ = sb.AppendLine(InvariantCulture, $"## {context.Title} [{context.Repo}-release-notes-{context.TitleSlug}]");
 
@@ -65,12 +48,6 @@ public class IndexMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRender
 			_ = sb.AppendLine(context.BundleDescription);
 		}
 
-		if (otherLinks.Count > 0)
-		{
-			var linksText = string.Join(" and ", otherLinks);
-			_ = sb.AppendLine(InvariantCulture, $"_{linksText}._");
-			_ = sb.AppendLine();
-		}
 
 		var hasAnyEntries = features.Count > 0 || enhancements.Count > 0 || security.Count > 0 || bugFixes.Count > 0 || docs.Count > 0 || regressions.Count > 0 || other.Count > 0;
 

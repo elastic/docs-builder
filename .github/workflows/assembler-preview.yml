@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: docs-internal-latest-16
     env:
       PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
@@ -56,7 +57,7 @@ jobs:
             }
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           ref: ${{ steps.pr-details.outputs.result || github.event.pull_request.head.sha }}
           persist-credentials: false
@@ -117,7 +118,7 @@ jobs:
         if: always() && steps.deployment.outputs.result
         uses: actions/github-script@v9
         with:
-          script: |
+          script: | # zizmor: ignore[template-injection] deployment_id from prior step output
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,

@@ -32,7 +32,7 @@ public class FolderNavigation<TModel>(
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
 
 	/// <inheritdoc />
-	public bool Hidden { get; }
+	public bool Hidden { get; private set; }
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
@@ -50,6 +50,7 @@ public class FolderNavigation<TModel>(
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{FolderPath}/index.md", out navigationItems);
 		Index = indexNavigation;
+		Hidden = Index.Hidden;
 		// Include NavigationRoot.Id to ensure uniqueness across docsets in assembler builds
 		// (URLs alone aren't unique until path prefixes are applied by SiteNavigation)
 		Id = ShortId.Create(NavigationRoot.Id, Index.Url);

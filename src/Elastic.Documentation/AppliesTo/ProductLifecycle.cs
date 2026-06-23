@@ -11,6 +11,9 @@ public enum ProductLifecycle
 	// technical preview (exists in current docs system per https://github.com/elastic/docs?tab=readme-ov-file#beta-dev-and-preview-experimental)
 	[JsonStringEnumMemberName("preview")]
 	TechnicalPreview,
+	// experimental (rapid iteration phase, less mature than technical preview)
+	[JsonStringEnumMemberName("experimental")]
+	Experimental,
 	// beta (ditto)
 	[JsonStringEnumMemberName("beta")]
 	Beta,

@@ -11,10 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\services\search\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Elastic.Internal.Search.Contract" />
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
     <PackageReference Include="Nullean.ScopedFileSystem" />

@@ -67,36 +67,4 @@ public static class DocumentationTooling
 
 		return builder;
 	}
-
-	private static string TryEnvVars(string fallback, params string[] keys)
-	{
-		foreach (var key in keys)
-		{
-			if (Environment.GetEnvironmentVariable(key) is { } value)
-				return value;
-		}
-		return fallback;
-	}
-	private static string? TryEnvVarsOptional(params string[] keys)
-	{
-		foreach (var key in keys)
-		{
-			if (Environment.GetEnvironmentVariable(key) is { } value)
-				return value;
-		}
-		return null;
-	}
-
-	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly")]
-	private static Uri ResolveServiceEndpoint(ServiceEndpointResolver resolver, Func<string> fallback)
-	{
-		var get = resolver.GetEndpointsAsync("https+http://elasticsearch", Cancel.None);
-		var endpoint = get.IsCompletedSuccessfully ? get.Result : get.GetAwaiter().GetResult();
-		if (endpoint.Endpoints.Count == 0)
-			return new Uri(fallback());
-		if (endpoint.Endpoints[0].EndPoint.AddressFamily is AddressFamily.Unknown or AddressFamily.Unspecified)
-			return new Uri(fallback());
-		var uri = new Uri(endpoint.Endpoints[0].ToString() ?? throw new InvalidOperationException("No 'elasticsearch' endpoints found"));
-		return uri;
-	}
 }

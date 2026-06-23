@@ -50,6 +50,7 @@
 		StaticFileContentHashProvider = Model.StaticFileContentHashProvider,
 		ReportIssueUrl = Model.ReportIssueUrl,
 		Breadcrumbs = Model.Breadcrumbs,
+		NavigationActiveUrl = Model.NavigationActiveUrl,
 		Htmx = new DefaultHtmxAttributeProvider(GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix)),
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
@@ -65,6 +66,7 @@
 		GitHubDocsUrl = Model.GitHubDocsUrl,
 		GitHubRef = Model.GitHubRef,
 		Branding = Model.Branding,
+		RedirectUrl = Model.RedirectUrl,
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{

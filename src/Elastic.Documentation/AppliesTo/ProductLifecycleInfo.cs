@@ -51,12 +51,13 @@ public static class ProductLifecycleInfo
 		[ProductLifecycle.GenerallyAvailable] = new("GA", "Generally available", 0),
 		[ProductLifecycle.Beta] = new("Beta", "Beta", 1),
 		[ProductLifecycle.TechnicalPreview] = new("Preview", "Preview", 2),
-		[ProductLifecycle.Planned] = new("Planned", "Planned", 3),
-		[ProductLifecycle.Deprecated] = new("Deprecated", "Deprecated", 4),
-		[ProductLifecycle.Removed] = new("Removed", "Removed", 5),
-		[ProductLifecycle.Unavailable] = new("Unavailable", "Unavailable", 6),
-		[ProductLifecycle.Development] = new("Development", "Development", 7),
-		[ProductLifecycle.Discontinued] = new("Discontinued", "Discontinued", 8),
+		[ProductLifecycle.Experimental] = new("Experimental", "Experimental", 3),
+		[ProductLifecycle.Planned] = new("Planned", "Planned", 4),
+		[ProductLifecycle.Deprecated] = new("Deprecated", "Deprecated", 5),
+		[ProductLifecycle.Removed] = new("Removed", "Removed", 6),
+		[ProductLifecycle.Unavailable] = new("Unavailable", "Unavailable", 7),
+		[ProductLifecycle.Development] = new("Development", "Development", 8),
+		[ProductLifecycle.Discontinued] = new("Discontinued", "Discontinued", 9),
 	};
 }
 

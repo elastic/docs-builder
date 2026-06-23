@@ -223,6 +223,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 	private static ProductLifecycle ParseLifecycle(string lifecycleStr) => lifecycleStr.ToLowerInvariant() switch
 	{
 		"preview" => ProductLifecycle.TechnicalPreview,
+		"experimental" => ProductLifecycle.Experimental,
 		"beta" => ProductLifecycle.Beta,
 		"ga" => ProductLifecycle.GenerallyAvailable,
 		"deprecated" => ProductLifecycle.Deprecated,
@@ -246,6 +247,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 			var lifecycleName = applicability.Lifecycle switch
 			{
 				ProductLifecycle.TechnicalPreview => "preview",
+				ProductLifecycle.Experimental => "experimental",
 				ProductLifecycle.Beta => "beta",
 				ProductLifecycle.GenerallyAvailable => "ga",
 				ProductLifecycle.Deprecated => "deprecated",
