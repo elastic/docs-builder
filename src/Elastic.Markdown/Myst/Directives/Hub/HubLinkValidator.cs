@@ -84,6 +84,13 @@ internal static class HubLinkValidator
 		if (context.Build.BuildType != BuildType.Isolated)
 			return;
 
+		// dev_docs sandboxes (docs-builder's own /docs, etc.) are not part of the
+		// assembled site and routinely host fixtures that reference cross-docset
+		// pages with bare absolute paths. Existence checks against the local docset
+		// would produce false positives.
+		if (context.Configuration.DevelopmentDocs)
+			return;
+
 		var (path, _) = SplitAnchor(url);
 		if (string.IsNullOrEmpty(path) || path == "/")
 			return;
@@ -109,15 +116,23 @@ internal static class HubLinkValidator
 		}
 
 		// Honour configured redirects so old paths emit a hint, not an error.
-		if (context.Configuration.Redirects is not null
-			&& context.Configuration.Redirects.TryGetValue(rel, out var redirect))
+		// Probe the same candidates as the existence check above: redirects.yml
+		// keys are stored with the `.md` suffix, so an extensionless authored
+		// path (e.g. `/explore-analyze/discover`) would otherwise miss a redirect
+		// keyed `explore-analyze/discover.md` and fall through to the hard error.
+		if (context.Configuration.Redirects is not null)
 		{
-			var to = redirect.To
-				?? (redirect.Many is not null
-					? string.Join(", ", redirect.Many.Select(m => m.To))
-					: "unknown");
-			block.EmitWarning($"Hub directive link `{url}` has a redirect; update to: {to}");
-			return;
+			foreach (var candidate in candidates)
+			{
+				if (!context.Configuration.Redirects.TryGetValue(candidate, out var redirect))
+					continue;
+				var to = redirect.To
+					?? (redirect.Many is not null
+						? string.Join(", ", redirect.Many.Select(m => m.To))
+						: "unknown");
+				block.EmitWarning($"Hub directive link `{url}` has a redirect; update to: {to}");
+				return;
+			}
 		}
 
 		block.EmitError($"Hub directive link `{url}` does not exist. If it was recently removed add a redirect.");
