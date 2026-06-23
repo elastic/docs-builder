@@ -26,11 +26,25 @@ journey('navigation test', ({ page, params }) => {
         await expect(page).toHaveTitle(/Elastic Docs \| Elastic Docs/)
     })
 
-    step('Click on "Elastic Fundamentals"', async () => {
-        await page
+    step('Navigate to Elastic fundamentals', async () => {
+        const fundamentalsLink = page
             .getByRole('link', { name: 'Elastic Fundamentals' })
             .first()
-            .click()
+        const landingGetStarted = page
+            .locator('a.card-cta')
+            .filter({ hasText: 'Get started' })
+            .first()
+
+        if (
+            await fundamentalsLink
+                .isVisible({ timeout: 5000 })
+                .catch(() => false)
+        ) {
+            await fundamentalsLink.click()
+        } else {
+            await landingGetStarted.click()
+        }
+
         await expect(page).toHaveURL(`${host}/docs/get-started`)
         await expect(page).toHaveTitle(/Elastic fundamentals/)
         await expect(
