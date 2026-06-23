@@ -165,7 +165,8 @@ public static class NavigationItemExtensions
 				_ = navigationDocumentationFileLookup.TryAdd(documentationFileLeaf.Model, documentationFileLeaf);
 				break;
 			case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationFileNode:
-				_ = navigationDocumentationFileLookup.TryAdd(documentationFileNode.Index.Model, documentationFileNode);
+				if (documentationFileNode.Index is { } documentationFileIndex)
+					_ = navigationDocumentationFileLookup.TryAdd(documentationFileIndex.Model, documentationFileNode);
 				foreach (var child in documentationFileNode.NavigationItems)
 					AddNavigationFileLookupsRecursive(child, navigationDocumentationFileLookup);
 				break;
