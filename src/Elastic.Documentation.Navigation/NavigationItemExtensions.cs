@@ -102,6 +102,36 @@ public static class NavigationItemExtensions
 		return navigationByOrder.ToFrozenDictionary();
 	}
 
+	public static void AddNavigationFileLookups(
+		this INavigationItem rootItem,
+		ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup
+	) =>
+		AddNavigationFileLookupsRecursive(rootItem, navigationDocumentationFileLookup);
+
+	private static void AddNavigationFileLookupsRecursive(
+		INavigationItem item,
+		ConditionalWeakTable<IDocumentationFile, INavigationItem> navigationDocumentationFileLookup)
+	{
+		switch (item)
+		{
+			case CrossLinkNavigationLeaf:
+				break;
+			case ILeafNavigationItem<IDocumentationFile> documentationFileLeaf:
+				_ = navigationDocumentationFileLookup.TryAdd(documentationFileLeaf.Model, documentationFileLeaf);
+				break;
+			case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationFileNode:
+				if (documentationFileNode.Index is { } documentationFileIndex)
+					_ = navigationDocumentationFileLookup.TryAdd(documentationFileIndex.Model, documentationFileNode);
+				foreach (var child in documentationFileNode.NavigationItems)
+					AddNavigationFileLookupsRecursive(child, navigationDocumentationFileLookup);
+				break;
+			case INodeNavigationItem<INavigationModel, INavigationItem> node:
+				foreach (var child in node.NavigationItems)
+					AddNavigationFileLookupsRecursive(child, navigationDocumentationFileLookup);
+				break;
+		}
+	}
+
 	/// <summary>
 	/// Recursively builds both NavigationDocumentationFileLookup and NavigationIndexedByOrder in a single traversal,
 	/// also collecting a URL-to-file map used by the second pass to resolve V2 page: entries.
