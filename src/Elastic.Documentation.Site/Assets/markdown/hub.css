@@ -33,6 +33,13 @@
 	.hub-hero .hub-hero-inner {
 		@apply mx-auto w-full max-w-5xl;
 	}
+	.hub-hero .hub-hero-eyebrow {
+		margin: 0 0 14px;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		color: rgb(255 255 255 / 0.55);
+	}
 	.hub-hero .hub-hero-top {
 		display: grid;
 		grid-template-columns: auto 1fr;

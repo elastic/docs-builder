@@ -2,6 +2,10 @@
 
 <section class="hub-hero">
 	<div class="hub-hero-inner">
+		@if (!string.IsNullOrWhiteSpace(Model.Title))
+		{
+			<p class="hub-hero-eyebrow">Find all docs about @Model.Title</p>
+		}
 		<div class="hub-hero-top">
 			@if (!string.IsNullOrWhiteSpace(Model.IconSvg))
 			{
