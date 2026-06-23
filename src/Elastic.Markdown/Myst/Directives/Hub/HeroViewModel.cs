@@ -10,11 +10,5 @@ public class HeroViewModel : DirectiveViewModel
 	public required string? IconSvg { get; init; }
 	public required string? Title { get; init; }
 	public required string? DescriptionHtml { get; init; }
-	public required string? Version { get; init; }
-	public required bool ShowSearch { get; init; }
-	public required IReadOnlyList<HeroQuickLink> QuickLinks { get; init; }
-	public required IReadOnlyList<HeroVersion> OtherVersions { get; init; }
 	public required string? ReleasesHtml { get; init; }
-	public required string? SitePathPrefix { get; init; }
-	public string? PrefixUrl(string? url) => HubUrl.Prefix(url, SitePathPrefix);
 }

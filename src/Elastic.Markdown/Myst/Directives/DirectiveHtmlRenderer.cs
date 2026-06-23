@@ -408,12 +408,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			IconSvg = block.IconSvg,
 			Title = block.Title,
 			DescriptionHtml = descriptionHtml,
-			Version = block.Version,
-			ShowSearch = block.ShowSearch,
-			QuickLinks = block.QuickLinks,
-			OtherVersions = block.OtherVersions,
-			ReleasesHtml = releasesHtml,
-			SitePathPrefix = block.Build.UrlPathPrefix
+			ReleasesHtml = releasesHtml
 		});
 		RenderRazorSlice(slice, renderer);
 	}

@@ -4276,13 +4276,6 @@ nav:
         title: Elasticsearch
       - page: docs-content://products/kibana/v9.md
         title: Kibana
-      - title: Logstash (soon)
-      - title: Beats (soon)
-    - label: Deployment runbooks
-      children:
-      - title: Elastic Cloud Hosted (soon)
-      - title: Elastic Cloud Serverless (soon)
-      - title: Self-managed (soon)
 
   - section: APIs
     url: https://www.elastic.co/docs/api
