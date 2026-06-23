@@ -97,6 +97,7 @@
 	}
 	else if (item is ILeafNavigationItem<INavigationModel> leaf)
 	{
+		var hasSameTopLevelGroup = true;
 		var (leafBadge, leafLabel) = ParseNavTitle(leaf.NavigationTitle);
 		<li class="flex group/li pr-8 @(isTopLevel ? "font-semibold mt-6" : "mt-4")">
 			<a
