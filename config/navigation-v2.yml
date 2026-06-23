@@ -4439,9 +4439,8 @@ nav:
     children:
     - toc: docs-content://troubleshoot
 
-  - section: Extension points
+  - section: Extend
     url: /extend/
-    isolated: true
     children:
     - toc: docs-content://extend
       children:
