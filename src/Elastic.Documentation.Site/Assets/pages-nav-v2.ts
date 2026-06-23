@@ -81,7 +81,7 @@ function sectionRootHasSidebarDestination(nav: HTMLElement): boolean {
  * keep normal current-page styling.
  */
 function isOnSectionRootPage(nav: HTMLElement): boolean {
-    const shell = nav.closest('.pages-nav-v2-shell')
+    const shell = nav.closest<HTMLElement>('.pages-nav-v2-shell')
     if (shell?.dataset.navIsolated === 'true') {
         return false
     }
