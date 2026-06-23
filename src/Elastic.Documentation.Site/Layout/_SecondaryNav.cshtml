@@ -6,10 +6,10 @@
 	<ask-ai></ask-ai>
 	<nav id="secondary-nav" hx-select-oob="#main-container" hx-swap="none"
 	     class="bg-grey-10 border-b border-grey-20">
-		<div class="w-full max-w-(--max-layout-width) mx-auto px-4 h-[55px] flex items-center">
+		<div class="w-full max-w-(--max-layout-width) mx-auto px-4 h-[55px] flex items-center min-w-0 overflow-x-auto">
 			@if (Model.NavV2Sections is { Count: > 0 } navTabs)
 			{
-				<ul class="flex gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
+				<ul class="flex w-max max-w-none flex-nowrap gap-6 font-sans font-semibold text-sm text-ink-light md:text-base">
 				@foreach (var navTab in navTabs.Where(s => !s.Isolated))
 				{
 					var isAbsolute = navTab.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase);

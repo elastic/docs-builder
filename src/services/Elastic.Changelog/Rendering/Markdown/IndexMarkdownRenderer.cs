@@ -8,7 +8,7 @@ using System.Text;
 using Elastic.Documentation.ReleaseNotes;
 using Nullean.ScopedFileSystem;
 using static System.Globalization.CultureInfo;
-using static Elastic.Documentation.ChangelogEntryType;
+using static Elastic.Documentation.ReleaseNotes.ChangelogEntryType;
 
 namespace Elastic.Changelog.Rendering.Markdown;
 
@@ -240,7 +240,7 @@ public class IndexMarkdownRenderer(ScopedFileSystem fileSystem) : MarkdownRender
 					}
 				}
 
-				if (!string.IsNullOrWhiteSpace(entry.Description))
+				if (!context.HideDescriptions && !string.IsNullOrWhiteSpace(entry.Description))
 				{
 					_ = sb.AppendLine(entryHideLinks && hasCommentedLinks ? "  " : "");
 					_ = sb.AppendLine();

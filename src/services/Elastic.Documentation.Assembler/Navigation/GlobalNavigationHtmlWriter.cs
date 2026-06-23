@@ -29,7 +29,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 	{
 		// V2 nav: render per-section sidebar based on current page
 		if (globalNavigation is SiteNavigationV2 navV2)
-			return await RenderSectionNavigation(navV2, currentRootNavigation, currentNavigationItem, ctx);
+			return await RenderSectionNavigation(navV2, currentNavigationItem, ctx);
 
 		if (currentRootNavigation is SiteNavigation)
 			return NavigationRenderResult.Empty;
@@ -69,13 +69,12 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 
 	private async Task<NavigationRenderResult> RenderSectionNavigation(
 		SiteNavigationV2 navV2,
-		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		INavigationItem currentNavigationItem,
 		Cancel ctx
 	)
 	{
-		// Islands take priority: if the current toc root is an island, render the island sidebar
-		var island = navV2.GetIslandForTocRoot(currentRootNavigation);
+		// Islands take priority: if any ancestor toc root of the current page is an island, render the island sidebar
+		var island = navV2.GetIslandForNavigationItem(currentNavigationItem);
 		if (island is not null)
 			return await RenderIslandNavigation(island, navV2, ctx);
 
@@ -139,6 +138,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 				return CreateIslandResult(cachedHtml, island, navV2);
 
 			_logger.LogInformation("Rendering V2 island navigation: {IslandLabel} ({IslandId})", island.Label, island.Id);
+			var islandUrlForPrefix = island.NavigationItems.FirstOrDefault(i => !string.IsNullOrEmpty(i.Url))?.Url ?? island.Url;
+			var backArrowUrl = CombineWithSitePrefix(navV2, island.BackUrl, islandUrlForPrefix);
 
 			var wrapper = new SectionNavigationV2Wrapper(
 				new NavigationSection(island.Id, island.Label, "", false, false, island.NavigationItems),
@@ -158,7 +159,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 				IsNavV2 = true,
 				IsIsolatedSection = true,
 				SectionUrl = null,
-				BackArrowUrl = CombineWithSitePrefix(navV2, island.ParentSection.Url)
+				BackArrowUrl = backArrowUrl
 			};
 
 			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
@@ -180,12 +181,30 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			ActiveSectionId = island.ParentSection.Id
 		};
 
-	private static string CombineWithSitePrefix(SiteNavigation nav, string sectionUrl)
+	private static string CombineWithSitePrefix(SiteNavigation nav, string sectionUrl, string? currentUrl = null)
 	{
 		var prefix = nav.Url.TrimEnd('/');
 		var path = sectionUrl.TrimStart('/');
-		return string.IsNullOrEmpty(path) ? $"{prefix}/" : $"{prefix}/{path}";
+		if (string.IsNullOrEmpty(path))
+			return $"{prefix}/";
+		if (IsExternalUrl(sectionUrl))
+			return sectionUrl;
+		if (sectionUrl.Equals(prefix, StringComparison.OrdinalIgnoreCase) || sectionUrl.StartsWith($"{prefix}/", StringComparison.OrdinalIgnoreCase))
+			return sectionUrl;
+		if (!string.IsNullOrEmpty(currentUrl) && sectionUrl.Length > 0 && sectionUrl[0] == '/')
+		{
+			var normalizedCurrentUrl = currentUrl.TrimEnd('/');
+			var normalizedSectionPath = "/" + path.TrimEnd('/');
+			var sectionIndex = normalizedCurrentUrl.IndexOf(normalizedSectionPath, StringComparison.OrdinalIgnoreCase);
+			if (sectionIndex > 0)
+				return normalizedCurrentUrl[..sectionIndex] + "/" + path;
+		}
+		return $"{prefix}/{path}";
 	}
+
+	private static bool IsExternalUrl(string url) =>
+		url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+		url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
 	private static NavigationRenderResult CreateSectionResult(string html, NavigationSection activeSection, SiteNavigationV2 navV2) =>
 		new()

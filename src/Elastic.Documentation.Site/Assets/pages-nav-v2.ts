@@ -3,11 +3,18 @@ import tippy from 'tippy.js'
 import type { Instance } from 'tippy.js'
 
 const navV2CollapsedStorageKey = 'docs-builder-nav-v2-collapsed-ids'
+const navV2SelectedLocationsStorageKey =
+    'docs-builder-nav-v2-selected-locations'
 
 let navV2FolderLinkToggleBound = false
 let navV2OptimisticNavigateBound = false
 
 let navV2TruncationTippyInstances: Instance[] = []
+const navV2ActiveBranchScrollTimeouts = new WeakMap<HTMLElement, number[]>()
+const navV2ActiveBranchScrollObservers = new WeakMap<
+    HTMLElement,
+    ResizeObserver
+>()
 
 function readCollapsedFolderIds(): Set<string> {
     try {
@@ -29,6 +36,46 @@ function readCollapsedFolderIds(): Set<string> {
 
 function writeCollapsedFolderIds(ids: Set<string>) {
     sessionStorage.setItem(navV2CollapsedStorageKey, JSON.stringify([...ids]))
+}
+
+function readSelectedNavLocations(): Record<string, string> {
+    try {
+        const raw = sessionStorage.getItem(navV2SelectedLocationsStorageKey)
+        if (!raw) {
+            return {}
+        }
+
+        const parsed = JSON.parse(raw) as unknown
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return {}
+        }
+
+        return Object.fromEntries(
+            Object.entries(parsed).filter(
+                (entry): entry is [string, string] =>
+                    typeof entry[0] === 'string' && typeof entry[1] === 'string'
+            )
+        )
+    } catch {
+        return {}
+    }
+}
+
+function rememberSelectedNavLocation(pathnameRaw: string, location?: string) {
+    if (!location) {
+        return
+    }
+
+    const locations = readSelectedNavLocations()
+    locations[normalizeDocPathname(pathnameRaw)] = location
+    sessionStorage.setItem(
+        navV2SelectedLocationsStorageKey,
+        JSON.stringify(locations)
+    )
+}
+
+function selectedNavLocationForPath(pathnameRaw: string): string | null {
+    return readSelectedNavLocations()[normalizeDocPathname(pathnameRaw)] ?? null
 }
 
 function persistFolderCheckboxCollapsedState(cb: HTMLInputElement) {
@@ -136,7 +183,10 @@ function ensureNavV2FolderLinkToggle() {
                 return
             }
 
-            if (linkPathMatchesCurrentPage(a)) {
+            if (
+                a.classList.contains('current') &&
+                linkPathMatchesCurrentPage(a)
+            ) {
                 cb.checked = !cb.checked
                 cb.dispatchEvent(new Event('change', { bubbles: true }))
                 persistFolderCheckboxCollapsedState(cb)
@@ -202,7 +252,11 @@ function ensureNavV2OptimisticCurrentOnNavigate() {
                 li?.querySelector<HTMLAnchorElement>(
                     ':scope > .nav-folder-peer > a.sidebar-link'
                 ) ?? null
-            if (folderRowInLi === a && linkPathMatchesCurrentPage(a)) {
+            if (
+                folderRowInLi === a &&
+                a.classList.contains('current') &&
+                linkPathMatchesCurrentPage(a)
+            ) {
                 return
             }
 
@@ -218,52 +272,74 @@ function ensureNavV2OptimisticCurrentOnNavigate() {
                 return
             }
 
-            const here = window.location.pathname.replace(/\/$/, '')
-            const pathStripped = path.replace(/\/$/, '')
-            if (pathStripped === here) {
+            const selectedLocation = a.dataset.navV2Location
+            const previousSelectedLocation = selectedNavLocationForPath(path)
+            rememberSelectedNavLocation(path, selectedLocation)
+
+            const here = normalizeDocPathname(window.location.pathname)
+            const pathStripped = normalizeDocPathname(path)
+            if (
+                pathStripped === here &&
+                (!selectedLocation ||
+                    selectedLocation === previousSelectedLocation)
+            ) {
                 return
             }
 
             markCurrentPageForPath(nav, path)
             expandToCurrentPageForPath(nav, path)
             applyActiveSubtreeHighlight(nav)
+            scheduleActiveBranchScroll(nav)
         },
         true
     )
 }
 
 /**
- * Returns all sibling top-level accordion checkboxes for a given checkbox.
- * Siblings are other checkboxes inside [data-v2-accordion] elements at the
- * same nesting level as the given checkbox's ancestor accordion.
+ * Returns all sibling folder checkboxes at the same nesting level.
  */
 function getSiblingAccordionCheckboxes(
     checkbox: HTMLInputElement
 ): HTMLInputElement[] {
-    const accordion = checkbox.closest('[data-v2-accordion]')
-    if (!accordion) {
+    const group = checkbox.closest('li.group-navigation')
+    if (!group) {
         return []
     }
 
-    const parent = accordion.parentElement
+    const parent = group.parentElement
     if (!parent) {
         return []
     }
 
     return Array.from(
         parent.querySelectorAll<HTMLInputElement>(
-            '[data-v2-accordion] > .peer input[type=checkbox]'
+            ':scope > li.group-navigation > .nav-folder-peer input[type=checkbox]'
         )
     ).filter((c) => c !== checkbox)
 }
 
+function isDefaultExpandedCheckbox(checkbox: HTMLInputElement) {
+    return checkbox.dataset.navV2ExpandedDefault === 'true'
+}
+
+function shouldKeepDefaultExpanded(
+    checkbox: HTMLInputElement,
+    collapsedIds: Set<string>
+) {
+    return (
+        isDefaultExpandedCheckbox(checkbox) &&
+        (!checkbox.id || !collapsedIds.has(checkbox.id))
+    )
+}
+
 /**
- * Accordion behaviour: when a top-level section is opened,
- * collapse all its siblings so only one section is expanded at a time.
+ * Accordion behaviour: when a folder is opened, collapse its siblings so
+ * only one branch stays expanded at that nesting level. Default-expanded
+ * siblings stay open unless the user explicitly collapsed them this session.
  */
 function initAccordion(nav: HTMLElement) {
     nav.querySelectorAll<HTMLInputElement>(
-        '[data-v2-accordion] > .peer input[type=checkbox]'
+        'li.group-navigation > .nav-folder-peer input[type=checkbox]'
     ).forEach((cb) => {
         if (cb.dataset.navV2AccordionBound === 'true') {
             return
@@ -273,12 +349,179 @@ function initAccordion(nav: HTMLElement) {
         cb.addEventListener('change', (e) => {
             const target = e.target as HTMLInputElement
             if (target.checked) {
+                const collapsedIds = readCollapsedFolderIds()
                 getSiblingAccordionCheckboxes(target).forEach((sibling) => {
+                    if (shouldKeepDefaultExpanded(sibling, collapsedIds)) {
+                        sibling.checked = true
+                        return
+                    }
+
                     sibling.checked = false
                 })
             }
         })
     })
+}
+
+function getAllFolderCheckboxes(nav: HTMLElement): HTMLInputElement[] {
+    return Array.from(
+        nav.querySelectorAll<HTMLInputElement>(
+            'li.group-navigation > .nav-folder-peer input[type=checkbox]'
+        )
+    )
+}
+
+function folderContainsMatchingPath(
+    checkbox: HTMLInputElement,
+    pathnameRaw: string
+) {
+    const group = checkbox.closest('li.group-navigation')
+    if (!group) {
+        return false
+    }
+
+    return getAnchorsMatchingPath(group, pathnameRaw).length > 0
+}
+
+function collapseInactiveFolders(
+    nav: HTMLElement,
+    activeCheckboxes: Set<HTMLInputElement>,
+    pathnameRaw?: string
+) {
+    const collapsedIds = readCollapsedFolderIds()
+    getAllFolderCheckboxes(nav).forEach((cb) => {
+        if (activeCheckboxes.has(cb)) {
+            cb.checked = true
+            return
+        }
+
+        if (
+            shouldKeepDefaultExpanded(cb, collapsedIds) &&
+            (!pathnameRaw || !folderContainsMatchingPath(cb, pathnameRaw))
+        ) {
+            cb.checked = true
+            return
+        }
+
+        cb.checked = false
+    })
+}
+
+function findNavV2ScrollContainer(nav: HTMLElement): HTMLElement | null {
+    return nav.closest<HTMLElement>('.pages-nav-menu')
+}
+
+function pickActiveBranchScrollTarget(
+    nav: HTMLElement,
+    current: HTMLAnchorElement
+): HTMLElement | null {
+    let target = current.closest<HTMLElement>('li')
+    let walk = target
+    while (walk && walk !== nav) {
+        if (walk.matches('li.group-navigation')) {
+            target = walk
+        }
+
+        walk = walk.parentElement?.closest<HTMLElement>('li') ?? null
+    }
+
+    return target
+}
+
+function scrollActiveBranchIntoView(nav: HTMLElement) {
+    const container = findNavV2ScrollContainer(nav)
+    if (!container) {
+        return
+    }
+
+    const current = deepestCurrentSidebarLink(nav)
+    if (!current) {
+        return
+    }
+
+    const target = pickActiveBranchScrollTarget(nav, current)
+    if (!target) {
+        return
+    }
+
+    const containerRect = container.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const topPadding = 8
+    const bottomPadding = 16
+    const visibleTop = containerRect.top + topPadding
+    const visibleBottom = containerRect.bottom - bottomPadding
+
+    if (targetRect.top >= visibleTop && targetRect.bottom <= visibleBottom) {
+        return
+    }
+
+    const targetTop =
+        targetRect.top - containerRect.top + container.scrollTop - topPadding
+    container.scrollTop = Math.max(0, targetTop)
+}
+
+function scheduleActiveBranchScroll(nav: HTMLElement) {
+    const existingTimeouts = navV2ActiveBranchScrollTimeouts.get(nav)
+    if (existingTimeouts !== undefined) {
+        existingTimeouts.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    }
+
+    const run = () => {
+        if (!nav.isConnected) {
+            return
+        }
+
+        scrollActiveBranchIntoView(nav)
+    }
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            run()
+        })
+    })
+
+    const timeoutIds = [260, 520].map((delay, index) =>
+        window.setTimeout(() => {
+            run()
+            if (index === 1) {
+                navV2ActiveBranchScrollTimeouts.delete(nav)
+            }
+        }, delay)
+    )
+    navV2ActiveBranchScrollTimeouts.set(nav, timeoutIds)
+}
+
+function initActiveBranchScrollObserver(nav: HTMLElement) {
+    if (
+        typeof ResizeObserver === 'undefined' ||
+        navV2ActiveBranchScrollObservers.has(nav)
+    ) {
+        return
+    }
+
+    const observer = new ResizeObserver(() => {
+        if (!nav.isConnected) {
+            observer.disconnect()
+            navV2ActiveBranchScrollObservers.delete(nav)
+            return
+        }
+
+        scheduleActiveBranchScroll(nav)
+    })
+    navV2ActiveBranchScrollObservers.set(nav, observer)
+
+    const container = findNavV2ScrollContainer(nav)
+    const stickyChrome =
+        container?.previousElementSibling instanceof HTMLElement
+            ? container.previousElementSibling
+            : null
+
+    if (container) {
+        observer.observe(container)
+    }
+    if (stickyChrome) {
+        observer.observe(stickyChrome)
+    }
 }
 
 function warmFolderSubtreeLayoutFromPeer(peer: HTMLElement) {
@@ -425,30 +668,8 @@ function navListItemDepthFromAnchor(anchor: Element, nav: HTMLElement): number {
     return depth
 }
 
-/**
- * Prefer the deepest {@code a.sidebar-link.current} when several share the URL (folder index
- * and child, or duplicate toc entries). Otherwise {@code querySelector} picks the first in DOM
- * order (usually a parent folder) and subtree/ancestor classes apply to the wrong rows.
- */
 function deepestCurrentSidebarLink(nav: HTMLElement): HTMLAnchorElement | null {
-    const anchors = nav.querySelectorAll<HTMLAnchorElement>(
-        'a.sidebar-link.current'
-    )
-    if (anchors.length === 0) {
-        return null
-    }
-
-    let best = anchors[0]
-    let bestDepth = navListItemDepthFromAnchor(best, nav)
-    for (let i = 1; i < anchors.length; i++) {
-        const candidate = anchors[i]
-        const d = navListItemDepthFromAnchor(candidate, nav)
-        if (d > bestDepth) {
-            bestDepth = d
-            best = candidate
-        }
-    }
-    return best
+    return nav.querySelector<HTMLAnchorElement>('a.sidebar-link.current')
 }
 
 /**
@@ -512,16 +733,11 @@ function applyActiveSubtreeHighlight(nav: HTMLElement) {
     }
 }
 
-/**
- * Mark all nav links whose href matches {@code pathname} with the "current" CSS class.
- */
 function markCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
     $$('.current', nav).forEach((el) => el.classList.remove('current'))
 
-    const pathname = stripTrailingSlashForNavHref(pathnameRaw)
-    $$(`a[href="${pathname}"], a[href="${pathname}/"]`, nav).forEach((el) =>
-        el.classList.add('current')
-    )
+    const current = pickAnchorMatchingPath(nav, pathnameRaw)
+    current?.classList.add('current')
 }
 
 /**
@@ -536,93 +752,128 @@ function markCurrentPage(nav: HTMLElement) {
     markCurrentPageForPath(nav, window.location.pathname)
 }
 
-function pickDeepestAnchorMatchingPath(
-    nav: HTMLElement,
+function getAnchorsMatchingPath(
+    root: ParentNode,
     pathnameRaw: string
-): HTMLElement | null {
+): HTMLAnchorElement[] {
     const pathname = stripTrailingSlashForNavHref(pathnameRaw)
-    const matches = nav.querySelectorAll<HTMLElement>(
-        `a[href="${pathname}"], a[href="${pathname}/"]`
+    return Array.from(
+        root.querySelectorAll<HTMLAnchorElement>(
+            `a[href="${pathname}"], a[href="${pathname}/"]`
+        )
     )
-    if (matches.length === 0) {
+}
+
+function pickCanonicalAnchor(
+    nav: HTMLElement,
+    anchors: HTMLAnchorElement[]
+): HTMLAnchorElement | null {
+    if (anchors.length === 0) {
         return null
     }
 
-    let best = matches[0]
+    let best = anchors[0]
     let bestDepth = navListItemDepthFromAnchor(best, nav)
-    for (let i = 1; i < matches.length; i++) {
-        const m = matches[i]
-        const d = navListItemDepthFromAnchor(m, nav)
+    let bestLi = best.closest('li')
+    for (let i = 1; i < anchors.length; i++) {
+        const candidate = anchors[i]
+        const candidateLi = candidate.closest('li')
+        if (!bestLi || !candidateLi || !bestLi.contains(candidateLi)) {
+            continue
+        }
+
+        const d = navListItemDepthFromAnchor(candidate, nav)
         if (d > bestDepth) {
             bestDepth = d
-            best = m
+            best = candidate
+            bestLi = candidateLi
         }
     }
     return best
 }
 
+function pickAnchorMatchingPath(
+    nav: HTMLElement,
+    pathnameRaw: string
+): HTMLAnchorElement | null {
+    const matches = getAnchorsMatchingPath(nav, pathnameRaw)
+    if (matches.length === 0) {
+        return null
+    }
+
+    const selectedLocation = selectedNavLocationForPath(pathnameRaw)
+    if (selectedLocation) {
+        const selected = matches.find(
+            (m) => m.dataset.navV2Location === selectedLocation
+        )
+        if (selected) {
+            return selected
+        }
+    }
+
+    return pickCanonicalAnchor(nav, matches)
+}
+
 /**
  * Expand all ancestor collapsible sections that contain the link for {@code pathnameRaw}.
- * Uses the deepest matching anchor when several share the URL.
+ * Uses the selected nav occurrence when available; direct loads fall back to the canonical occurrence.
  */
 function expandToCurrentPageForPath(nav: HTMLElement, pathnameRaw: string) {
-    const link = pickDeepestAnchorMatchingPath(nav, pathnameRaw)
+    const link = pickAnchorMatchingPath(nav, pathnameRaw)
     if (!link) {
+        collapseInactiveFolders(nav, new Set())
         return
     }
 
     const collapsedIds = readCollapsedFolderIds()
+    const activeCheckboxes = new Set<HTMLInputElement>()
+    let wroteCollapsedIds = false
 
     let el: Element | null = link.parentElement
     while (el && el !== nav) {
         if (el.matches('li')) {
             const cb = el.querySelector<HTMLInputElement>(
-                ':scope > .peer input[type=checkbox]'
+                ':scope > .nav-folder-peer input[type=checkbox]'
             )
             if (cb && cb.id) {
-                const rowLink = el.querySelector<HTMLElement>(
-                    ':scope > .nav-folder-peer > a.sidebar-link'
-                )
-                const currentIsThisFolderRow =
-                    rowLink !== null && rowLink === link
-
+                activeCheckboxes.add(cb)
                 if (collapsedIds.has(cb.id)) {
-                    if (currentIsThisFolderRow) {
-                        // User collapsed this folder while its index is current; HTML swap often
-                        // re-checks the input — force closed so a second click can stay collapsed.
-                        cb.checked = false
-                    } else {
-                        collapsedIds.delete(cb.id)
-                        writeCollapsedFolderIds(collapsedIds)
-                        cb.checked = true
-                    }
-                } else {
-                    cb.checked = true
+                    collapsedIds.delete(cb.id)
+                    wroteCollapsedIds = true
                 }
+                cb.checked = true
             } else if (cb) {
+                activeCheckboxes.add(cb)
                 cb.checked = true
             }
         }
 
         el = el.parentElement
     }
+
+    if (wroteCollapsedIds) {
+        writeCollapsedFolderIds(collapsedIds)
+    }
+
+    collapseInactiveFolders(nav, activeCheckboxes, pathnameRaw)
 }
 
 /**
  * Expand all ancestor collapsible sections that contain the current page link,
- * so that navigating directly to a URL reveals its location in the sidebar.
- * Does not re-open a folder row that the user collapsed while that folder index
- * is the current page (see session storage + folder row link match).
+ * so that navigating directly to a URL reveals its location in the sidebar,
+ * while collapsing folders that are outside the active branch.
  */
 function expandToCurrentPage(nav: HTMLElement) {
     if (isOnSectionRootPage(nav)) {
-        // On the section root page, expand all top-level folders so the
-        // section content is visible even though no specific page is current.
-        nav.querySelectorAll<HTMLInputElement>(
-            '#nav-tree > li > .peer > input[type="checkbox"]'
-        ).forEach((cb) => {
-            cb.checked = true
-        })
+        const activeCheckboxes = new Set<HTMLInputElement>()
+        const topLevelFolders = nav.querySelectorAll<HTMLInputElement>(
+            '#nav-tree > li.group-navigation > .nav-folder-peer > input[type="checkbox"]'
+        )
+        if (topLevelFolders.length === 1) {
+            topLevelFolders[0].checked = true
+            activeCheckboxes.add(topLevelFolders[0])
+        }
+        collapseInactiveFolders(nav, activeCheckboxes)
         return
     }
     expandToCurrentPageForPath(nav, window.location.pathname)
@@ -705,6 +956,8 @@ export function initNavV2(nav: HTMLElement) {
     markCurrentPage(nav)
     expandToCurrentPage(nav)
     applyActiveSubtreeHighlight(nav)
+    initActiveBranchScrollObserver(nav)
+    scheduleActiveBranchScroll(nav)
     initNavV2FolderLayoutWarmup(nav)
     requestAnimationFrame(() => {
         requestAnimationFrame(() => initNavV2TruncationTooltips(nav))

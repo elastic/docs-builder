@@ -13,6 +13,7 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Hub;
@@ -144,6 +145,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case OnThisPageBlock onThisPageBlock:
 				WriteOnThisPage(renderer, onThisPageBlock);
 				return;
+			case CliModifiersBlock cliModifiersBlock:
+				WriteCliModifiers(renderer, cliModifiersBlock);
+				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
 				// 	WriteCode(renderer, directiveBlock);
@@ -268,6 +272,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			ColumnWidths = block.ColumnWidths
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteCliModifiers(HtmlRenderer renderer, CliModifiersBlock block)
+	{
+		if (!block.Destructive && !block.RequiresConfirmation && !block.RequiresAuth
+			&& !block.Idempotent && string.IsNullOrWhiteSpace(block.Scope)
+			&& !block.Streaming && !block.LongRunning)
+			return;
+
+		var slice = CliModifiersView.Create(new CliModifiersViewModel
+		{
+			DirectiveBlock = block,
+			Destructive = block.Destructive,
+			RequiresConfirmation = block.RequiresConfirmation,
+			RequiresAuth = block.RequiresAuth,
+			Idempotent = block.Idempotent,
+			Scope = block.Scope,
+			Streaming = block.Streaming,
+			LongRunning = block.LongRunning,
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -586,6 +611,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			GroupHeadingLevel = block.GroupHeadingLevel,
 			VersionsConfig = block.Build.VersionsConfiguration,
+			ActiveDeploymentFilter = block.ActiveDeploymentFilter,
 			RenderMarkdown = s =>
 			{
 				var normalized = SettingsMarkdownNormalizer.Normalize(s, settings.Product);

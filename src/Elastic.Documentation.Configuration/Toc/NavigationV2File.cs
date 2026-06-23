@@ -58,6 +58,7 @@ public record IslandNavV2Item(
 public record GroupNavV2Item(
 	string Title,
 	Uri? Page,
+	bool Expanded,
 	IReadOnlyList<INavV2Item> Children
 ) : INavV2Item;
 
@@ -186,6 +187,10 @@ public class NavV2FileYamlConverter : IYamlTypeConverter
 
 		if (dict.TryGetValue("group", out var groupVal) && groupVal is string groupStr)
 		{
+			var expanded = dict.TryGetValue("expanded", out var expVal)
+				&& expVal is string expStr
+				&& bool.TryParse(expStr, out var expBool)
+				&& expBool;
 			var groupChildren = dict.TryGetValue("children", out var gch) && gch is IReadOnlyList<INavV2Item> gChildList
 				? gChildList
 				: [];
@@ -195,7 +200,7 @@ public class NavV2FileYamlConverter : IYamlTypeConverter
 				var gpUri = gpStr.Contains("://") ? gpStr : $"docs-content://{gpStr}";
 				_ = Uri.TryCreate(gpUri, UriKind.Absolute, out groupPage);
 			}
-			return new GroupNavV2Item(groupStr, groupPage, groupChildren);
+			return new GroupNavV2Item(groupStr, groupPage, expanded, groupChildren);
 		}
 
 		if (dict.TryGetValue("page", out var pageVal) && pageVal is string pageStr)

@@ -12,7 +12,7 @@ nav:
       - group: Elasticsearch concepts
         children:
         - page: docs-content://manage-data/data-store.md
-          title: Elasticsearch essentials (Core document database)
+          title: Elasticsearch essentials
         - page: docs-content://manage-data/ingest.md
           title: Ingest data into Elasticsearch
         - page: docs-content://solutions/search.md
@@ -26,7 +26,7 @@ nav:
           - page: docs-content://solutions/search/site-or-app.md
             title: Add search to your site or app
           - page: docs-content://solutions/search/rag.md
-            title: RAG
+            title: Retrieval-augmented generation (RAG)
     - label: Install, deploy, and administer
       children:
         - group: Distributed architecture
@@ -81,9 +81,9 @@ nav:
             page: docs-content://deploy-manage/reference-architectures.md
             children:
             - page: docs-content://deploy-manage/reference-architectures/hotfrozen-high-availability.md
-              title: Hot/Frozen - High Availability
+              title: Hot-frozen high availability
             - page: docs-content://deploy-manage/reference-architectures/genai-search-high-availability.md
-              title: GenAI Search - High Availability
+              title: GenAI search high availability
           - group: Production guidance
             page: docs-content://deploy-manage/production-guidance.md
             children:
@@ -763,17 +763,23 @@ nav:
             page: docs-content://deploy-manage/security.md
             children:
             - page: docs-content://deploy-manage/security/secure-hosting-environment.md
+              title: "Secure your orchestrator"
               children:
               - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation.md
                 title: "Elastic Cloud Enterprise"
                 children:
                 - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation/manage-security-certificates.md
+                  title: "Manage security certificates"
                 - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation/allow-x509-certificates-signed-with-sha-1.md
+                  title: "Allow X.509 certificates signed with SHA-1"
                 - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation/configure-tls-version.md
+                  title: "Configure the TLS version"
                 - page: docs-content://deploy-manage/security/secure-your-elastic-cloud-enterprise-installation/migrate-ece-on-podman-hosts-to-selinux-enforce.md
+                  title: "Migrate ECE on Podman hosts to SELinux enforce"
               - page: docs-content://deploy-manage/security/secure-your-eck-installation.md
                 title: "Elastic Cloud on Kubernetes"
             - page: docs-content://deploy-manage/security/secure-your-cluster-deployment.md
+              title: "Secure your cluster, deployment, or project"
               children:
               - page: docs-content://deploy-manage/security/self-setup.md
                 title: "Self-managed security setup"
@@ -787,6 +793,7 @@ nav:
                 - page: docs-content://deploy-manage/security/set-up-basic-security-plus-https.md
                   title: "Set up HTTPS"
                 - page: docs-content://deploy-manage/security/using-kibana-with-security.md
+                  title: "Configure security in Kibana"
               - page: docs-content://deploy-manage/security/secure-cluster-communications.md
                 title: "Manage TLS encryption"
                 children:
@@ -803,12 +810,18 @@ nav:
                   - page: docs-content://deploy-manage/security/kibana-es-mutual-tls.md
                     title: "Mutual authentication"
                   - page: docs-content://deploy-manage/security/supported-ssltls-versions-by-jdk-version.md
+                    title: "Supported SSL/TLS versions by JDK version"
                   - page: docs-content://deploy-manage/security/enabling-cipher-suites-for-stronger-encryption.md
+                    title: "Enabling cipher suites for stronger encryption"
                 - page: docs-content://deploy-manage/security/eck-tls.md
                   title: "ECK"
                   children:
                   - page: docs-content://deploy-manage/security/k8s-https-settings.md
+                    title: "Manage HTTP certificates on ECK"
                   - page: docs-content://deploy-manage/security/k8s-transport-settings.md
+                    title: Manage transport certificates on ECK
+                  - page: docs-content://deploy-manage/security/k8s-es-client-certificate-auth.md
+                    title: "Client certificate authentication"
                 - page: docs-content://deploy-manage/security/external-ca-transport.md
                   title: "External CA for TLS"
               - page: docs-content://deploy-manage/security/network-security.md
@@ -830,6 +843,7 @@ nav:
                 - page: docs-content://deploy-manage/security/remote-cluster-filtering.md
                   title: "Remote cluster filters"
                 - page: docs-content://deploy-manage/security/private-connectivity.md
+                  title: "Private connectivity"
                   children:
                   - page: docs-content://deploy-manage/security/private-connectivity-aws.md
                     title: "AWS PrivateLink"
@@ -838,39 +852,58 @@ nav:
                   - page: docs-content://deploy-manage/security/private-connectivity-gcp.md
                     title: "GCP Private Service Connect"
                   - page: docs-content://deploy-manage/security/claim-private-connection-api.md
+                    title: "Claim private connection ownership"
                 - page: docs-content://deploy-manage/security/network-security-api.md
                   title: "Through the API"
                 - page: docs-content://deploy-manage/security/k8s-network-policies.md
+                  title: "Kubernetes network policies"
               - page: docs-content://deploy-manage/security/elastic-cloud-static-ips.md
+                title: "Elastic Cloud static IPs"
               - page: docs-content://deploy-manage/security/kibana-session-management.md
+                title: "Kibana session management"
               - page: docs-content://deploy-manage/security/data-security.md
+                title: "Encrypt your deployment data"
                 children:
                 - page: docs-content://deploy-manage/security/encrypt-deployment-with-customer-managed-encryption-key.md
+                  title: "Use a customer-managed encryption key"
               - page: docs-content://deploy-manage/security/secure-settings.md
+                title: "Secure your settings"
                 children:
                 - page: docs-content://deploy-manage/security/k8s-secure-settings.md
+                  title: "Secure settings on ECK"
               - page: docs-content://deploy-manage/security/secure-saved-objects.md
+                title: "Secure Kibana saved objects"
               - page: docs-content://deploy-manage/security/logging-configuration/security-event-audit-logging.md
+                title: "Security event audit logging"
                 children:
                 - page: docs-content://deploy-manage/security/logging-configuration/enabling-audit-logs.md
+                  title: "Enable audit logging"
                 - page: docs-content://deploy-manage/security/logging-configuration/configuring-audit-logs.md
+                  title: Configure audit logging
                   children:
                   - page: docs-content://deploy-manage/security/logging-configuration/logfile-audit-events-ignore-policies.md
                     title: "Elasticsearch audit events ignore policies"
                   - page: docs-content://deploy-manage/security/logging-configuration/logfile-audit-output.md
                     title: "Elasticsearch logfile output"
                 - page: docs-content://deploy-manage/security/logging-configuration/auditing-search-queries.md
+                  title: Audit Elasticsearch search queries
                 - page: docs-content://deploy-manage/security/logging-configuration/correlating-kibana-elasticsearch-audit-logs.md
                   title: "Correlate audit events"
             - page: docs-content://deploy-manage/security/secure-clients-integrations.md
+              title: Secure other Elastic Stack components
             - page: docs-content://deploy-manage/security/httprest-clients-security.md
+              title: Securing HTTP client applications
             - page: docs-content://deploy-manage/security/limitations.md
               title: "Limitations"
             - page: docs-content://deploy-manage/security/fips.md
+              title: FIPS compliance
               children:
               - page: docs-content://deploy-manage/security/fips-es.md
+                title: FIPS compliance for Elasticsearch
               - page: docs-content://deploy-manage/security/fips-kib.md
+                title: FIPS compliance for Kibana
               - page: docs-content://deploy-manage/security/fips-ingest.md
+                title: FIPS mode for Ingest tools
           - group: Authentication and authorization
             page: docs-content://deploy-manage/users-roles.md
             children:
@@ -878,7 +911,9 @@ nav:
               title: "Cloud organization"
               children:
               - page: docs-content://deploy-manage/users-roles/cloud-organization/manage-users.md
+                title: Manage users
               - page: docs-content://deploy-manage/users-roles/cloud-organization/user-roles.md
+                title: User roles and privileges
               - page: docs-content://deploy-manage/users-roles/cloud-organization/configure-saml-authentication.md
                 title: "Configure SAML SSO"
                 children:
@@ -890,32 +925,46 @@ nav:
               title: "ECE orchestrator"
               children:
               - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/manage-system-passwords.md
+                title: Manage system passwords
               - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/manage-users-roles.md
+                title: Manage users and roles
                 children:
                 - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/native-user-authentication.md
+                  title: Native users
                 - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/active-directory.md
+                  title: Active Directory
                 - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/ldap.md
+                  title: LDAP
                 - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/saml.md
+                  title: SAML
               - page: docs-content://deploy-manage/users-roles/cloud-enterprise-orchestrator/configure-sso-for-deployments.md
+                title: Configure SSO for deployments
             - page: docs-content://deploy-manage/users-roles/serverless-custom-roles.md
+              title: Serverless project custom roles
             - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth.md
               title: "Cluster or deployment"
               children:
               - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/quickstart.md
                 title: "Quickstart"
               - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/user-authentication.md
+                title: User authentication
                 children:
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/authentication-realms.md
+                  title: Authentication realms
                   children:
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/realm-chains.md
+                    title: Realm chains
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/security-domains.md
+                    title: Security domains
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/internal-authentication.md
+                  title: Internal authentication
                   children:
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/native.md
                     title: "Native"
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/file-based.md
                     title: "File-based"
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/external-authentication.md
+                  title: External authentication
                   children:
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/active-directory.md
                     title: "Active Directory"
@@ -936,7 +985,9 @@ nav:
                     - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/saml-entra.md
                       title: "With Microsoft Entra ID"
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/pki.md
+                    title: PKI
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/custom.md
+                    title: Custom realms
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/built-in-users.md
                   title: "Built-in users"
                   children:
@@ -952,37 +1003,57 @@ nav:
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/kibana-authentication.md
                   title: "Kibana authentication"
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/access-agreement.md
+                  title: Kibana access agreement
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/anonymous-access.md
+                  title: Anonymous access
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/token-based-authentication-services.md
+                  title: Token-based authentication services
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/service-accounts.md
+                  title: Service accounts
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/internal-users.md
+                  title: Internal users
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/operator-privileges.md
+                  title: Operator privileges
                   children:
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/configure-operator-privileges.md
+                    title: Configure operator privileges
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/operator-only-functionality.md
+                    title: Operator-only functionality
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/operator-privileges-for-snapshot-restore.md
+                    title: Operator privileges for snapshot and restore
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/user-profiles.md
+                  title: User profiles
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/looking-up-users-without-authentication.md
+                  title: Looking up users without authentication
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/controlling-user-cache.md
+                  title: Controlling the user cache
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/manage-authentication-for-multiple-clusters.md
+                  title: Manage authentication for multiple clusters
               - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/user-roles.md
+                title: User roles
                 children:
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/defining-roles.md
+                  title: Defining roles
                   children:
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/role-structure.md
+                    title: Role structure
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/granting-privileges-for-data-streams-aliases.md
                     title: "For data streams and aliases"
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/kibana-role-management.md
                     title: "Using Kibana"
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/role-restriction.md
+                    title: Role restriction
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/kibana-privileges.md
+                  title: Kibana privileges
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/mapping-users-groups-to-roles.md
                   title: "Map users and groups to roles"
                   children:
                   - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/role-mapping-resources.md
                     title: "Role mapping properties"
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/authorization-delegation.md
+                  title: Authorization delegation
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/authorization-plugins.md
+                  title: Authorization plugins
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/controlling-access-at-document-field-level.md
                   title: "Control access at the document and field level"
                 - page: docs-content://deploy-manage/users-roles/cluster-or-deployment-auth/submitting-requests-on-behalf-of-other-users.md
@@ -991,15 +1062,20 @@ nav:
             page: docs-content://deploy-manage/api-keys.md
             children:
             - page: docs-content://deploy-manage/api-keys/elasticsearch-api-keys.md
+              title: Elasticsearch API keys
             - page: docs-content://deploy-manage/api-keys/serverless-project-api-keys.md
+              title: Serverless project API keys
             - page: docs-content://deploy-manage/api-keys/elastic-cloud-api-keys.md
+              title: Elastic Cloud API keys
             - page: docs-content://deploy-manage/api-keys/elastic-cloud-enterprise-api-keys.md
+              title: Elastic Cloud Enterprise API keys
           - group: Spaces
             page: docs-content://deploy-manage/manage-spaces.md
           - group: Monitoring
             page: docs-content://deploy-manage/monitor.md
             children:
             - page: docs-content://deploy-manage/monitor/autoops.md
+              title: AutoOps
               children:
               - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-how-to-access.md
                 title: "For Elastic Cloud Hosted"
@@ -1057,10 +1133,13 @@ nav:
                 title: "Events"
                 children:
                 - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-event-settings.md
+                  title: Event Settings
                 - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-notifications-settings.md
+                  title: Notifications Settings
               - page: docs-content://deploy-manage/monitor/autoops/ec-autoops-faq.md
                 title: "FAQ"
             - page: docs-content://deploy-manage/monitor/stack-monitoring.md
+              title: Stack monitoring
               children:
               - page: docs-content://deploy-manage/monitor/stack-monitoring/ece-ech-stack-monitoring.md
                 title: "Enable on ECH and ECE"
@@ -1076,14 +1155,20 @@ nav:
                 - page: docs-content://deploy-manage/monitor/stack-monitoring/collecting-log-data-with-filebeat.md
                   title: "Collecting log data with Filebeat"
                 - page: docs-content://deploy-manage/monitor/stack-monitoring/es-self-monitoring-prod.md
+                  title: Monitoring in a production environment
                 - page: docs-content://deploy-manage/monitor/stack-monitoring/es-legacy-collection-methods.md
                   title: "Legacy collection methods"
                   children:
                   - page: docs-content://deploy-manage/monitor/stack-monitoring/es-monitoring-collectors.md
+                    title: Collectors
                   - page: docs-content://deploy-manage/monitor/stack-monitoring/es-monitoring-exporters.md
+                    title: Exporters
                   - page: docs-content://deploy-manage/monitor/stack-monitoring/es-local-exporter.md
+                    title: Local exporters
                   - page: docs-content://deploy-manage/monitor/stack-monitoring/es-http-exporter.md
+                    title: HTTP exporters
                   - page: docs-content://deploy-manage/monitor/stack-monitoring/es-pause-export.md
+                    title: Pausing data collection
               - page: docs-content://deploy-manage/monitor/stack-monitoring/kibana-monitoring-self-managed.md
                 title: "Self-managed: Kibana"
                 children:
@@ -1094,52 +1179,83 @@ nav:
                 - page: docs-content://deploy-manage/monitor/stack-monitoring/kibana-monitoring-legacy.md
                   title: "Legacy collection methods"
               - page: docs-content://deploy-manage/monitor/stack-monitoring/kibana-monitoring-data.md
+                title: Access monitoring data in Kibana
               - page: docs-content://deploy-manage/monitor/monitoring-data/visualizing-monitoring-data.md
+                title: Visualizing monitoring data
                 children:
                 - page: docs-content://deploy-manage/monitor/monitoring-data/beats-page.md
+                  title: Beats metrics
                 - page: docs-content://deploy-manage/monitor/monitoring-data/elasticsearch-metrics.md
+                  title: Elasticsearch metrics
                 - page: docs-content://deploy-manage/monitor/monitoring-data/kibana-page.md
+                  title: Kibana metrics
                 - page: docs-content://deploy-manage/monitor/monitoring-data/integrations-server-page.md
+                  title: Integrations Server metrics
                 - page: docs-content://deploy-manage/monitor/monitoring-data/logstash-page.md
+                  title: Logstash metrics
                 - page: docs-content://deploy-manage/monitor/monitoring-data/monitor-troubleshooting.md
                   title: "Troubleshooting"
               - page: docs-content://deploy-manage/monitor/monitoring-data/configure-stack-monitoring-alerts.md
+                title: Stack monitoring alerts
               - page: docs-content://deploy-manage/monitor/monitoring-data/configuring-data-streamsindices-for-monitoring.md
+                title: Configuring monitoring data streams and indices
                 children:
                 - page: docs-content://deploy-manage/monitor/monitoring-data/config-monitoring-data-streams-elastic-agent.md
+                  title: Configuring data streams created by Elastic Agent
                 - page: docs-content://deploy-manage/monitor/monitoring-data/config-monitoring-data-streams-metricbeat-8.md
+                  title: Configuring data streams created by Metricbeat 8
                 - page: docs-content://deploy-manage/monitor/monitoring-data/config-monitoring-indices-metricbeat-7-internal-collection.md
+                  title: Configuring indices created by Metricbeat 7 or internal collection
             - page: docs-content://deploy-manage/monitor/autoops-vs-stack-monitoring.md
               title: "AutoOps vs. Stack Monitoring"
             - page: docs-content://deploy-manage/monitor/cloud-health-perf.md
               title: "Cloud deployment health"
               children:
               - page: docs-content://deploy-manage/monitor/access-performance-metrics-on-elastic-cloud.md
+                title: Performance metrics on Elastic Cloud
               - page: docs-content://deploy-manage/monitor/ec-memory-pressure.md
+                title: JVM memory pressure indicator
             - page: docs-content://deploy-manage/monitor/kibana-task-manager-health-monitoring.md
               title: "Kibana task manager monitoring"
             - page: docs-content://deploy-manage/monitor/orchestrators.md
+              title: Monitoring orchestrators
               children:
               - page: docs-content://deploy-manage/monitor/orchestrators/eck-metrics-configuration.md
+                title: ECK operator metrics
                 children:
                 - page: docs-content://deploy-manage/monitor/orchestrators/k8s-enabling-metrics-endpoint.md
+                  title: Enabling the metrics endpoint
                 - page: docs-content://deploy-manage/monitor/orchestrators/k8s-securing-metrics-endpoint.md
+                  title: Securing the metrics endpoint
                 - page: docs-content://deploy-manage/monitor/orchestrators/k8s-prometheus-requirements.md
+                  title: Prometheus requirements
               - page: docs-content://deploy-manage/monitor/orchestrators/ece-platform-monitoring.md
+                title: ECE platform monitoring
                 children:
                 - page: docs-content://deploy-manage/monitor/orchestrators/ece-monitoring-ece-access.md
+                  title: Platform monitoring deployment logs and metrics
                 - page: docs-content://deploy-manage/monitor/orchestrators/ece-proxy-log-fields.md
+                  title: Proxy log fields
                 - page: docs-content://deploy-manage/monitor/orchestrators/ece-monitoring-ece-set-retention.md
+                  title: Set the retention period for logging and metrics indices
             - page: docs-content://deploy-manage/monitor/logging-configuration.md
+              title: Logging
               children:
               - page: docs-content://deploy-manage/monitor/logging-configuration/elasticsearch-log4j-configuration-self-managed.md
+                title: Elasticsearch log4j configuration
               - page: docs-content://deploy-manage/monitor/logging-configuration/update-elasticsearch-logging-levels.md
+                title: Update Elasticsearch logging levels
               - page: docs-content://deploy-manage/monitor/logging-configuration/elasticsearch-deprecation-logs.md
+                title: Elasticsearch deprecation logs
               - page: docs-content://deploy-manage/monitor/logging-configuration/slow-logs.md
+                title: Slow query and index logging
               - page: docs-content://deploy-manage/monitor/logging-configuration/kibana-logging.md
+                title: Kibana logging
                 children:
                 - page: docs-content://deploy-manage/monitor/logging-configuration/kibana-log-levels.md
+                  title: Set global log levels for Kibana
                 - page: docs-content://deploy-manage/monitor/logging-configuration/kib-advanced-logging.md
+                  title: Advanced Kibana logging settings
                   children:
                   - page: docs-content://deploy-manage/monitor/logging-configuration/kibana-log-settings-examples.md
                     title: "Examples"
@@ -1149,18 +1265,26 @@ nav:
             page: docs-content://deploy-manage/tools.md
             children:
             - page: docs-content://deploy-manage/tools/snapshot-and-restore.md
+              title: Snapshot and restore
               children:
               - page: docs-content://deploy-manage/tools/snapshot-and-restore/manage-snapshot-repositories.md
+                title: Manage snapshot repositories
                 children:
                 - page: docs-content://deploy-manage/tools/snapshot-and-restore/self-managed.md
                   title: "Self-managed"
                   children:
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/azure-repository.md
+                    title: Azure repository
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/google-cloud-storage-repository.md
+                    title: Google Cloud Storage repository
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/s3-repository.md
+                    title: S3 repository
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/shared-file-system-repository.md
+                    title: Shared file system repository
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/read-only-url-repository.md
+                    title: Read-only URL repository
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/source-only-repository.md
+                    title: Source-only repository
                 - page: docs-content://deploy-manage/tools/snapshot-and-restore/elastic-cloud-hosted.md
                   title: "Elastic Cloud Hosted"
                   children:
@@ -1171,6 +1295,7 @@ nav:
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/ec-azure-snapshotting.md
                     title: "Azure Blob Storage"
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/access-isolation-for-found-snapshots-repository.md
+                    title: Access isolation for the found-snapshots repository
                     children:
                     - page: docs-content://deploy-manage/tools/snapshot-and-restore/repository-isolation-on-azure.md
                       title: "Azure"
@@ -1184,19 +1309,29 @@ nav:
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/google-cloud-storage-gcs-repository.md
                     title: "Google Cloud Storage"
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/azure-storage-repository.md
+                    title: Azure Storage repository
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/minio-on-premise-repository.md
+                    title: MinIO self-managed repository
                 - page: docs-content://deploy-manage/tools/snapshot-and-restore/cloud-on-k8s.md
                   title: "Elastic Cloud on Kubernetes"
               - page: docs-content://deploy-manage/tools/snapshot-and-restore/create-snapshots.md
+                title: Create, monitor and delete snapshots
               - page: docs-content://deploy-manage/tools/snapshot-and-restore/restore-snapshot.md
+                title: Restore a snapshot
                 children:
                 - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-restore-across-clusters.md
+                  title: Restore a snapshot across clusters
                   children:
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-restore-snapshots-into-new-deployment.md
+                    title: Restore snapshot into a new deployment
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-restore-snapshots-into-existing-deployment.md
+                    title: Restore snapshot into an existing deployment
                   - page: docs-content://deploy-manage/tools/snapshot-and-restore/ece-restore-snapshots-containing-searchable-snapshots-indices-across-clusters.md
+                    title: Restore snapshots containing searchable snapshots indices across clusters
               - page: docs-content://deploy-manage/tools/snapshot-and-restore/searchable-snapshots.md
+                title: Searchable snapshots
             - page: docs-content://deploy-manage/tools/cross-cluster-replication.md
+              title: Cross-cluster replication
               children:
               - page: docs-content://deploy-manage/tools/cross-cluster-replication/set-up-cross-cluster-replication.md
                 title: "Set up cross-cluster replication"
@@ -1204,26 +1339,42 @@ nav:
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-getting-started-prerequisites.md
                   title: "Prerequisites"
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/_connect_to_a_remote_cluster.md
+                  title: Connect to a remote cluster
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/_configure_privileges_for_cross_cluster_replication_2.md
+                  title: Configure privileges for cross-cluster replication
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-getting-started-follower-index.md
+                  title: Create a follower index to replicate a specific index
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-getting-started-auto-follow.md
+                  title: Create an auto-follow pattern to replicate time series indices
               - page: docs-content://deploy-manage/tools/cross-cluster-replication/manage-cross-cluster-replication.md
+                title: Manage cross-cluster replication
                 children:
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-inspect-progress.md
+                  title: Inspect replication statistics
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-pause-replication.md
+                  title: Pause and resume replication
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-recreate-follower-index.md
+                  title: Recreate a follower index
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-terminate-replication.md
+                  title: Terminate replication
               - page: docs-content://deploy-manage/tools/cross-cluster-replication/manage-auto-follow-patterns.md
+                title: Manage auto-follow patterns
                 children:
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-auto-follow-create.md
+                  title: Create auto-follow patterns
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-auto-follow-retrieve.md
+                  title: Retrieve auto-follow patterns
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-auto-follow-pause.md
+                  title: Pause and resume auto-follow patterns
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-auto-follow-delete.md
+                  title: Delete auto-follow patterns
               - page: docs-content://deploy-manage/tools/cross-cluster-replication/upgrading-clusters.md
                 title: "Upgrading clusters"
                 children:
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-uni-directional-upgrade.md
+                  title: Uni-directional index following
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-bi-directional-upgrade.md
+                  title: Bi-directional index following
               - page: docs-content://deploy-manage/tools/cross-cluster-replication/uni-directional-disaster-recovery.md
                 title: "Uni-directional disaster recovery"
                 children:
@@ -1237,11 +1388,13 @@ nav:
                 title: "Bi-directional disaster recovery"
                 children:
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/ccr-tutorial-initial-setup.md
+                  title: Initial setup
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/_failover_when_clustera_is_down_2.md
                   title: "Failover when clusterA is down"
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/_failback_when_clustera_comes_back_2.md
                   title: "Failback when clusterA comes back"
                 - page: docs-content://deploy-manage/tools/cross-cluster-replication/_perform_update_or_delete_by_query.md
+                  title: Perform update or delete by query
           - group: Autoscaling
             page: docs-content://deploy-manage/autoscaling.md
             children:
@@ -1250,7 +1403,9 @@ nav:
             - page: docs-content://deploy-manage/autoscaling/autoscaling-in-eck.md
               title: "In ECK"
             - page: docs-content://deploy-manage/autoscaling/autoscaling-deciders.md
+              title: Autoscaling deciders
             - page: docs-content://deploy-manage/autoscaling/trained-model-autoscaling.md
+              title: Trained model autoscaling
           - page: docs-content://deploy-manage/stack-settings.md
             title: Stack settings
           - page: docs-content://deploy-manage/manage-connectors.md
@@ -1302,7 +1457,9 @@ nav:
               title: "On self-managed Elastic Stack"
               children:
               - page: docs-content://deploy-manage/remote-clusters/remote-clusters-api-key.md
+                title: Add remote clusters using API key authentication
               - page: docs-content://deploy-manage/remote-clusters/remote-clusters-cert.md
+                title: Add remote clusters using TLS certificate authentication
               - page: docs-content://deploy-manage/remote-clusters/self-remote-cluster-eck.md
                 title: "To Elastic Cloud on Kubernetes"
               - page: docs-content://deploy-manage/remote-clusters/remote-clusters-migrate.md
@@ -1330,37 +1487,58 @@ nav:
             page: docs-content://deploy-manage/maintenance.md
             children:
             - page: docs-content://deploy-manage/maintenance/ece.md
+              title: ECE maintenance
               children:
               - page: docs-content://deploy-manage/maintenance/ece/deployments-maintenance.md
+                title: Deployments maintenance
                 children:
                 - page: docs-content://deploy-manage/maintenance/ece/pause-instance.md
+                  title: Pause instance
               - page: docs-content://deploy-manage/maintenance/ece/maintenance-activities.md
+                title: Maintenance activities
                 children:
                 - page: docs-content://deploy-manage/maintenance/ece/enable-maintenance-mode.md
+                  title: Enable maintenance mode
                 - page: docs-content://deploy-manage/maintenance/ece/scale-out-installation.md
+                  title: Scale out your installation
                 - page: docs-content://deploy-manage/maintenance/ece/move-nodes-instances-from-allocators.md
+                  title: Move nodes or instances from allocators
                 - page: docs-content://deploy-manage/maintenance/ece/perform-ece-hosts-maintenance.md
+                  title: Perform ECE hosts maintenance
                 - page: docs-content://deploy-manage/maintenance/ece/delete-ece-hosts.md
+                  title: Delete ECE hosts
             - page: docs-content://deploy-manage/maintenance/start-stop-services.md
+              title: Start and stop services
               children:
               - page: docs-content://deploy-manage/maintenance/start-stop-services/start-stop-elasticsearch.md
+                title: Start and stop Elasticsearch
               - page: docs-content://deploy-manage/maintenance/start-stop-services/start-stop-kibana.md
+                title: Start and stop Kibana
               - page: docs-content://deploy-manage/maintenance/start-stop-services/restart-cloud-hosted-deployment.md
+                title: Restart an Elastic Cloud Hosted deployment
               - page: docs-content://deploy-manage/maintenance/start-stop-services/restart-an-ece-deployment.md
+                title: Restart an ECE deployment
               - page: docs-content://deploy-manage/maintenance/start-stop-services/full-cluster-restart-rolling-restart-procedures.md
+                title: Full Cluster restart and rolling restart procedures
             - page: docs-content://deploy-manage/maintenance/start-stop-routing-requests.md
+              title: Start and stop routing requests
             - page: docs-content://deploy-manage/maintenance/add-and-remove-elasticsearch-nodes.md
+              title: Add and Remove Elasticsearch nodes
           - group: Upgrade
             page: docs-content://deploy-manage/upgrade.md
             children:
             - page: docs-content://deploy-manage/upgrade/plan-upgrade.md
+              title: Plan your upgrade
             - page: docs-content://deploy-manage/upgrade/prepare-to-upgrade.md
               title: "Preparation steps"
               children:
               - page: docs-content://deploy-manage/upgrade/prepare-to-upgrade/upgrade-assistant.md
+                title: Upgrade Assistant
             - page: docs-content://deploy-manage/upgrade/deployment-or-cluster.md
+              title: Upgrade your deployment or cluster
               children:
               - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-717.md
+                title: Upgrade from 7.17 to latest
               - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-on-ech.md
                 title: "Upgrade on Elastic Cloud Hosted"
               - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-on-ece.md
@@ -1371,11 +1549,14 @@ nav:
                 title: "Upgrade Elastic on a self-managed cluster"
                 children:
                 - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/elasticsearch.md
+                  title: Upgrade Elasticsearch
                 - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/upgrade-elasticsearch-docker.md
                   title: "Upgrade Elasticsearch running on Docker"
                 - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/kibana.md
+                  title: Upgrade Kibana
                   children:
                   - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/saved-object-migrations.md
+                    title: Saved object migrations
                   - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/kibana-roll-back.md
                     title: "Roll back to a previous version"
               - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/archived-settings.md
@@ -1383,19 +1564,26 @@ nav:
               - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/reading-indices-from-older-elasticsearch-versions.md
                 title: "Reading indices from older versions"
               - page: docs-content://deploy-manage/upgrade/deployment-or-cluster/enterprise-search.md
+                title: Upgrade Enterprise Search
             - page: docs-content://deploy-manage/upgrade/ingest-components.md
+              title: Upgrade your ingest components
             - page: docs-content://deploy-manage/upgrade/orchestrator.md
               title: "Upgrade your ECE or ECK orchestrator"
               children:
               - page: docs-content://deploy-manage/upgrade/orchestrator/upgrade-cloud-enterprise.md
+                title: Upgrade Elastic Cloud Enterprise
                 children:
                 - page: docs-content://deploy-manage/upgrade/orchestrator/re-running-the-ece-upgrade.md
+                  title: Re-running the ECE upgrade
               - page: docs-content://deploy-manage/upgrade/orchestrator/upgrade-cloud-on-k8s.md
+                title: Upgrade Elastic Cloud on Kubernetes
           - group: Uninstall
             page: docs-content://deploy-manage/uninstall.md
             children:
             - page: docs-content://deploy-manage/uninstall/uninstall-elastic-cloud-enterprise.md
+              title: Uninstall Elastic Cloud Enterprise
             - page: docs-content://deploy-manage/uninstall/uninstall-elastic-cloud-on-kubernetes.md
+              title: Uninstall Elastic Cloud on Kubernetes
             - page: docs-content://deploy-manage/uninstall/delete-a-cloud-deployment.md
               title: "Delete an orchestrated deployment"
           - group: Licenses and subscriptions
@@ -1411,6 +1599,7 @@ nav:
             page: docs-content://deploy-manage/cloud-organization.md
             children:
             - page: docs-content://deploy-manage/cloud-organization/billing.md
+              title: Billing
               children:
               - page: docs-content://deploy-manage/cloud-organization/billing/cloud-hosted-deployment-billing-dimensions.md
                 title: "Hosted billing dimensions"
@@ -1424,17 +1613,27 @@ nav:
                 - page: docs-content://deploy-manage/cloud-organization/billing/security-billing-dimensions.md
                   title: "Security projects"
               - page: docs-content://deploy-manage/cloud-organization/billing/billing-models.md
+                title: Billing models
               - page: docs-content://deploy-manage/cloud-organization/billing/add-billing-details.md
+                title: Add your billing details
               - page: docs-content://deploy-manage/cloud-organization/billing/view-billing-history.md
+                title: View your billing history
               - page: docs-content://deploy-manage/cloud-organization/billing/manage-billing-notifications.md
                 title: "Manage notifications"
               - page: docs-content://deploy-manage/cloud-organization/billing/manage-subscription.md
+                title: Manage your subscription
               - page: docs-content://deploy-manage/cloud-organization/billing/monitor-analyze-usage.md
+                title: Monitor and analyze usage
               - page: docs-content://deploy-manage/cloud-organization/billing/ecu.md
+                title: Elastic Consumption Units
               - page: docs-content://deploy-manage/cloud-organization/billing/billing-faq.md
+                title: Billing FAQ
             - page: docs-content://deploy-manage/cloud-organization/operational-emails.md
+              title: Operational emails
             - page: docs-content://deploy-manage/cloud-organization/billing/update-billing-operational-contacts.md
+              title: Update billing and operational contacts
             - page: docs-content://deploy-manage/cloud-organization/service-status.md
+              title: Service status
             - page: docs-content://deploy-manage/cloud-organization/tools-and-apis.md
               title: "Tools and APIs"
         - group: Deployment and administration tools
@@ -1442,14 +1641,16 @@ nav:
           - toc: ecctl://reference
           - page: elasticsearch://reference/elasticsearch/command-line-tools/index.md
             title: Command-line tools
+          - island: Account and preferences
+            toc: docs-content://cloud-account
     - label: The Elasticsearch platform
       children:
       - label: Ingest and manage data
         children:
-        - group: "Ingest or migrate: bring your data into Elasticsearch"
+        - group: Ingest or migrate data
           children:
           - page: docs-content://manage-data/ingest.md
-            title: Choose/Plan your ingest method
+            title: Choose an ingest method
           - group: Ingest architectures
             page: docs-content://manage-data/ingest/ingest-reference-architectures.md
             children:
@@ -1496,7 +1697,7 @@ nav:
               title: Ingesting data for search use cases
             - title: Ingesting data for observability
             - page: docs-content://solutions/security/get-started/ingest-data-to-elastic-security.md
-              title: Ingesting data for security (Move from Solutions)
+              title: Ingesting data for security
           - page: docs-content://manage-data/ingest/ingesting-timeseries-data.md
             title: Ingesting time series data
           - group: Ingest logs
@@ -1587,6 +1788,7 @@ nav:
             - page: docs-content://manage-data/migrate/migrate-internal-indices.md
               title: Migrate system indices
         - group: Ingest tools
+          expanded: true
           page: docs-content://reference/ingestion-tools/index.md
           children:
           - toc: opentelemetry://reference
@@ -1850,37 +2052,197 @@ nav:
             title: Index mapping and text analysis
           - page: docs-content://manage-data/ingest/transform-enrich/ingest-lag.md
             title: Calculate ingest lag metadata
-      - label: Search, visualize and analyze
+      - label: Search, visualize, and analyze
         children:
+        # =======================================================================
+        # SEARCH AND QUERY
+        # Narrative arc: get started → approaches → ingest → querying → cross-cluster → integrate
+        # Pages pulled from solutions/search/ and explore-analyze/ at current paths.
+        # [from E&A] = page currently lives in explore-analyze/
+        # [TODO] = placeholder, page not yet written
+        # =======================================================================
         - group: Search and query
+          page: docs-content://solutions/search.md
           children:
+
+          # -----------------------------------------------------------------------
+          # 1. GET STARTED
+          # -----------------------------------------------------------------------
           - group: Get started with search
+            page: docs-content://solutions/search/get-started.md
             children:
-            - title: APIs and tools for search
-          - group: Search strategies
+            - group: Quickstarts
+              page: docs-content://solutions/search/get-started/quickstarts.md
+              children:
+              - page: docs-content://solutions/search/get-started/index-basics.md
+                title: Index basics
+              - page: docs-content://solutions/search/get-started/keyword-search-python.md
+                title: Keyword search with Python
+              - page: docs-content://solutions/search/get-started/semantic-search.md
+                title: Semantic search
+
+          # -----------------------------------------------------------------------
+          # 2. SEARCH APPROACHES
+          # What kind of search do I need?
+          # FTS is the foundation — everything else layers on top.
+          # -----------------------------------------------------------------------
+          - group: Search approaches
+            expanded: true
+            page: docs-content://solutions/search/search-approaches.md
             children:
-            - title: Full-text search
-            - title: AI-powered search
-            - title: Hybrid search
-            - title: Ranking and reranking
-          - group: Build search queries with APIs and query languages and search templates
+            # Full-text is core to every deployment, not just one option
+            - group: Full-text search
+              page: docs-content://solutions/search/full-text.md
+              children:
+              - page: docs-content://solutions/search/full-text/how-full-text-works.md
+                title: How full-text search works
+              - page: docs-content://solutions/search/full-text/text-analysis-during-search.md
+                title: Text analysis during search
+              - group: Search relevance
+                page: docs-content://solutions/search/full-text/search-relevance.md
+                children:
+                - page: docs-content://solutions/search/full-text/search-relevance/mixing-exact-search-with-stemming.md
+                  title: Mix exact search with stemming
+                - page: docs-content://solutions/search/full-text/search-relevance/consistent-scoring.md
+                  title: Consistent scoring
+                - page: docs-content://solutions/search/full-text/search-relevance/static-scoring-signals.md
+                  title: Static scoring signals
+              - group: Synonyms
+                page: docs-content://solutions/search/full-text/search-with-synonyms.md
+                children:
+                - page: docs-content://solutions/search/full-text/create-update-synonyms-api-example.md
+                  title: Create and update synonyms via API
+            # Vector search — formerly "AI search"
+            - group: Vector search
+              page: docs-content://solutions/search/ai-search/ai-search.md
+              children:
+              - group: Dense vector search
+                page: docs-content://solutions/search/vector/dense-vector.md
+                children:
+                - page: docs-content://solutions/search/vector/knn.md
+                  title: k-nearest neighbor (kNN)
+                - page: docs-content://solutions/search/vector/bring-own-vectors.md
+                  title: Bring your own vectors
+              - page: docs-content://solutions/search/vector/sparse-vector.md
+                title: Sparse vector search
+              - page: docs-content://solutions/search/vector/dense-versus-sparse-ingest-pipelines.md
+                title: Dense vs sparse ingest pipelines
+              - group: Semantic search
+                page: docs-content://solutions/search/semantic-search.md
+                children:
+                - page: docs-content://solutions/search/semantic-search/semantic-search-semantic-text.md
+                  title: Semantic search with semantic_text
+                - page: docs-content://solutions/search/semantic-search/semantic-search-inference.md
+                  title: Semantic search with the inference API
+                - page: docs-content://solutions/search/semantic-search/semantic-search-elser-ingest-pipelines.md
+                  title: Semantic search with ELSER
+                - page: docs-content://solutions/search/semantic-search/cohere-es.md
+                  title: Semantic search with Cohere
+              - page: docs-content://solutions/search/using-openai-compatible-models.md
+                title: Using OpenAI-compatible models
+            - group: Hybrid search
+              page: docs-content://solutions/search/hybrid-search.md
+              children:
+              - page: docs-content://solutions/search/hybrid-semantic-text.md
+                title: Hybrid search with semantic_text
+            # Ranking — semantic reranking is a lightweight upgrade on top of FTS
+            - group: Ranking and reranking
+              page: docs-content://solutions/search/ranking.md
+              children:
+              - page: docs-content://solutions/search/ranking/semantic-reranking.md
+                title: Semantic reranking
+              - group: Learning to rank
+                page: docs-content://solutions/search/ranking/learning-to-rank-ltr.md
+                children:
+                - page: docs-content://solutions/search/ranking/learning-to-rank-model-training.md
+                  title: Train an LTR model
+                - page: docs-content://solutions/search/ranking/learning-to-rank-search-usage.md
+                  title: Use LTR in search
+
+          # -----------------------------------------------------------------------
+          # 3. INGEST FOR SEARCH
+          # After approaches — the approach decision shapes what your pipeline needs.
+          # -----------------------------------------------------------------------
+          - group: Ingest for search
+            page: docs-content://solutions/search/ingest-for-search.md
             children:
-            - title: ES|QL
-            - title: Query DSL
-            - title: "..."
+            - page: docs-content://solutions/search/search-pipelines.md
+              title: Search pipelines
+
+          # -----------------------------------------------------------------------
+          # 4. QUERYING
+          # How do I express and execute my search?
+          # Two dimensions: what language? what interface?
+          # -----------------------------------------------------------------------
+          - group: Build search queries
+            expanded: true
+            page: docs-content://solutions/search/querying-for-search.md
+            children:
+            - group: The search API
+              page: docs-content://solutions/search/the-search-api.md
+              children:
+              - page: docs-content://solutions/search/search-templates.md
+                title: Search templates
+              - group: Aggregations
+                page: docs-content://explore-analyze/query-filter/aggregations.md # [from E&A]
+                children:
+                - page: docs-content://explore-analyze/query-filter/aggregations/tutorial-analyze-ecommerce-data-with-aggregations-using-query-dsl.md
+                  title: Tutorial — analyze e-commerce data
+            - page: docs-content://solutions/search/retrievers-overview.md
+              title: Retrievers
+            - page: docs-content://solutions/search/esql-for-search.md
+              title: ES|QL for search
+            - page: docs-content://solutions/search/async-search-api.md
+              title: Async search
+            # Query language reference — bulk toc, cannot interleave with narrative pages above
+            - toc: elasticsearch://reference/query-languages
+            # Developer tools — for running and testing queries
+            - group: Developer tools
+              page: docs-content://explore-analyze/query-filter/tools.md # [from E&A]
+              children:
+              - page: docs-content://explore-analyze/query-filter/tools/console.md
+                title: Console
+              - page: docs-content://explore-analyze/query-filter/tools/search-profiler.md
+                title: Search Profiler
+              - page: docs-content://explore-analyze/query-filter/tools/saved-queries.md
+                title: Saved queries
+
+          # -----------------------------------------------------------------------
+          # 5. SEARCH ACROSS CLUSTERS AND PROJECTS
+          # End-of-journey scaling topic: "my data spans multiple clusters"
+          # -----------------------------------------------------------------------
+          - group: Cross-cluster search
+            page: docs-content://explore-analyze/cross-cluster-search.md # [from E&A]
+            children:
+            - page: docs-content://explore-analyze/cross-cluster-search/using-resolve-cluster-endpoint-before-cross-cluster-search.md
+              title: Using the resolve cluster endpoint
+          # Cross-project search — serverless only, pages are hidden in toc
           - group: Cross-project search
+            page: docs-content://explore-analyze/cross-project-search.md # [from E&A]
             children:
-            - title: Link projects for cross-project search
-            - title: Using project routing to limit search scope
-            - title: How search works in CPS
-            - title: Using tags to control search
-          - title: Cross-cluster search
-          - title: Add search to your site or app
-          - group: Querying and filtering in Kibana
+            - page: docs-content://explore-analyze/cross-project-search/cross-project-search-link-projects.md
+              title: Link projects
+            - page: docs-content://explore-analyze/cross-project-search/cross-project-search-search.md
+              title: Search across projects
+            - page: docs-content://explore-analyze/cross-project-search/cross-project-search-tags.md
+              title: Using tags to control search
+            - page: docs-content://explore-analyze/cross-project-search/cross-project-search-project-routing.md
+              title: Project routing
+
+          # -----------------------------------------------------------------------
+          # 6. INTEGRATE WITH YOUR APP
+          # Wire search into your application code.
+          # [TODO] site-or-app.md → integrate.md rename deferred to docs-content work
+          # -----------------------------------------------------------------------
+          - group: Integrate with your app
+            page: docs-content://solutions/search/site-or-app.md
             children:
-            - title: Filtering in Kibana
-            - title: Query languages
-            - title: Query tools
+            - page: docs-content://solutions/search/site-or-app/clients.md
+              title: Client libraries
+            - page: docs-content://solutions/search/site-or-app/search-ui.md
+              title: Search UI
+            - page: docs-content://solutions/search/apis-and-tools.md
+              title: APIs and tools
         - group: Explore and visualize
           page: docs-content://explore-analyze/explore-and-visualize.md
           children:
@@ -2304,7 +2666,7 @@ nav:
             title: Workflow templates
       - label: AI and machine learning
         children:
-        - group: Machine Learning and NLP
+        - group: Machine learning and NLP
           page: docs-content://explore-analyze/machine-learning.md
           children:
           - page: docs-content://explore-analyze/machine-learning/setting-up-machine-learning.md
@@ -2655,7 +3017,7 @@ nav:
               - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/k8s.md
                 title: Kubernetes
               - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/hosts_vms.md
-                title: Hosts / VMs
+                title: Hosts and VMs
               - page: docs-content://solutions/observability/get-started/opentelemetry/quickstart/self-managed/docker.md
                 title: Docker
             - group: Elastic Cloud Serverless
@@ -2694,6 +3056,8 @@ nav:
                 title: Upgrade
               - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/kubernetes/customization.md
                 title: Customization
+            - page: docs-content://solutions/observability/get-started/opentelemetry/use-cases/llms/index.md
+              title: LLM observability
           - group: Other Observability tutorials
             page: docs-content://solutions/observability/get-started/other-tutorials/index.md
             children:
@@ -2795,6 +3159,8 @@ nav:
                   title: Infrastructure
                 - page: docs-content://solutions/observability/apm/logs.md
                   title: Logs
+              - page: docs-content://solutions/observability/apm/discover-traces.md
+                title: Discover traces
               - group: Filter and search data
                 page: docs-content://solutions/observability/apm/filter-search-data.md
                 children:
@@ -3310,8 +3676,24 @@ nav:
             title: Rename processor
           - page: docs-content://solutions/observability/streams/management/extract/append.md
             title: Append processor
+          - page: docs-content://solutions/observability/streams/management/extract/concat.md
+            title: Concat processor
+          - page: docs-content://solutions/observability/streams/management/extract/join.md
+            title: Join processor
+          - page: docs-content://solutions/observability/streams/management/extract/lowercase.md
+            title: Lowercase processor
+          - page: docs-content://solutions/observability/streams/management/extract/uppercase.md
+            title: Uppercase processor
+          - page: docs-content://solutions/observability/streams/management/extract/trim.md
+            title: Trim processor
+          - page: docs-content://solutions/observability/streams/management/extract/redact.md
+            title: Redact processor
+          - page: docs-content://solutions/observability/streams/management/extract/network-direction.md
+            title: Network direction processor
           - page: docs-content://solutions/observability/streams/management/extract/manual-pipeline-configuration.md
             title: Manual pipeline configuration
+        - page: docs-content://solutions/observability/streams/management/streamlang.md
+          title: Streamlang
         - page: docs-content://solutions/observability/streams/management/partitioning.md
           title: Partition data into child streams
         - page: docs-content://solutions/observability/streams/management/schema.md
@@ -3908,7 +4290,15 @@ nav:
   - section: Reference
     url: /reference/
     children:
-    - toc: docs-content://reference
+    - toc: docs-content://reference/security
+    - toc: docs-content://reference/observability
+    - toc: docs-content://reference/elasticsearch-clients
+    - toc: docs-content://reference/ingestion-tools
+    - toc: docs-content://reference/fleet
+    - toc: docs-content://reference/apm
+    - toc: docs-content://reference/apm-agents
+    - toc: docs-content://reference/machine-learning
+    - toc: docs-content://reference/glossary
     - toc: elasticsearch://reference/elasticsearch
     - toc: elasticsearch://reference/elasticsearch-plugins
     - toc: elasticsearch://reference/community-contributed
@@ -3989,6 +4379,10 @@ nav:
     - page: docs-content://explore-analyze/numeral-formatting.md
       title: Numeral formatting
     - toc: elasticsearch://reference/text-analysis
+    - island: Logstash plugins
+      toc: logstash-docs-md://lsr
+    - island: Logstash versioned plugins
+      toc: logstash-docs-md://vpr
 
   - section: Release notes
     url: /release-notes/
@@ -4058,7 +4452,6 @@ nav:
         # ECCTL
         - toc: ecctl://release-notes
 
-
   - section: Troubleshoot
     url: /troubleshoot/
     children:
@@ -4075,3 +4468,12 @@ nav:
       - toc: beats://extend
       - toc: elasticsearch://extend
       - toc: integrations://extend
+
+  # Disabled pending a decision on whether to keep the contribute-docs
+  # content in the public site. Re-enable to resurface ~35 pages.
+  # - section: Contribute
+  #   url: /contribute-docs/
+  #   isolated: true
+  #   children:
+  #   - toc: docs-content://contribute-docs
+

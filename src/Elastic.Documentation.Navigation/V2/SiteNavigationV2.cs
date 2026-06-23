@@ -21,8 +21,8 @@ namespace Elastic.Documentation.Navigation.V2;
 /// </summary>
 public class SiteNavigationV2 : SiteNavigation
 {
-	private readonly Dictionary<string, NavigationSection> _urlToSection = new(StringComparer.OrdinalIgnoreCase);
-	private readonly Dictionary<string, NavigationIsland> _tocRootToIsland = new(StringComparer.Ordinal);
+	private readonly Dictionary<string, NavigationSection> _urlToSection = [with(StringComparer.OrdinalIgnoreCase)];
+	private readonly Dictionary<string, NavigationIsland> _tocRootToIsland = [with(StringComparer.Ordinal)];
 
 	public SiteNavigationV2(
 		NavigationV2File v2File,
@@ -60,11 +60,22 @@ public class SiteNavigationV2 : SiteNavigation
 	public IReadOnlyList<NavigationIsland> Islands { get; }
 
 	/// <summary>
-	/// Resolves which island a page belongs to by its toc root.
-	/// Uses the nav ownership model — the toc root that owns the page determines the island.
+	/// Resolves which island a page belongs to by walking up its parent chain.
+	/// Returns the innermost registered toc root, so islands that wrap nested tocs
+	/// (whose pages have an outer toc as their NavigationRoot) still resolve correctly.
 	/// </summary>
-	public NavigationIsland? GetIslandForTocRoot(IRootNavigationItem<INavigationModel, INavigationItem> tocRoot) =>
-		_tocRootToIsland.GetValueOrDefault(tocRoot.Id);
+	public NavigationIsland? GetIslandForNavigationItem(INavigationItem item)
+	{
+		var current = item;
+		while (current is not null)
+		{
+			if (current is INodeNavigationItem<INavigationModel, INavigationItem> node
+				&& _tocRootToIsland.TryGetValue(node.Id, out var island))
+				return island;
+			current = current.Parent;
+		}
+		return null;
+	}
 
 	/// <summary>
 	/// Resolves which section a page belongs to by its URL.
@@ -72,17 +83,32 @@ public class SiteNavigationV2 : SiteNavigation
 	/// </summary>
 	public NavigationSection? GetSectionForUrl(string? pageUrl)
 	{
-		if (pageUrl is not null)
-		{
-			var normalized = pageUrl.TrimEnd('/');
-			if (_urlToSection.TryGetValue(normalized, out var section))
-				return section;
-			if (_urlToSection.TryGetValue(normalized + "/", out section))
-				return section;
-		}
+		if (pageUrl is not null && TryGetSectionForUrl(pageUrl, out var section))
+			return section;
 		return Sections.FirstOrDefault(s => !s.Isolated);
 	}
 
+	private bool TryGetSectionForUrl(string url, out NavigationSection section)
+	{
+		var normalized = url.TrimEnd('/');
+		if (_urlToSection.TryGetValue(normalized, out section!))
+			return true;
+		if (_urlToSection.TryGetValue(normalized + "/", out section!))
+			return true;
+
+		var prefix = Url.TrimEnd('/');
+		if (!string.IsNullOrEmpty(prefix) && normalized.StartsWith($"{prefix}/", StringComparison.OrdinalIgnoreCase))
+		{
+			var withoutPrefix = normalized[prefix.Length..];
+			if (_urlToSection.TryGetValue(withoutPrefix, out section!))
+				return true;
+			if (_urlToSection.TryGetValue(withoutPrefix + "/", out section!))
+				return true;
+		}
+
+		section = null!;
+		return false;
+	}
 	private static IReadOnlyList<NavigationSection> BuildSections(IReadOnlyList<INavigationItem> items) =>
 		items
 			.OfType<SectionNavigationNode>()
@@ -113,6 +139,7 @@ public class SiteNavigationV2 : SiteNavigation
 					islandNode.Url,
 					islandNode.SourceTocRootId,
 					parentSection,
+					islandNode.ParentUrl,
 					[.. islandNode.NavigationItems]
 				));
 			}
@@ -126,7 +153,10 @@ public class SiteNavigationV2 : SiteNavigation
 	private void BuildUrlToSectionLookup()
 	{
 		foreach (var section in Sections)
+		{
 			CollectUrlsForSection(section.NavigationItems, section);
+			AddUrlToSection(section.Url, section, replaceExisting: true);
+		}
 	}
 
 	private void CollectUrlsForSection(IEnumerable<INavigationItem> items, NavigationSection section)
@@ -137,16 +167,39 @@ public class SiteNavigationV2 : SiteNavigation
 			if (item is IslandNavigationNode)
 				continue;
 
-			if (!string.IsNullOrEmpty(item.Url))
-			{
-				var normalized = item.Url.TrimEnd('/');
-				_ = _urlToSection.TryAdd(normalized, section);
-			}
+			AddUrlToSection(item.Url, section);
 
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
 				CollectUrlsForSection(node.NavigationItems, section);
 		}
 	}
+
+	private void AddUrlToSection(string url, NavigationSection section, bool replaceExisting = false)
+	{
+		if (string.IsNullOrEmpty(url))
+			return;
+		AddNormalizedUrlToSection(url, section, replaceExisting);
+		if (IsExternalUrl(url))
+			return;
+		var prefix = Url.TrimEnd('/');
+		var path = url.TrimStart('/');
+		var prefixed = string.IsNullOrEmpty(path) ? prefix : $"{prefix}/{path}";
+		if (!url.Equals(prefixed, StringComparison.OrdinalIgnoreCase))
+			AddNormalizedUrlToSection(prefixed, section, replaceExisting);
+	}
+
+	private void AddNormalizedUrlToSection(string url, NavigationSection section, bool replaceExisting)
+	{
+		var normalized = url.TrimEnd('/');
+		if (replaceExisting)
+			_urlToSection[normalized] = section;
+		else
+			_ = _urlToSection.TryAdd(normalized, section);
+	}
+
+	private static bool IsExternalUrl(string url) =>
+		url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+		url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
 	private void BuildTocRootToIslandLookup()
 	{
@@ -439,12 +492,12 @@ public class SiteNavigationV2 : SiteNavigation
 	{
 		if (group.Page is not null)
 		{
-			var folderPlaceholder = new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, [], parent);
+			var folderPlaceholder = new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, group.Expanded, [], parent);
 			var folderChildren = BuildV2Items(group.Children, nodes, folderPlaceholder, sitePrefix);
-			return new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, folderChildren, parent);
+			return new PageFolderNavigationNode(group.Title, group.Page, sitePrefix, group.Expanded, folderChildren, parent);
 		}
-		var placeholder = new PlaceholderNavigationNode(group.Title, sitePrefix, [], parent);
+		var placeholder = new PlaceholderNavigationNode(group.Title, sitePrefix, group.Expanded, [], parent);
 		var children = BuildV2Items(group.Children, nodes, placeholder, sitePrefix);
-		return new PlaceholderNavigationNode(group.Title, sitePrefix, children, parent);
+		return new PlaceholderNavigationNode(group.Title, sitePrefix, group.Expanded, children, parent);
 	}
 }

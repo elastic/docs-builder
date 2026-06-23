@@ -174,6 +174,8 @@ toc:
       - file: installation.md
       - file: shell-autocompletion.md
       - file: cli-reference-how-to.md
+        children:
+          - file: cli-supplemental-docs.md
   - folder: mcp
     children:
       - file: index.md
