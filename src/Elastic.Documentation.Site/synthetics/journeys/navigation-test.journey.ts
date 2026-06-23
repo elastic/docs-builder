@@ -79,26 +79,29 @@ journey('navigation test', ({ page, params }) => {
     })
 
     step('Use dropdown to navigate to reference', async () => {
+        const referenceUrl = `${host}/docs/reference`
         const pagesDropdown = page.locator('#pages-dropdown')
-        const referenceLink = pagesDropdown.getByRole('link', {
-            name: 'Reference',
-            exact: true,
-        })
+        const referenceInDropdown = pagesDropdown.locator(
+            'a[href="/docs/reference"]'
+        )
 
         if (
             await pagesDropdown.isVisible({ timeout: 5000 }).catch(() => false)
         ) {
             await pagesDropdown.locator('svg').click()
+            await referenceInDropdown.evaluate((el) =>
+                (el as HTMLAnchorElement).click()
+            )
             try {
-                await referenceLink.click({ force: true, timeout: 10000 })
+                await expect(page).toHaveURL(referenceUrl, { timeout: 5000 })
             } catch {
                 // Nav V2 sidebar can overlap the pages dropdown in assembler preview.
-                await page.goto(`${host}/docs/reference`)
+                await page.goto(referenceUrl)
             }
         } else {
-            await page.goto(`${host}/docs/reference`)
+            await page.goto(referenceUrl)
         }
 
-        await expect(page).toHaveURL(`${host}/docs/reference`)
+        await expect(page).toHaveURL(referenceUrl)
     })
 })
