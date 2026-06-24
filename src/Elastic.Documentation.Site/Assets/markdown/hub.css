@@ -34,11 +34,45 @@
 		@apply mx-auto w-full max-w-5xl;
 	}
 	.hub-hero .hub-hero-eyebrow {
-		margin: 0 0 14px;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px 14px;
+		margin: 0 0 16px;
 		font-size: 0.8125rem;
-		font-weight: 600;
 		letter-spacing: 0.02em;
+	}
+	.hub-hero .hub-hero-eyebrow-label {
+		font-weight: 600;
 		color: rgb(255 255 255 / 0.55);
+	}
+	.hub-hero .hub-hero-eyebrow-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 12px;
+		font-weight: 600;
+		color: var(--color-white);
+		text-decoration: none;
+		background: rgb(255 255 255 / 0.08);
+		border: 1px solid rgb(255 255 255 / 0.2);
+		border-radius: 999px;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.hub-hero .hub-hero-eyebrow-link:hover,
+	.hub-hero .hub-hero-eyebrow-link:focus-visible {
+		background: rgb(255 255 255 / 0.16);
+		border-color: rgb(255 255 255 / 0.4);
+	}
+	.hub-hero .hub-hero-eyebrow-arrow {
+		flex-shrink: 0;
+		transition: transform 0.15s ease;
+	}
+	.hub-hero .hub-hero-eyebrow-link:hover .hub-hero-eyebrow-arrow,
+	.hub-hero .hub-hero-eyebrow-link:focus-visible .hub-hero-eyebrow-arrow {
+		transform: translateX(2px);
 	}
 	.hub-hero .hub-hero-top {
 		display: grid;
