@@ -11,6 +11,16 @@ Before deleting anything, the command checks whether any matching files are refe
 
 For more context, go to [](/contribute/bundle-changelogs.md#changelog-remove).
 
+## Bundle dependency check
+
+The dependency scan considers the **effective** entry list for each parent bundle: parent `entries` merged with amend sidecars (`{bundle}.amend-N.yaml`) in numeric order. Within each amend file, `exclude-entries` are applied before additions, matching how bundles are loaded for [`changelog render`](/cli/changelog/render.md) and the `{changelog}` directive.
+
+A changelog file blocks deletion only when it still appears in that effective list as an **unresolved** entry (the bundle references the file by name and checksum rather than embedding inline title and type). Resolved entries do not require the source file on disk.
+
+If you removed an entry from a bundle with [`changelog bundle-amend --remove`](/cli/changelog/bundle-amend.md), the corresponding `exclude-entries` record drops it from the effective list, so `changelog remove` can delete the source file even when the parent bundle still lists it.
+
+Amend sidecar files are not scanned as parent bundles themselves—only the parent bundle file plus its amend chain is evaluated. If an amend file cannot be parsed, the command logs a warning and uses the parent bundle entries only for that dependency check.
+
 ## Directory resolution
 
 Both modes use the same ordered fallback to locate changelog YAML files and existing bundles.

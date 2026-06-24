@@ -1280,16 +1280,22 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>Append additional changelog entries to a published bundle without modifying it.</summary>
+	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
 	/// <remarks>Creates an immutable <c>.amend-N.yaml</c> sidecar file alongside the original bundle.</remarks>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
-	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).</param>
+	/// <param name="add">Optional: Changelog YAML paths to add. Repeat <c>--add</c> or pass a comma-separated list in one value (for example, <c>--add "file1.yaml,file2.yaml"</c>). Supports tilde (~) expansion and relative paths.</param>
+	/// <param name="remove">Optional: Changelog YAML paths to exclude from the effective bundle. Repeat <c>--remove</c> or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.</param>
+	/// <param name="resolve">Optional: When using <c>--add</c>, inline each added changelog's content in the amend file. Use <c>--no-resolve</c> to record file references only. When omitted, inferred from the parent bundle. Does not apply to <c>--remove</c>.</param>
+	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.</param>
+	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
 		string[]? add = null,
+		string[]? remove = null,
 		bool? resolve = null,
+		bool force = false,
+		bool dryRun = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1298,30 +1304,32 @@ internal sealed partial class ChangelogCommands(
 
 		var service = new ChangelogBundleAmendService(logFactory, configurationContext: configurationContext);
 
-		if (add == null || add.Length == 0)
+		var normalizedAddFiles = add != null
+			? ExpandCommaSeparated(add).Select(NormalizePath).ToList()
+			: [];
+		var normalizedRemoveFiles = remove != null
+			? ExpandCommaSeparated(remove).Select(NormalizePath).ToList()
+			: [];
+
+		if (normalizedAddFiles.Count == 0 && normalizedRemoveFiles.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one file must be specified with --add");
+			collector.EmitError(string.Empty, "At least one file must be specified with --add or --remove");
 			_ = collector.StartAsync(ctx);
 			await collector.WaitForDrain();
 			await collector.StopAsync(ctx);
 			return 1;
 		}
 
-		// Normalize the bundle path
 		var normalizedBundlePath = bundlePath.FullName;
-
-		var normalizedAddFiles = ExpandCommaSeparated(add)
-			.Select(NormalizePath)
-			.ToList();
-
-		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then infer from bundle
-		var shouldResolve = resolve;
 
 		var input = new AmendBundleArguments
 		{
 			BundlePath = normalizedBundlePath,
-			AddFiles = normalizedAddFiles.ToArray(),
-			Resolve = shouldResolve
+			AddFiles = normalizedAddFiles,
+			RemoveFiles = normalizedRemoveFiles,
+			Resolve = resolve,
+			Force = force,
+			DryRun = dryRun
 		};
 
 		serviceInvoker.AddCommand(service, input,

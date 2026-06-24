@@ -286,7 +286,7 @@ Bundles with the same target version/date are automatically merged into a single
 
 Bundles can have associated **amend files** that follow the naming pattern `{bundle-name}.amend-{N}.yaml` (e.g., `9.3.0.amend-1.yaml`). When loading bundles, the directive automatically discovers and merges amend files with their parent bundles.
 
-This allows you to add late additions to a release without modifying the original bundle file:
+This allows you to add or remove late changes to a release without modifying the original bundle file:
 
 ```
 bundles/
@@ -294,6 +294,8 @@ bundles/
 ├── 9.3.0.amend-1.yaml   # First amend (auto-merged with parent)
 └── 9.3.0.amend-2.yaml   # Second amend (auto-merged with parent)
 ```
+
+Amend files may contain `entries` (additions) and `exclude-entries` (removals). Within each amend file, exclusions are applied before additions. Amend files are processed in numeric order.
 
 All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (products, hide-features, repo) is preserved.
 
@@ -386,8 +388,9 @@ This prevents silent data loss where changelog entries would be quietly omitted 
 To fix this, either:
 
 - Restore the missing changelog files, or
-- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained), or
-- Remove the unresolvable entry from the bundle file.
+- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained).
+
+`bundle-amend --remove` only applies when the source changelog file is still available (for example, to drop an entry from the effective bundle before you delete the file with `changelog remove`).
 
 :::{tip}
 In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.

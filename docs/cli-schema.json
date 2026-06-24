@@ -2869,7 +2869,7 @@
             "changelog"
           ],
           "name": "bundle-amend",
-          "summary": "Append additional changelog entries to a published bundle without modifying it.",
+          "summary": "Append or exclude changelog entries in a published bundle without modifying it.",
           "notes": "Creates an immutable .amend-N.yaml sidecar file alongside the original bundle.",
           "usage": "docs-builder changelog bundle-amend \u003Cbundle-path\u003E [options]",
           "examples": [],
@@ -2901,7 +2901,16 @@
               "name": "add",
               "type": "array",
               "required": false,
-              "summary": "Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add \u0022file1.yaml,file2.yaml\u0022). Supports tilde (~) expansion and relative paths.",
+              "summary": "Optional: Changelog YAML paths to add. Repeat --add or pass a comma-separated list in one value (for example, --add \u0022file1.yaml,file2.yaml\u0022). Supports tilde (~) expansion and relative paths.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "remove",
+              "type": "array",
+              "required": false,
+              "summary": "Optional: Changelog YAML paths to exclude from the effective bundle. Repeat --remove or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -2910,8 +2919,24 @@
               "name": "resolve",
               "type": "boolean",
               "required": false,
-              "summary": "Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).",
+              "summary": "Optional: When using --add, inline each added changelog\u0027s content in the amend file. Use --no-resolve to record file references only. When omitted, inferred from the parent bundle. Does not apply to --remove.",
               "defaultValue": "default"
+            },
+            {
+              "role": "flag",
+              "name": "force",
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "dry-run",
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: Preview changes without writing an amend file.",
+              "defaultValue": "false"
             },
             {
               "role": "flag",

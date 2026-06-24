@@ -53,7 +53,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 		}
 
 		// Merge amend files with their parent bundles
-		loadedBundles = MergeAmendFiles(loadedBundles);
+		loadedBundles = MergeAmendFiles(loadedBundles, bundlesFolderPath, emitWarning);
 
 		return loadedBundles;
 	}
@@ -94,7 +94,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, fileName, entries));
 		}
 
-		return MergeAmendFiles(loadedBundles);
+		return MergeAmendFiles(loadedBundles, string.Empty, emitWarning);
 	}
 
 	/// <summary>Resolves only inline entries; file-only references (unresolvable without the changelog dir) are skipped with a warning.</summary>
@@ -320,63 +320,67 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// Amend files follow the naming pattern: {baseName}.amend-{N}.yaml
 	/// </summary>
 	/// <param name="bundles">The list of loaded bundles including amend files.</param>
+	/// <param name="bundlesFolderPath">The absolute path to the bundles folder.</param>
+	/// <param name="emitWarning">Callback to emit warnings during entry resolution.</param>
 	/// <returns>A list of bundles with amend file entries merged into their parent bundles.</returns>
-	private List<LoadedBundle> MergeAmendFiles(List<LoadedBundle> bundles)
+	private List<LoadedBundle> MergeAmendFiles(
+		List<LoadedBundle> bundles,
+		string bundlesFolderPath,
+		Action<string> emitWarning)
 	{
 		if (bundles.Count <= 1)
 			return bundles;
 
-		// Build a lookup of bundles by their file path for quick access
 		var bundlesByPath = bundles.ToDictionary(b => b.FilePath, StringComparer.OrdinalIgnoreCase);
-
-		// Identify amend files and their parent bundles
-		var amendBundles = bundles.Where(b => IsAmendFile(b.FilePath)).ToList();
+		var amendBundles = bundles.Where(b => BundleAmendMerger.IsAmendFile(b.FilePath)).ToList();
 
 		if (amendBundles.Count == 0)
 			return bundles;
 
-		// Track which bundles to remove (amend files that were merged)
 		var mergedAmendPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-		// Track parent bundles with their merged entries
 		var mergedParents = new Dictionary<string, LoadedBundle>(StringComparer.OrdinalIgnoreCase);
 
-		foreach (var amendBundle in amendBundles)
+		var amendsByParent = amendBundles
+			.GroupBy(a => GetParentBundlePath(a.FilePath))
+			.Where(group => group.Key != null);
+
+		foreach (var group in amendsByParent)
 		{
-			var parentPath = GetParentBundlePath(amendBundle.FilePath);
+			var parentPath = group.Key!;
+			if (!bundlesByPath.TryGetValue(parentPath, out var parentBundle))
+				continue;
 
-			if (parentPath == null || !bundlesByPath.TryGetValue(parentPath, out var parentBundle))
-				continue; // No parent found, amend file will remain standalone
+			var orderedAmendData = group
+				.OrderBy(a => BundleAmendMerger.GetAmendFileNumber(a.FilePath))
+				.Select(a => a.Data)
+				.ToList();
 
-			// Get or create the merged parent entry
-			if (!mergedParents.TryGetValue(parentPath, out var mergedParent))
-				mergedParent = parentBundle;
+			var mergedEntryList = BundleAmendMerger.MergeEntries(parentBundle.Data.Entries, orderedAmendData);
+			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList };
 
-			// Merge the amend entries into the parent
-			var combinedEntries = mergedParent.Entries.Concat(amendBundle.Entries).ToList();
+			var bundleDirectory = fileSystem.Path.GetDirectoryName(parentPath) ?? bundlesFolderPath;
+			var changelogDirectory = fileSystem.Path.GetDirectoryName(bundleDirectory) ?? bundlesFolderPath;
+			var resolvedEntries = ResolveEntries(mergedBundleData, changelogDirectory, emitWarning);
 
 			mergedParents[parentPath] = new LoadedBundle(
-				mergedParent.Version,
-				mergedParent.Repo,
-				mergedParent.Owner,
-				mergedParent.Data,
-				mergedParent.FilePath,
-				combinedEntries
-			);
+				parentBundle.Version,
+				parentBundle.Repo,
+				parentBundle.Owner,
+				mergedBundleData,
+				parentPath,
+				resolvedEntries);
 
-			_ = mergedAmendPaths.Add(amendBundle.FilePath);
+			foreach (var amend in group)
+				_ = mergedAmendPaths.Add(amend.FilePath);
 		}
 
-		// Build the final result: replace parent bundles with merged versions, exclude merged amend files
-		var result = bundles
+		return bundles
 			.Where(bundle => !mergedAmendPaths.Contains(bundle.FilePath))
 			.Select(bundle =>
 				mergedParents.TryGetValue(bundle.FilePath, out var mergedBundle)
 					? mergedBundle
 					: bundle)
 			.ToList();
-
-		return result;
 	}
 
 	/// <summary>
@@ -385,7 +389,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <param name="filePath">The file path to check.</param>
 	/// <returns>True if the file is an amend file.</returns>
 	private static bool IsAmendFile(string filePath) =>
-		AmendFileRegex().IsMatch(filePath);
+		BundleAmendMerger.IsAmendFile(filePath);
 
 	/// <summary>
 	/// Gets the parent bundle path from an amend file path.
@@ -394,16 +398,12 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// <returns>The parent bundle path, or null if not an amend file.</returns>
 	private string? GetParentBundlePath(string amendFilePath)
 	{
-		var match = AmendFileRegex().Match(amendFilePath);
-		if (!match.Success)
+		if (!BundleAmendMerger.IsAmendFile(amendFilePath))
 			return null;
 
-		// Replace the ".amend-N" part with just the extension
 		var directory = fileSystem.Path.GetDirectoryName(amendFilePath) ?? string.Empty;
 		var fileName = fileSystem.Path.GetFileName(amendFilePath);
 		var extension = fileSystem.Path.GetExtension(amendFilePath);
-
-		// Remove the .amend-N part from the filename
 		var parentFileName = AmendFileRegex().Replace(fileName, extension);
 
 		return fileSystem.Path.Join(directory, parentFileName);
