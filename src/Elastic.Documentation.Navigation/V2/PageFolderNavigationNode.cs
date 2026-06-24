@@ -26,6 +26,7 @@ public class PageFolderNavigationNode : INodeNavigationItem<INavigationModel, IN
 	{
 		Id = ShortId.Create("page-folder", title);
 		NavigationTitle = title;
+		Page = page;
 		Url = ResolveUrl(page, sitePrefix);
 		ExpandedByDefault = expandedByDefault;
 		NavigationItems = children;
@@ -36,6 +37,8 @@ public class PageFolderNavigationNode : INodeNavigationItem<INavigationModel, IN
 
 	/// <inheritdoc />
 	public string Id { get; }
+
+	public Uri Page { get; }
 
 	/// <inheritdoc />
 	public string Url { get; }

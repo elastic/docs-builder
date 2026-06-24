@@ -105,7 +105,7 @@ actual: {actual}
         let formatter = PrettyMarkupFormatter()
         element.Children
         |> Seq.indexed
-        |> Seq.filter (fun (i, c) -> (not <| (i = 0 && c.TagName = "H1")))
+        |> Seq.filter (fun (i, c) -> not (c.ClassList.Contains("page-title-row")) && not (i = 0 && c.TagName = "H1"))
         |> Seq.map(fun (_, c) -> c)
         |> Seq.iter _.ToHtml(sw, formatter)
         sw.ToString().TrimStart('\n')

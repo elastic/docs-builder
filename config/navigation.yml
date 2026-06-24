@@ -17,6 +17,7 @@ toc:
   #############
   # NARRATIVE #
   #############
+  - toc: products
   - toc: get-started
   - toc: solutions
   - toc: manage-data

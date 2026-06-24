@@ -36,6 +36,7 @@ public record SectionNavV2Item(
 	string Label,
 	string Url,
 	bool Isolated,
+	bool Dropdown,
 	IReadOnlyList<INavV2Item> Children
 ) : INavV2Item;
 
@@ -140,10 +141,14 @@ public class NavV2FileYamlConverter : IYamlTypeConverter
 				&& isoVal is string isoStr
 				&& bool.TryParse(isoStr, out var isoBool)
 				&& isoBool;
+			var dropdown = dict.TryGetValue("dropdown", out var ddVal)
+				&& ddVal is string ddStr
+				&& bool.TryParse(ddStr, out var ddBool)
+				&& ddBool;
 			var sectionChildren = dict.TryGetValue("children", out var sch) && sch is IReadOnlyList<INavV2Item> sChildList
 				? sChildList
 				: [];
-			return new SectionNavV2Item(sectionStr, sectionUrl, isolated, sectionChildren);
+			return new SectionNavV2Item(sectionStr, sectionUrl, isolated, dropdown, sectionChildren);
 		}
 
 		if (dict.TryGetValue("island", out var islandVal) && islandVal is string islandStr)
