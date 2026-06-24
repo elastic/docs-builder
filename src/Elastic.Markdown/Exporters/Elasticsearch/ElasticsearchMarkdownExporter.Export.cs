@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Elasticsearch;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch.Indices;
@@ -156,6 +157,19 @@ public partial class ElasticsearchMarkdownExporter
 				Repository = p.Repository ?? inference.Repository
 			}).ToArray()
 			: null;
+
+		var gitHubRepo = fileContext.BuildContext.Git.GitHubRepository;
+		var branch = fileContext.BuildContext.Git.Branch;
+		if (gitHubRepo is not null
+			&& fileContext.BuildContext.Git != GitCheckoutInformation.Unavailable
+			&& fileContext.BuildContext.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		{
+			var relativeSourcePath = Path.GetRelativePath(
+				checkoutDirectory.FullName,
+				fileContext.BuildContext.DocumentationSourceDirectory.FullName);
+			var path = UrlPath.Join(relativeSourcePath, file.RelativePath);
+			doc.SourceUrl = $"https://github.com/{gitHubRepo}/blob/{branch}/{path}";
+		}
 
 		CommonEnrichments(doc, currentNavigation);
 		AssignContentHash(doc);
