@@ -1,4 +1,4 @@
-import { $$, $ } from 'select-dom'
+import { $$optional, $optional } from 'select-dom'
 
 interface TocElements {
     headings: Element[]
@@ -13,12 +13,14 @@ const HEADING_OFFSET = 34 * 4
 
 function initializeTocElements(): TocElements {
     // Support both regular docs (#markdown-content) and API docs (#elastic-api-v3)
-    const headings = $$(
+    const headings = $$optional(
         '#markdown-content h2, #markdown-content h3, #elastic-api-v3 h3[data-section]'
     )
-    const tocLinks = $$('#toc-nav li>a') as HTMLAnchorElement[]
-    const tocContainer = $('#toc-nav .toc-progress-container') as HTMLDivElement
-    const progressIndicator = $(
+    const tocLinks = $$optional('#toc-nav li>a') as HTMLAnchorElement[]
+    const tocContainer = $optional(
+        '#toc-nav .toc-progress-container'
+    ) as HTMLDivElement
+    const progressIndicator = $optional(
         '.toc-progress-indicator',
         tocContainer
     ) as HTMLDivElement

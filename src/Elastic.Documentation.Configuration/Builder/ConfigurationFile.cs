@@ -38,6 +38,13 @@ public record ConfigurationFile
 	/// </summary>
 	public CrossLinkEntry[] CrossLinkEntries { get; } = [];
 
+	/// <summary>
+	/// Canonical product ids declared under <c>release_notes</c> whose changelog content is sourced from
+	/// the public CDN. Validated against products.yml; drives startup prefetch for the <c>{changelog}</c>
+	/// directive and CDN sourcing for <c>changelog bundle</c>.
+	/// </summary>
+	public string[] ReleaseNotesProducts { get; } = [];
+
 	/// The maximum depth `toc.yml` files may appear
 	public int MaxTocDepth { get; } = 1;
 
@@ -137,6 +144,9 @@ public record ConfigurationFile
 				.ToArray();
 
 			CrossLinkRepositories = CrossLinkEntries.Select(e => e.Repository).ToArray();
+
+			// Parse and validate CDN-backed release-notes product declarations
+			ReleaseNotesProducts = ParseReleaseNotesProducts(docSetFile.ReleaseNotes, productsConfig, context);
 
 			// Extensions - assuming they're not in DocumentationSetFile yet
 			Extensions = new EnabledExtensions(docSetFile.Extensions);
@@ -370,6 +380,57 @@ public record ConfigurationFile
 
 		return imagePath;
 	}
+
+	private static string[] ParseReleaseNotesProducts(
+		IReadOnlyList<ReleaseNotesProductReference> references,
+		ProductsConfiguration productsConfig,
+		IDocumentationSetContext context)
+	{
+		if (references.Count == 0)
+			return [];
+
+		var products = new List<string>(references.Count);
+		foreach (var reference in references)
+		{
+			var product = reference.Product?.Trim();
+			if (string.IsNullOrEmpty(product))
+			{
+				context.EmitError(context.ConfigurationPath, "A 'release_notes' entry is missing a 'product' value.");
+				continue;
+			}
+
+			if (!IsValidProductId(product))
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"Invalid 'release_notes' product '{product}'. Product ids must match [a-zA-Z0-9_-]+.");
+				continue;
+			}
+
+			// products.yml keys are hyphenated; accept the underscore variant for parity with `products`.
+			var normalized = product.Replace('_', '-');
+			if (!productsConfig.Products.TryGetValue(normalized, out var resolved))
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"Unknown 'release_notes' product '{product}'. It must be a product id defined in products.yml.");
+				continue;
+			}
+
+			if (!resolved.Features.ReleaseNotes)
+			{
+				context.EmitError(context.ConfigurationPath,
+					$"Product '{product}' declared in 'release_notes' does not participate in the release-notes system (it lacks the 'release-notes' feature in products.yml).");
+				continue;
+			}
+
+			if (!products.Contains(resolved.Id, StringComparer.Ordinal))
+				products.Add(resolved.Id);
+		}
+
+		return [.. products];
+	}
+
+	private static bool IsValidProductId(string product) =>
+		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 
 	private static CrossLinkEntry? ParseCrossLinkEntry(string raw, DocSetRegistry docsetRegistry, IFileInfo configPath, IDocumentationContext context)
 	{

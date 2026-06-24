@@ -56,8 +56,11 @@ public static class ElasticsearchEndpointFactory
 			Username = username
 		};
 
-		environment ??= ResolveEnvironment(config, appConfiguration);
 		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
+		IEnvironmentValidator environmentValidator = buildType == "codex"
+			? new CodexEnvironmentValidator()
+			: new SiteEnvironmentValidator();
+		environment ??= environmentValidator.Resolve(appConfiguration?["ENVIRONMENT"] ?? config["ENVIRONMENT"]);
 
 		var searchIndexOverride =
 			config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"]
@@ -70,27 +73,5 @@ public static class ElasticsearchEndpointFactory
 			BuildType = buildType,
 			SearchIndexOverride = !string.IsNullOrEmpty(searchIndexOverride) ? searchIndexOverride : null
 		};
-	}
-
-	/// <summary>
-	/// Resolves the domain environment name using this priority:
-	/// 1. <c>ENVIRONMENT</c> env var (our deployment env: dev, edge, staging, prod)
-	/// 2. Fallback: <c>"dev"</c>
-	/// </summary>
-	/// <remarks>
-	/// Deliberately reads only <c>ENVIRONMENT</c>, not <c>DOTNET_ENVIRONMENT</c>.
-	/// <c>DOTNET_ENVIRONMENT</c> is set by <c>AddDocumentationServiceDefaults</c> to the
-	/// mapped .NET hosting name (Development/Staging/Production) and must not be used as the
-	/// domain environment for index naming or telemetry.
-	/// </remarks>
-	private static string ResolveEnvironment(IConfiguration config, IConfiguration? appConfiguration)
-	{
-		var envVar = appConfiguration?["ENVIRONMENT"] ?? config["ENVIRONMENT"];
-
-		string[] allowedEnvironments = ["dev", "edge", "staging", "prod"];
-		if (!allowedEnvironments.Contains(envVar?.ToLowerInvariant()))
-			envVar = "dev";
-
-		return envVar!.ToLowerInvariant();
 	}
 }

@@ -2556,6 +2556,14 @@
             },
             {
               "role": "flag",
+              "name": "strict-fetch",
+              "type": "boolean",
+              "required": false,
+              "summary": "Optional: Treat a failure to fetch any PR or issue from GitHub (with --prs, --issues, or --report) as an error that exits non-zero, instead of a warning. Use in CI so a missing or unauthorized GITHUB_TOKEN fails the run rather than silently producing unfiltered changelogs with missing titles. Files are still written so they can be inspected.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "subtype",
               "type": "string",
               "required": false,
@@ -2776,7 +2784,7 @@
               "name": "plan",
               "type": "boolean",
               "required": false,
-              "summary": "Emit GitHub Actions step outputs (needs_network, needs_github_token, output_path) describing network requirements and the resolved output path, then exit without generating the bundle. Intended for CI actions.",
+              "summary": "Emit GitHub Actions step outputs (needs_network, needs_github_token, output_path, and cdn_url when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions.",
               "defaultValue": "false"
             },
             {

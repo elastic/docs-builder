@@ -171,6 +171,26 @@ public class CodexTestDocumentationFileFactory : IDocumentationFileFactory<TestD
 	}
 }
 
+// Factory that mirrors production behaviour: returns null when the referenced file is not present on disk.
+// Used to reproduce the missing-toc-file scenario where navigation produces a null Index sentinel.
+public class MissingFileDocumentationFileFactory : IDocumentationFileFactory<IDocumentationFile>
+{
+	public static MissingFileDocumentationFileFactory Instance { get; } = new();
+
+	/// <inheritdoc />
+	public IDocumentationFile? TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
+	{
+		if (!path.Exists)
+			return null;
+
+		var fileName = path.Name;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+			? fileName[..^3]
+			: fileName;
+		return new TestDocumentationFile(title);
+	}
+}
+
 // Factory that creates base IDocumentationFile instances for tests that don't need concrete types
 public class GenericDocumentationFileFactory : IDocumentationFileFactory<IDocumentationFile>
 {

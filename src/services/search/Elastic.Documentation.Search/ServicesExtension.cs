@@ -5,7 +5,6 @@
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search.Common;
 using Elastic.Internal.Search;
-using Elastic.Internal.Search.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -36,25 +35,24 @@ public static class ServicesExtension
 		_ = services.AddScoped<IProductNameLookup>(sp => sp.GetRequiredService<ProductsConfiguration>());
 
 		// Inner search service: docs-builder pairs the typed contract with the docs index alias.
-		// docs-builder's SearchConfiguration (in Elastic.Documentation.Configuration.Search) is
-		// translated to the contract's shape — both carry synonyms+diminish-terms+ruleset, but
-		// the docs-builder type has richer QueryRule POCOs the shared service doesn't need.
+		// SearchQueryConfiguration is a lean projection of the richer docs-builder SearchConfiguration,
+		// carrying only the four values the query path reads.
 		_ = services.AddScoped<ISearchService<DocumentationDocument>>(sp =>
 		{
 			var acc = sp.GetRequiredService<ElasticsearchClientAccessor>();
 			var lookup = sp.GetRequiredService<IProductNameLookup>();
 			var innerLogger = sp.GetRequiredService<ILogger<DefaultSearchService<DocumentationDocument>>>();
 
-			var sharedConfig = new Internal.Search.Configuration.SearchConfiguration
+			var queryConfig = new SearchQueryConfiguration
 			{
 				SynonymBiDirectional = acc.SynonymBiDirectional,
-				DiminishTerms = acc.DiminishTerms.ToArray(),
+				DiminishTerms = acc.DiminishTerms,
 				RulesetName = acc.RulesetName,
 				SemanticEnabled = true
 			};
 
 			return new DefaultSearchService<DocumentationDocument>(
-				acc.Client, acc.SearchIndex, sharedConfig, innerLogger, lookup);
+				acc.Client, acc.SearchIndex, queryConfig, innerLogger, lookup);
 		});
 
 		// Docs-specific adapters preserve the existing API/MCP wire format.

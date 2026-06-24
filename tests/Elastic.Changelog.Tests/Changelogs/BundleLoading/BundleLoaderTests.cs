@@ -403,7 +403,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var merged = service.MergeBundlesByTarget(bundles);
+		var merged = BundleLoader.MergeBundlesByTarget(bundles);
 
 		// Assert
 		merged.Should().HaveCount(1);
@@ -424,7 +424,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var merged = service.MergeBundlesByTarget(bundles);
+		var merged = BundleLoader.MergeBundlesByTarget(bundles);
 
 		// Assert
 		merged.Should().HaveCount(2);
@@ -444,7 +444,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var merged = service.MergeBundlesByTarget(bundles);
+		var merged = BundleLoader.MergeBundlesByTarget(bundles);
 
 		// Assert
 		merged.Should().HaveCount(1);
@@ -467,7 +467,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var merged = service.MergeBundlesByTarget(bundles);
+		var merged = BundleLoader.MergeBundlesByTarget(bundles);
 
 		// Assert
 		merged.Should().HaveCount(3);
@@ -489,7 +489,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var merged = service.MergeBundlesByTarget(bundles);
+		var merged = BundleLoader.MergeBundlesByTarget(bundles);
 
 		// Assert
 		merged.Should().HaveCount(3);
@@ -1366,7 +1366,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		var loaded = service.LoadBundles(bundlesFolder, EmitWarning);
 
 		// Act
-		var merged = service.MergeBundlesByTarget(loaded);
+		var merged = BundleLoader.MergeBundlesByTarget(loaded);
 
 		// Assert
 		merged.Should().HaveCount(1);

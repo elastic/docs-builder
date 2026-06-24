@@ -450,4 +450,92 @@ public class ChangelogUploadServiceTests
 
 		targets.Should().BeEmpty();
 	}
+
+	[Fact]
+	public async Task Upload_BundleArtifactType_UploadsRegistryAlongsideBundle()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "9.3.0.yaml"), new MockFileData("""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: 1.yaml
+			      checksum: c0ffee
+			    type: enhancement
+			    title: Sample
+			"""));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
+			.Returns(new PutObjectResponse());
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Bundle,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = bundleDir
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeTrue();
+		_collector.Errors.Should().Be(0);
+
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundle/9.3.0.yaml"),
+			A<CancellationToken>._
+		)).MustHaveHappenedOnceExactly();
+
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/registry.json"),
+			A<CancellationToken>._
+		)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task Upload_ChangelogArtifactType_DoesNotUploadRegistry()
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: Plain entry
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - "100"
+			""");
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
+			.Returns(new PutObjectResponse());
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeTrue();
+
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("/registry.json", StringComparison.Ordinal)),
+			A<CancellationToken>._
+		)).MustNotHaveHappened();
+	}
 }
