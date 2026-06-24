@@ -37,7 +37,7 @@ public class CdnChangelogEntryFetcherTests
 	public async Task FetchAsync_HappyPath_ReturnsAllEntriesFromRegistry()
 	{
 		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/changelog/registry.json", StringComparison.Ordinal)
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
 				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-b.yaml" } ] }""")
 				: Yaml(SampleEntry));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
@@ -49,7 +49,9 @@ public class CdnChangelogEntryFetcherTests
 		warnings.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("1-a.yaml", "2-b.yaml");
 		entries.Should().OnlyContain(e => e.Content.Contains("Sample enhancement"));
-		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/elasticsearch/changelog/1-a.yaml", StringComparison.Ordinal));
+		// Artifact-root layout: entries and their registry live under changelog/{repo}/...
+		handler.RequestedPaths.Should().Contain("/changelog/elasticsearch/registry.json");
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elasticsearch/1-a.yaml", StringComparison.Ordinal));
 	}
 
 	[Fact]
@@ -72,7 +74,7 @@ public class CdnChangelogEntryFetcherTests
 		// (not skipped) so the bundle fails rather than silently dropping a release entry.
 		var handler = new StubHandler(req =>
 		{
-			if (req.RequestUri!.AbsolutePath.EndsWith("/changelog/registry.json", StringComparison.Ordinal))
+			if (req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-missing.yaml" } ] }""");
 			return req.RequestUri!.AbsolutePath.EndsWith("/2-missing.yaml", StringComparison.Ordinal)
 				? new HttpResponseMessage(HttpStatusCode.NotFound)
@@ -97,7 +99,7 @@ public class CdnChangelogEntryFetcherTests
 		var handler = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
-			if (path.EndsWith("/changelog/registry.json", StringComparison.Ordinal))
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" } ] }""");
 			if (path.EndsWith("/1-a.yaml", StringComparison.Ordinal))
 				return Interlocked.Increment(ref entryAttempts) == 1
@@ -134,7 +136,7 @@ public class CdnChangelogEntryFetcherTests
 	public async Task FetchAsync_UnsafeFileName_EmitsWarningAndSkips()
 	{
 		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/changelog/registry.json", StringComparison.Ordinal)
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
 				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "../escape.yaml" }, { "file": "ok.yaml" } ] }""")
 				: Yaml(SampleEntry));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();

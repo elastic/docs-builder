@@ -1572,12 +1572,22 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Upload changelog entries or bundle artifacts to S3 or Elasticsearch.</summary>
-	/// <remarks>Uses content-hash–based incremental transfer — only changed files are uploaded.</remarks>
+	/// <remarks>
+	/// Uses content-hash–based incremental transfer — only changed files are uploaded.
+	/// <para>
+	/// Changelog entries are uploaded once under <c>changelog/{repo}/{file}</c>, keyed by the authoring
+	/// repository (resolved from <c>--repo</c>, then <c>bundle.repo</c> in changelog.yml, then the git
+	/// remote origin). Bundles are uploaded under <c>bundle/{product}/{file}</c>, product-scoped from
+	/// the bundle YAML, and do not require a repo.
+	/// </para>
+	/// </remarks>
 	/// <param name="artifactType">Artifact type to upload: 'changelog' (individual entries) or 'bundle' (consolidated bundles).</param>
 	/// <param name="target">Upload destination: 's3' or 'elasticsearch'.</param>
 	/// <param name="s3BucketName">S3 bucket name (required when target is 's3').</param>
 	/// <param name="config">Path to changelog.yml configuration file. Defaults to docs/changelog.yml.</param>
 	/// <param name="directory">Override changelog directory instead of reading it from config.</param>
+	/// <param name="repo">GitHub repository name used to scope uploaded changelog entry keys (changelog/{repo}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
+	/// <param name="owner">GitHub repository owner, accepted for parity with other changelog commands. Falls back to bundle.owner in changelog.yml, then the git remote origin. Not part of the S3 key.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -1585,6 +1595,8 @@ internal sealed partial class ChangelogCommands(
 		string s3BucketName = "",
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
+		string? repo = null,
+		string? owner = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1610,6 +1622,10 @@ internal sealed partial class ChangelogCommands(
 		var resolvedDirectory = directory != null ? directory?.FullName : null;
 		var resolvedConfig = config != null ? config?.FullName : null;
 
+		// Resolve the authoring repo for entry keys: --repo > bundle.repo (changelog.yml) > git remote
+		// origin. Reduced to a single path segment (owner/repo -> repo) for the changelog/{repo}/ key.
+		var (resolvedRepo, resolvedOwner) = await ResolveUploadRepoOwner(repo, owner, resolvedConfig, ctx);
+
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, configurationContext);
 		var args = new ChangelogUploadArguments
@@ -1618,12 +1634,44 @@ internal sealed partial class ChangelogCommands(
 			Target = parsedTarget,
 			S3BucketName = s3BucketName,
 			Config = resolvedConfig,
-			Directory = resolvedDirectory
+			Directory = resolvedDirectory,
+			Repo = resolvedRepo,
+			Owner = resolvedOwner
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>
+	/// Resolves the authoring repo and owner for changelog uploads using the precedence
+	/// <c>--repo</c>/<c>--owner</c> &gt; <c>bundle.repo</c>/<c>bundle.owner</c> in changelog.yml &gt; git
+	/// remote origin. The repo is reduced to a single path segment (<c>owner/repo</c> -&gt; <c>repo</c>).
+	/// </summary>
+	private async Task<(string? Repo, string? Owner)> ResolveUploadRepoOwner(string? repoCli, string? ownerCli, string? configPath, CancellationToken ctx)
+	{
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+			.LoadChangelogConfiguration(collector, configPath, ctx);
+
+		string? gitOwner = null;
+		string? gitRepo = null;
+		var cwd = Directory.GetCurrentDirectory();
+		var repoRoot = Paths.FindGitRoot(_fileSystem.DirectoryInfo.New(cwd))?.FullName ?? cwd;
+		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
+			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
+
+		var resolvedRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : (bundleConfig?.Bundle?.Repo ?? gitRepo);
+		var resolvedOwner = ownerCli ?? bundleConfig?.Bundle?.Owner ?? gitOwner;
+
+		if (!string.IsNullOrWhiteSpace(resolvedRepo))
+		{
+			var slash = resolvedRepo.LastIndexOf('/');
+			if (slash >= 0 && slash < resolvedRepo.Length - 1)
+				resolvedRepo = resolvedRepo[(slash + 1)..];
+		}
+
+		return (resolvedRepo, resolvedOwner);
 	}
 
 	/// <summary>

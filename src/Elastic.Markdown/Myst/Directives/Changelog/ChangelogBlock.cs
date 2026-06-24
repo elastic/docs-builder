@@ -100,7 +100,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 
 	/// <summary>
 	/// Product to source bundles for from the public CDN (the <c>:cdn:</c> option). When set, the
-	/// directive fetches <c>{cdnBase}/{product}/registry.json</c> and the bundles it lists
+	/// directive fetches <c>{cdnBase}/bundle/{product}/registry.json</c> and the bundles it lists
 	/// instead of reading a local folder; any folder argument is ignored.
 	/// </summary>
 	public string? CdnProduct { get; private set; }

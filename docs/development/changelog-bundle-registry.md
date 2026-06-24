@@ -34,8 +34,8 @@ copies, no cross-repo file syncing.
 │  Client CI   │  --artifact-type      │  Private bundles   │ ───────────────────▶ │ Changelog scrubber │
 │ (docs-actions)│  bundle  ───────────▶ │  S3 bucket         │                       │ Lambda             │
 └──────────────┘                       │                    │                       └─────────┬─────────┘
-       │                               │  {product}/bundle/*.yaml                             │ scrub + copy
-       │ also refreshes                │  {product}/registry.json                       │ (pass-through for
+       │                               │  bundle/{product}/*.yaml                             │ scrub + copy
+       │ also refreshes                │  bundle/{product}/registry.json                 │ (pass-through for
        └──────────────────────────────▶                    │                                  │  registry.json)
                                        └────────────────────┘                                 ▼
                                                                                    ┌───────────────────┐
@@ -46,24 +46,27 @@ copies, no cross-repo file syncing.
 
 1. **Producer** — `changelog upload --artifact-type bundle --target s3` (invoked by the
    docs-actions changelog upload workflow) uploads each bundle to
-   `{product}/bundle/{file}` in the **private** bucket, then refreshes
-   `{product}/registry.json` for every product the run touched.
+   `bundle/{product}/{file}` in the **private** bucket, then refreshes
+   `bundle/{product}/registry.json` for every product the run touched. The companion
+   `--artifact-type changelog` upload writes individual entries to `changelog/{repo}/{file}`
+   (one copy, keyed by the authoring repo) and refreshes `changelog/{repo}/registry.json`.
 2. **Scrubber Lambda** — triggered by `s3:ObjectCreated` on the private bucket, it scrubs
-   private repository references out of bundle YAML and writes the sanitized copy to the
-   **public** bucket. The `registry.json` object is copied through **verbatim**.
+   private repository references out of bundle and entry YAML and writes the sanitized copy to
+   the **public** bucket. The `registry.json` object is copied through **verbatim**.
 3. **Consumer** — for each product declared under `release_notes` in `docset.yml`, docs-builder
-   reads `{product}/registry.json` from the CDN at build startup and fetches each listed bundle;
-   the `{changelog}` directive in `cdn:` mode then renders from the prefetched result.
+   reads `bundle/{product}/registry.json` from the CDN at build startup and fetches each listed
+   bundle; the `{changelog}` directive in `cdn:` mode then renders from the prefetched result.
 
 ### Why a registry instead of an S3 listing
 
 The public surface is a CDN (CloudFront) in front of S3. CloudFront does not expose bucket
-listing, so the consumer cannot enumerate `{product}/bundle/`. The registry is a stable,
+listing, so the consumer cannot enumerate `bundle/{product}/`. The registry is a stable,
 cacheable manifest at a predictable key that lists exactly which bundles exist for a product.
 
 ## `registry.json` format
 
-Stored at `{product}/registry.json`. Serialized with `snake_case` keys.
+Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{repo}/registry.json`
+(changelog-entry index). Serialized with `snake_case` keys.
 
 ```json
 {
@@ -80,9 +83,9 @@ Stored at `{product}/registry.json`. Serialized with `snake_case` keys.
 | Field | Meaning |
 |---|---|
 | `schema_version` | Bumped when consumers must change their parser. |
-| `product` | Product identifier; matches the first S3 key segment. |
+| `product` | Grouping identifier; the second S3 key segment — the product for a bundle index (`bundle/{product}/…`) or the authoring repo for a changelog-entry index (`changelog/{repo}/…`). |
 | `generated_at` | UTC timestamp of the last regeneration. |
-| `bundles[].file` | Bundle file name, resolved at `{product}/bundle/{file}`. |
+| `bundles[].file` | Bundle file name, resolved at `bundle/{product}/{file}` (or entry file at `changelog/{repo}/{file}` for the entry index). |
 | `bundles[].target` | Target version/date from the bundle's declaration of **this** product (may be null). |
 | `bundles[].etag` | See the ETag caveat below. |
 
@@ -105,7 +108,8 @@ reads of the same bucket).
 The refresh runs inside `ChangelogUploadService` after a successful **bundle** upload (it is
 skipped for `--artifact-type changelog`). `RegistryBuilder`:
 
-- Groups the run's upload targets by product (from the `{product}/bundle/{file}` key).
+- Groups the run's upload targets by the second key segment — product for bundles
+  (`bundle/{product}/{file}`), repo for entries (`changelog/{repo}/{file}`).
 - For each product, derives one `registry` entry per bundle (file name, that product's
   target, locally-computed S3 ETag).
 - Reads the existing manifest from S3, merges by file name (re-uploads replace their entry;
@@ -150,8 +154,9 @@ for the producer**:
   covering the registry `CopyObject` pass-through and the `ObjectRemoved` delete.
 - A CloudFront cache policy tuned for the manifest already exists (default TTL 1h, min 60s).
 
-The scrubber only passes through keys accepted by `RegistryKey.IsRegistry` (a single
-`{product}/registry.json` segment), so arbitrary JSON cannot reach the public surface.
+The scrubber only passes through keys accepted by `RegistryKey.IsRegistry`
+(`bundle/{product}/registry.json` or `changelog/{repo}/registry.json`, each a single middle
+segment), so arbitrary JSON cannot reach the public surface.
 
 **No new docs-actions workflow logic is required** for the producer either: the refresh is a
 side-effect of the existing `changelog upload` step; docs-actions only needs a docs-builder
@@ -166,21 +171,23 @@ build that includes this feature.
 
 Consumers must therefore treat a missing bundle as non-fatal (skip + warn), not an error.
 
-## `changelog bundle` entry sourcing (declared-gate)
+## `changelog bundle` entry sourcing (repo gate)
 
 The `changelog bundle` command aggregates individual changelog **entries**. It can read those
-entries from the local folder or fetch a product's published entries from the CDN
-(`{product}/changelog/registry.json` → `{product}/changelog/{file}`, via `CdnChangelogEntryFetcher`).
+entries from the local folder or fetch the **authoring repo's** published entries from the CDN
+(`changelog/{repo}/registry.json` → `changelog/{repo}/{file}`, via `CdnChangelogEntryFetcher`).
 
-CDN entry sourcing is **opt-in per product** (a *declared-gate*): a product's entries are pulled from
-the CDN only when that product is declared under `release_notes` in the repo's `docset.yml` — the same
-declaration the directive consumes. The decision is made per run by `ChangelogBundlingService`:
+Under the artifact-root layout, entries are repo-scoped — not product-scoped — so CDN entry
+sourcing keys off the resolvable authoring repo (the same precedence as upload:
+`--repo` > `bundle.repo` > git remote), **not** off the bundle's target products. This is what lets
+one repo (for example `kibana`) produce a bundle for a shared product (for example `cloud-serverless`)
+while sourcing its own entries from `changelog/kibana/`, without that product appearing in the repo's
+own `docset.yml`. The decision is made per run by `ChangelogBundlingService`:
 
-- **Local folder** when `bundle.use_local_changelogs: true`, when `--directory` is passed, when no
-  concrete product is in scope (for example `--all` or PR/issue-only filters), or when any in-scope
-  product is **not** declared under `release_notes`.
-- **CDN** only when every in-scope product is declared. The declared set is read with
-  `DocumentationSetFile.LoadMetadata` from the known docset locations (repo root or `docs/`).
+- **Local folder** when `bundle.use_local_changelogs: true`, when `--directory` is passed, or when
+  the authoring repo cannot be resolved.
+- **CDN** when the authoring repo resolves, local sourcing is not forced, and a CDN base is
+  configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution).
 
 The same gate drives the `--plan` `needs_network` output, so a planning step and the actual bundle
 run agree on whether the Docker bundle needs network access. The registry-fetch is fail-fast and an
@@ -239,8 +246,8 @@ notes use `NoopReleaseNotesResolver`.
 
 ### Fetch flow
 
-1. `GET {cdnBase}/{product}/registry.json`.
-2. Parse it; for each `bundles[].file`, `GET {cdnBase}/{product}/bundle/{file}`.
+1. `GET {cdnBase}/bundle/{product}/registry.json`.
+2. Parse it; for each `bundles[].file`, `GET {cdnBase}/bundle/{product}/{file}`.
 3. Feed the downloaded YAML into the existing `BundleLoader` → `MergeBundlesByTarget` →
    render pipeline. **Rendering is unchanged**; only the source of the bundle bytes differs.
 
@@ -270,7 +277,7 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
   prefetched bundles at render time.
 - **Security.** The base URL is trusted configuration; the product and registry-supplied bundle
   file names are validated to single path segments so neither can traverse outside
-  `{product}/bundle/`.
+  `bundle/{product}/`.
 
 ### Follow-ups (not yet implemented) [implementation-notes]
 

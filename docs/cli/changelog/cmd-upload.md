@@ -1,6 +1,6 @@
 ## Description
 
-Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory, maps each file to one or more product-scoped S3 keys, and uploads only files whose content hash changed since the last run.
+Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory and uploads only files whose content hash changed since the last run. Changelog entries are uploaded once under `changelog/{repo}/{file}`, keyed by the authoring repository; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
 
 To create bundles first, use [](/cli/changelog/bundle.md).
 For the end-to-end workflow, see [](/contribute/bundle-changelogs.md).
@@ -42,10 +42,8 @@ Your IAM policy must allow these S3 actions on the target bucket:
 
 You can scope object-level permissions to the key prefixes the command writes:
 
-- `{product}/bundle/*`
-- `{product}/changelog/*`
-- `{product}/registry.json`
-- `{product}/changelog/registry.json`
+- `bundle/*` (bundle YAML and `bundle/{product}/registry.json`)
+- `changelog/*` (entry YAML and `changelog/{repo}/registry.json`)
 
 #### Local development
 
@@ -79,10 +77,10 @@ Use `--artifact-type` to choose what to upload:
 | `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml`, or `docs/releases` |
 | `changelog` | Individual changelog entry YAML files | `bundle.directory` from `changelog.yml`, or `docs/changelog` |
 
-Each file is uploaded once per product listed in its YAML:
+Keying differs by artifact type:
 
-- Changelog entries use the `products[].product` field.
-- Bundles use the `products[].product` field (product ID).
+- **Changelog entries** are uploaded **once** under the authoring repository, regardless of how many products they list (or none). The repo is resolved from `--repo`, then `bundle.repo` in `changelog.yml`, then the git remote origin.
+- **Bundles** are uploaded once per product listed in the bundle's `products[].product` field (a bundle that declares multiple products is written under each product prefix).
 
 ## Upload targets
 
@@ -98,18 +96,20 @@ Use `--target` to choose the destination:
 For each discovered file, the command writes to:
 
 ```text
-s3://{bucket}/{product}/changelog/{filename}   # --artifact-type changelog
-s3://{bucket}/{product}/bundle/{filename}      # --artifact-type bundle
+s3://{bucket}/changelog/{repo}/{filename}      # --artifact-type changelog
+s3://{bucket}/bundle/{product}/{filename}      # --artifact-type bundle
 ```
 
-A changelog or bundle that applies to multiple products is uploaded to multiple keys — one per product.
+Changelog entries are written once under the authoring repo. A bundle that applies to multiple products is uploaded to multiple keys — one per product.
 
-After a successful upload, the command refreshes per-product `registry.json` manifests at:
+After a successful upload, the command refreshes the relevant `registry.json` manifest:
 
 ```text
-s3://{bucket}/{product}/registry.json                 # bundle uploads
-s3://{bucket}/{product}/changelog/registry.json       # changelog uploads
+s3://{bucket}/changelog/{repo}/registry.json          # changelog uploads
+s3://{bucket}/bundle/{product}/registry.json          # bundle uploads
 ```
+
+When several repositories publish bundles for the same shared product (for example `cloud-serverless`), use a `{repo}-{dateOrVersion}.yaml` bundle filename convention so they don't overwrite each other under `bundle/{product}/`.
 
 The registry refresh is best-effort: upload failures block the run, but a stale manifest does not fail an otherwise successful upload.
 
@@ -142,13 +142,15 @@ docs-builder changelog upload \
 
 ### Upload changelog entries to S3
 
-Upload individual changelog YAML files from the default changelog directory (`docs/changelog`):
+Upload individual changelog YAML files from the default changelog directory (`docs/changelog`). Entries are written to `changelog/{repo}/...`; pass `--repo` (and optionally `--owner`) when the authoring repo can't be inferred from `bundle.repo` or the git remote:
 
 ```sh
 docs-builder changelog upload \
   --artifact-type changelog \
   --target s3 \
-  --s3-bucket-name my-changelog-bundles
+  --s3-bucket-name my-changelog-bundles \
+  --repo my-repo \
+  --owner elastic
 ```
 
 ### Override the source directory

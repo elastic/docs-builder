@@ -10,44 +10,50 @@ namespace Elastic.Changelog.Uploading;
 /// </summary>
 public static class RegistryKey
 {
-	private const string BundleSuffix = "/registry.json";
-	private const string ChangelogSuffix = "/changelog/registry.json";
+	private const string RegistrySuffix = "/registry.json";
+	private const string BundlePrefix = "bundle/";
+	private const string ChangelogPrefix = "changelog/";
 
 	/// <summary>
-	/// Returns true when <paramref name="key"/> is a per-product manifest of either form
-	/// <c>{product}/registry.json</c> (the bundle index) or
-	/// <c>{product}/changelog/registry.json</c> (the changelog-entry index), where
-	/// <c>{product}</c> matches the same character class enforced by
-	/// <c>ChangelogUploadService.ProductNameRegex</c> (<c>[a-zA-Z0-9_-]+</c>).
+	/// Returns true when <paramref name="key"/> is a manifest of either artifact-root form
+	/// <c>bundle/{product}/registry.json</c> (the bundle index) or
+	/// <c>changelog/{repo}/registry.json</c> (the changelog-entry index), where the middle
+	/// segment is a single path segment in the character class <c>[a-zA-Z0-9._-]+</c>.
 	/// </summary>
 	/// <remarks>
 	/// Used by the changelog scrubber Lambda to decide whether to pass an incoming
-	/// <c>*.json</c> object through to the public bucket. Anything else (e.g. nested
-	/// under a bundle/ prefix, or a multi-segment product) is rejected, which keeps
-	/// arbitrary JSON out of the public surface.
+	/// <c>*.json</c> object through to the public bucket. Anything else (a bare
+	/// <c>{x}/registry.json</c>, a deeper nesting, or an unknown top-level prefix) is
+	/// rejected, which keeps arbitrary JSON out of the public surface.
 	/// </remarks>
 	public static bool IsRegistry(string key)
 	{
 		if (string.IsNullOrEmpty(key))
 			return false;
 
-		if (key.EndsWith(ChangelogSuffix, StringComparison.Ordinal))
-			return IsValidProduct(key.AsSpan(0, key.Length - ChangelogSuffix.Length));
-
-		if (key.EndsWith(BundleSuffix, StringComparison.Ordinal))
-			return IsValidProduct(key.AsSpan(0, key.Length - BundleSuffix.Length));
-
-		return false;
+		return IsScopedRegistry(key, BundlePrefix) || IsScopedRegistry(key, ChangelogPrefix);
 	}
 
-	private static bool IsValidProduct(ReadOnlySpan<char> product)
+	private static bool IsScopedRegistry(string key, string prefix)
 	{
-		if (product.IsEmpty || product.Contains('/'))
+		if (!key.StartsWith(prefix, StringComparison.Ordinal) || !key.EndsWith(RegistrySuffix, StringComparison.Ordinal))
 			return false;
 
-		foreach (var c in product)
+		var segmentLength = key.Length - prefix.Length - RegistrySuffix.Length;
+		if (segmentLength <= 0)
+			return false;
+
+		return IsValidSegment(key.AsSpan(prefix.Length, segmentLength));
+	}
+
+	private static bool IsValidSegment(ReadOnlySpan<char> segment)
+	{
+		if (segment.IsEmpty || segment.Contains('/') || segment is "." or "..")
+			return false;
+
+		foreach (var c in segment)
 		{
-			if (!(char.IsAsciiLetterOrDigit(c) || c == '_' || c == '-'))
+			if (!(char.IsAsciiLetterOrDigit(c) || c == '_' || c == '-' || c == '.'))
 				return false;
 		}
 		return true;

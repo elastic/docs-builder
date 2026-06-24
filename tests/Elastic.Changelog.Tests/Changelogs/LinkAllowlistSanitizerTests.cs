@@ -534,7 +534,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 	public void TryApplyChangelogEntry_BarePrNumberWithoutDefaultRepo_KeptWithWarning()
 	{
 		// The scrubber Lambda calls TryApplyChangelogEntry with defaultRepo=null because per-entry
-		// YAMLs uploaded under {product}/changelog/*.yaml carry no embedded repo context. A bare
+		// YAMLs uploaded under changelog/{repo}/*.yaml carry no embedded repo context. A bare
 		// numeric PR ref ("155500") must be tolerated rather than failing the whole entry — the
 		// reference carries no repo identity so it cannot leak a private link, and downstream
 		// rendering supplies the owner/repo from runtime context.
