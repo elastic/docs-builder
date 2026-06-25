@@ -27,6 +27,7 @@ The directive supports the following options:
 | `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
 | `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
 | `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
+| `:release-dates:` | Render the bundle `release-date` field as _Released: …_ after the version heading | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
 | `:cdn: [product]` | Render bundles for a product that is declared under `release_notes` in `docset.yml` and prefetched from the public changelog CDN. The product is optional and inferred from the current repository when omitted | (local folder) |
 | `:version: target` | Render only the single bundle matching this target/version | (all versions) |
@@ -40,6 +41,7 @@ The directive supports the following options:
 :link-visibility: keep-links
 :description-visibility: keep-descriptions
 :dropdowns:
+:release-dates:
 :::
 ```
 
@@ -148,6 +150,19 @@ Controls how the "separated" entry types (`breaking-change`, `deprecation`, `kno
 
 Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release-notes pages where the list itself is the primary content.
 
+#### `:release-dates:` [release-dates]
+
+Controls whether the bundle `release-date` field is rendered as italicized _Released: …_ text immediately after each version heading. Defaults to `false`.
+
+| Mode | Behavior |
+|------|----------|
+| (omitted, default) | Do not render release dates, even when the bundle YAML includes `release-date`. |
+| `:release-dates:` | Render `_Released: …_` when the bundle includes a `release-date` field. |
+
+Use this option for semver or agent releases where an explicit release date adds context. Omit it for date-based releases where the version heading already encodes the release date.
+
+This is **render-time** control only. To include or omit `release-date` in bundle YAML at build time, use `bundle.release_dates` in `changelog.yml` or the `--release-date` / `--no-release-date` flags on [`changelog bundle`](/cli/changelog/bundle.md) (option-based mode). The `changelog render` command does not provide an equivalent flag; it always renders release dates when present in the bundle.
+
 #### `:subsections:`
 
 When enabled, entries are grouped by "area" within each section.
@@ -187,7 +202,7 @@ The value names a product defined in [`products.yml`](https://github.com/elastic
 :::
 ```
 
-If the product cannot be inferred, or is not declared under `release_notes`, the block emits an error rather than rendering empty. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
+If the product cannot be inferred, or is not declared under `release_notes`, the block emits an error rather than rendering empty. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:release-dates:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
 
 The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
 
@@ -334,7 +349,7 @@ Each bundle renders as a `## {version}` section with optional release date, desc
 ```markdown
 ## 0.100.0
 
-_Released: 2026-04-09_
+_Released: April 9, 2026_
 
 This release includes new features and bug fixes.
 
@@ -345,12 +360,16 @@ Download the release binaries: https://github.com/elastic/elasticsearch/releases
 ### Fixes
 ...
 
-## 0.99.0
+## 2025-08-05
 ### Features and enhancements
 ...
 ```
 
-When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: April 9, 2026_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents. If the `release-date` field is present in a bundle, it is always displayed. To control release dates, set `release_dates: false` at the bundle or profile level in the configuration (see [profile configuration](/cli/changelog/bundle.md)); when false, this prevents the date from being written to the bundle during bundling. Defaults to true when omitted.
+When a bundle includes a `release-date` field, the directive renders it as italicized text (for example, `_Released: April 9, 2026_`) immediately after the version heading **only when** [`:release-dates:`](#release-dates) is set. This is informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
+
+**Bundle time:** set `release_dates: false` at the bundle or profile level in `changelog.yml`, or use `--no-release-date` on [`changelog bundle`](/cli/changelog/bundle.md), to omit `release-date` from bundle YAML when bundling. Defaults to auto-population when omitted.
+
+**Render time:** omit `:release-dates:` (default) to hide `_Released:_` even when the bundle YAML contains a date — for example, when the version heading already shows a release date.
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
