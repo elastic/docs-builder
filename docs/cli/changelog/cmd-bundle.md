@@ -1,6 +1,6 @@
 Aggregates changelog YAML files matching a filter into a single bundle file. The bundle is the artifact used by the `{changelog}` directive and `docs-builder changelog render` to produce release notes.
 
-The command has **two mutually exclusive modes**. You cannot mix them: supplying a profile name on the command line disables all filter and output flags.
+The command has **two mutually exclusive modes**. You cannot mix them: supplying a profile name on the command line disables all filter and output flags (refer to [Options](#options) for equivalent changelog configuration settings).
 
 ## Profile-based mode
 
