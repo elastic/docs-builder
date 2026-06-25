@@ -8,6 +8,7 @@ using Aspire.Hosting.Testing;
 using AwesomeAssertions;
 using Documentation.Builder.Diagnostics.Console;
 using Elastic.Documentation.Aspire;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Internal.Search;
