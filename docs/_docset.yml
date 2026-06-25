@@ -148,6 +148,7 @@ toc:
       - file: videos.md
       - file: kbd.md
       - file: math.md
+      - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
       - file: task-lists.md
