@@ -217,7 +217,7 @@ public partial class ChangelogBundlingService(
 			// needs_network decision.
 			var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
 			var authoringRepo = NormalizeRepo(input.Repo);
-			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs, explicitDirectory);
+			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
 
 			// Validate input. In CDN mode the local input directory is not read, so its existence
 			// is not required.
@@ -650,7 +650,7 @@ public partial class ChangelogBundlingService(
 		var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
 		var authoringRepo = NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
-		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs, explicitDirectory))
+		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
 			needsNetwork = true;
 
 		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults.

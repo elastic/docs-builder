@@ -47,7 +47,7 @@ public static class RegistryKey
 		// Bundle products never contain dots (producer class is [a-zA-Z0-9_-]+); only changelog repo
 		// segments may, so dots are accepted under changelog/ but not bundle/.
 		var allowDots = string.Equals(prefix, ChangelogPrefix, StringComparison.Ordinal);
-		return IsValidSegment(key.AsSpan(prefix.Length, segmentLength), allowDots);
+		return IsValidSegment(key.AsSpan(prefix.Length, segmentLength), allowDots: allowDots);
 	}
 
 	private static bool IsValidSegment(ReadOnlySpan<char> segment, bool allowDots)
