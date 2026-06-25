@@ -50,6 +50,7 @@
 							@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
 							{
 								<div id="elastic-website-search-input-container"
+								     hx-preserve="true"
 								     class="sticky bottom-8 mt-8 z-40">
 								</div>
 							}
@@ -98,7 +99,7 @@
 @if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
 {
 	<elastic-website-search
-		nav-mode="off"
+		nav-mode="on"
 		chat-enabled="true"
 		chat-mode="input"
 		chat-input-container="#elastic-website-search-input-container">

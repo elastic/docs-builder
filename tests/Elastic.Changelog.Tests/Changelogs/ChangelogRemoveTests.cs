@@ -291,6 +291,93 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task Remove_WhenExcludedByAmendBundle_Proceeds()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+
+		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
+		FileSystem.Directory.CreateDirectory(bundlesDir);
+		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
+		var bundlePath = FileSystem.Path.Join(bundlesDir, "9.3.0.yaml");
+		await FileSystem.File.WriteAllTextAsync(
+			bundlePath,
+			// language=yaml
+			$"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- file:
+			    name: 1001-es-feature.yaml
+			    checksum: {checksum}
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(bundlesDir, "9.3.0.amend-1.yaml"),
+			// language=yaml
+			$"""
+			exclude-entries:
+			- file:
+			    name: 1001-es-feature.yaml
+			    checksum: {checksum}
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
+
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue("Amend exclusion should remove bundle dependency");
+		Collector.Errors.Should().Be(0);
+		FileExists("1001-es-feature.yaml").Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task Remove_WhenCorruptAmendBundle_StillBlocksFromParentReference()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+
+		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
+		FileSystem.Directory.CreateDirectory(bundlesDir);
+		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
+		var bundlePath = FileSystem.Path.Join(bundlesDir, "9.3.0.yaml");
+		await FileSystem.File.WriteAllTextAsync(
+			bundlePath,
+			// language=yaml
+			$"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- file:
+			    name: 1001-es-feature.yaml
+			    checksum: {checksum}
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(bundlesDir, "9.3.0.amend-1.yaml"),
+			"exclude-entries:\n  - file: [invalid yaml",
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
+
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse("Parent bundle reference should block deletion when amend file is corrupt");
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("1001-es-feature.yaml") &&
+			d.Message.Contains("unresolved bundle"));
+		FileExists("1001-es-feature.yaml").Should().BeTrue("File must not be deleted when parent still references it");
+	}
+
+	[Fact]
 	public async Task Remove_WhenReferencedByUnresolvedBundle_WithForce_Proceeds()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);

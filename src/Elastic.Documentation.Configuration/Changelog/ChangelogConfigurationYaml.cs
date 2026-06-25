@@ -276,6 +276,12 @@ internal sealed record BundleConfigurationYaml
 	public string? OutputDirectory { get; set; }
 
 	/// <summary>
+	/// When true, source the individual changelog entries that make up a bundle from the local
+	/// <see cref="Directory"/> instead of the public CDN. Defaults to false (CDN sourcing).
+	/// </summary>
+	public bool? UseLocalChangelogs { get; set; }
+
+	/// <summary>
 	/// Whether to resolve (copy contents) by default.
 	/// </summary>
 	public bool? Resolve { get; set; }

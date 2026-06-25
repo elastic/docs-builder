@@ -56,8 +56,11 @@ public static class ElasticsearchEndpointFactory
 			Username = username
 		};
 
-		environment ??= ResolveEnvironment(config, appConfiguration);
 		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
+		IEnvironmentValidator environmentValidator = buildType == "codex"
+			? new CodexEnvironmentValidator()
+			: new SiteEnvironmentValidator();
+		environment ??= environmentValidator.Resolve(appConfiguration?["ENVIRONMENT"] ?? config["ENVIRONMENT"]);
 
 		var searchIndexOverride =
 			config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"]
@@ -70,25 +73,5 @@ public static class ElasticsearchEndpointFactory
 			BuildType = buildType,
 			SearchIndexOverride = !string.IsNullOrEmpty(searchIndexOverride) ? searchIndexOverride : null
 		};
-	}
-
-	/// <summary>
-	/// Resolves the environment name using this priority:
-	/// 1. <c>DOTNET_ENVIRONMENT</c> env var
-	/// 2. <c>ENVIRONMENT</c> env var
-	/// 3. Fallback: <c>"dev"</c>
-	/// </summary>
-	private static string ResolveEnvironment(IConfiguration config, IConfiguration? appConfiguration)
-	{
-		var envVar = appConfiguration?["DOTNET_ENVIRONMENT"]
-			?? appConfiguration?["ENVIRONMENT"]
-			?? config["DOTNET_ENVIRONMENT"]
-			?? config["ENVIRONMENT"];
-
-		string[] allowedEnvironements = ["dev", "prod", "staging"];
-		if (!allowedEnvironements.Contains(envVar))
-			envVar = "dev";
-
-		return !string.IsNullOrEmpty(envVar) ? envVar.ToLowerInvariant() : "dev";
 	}
 }

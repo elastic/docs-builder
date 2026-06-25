@@ -26,6 +26,14 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "cross_links")]
 	public List<string> CrossLinks { get; set; } = [];
 
+	/// <summary>
+	/// Products whose changelog content is sourced from the public CDN. Declaring a product here lets
+	/// docs-builder prefetch its bundles at startup (consumed by the <c>{changelog}</c> <c>:cdn:</c> mode)
+	/// and lets <c>changelog bundle</c> source that product's entries from the CDN.
+	/// </summary>
+	[YamlMember(Alias = "release_notes")]
+	public List<ReleaseNotesProductReference> ReleaseNotes { get; set; } = [];
+
 	[YamlMember(Alias = "exclude")]
 	public List<string> Exclude { get; set; } = [];
 
@@ -72,6 +80,9 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// </summary>
 	[YamlMember(Alias = "branding")]
 	public BrandingConfiguration? Branding { get; set; }
+
+	[YamlMember(Alias = "storybook")]
+	public DocumentationSetStorybook? Storybook { get; set; }
 
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
 	{
@@ -545,7 +556,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			? ResolveTableOfContents(collector, cliRef.Children, baseDirectory, fileSystem, fullVirtualRoot, containerPath, context)
 			: [];
 
-		return new CliReferenceRef(schemaFullPath, cliRef.SupplementalFolder, fullVirtualRoot, pathRelativeToContainer, context, resolvedChildren);
+		return new CliReferenceRef(schemaFullPath, cliRef.SupplementalFolder, cliRef.Title, cliRef.NavigationTitle, fullVirtualRoot, pathRelativeToContainer, context, resolvedChildren);
 	}
 
 	/// <summary>
@@ -738,6 +749,23 @@ public class DocumentationSetFeatures
 	public bool? PrimaryNav { get; set; }
 	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
 	public bool? DisableGithubEditLink { get; set; }
+}
+
+[YamlSerializable]
+public class DocumentationSetStorybook
+{
+	[YamlMember(Alias = "registry")]
+	public string? Registry { get; set; }
+}
+
+/// <summary>
+/// A single <c>release_notes</c> entry declaring a product whose changelog content is CDN-backed.
+/// </summary>
+[YamlSerializable]
+public record ReleaseNotesProductReference
+{
+	[YamlMember(Alias = "product")]
+	public string Product { get; set; } = string.Empty;
 }
 
 /// <summary>

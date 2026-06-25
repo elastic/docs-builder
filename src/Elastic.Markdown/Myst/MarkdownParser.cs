@@ -48,6 +48,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocument = Resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = Resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			ReleaseNotesResolver = Resolvers.ReleaseNotesResolver,
 			NavigationTraversable = Resolvers.NavigationTraversable,
 			SkipValidation = skip
 		};
@@ -88,7 +89,8 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocument = resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			NavigationTraversable = resolvers.NavigationTraversable,
-			CrossLinkResolver = resolvers.CrossLinkResolver
+			CrossLinkResolver = resolvers.CrossLinkResolver,
+			ReleaseNotesResolver = resolvers.ReleaseNotesResolver
 		};
 		var context = new ParserContext(state);
 
@@ -108,6 +110,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocument = resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = resolvers.CrossLinkResolver,
+			ReleaseNotesResolver = resolvers.ReleaseNotesResolver,
 			NavigationTraversable = resolvers.NavigationTraversable,
 			ParentMarkdownPath = parentPath,
 			IncludeLine = includeLine

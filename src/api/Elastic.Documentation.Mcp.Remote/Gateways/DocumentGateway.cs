@@ -5,7 +5,6 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
-using Elastic.Internal.Search;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Mcp.Remote.Gateways;
@@ -25,29 +24,31 @@ public class DocumentGateway(
 		try
 		{
 			var normalizedUrl = NormalizeUrl(url);
+			// TODO: conditionally omit Body from the source filter when the caller doesn't need it —
+			// currently Body is always fetched even when includeBody=false, wasting network + deserialization.
 			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(s => s
 				.Indices(clientAccessor.SearchIndex)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(normalizedUrl)))
 				.Size(1)
-			.Source(sf => sf.Filter(f => f.Includes(
-				e => e.Url,
-				e => e.Title,
-				e => e.SearchTitle,
-				e => e.Type,
-				e => e.Description,
-				e => e.NavigationSection,
-				e => e.Body,
-				e => e.Parents,
-				e => e.Headings,
-				e => e.Links,
-				e => e.AiShortSummary,
-				e => e.AiRagOptimizedSummary,
-				e => e.AiQuestions,
-				e => e.AiUseCases,
-				e => e.LastUpdated,
-				e => e.Product,
-				e => e.RelatedProducts
-			))),
+				.Source(sf => sf.Filter(f => f.Includes(
+					e => e.Url,
+					e => e.Title,
+					e => e.SearchTitle,
+					e => e.Type,
+					e => e.Description,
+					e => e.NavigationSection,
+					e => e.Body,
+					e => e.Parents,
+					e => e.Headings,
+					e => e.Links,
+					e => e.AiShortSummary,
+					e => e.AiRagOptimizedSummary,
+					e => e.AiQuestions,
+					e => e.AiUseCases,
+					e => e.LastUpdated,
+					e => e.Product,
+					e => e.RelatedProducts
+				))),
 				ct);
 
 			if (!response.IsValidResponse || response.Documents.Count == 0)
@@ -108,6 +109,7 @@ public class DocumentGateway(
 				.Indices(clientAccessor.SearchIndex)
 				.Query(q => q.Term(t => t.Field(f => f.Url).Value(normalizedUrl)))
 				.Size(1)
+			// Body is fetched solely to compute BodyLength — no stored length field exists in the index.
 			.Source(sf => sf.Filter(f => f.Includes(
 				e => e.Url,
 				e => e.Title,

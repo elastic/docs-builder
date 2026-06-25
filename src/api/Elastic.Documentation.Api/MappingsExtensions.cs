@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
-using Elastic.Documentation.Api.Telemetry;
 using Elastic.Documentation.Search;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -17,17 +16,14 @@ namespace Elastic.Documentation.Api;
 
 public static class MappingsExtension
 {
-	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group, bool mapOtlpEndpoints = true)
+	public static void MapElasticDocsApiEndpoints(this IEndpointRouteBuilder group)
 	{
-
 		_ = group.MapGet("/", () => Results.Empty);
 		_ = group.MapPost("/", () => Results.Empty);
 		MapAskAiEndpoint(group);
 		MapNavigationSearch(group);
 		MapFullSearch(group);
 		MapChanges(group);
-		if (mapOtlpEndpoints)
-			MapOtlpProxyEndpoint(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -180,32 +176,4 @@ public static class MappingsExtension
 				return Results.Ok(response);
 			});
 
-	private static void MapOtlpProxyEndpoint(IEndpointRouteBuilder group)
-	{
-		// Use /o/* to avoid adblocker detection (common blocklists target /otlp, /telemetry, etc.)
-		var otlpGroup = group.MapGroup("/o");
-
-		MapOtlpSignalEndpoint(otlpGroup, "/t", OtlpSignalType.Traces);
-		MapOtlpSignalEndpoint(otlpGroup, "/l", OtlpSignalType.Logs);
-		MapOtlpSignalEndpoint(otlpGroup, "/m", OtlpSignalType.Metrics);
-	}
-
-	private static void MapOtlpSignalEndpoint(
-		IEndpointRouteBuilder group,
-		string path,
-		OtlpSignalType signalType) =>
-		group.MapPost(path,
-			async (HttpContext context, IOtlpService otlpService, Cancel ctx) =>
-			{
-				var contentType = context.Request.ContentType ?? "application/json";
-				var result = await otlpService.ForwardOtlp(
-					signalType,
-					context.Request.Body,
-					contentType,
-					ctx);
-				return result.IsSuccess
-					? Results.NoContent()
-					: Results.StatusCode(result.StatusCode);
-			})
-			.DisableAntiforgery();
 }

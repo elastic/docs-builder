@@ -11,11 +11,12 @@ import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
+import { logError } from './telemetry/logging'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import * as katex from 'katex'
-import { $, $$ } from 'select-dom'
+import { $, $optional, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
 // Injected at build time from MinVer
@@ -41,6 +42,7 @@ import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
 import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
+import('./web-components/StorybookStory/StorybookStoryComponent')
 
 if (config.buildType === 'isolated' || config.airGapped) {
     import('./isolated')
@@ -53,11 +55,36 @@ const { getOS } = new UAParser()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HtmxEvent = any
 
+// Run each init step in isolation so a failure in one does not abort the rest.
+async function runInitSteps(
+    steps: Array<[string, () => void | Promise<void>]>
+) {
+    for (const [name, init] of steps) {
+        try {
+            await init()
+        } catch (error) {
+            console.error(`Init step "${name}" failed:`, error)
+            logError(`Init step failed: ${name}`, {
+                'init.step': name,
+                'error.message':
+                    error instanceof Error ? error.message : String(error),
+            })
+        }
+    }
+}
+
+function applyEditParam() {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.has('edit')) {
+        $optional('.edit-this-page.hidden')?.classList.remove('hidden')
+    }
+}
+
 /**
  * Initialize KaTeX math rendering for elements with class 'math'
  */
 function initMath() {
-    const mathElements = $$('.math:not([data-katex-processed])')
+    const mathElements = $$optional('.math:not([data-katex-processed])')
     mathElements.forEach((element) => {
         try {
             const content = element.textContent?.trim()
@@ -103,39 +130,48 @@ function initMath() {
 
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
-    initMath()
-    initMermaid()
+    runInitSteps([
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+    ])
 })
 
 document.addEventListener('htmx:load', function () {
-    initTocNav()
-    initHighlight()
-    initCopyButton()
-    initAgentSkillCopy()
-    initTabs()
-    initAppliesSwitch()
-    initMath()
-    initMermaid()
-    initNav()
-
-    initSmoothScroll()
-    openDetailsWithAnchor()
-    initImageCarousel()
-    initApiDocs()
-
-    const urlParams = new URLSearchParams(window.location.search)
-    const editParam = urlParams.has('edit')
-    if (editParam) {
-        $('.edit-this-page.hidden')?.classList.remove('hidden')
-    }
+    runInitSteps([
+        ['initTocNav', initTocNav],
+        ['initHighlight', initHighlight],
+        ['initCopyButton', initCopyButton],
+        ['initAgentSkillCopy', initAgentSkillCopy],
+        ['initTabs', initTabs],
+        ['initAppliesSwitch', initAppliesSwitch],
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+        ['initNav', initNav],
+        ['initSmoothScroll', initSmoothScroll],
+        ['openDetailsWithAnchor', openDetailsWithAnchor],
+        ['initImageCarousel', initImageCarousel],
+        ['initApiDocs', initApiDocs],
+        ['applyEditParam', applyEditParam],
+    ])
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
 document.addEventListener(
     'htmx:removingHeadElement',
     function (event: HtmxEvent) {
-        const tagName = event.detail.headElement.tagName
-        if (tagName === 'STYLE') {
+        const headElement = event.detail.headElement
+        if (headElement.tagName === 'STYLE') {
+            event.preventDefault()
+            return
+        }
+        // Keep the Storybook bootstrap assets that <storybook-story> injects into
+        // <head>; htmx would otherwise strip them on navigation, which both breaks an
+        // in-flight first load (the stylesheet's onload never fires) and leaves the
+        // module-level load caches pointing at elements that no longer exist.
+        if (
+            headElement.dataset?.storybookScript !== undefined ||
+            headElement.dataset?.storybookStyle !== undefined
+        ) {
             event.preventDefault()
         }
     }
@@ -190,7 +226,7 @@ document.body.addEventListener(
 )
 
 // We add a query string to the get request to make sure the requested page is up to date
-const docsBuilderVersion = $('body')?.dataset.docsBuilderVersion
+const docsBuilderVersion = $('body').dataset.docsBuilderVersion
 document.body.addEventListener(
     'htmx:configRequest',
     function (event: HtmxEvent) {

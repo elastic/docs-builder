@@ -232,6 +232,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="report">Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as `changelog bundle --report`). Mutually exclusive with --prs, --issues, and --release-version.</param>
 	/// <param name="repo">Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified.</param>
 	/// <param name="stripTitlePrefix">Optional: When used with --prs or --report, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., "[Inference API] Title" becomes "Title", "[ES|QL]: Title" becomes "Title", "[Discover][ESQL] Title" becomes "Title")</param>
+	/// <param name="strictFetch">Optional: Treat a failure to fetch any PR or issue from GitHub (with --prs, --issues, or --report) as an error that exits non-zero, instead of a warning. Use in CI so a missing or unauthorized GITHUB_TOKEN fails the run rather than silently producing unfiltered changelogs with missing titles. Files are still written so they can be inspected.</param>
 	/// <param name="subtype">Optional: Subtype for breaking changes (api, behavioral, configuration, etc.)</param>
 	/// <param name="title">Optional: A short, user-facing title (max 80 characters). Required if neither --prs, --issues, nor --report is specified. If --prs and --title are specified, the latter value is used instead of what exists in the PR.</param>
 	/// <param name="type">Optional: Type of change (feature, enhancement, bug-fix, breaking-change, etc.). Required if neither --prs, --issues, nor --report is specified. If mappings are configured, type can be derived from the PR or issue.</param>
@@ -261,6 +262,7 @@ internal sealed partial class ChangelogCommands(
 		string? releaseVersion = null,
 		string? repo = null,
 		bool stripTitlePrefix = false,
+		bool strictFetch = false,
 		string? subtype = null,
 		string? title = null,
 		string? type = null,
@@ -527,7 +529,8 @@ internal sealed partial class ChangelogCommands(
 			StripTitlePrefix = stripTitlePrefixResolved,
 			ExtractReleaseNotes = extractReleaseNotes,
 			ExtractIssues = extractIssues,
-			Concise = concise
+			Concise = concise,
+			StrictFetch = strictFetch
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -563,7 +566,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="report">A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
 	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
-	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>) describing network requirements and the resolved output path, then exit without generating the bundle. Intended for CI actions.</param>
+	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>, and <c>cdn_url</c> when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions.</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> Bundle(
@@ -842,6 +845,8 @@ internal sealed partial class ChangelogCommands(
 			await githubActionsService.SetOutputAsync("needs_github_token", planResult.NeedsGithubToken ? "true" : "false");
 			if (planResult.OutputPath != null)
 				await githubActionsService.SetOutputAsync("output_path", planResult.OutputPath);
+			if (planResult.CdnUrl != null)
+				await githubActionsService.SetOutputAsync("cdn_url", planResult.CdnUrl);
 			return 0;
 		}
 
@@ -1275,16 +1280,22 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>Append additional changelog entries to a published bundle without modifying it.</summary>
+	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
 	/// <remarks>Creates an immutable <c>.amend-N.yaml</c> sidecar file alongside the original bundle.</remarks>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
-	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).</param>
+	/// <param name="add">Optional: Changelog YAML paths to add. Repeat <c>--add</c> or pass a comma-separated list in one value (for example, <c>--add "file1.yaml,file2.yaml"</c>). Supports tilde (~) expansion and relative paths.</param>
+	/// <param name="remove">Optional: Changelog YAML paths to exclude from the effective bundle. Repeat <c>--remove</c> or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.</param>
+	/// <param name="resolve">Optional: When using <c>--add</c>, inline each added changelog's content in the amend file. Use <c>--no-resolve</c> to record file references only. When omitted, inferred from the parent bundle. Does not apply to <c>--remove</c>.</param>
+	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.</param>
+	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
 		string[]? add = null,
+		string[]? remove = null,
 		bool? resolve = null,
+		bool force = false,
+		bool dryRun = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1293,30 +1304,32 @@ internal sealed partial class ChangelogCommands(
 
 		var service = new ChangelogBundleAmendService(logFactory, configurationContext: configurationContext);
 
-		if (add == null || add.Length == 0)
+		var normalizedAddFiles = add != null
+			? ExpandCommaSeparated(add).Select(NormalizePath).ToList()
+			: [];
+		var normalizedRemoveFiles = remove != null
+			? ExpandCommaSeparated(remove).Select(NormalizePath).ToList()
+			: [];
+
+		if (normalizedAddFiles.Count == 0 && normalizedRemoveFiles.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one file must be specified with --add");
+			collector.EmitError(string.Empty, "At least one file must be specified with --add or --remove");
 			_ = collector.StartAsync(ctx);
 			await collector.WaitForDrain();
 			await collector.StopAsync(ctx);
 			return 1;
 		}
 
-		// Normalize the bundle path
 		var normalizedBundlePath = bundlePath.FullName;
-
-		var normalizedAddFiles = ExpandCommaSeparated(add)
-			.Select(NormalizePath)
-			.ToList();
-
-		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then infer from bundle
-		var shouldResolve = resolve;
 
 		var input = new AmendBundleArguments
 		{
 			BundlePath = normalizedBundlePath,
-			AddFiles = normalizedAddFiles.ToArray(),
-			Resolve = shouldResolve
+			AddFiles = normalizedAddFiles,
+			RemoveFiles = normalizedRemoveFiles,
+			Resolve = resolve,
+			Force = force,
+			DryRun = dryRun
 		};
 
 		serviceInvoker.AddCommand(service, input,
