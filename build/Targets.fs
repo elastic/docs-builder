@@ -44,11 +44,15 @@ let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-
 
 let private lint (lintArgs: ParseResults<LintArgs>) =
     let includeFiles = lintArgs.TryGetResult LintArgs.Include |> Option.defaultValue []
-    let includeArgs = 
-        if includeFiles.IsEmpty then []
-        else ["--include"] @ includeFiles
+    // When files are provided (pre-push hook): whitespace only — style/analyzers require full Roslyn
+    // semantic analysis (~60s extra) and are not accidentally introduced during normal coding.
+    // When no files (CI): full check, but skip restore since packages are already available.
+    let formatArgs =
+        match includeFiles with
+        | [] -> ["format"; "--verify-no-changes"; "--no-restore"]
+        | files -> ["format"; "whitespace"; "--verify-no-changes"; "--no-restore"; "--include"] @ files
     match exec {
-        exit_code_of "dotnet" (["format"; "--verify-no-changes"] @ includeArgs)
+        exit_code_of "dotnet" formatArgs
     } with
     | 0 -> printfn "There are no dotnet formatting violations, continuing the build."
     | _ -> failwithf "There are dotnet formatting violations. Call `dotnet format` to fix or specify -c to ./build.sh to skip this check"
