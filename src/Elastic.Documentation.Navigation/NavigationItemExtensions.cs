@@ -163,6 +163,8 @@ public static class NavigationItemExtensions
 				{
 					_ = navigationDocumentationFileLookup.TryAdd(documentationFileIndex.Model, documentationFileNode);
 					_ = navigationByOrder.TryAdd(documentationFileIndex.NavigationIndex, documentationFileIndex);
+					_ = urlToFile.TryAdd(documentationFileNode.Url, documentationFileIndex.Model);
+					_ = urlToFile.TryAdd(documentationFileIndex.Url, documentationFileIndex.Model);
 				}
 				foreach (var child in documentationFileNode.NavigationItems)
 					BuildNavigationLookupsRecursive(child, navigationDocumentationFileLookup, navigationByOrder, urlToFile);

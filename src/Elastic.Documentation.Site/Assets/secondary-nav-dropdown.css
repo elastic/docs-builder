@@ -14,8 +14,18 @@
 
 @layer components {
 	.secondary-nav-dropdown {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
+	}
+
+	/* The nav bar uses overflow-x:auto for horizontal tab scrolling, which
+	   also clips vertically and would cut off an open dropdown. Let the menu
+	   escape only while a dropdown is open. */
+	.secondary-nav-scroll-container:has(.secondary-nav-dropdown[open]) {
+		/* !important to win over the Tailwind `overflow-x-auto` utility,
+		   which sits in a higher cascade layer. */
+		overflow: visible !important;
 	}
 	.secondary-nav-dropdown summary {
 		list-style: none;
@@ -40,7 +50,7 @@
 		min-width: 220px;
 		max-width: 320px;
 		z-index: 50;
-		display: flex;
+		display: none;
 		flex-direction: column;
 		padding: 6px 0;
 		background: var(--color-white);
@@ -48,6 +58,9 @@
 		border-radius: 6px;
 		box-shadow: 0 8px 24px rgb(0 0 0 / 0.08);
 		font-weight: 500;
+	}
+	.secondary-nav-dropdown[open] .secondary-nav-dropdown-menu {
+		display: flex;
 	}
 
 	.secondary-nav-dropdown-group-label {

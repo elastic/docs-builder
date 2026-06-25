@@ -40,9 +40,6 @@ layout: hub
 :icon: kibana
 :title: Kibana
 :description: The UI for the Elasticsearch platform.
-:version: v9 / Serverless (current)
-:versions: v8,v7
-:quick-links: Install=/install,Tutorial=/tutorial
 :releases: Latest&#58; [Stack 9.4.1](/rn) (Mar 28, 2026)
 :::
 
