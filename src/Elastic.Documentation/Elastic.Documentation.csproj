@@ -11,8 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- TODO: switch back to PackageReference once the new contract version is published -->
-    <ProjectReference Include="../../../../.supacode/repos/website-search-data/feature/contract-work-move-docs-out/src/Elastic.Internal.Search.Contract/Elastic.Internal.Search.Contract.csproj" />
+    <PackageReference Include="Elastic.Internal.Search.Contract" />
     <PackageReference Include="Elastic.Mapping" />
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
