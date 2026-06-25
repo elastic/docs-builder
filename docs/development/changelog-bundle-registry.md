@@ -110,8 +110,8 @@ skipped for `--artifact-type changelog`). `RegistryBuilder`:
 
 - Groups the run's upload targets by the second key segment — product for bundles
   (`bundle/{product}/{file}`), repo for entries (`changelog/{repo}/{file}`).
-- For each product, derives one `registry` entry per bundle (file name, that product's
-  target, locally-computed S3 ETag).
+- For each group, derives one `registry` entry per file (file name, locally-computed S3 ETag,
+  and — for bundle indexes only — that product's target; entry indexes record no target).
 - Reads the existing manifest from S3, merges by file name (re-uploads replace their entry;
   others are preserved), and writes the merged manifest back.
 

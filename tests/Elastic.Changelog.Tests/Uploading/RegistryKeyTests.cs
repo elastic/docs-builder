@@ -40,6 +40,9 @@ public class RegistryKeyTests
 	// Unknown top-level prefix.
 	[InlineData("entries/elasticsearch/registry.json")]
 	[InlineData("elasticsearch/bundle/registry.json")]
+	// Dots are allowed only for changelog repo segments, never for bundle product segments
+	// (producers validate products as [a-zA-Z0-9_-]+).
+	[InlineData("bundle/foo.bar/registry.json")]
 	// Wrong extension.
 	[InlineData("bundle/elasticsearch/registry.yaml")]
 	[InlineData("changelog/elasticsearch/registry.yaml")]

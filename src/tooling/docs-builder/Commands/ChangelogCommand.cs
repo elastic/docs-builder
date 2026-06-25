@@ -1624,7 +1624,7 @@ internal sealed partial class ChangelogCommands(
 
 		// Resolve the authoring repo for entry keys: --repo > bundle.repo (changelog.yml) > git remote
 		// origin. Reduced to a single path segment (owner/repo -> repo) for the changelog/{repo}/ key.
-		var (resolvedRepo, resolvedOwner) = await ResolveUploadRepoOwner(repo, owner, resolvedConfig, ctx);
+		var (resolvedRepo, resolvedOwner) = await ResolveUploadRepoOwner(repo, owner, resolvedConfig, resolvedDirectory, ctx);
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, configurationContext);
@@ -1644,20 +1644,29 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>
-	/// Resolves the authoring repo and owner for changelog uploads using the precedence
-	/// <c>--repo</c>/<c>--owner</c> &gt; <c>bundle.repo</c>/<c>bundle.owner</c> in changelog.yml &gt; git
-	/// remote origin. The repo is reduced to a single path segment (<c>owner/repo</c> -&gt; <c>repo</c>).
-	/// </summary>
-	private async Task<(string? Repo, string? Owner)> ResolveUploadRepoOwner(string? repoCli, string? ownerCli, string? configPath, CancellationToken ctx)
+	/// <summary>Resolves the authoring repo/owner for uploads (<c>--repo</c> &gt; <c>bundle.repo</c> &gt; git remote), reducing the repo to a single path segment.</summary>
+	private async Task<(string? Repo, string? Owner)> ResolveUploadRepoOwner(string? repoCli, string? ownerCli, string? configPath, string? uploadDirectory, CancellationToken ctx)
 	{
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 			.LoadChangelogConfiguration(collector, configPath, ctx);
 
+		// Anchor the git-remote fallback to the upload source (config file or changelog directory), not
+		// the process cwd, so an out-of-tree --config/--directory resolves the right origin. Both values
+		// are absolute (FileInfo/DirectoryInfo FullName) when present.
+		string? anchor = null;
+		if (!string.IsNullOrWhiteSpace(configPath))
+		{
+			var configDir = _fileSystem.Path.GetDirectoryName(configPath);
+			if (!string.IsNullOrWhiteSpace(configDir) && _fileSystem.Directory.Exists(configDir))
+				anchor = configDir;
+		}
+		if (anchor is null && !string.IsNullOrWhiteSpace(uploadDirectory) && _fileSystem.Directory.Exists(uploadDirectory))
+			anchor = uploadDirectory;
+		anchor ??= Directory.GetCurrentDirectory();
+
 		string? gitOwner = null;
 		string? gitRepo = null;
-		var cwd = Directory.GetCurrentDirectory();
-		var repoRoot = Paths.FindGitRoot(_fileSystem.DirectoryInfo.New(cwd))?.FullName ?? cwd;
+		var repoRoot = Paths.FindGitRoot(_fileSystem.DirectoryInfo.New(anchor))?.FullName ?? anchor;
 		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
 			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
 

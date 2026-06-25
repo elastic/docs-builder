@@ -679,10 +679,7 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
-	/// <summary>
-	/// Public CDN URL of the scrubbed bundle (<c>{base}/bundle/{product}/{file}</c>), polled by the
-	/// bundle-PR action. Null when the product, output file name, or CDN base cannot be resolved.
-	/// </summary>
+	/// <summary>Public CDN URL of the scrubbed bundle (<c>{base}/bundle/{product}/{file}</c>); null when product, output file name, or CDN base cannot be resolved.</summary>
 	private string? ResolveCdnBundleUrl(BundleProfile? profileDef, BundleChangelogsArguments input, string? outputPath)
 	{
 		if (string.IsNullOrWhiteSpace(outputPath))
@@ -732,12 +729,7 @@ public partial class ChangelogBundlingService(
 		return null;
 	}
 
-	/// <summary>
-	/// Downloads the changelog entries from the public CDN for the authoring <paramref name="repo"/>'s
-	/// pool (<c>changelog/{repo}/...</c>). Returns null (after emitting an error) on any fatal fetch
-	/// failure; an entry not yet public is skipped with a warning by the fetcher. The bundle command's
-	/// own filters (products / prs / issues) then narrow the downloaded set.
-	/// </summary>
+	/// <summary>Downloads the authoring <paramref name="repo"/>'s changelog entries from the CDN (<c>changelog/{repo}/...</c>); returns null after emitting an error on any fatal fetch failure.</summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesAsync(
 		IDiagnosticsCollector collector,
 		string? repo,
@@ -784,10 +776,7 @@ public partial class ChangelogBundlingService(
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}
 
-	/// <summary>
-	/// Reduces a configured repo value to the single path segment used in CDN keys
-	/// (<c>owner/repo</c> -&gt; <c>repo</c>). Null/empty input is returned unchanged.
-	/// </summary>
+	/// <summary>Reduces a configured repo value to the single CDN-key path segment (<c>owner/repo</c> -&gt; <c>repo</c>); null/empty unchanged.</summary>
 	private static string? NormalizeRepo(string? repo)
 	{
 		if (string.IsNullOrWhiteSpace(repo))
@@ -796,12 +785,7 @@ public partial class ChangelogBundlingService(
 		return slash >= 0 && slash < repo.Length - 1 ? repo[(slash + 1)..] : repo;
 	}
 
-	/// <summary>
-	/// Gate for CDN entry sourcing under the artifact-root layout. Entries are repo-scoped
-	/// (<c>changelog/{repo}/...</c>), so the CDN is used when the authoring repo resolves, the user has
-	/// not forced local sourcing (<c>bundle.use_local_changelogs</c> or an explicit <c>--directory</c>),
-	/// and a CDN base is configured. Otherwise entries are read from the local folder.
-	/// </summary>
+	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--directory</c>), and a CDN base is configured.</summary>
 	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
 	{
 		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))

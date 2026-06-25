@@ -111,11 +111,7 @@ internal sealed class RegistryBuilder(
 		return new RefreshResult(updated, unchanged, failed);
 	}
 
-	/// <summary>
-	/// Extracts the grouping segment from an artifact-root S3 key: the product from
-	/// <c>bundle/{product}/{file}</c> (bundle scope) or the repo from <c>changelog/{repo}/{file}</c>
-	/// (changelog scope). Returns null when the key does not match the expected scope prefix/shape.
-	/// </summary>
+	/// <summary>Extracts the grouping segment (product for <c>bundle/{product}/…</c>, repo for <c>changelog/{repo}/…</c>) from an artifact-root S3 key, or null.</summary>
 	private static string? ExtractGroupKey(string s3Key, RegistryScope scope)
 	{
 		var prefix = scope == RegistryScope.Changelog ? "changelog/" : "bundle/";

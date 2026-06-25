@@ -17,8 +17,9 @@ public static class RegistryKey
 	/// <summary>
 	/// Returns true when <paramref name="key"/> is a manifest of either artifact-root form
 	/// <c>bundle/{product}/registry.json</c> (the bundle index) or
-	/// <c>changelog/{repo}/registry.json</c> (the changelog-entry index), where the middle
-	/// segment is a single path segment in the character class <c>[a-zA-Z0-9._-]+</c>.
+	/// <c>changelog/{repo}/registry.json</c> (the changelog-entry index). The bundle product
+	/// segment matches the producer's product class (<c>[a-zA-Z0-9_-]+</c>); the changelog repo
+	/// segment additionally allows <c>.</c> (GitHub repo names can contain dots).
 	/// </summary>
 	/// <remarks>
 	/// Used by the changelog scrubber Lambda to decide whether to pass an incoming
@@ -43,17 +44,20 @@ public static class RegistryKey
 		if (segmentLength <= 0)
 			return false;
 
-		return IsValidSegment(key.AsSpan(prefix.Length, segmentLength));
+		// Bundle products never contain dots (producer class is [a-zA-Z0-9_-]+); only changelog repo
+		// segments may, so dots are accepted under changelog/ but not bundle/.
+		var allowDots = string.Equals(prefix, ChangelogPrefix, StringComparison.Ordinal);
+		return IsValidSegment(key.AsSpan(prefix.Length, segmentLength), allowDots);
 	}
 
-	private static bool IsValidSegment(ReadOnlySpan<char> segment)
+	private static bool IsValidSegment(ReadOnlySpan<char> segment, bool allowDots)
 	{
 		if (segment.IsEmpty || segment.Contains('/') || segment is "." or "..")
 			return false;
 
 		foreach (var c in segment)
 		{
-			if (!(char.IsAsciiLetterOrDigit(c) || c == '_' || c == '-' || c == '.'))
+			if (!(char.IsAsciiLetterOrDigit(c) || c == '_' || c == '-' || (allowDots && c == '.')))
 				return false;
 		}
 		return true;
