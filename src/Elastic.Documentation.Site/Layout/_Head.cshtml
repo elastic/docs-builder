@@ -27,6 +27,10 @@
 	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
 	<script src="@Model.Static("main.js")" defer></script>
+	@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is { } websiteSearchUrl)
+	{
+		<script type="module" src="@websiteSearchUrl"></script>
+	}
 	@if (Model.CanonicalBaseUrl is not null)
 	{
 		<link rel="canonical" href="@Model.CanonicalUrl" />
@@ -41,14 +45,25 @@
 			})(window,document,'script','dataLayer','@Model.GoogleTagManager.Id');
 		</script>
 	}
-	@await RenderPartialAsync(_Favicon.Create())
+	@await RenderPartialAsync(_Favicon.Create(Model))
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
 	<meta name="htmx-config" content='{"selfRequestsOnly": true}'>
+	@if (!string.IsNullOrEmpty(Model.NavigationActiveUrl))
+	{
+		<meta name="docs:nav-active" content="@Model.NavigationActiveUrl">
+	}
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
 	<meta property="og:description" content="@Model.Description"/>
-	<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
-	<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+	@if (Model.Branding is null)
+	{
+		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
+		<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+	}
+	else if (Model.BrandingOgImageStaticPath is { } ogPath)
+	{
+		<meta property="og:image" content="@(Model.CanonicalBaseUrl is not null ? new Uri(Model.CanonicalBaseUrl, ogPath).ToString() : ogPath)"/>
+	}
 	@if (!string.IsNullOrEmpty(Model.CanonicalUrl))
 	{
 		<meta property="og:url" content="@Model.CanonicalUrl" />

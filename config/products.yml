@@ -1,4 +1,9 @@
 products:
+  agent-skills:
+    display: 'Elastic Agent Skills'
+    versioning: 'all'
+    features:
+      public-reference: false
   apm:
     display: 'APM'
     versioning: 'stack'
@@ -133,6 +138,10 @@ products:
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
+  elastic-docs:
+    display: 'Elastic Documentation'
+    features:
+      public-reference: false
   elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
     versioning: 'esf'
@@ -238,6 +247,12 @@ products:
   serverless-security:
     display: 'Elastic Security Serverless'
     versioning: 'all'
+  transport-go:
+    display: 'Elastic Transport Go'
+    repository: 'elastic-transport-go'
+    versioning: 'all'
+    features:
+      public-reference: false
   winlogbeat:
     display: 'Winlogbeat'
     versioning: 'stack'

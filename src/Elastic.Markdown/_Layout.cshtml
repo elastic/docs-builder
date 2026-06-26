@@ -13,6 +13,11 @@
 
 		if (name == GlobalSections.Head)
 		{
+			if (Model.RedirectUrl is { } redirectUrl && Model.Layout is not MarkdownPageLayout.Archive)
+			{
+				var encodedUrl = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(redirectUrl);
+				<script>window.location.replace('@(new HtmlString(encodedUrl))');</script>
+			}
 			//this ensures we forward head sections declared in this project into to GlobalLayout view's section
 			await RenderSectionAsync(GlobalSections.Head);
 		}
@@ -30,18 +35,29 @@
 						md:px-4
 			">
 				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
-					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
-					<main id="content-container" class="min-w-0 lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-end mx-4 gap-4">
-						@await RenderPartialAsync(_TableOfContents.Create(Model))
-						<div class="mb-9 mt-0 min-w-0">
+					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-end mx-4 gap-4 md:order-2">
+						@{
+							var breadcrumbs = Model.Breadcrumbs.ToList();
+							var breadcrumbVisible = breadcrumbs.Count > 0 && (breadcrumbs.Count > 1 || Model.BuildType != BuildType.Isolated);
+						}
+						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1 @(breadcrumbVisible ? "" : "pt-6")">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 							<article id="markdown-content" class="markdown-content min-w-0">
 								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 								@await RenderBodyAsync()
 							</article>
 							@await RenderPartialAsync(_PrevNextNav.Create(Model))
+							@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
+							{
+								<div id="elastic-website-search-input-container"
+								     hx-preserve="true"
+								     class="sticky bottom-8 mt-8 z-40">
+								</div>
+							}
 						</div>
+						@await RenderPartialAsync(_TableOfContents.Create(Model))
 					</main>
+					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
 				</div>
 			</div>
 		</div>
@@ -80,6 +96,15 @@
 		break;
 }
 </div>
+@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
+{
+	<elastic-website-search
+		nav-mode="on"
+		chat-enabled="true"
+		chat-mode="input"
+		chat-input-container="#elastic-website-search-input-container">
+	</elastic-website-search>
+}
 @if (RenderHeaderAndFooter)
 {
 	if (Model.BuildType == BuildType.Assembler)

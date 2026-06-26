@@ -18,6 +18,13 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 	{
 		if (renderer.EnableHtmlForInline && !link.IsImage)
 		{
+			// Avoid nested <a> tags when a URL inside link text was autolinked (elastic/docs-builder#3317).
+			if (IsNestedInsideLink(link))
+			{
+				renderer.WriteChildren(link);
+				return;
+			}
+
 			if (link.GetData(nameof(ParserContext.CurrentUrlPath)) is not string)
 			{
 				base.Write(renderer, link);
@@ -94,7 +101,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 		// Write any additional attributes (like width/height from styling instructions)
 		_ = renderer.WriteAttributes(link);
 
-		// Set title to alt text for inline images (after any substitutions are processed)
+		// Always use alt text as title for accessibility consistency
 		if (link.FirstChild != null)
 		{
 			_ = renderer.Write(" title=\"");
@@ -107,6 +114,18 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 	private static IHtmxAttributeProvider? GetHtmxProvider(LinkInline link) =>
 		link.GetData(nameof(IHtmxAttributeProvider)) as IHtmxAttributeProvider;
+
+	private static bool IsNestedInsideLink(LinkInline link)
+	{
+		var parent = link.Parent;
+		while (parent != null)
+		{
+			if (parent is LinkInline)
+				return true;
+			parent = parent.Parent;
+		}
+		return false;
+	}
 }
 
 public static class CustomLinkInlineRendererExtensions

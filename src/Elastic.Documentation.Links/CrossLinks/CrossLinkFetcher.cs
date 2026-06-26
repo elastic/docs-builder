@@ -7,6 +7,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.Text.Json;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Serialization;
 using Microsoft.Extensions.Logging;
@@ -29,10 +30,22 @@ public record FetchedCrossLinks
 	public FrozenDictionary<string, string>? RegistryUrlsByRepository { get; init; }
 
 	/// <summary>
+	/// Optional map of repository name to the declared <see cref="DocSetRegistry"/> for that cross-link entry.
+	/// Used to pick the correct links.json path shape in error messages when the index could not be fetched.
+	/// </summary>
+	public FrozenDictionary<string, DocSetRegistry>? RegistryByRepository { get; init; }
+
+	/// <summary>
 	/// Set of repository names that belong to a codex (non-public) registry.
 	/// Used by the URI resolver to generate codex URLs instead of public preview URLs.
 	/// </summary>
 	public FrozenSet<string>? CodexRepositories { get; init; }
+
+	/// <summary>
+	/// True when all declared repositories resolved without falling back to placeholder data.
+	/// When false, callers should avoid caching so a subsequent reload retries the fetch.
+	/// </summary>
+	public bool IsComplete { get; init; } = true;
 
 	public static FetchedCrossLinks Empty { get; } = new()
 	{
@@ -40,6 +53,7 @@ public record FetchedCrossLinks
 		LinkReferences = new Dictionary<string, RepositoryLinks>().ToFrozenDictionary(),
 		LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
 		RegistryUrlsByRepository = null,
+		RegistryByRepository = null,
 		CodexRepositories = null
 	};
 }

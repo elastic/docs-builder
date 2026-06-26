@@ -83,7 +83,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
 		indexContent.Should().Contain("New Cloud Connect UI");
-		indexContent.Should().Contain("[Highlights]");
+		// Note: Cross-file links like "[Highlights]" have been removed from index.md
 	}
 
 	[Fact]

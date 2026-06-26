@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.IO;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 
@@ -44,6 +46,13 @@ public record GlobalLayoutViewModel
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
 
+	/// <summary>
+	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
+	/// the URL of its nearest visible ancestor. The client uses this to highlight the correct
+	/// nav entry when the page has no rendered nav link of its own.
+	/// </summary>
+	public string? NavigationActiveUrl { get; init; }
+
 
 	// Header properties for isolated mode
 	public string? HeaderTitle { get; init; }
@@ -67,6 +76,25 @@ public record GlobalLayoutViewModel
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
 	public bool RenderHamburgerIcon { get; init; } = true;
+
+	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
+	public BrandingConfiguration? Branding { get; init; }
+
+	/// <summary>Static URL of the branding icon, if configured.</summary>
+	public string? BrandingIconStaticPath =>
+		Branding?.Icon is { } icon ? Static(Path.GetFileName(icon)) : null;
+
+	/// <summary>Static URL of the OG image, if configured.</summary>
+	public string? BrandingOgImageStaticPath =>
+		Branding?.OgImage is { } og ? Static(Path.GetFileName(og)) : null;
+
+	/// <summary>Static URL of the browser favicon, if configured or auto-discovered.</summary>
+	public string? BrandingFaviconStaticPath =>
+		Branding?.Favicon is { } f ? Static(Path.GetFileName(f)) : null;
+
+	/// <summary>Static URL of the Apple touch icon, if configured or auto-discovered.</summary>
+	public string? BrandingAppleTouchIconStaticPath =>
+		Branding?.AppleTouchIcon is { } a ? Static(Path.GetFileName(a)) : null;
 
 	/// <summary>Root path for static assets. For codex builds, strips the /r/repoName segment from the URL path prefix.</summary>
 	public string StaticPathPrefix => GetStaticPathPrefix();

@@ -96,7 +96,9 @@ exclude:
 
 ### `api`
 
-Maps product names to OpenAPI specification files to enable the [API Explorer](api-explorer.md). Paths are relative to the folder containing `docset.yml`. Only valid in `docset.yml`, not in `toc.yml` files.
+Configures API Explorer sections for your content set using OpenAPI specification files and optional intro/outro pages. Paths are relative to the folder containing `docset.yml`. Only valid in `docset.yml`, not in `toc.yml` files.
+
+#### Basic configuration
 
 ```yaml
 api:
@@ -104,9 +106,24 @@ api:
   kibana: kibana-openapi.json
 ```
 
-Each key becomes a sub-path of the generated API docs: `elasticsearch` → `/api/elasticsearch/`, `kibana` → `/api/kibana/`.
+#### Advanced configuration with intro/outro pages
 
-See [API Explorer](api-explorer.md) for full configuration details.
+```yaml
+api:
+  kibana:
+    - file: kibana-intro.md
+    - spec: kibana-openapi.json
+    - file: kibana-outro.md
+```
+
+Each product key becomes a sub-path of the generated API docs: `elasticsearch` → `/api/elasticsearch/`, `kibana` → `/api/kibana/`.
+
+The sequence format allows you to add custom Markdown content:
+- **Intro pages** (before the first `spec`) appear at the top of the API navigation
+- **Generated content** (operations, tags, types) appears in the middle  
+- **Outro pages** (after specs) appear at the bottom
+
+See [API Explorer](api-explorer.md) for full configuration details and examples.
 
 ### `toc`
 

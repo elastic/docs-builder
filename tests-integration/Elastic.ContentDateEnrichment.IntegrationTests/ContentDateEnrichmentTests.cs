@@ -9,7 +9,11 @@ using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
+<<<<<<< HEAD
 using Elastic.Ingest.Elasticsearch;
+=======
+using Elastic.Internal.Search;
+>>>>>>> origin/main
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -300,9 +304,66 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	}
 
 	/// <summary>
+<<<<<<< HEAD
 	/// Verifies the filter approach: on the second run (reuse path with HashedBulkUpdate),
 	/// the filter only processes documents that were changed (unresolved dates),
 	/// while unchanged documents (noop) retain their existing resolved dates.
+=======
+	/// Discovery test: indexes a full DocumentationDocument via a scripted upsert
+	/// (the same mechanism HashedBulkUpdate uses) and reads back what ES actually
+	/// stores for content_last_updated when the field is never explicitly set.
+	/// This tells us the exact value to filter on in ResolveContentDatesAsync.
+	/// </summary>
+	[Fact]
+	public async Task ScriptedUpsert_WithFullDocument_ContentLastUpdatedValue()
+	{
+		var index = "test-discovery";
+
+		// Create index with the content_last_updated mapping
+		await CreateTestIndex(index, "_none");
+
+		// Serialize a DocumentationDocument with default ContentLastUpdated (never set)
+		// using the same serializer context that HashedBulkUpdate uses in production
+		var doc = new DocumentationDocument
+		{
+			Url = "test-discovery-url",
+			Title = "Discovery Test",
+			SearchTitle = "Discovery Test",
+			ContentType = "doc",
+			Hash = "testhash123",
+			ContentBodyHash = "contenthash123"
+		};
+		var serializedDoc = JsonSerializer.Serialize(doc, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+
+		// Index via scripted upsert (same as HashedBulkUpdate)
+		await IndexFullDocumentViaScriptedUpsert(index, doc.Url, serializedDoc);
+		await RefreshIndex(index);
+
+		// Read back from ES
+		var response = await _transport.GetAsync<StringResponse>(
+			$"{index}/_doc/{doc.Url}", CancellationToken.None
+		);
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
+			$"Failed to get document: {response.ApiCallDetails.DebugInformation}");
+
+		var source = JsonNode.Parse(response.Body)?["_source"];
+		source.Should().NotBeNull();
+
+		var esDateValue = source["content_last_updated"]?.ToString();
+
+		// The default DateTimeOffset (0001-01-01) should be stored — verify it's pre-epoch
+		esDateValue.Should().NotBeNull("content_last_updated should be present in ES document");
+		var esDate = DateTimeOffset.Parse(esDateValue, CultureInfo.InvariantCulture);
+		esDate.Year.Should().Be(1, "default DateTimeOffset.MinValue should serialize as year 0001");
+		esDate.Should().BeBefore(DateTimeOffset.UnixEpoch,
+			"the default value should be well before 1970, making it safe to filter with 'must_not range gt 1970'");
+	}
+
+	/// <summary>
+	/// Verifies the filter approach: after a scripted upsert writes a full DocumentationDocument
+	/// with default content_last_updated, the must_not range filter correctly matches it.
+	/// Also verifies a document with a real date is NOT matched.
+>>>>>>> origin/main
 	/// </summary>
 	[Fact]
 	public async Task FilteredResolve_SkipsDocumentsWithExistingDates()
@@ -314,8 +375,19 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		string index;
 		using (var channel1 = await CreateChannelAsync(enrichment, "filtered"))
 		{
+<<<<<<< HEAD
 			await channel1.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
 			index = channel1.IndexName; // wildcard — resolved to concrete name below
+=======
+			Url = "url2",
+			Title = "Doc 2",
+			SearchTitle = "Doc 2",
+			ContentType = "doc",
+			ContentBodyHash = "hash_b"
+		};
+		var serialized2 = JsonSerializer.Serialize(doc2, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+		await IndexFullDocumentViaScriptedUpsert(index, "url2", serialized2);
+>>>>>>> origin/main
 
 			await WriteDocuments(channel1,
 				CreateDoc("url1", "hash_a", "Doc 1"),
@@ -451,6 +523,84 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 	// --- Helpers ---
 
+<<<<<<< HEAD
+=======
+	private async Task CreateTestIndex(string index, string pipelineName)
+	{
+		_ = await _transport.DeleteAsync<StringResponse>(
+			index, new DefaultRequestParameters(), PostData.Empty, CancellationToken.None
+		);
+
+		var body = new JsonObject
+		{
+			["settings"] = new JsonObject
+			{
+				["index.default_pipeline"] = pipelineName,
+				["number_of_replicas"] = 0
+			},
+			["mappings"] = new JsonObject
+			{
+				["properties"] = new JsonObject
+				{
+					["url"] = new JsonObject { ["type"] = "keyword" },
+					["content_hash"] = new JsonObject { ["type"] = "keyword" },
+					["content_last_updated"] = new JsonObject { ["type"] = "date" },
+					["title"] = new JsonObject { ["type"] = "text" }
+				}
+			}
+		};
+
+		var response = await _transport.PutAsync<StringResponse>(
+			index, PostData.String(body.ToJsonString()), CancellationToken.None
+		);
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
+			$"Failed to create test index: {response.ApiCallDetails.DebugInformation}");
+	}
+
+	/// <summary>
+	/// Indexes documents via scripted upsert with full DocumentationDocument serialization,
+	/// matching how HashedBulkUpdate works in production. If the hash matches an existing
+	/// document, the script noops (preserving existing fields like content_last_updated).
+	/// If the hash differs (or is new), the script replaces the entire document.
+	/// </summary>
+	private async Task IndexDocumentsDirectly(string index, params (string url, string contentHash, string title)[] docs)
+	{
+		foreach (var (url, contentHash, title) in docs)
+		{
+			var doc = new DocumentationDocument
+			{
+				Url = url,
+				Title = title,
+				SearchTitle = title,
+				ContentType = "doc",
+				Hash = contentHash,
+				ContentBodyHash = contentHash
+			};
+			var serialized = JsonSerializer.Serialize(doc, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+			await IndexFullDocumentViaScriptedUpsert(index, url, serialized);
+		}
+	}
+
+	/// <summary>Uses the _index API which DOES trigger the default_pipeline.</summary>
+	private async Task IndexViaIndexAction(string index, string url, string contentHash, string title)
+	{
+		var doc = new JsonObject
+		{
+			["url"] = url,
+			["content_hash"] = contentHash,
+			["title"] = title
+		};
+
+		var response = await _transport.PutAsync<StringResponse>(
+			$"{index}/_doc/{url}",
+			PostData.String(doc.ToJsonString()),
+			CancellationToken.None
+		);
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
+			$"Failed to index document {url}: {response.ApiCallDetails.DebugInformation}");
+	}
+
+>>>>>>> origin/main
 	private async Task<TestDocument> GetDocument(string index, string id)
 	{
 		var response = await _transport.GetAsync<StringResponse>($"{index}/_doc/{id}", CancellationToken.None);

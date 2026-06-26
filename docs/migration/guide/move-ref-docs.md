@@ -103,47 +103,71 @@ Example commit: [#398/commit](https://github.com/elastic/apm-agent-android/pull/
 
 ### Step 3: Add the new CI checks
 
-There are two CI checks to add:
+Add three workflow files from [`elastic/docs-actions`](https://github.com/elastic/docs-actions) (`@v1`). Full copy-paste examples and explanations are in [How to set up docs previews](./how-to-set-up-docs-previews.md).
 
-**`docs-build.yml`**
-Add a file named `docs-build.yml` at `.github/workflows/docs-build.yml`. The contents of this file are below:
+**`docs-build.yml`** — `.github/workflows/docs-build.yml`
 
 ```yml
 name: docs-build
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   push:
     branches:
       - main
       - '\d+.\d+' <1>
-  pull_request_target: ~
   merge_group: ~
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
-  docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-build.yml@main
+  build:
+    uses: elastic/docs-actions/.github/workflows/docs-build.yml@v1
     with:
-      path-pattern: docs/**
-    permissions:
-      deployments: write
-      id-token: write
-      contents: read
-      pull-requests: read
+      path-pattern: docs/** <2>
+      use-release-branches: true <3>
 ```
 
-1. Optional match for version branches if you do not wish to publish to production from `main`.
+1. Optional: semver-style branches when docs publish from a release line rather than only `main`.
+2. Update if your Markdown does not live under `docs/`.
+3. Pair with the same flags on **docs-deploy**; set `use-release-branches` only when you use release-line pushes as above.
 
-Learn more about this file: [`docs-build.yml`](./how-to-set-up-docs-previews.md#build).
+[`docs-build.yml`](./how-to-set-up-docs-previews.md#build)
 
-:::{important}
-If the documentation you are adding will not live in the `/docs/*` dir of the repository, you must update the `path-pattern` appropriately. Please reach out in #docs-team if you need help with this.
-:::
-
-**`docs-cleanup.yml`**
-Add a file named `docs-cleanup.yml` at `.github/workflows/docs-cleanup.yml`. The contents of this file are below:
+**`docs-deploy.yml`** — `.github/workflows/docs-deploy.yml`
 
 ```yml
-name: docs-cleanup
+name: docs-deploy
+
+on:
+  workflow_run:
+    workflows: [docs-build]
+    types: [completed]
+
+permissions:
+  contents: read
+  deployments: write
+  id-token: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  deploy:
+    uses: elastic/docs-actions/.github/workflows/docs-deploy.yml@v1
+    with:
+      path-pattern: docs/**
+      use-release-branches: true
+```
+
+[`docs-deploy.yml`](./how-to-set-up-docs-previews.md#deploy)
+
+**`docs-preview-cleanup.yml`** — `.github/workflows/docs-preview-cleanup.yml`
+
+```yml
+name: docs-preview-cleanup
 
 on:
   pull_request_target:
@@ -151,15 +175,23 @@ on:
       - closed
 
 jobs:
-  docs-preview:
-    uses: elastic/docs-builder/.github/workflows/preview-cleanup.yml@main
+  cleanup:
+    uses: elastic/docs-actions/.github/workflows/docs-preview-cleanup.yml@v1
     permissions:
       contents: none
       id-token: write
       deployments: write
 ```
 
-Learn more about this file: [`docs-cleanup.yml`](./how-to-set-up-docs-previews.md#cleanup)
+[`docs-preview-cleanup.yml`](./how-to-set-up-docs-previews.md#preview-cleanup)
+
+:::{important}
+If the documentation you are adding will not live in the `/docs/*` dir of the repository, you must update `path-pattern` on **both** `docs-build` and `docs-deploy` (and adjust `use-release-branches` only if your branching strategy requires it). Please reach out in #docs-team if you need help with this.
+:::
+
+:::{note}
+If you only use continuous deployment from `main` (no release-line branches), omit `\d+.\d+` from `push.branches`, remove `use-release-branches`, and drop the matching `with:` from **docs-deploy** — see the minimal examples in [How to set up docs previews](./how-to-set-up-docs-previews.md).
+:::
 
 Example PR: [#398](https://github.com/elastic/apm-agent-android/pull/398)
 

@@ -52,7 +52,7 @@ public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context
 			this.EmitError("{applies-item} requires an argument with applies_to definition.");
 
 		AppliesToDefinition = (Arguments ?? "{undefined}").ReplaceSubstitutions(context);
-		Index = Parent!.IndexOf(this);
+		Index = Parent!.OfType<AppliesItemBlock>().ToList().IndexOf(this);
 
 		var appliesSwitch = Parent as AppliesSwitchBlock;
 

@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Changelog.Configuration;
-using Elastic.Changelog.Serialization;
-using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
@@ -142,6 +139,7 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 			config.Lifecycles.Should().Contain(Lifecycle.Preview);
 			config.Lifecycles.Should().Contain(Lifecycle.Beta);
 			config.Lifecycles.Should().Contain(Lifecycle.Ga);
+			config.Lifecycles.Should().Contain(Lifecycle.Experimental);
 		}
 		finally
 		{
@@ -1002,6 +1000,99 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 	}
 
 	[Fact]
+	public async Task LoadChangelogConfiguration_BundleSection_ParsesReleaseDates()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			bundle:
+			  release_dates: false
+			  profiles:
+			    test-profile:
+			      output: "test-{version}.yaml"
+			      release_dates: true
+			    inherit-profile:
+			      output: "inherit-{version}.yaml"
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config.Bundle.Should().NotBeNull();
+			config.Bundle.ReleaseDates.Should().BeFalse("bundle.release_dates was explicitly set to false");
+
+			// Test profile override
+			config.Bundle.Profiles.Should().ContainKey("test-profile");
+			config.Bundle.Profiles["test-profile"].ReleaseDates.Should().BeTrue("profile overrides bundle setting");
+
+			// Test profile inheritance (profile omits release_dates, should be null for inheritance)
+			config.Bundle.Profiles.Should().ContainKey("inherit-profile");
+			config.Bundle.Profiles["inherit-profile"].ReleaseDates.Should().BeNull("profile omits release_dates for inheritance");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_BundleSection_ReleaseDatesDefaultsToNull()
+	{
+		// Arrange
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			bundle:
+			  repo: test-repo
+			  profiles:
+			    test-profile:
+			      output: "test-{version}.yaml"
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+			// Act
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current.CancellationToken);
+
+			// Assert
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			config.Bundle.Should().NotBeNull();
+			config.Bundle.ReleaseDates.Should().BeNull("bundle.release_dates was omitted, should default to null");
+			config.Bundle.Profiles.Should().ContainKey("test-profile");
+			config.Bundle.Profiles["test-profile"].ReleaseDates.Should().BeNull("profile.release_dates was omitted, should be null");
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Fact]
 	public async Task LoadChangelogConfiguration_WithPivotProducts_ComputesLabelToProductsMapping()
 	{
 		// Arrange
@@ -1608,5 +1699,50 @@ public class ChangelogConfigurationTests(ITestOutputHelper output) : ChangelogTe
 		config.Should().BeNull();
 		Collector.Errors.Should().BeGreaterThan(0);
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("'invalid-product' is not in the list of available products"));
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_UseLocalChangelogs_DefaultsToFalse()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: docs/changelog
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.UseLocalChangelogs.Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task LoadChangelogConfiguration_UseLocalChangelogs_True_Parses()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  directory: docs/changelog
+			  use_local_changelogs: true
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current.CancellationToken);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.UseLocalChangelogs.Should().BeTrue();
 	}
 }

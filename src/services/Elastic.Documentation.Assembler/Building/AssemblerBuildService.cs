@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using Actions.Core.Services;
+using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
@@ -32,16 +33,19 @@ public class AssemblerBuildService(
 
 	public async Task<bool> BuildAll(
 		IDiagnosticsCollector collector,
-		bool? strict, string? environment,
-		bool? metadataOnly,
-		bool? showHints,
-		IReadOnlySet<Exporter>? exporters,
-		bool? assumeBuild,
+		AssemblerBuildOptions options,
 		ScopedFileSystem readFs,
 		ScopedFileSystem writeFs,
 		Cancel ctx
 	)
 	{
+		var strict = options.Strict;
+		var environment = options.Environment;
+		var metadataOnly = options.MetadataOnly;
+		var showHints = options.ShowHints;
+		var exporters = options.Exporters;
+		var assumeBuild = options.AssumeBuild;
+
 		collector.NoHints = !showHints.GetValueOrDefault(false);
 		strict ??= false;
 		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
@@ -138,7 +142,20 @@ public class AssemblerBuildService(
 				.Distinct();
 			var now = DateTimeOffset.UtcNow;
 			var entries = urls.ToDictionary(u => u, _ => now);
-			SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+
+			if (entries.Count >= SitemapBuilder.WarningEntryThreshold)
+				collector.EmitGlobalWarning(
+					$"Sitemap has {entries.Count:N0} entries, approaching the {SitemapBuilder.MaxEntries:N0} URL protocol limit. " +
+					"Consider implementing sitemap index files."
+				);
+
+			var sitemapResult = SitemapBuilder.Generate(entries, assembleContext.WriteFileSystem, assembleContext.OutputWithPathPrefixDirectory);
+
+			if (sitemapResult.FileSizeBytes >= SitemapBuilder.WarningFileSizeBytes)
+				collector.EmitGlobalWarning(
+					$"Sitemap file size is {sitemapResult.FileSizeBytes / (1024.0 * 1024.0):F1} MB, approaching the 50 MB protocol limit. " +
+					"Consider implementing sitemap index files."
+				);
 		}
 
 		if (exporters.Contains(Exporter.LLMText))

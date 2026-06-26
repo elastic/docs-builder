@@ -8,22 +8,19 @@ using Elastic.Mapping;
 namespace Elastic.Documentation.Search;
 
 /// <summary>
-/// JSON-serializable product record for Elasticsearch indexing.
-/// Only contains id and repository - name/version are looked up dynamically by product id.
+/// JSON-serializable product reference embedded on <see cref="DocumentationDocument.Product"/> /
+/// <see cref="DocumentationDocument.RelatedProducts"/>. Only id + repository are stored;
+/// display names are resolved at read time by the consumer.
 /// </summary>
 public record IndexedProduct
 {
-	/// <summary>
-	/// The product ID from products.yml (e.g., "elasticsearch", "kibana", "apm-agent-java")
-	/// </summary>
 	[Keyword(Normalizer = "keyword_normalizer")]
 	[JsonPropertyName("id")]
-	public string? Id { get; init; }
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? Id { get; set; }
 
-	/// <summary>
-	/// The repository name (e.g., "elasticsearch", "docs-content", "elastic-otel-java")
-	/// </summary>
 	[Keyword(Normalizer = "keyword_normalizer")]
 	[JsonPropertyName("repository")]
-	public string? Repository { get; init; }
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? Repository { get; set; }
 }

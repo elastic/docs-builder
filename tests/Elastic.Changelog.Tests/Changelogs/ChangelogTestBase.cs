@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
@@ -109,6 +110,19 @@ public abstract class ChangelogTestBase : IDisposable
 			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
 			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
 		};
+	}
+
+	/// <summary>
+	/// Seeds a minimal docset.yml at the working-directory root declaring the given products under
+	/// <c>release_notes</c>. The <c>changelog bundle</c> declared-gate sources a product's entries from
+	/// the CDN only when it is declared here.
+	/// </summary>
+	protected void DeclareReleaseNotesProducts(params string[] productIds)
+	{
+		var lines = new List<string> { "release_notes:" };
+		lines.AddRange(productIds.Select(id => $"  - product: {id}"));
+		var path = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "docset.yml");
+		FileSystem.File.WriteAllText(path, string.Join("\n", lines) + "\n");
 	}
 
 	public void Dispose()

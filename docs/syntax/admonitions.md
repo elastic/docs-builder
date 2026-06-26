@@ -5,6 +5,33 @@ Admonitions allow you to highlight important information with varying levels of 
 ## Basic admonitions
 
 Admonitions can span multiple lines and support inline formatting.
+
+:::::{tab-set}
+
+::::{tab-item} Output
+
+:::{admonition} Multiple paragraphs
+Separate paragraphs with a blank line, just like regular Markdown.
+
+Adjacent lines without a blank line between them render as a single paragraph.
+:::
+
+::::
+
+::::{tab-item} Markdown
+
+```markdown
+:::{admonition} Multiple paragraphs
+Separate paragraphs with a blank line, just like regular Markdown.
+
+Adjacent lines without a blank line between them render as a single paragraph.
+:::
+```
+
+::::
+
+:::::
+
 Available admonition types include:
 
 - [Note](#note)
@@ -24,6 +51,7 @@ A relevant piece of information with no serious repercussions if ignored.
 
 :::{note}
 This is a note.
+
 It can span multiple lines and supports inline formatting.
 :::
 
@@ -34,6 +62,7 @@ It can span multiple lines and supports inline formatting.
 ```markdown
 :::{note}
 This is a note.
+
 It can span multiple lines and supports inline formatting.
 :::
 ```
@@ -133,6 +162,8 @@ A plain admonition is a callout with no further styling. Useful to create a call
 ::::{tab-item} Output
 
 :::{admonition} This is my callout
+This is a plain callout.
+
 It can *span* multiple lines and supports inline formatting.
 :::
 
@@ -142,6 +173,8 @@ It can *span* multiple lines and supports inline formatting.
 
 ```markdown
 :::{admonition} This is my callout
+This is a plain callout.
+
 It can *span* multiple lines and supports inline formatting.
 :::
 ```

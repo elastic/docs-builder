@@ -10,7 +10,9 @@ using Elastic.Codex.Page;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
@@ -95,6 +97,7 @@ public class CodexBuildService(
 		{
 			var firstContext = buildContexts[0].BuildContext;
 			firstContext.Endpoints.BuildType = "codex";
+			firstContext.Endpoints.Environment = environment; // from codex.yml; ensures the correct index (e.g. internal)
 			sharedExporters = exporters.CreateMarkdownExporters(logFactory, firstContext).ToArray();
 			var startTasks = sharedExporters.Select(async e => await e.StartAsync(ctx));
 			await Task.WhenAll(startTasks);
@@ -178,14 +181,16 @@ public class CodexBuildService(
 				? parsed
 				: null;
 
-			// Create build context for this documentation set
+			// Repository clone root must be BuildContext `source`: FindGitRoot(..., ceiling: rootFolder) only
+			// discovers .git inside that ceiling (#3115). Using DocsDirectory alone would cap the ceiling
+			// at the docs subtree and return null above repo/.git, breaking GithubEditUrl generation.
 			var buildContext = new BuildContext(
 				context.Collector,
 				fileSystem,
 				fileSystem,
 				configurationContext,
 				ExportOptions.Default,
-				checkout.DocsDirectory.FullName,
+				checkout.RepositoryDirectory.FullName,
 				outputPath,
 				git)
 			{
@@ -218,8 +223,11 @@ public class CodexBuildService(
 				crossLinkResolver = new CrossLinkResolver(FetchedCrossLinks.Empty, uriResolver);
 			}
 
+			// Prefetch CDN-hosted release notes for products declared under `release_notes` in docset.yml.
+			var releaseNotesResolver = await ReleaseNotesFetcher.PrefetchAsync(buildContext, logFactory, ctx);
+
 			// Create documentation set
-			var documentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver);
+			var documentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver, releaseNotesResolver);
 			await documentationSet.ResolveDirectoryTree(ctx);
 
 			return new CodexDocumentationSetBuildContext(checkout, buildContext, documentationSet);

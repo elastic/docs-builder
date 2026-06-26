@@ -47,11 +47,18 @@ public class HtmlWriter(
 	private IPageViewFactory PageViewFactory { get; } = pageViewFactory ?? new DefaultPageViewFactory();
 
 	/// <inheritdoc />
-	public string Render(string markdown, IFileInfo? source)
+	public string Render(string markdown, IFileInfo? source) =>
+		RenderCore(markdown, source, stripFirstHeadingLevel1: true);
+
+	/// <inheritdoc />
+	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
+		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
+
+	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
-		return MarkdownFile.CreateHtml(parsed);
+		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1);
 	}
 
 	public async Task<RenderResult> RenderLayout(MarkdownFile markdown, Cancel ctx = default)
@@ -75,14 +82,17 @@ public class HtmlWriter(
 		var next = NavigationTraversable.GetNext(markdown);
 		var parents = NavigationTraversable.GetParentsOfMarkdownFile(markdown);
 
-		var remote = DocumentationSet.Context.Git.RepositoryName;
+		// For hidden nav items (e.g. individual detection rule pages) there is no rendered nav link,
+		// so JS can't mark anything as current. Point it at the nearest visible ancestor instead.
+		var navActiveUrl = current.Hidden ? parents.FirstOrDefault(p => !p.Hidden)?.Url : null;
+		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
-		if (DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
+		if (gitHubRepo is not null && DocumentationSet.Context.Git != GitCheckoutInformation.Unavailable && DocumentationSet.Context.DocumentationCheckoutDirectory is { } checkoutDirectory)
 		{
 			var relativeSourcePath = Path.GetRelativePath(checkoutDirectory.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName);
 			var path = UrlPath.Join(relativeSourcePath, markdown.RelativePath);
-			editUrl = $"https://github.com/elastic/{remote}/edit/{branch}/{path}";
+			editUrl = $"https://github.com/{gitHubRepo}/edit/{branch}/{path}";
 		}
 
 		Uri? reportLinkParameter = null;
@@ -90,7 +100,10 @@ public class HtmlWriter(
 		{
 			reportLinkParameter = new Uri(DocumentationSet.Context.CanonicalBaseUrl, current.Url);
 		}
-		var reportUrl = $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web";
+		// Suppress the report URL for white-label builds — elastic/docs-content is an Elastic-owned repo
+		var reportUrl = DocumentationSet.Configuration.Branding is null
+			? $"https://github.com/elastic/docs-content/issues/new?template=issue-report.yaml&link={reportLinkParameter}&labels=source:web"
+			: null;
 
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
@@ -128,12 +141,17 @@ public class HtmlWriter(
 
 
 		// Git info for isolated header
-		var gitRepo = DocumentationSet.Context.Git.RepositoryName;
 		var gitBranch = DocumentationSet.Context.Git.Branch;
 		var gitRef = DocumentationSet.Context.Git.Ref;
 		string? gitHubDocsUrl = null;
-		if (!string.IsNullOrEmpty(gitRepo) && gitRepo != "unavailable" && !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable")
-			gitHubDocsUrl = $"https://github.com/elastic/{gitRepo}/tree/{gitBranch}/docs";
+		if (gitHubRepo is not null
+			&& !string.IsNullOrEmpty(gitBranch) && gitBranch != "unavailable"
+			&& DocumentationSet.Context.DocumentationCheckoutDirectory is { } docsCheckoutDir)
+		{
+			var relativeDocsPath = Path.GetRelativePath(docsCheckoutDir.FullName, DocumentationSet.Context.DocumentationSourceDirectory.FullName)
+				.Replace(Path.DirectorySeparatorChar, '/');
+			gitHubDocsUrl = $"https://github.com/{gitHubRepo}/tree/{gitBranch}/{relativeDocsPath}";
+		}
 
 		var slice = PageViewFactory.Create(new IndexViewModel
 		{
@@ -150,12 +168,13 @@ public class HtmlWriter(
 			PreviousDocument = previous,
 			NextDocument = next,
 			Breadcrumbs = breadcrumbs,
+			NavigationActiveUrl = navActiveUrl,
 			NavigationHtml = navigationHtmlRenderResult.Html,
 			UrlPathPrefix = markdown.UrlPathPrefix,
 			SiteRootPath = DocumentationSet.Context.SiteRootPath,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
-			MarkdownUrl = current.Url.TrimEnd('/') + ".md",
+			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",
 			AllowIndexing = DocumentationSet.Context.AllowIndexing && markdown.YamlFrontMatter?.NoIndex != true && (markdown.CrossLink.Equals("docs-content://index.md", StringComparison.OrdinalIgnoreCase) || markdown is DetectionRuleFile || !current.Hidden),
 			CanonicalBaseUrl = DocumentationSet.Context.CanonicalBaseUrl,
 			GoogleTagManager = DocumentationSet.Context.GoogleTagManager,
@@ -174,9 +193,11 @@ public class HtmlWriter(
 			// Git info for isolated header
 			GitBranch = gitBranch != "unavailable" ? gitBranch : null,
 			GitCommitShort = gitRef is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
-			GitRepository = gitRepo != "unavailable" ? gitRepo : null,
+			GitRepository = gitHubRepo,
 			GitHubDocsUrl = gitHubDocsUrl,
-			GitHubRef = DocumentationSet.Context.Git.GitHubRef
+			GitHubRef = DocumentationSet.Context.Git.GitHubRef,
+			Branding = DocumentationSet.Configuration.Branding,
+			RedirectUrl = markdown.RedirectUrl
 		});
 
 		return new RenderResult

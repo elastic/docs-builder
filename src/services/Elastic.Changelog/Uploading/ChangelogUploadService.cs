@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using Amazon.S3;
-using Elastic.Changelog.Configuration;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
@@ -58,30 +58,30 @@ public partial class ChangelogUploadService(
 			return true;
 		}
 
-		if (args.ArtifactType == ArtifactType.Bundle)
-		{
-			_logger.LogWarning("Bundle artifact upload is not yet implemented; skipping");
-			return true;
-		}
+		var directory = args.ArtifactType == ArtifactType.Bundle
+			? await ResolveBundleDirectory(collector, args, ctx)
+			: await ResolveChangelogDirectory(collector, args, ctx);
 
-		var changelogDir = await ResolveChangelogDirectory(collector, args, ctx);
-		if (changelogDir == null)
+		if (directory == null)
 			return false;
 
-		if (!_fileSystem.Directory.Exists(changelogDir))
+		if (!_fileSystem.Directory.Exists(directory))
 		{
-			_logger.LogInformation("Changelog directory {Directory} does not exist; nothing to upload", changelogDir);
+			_logger.LogInformation("{ArtifactType} directory {Directory} does not exist; nothing to upload", args.ArtifactType, directory);
 			return true;
 		}
 
-		var targets = DiscoverUploadTargets(collector, changelogDir);
+		var targets = args.ArtifactType == ArtifactType.Bundle
+			? DiscoverBundleUploadTargets(collector, directory)
+			: DiscoverUploadTargets(collector, directory);
+
 		if (targets.Count == 0)
 		{
-			_logger.LogInformation("No changelog files found to upload in {Directory}", changelogDir);
+			_logger.LogInformation("No {ArtifactType} files found to upload in {Directory}", args.ArtifactType, directory);
 			return true;
 		}
 
-		_logger.LogInformation("Found {Count} upload target(s) from {Directory}", targets.Count, changelogDir);
+		_logger.LogInformation("Found {Count} {ArtifactType} upload target(s) from {Directory}", targets.Count, args.ArtifactType, directory);
 
 		using var defaultClient = s3Client == null ? new AmazonS3Client() : null;
 		var client = s3Client ?? defaultClient!;
@@ -94,7 +94,42 @@ public partial class ChangelogUploadService(
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
 
+		// On a successful upload, refresh the per-product registry.json so consumers can enumerate
+		// content without an S3 listing: the bundle index (consumed by the changelog directive in
+		// cdn: mode) for bundle uploads, and the changelog-entry index (consumed by `changelog
+		// bundle` when sourcing entries from the CDN) for changelog uploads.
+		// Failures here are logged but don't fail the upload — the objects themselves are already in S3.
+		if (result.Failed == 0 && targets.Count > 0)
+		{
+			var scope = args.ArtifactType == ArtifactType.Bundle ? RegistryScope.Bundle : RegistryScope.Changelog;
+			await RefreshRegistries(collector, client, etagCalculator, args, targets, scope, ctx);
+		}
+
 		return result.Failed == 0;
+	}
+
+	private async Task RefreshRegistries(
+		IDiagnosticsCollector collector,
+		IAmazonS3 client,
+		IS3EtagCalculator etagCalculator,
+		ChangelogUploadArguments args,
+		IReadOnlyList<UploadTarget> uploadTargets,
+		RegistryScope scope,
+		Cancel ctx)
+	{
+		try
+		{
+			var builder = new RegistryBuilder(logFactory, _fileSystem, client, etagCalculator, args.S3BucketName);
+			var result = await builder.RefreshAsync(collector, uploadTargets, ctx, scope);
+			_logger.LogInformation("Registry refresh ({Scope}): {Updated} updated, {Unchanged} unchanged, {Failed} failed",
+				scope, result.Updated, result.Unchanged, result.Failed);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			// Leaving the manifest stale is non-fatal — bundle objects are unaffected.
+			_logger.LogWarning(ex, "Registry refresh failed; bundles uploaded successfully but manifests may be stale");
+			collector.EmitWarning(string.Empty, $"Failed to refresh registry manifest(s): {ex.Message}");
+		}
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir)
@@ -133,7 +168,7 @@ public partial class ChangelogUploadService(
 					continue;
 				}
 
-				var s3Key = $"{product}/changelogs/{fileName}";
+				var s3Key = $"{product}/changelog/{fileName}";
 				targets.Add(new UploadTarget(filePath, s3Key));
 			}
 		}
@@ -164,6 +199,70 @@ public partial class ChangelogUploadService(
 		}
 	}
 
+	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
+	{
+		var rootDir = _fileSystem.DirectoryInfo.New(bundleDir);
+
+		var yamlFiles = _fileSystem.Directory.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
+			.Concat(_fileSystem.Directory.GetFiles(bundleDir, "*.yml", SearchOption.TopDirectoryOnly))
+			.ToList();
+
+		var targets = new List<UploadTarget>();
+
+		foreach (var filePath in yamlFiles)
+		{
+			var fileInfo = _fileSystem.FileInfo.New(filePath);
+			if (SymlinkValidator.ValidateFileAccess(fileInfo, rootDir) is { } accessError)
+			{
+				collector.EmitWarning(filePath, $"Skipping: {accessError}");
+				continue;
+			}
+
+			var products = ReadProductsFromBundle(filePath);
+			if (products.Count == 0)
+			{
+				_logger.LogDebug("No products found in bundle {File}, skipping", filePath);
+				continue;
+			}
+
+			var fileName = _fileSystem.Path.GetFileName(filePath);
+
+			foreach (var product in products)
+			{
+				if (!ProductNameRegex().IsMatch(product))
+				{
+					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
+					continue;
+				}
+
+				var s3Key = $"{product}/bundle/{fileName}";
+				targets.Add(new UploadTarget(filePath, s3Key));
+			}
+		}
+
+		return targets;
+	}
+
+	private List<string> ReadProductsFromBundle(string filePath)
+	{
+		try
+		{
+			var content = _fileSystem.File.ReadAllText(filePath);
+			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+
+			return bundle.Products
+				.Select(p => p.ProductId)
+				.Where(p => !string.IsNullOrWhiteSpace(p))
+				.Distinct()
+				.ToList();
+		}
+		catch (Exception ex)
+		{
+			_logger.LogWarning(ex, "Could not read products from bundle {File}", filePath);
+			return [];
+		}
+	}
+
 	private async Task<string?> ResolveChangelogDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
 		if (!string.IsNullOrWhiteSpace(args.Directory))
@@ -174,5 +273,17 @@ public partial class ChangelogUploadService(
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
 		return config?.Bundle?.Directory ?? "docs/changelog";
+	}
+
+	private async Task<string?> ResolveBundleDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
+	{
+		if (!string.IsNullOrWhiteSpace(args.Directory))
+			return args.Directory;
+
+		if (_configLoader == null)
+			return "docs/releases";
+
+		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
+		return config?.Bundle?.OutputDirectory ?? config?.Bundle?.Directory ?? "docs/releases";
 	}
 }

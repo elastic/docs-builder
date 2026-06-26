@@ -5,6 +5,7 @@
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -1728,6 +1729,48 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithMultipleInvalidEntries_ReportsAllInOnePass()
+	{
+		// Arrange: one entry missing its title, another missing its products.
+		// language=yaml
+		var changelog1 =
+			"""
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			""";
+
+		// language=yaml
+		var changelog2 =
+			"""
+			title: Second feature
+			type: feature
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-missing-title.yaml");
+		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-missing-products.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Resolve = true,
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert: both problems are reported in a single run instead of aborting on the first.
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: title"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithResolveAndInvalidProduct_ReturnsError()
 	{
 		// Arrange
@@ -2206,6 +2249,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			bundle:
 			  directory: "{_changelogDir.Replace("\\", "/")}"
 			  output_directory: "{outputDir.Replace("\\", "/")}"
+			  use_local_changelogs: true
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-dir", "changelog.yml");
@@ -3322,6 +3366,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$$"""
 			bundle:
 			  directory: {{Path.Join(root, "changelogs")}}
+			  use_local_changelogs: true
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
@@ -3381,6 +3426,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$$"""
 			bundle:
 			  directory: {{Path.Join(root, "changelogs")}}
+			  use_local_changelogs: true
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
@@ -3431,6 +3477,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var configContent = $"""
 			bundle:
 			  directory: {_changelogDir}
+			  use_local_changelogs: true
 			  profiles:
 			    release:
 			      output: "bundle.yaml"
@@ -3506,6 +3553,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var configContent = $"""
 			bundle:
 			  directory: {_changelogDir}
+			  use_local_changelogs: true
 			  profiles:
 			    release:
 			      output: "bundle.yaml"
@@ -6043,6 +6091,139 @@ public class BundleChangelogsTests : ChangelogTestBase
 			"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."));
 	}
 
+
+	[Fact]
+	public async Task BundleChangelogs_WithBundleReleaseDatesFalse_SuppressesReleaseDate()
+	{
+		// Arrange
+		CreateSampleChangelogs();
+
+		// Create a config with bundle.release_dates: false
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			bundle:
+			  release_dates: false
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = outputPath,
+			Config = configPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue("bundling should succeed with release_dates config");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().NotContain("release-date:", "release date should be suppressed when bundle.release_dates is false");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithBundleReleaseDatesTrue_AutoPopulatesReleaseDate()
+	{
+		// Arrange
+		CreateSampleChangelogs();
+
+		// Create a config with bundle.release_dates: true (explicit)
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(configPath,
+			"""
+			bundle:
+			  release_dates: true
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = outputPath,
+			Config = configPath
+		};
+
+		// Act
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue("bundling should succeed with release_dates config");
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("release-date:", "release date should be auto-populated when bundle.release_dates is true");
+	}
+
+	[Fact]
+	public async Task BundleChangelogs_WithBomPrefixedInput_ProducesNormalizedOutput()
+	{
+		// Arrange - Create changelog with BOM prefix
+		// language=yaml
+		var changelogContent =
+			"""
+			title: Test changelog with BOM
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/123
+			""";
+
+		// Add UTF-8 BOM to the content
+		var contentWithBom = ChangelogUtf8Normalization.Utf8BomChar + changelogContent;
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "changelog-with-bom.yaml");
+
+		// Write the file with BOM using explicit encoding
+		await FileSystem.File.WriteAllTextAsync(changelogFile, contentWithBom, Encoding.UTF8, TestContext.Current.CancellationToken);
+
+		// Verify the source file has BOM by reading as bytes
+		var sourceBytes = await FileSystem.File.ReadAllBytesAsync(changelogFile, TestContext.Current.CancellationToken);
+		ChangelogUtf8Normalization.HasUtf8Bom(sourceBytes).Should().BeTrue("source file should contain BOM");
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = outputPath
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue("bundling should succeed");
+		Collector.Errors.Should().Be(0);
+
+		// Verify output file does not contain BOM
+		var outputBytes = await FileSystem.File.ReadAllBytesAsync(outputPath, TestContext.Current.CancellationToken);
+		ChangelogUtf8Normalization.HasUtf8Bom(outputBytes).Should().BeFalse("bundled output should not contain UTF-8 BOM");
+
+		// Verify content refs (bundle uses file refs + checksum unless resolve inlines entries)
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		bundleContent.Should().Contain("changelog-with-bom.yaml");
+		bundleContent.Should().Contain("entries:");
+	}
 
 	private void CreateSampleChangelogs()
 	{

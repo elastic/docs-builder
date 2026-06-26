@@ -5,11 +5,12 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
-using Elastic.Documentation.Api.Core.Search;
 using Elastic.Documentation.Assembler.Mcp;
 using Elastic.Documentation.Mcp.Remote.Responses;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
+using Elastic.Documentation.Search;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol;
 using ModelContextProtocol.Server;
 
 namespace Elastic.Documentation.Mcp.Remote.Tools;
@@ -18,7 +19,7 @@ namespace Elastic.Documentation.Mcp.Remote.Tools;
 /// MCP tools for semantic search operations on Elastic documentation.
 /// </summary>
 [McpServerToolType]
-public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchTools> logger)
+public class SearchTools(IFullSearchService fullSearchGateway, ILogger<SearchTools> logger)
 {
 	/// <summary>
 	/// Performs semantic search across all Elastic documentation.
@@ -70,7 +71,7 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 			var response = new SemanticSearchResponse
 			{
 				Query = query,
-				TotalHits = result.TotalHits,
+				TotalHits = result.TotalResults,
 				IsSemanticQuery = result.IsSemanticQuery,
 				Results = result.Results.Select(r => new SearchResultDto
 				{
@@ -94,6 +95,14 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 			McpToolTelemetry.MarkCancelled(activity);
 			outcome = "cancelled";
 			throw;
+		}
+		catch (SearchUnavailableException ex)
+		{
+			// Transient backend failure (timeout, 429, overload) — surface as McpException so the
+			// MCP client receives IsError=true with the message and knows to retry.
+			McpToolTelemetry.MarkFailure(activity, ex);
+			outcome = "unavailable";
+			throw new McpException(ex.Message, ex);
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{
@@ -172,6 +181,14 @@ public class SearchTools(IFullSearchGateway fullSearchGateway, ILogger<SearchToo
 			McpToolTelemetry.MarkCancelled(activity);
 			outcome = "cancelled";
 			throw;
+		}
+		catch (SearchUnavailableException ex)
+		{
+			// Transient backend failure (timeout, 429, overload) — surface as McpException so the
+			// MCP client receives IsError=true with the message and knows to retry.
+			McpToolTelemetry.MarkFailure(activity, ex);
+			outcome = "unavailable";
+			throw new McpException(ex.Message, ex);
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
 		{

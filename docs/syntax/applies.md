@@ -1,17 +1,29 @@
 # Applies to
 
-Starting with Elastic Stack 9.0, ECE 4.0, and ECK 3.0, documentation follows a [cumulative approach](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs): instead of creating separate pages for each product and release, we update a single page with product- and version-specific details over time.
+Elastic documentation on [elastic.co/docs](https://www.elastic.co/docs) follows a [cumulative](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) model. We don't maintain versioned branches or separate copies of a page for each release. Instead, every page covers all supported versions, and writers use `applies_to` metadata to tag content with the versions, products, deployment models, and lifecycle states it applies to.
 
-To support this, source files use a tagging system to indicate:
-
-* Which Elastic products and deployment models the content applies to.
-* When a feature changes state relative to the base version.
-
-This is what the `applies_to` metadata is for. It can be used at the [page](#page-level), [section](#section-level), or [inline](#inline-level) level to specify applicability with precision.
-
-:::{note}
-For detailed guidance, refer to [Write cumulative documentation](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs).
+:::{tip}
+You can use the [applies-to-tagging](https://github.com/elastic/elastic-docs-skills/tree/main/skills/authoring/applies-to-tagging) skill in Claude Code to validate and generate `applies_to` tags. [**Learn more**](https://github.com/elastic/elastic-docs-skills/tree/main#elastic-docs-skills)
 :::
+
+## Quick reference
+
+When documenting a new feature or behavior, answer these two questions:
+
+1. **Where should I add `applies_to` metadata?** Find where your changes sit on the page and match to a type below.
+2. **What keys and values do I use?** Refer to the [key-value reference](#key-value-reference) for the full list of valid keys, lifecycles, and version formats.
+
+### Where should I put the `applies_to` metadata?
+
+| When | Use |
+|------|-----|
+| You're creating a new page | [Frontmatter](#page-level) |
+| You're adding a new section to an existing page | [Section-level annotation](#section-level) |
+| You're adding a single new item to a list or definition term | [Inline annotation](#inline-level) |
+| You're marking a single item as a technical preview | [Preview shorthand](#inline-level) |
+| You need to show entirely different content for each variant, not just tag the same content | [Versioned tabs](applies-switch.md) |
+| You're adding a version-specific note, tip, or warning | [Admonition annotation](admonitions.md) |
+| You're adding a version-specific dropdown | [Dropdown annotation](dropdowns.md) |
 
 ## Syntax reference
 
@@ -144,7 +156,7 @@ The following table shows how different version syntaxes render:
 
 The build process enforces the following validation rules:
 
-- **One version per lifecycle**: Each lifecycle (GA, Preview, Beta, etc.) can only have one version declaration.
+- **One version per lifecycle**: Each lifecycle (GA, Preview, Beta, Experimental, etc.) can only have one version declaration.
   - ✅ `stack: ga 9.2+, beta 9.0-9.1`
   - ❌ `stack: ga 9.2, ga 9.3`
 - **One "greater than" per key**: Only one lifecycle per product key can use the `+` (greater than or equal to) syntax.
@@ -275,6 +287,8 @@ applies_to:
 | `` {applies_to}`stack: preview 8.18` `` | {applies_to}`stack: preview 8.18` |
 | `` {applies_to}`stack: preview 9.0` `` | {applies_to}`stack: preview 9.0` |
 | `` {applies_to}`stack: preview 9.1` `` | {applies_to}`stack: preview 9.1` |
+| `` {applies_to}`stack: experimental` `` | {applies_to}`stack: experimental` |
+| `` {applies_to}`stack: experimental 9.0` `` | {applies_to}`stack: experimental 9.0` |
 | `` {applies_to}`stack: ga` `` | {applies_to}`stack: ga` |
 | `` {applies_to}`stack: ga 8.18` `` | {applies_to}`stack: ga 8.18` |
 | `` {applies_to}`stack: ga 9.0` `` | {applies_to}`stack: ga 9.0` |
@@ -294,6 +308,7 @@ applies_to:
 |--------------|--------|
 | `` {applies_to}`serverless: ` `` | {applies_to}`serverless: ` |
 | `` {applies_to}`serverless: preview` `` | {applies_to}`serverless: preview` |
+| `` {applies_to}`serverless: experimental` `` | {applies_to}`serverless: experimental` |
 | `` {applies_to}`serverless: ga` `` | {applies_to}`serverless: ga` |
 | `` {applies_to}`serverless: beta` `` | {applies_to}`serverless: beta` |
 | `` {applies_to}`serverless: deprecated` `` | {applies_to}`serverless: deprecated` |
@@ -314,9 +329,9 @@ apm_agent_java: beta 1.0+
 edot_dotnet: preview 1.0+
 edot_python:
 edot_node: ga 1.0+
-elasticsearch: preview 9.0+
-security: removed 9.0
-observability: deprecated 9.0+
+elasticsearch: preview
+security: removed
+observability: deprecated
 ```
 
 ### In-text example
@@ -401,6 +416,7 @@ Inline applies annotations are rendered in the order they appear in the source f
 |:----------|:---------------|-----------------|:----------------|
 | GA | – | – | `{product}` |
 | Preview | – | – | `{product}\|Preview` |
+| Experimental | – | – | `{product}\|Experimental` |
 | Beta | – | – | `{product}\|Beta` |
 | Deprecated | – | – | `{product}\|Deprecated` |
 | Removed | – | – | `{product}\|Removed` |
@@ -417,6 +433,7 @@ When no version is declared, the badge does not show a version. The lifecycle na
 | GA | – | 1 | `{product}` |
 | GA | – | \>= 2 | `{product}\|GA` |
 | Preview | – | – | `{product}\|Preview` |
+| Experimental | – | – | `{product}\|Experimental` |
 | Beta | – | – | `{product}\|Beta` |
 | Deprecated | – | – | `{product}\|Deprecated` |
 | Removed | – | – | `{product}\|Removed` |
@@ -432,6 +449,9 @@ When no version is declared, the badge does not show a version. The lifecycle na
 | | Unreleased | 1 | `{product}\|Planned` |
 | | | \>= 2 | Use previous lifecycle |
 | Preview | Released | \>= 1 | `{product}\|Preview x.x+` |
+| | Unreleased | 1 | `{product}\|Planned` |
+| | | \>= 2 | Use previous lifecycle |
+| Experimental | Released | \>= 1 | `{product}\|Experimental x.x+` |
 | | Unreleased | 1 | `{product}\|Planned` |
 | | | \>= 2 | Use previous lifecycle |
 | Beta | Released | \>= 1 | `{product}\|Beta x.x+` |
@@ -456,6 +476,10 @@ When no version is declared, the badge does not show a version. The lifecycle na
 | | | \>= 2 | Use previous lifecycle |
 | Preview | `y.y.y` is released | \>= 1 | `{product}\|Preview x.x-y.y` |
 | | `y.y.y` is **not** released, `x.x.x` is released | \>= 1 | `{product}\|Preview x.x+` |
+| | `y.y.y` is **not** released, `x.x.x` is **not** released | 1 | `{product}\|Planned` |
+| | | \>= 2 | Use previous lifecycle |
+| Experimental | `y.y.y` is released | \>= 1 | `{product}\|Experimental x.x-y.y` |
+| | `y.y.y` is **not** released, `x.x.x` is released | \>= 1 | `{product}\|Experimental x.x+` |
 | | `y.y.y` is **not** released, `x.x.x` is **not** released | 1 | `{product}\|Planned` |
 | | | \>= 2 | Use previous lifecycle |
 | Beta | `y.y.y` is released | \>= 1 | `{product}\|Beta x.x-y.y` |
@@ -484,6 +508,9 @@ When no version is declared, the badge does not show a version. The lifecycle na
 | Preview | Released | \>= 1 | `{product}\|Preview X.X` |
 | | Unreleased | 1 | `{product}\|Planned` |
 | | | \>= 2 | Use previous lifecycle |
+| Experimental | Released | \>= 1 | `{product}\|Experimental X.X` |
+| | Unreleased | 1 | `{product}\|Planned` |
+| | | \>= 2 | Use previous lifecycle |
 | Beta | Released | \>= 1 | `{product}\|Beta X.X` |
 | | Unreleased | 1 | `{product}\|Planned` |
 | | | \>= 2 | Use previous lifecycle |
@@ -504,6 +531,7 @@ When no version is declared, the badge does not show a version. The lifecycle na
 |:----------|:---------------|-----------------|:----------------|
 | GA | – | 1 | `Generally available` |
 | Preview | – | 1 | `Preview` |
+| Experimental | – | 1 | `Experimental` |
 | Beta | – | 1 | `Beta` |
 | Deprecated | – | 1 | `Deprecated` |
 | Removed | – | 1 | `Removed` |
@@ -519,6 +547,7 @@ When no version is declared, the popover shows only the lifecycle state (no base
 |:----------|:---------------|-----------------|:----------------|
 | GA | – | 1 | `Generally available` |
 | Preview | – | 1 | `Preview` |
+| Experimental | – | 1 | `Experimental` |
 | Beta | – | 1 | `Beta` |
 | Deprecated | – | 1 | `Deprecated` |
 | Removed | – | 1 | `Removed` |
@@ -534,6 +563,9 @@ When no version is declared, the popover shows only the lifecycle state (no base
 | | Unreleased | 1 | `Planned` |
 | | | \>= 2 | Do not add to availability list |
 | Preview | Released | \>= 1 | `Preview since X.X` |
+| | Unreleased | 1 | `Planned` |
+| | | \>= 2 | Do not add to availability list |
+| Experimental | Released | \>= 1 | `Experimental since X.X` |
 | | Unreleased | 1 | `Planned` |
 | | | \>= 2 | Do not add to availability list |
 | Beta | Released | \>= 1 | `Beta since X.X` |
@@ -561,6 +593,10 @@ When no version is declared, the popover shows only the lifecycle state (no base
 | | `y.y.y` is **not** released, `x.x.x` is released | \>= 1 | `Preview since X.X` |
 | | `y.y.y` is **not** released, `x.x.x` is **not** released | 1 | `Planned` |
 | | | \>= 2 | Do not add to availability list |
+| Experimental | `y.y.y` is released | \>= 1 | `Experimental from X.X to Y.Y` |
+| | `y.y.y` is **not** released, `x.x.x` is released | \>= 1 | `Experimental since X.X` |
+| | `y.y.y` is **not** released, `x.x.x` is **not** released | 1 | `Planned` |
+| | | \>= 2 | Do not add to availability list |
 | Beta | `y.y.y` is released | \>= 1 | `Beta from X.X to Y.Y` |
 | | `y.y.y` is **not** released, `x.x.x` is released | \>= 1 | `Beta since X.X` |
 | | `y.y.y` is **not** released, `x.x.x` is **not** released | 1 | `Planned` |
@@ -585,6 +621,9 @@ When no version is declared, the popover shows only the lifecycle state (no base
 | | Unreleased | 1 | `Planned` |
 | | | \>= 2 | Do not add to availability list |
 | Preview | Released | \>= 1 | `Preview in X.X` |
+| | Unreleased | 1 | `Planned` |
+| | | \>= 2 | Do not add to availability list |
+| Experimental | Released | \>= 1 | `Experimental in X.X` |
 | | Unreleased | 1 | `Planned` |
 | | | \>= 2 | Do not add to availability list |
 | Beta | Released | \>= 1 | `Beta in X.X` |

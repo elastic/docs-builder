@@ -4,12 +4,13 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
 using YamlDotNet.Serialization;
-using static Elastic.Documentation.Configuration.SymlinkValidator;
+using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
@@ -24,6 +25,14 @@ public class DocumentationSetFile : TableOfContentsFile
 
 	[YamlMember(Alias = "cross_links")]
 	public List<string> CrossLinks { get; set; } = [];
+
+	/// <summary>
+	/// Products whose changelog content is sourced from the public CDN. Declaring a product here lets
+	/// docs-builder prefetch its bundles at startup (consumed by the <c>{changelog}</c> <c>:cdn:</c> mode)
+	/// and lets <c>changelog bundle</c> source that product's entries from the CDN.
+	/// </summary>
+	[YamlMember(Alias = "release_notes")]
+	public List<ReleaseNotesProductReference> ReleaseNotes { get; set; } = [];
 
 	[YamlMember(Alias = "exclude")]
 	public List<string> Exclude { get; set; } = [];
@@ -52,7 +61,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	public DocumentationSetFeatures Features { get; set; } = new();
 
 	[YamlMember(Alias = "api")]
-	public Dictionary<string, ApiConfiguration> Api { get; set; } = [];
+	public Dictionary<string, ApiProductSequence> Api { get; set; } = [];
 
 	/// <summary>
 	/// Default products for this documentation set. These are merged with page-level frontmatter products.
@@ -66,6 +75,15 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "codex")]
 	public CodexDocSetMetadata? Codex { get; set; }
 
+	/// <summary>
+	/// Optional white-label branding overrides. When present, all Elastic-specific chrome is suppressed.
+	/// </summary>
+	[YamlMember(Alias = "branding")]
+	public BrandingConfiguration? Branding { get; set; }
+
+	[YamlMember(Alias = "storybook")]
+	public DocumentationSetStorybook? Storybook { get; set; }
+
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
 	{
 		if (item is FileRef fileRef)
@@ -76,6 +94,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			return tocRef.Children.SelectMany(GetFileRefs).ToArray();
 		if (item is CrossLinkRef)
 			return [];
+		if (item is CliReferenceRef cliRef2)
+			return cliRef2.Children.SelectMany(GetFileRefs).ToArray();
 		throw new Exception($"Unexpected item type {item.GetType().Name}");
 	}
 
@@ -157,6 +177,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			{
 				IsolatedTableOfContentsRef tocRef => ResolveIsolatedToc(collector, tocRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				DetectionRuleOverviewRef ruleOverviewReference => ResolveRuleOverviewReference(collector, ruleOverviewReference, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
+				CliReferenceRef cliRef => ResolveCliReference(collector, cliRef, baseDirectory, fileSystem, parentPath, containerPath, context),
 				FileRef fileRef => ResolveFileRef(collector, fileRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				FolderRef folderRef => ResolveFolderRef(collector, folderRef, baseDirectory, fileSystem, parentPath, containerPath, context, suppressDiagnostics),
 				CrossLinkRef crossLink => ResolveCrossLinkRef(collector, crossLink, baseDirectory, fileSystem, parentPath, containerPath, context),
@@ -164,7 +185,12 @@ public class DocumentationSetFile : TableOfContentsFile
 			};
 
 			if (resolvedItem != null)
+			{
 				resolved.Add(resolvedItem);
+				// Emit the deprecated rules overview as a sibling immediately after the active rules ref
+				if (resolvedItem is DetectionRuleOverviewRef { DeprecatedSiblingRef: { } deprecatedSibling })
+					resolved.Add(deprecatedSibling);
+			}
 		}
 
 		return resolved;
@@ -443,11 +469,95 @@ public class DocumentationSetFile : TableOfContentsFile
 			.ToList();
 		var tomlChildren = DetectionRuleOverviewRef.CreateTableOfContentItems(tocSourceFolders, context, baseDirectory);
 
-		var children = resolvedChildren.Concat(tomlChildren).ToList();
+		var children = resolvedChildren.ToList();
+		children.AddRange(tomlChildren);
 
-		return new DetectionRuleOverviewRef(fullPath, pathRelativeToContainer, detectionRuleRef.DetectionRuleFolders, children, context);
+		// Auto-detect _deprecated subdirectories. When found, build the deprecated overview FileRef
+		// and attach it as DeprecatedSiblingRef so ResolveTableOfContents can emit it as a sibling,
+		// not as a child nested under the active rules.
+		FileRef? deprecatedSiblingRef = null;
+		var hasDeprecatedRules = tocSourceFolders.Any(d =>
+			d.Exists && d.EnumerateDirectories("_deprecated", SearchOption.TopDirectoryOnly).Any());
+		if (hasDeprecatedRules)
+		{
+			var deprecatedFileName = detectionRuleRef.DeprecatedFile ?? "deprecated-detection-rules.md";
+			var overviewDir = fileSystem.Path.GetDirectoryName(fullPath);
+			var deprecatedFullPath = string.IsNullOrEmpty(overviewDir)
+				? deprecatedFileName
+				: $"{overviewDir}/{deprecatedFileName}";
+			var deprecatedPathRelativeToContainer = string.IsNullOrEmpty(containerPath)
+				? deprecatedFullPath
+				: deprecatedFullPath.Substring(containerPath.Length + 1);
+			var deprecatedTomlChildren = DetectionRuleOverviewRef.CreateDeprecatedTableOfContentItems(tocSourceFolders, context, baseDirectory);
+			deprecatedSiblingRef = new FileRef(deprecatedFullPath, deprecatedPathRelativeToContainer, false, deprecatedTomlChildren, context);
+		}
+
+		return new DetectionRuleOverviewRef(fullPath, pathRelativeToContainer, detectionRuleRef.DetectionRuleFolders, children, context, detectionRuleRef.DeprecatedFile)
+		{
+			DeprecatedSiblingRef = deprecatedSiblingRef
+		};
 	}
 
+
+	private static ITableOfContentsItem? ResolveCliReference(
+		IDiagnosticsCollector collector,
+		CliReferenceRef cliRef,
+		IDirectoryInfo baseDirectory,
+		IFileSystem fileSystem,
+		string parentPath,
+		string containerPath,
+		string context)
+	{
+		// Resolve schema path relative to docset root (context-relative for paths with '/')
+		string schemaFullPath;
+		if (cliRef.SchemaPath.Contains('/'))
+		{
+			var contextDir = fileSystem.Path.GetDirectoryName(context) ?? "";
+			var contextRelativePath = fileSystem.Path.GetRelativePath(baseDirectory.FullName, contextDir);
+			if (contextRelativePath == ".")
+				contextRelativePath = "";
+			schemaFullPath = string.IsNullOrEmpty(contextRelativePath)
+				? cliRef.SchemaPath
+				: $"{contextRelativePath}/{cliRef.SchemaPath}";
+		}
+		else
+		{
+			schemaFullPath = string.IsNullOrEmpty(parentPath)
+				? cliRef.SchemaPath
+				: $"{parentPath}/{cliRef.SchemaPath}";
+		}
+
+		var schemaFileInfo = fileSystem.FileInfo.New(fileSystem.Path.Join(baseDirectory.FullName, schemaFullPath));
+		if (!schemaFileInfo.Exists)
+		{
+			collector.EmitError(context, $"CLI schema file not found: {cliRef.SchemaPath}");
+			return null;
+		}
+
+		// Derive virtual root: use SupplementalFolder if set, otherwise schema path without extension
+		var virtualRoot = cliRef.SupplementalFolder is not null
+			? cliRef.SupplementalFolder.TrimEnd('/')
+			: Path.ChangeExtension(schemaFullPath, null);
+
+		var fullVirtualRoot = string.IsNullOrEmpty(parentPath) ? virtualRoot : $"{parentPath}/{virtualRoot}";
+		var pathRelativeToContainer = string.IsNullOrEmpty(containerPath)
+			? fullVirtualRoot
+			: fullVirtualRoot[(containerPath.Length + 1)..];
+
+		if (cliRef.SupplementalFolder is not null)
+		{
+			var supplementalDirPath = fileSystem.Path.Join(baseDirectory.FullName, cliRef.SupplementalFolder);
+			if (!fileSystem.Directory.Exists(supplementalDirPath))
+				collector.EmitWarning(context, $"CLI supplemental docs folder not found: {cliRef.SupplementalFolder}");
+		}
+
+		// Resolve explicit children (regular docs + namespace/folder refs) relative to the virtual root
+		var resolvedChildren = cliRef.Children.Count > 0
+			? ResolveTableOfContents(collector, cliRef.Children, baseDirectory, fileSystem, fullVirtualRoot, containerPath, context)
+			: [];
+
+		return new CliReferenceRef(schemaFullPath, cliRef.SupplementalFolder, cliRef.Title, cliRef.NavigationTitle, fullVirtualRoot, pathRelativeToContainer, context, resolvedChildren);
+	}
 
 	/// <summary>
 	/// Resolves a FolderRef by prepending the parent path to the folder path and recursively resolving children.
@@ -641,6 +751,23 @@ public class DocumentationSetFeatures
 	public bool? DisableGithubEditLink { get; set; }
 }
 
+[YamlSerializable]
+public class DocumentationSetStorybook
+{
+	[YamlMember(Alias = "registry")]
+	public string? Registry { get; set; }
+}
+
+/// <summary>
+/// A single <c>release_notes</c> entry declaring a product whose changelog content is CDN-backed.
+/// </summary>
+[YamlSerializable]
+public record ReleaseNotesProductReference
+{
+	[YamlMember(Alias = "product")]
+	public string Product { get; set; } = string.Empty;
+}
+
 /// <summary>
 /// Codex-specific metadata. Only contains <c>group</c> for navigation grouping in a codex environment.
 /// </summary>
@@ -649,4 +776,38 @@ public class CodexDocSetMetadata
 {
 	[YamlMember(Alias = "group")]
 	public string? Group { get; set; }
+}
+
+/// <summary>
+/// White-label branding overrides for isolated builds. Presence of this section removes all Elastic-specific chrome.
+/// All image paths are relative to the directory containing <c>docset.yml</c>.
+/// </summary>
+[YamlSerializable]
+public class BrandingConfiguration
+{
+	/// <summary>Path to the site icon image, relative to the docs source directory.</summary>
+	[YamlMember(Alias = "icon")]
+	public string? Icon { get; set; }
+
+	/// <summary>CSS colour value for the header background. Defaults to <c>#000000</c> when not specified.</summary>
+	[YamlMember(Alias = "header-bg", ApplyNamingConventions = false)]
+	public string? HeaderBg { get; set; }
+
+	/// <summary>Path to the Open Graph image, relative to the docs source directory.</summary>
+	[YamlMember(Alias = "og-image", ApplyNamingConventions = false)]
+	public string? OgImage { get; set; }
+
+	/// <summary>
+	/// Path to the browser favicon, relative to the docs source directory.
+	/// When not set, auto-discovered from well-known filenames (favicon.ico, favicon.png, favicon.svg).
+	/// </summary>
+	[YamlMember(Alias = "favicon", ApplyNamingConventions = false)]
+	public string? Favicon { get; set; }
+
+	/// <summary>
+	/// Path to the Apple touch icon, relative to the docs source directory.
+	/// When not set, auto-discovered from apple-touch-icon.png if present.
+	/// </summary>
+	[YamlMember(Alias = "apple-touch-icon", ApplyNamingConventions = false)]
+	public string? AppleTouchIcon { get; set; }
 }

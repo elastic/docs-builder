@@ -4,11 +4,31 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
 public class PhysicalDocsetTests
 {
+	[Fact]
+	public void CliReferenceRefReadsTitleOverrides()
+	{
+		const string yaml = """
+			project: test
+			toc:
+			  - cli: cli/schema.json
+			    folder: cli
+			    title: Elastic CLI reference
+			    navigation_title: CLI reference
+			""";
+
+		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().Single();
+
+		cliRef.Title.Should().Be("Elastic CLI reference");
+		cliRef.NavigationTitle.Should().Be("CLI reference");
+	}
+
 	[Fact]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
@@ -37,9 +57,9 @@ public class PhysicalDocsetTests
 
 		// Assert API configuration
 		docSet.Api.Should().HaveCount(3);
-		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.Spec.Should().Be("elasticsearch-openapi.json");
-		docSet.Api.Should().ContainKey("kibana").WhoseValue.Spec.Should().Be("kibana-openapi.json");
-		docSet.Api.Should().ContainKey("dashboard").WhoseValue.Spec.Should().Be("dashboard-openapi.json");
+		docSet.Api.Should().ContainKey("elasticsearch").WhoseValue.GetSpecPaths().Should().Contain("elasticsearch-openapi-docs.json");
+		docSet.Api.Should().ContainKey("kibana").WhoseValue.GetSpecPaths().Should().Contain("kibana-openapi.json");
+		docSet.Api.Should().ContainKey("dashboard").WhoseValue.GetSpecPaths().Should().Contain("dashboard-openapi.json");
 
 		// Assert TOC structure
 		docSet.TableOfContents.Should().NotBeEmpty();
@@ -86,9 +106,12 @@ public class PhysicalDocsetTests
 		folderNames.Should().Contain("building-blocks");
 		folderNames.Should().Contain("configure");
 		folderNames.Should().Contain("syntax");
-		folderNames.Should().Contain("cli");
 		folderNames.Should().Contain("migration");
 		folderNames.Should().Contain("testing");
+
+		// cli is a CliReferenceRef (schema-driven), not a FolderRef
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
+		cliRef.Should().NotBeNull();
 	}
 
 	[Fact]
@@ -108,12 +131,9 @@ public class PhysicalDocsetTests
 		nestedFolders.Should().Contain("site");
 		nestedFolders.Should().Contain("content-set");
 
-		// Test the cli folder has nested folders
-		var cliFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "cli");
-		var cliNestedFolders = cliFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
-		cliNestedFolders.Should().Contain("docset");
-		cliNestedFolders.Should().Contain("assembler");
-		cliNestedFolders.Should().Contain("links");
+		// cli is a CliReferenceRef (schema-driven), not a FolderRef — verify it has children
+		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().First();
+		cliRef.Children.Should().NotBeEmpty();
 	}
 
 	[Fact]

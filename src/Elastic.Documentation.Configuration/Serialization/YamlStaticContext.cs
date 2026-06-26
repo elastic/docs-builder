@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
@@ -38,11 +39,15 @@ namespace Elastic.Documentation.Configuration.Serialization;
 // Table of contents
 [YamlSerializable(typeof(DocumentationSetFile))]
 [YamlSerializable(typeof(DocumentationSetFeatures))]
+[YamlSerializable(typeof(DocumentationSetStorybook))]
 [YamlSerializable(typeof(CodexDocSetMetadata))]
+[YamlSerializable(typeof(ReleaseNotesProductReference))]
 [YamlSerializable(typeof(TableOfContentsFile))]
 [YamlSerializable(typeof(SiteNavigationFile))]
 [YamlSerializable(typeof(PhantomRegistration))]
 [YamlSerializable(typeof(ProductLink))]
+// API configuration (used in DocumentationSetFile.Api Dictionary<string, ApiConfiguration>)
+[YamlSerializable(typeof(ApiConfiguration))]
 // Search configuration
 [YamlSerializable(typeof(SearchConfigDto))]
 [YamlSerializable(typeof(QueryRuleDto))]
@@ -59,4 +64,18 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(ChangelogConfigMinimalDto))]
 [YamlSerializable(typeof(RulesConfigMinimalDto))]
 [YamlSerializable(typeof(PublishRulesMinimalDto))]
+// Changelog YAML DTOs for CLI configuration (changelog.yml)
+[YamlSerializable(typeof(ChangelogConfigurationYaml))]
+[YamlSerializable(typeof(PivotConfigurationYaml))]
+[YamlSerializable(typeof(TypeEntryYaml))]
+[YamlSerializable(typeof(RulesConfigurationYaml))]
+[YamlSerializable(typeof(CreateRulesYaml))]
+[YamlSerializable(typeof(BundleRulesYaml))]
+[YamlSerializable(typeof(PublishRulesYaml))]
+[YamlSerializable(typeof(ProductsConfigYaml))]
+[YamlSerializable(typeof(DefaultProductYaml))]
+[YamlSerializable(typeof(BundleConfigurationYaml))]
+[YamlSerializable(typeof(BundleProfileYaml))]
+[YamlSerializable(typeof(ExtractConfigurationYaml))]
+[YamlSerializable(typeof(YamlLenientList))]
 public partial class YamlStaticContext;

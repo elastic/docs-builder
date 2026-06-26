@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,20 +6,16 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Elastic.Documentation</RootNamespace>
     <IsAotCompatible>true</IsAotCompatible>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574;CS0419</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.Glob" />
+    <PackageReference Include="Elastic.Internal.Search.Contract" />
     <PackageReference Include="Elastic.Mapping" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
-    <PackageReference Include="Proc" />
-    <PackageReference Include="SoftCircuits.IniFileParser" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
-    <PackageReference Include="System.IO.Abstractions" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator"/>
-    <PackageReference Include="YamlDotNet"/>
   </ItemGroup>
 
 </Project>

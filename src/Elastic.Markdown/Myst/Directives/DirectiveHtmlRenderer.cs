@@ -13,13 +13,16 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
+using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
@@ -100,6 +103,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case MathBlock mathBlock:
 				WriteMathBlock(renderer, mathBlock);
 				return;
+			case PageCardBlock pageCardBlock:
+				WritePageCard(renderer, pageCardBlock);
+				return;
 			case StepperBlock stepperBlock:
 				WriteStepperBlock(renderer, stepperBlock);
 				return;
@@ -120,6 +126,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
+				return;
+			case CliModifiersBlock cliModifiersBlock:
+				WriteCliModifiers(renderer, cliModifiersBlock);
+				return;
+			case StorybookBlock storybookBlock:
+				WriteStorybook(renderer, storybookBlock);
 				return;
 			default:
 				// if (!string.IsNullOrEmpty(directiveBlock.Info) && !directiveBlock.Info.StartsWith('{'))
@@ -173,6 +185,17 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				ImageUrl = img.ImageUrl
 			}).ToList(),
 			MaxHeight = block.MaxHeight
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WritePageCard(HtmlRenderer renderer, PageCardBlock block)
+	{
+		var slice = PageCardView.Create(new PageCardViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Url = block.ResolvedUrl
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -238,6 +261,34 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer);
 	}
 
+	private static void WriteCliModifiers(HtmlRenderer renderer, CliModifiersBlock block)
+	{
+		if (!block.Destructive && !block.RequiresConfirmation && !block.RequiresAuth
+			&& !block.Idempotent && string.IsNullOrWhiteSpace(block.Scope)
+			&& !block.Streaming && !block.LongRunning)
+			return;
+
+		var slice = CliModifiersView.Create(new CliModifiersViewModel
+		{
+			DirectiveBlock = block,
+			Destructive = block.Destructive,
+			DestructiveDescription = block.DestructiveDescription,
+			RequiresConfirmation = block.RequiresConfirmation,
+			RequiresConfirmationDescription = block.RequiresConfirmationDescription,
+			RequiresAuth = block.RequiresAuth,
+			RequiresAuthDescription = block.RequiresAuthDescription,
+			Idempotent = block.Idempotent,
+			IdempotentDescription = block.IdempotentDescription,
+			Scope = block.Scope,
+			ScopeDescription = block.ScopeDescription,
+			Streaming = block.Streaming,
+			StreamingDescription = block.StreamingDescription,
+			LongRunning = block.LongRunning,
+			LongRunningDescription = block.LongRunningDescription,
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
 	private static void WriteAgentSkill(HtmlRenderer renderer, AgentSkillBlock block)
 	{
 		if (string.IsNullOrEmpty(block.Url))
@@ -248,8 +299,28 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Url = block.Url,
+			InstallCommand = block.InstallCommand,
 			HasBody = block.Count > 0,
-			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills"
+			LearnMoreUrl = $"{prefix}/explore-analyze/ai-features/agent-skills#available-skills"
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteStorybook(HtmlRenderer renderer, StorybookBlock block)
+	{
+		if (string.IsNullOrEmpty(block.StoryUrl))
+			return;
+
+		var slice = StorybookView.Create(new StorybookViewModel
+		{
+			DirectiveBlock = block,
+			StoryUrl = block.StoryUrl,
+			StoryId = block.StoryId ?? string.Empty,
+			Height = block.Height,
+			IframeTitle = block.IframeTitle,
+			HasBody = block.Count > 0,
+			InlineEntry = block.InlineEntry,
+			InlineBootstrapJson = block.InlineBootstrapJson,
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -462,6 +533,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			GroupHeadingLevel = block.GroupHeadingLevel,
 			VersionsConfig = block.Build.VersionsConfiguration,
+			ActiveDeploymentFilter = block.ActiveDeploymentFilter,
 			RenderMarkdown = s =>
 			{
 				var normalized = SettingsMarkdownNormalizer.Normalize(s, settings.Product);
@@ -599,7 +671,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteChangelogBlock(HtmlRenderer renderer, ChangelogBlock block)
 	{
-		if (!block.Found || block.BundlesFolderPath is null)
+		if (!block.Found)
+			return;
+
+		// Local-folder mode must also have resolved a bundles folder; CDN-sourced bundles never set one.
+		var isCdnSourced = !string.IsNullOrWhiteSpace(block.CdnProduct);
+		if (!isCdnSourced && block.BundlesFolderPath is null)
 			return;
 
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(block);

@@ -10,7 +10,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="TestData\**\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

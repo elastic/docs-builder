@@ -46,6 +46,10 @@ This feature has been removed from Elastic Cloud Enterprise.
 	}
 
 	[Fact]
+	public void FirstItemRendersChecked() =>
+		Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
+
+	[Fact]
 	public void ParsesAppliesToDefinitions()
 	{
 		var items = Block!.OfType<AppliesItemBlock>().ToArray();
@@ -62,6 +66,40 @@ This feature has been removed from Elastic Cloud Enterprise.
 		foreach (var item in items)
 			item.Directive.Should().Be("applies-item");
 	}
+}
+
+// Reproduces the real-world case: a % comment block between {applies-switch} and
+// the first {applies-item} previously pushed all item indices to 1, 2, 3.
+public class ApplicabilitySwitchWithCommentTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,
+"""
+:::::{applies-switch}
+
+% TODO: some comment here
+
+::::{applies-item} stack: preview 9.1
+Content A
+::::
+
+::::{applies-item} ess: preview 9.1
+Content B
+::::
+
+:::::
+"""
+)
+{
+	[Fact]
+	public void ItemIndicesAreZeroBased()
+	{
+		var items = Block!.OfType<AppliesItemBlock>().ToArray();
+		items.Should().HaveCount(2);
+		for (var i = 0; i < items.Length; i++)
+			items[i].Index.Should().Be(i);
+	}
+
+	[Fact]
+	public void FirstItemRendersChecked() =>
+		Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
 }
 
 public class MultipleApplicabilitySwitchTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(output,

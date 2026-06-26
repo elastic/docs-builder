@@ -13,6 +13,7 @@ open System.IO.Abstractions.TestingHelpers
 open System.Threading.Tasks
 open YamlDotNet.RepresentationModel
 open Elastic.Documentation
+open Elastic.Documentation.Versions
 open Elastic.Documentation.Configuration
 open Elastic.Documentation.Configuration.LegacyUrlMappings
 open Elastic.Documentation.Configuration.Versions

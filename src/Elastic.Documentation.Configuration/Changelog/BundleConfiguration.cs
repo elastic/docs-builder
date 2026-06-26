@@ -22,6 +22,14 @@ public record BundleConfiguration
 	public string? OutputDirectory { get; init; }
 
 	/// <summary>
+	/// When true, the individual changelog entries that make up a bundle are sourced from the local
+	/// <see cref="Directory"/>. When false (the default), they are fetched from the public changelog
+	/// CDN, scoped to the bundle's products. An explicit <c>--directory</c> on the CLI always forces
+	/// local sourcing regardless of this setting.
+	/// </summary>
+	public bool UseLocalChangelogs { get; init; }
+
+	/// <summary>
 	/// Whether to resolve (copy contents of each changelog file into the entries array).
 	/// Defaults to true
 	/// </summary>
@@ -50,6 +58,11 @@ public record BundleConfiguration
 	/// Requires <see cref="Resolve"/>.
 	/// </summary>
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
+
+	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.
@@ -110,6 +123,11 @@ public record BundleProfile
 	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
 	/// </summary>
 	public IReadOnlyList<string>? HideFeatures { get; init; }
+
+	/// <summary>
+	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
+	/// </summary>
+	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
 	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
