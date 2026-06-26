@@ -9,11 +9,9 @@ using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Serialization;
-<<<<<<< HEAD
+using System.Text.Json;
 using Elastic.Ingest.Elasticsearch;
-=======
-using Elastic.Internal.Search;
->>>>>>> origin/main
+using Elastic.Internal.Search.Mapping;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -104,7 +102,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var typeContext = DocumentationMappingContext.DocumentationDocument
 			.CreateContext(type: testName, env: "test") with
 		{
-			ConfigureAnalysis = a => DocumentationAnalysisFactory.BuildAnalysis(a, synonymSetName, ["test, testing"]),
+			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, ["test, testing"]),
 			IndexSettings = new Dictionary<string, string>
 			{
 				["index.default_pipeline"] = enrichment.PipelineName
@@ -113,7 +111,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		var options = new IngestChannelOptions<DocumentationDocument>(_transport, typeContext, indexNameOverride: indexNameOverride)
 		{
-			SerializerContext = SourceGenerationContext.Default
+			SerializerContext = Elastic.Documentation.Serialization.SourceGenerationContext.Default
 		};
 		return new IngestChannel<DocumentationDocument>(options);
 	}
@@ -136,7 +134,6 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		Url = url,
 		Title = title,
 		SearchTitle = title,
-		Type = "doc",
 		Hash = contentHash,
 		ContentBodyHash = contentHash
 	};
@@ -304,11 +301,6 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	}
 
 	/// <summary>
-<<<<<<< HEAD
-	/// Verifies the filter approach: on the second run (reuse path with HashedBulkUpdate),
-	/// the filter only processes documents that were changed (unresolved dates),
-	/// while unchanged documents (noop) retain their existing resolved dates.
-=======
 	/// Discovery test: indexes a full DocumentationDocument via a scripted upsert
 	/// (the same mechanism HashedBulkUpdate uses) and reads back what ES actually
 	/// stores for content_last_updated when the field is never explicitly set.
@@ -333,7 +325,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			Hash = "testhash123",
 			ContentBodyHash = "contenthash123"
 		};
-		var serializedDoc = JsonSerializer.Serialize(doc, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+		var serializedDoc = JsonSerializer.Serialize(doc, Elastic.Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
 
 		// Index via scripted upsert (same as HashedBulkUpdate)
 		await IndexFullDocumentViaScriptedUpsert(index, doc.Url, serializedDoc);
@@ -351,7 +343,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		var esDateValue = source["content_last_updated"]?.ToString();
 
-		// The default DateTimeOffset (0001-01-01) should be stored — verify it's pre-epoch
+		// The default DateTimeOffset (0001-01-01) should be stored -- verify it's pre-epoch
 		esDateValue.Should().NotBeNull("content_last_updated should be present in ES document");
 		var esDate = DateTimeOffset.Parse(esDateValue, CultureInfo.InvariantCulture);
 		esDate.Year.Should().Be(1, "default DateTimeOffset.MinValue should serialize as year 0001");
@@ -360,10 +352,9 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	}
 
 	/// <summary>
-	/// Verifies the filter approach: after a scripted upsert writes a full DocumentationDocument
-	/// with default content_last_updated, the must_not range filter correctly matches it.
-	/// Also verifies a document with a real date is NOT matched.
->>>>>>> origin/main
+	/// Verifies the filter approach: on the second run (reuse path with HashedBulkUpdate),
+	/// the filter only processes documents that were changed (unresolved dates),
+	/// while unchanged documents (noop) retain their existing resolved dates.
 	/// </summary>
 	[Fact]
 	public async Task FilteredResolve_SkipsDocumentsWithExistingDates()
@@ -375,19 +366,8 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		string index;
 		using (var channel1 = await CreateChannelAsync(enrichment, "filtered"))
 		{
-<<<<<<< HEAD
 			await channel1.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
-			index = channel1.IndexName; // wildcard — resolved to concrete name below
-=======
-			Url = "url2",
-			Title = "Doc 2",
-			SearchTitle = "Doc 2",
-			ContentType = "doc",
-			ContentBodyHash = "hash_b"
-		};
-		var serialized2 = JsonSerializer.Serialize(doc2, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
-		await IndexFullDocumentViaScriptedUpsert(index, "url2", serialized2);
->>>>>>> origin/main
+			index = channel1.IndexName; // wildcard -- resolved to concrete name below
 
 			await WriteDocuments(channel1,
 				CreateDoc("url1", "hash_a", "Doc 1"),
@@ -523,8 +503,6 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 	// --- Helpers ---
 
-<<<<<<< HEAD
-=======
 	private async Task CreateTestIndex(string index, string pipelineName)
 	{
 		_ = await _transport.DeleteAsync<StringResponse>(
@@ -576,7 +554,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 				Hash = contentHash,
 				ContentBodyHash = contentHash
 			};
-			var serialized = JsonSerializer.Serialize(doc, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+			var serialized = JsonSerializer.Serialize(doc, Elastic.Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
 			await IndexFullDocumentViaScriptedUpsert(index, url, serialized);
 		}
 	}
@@ -600,7 +578,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			$"Failed to index document {url}: {response.ApiCallDetails.DebugInformation}");
 	}
 
->>>>>>> origin/main
+
 	private async Task<TestDocument> GetDocument(string index, string id)
 	{
 		var response = await _transport.GetAsync<StringResponse>($"{index}/_doc/{id}", CancellationToken.None);
@@ -671,6 +649,57 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 				);
 			})
 			.ToList();
+	}
+
+	/// <summary>
+	/// Indexes a pre-serialized DocumentationDocument via scripted upsert,
+	/// matching the exact pattern HashedBulkUpdate uses in production.
+	/// </summary>
+	private async Task IndexFullDocumentViaScriptedUpsert(string index, string id, string serializedDoc)
+	{
+		const string hashField = "hash";
+		var docNode = JsonNode.Parse(serializedDoc)!;
+		var hashValue = docNode[hashField]?.ToString() ?? "";
+
+		var actionLine = new JsonObject
+		{
+			["update"] = new JsonObject
+			{
+				["_index"] = index,
+				["_id"] = id
+			}
+		};
+
+		// Matches HashedBulkUpdate's script: if hash matches -> noop, else replace source
+		var bodyLine = new JsonObject
+		{
+			["scripted_upsert"] = true,
+			["upsert"] = new JsonObject(),
+			["script"] = new JsonObject
+			{
+				["source"] = $"if (ctx._source.{hashField} == params.hash) {{ ctx.op = 'noop' }} else {{ ctx._source = params.doc; ctx._source.{hashField} = params.hash }}",
+				["params"] = new JsonObject
+				{
+					["hash"] = hashValue,
+					["doc"] = docNode
+				}
+			}
+		};
+
+		var bulkBody = $"{actionLine.ToJsonString()}\n{bodyLine.ToJsonString()}\n";
+		var response = await _transport.PostAsync<StringResponse>(
+			"/_bulk",
+			PostData.String(bulkBody),
+			CancellationToken.None
+		);
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
+			$"Bulk update failed: {response.ApiCallDetails.DebugInformation}");
+
+		var bulkResult = JsonNode.Parse(response.Body);
+		bulkResult.Should().NotBeNull("bulk response body should be valid JSON");
+		bulkResult!["errors"].Should().NotBeNull("bulk response should contain an 'errors' field");
+		bulkResult["errors"]!.GetValue<bool>().Should().BeFalse(
+			$"Bulk response contained item errors: {response.Body}");
 	}
 
 	private sealed record TestDocument(string Url, string ContentHash, DateTimeOffset? ContentLastUpdated);
