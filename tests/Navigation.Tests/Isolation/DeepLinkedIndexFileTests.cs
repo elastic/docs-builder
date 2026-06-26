@@ -12,12 +12,7 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-/// <summary>
-/// Regression coverage for https://github.com/elastic/docs-builder/issues/764.
-/// A childless <c>file: subdir/index.md</c> entry is sugar for <c>folder: subdir, file: index.md</c>,
-/// so each entry becomes its own subfolder with a proper index page instead of competing for the
-/// parent's index slot (which silently dropped it from the navigation).
-/// </summary>
+/// <summary>Regression coverage for https://github.com/elastic/docs-builder/issues/764: a childless <c>file: subdir/index.md</c> entry becomes its own single-page folder instead of being silently dropped from the navigation.</summary>
 public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
 {
 	[Fact]

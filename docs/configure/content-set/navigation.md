@@ -211,19 +211,30 @@ toc:
   - file: reference/activemq/index.md
 ```
 
-Each entry becomes its own subsection linking to the directory's `index.md`. This is convenient when every subdirectory contains only an `index.md`. It is shorthand for:
+Each entry becomes its own subsection linking to the directory's `index.md`. This is shorthand for the explicit `folder:` + `file:` form, which remains the preferred approach for folders that also have additional children:
 
 ```yaml
 toc:
   - folder: reference/1password
-    children:
-      - file: index.md
+    file: index.md
   - folder: reference/activemq
-    children:
-      - file: index.md
+    file: index.md
 ```
 
-If the entry declares `children`, it keeps the [virtual grouping](#virtual-grouping) (deep-linking) behavior instead.
+The shorthand also works inside a parent folder's `children` list, which is the common case for a directory of single-page subsections (for example, dozens of integrations under `reference`):
+
+```yaml
+toc:
+  - folder: reference
+    file: index.md
+    children:
+      - file: 1password/index.md
+      - file: activemq/index.md
+```
+
+Each child becomes its own subsection; none is consumed as the parent's index page.
+
+If the entry declares its own `children`, it keeps the [virtual grouping](#virtual-grouping) (deep-linking) behavior instead.
 
 #### Hidden files
 
