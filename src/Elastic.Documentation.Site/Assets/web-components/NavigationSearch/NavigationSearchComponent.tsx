@@ -2,7 +2,7 @@ import { config } from '../../config'
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearch } from './NavigationSearch'
-import { EuiHorizontalRule, EuiProvider, useEuiTheme } from '@elastic/eui'
+import { EuiProvider } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
@@ -13,7 +13,6 @@ interface NavigationSearchProps {
 }
 
 const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
-    const { euiTheme } = useEuiTheme()
     const { data: isApiAvailable } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
@@ -33,19 +32,12 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
 
     return (
         <div
-            className="sticky top-0"
+            className="pages-nav-v2__search-inner sticky top-0 z-10 shrink-0 bg-white"
             css={css`
-                padding-top: ${euiTheme.size.base};
-                padding-right: ${euiTheme.size.base};
+                padding: 16px 19px 0 0;
             `}
         >
             <NavigationSearch placeholder={placeholder} />
-            <EuiHorizontalRule
-                margin="none"
-                css={css`
-                    margin-top: ${euiTheme.size.base};
-                `}
-            />
         </div>
     )
 }

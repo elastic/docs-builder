@@ -8,6 +8,7 @@ import { initImageCarousel } from './image-carousel'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initNavV2 } from './pages-nav-v2'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
@@ -128,15 +129,16 @@ function initMath() {
     })
 }
 
-// Initialize on initial page load
-document.addEventListener('DOMContentLoaded', function () {
-    runInitSteps([
-        ['initMath', initMath],
-        ['initMermaid', initMermaid],
-    ])
-})
+function initPageNav() {
+    const v2Nav = document.querySelector<HTMLElement>('[data-nav-v2]')
+    if (v2Nav) {
+        initNavV2(v2Nav)
+    } else {
+        initNav()
+    }
+}
 
-document.addEventListener('htmx:load', function () {
+function initPageAfterContentSwap() {
     runInitSteps([
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
@@ -146,13 +148,26 @@ document.addEventListener('htmx:load', function () {
         ['initAppliesSwitch', initAppliesSwitch],
         ['initMath', initMath],
         ['initMermaid', initMermaid],
-        ['initNav', initNav],
+        ['initPageNav', initPageNav],
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
     ])
+}
+
+// htmx defers the initial htmx:load to setTimeout(0); prime V2 sidebar on first paint so isolated serve shows behaviour before that tick.
+document.addEventListener('DOMContentLoaded', function () {
+    runInitSteps([
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+        ['initPageNav', initPageNav],
+    ])
+})
+
+document.addEventListener('htmx:load', function () {
+    initPageAfterContentSwap()
 })
 
 // Don't remove style tags because they are used by the elastic global nav.

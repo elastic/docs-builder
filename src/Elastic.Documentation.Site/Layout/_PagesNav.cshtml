@@ -1,8 +1,8 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-40 md:z-auto transition-[top,max-height] duration-300 md:order-1">
+<aside class="sidebar font-sans bg-white max-md:fixed md:sticky shadow-2xl md:shadow-none max-md:left-full max-md:group-has-[#pages-nav-hamburger:checked]/body:left-0 max-md:bottom-0 md:top-(--offset-top) md:left-auto md:bottom-auto w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-40 md:z-auto transition-[top,max-height] duration-300">
 	<nav
 		id="pages-nav"
-		class="sidebar-nav h-full simple-scrollbar">
+		class="sidebar-nav min-h-0 flex-1 simple-scrollbar">
 		@(new HtmlString(Model.NavigationHtml))
 	</nav>
 	@* ReSharper disable once Html.IdNotResolved *@
