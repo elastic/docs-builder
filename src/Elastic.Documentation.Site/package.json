@@ -125,7 +125,7 @@
     "htmx-ext-head-support": "2.0.5",
     "htmx-ext-preload": "2.1.2",
     "htmx.org": "2.0.10",
-    "idb-keyval": "6.2.2",
+    "idb-keyval": "6.2.5",
     "katex": "^0.16.45",
     "lodash": "^4.17.23",
     "marked": "17.0.6",
