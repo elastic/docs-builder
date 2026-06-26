@@ -111,7 +111,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		var options = new IngestChannelOptions<DocumentationDocument>(_transport, typeContext, indexNameOverride: indexNameOverride)
 		{
-			SerializerContext = Elastic.Documentation.Serialization.SourceGenerationContext.Default
+			SerializerContext = SourceGenerationContext.Default
 		};
 		return new IngestChannel<DocumentationDocument>(options);
 	}
@@ -325,7 +325,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			Hash = "testhash123",
 			ContentBodyHash = "contenthash123"
 		};
-		var serializedDoc = JsonSerializer.Serialize(doc, Elastic.Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+		var serializedDoc = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
 
 		// Index via scripted upsert (same as HashedBulkUpdate)
 		await IndexFullDocumentViaScriptedUpsert(index, doc.Url, serializedDoc);
@@ -554,7 +554,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 				Hash = contentHash,
 				ContentBodyHash = contentHash
 			};
-			var serialized = JsonSerializer.Serialize(doc, Elastic.Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+			var serialized = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
 			await IndexFullDocumentViaScriptedUpsert(index, url, serialized);
 		}
 	}
