@@ -10,33 +10,48 @@ namespace Elastic.Changelog.Tests.Uploading;
 public class RegistryKeyTests
 {
 	[Theory]
-	// Bundle index: {product}/registry.json
-	[InlineData("elasticsearch/registry.json")]
-	[InlineData("kibana/registry.json")]
-	[InlineData("elastic-agent/registry.json")]
-	[InlineData("cloud_hosted/registry.json")]
-	[InlineData("a/registry.json")]
-	// Changelog-entry index: {product}/changelog/registry.json
-	[InlineData("elasticsearch/changelog/registry.json")]
-	[InlineData("kibana/changelog/registry.json")]
-	[InlineData("cloud_hosted/changelog/registry.json")]
-	public void IsRegistry_ValidProductKeys_ReturnsTrue(string key) =>
+	// Bundle index (artifact-root): bundle/{product}/registry.json
+	[InlineData("bundle/elasticsearch/registry.json")]
+	[InlineData("bundle/kibana/registry.json")]
+	[InlineData("bundle/elastic-agent/registry.json")]
+	[InlineData("bundle/cloud_hosted/registry.json")]
+	[InlineData("bundle/cloud-serverless/registry.json")]
+	[InlineData("bundle/a/registry.json")]
+	// Changelog-entry index (artifact-root): changelog/{repo}/registry.json
+	[InlineData("changelog/elasticsearch/registry.json")]
+	[InlineData("changelog/kibana/registry.json")]
+	[InlineData("changelog/cloud/registry.json")]
+	// Repo segments may contain dots (e.g. apm-agent-dotnet, elasticsearch-net).
+	[InlineData("changelog/apm.agent/registry.json")]
+	public void IsRegistry_ValidArtifactRootKeys_ReturnsTrue(string key) =>
 		RegistryKey.IsRegistry(key).Should().BeTrue();
 
 	[Theory]
 	[InlineData("")]
 	[InlineData("registry.json")]
 	[InlineData("/registry.json")]
+	// Old product-first layout is no longer a valid manifest key.
+	[InlineData("elasticsearch/registry.json")]
+	[InlineData("elasticsearch/changelog/registry.json")]
+	// Missing/empty middle segment.
+	[InlineData("bundle/registry.json")]
+	[InlineData("changelog/registry.json")]
+	[InlineData("bundle//registry.json")]
+	// Unknown top-level prefix.
+	[InlineData("entries/elasticsearch/registry.json")]
 	[InlineData("elasticsearch/bundle/registry.json")]
-	[InlineData("elasticsearch/registry.yaml")]
-	[InlineData("elasticsearch/changelog/registry.yaml")]
-	[InlineData("elasticsearch/changelog/bundle/registry.json")]
-	[InlineData("../registry.json")]
-	[InlineData("elastic search/registry.json")]
-	[InlineData("elastic.search/registry.json")]
-	[InlineData("elastic/search/registry.json")]
-	[InlineData("elastic search/changelog/registry.json")]
-	[InlineData("elastic/search/changelog/registry.json")]
+	// Dots are allowed only for changelog repo segments, never for bundle product segments
+	// (producers validate products as [a-zA-Z0-9_-]+).
+	[InlineData("bundle/foo.bar/registry.json")]
+	// Wrong extension.
+	[InlineData("bundle/elasticsearch/registry.yaml")]
+	[InlineData("changelog/elasticsearch/registry.yaml")]
+	// Deeper nesting / traversal in the middle segment.
+	[InlineData("bundle/elastic/search/registry.json")]
+	[InlineData("changelog/elastic/search/registry.json")]
+	[InlineData("bundle/../registry.json")]
+	[InlineData("changelog/../registry.json")]
+	[InlineData("bundle/elastic search/registry.json")]
 	public void IsRegistry_InvalidKeys_ReturnsFalse(string key) =>
 		RegistryKey.IsRegistry(key).Should().BeFalse();
 }

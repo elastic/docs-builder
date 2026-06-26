@@ -53,16 +53,16 @@ public class BundlePlanTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task Plan_ProfileMode_ResolvesOutputPath()
+	public async Task Plan_ProfileMode_RepoResolvable_ReturnsNeedsNetwork()
 	{
-		// A profile whose product is declared under release_notes sources entries from the CDN, so the plan
+		// A profile whose authoring repo resolves (bundle.repo) sources entries from the CDN, so the plan
 		// reports needs_network (but not a GitHub token, since this is not a github_release profile).
-		DeclareReleaseNotesProducts("elasticsearch");
 		// language=yaml
 		var configContent =
 			"""
 			bundle:
 			  output_directory: docs/releases
+			  repo: elasticsearch
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
@@ -83,16 +83,16 @@ public class BundlePlanTests : ChangelogTestBase
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeFalse();
 		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
-		// The bundle-PR action polls this URL for the scrubbed copy: {base}/{product}/bundle/{file}.
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/elasticsearch/bundle/elasticsearch-9.2.0.yaml");
+		// The bundle-PR action polls this URL for the scrubbed copy: {base}/bundle/{product}/{file}.
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
 	}
 
 	[Fact]
-	public async Task Plan_ProfileMode_UndeclaredProduct_ReturnsNoNetwork()
+	public async Task Plan_ProfileMode_NoRepo_ReturnsNoNetwork()
 	{
-		// Declared-gate at plan time: with the product absent from docset.yml release_notes, the bundle
-		// run will source locally, so the plan reports no network. The CDN URL is still resolved because
-		// it only describes where a (possibly local) bundle would be published, independent of the gate.
+		// Repo gate at plan time: with no bundle.repo (and no --repo), the authoring repo is unresolvable,
+		// so the bundle run sources locally and the plan reports no network. The CDN URL is still resolved
+		// because it only describes where a (possibly local) bundle would be published, independent of the gate.
 		// language=yaml
 		var configContent =
 			"""
@@ -116,7 +116,7 @@ public class BundlePlanTests : ChangelogTestBase
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/elasticsearch/bundle/elasticsearch-9.2.0.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
 	}
 
 	[Fact]
@@ -146,7 +146,7 @@ public class BundlePlanTests : ChangelogTestBase
 		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
 
 		result.Should().NotBeNull();
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/cloud-serverless/bundle/serverless-2026-03.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/serverless-2026-03.yaml");
 	}
 
 	[Fact]

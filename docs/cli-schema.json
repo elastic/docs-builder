@@ -3923,7 +3923,7 @@
           ],
           "name": "upload",
           "summary": "Upload changelog entries or bundle artifacts to S3 or Elasticsearch.",
-          "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.",
+          "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{repo}/{file}, keyed by the authoring\nrepository (resolved from --repo, then bundle.repo in changelog.yml, then the git\nremote origin). Bundles are uploaded under bundle/{product}/{file}, product-scoped from\nthe bundle YAML, and do not require a repo.",
           "usage": "docs-builder changelog upload --artifact-type \u003Cstring\u003E --target \u003Cstring\u003E [options]",
           "examples": [],
           "parameters": [
@@ -3981,6 +3981,20 @@
                   "kind": "rejectSymbolicLinks"
                 }
               ]
+            },
+            {
+              "role": "flag",
+              "name": "repo",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub repository name used to scope uploaded changelog entry keys (changelog/{repo}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads."
+            },
+            {
+              "role": "flag",
+              "name": "owner",
+              "type": "string",
+              "required": false,
+              "summary": "GitHub repository owner, accepted for parity with other changelog commands. Falls back to bundle.owner in changelog.yml, then the git remote origin. Not part of the S3 key."
             },
             {
               "role": "flag",

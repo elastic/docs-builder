@@ -14,10 +14,10 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 public readonly record struct CdnChangelogEntry(string FileName, string Content);
 
 /// <summary>
-/// Fetches the individual (scrubbed) changelog entries for a single product from the public CDN, for
-/// the <c>changelog bundle</c> command when sourcing entries from S3 rather than a local folder. It
-/// reads <c>{base}/{product}/changelog/registry.json</c> to enumerate entries and downloads each
-/// <c>{base}/{product}/changelog/{file}</c> as raw YAML; the bundle command then applies its usual
+/// Fetches the individual (scrubbed) changelog entries for a single authoring repo from the public
+/// CDN, for the <c>changelog bundle</c> command when sourcing entries from S3 rather than a local
+/// folder. It reads <c>{base}/changelog/{repo}/registry.json</c> to enumerate entries and downloads
+/// each <c>{base}/changelog/{repo}/{file}</c> as raw YAML; the bundle command then applies its usual
 /// filter (products / prs / issues) to the downloaded set.
 /// </summary>
 /// <remarks>
@@ -92,19 +92,19 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	}
 
 	/// <summary>
-	/// Downloads the changelog entries for <paramref name="product"/> from the CDN at
+	/// Downloads the changelog entries for the authoring <paramref name="repo"/> from the CDN at
 	/// <paramref name="baseUri"/>. Returns an empty list after emitting an error when the registry cannot
 	/// be read or when a registry-listed entry cannot be fetched within the retry budget. Entries are
 	/// returned in registry order; the caller owns filtering and de-duplication.
 	/// </summary>
 	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchAsync(
 		Uri baseUri,
-		string product,
+		string repo,
 		Action<string> emitError,
 		Action<string> emitWarning,
 		Cancel ctx)
 	{
-		var registryUri = Combine(baseUri, product, "changelog", "registry.json");
+		var registryUri = Combine(baseUri, "changelog", repo, "registry.json");
 
 		ChangelogRegistry? registry;
 		try
@@ -113,20 +113,20 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
-			emitError($"Could not fetch changelog entry registry for product '{product}' from {registryUri}: {ex.Message}");
+			emitError($"Could not fetch changelog entry registry for repo '{repo}' from {registryUri}: {ex.Message}");
 			return [];
 		}
 
 		if (registry is null)
 		{
-			emitError($"Changelog entry registry for product '{product}' at {registryUri} was empty or unparseable.");
+			emitError($"Changelog entry registry for repo '{repo}' at {registryUri} was empty or unparseable.");
 			return [];
 		}
 
 		if (registry.SchemaVersion > SupportedSchemaVersion)
 		{
 			emitError(
-				$"Changelog entry registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
+				$"Changelog entry registry for repo '{repo}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
 			return [];
 		}
 
@@ -138,12 +138,12 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			var fileName = entry.File;
 			if (string.IsNullOrWhiteSpace(fileName) || !IsSafeFileName(fileName))
 			{
-				emitWarning($"Changelog entry registry for '{product}' lists an invalid file name '{fileName}'; skipping.");
+				emitWarning($"Changelog entry registry for '{repo}' lists an invalid file name '{fileName}'; skipping.");
 				continue;
 			}
 
-			var entryUri = Combine(baseUri, product, "changelog", fileName);
-			var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, product, ctx).ConfigureAwait(false);
+			var entryUri = Combine(baseUri, "changelog", repo, fileName);
+			var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, repo, ctx).ConfigureAwait(false);
 			if (fetched)
 			{
 				entries.Add(new CdnChangelogEntry(fileName, content));
@@ -154,12 +154,12 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			// scrubbed to the public one within milliseconds. Still missing after the retry budget means
 			// a genuine propagation/scrub failure — fail rather than ship a bundle missing this entry.
 			emitError(
-				$"Changelog entry '{fileName}' for product '{product}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
+				$"Changelog entry '{fileName}' for repo '{repo}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
 				"The scrubbed copy may not have propagated to the CDN yet; retry shortly, and if it persists check the changelog scrubber pipeline.");
 			return [];
 		}
 
-		_logger.LogInformation("Fetched {Count} changelog entry(ies) for {Product} from {BaseUri}", entries.Count, product, baseUri);
+		_logger.LogInformation("Fetched {Count} changelog entry(ies) for repo {Repo} from {BaseUri}", entries.Count, repo, baseUri);
 		return entries;
 	}
 
@@ -168,7 +168,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// up to <see cref="_maxAttempts"/> times with exponential backoff. Retry requests are cache-busted
 	/// so a CloudFront-cached 404 cannot pin the result for the whole window.
 	/// </summary>
-	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchEntryAsync(Uri uri, string fileName, string product, Cancel ctx)
+	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchEntryAsync(Uri uri, string fileName, string repo, Cancel ctx)
 	{
 		string? lastError = null;
 
@@ -179,7 +179,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			{
 				var content = await FetchTextAsync(uri, attempt, ctx).ConfigureAwait(false);
 				if (attempt > 1)
-					_logger.LogInformation("Fetched changelog entry '{File}' for {Product} on attempt {Attempt}/{Max}", fileName, product, attempt, _maxAttempts);
+					_logger.LogInformation("Fetched changelog entry '{File}' for {Repo} on attempt {Attempt}/{Max}", fileName, repo, attempt, _maxAttempts);
 				return (true, content, null);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
@@ -190,8 +190,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 
 				var delay = RetryDelay(attempt);
 				_logger.LogDebug(
-					"Changelog entry '{File}' for {Product} not yet available (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
-					fileName, product, attempt, _maxAttempts, ex.Message, delay);
+					"Changelog entry '{File}' for {Repo} not yet available (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
+					fileName, repo, attempt, _maxAttempts, ex.Message, delay);
 				await _sleep(delay, ctx).ConfigureAwait(false);
 			}
 		}
@@ -250,7 +250,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 
 	/// <summary>
 	/// Guards against path traversal or nested keys sneaking in via the registry: an entry file name
-	/// must be a single path segment (the producer always writes <c>{product}/changelog/{file}</c>).
+	/// must be a single path segment (the producer always writes <c>changelog/{repo}/{file}</c>).
 	/// </summary>
 	private static bool IsSafeFileName(string fileName) =>
 		!fileName.Contains('/', StringComparison.Ordinal)

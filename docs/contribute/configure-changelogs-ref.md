@@ -51,7 +51,7 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links. Only needed when the product ID doesn't match the GitHub repository name. |
+| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, and to scope uploaded changelog-entry keys (`changelog/{repo}/...`) and CDN entry sourcing. Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
 | `bundle.resolve`          | When `true`, changelog contents are copied into bundle (default: `true`). |
 | `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
@@ -66,20 +66,16 @@ When `bundle.link_allow_repos` is omitted, no link filtering occurs.
 
 ### Entry sourcing [bundle-entry-sourcing]
 
-`changelog bundle` reads the individual changelog entries it aggregates either from the local folder or from the public CDN. CDN sourcing is **opt-in per product** (declared-gate): an entry is pulled from the CDN only when its product is declared under `release_notes` in the docset's `docset.yml`.
+`changelog bundle` reads the individual changelog entries it aggregates either from the local folder or from the public CDN. Entries are stored on the CDN per **authoring repository** (`changelog/{repo}/...`), not per product, so CDN sourcing keys off the resolvable authoring repo rather than the bundle's target products.
 
-```yaml
-# docset.yml
-release_notes:
-  - product: elasticsearch
-```
+The authoring repo is resolved with the same precedence as `changelog upload`: `--repo` > `bundle.repo` in `changelog.yml` > the git remote origin.
 
 Sourcing is decided per run:
 
-- **Local folder (default).** Used when no product in scope is declared under `release_notes`, when `bundle.use_local_changelogs: true`, when `--directory` is passed, or when the filter resolves no concrete product (for example, `--all` or PR/issue-only filters). The folder must contain the changelog files.
-- **CDN.** Used only when every product in scope is declared under `release_notes` and none of the local-sourcing conditions above apply. The product must also exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml) with the `release-notes` feature enabled.
+- **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
+- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{repo}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue filters to the downloaded set.
 
-The product ID under `release_notes` matches the product format described in [](/cli/changelog/bundle.md#product-format). This is the same declaration the `{changelog}` directive's `:cdn:` mode consumes, so a repository that opts into CDN-sourced bundling and CDN-rendered release notes declares each product once.
+Because entries are repo-scoped, one repository can produce a bundle for a shared product (for example, `cloud-serverless`) while sourcing its own entries from `changelog/{repo}/`, without that product appearing in the repository's `docset.yml`. The `{changelog}` directive's `:cdn:` mode still consumes product-scoped *bundles*, so a repository that also renders its own release notes declares each product under `release_notes` as before.
 
 ### Bundle descriptions [bundle-descriptions]
 

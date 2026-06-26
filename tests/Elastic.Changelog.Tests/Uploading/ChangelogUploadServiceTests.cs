@@ -48,7 +48,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public void DiscoverUploadTargets_SingleProduct_MapsToCorrectS3Key()
+	public void DiscoverUploadTargets_SingleEntry_MapsToRepoScopedKey()
 	{
 		// language=yaml
 		var path = AddChangelog("entry.yaml", """
@@ -61,17 +61,19 @@ public class ChangelogUploadServiceTests
 			  - "100"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elasticsearch");
 
 		targets.Should().HaveCount(1);
 		targets[0].LocalPath.Should().Be(path);
-		targets[0].S3Key.Should().Be("elasticsearch/changelog/entry.yaml");
+		targets[0].S3Key.Should().Be("changelog/elasticsearch/entry.yaml");
 		_collector.Errors.Should().Be(0);
 	}
 
 	[Fact]
-	public void DiscoverUploadTargets_MultipleProducts_CreatesTargetPerProduct()
+	public void DiscoverUploadTargets_EntryWithMultipleProducts_StillSingleRepoKey()
 	{
+		// Option AD: entries are stored once per authoring repo, regardless of how many products they
+		// list (or will later be consumed by). No per-product fan-out.
 		// language=yaml
 		AddChangelog("fix.yaml", """
 			title: Cross-product fix
@@ -85,35 +87,17 @@ public class ChangelogUploadServiceTests
 			  - "200"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "kibana");
 
-		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelog/fix.yaml");
-		targets.Should().Contain(t => t.S3Key == "kibana/changelog/fix.yaml");
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("changelog/kibana/fix.yaml");
 	}
 
 	[Fact]
-	public void DiscoverUploadTargets_InvalidProductName_SkipsWithWarning()
+	public void DiscoverUploadTargets_EntryWithNoProducts_StillUploaded()
 	{
-		// language=yaml
-		AddChangelog("bad.yaml", """
-			title: Bad product
-			type: feature
-			products:
-			  - product: "../traversal"
-			prs:
-			  - "300"
-			""");
-
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
-
-		targets.Should().BeEmpty();
-		_collector.Warnings.Should().BeGreaterThan(0);
-	}
-
-	[Fact]
-	public void DiscoverUploadTargets_NoProducts_ReturnsEmpty()
-	{
+		// Author foreknowledge of consuming products is no longer required: an entry with no products is
+		// still uploaded under the repo pool.
 		// language=yaml
 		AddChangelog("noproducts.yaml", """
 			title: No products
@@ -122,45 +106,62 @@ public class ChangelogUploadServiceTests
 			  - "400"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elasticsearch");
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("changelog/elasticsearch/noproducts.yaml");
+		_collector.Errors.Should().Be(0);
+	}
+
+	[Fact]
+	public void DiscoverUploadTargets_MissingRepo_EmitsErrorAndReturnsEmpty()
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, repo: null);
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Theory]
+	[InlineData("bad repo")]
+	[InlineData("..")]
+	[InlineData(".")]
+	[InlineData("owner/repo")]
+	public void DiscoverUploadTargets_InvalidRepo_EmitsError(string repo)
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, repo);
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public void DiscoverUploadTargets_EmptyDirectory_ReturnsEmpty()
+	{
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elasticsearch");
 
 		targets.Should().BeEmpty();
 		_collector.Errors.Should().Be(0);
 	}
 
 	[Fact]
-	public void DiscoverUploadTargets_EmptyDirectory_ReturnsEmpty()
-	{
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
-
-		targets.Should().BeEmpty();
-	}
-
-	[Fact]
-	public void DiscoverUploadTargets_MixedValidAndInvalidProducts_FiltersCorrectly()
-	{
-		// language=yaml
-		AddChangelog("mixed.yaml", """
-			title: Mixed products
-			type: feature
-			products:
-			  - product: elasticsearch
-			  - product: "bad product with spaces"
-			  - product: kibana
-			prs:
-			  - "500"
-			""");
-
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
-
-		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelog/mixed.yaml");
-		targets.Should().Contain(t => t.S3Key == "kibana/changelog/mixed.yaml");
-		_collector.Warnings.Should().BeGreaterThan(0);
-	}
-
-	[Fact]
-	public void DiscoverUploadTargets_MultipleFiles_DiscoversBoth()
+	public void DiscoverUploadTargets_MultipleFiles_DiscoversAllUnderRepo()
 	{
 		// language=yaml
 		AddChangelog("first.yaml", """
@@ -181,32 +182,34 @@ public class ChangelogUploadServiceTests
 			  - "2"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elasticsearch");
 
 		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elasticsearch/changelog/first.yaml");
-		targets.Should().Contain(t => t.S3Key == "kibana/changelog/second.yaml");
+		targets.Should().Contain(t => t.S3Key == "changelog/elasticsearch/first.yaml");
+		targets.Should().Contain(t => t.S3Key == "changelog/elasticsearch/second.yaml");
 	}
 
-	[Fact]
-	public void DiscoverUploadTargets_ProductWithHyphensAndUnderscores_Accepted()
+	[Theory]
+	[InlineData("elasticsearch-net")]
+	[InlineData("cloud_hosted")]
+	[InlineData("apm-agent-dotnet")]
+	[InlineData("docs.elastic")]
+	public void DiscoverUploadTargets_RepoWithHyphensDotsUnderscores_Accepted(string repo)
 	{
 		// language=yaml
-		AddChangelog("hyphen.yaml", """
+		AddChangelog("entry.yaml", """
 			title: Hyphenated
 			type: feature
 			products:
-			  - product: elastic-agent
-			  - product: cloud_hosted
+			  - product: elasticsearch
 			prs:
 			  - "600"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir);
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, repo);
 
-		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elastic-agent/changelog/hyphen.yaml");
-		targets.Should().Contain(t => t.S3Key == "cloud_hosted/changelog/hyphen.yaml");
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be($"changelog/{repo}/entry.yaml");
 		_collector.Errors.Should().Be(0);
 		_collector.Warnings.Should().Be(0);
 	}
@@ -236,7 +239,8 @@ public class ChangelogUploadServiceTests
 			ArtifactType = ArtifactType.Changelog,
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
-			Directory = _changelogDir
+			Directory = _changelogDir,
+			Repo = "elasticsearch"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -245,9 +249,41 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/changelog/entry.yaml" && r.BucketName == "test-bucket"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elasticsearch/entry.yaml" && r.BucketName == "test-bucket"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task Upload_ChangelogWithoutRepo_FailsWithoutS3Calls()
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - "100"
+			""");
+
+		var args = new ChangelogUploadArguments
+		{
+			ArtifactType = ArtifactType.Changelog,
+			Target = UploadTargetKind.S3,
+			S3BucketName = "test-bucket",
+			Directory = _changelogDir
+			// Repo intentionally unset.
+		};
+		var ct = TestContext.Current.CancellationToken;
+		var result = await _service.Upload(_collector, args, ct);
+
+		result.Should().BeFalse();
+		_collector.Errors.Should().BeGreaterThan(0);
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
+			.MustNotHaveHappened();
 	}
 
 	[Fact]
@@ -258,7 +294,8 @@ public class ChangelogUploadServiceTests
 			ArtifactType = ArtifactType.Changelog,
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
-			Directory = _changelogDir
+			Directory = _changelogDir,
+			Repo = "elasticsearch"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -294,7 +331,8 @@ public class ChangelogUploadServiceTests
 			ArtifactType = ArtifactType.Changelog,
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
-			Directory = _changelogDir
+			Directory = _changelogDir,
+			Repo = "elasticsearch"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -375,13 +413,13 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundle/elasticsearch-9.2.0.yaml" && r.BucketName == "test-bucket"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/elasticsearch-9.2.0.yaml" && r.BucketName == "test-bucket"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
-	public void DiscoverBundleUploadTargets_MapsToCorrectS3Key()
+	public void DiscoverBundleUploadTargets_MapsToArtifactRootKey()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
 		_mockFileSystem.Directory.CreateDirectory(bundleDir);
@@ -405,7 +443,7 @@ public class ChangelogUploadServiceTests
 		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
 
 		targets.Should().HaveCount(1);
-		targets[0].S3Key.Should().Be("elasticsearch/bundle/elasticsearch-9.2.0.yaml");
+		targets[0].S3Key.Should().Be("bundle/elasticsearch/elasticsearch-9.2.0.yaml");
 		_collector.Errors.Should().Be(0);
 	}
 
@@ -436,8 +474,8 @@ public class ChangelogUploadServiceTests
 		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
 
 		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "elasticsearch/bundle/stack-9.2.0.yaml");
-		targets.Should().Contain(t => t.S3Key == "kibana/bundle/stack-9.2.0.yaml");
+		targets.Should().Contain(t => t.S3Key == "bundle/elasticsearch/stack-9.2.0.yaml");
+		targets.Should().Contain(t => t.S3Key == "bundle/kibana/stack-9.2.0.yaml");
 	}
 
 	[Fact]
@@ -492,18 +530,18 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/bundle/9.3.0.yaml"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/9.3.0.yaml"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/registry.json"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
-	public async Task Upload_ChangelogArtifactType_DoesNotUploadRegistry()
+	public async Task Upload_ChangelogArtifactType_RefreshesRepoScopedRegistry()
 	{
 		// language=yaml
 		AddChangelog("entry.yaml", """
@@ -518,6 +556,8 @@ public class ChangelogUploadServiceTests
 
 		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._))
 			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
 			.Returns(new PutObjectResponse());
 
@@ -526,15 +566,22 @@ public class ChangelogUploadServiceTests
 			ArtifactType = ArtifactType.Changelog,
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
-			Directory = _changelogDir
+			Directory = _changelogDir,
+			Repo = "elasticsearch"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
 
+		// Changelog uploads refresh the repo-scoped entry index, not a bundle index.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key.EndsWith("/registry.json", StringComparison.Ordinal)),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elasticsearch/registry.json"),
+			A<CancellationToken>._
+		)).MustHaveHappenedOnceExactly();
+
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key.StartsWith("bundle/", StringComparison.Ordinal)),
 			A<CancellationToken>._
 		)).MustNotHaveHappened();
 	}

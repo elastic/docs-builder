@@ -50,7 +50,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	private static StubHandler RegistryHandler() => new(req =>
 	{
 		var path = req.RequestUri!.AbsolutePath;
-		if (path.EndsWith("/changelog/registry.json", StringComparison.Ordinal))
+		if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 			return Json(RegistryJson);
 		if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
 			return Yaml(EntryAlpha);
@@ -69,16 +69,19 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 
 	[Fact]
-	public async Task OptionMode_ProductFilter_SourcesAllMatchingEntriesFromCdn()
+	public async Task OptionMode_RepoResolvable_SourcesAllEntriesFromRepoPoolOnCdn()
 	{
-		DeclareReleaseNotesProducts("elasticsearch");
-		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, Fetcher());
+		// Under the artifact-root layout the CDN entry pool is keyed by the authoring repo, not the
+		// target product. A resolvable repo (here via --repo) is what enables CDN sourcing.
+		var handler = RegistryHandler();
+		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, Fetcher(Output, handler));
 		var output = OutputPath();
 
 		var input = new BundleChangelogsArguments
 		{
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
 			Output = output,
+			Repo = "elasticsearch",
 			Resolve = true
 		};
 
@@ -87,6 +90,9 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
+		// Entries are sourced from the authoring repo's pool: changelog/{repo}/...
+		handler.RequestedPaths.Should().Contain("/changelog/elasticsearch/registry.json");
+
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Alpha");
 		bundle.Should().Contain("Bravo");
@@ -94,11 +100,11 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	}
 
 	[Fact]
-	public async Task OptionMode_NoResolvableProduct_FallsBackToLocal()
+	public async Task OptionMode_NoResolvableRepo_FallsBackToLocal()
 	{
-		// An option-mode --all filter resolves no product to scope the CDN fetch. With no --directory and
-		// no use_local_changelogs, the bundler should fall back to local folder sourcing rather than hit
-		// the CDN — preserving the pre-CDN behaviour for PR/issue-only and --all flows.
+		// With no --repo, no bundle.repo in config, and no git-remote resolution at the service layer, the
+		// authoring repo is unresolvable. With no --directory and no use_local_changelogs, the bundler
+		// still falls back to local folder sourcing rather than hitting the CDN.
 		var localDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		FileSystem.Directory.CreateDirectory(localDir);
 		await FileSystem.File.WriteAllTextAsync(
@@ -129,11 +135,10 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	}
 
 	[Fact]
-	public async Task OptionMode_UndeclaredProduct_FallsBackToLocal()
+	public async Task OptionMode_UseLocalChangelogs_ForcesLocalEvenWithResolvableRepo()
 	{
-		// The declared-gate: a product not listed under docset.yml release_notes is never sourced from the
-		// CDN, even with a resolvable product filter and no --directory. The bundler falls back to local
-		// folder sourcing instead. Here elasticsearch is intentionally NOT declared.
+		// use_local_changelogs is the explicit opt-out: even when the authoring repo resolves (bundle.repo),
+		// entries are read from the local folder and the CDN is never touched.
 		var localDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog");
 		FileSystem.Directory.CreateDirectory(localDir);
 		await FileSystem.File.WriteAllTextAsync(
@@ -143,6 +148,8 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 			$"""
 			bundle:
 			  directory: {localDir}
+			  repo: elasticsearch
+			  use_local_changelogs: true
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -163,7 +170,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
-		handler.RequestedPaths.Should().BeEmpty("an undeclared product must not reach the CDN");
+		handler.RequestedPaths.Should().BeEmpty("use_local_changelogs must not reach the CDN");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("name: 1-local.yaml");
@@ -172,7 +179,6 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	[Fact]
 	public async Task RegistryFailure_FailsBundle()
 	{
-		DeclareReleaseNotesProducts("elasticsearch");
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output),
 			new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)), sleep: (_, _) => Task.CompletedTask);
 		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, fetcher);
@@ -181,6 +187,7 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		{
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
 			Output = OutputPath(),
+			Repo = "elasticsearch",
 			Resolve = true
 		};
 
@@ -198,20 +205,20 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		var handler = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
-			if (path.EndsWith("/changelog/registry.json", StringComparison.Ordinal))
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(RegistryJson);
 			if (path.EndsWith("1-alpha.yaml", StringComparison.Ordinal))
 				return Yaml(EntryAlpha);
 			return new HttpResponseMessage(HttpStatusCode.NotFound); // 2-bravo.yaml never propagates
 		});
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, maxAttempts: 2, sleep: (_, _) => Task.CompletedTask);
-		DeclareReleaseNotesProducts("elasticsearch");
 		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, fetcher);
 
 		var input = new BundleChangelogsArguments
 		{
 			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
 			Output = OutputPath(),
+			Repo = "elasticsearch",
 			Resolve = true
 		};
 
@@ -224,9 +231,8 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	[Fact]
 	public async Task ProfileGitHubRelease_ScopesByOutputProductsAndFiltersByReleasePrs()
 	{
-		// A github_release profile resolves the product from output_products (to scope the CDN fetch)
-		// and the PR filter from the release body. Only the entry referenced by the release survives.
-		DeclareReleaseNotesProducts("elasticsearch");
+		// A github_release profile resolves the authoring repo from the profile (to scope the CDN entry
+		// pool) and the PR filter from the release body. Only the entry referenced by the release survives.
 		var releaseService = A.Fake<IGitHubReleaseService>();
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
