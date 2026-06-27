@@ -2,7 +2,7 @@ import { config } from '../../config'
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearch } from './NavigationSearch'
-import { EuiHorizontalRule, EuiProvider, useEuiTheme } from '@elastic/eui'
+import { EuiProvider } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
@@ -13,8 +13,8 @@ interface NavigationSearchProps {
 }
 
 const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
-    const { euiTheme } = useEuiTheme()
-    const { data: isApiAvailable } = useQuery({
+    const shouldCheckApi = config.buildType !== 'codex' && !config.airGapped
+    const { data: isApiAvailable, isError } = useQuery({
         queryKey: ['api-health'],
         queryFn: async () => {
             const response = await fetch(`${config.apiBasePath}/v1/`, {
@@ -24,27 +24,31 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
         },
         staleTime: 60 * 60 * 1000, // 60 minutes
         retry: false,
-        enabled: config.buildType !== 'codex' && !config.airGapped,
+        enabled: shouldCheckApi,
     })
 
-    if (config.airGapped || (!isApiAvailable && config.buildType !== 'codex')) {
+    if (config.airGapped) {
         return null
     }
+
+    // Treat network/timeout failures (isError) the same as a non-ok response —
+    // either way the search API is not reachable and the input should be disabled.
+    const isSearchUnavailable =
+        shouldCheckApi && (isApiAvailable === false || isError)
 
     return (
         <div
             className="sticky top-0"
             css={css`
-                padding-top: ${euiTheme.size.base};
-                padding-right: ${euiTheme.size.base};
+                padding-top: 18px;
+                padding-right: 18px;
+                padding-bottom: 16px;
+                padding-left: 0;
             `}
         >
-            <NavigationSearch placeholder={placeholder} />
-            <EuiHorizontalRule
-                margin="none"
-                css={css`
-                    margin-top: ${euiTheme.size.base};
-                `}
+            <NavigationSearch
+                placeholder={placeholder}
+                disabled={isSearchUnavailable}
             />
         </div>
     )

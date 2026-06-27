@@ -1,0 +1,294 @@
+/*
+ * Page-top "Availability" box. Sits below the H1 and consolidates two
+ * page-level metadata systems in a single container:
+ *
+ *   - Product hub pills, in the summary row alongside the "Availability"
+ *     label, for navigation to each product's hub page.
+ *   - applies_to-driven rows (Versions / Deployments) below the summary,
+ *     collapsible via native <details>, expanded by default.
+ *
+ * Hub layout (and any frontmatter Layout) opts out -- the partial returns
+ * early. The box only renders when at least one of pills or rows exists.
+ */
+
+@layer components {
+	.metadata-box {
+		margin: 16px 0 24px 0;
+		padding: 8px 14px;
+		background: var(--color-grey-10);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 6px;
+		font-size: 13px;
+		line-height: 1.4;
+	}
+
+	.metadata-box-heading {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 12px;
+		cursor: pointer;
+		list-style: none;
+		padding: 2px 0 6px 0;
+		user-select: none;
+	}
+	.metadata-box-heading::-webkit-details-marker {
+		display: none;
+	}
+	.metadata-box-heading:focus-visible {
+		outline: 2px solid var(--color-blue-elastic);
+		outline-offset: 2px;
+		border-radius: 3px;
+	}
+
+	.metadata-box-summary-only .metadata-box-heading {
+		cursor: default;
+	}
+
+	/* Title sits one step above the row labels in the visual hierarchy:
+	   slightly larger, heavier weight, full ink color. Row labels stay
+	   smaller and lighter, so the title reads as the box's heading and
+	   the pills next to it become the headlined entries. */
+	.metadata-box-title {
+		flex: 0 0 auto;
+		font-size: 15px;
+		font-weight: 700;
+		color: var(--color-ink-dark);
+	}
+
+	.metadata-box-pills {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		flex: 1 1 auto;
+	}
+
+	.metadata-box-chevron {
+		flex-shrink: 0;
+		margin-left: auto;
+		color: var(--color-grey-60);
+		transition: transform 0.15s ease;
+	}
+	.metadata-box[open] .metadata-box-chevron {
+		transform: rotate(180deg);
+	}
+
+	.metadata-box-rows {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin-top: 6px;
+		padding-top: 10px;
+		border-top: 1px solid var(--color-grey-20);
+	}
+
+	.metadata-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 10px;
+		min-height: 24px;
+	}
+
+	.metadata-label {
+		flex: 0 0 auto;
+		min-width: 100px;
+		font-weight: 600;
+		color: var(--color-grey-80);
+	}
+
+	.metadata-values {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	/*
+	 * Render applies_to entries as plain comma-separated text + a small
+	 * "?" icon that carries the existing popover tooltip. Implemented in
+	 * CSS so we don't touch the popover web component:
+	 *   - Override the global `display: contents` on the popover host so
+	 *     it has its own box (and ::before content can render).
+	 *   - Use ::before with `attr(badge-key)` to print the entry's name.
+	 *   - Reskin the visible `.applicable-info` pill into a 16px "?"
+	 *     circle that still triggers the tooltip on hover/click.
+	 */
+	.metadata-values.applies applies-to-popover {
+		display: inline-flex;
+		align-items: center;
+		color: var(--color-ink-dark);
+	}
+	.metadata-values applies-to-popover::before {
+		content: attr(badge-key);
+	}
+	.metadata-values applies-to-popover:not(:first-child)::before {
+		content: ', ' attr(badge-key);
+	}
+
+	.metadata-values .applicable-info {
+		all: unset;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 14px;
+		height: 14px;
+		margin-left: 4px;
+		border-radius: 999px;
+		background: var(--color-grey-20);
+		color: var(--color-grey-80);
+		font-size: 10px;
+		font-weight: 700;
+		line-height: 1;
+		cursor: help;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease;
+	}
+	.metadata-values .applicable-info::before {
+		content: '?';
+	}
+	/* Visually hide children but keep them in the accessibility tree so the trigger
+	   has an accessible name. `display: none` would strip the label entirely and
+	   leave only the decorative `?` from ::before. */
+	.metadata-values .applicable-info > * {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+	.metadata-values .applicable-info:hover {
+		background: var(--color-grey-30);
+		color: var(--color-ink-dark);
+	}
+
+	/* Unavailable items (sorted to the end by ApplicableToViewModel) render
+	   dimmed + struck-through to read as "not in scope" rather than as a
+	   peer alternative. */
+	.metadata-values applies-to-popover[lifecycle-class='unavailable']::before {
+		text-decoration: line-through;
+		text-decoration-color: var(--color-ink-light);
+		color: var(--color-ink-light);
+	}
+	.metadata-values
+		applies-to-popover[lifecycle-class='unavailable']
+		.applicable-info {
+		opacity: 0.65;
+	}
+
+	/*
+	 * Product hub pills (used inside the metadata box's summary row).
+	 * Brand-color dot + display name + arrow. Rendered as anchors, so we
+	 * override `.markdown-content a` (blue + underline) explicitly --
+	 * `!important` is the safety net against utility-layer rules that beat
+	 * us on cascade order.
+	 */
+	.markdown-content a.product-badge,
+	a.product-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 2px 10px;
+		border-radius: 999px;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		color: var(--color-ink-dark) !important;
+		font-size: 12px;
+		font-weight: 600;
+		text-decoration: none !important;
+		line-height: 1.3;
+		transition:
+			border-color 0.15s ease,
+			background-color 0.15s ease,
+			color 0.15s ease,
+			box-shadow 0.15s ease,
+			transform 0.15s ease;
+	}
+	.markdown-content a.product-badge:hover,
+	a.product-badge:hover {
+		text-decoration: none !important;
+		color: var(--color-ink-dark) !important;
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+		transform: translateY(-1px);
+	}
+
+	.product-badge-arrow {
+		flex-shrink: 0;
+		color: var(--color-grey-50);
+		font-size: 13px;
+		line-height: 1;
+		margin-left: 1px;
+		transition:
+			transform 0.15s ease,
+			color 0.15s ease;
+	}
+	.product-badge:hover .product-badge-arrow {
+		color: var(--color-ink-light);
+		transform: translateX(2px);
+	}
+	.product-badge:focus-visible {
+		outline: 2px solid var(--color-blue-elastic);
+		outline-offset: 2px;
+	}
+
+	.product-badge-dot {
+		display: inline-block;
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--color-grey-40);
+		flex-shrink: 0;
+	}
+	.product-badge-label {
+		display: inline-block;
+		white-space: nowrap;
+	}
+
+	/* Per-product accents -- mirrors hub solution-card border colors. */
+	.product-badge-elasticsearch .product-badge-dot {
+		background: #fec514;
+	}
+	.product-badge-elasticsearch:hover {
+		border-color: #fec514;
+		background: rgb(254 197 20 / 0.06);
+	}
+	.product-badge-kibana .product-badge-dot {
+		background: #f04e98;
+	}
+	.product-badge-kibana:hover {
+		border-color: #f04e98;
+		background: rgb(240 78 152 / 0.05);
+	}
+	.product-badge-observability .product-badge-dot {
+		background: #0077cc;
+	}
+	.product-badge-observability:hover {
+		border-color: #0077cc;
+		background: rgb(0 119 204 / 0.05);
+	}
+	.product-badge-security .product-badge-dot {
+		background: #00bfb3;
+	}
+	.product-badge-security:hover {
+		border-color: #00bfb3;
+		background: rgb(0 191 179 / 0.06);
+	}
+
+	@media (max-width: 640px) {
+		.metadata-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 4px;
+		}
+		.metadata-label {
+			min-width: 0;
+		}
+	}
+}

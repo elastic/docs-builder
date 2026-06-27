@@ -73,7 +73,9 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 			TopLevelItems = navigation.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList(),
 			Htmx = htmx,
 			BuildType = context.BuildType,
-			Branding = context.Configuration.Branding
+			Branding = context.Configuration.Branding,
+			// Isolated serve (e.g. port 3000): reuse V2 sidebar markup/CSS/JS for local styling; tree is still docset TOC only.
+			IsNavV2 = context.BuildType == BuildType.Isolated
 		};
 	}
 
