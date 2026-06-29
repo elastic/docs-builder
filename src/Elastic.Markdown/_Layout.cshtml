@@ -81,6 +81,23 @@
 			</div>
 		</div>
 	}
+
+	private async Task RenderLanding()
+	{
+		<div class="relative landing-page-shell">
+			<div class="min-h-screen w-full max-w-(--max-layout-width) mx-auto md:px-4">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
+					<main id="content-container" class="min-w-0">
+						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						@await RenderPartialAsync(_LandingPage.Create(Model))
+					</main>
+					@* Landing pages have no right-hand TOC; keep the slot for htmx oob swaps from doc pages. *@
+					<aside id="toc-nav" class="hidden" aria-hidden="true"></aside>
+				</div>
+			</div>
+		</div>
+	}
 }
 
 @if (RenderHeaderAndFooter)
@@ -102,7 +119,7 @@
 		await RenderPartialAsync(_NotFound.Create(Model));
 		break;
 	case MarkdownPageLayout.LandingPage:
-		await RenderPartialAsync(_LandingPage.Create(Model));
+		await RenderLanding();
 		break;
 	case MarkdownPageLayout.Archive:
 		await RenderPartialAsync(_Archive.Create(Model));
