@@ -107,6 +107,21 @@ let private runLocalContainer _ =
     let image = $"elastic/docs-builder:%s{tag}"
     exec { run "docker" ["docker"; "run"; image; "--help"] }
 
+let private runDotnetWithRegistryPushRetry (args: string list) =
+    let maxAttempts = 3
+    let rec attempt number =
+        match exec {
+            validExitCode (fun _ -> true)
+            exit_code_of "dotnet" args
+        } with
+        | 0 -> ()
+        | _ when number < maxAttempts ->
+            printfn "Container registry push failed (attempt %d/%d); retrying..." number maxAttempts
+            attempt (number + 1)
+        | _ ->
+            exec { run "dotnet" args }
+    attempt 1
+
 let private publishContainers _ =
 
     let createImage projectPath containerName =
@@ -132,7 +147,10 @@ let private publishContainers _ =
                     "-p"; "ContainerUser=1001:1001";
                 ]
             | _ -> []
-        exec { run "dotnet" (args @ registry) }
+        let dotnetArgs = args @ registry
+        match registry with
+        | [] -> exec { run "dotnet" dotnetArgs }
+        | _ -> runDotnetWithRegistryPushRetry dotnetArgs
     createImage "src/tooling/docs-builder/docs-builder.csproj" "docs-builder"
     createImage "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" "docs-builder-mcp"
     createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
