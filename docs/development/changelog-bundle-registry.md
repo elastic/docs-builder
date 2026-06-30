@@ -48,8 +48,9 @@ copies, no cross-repo file syncing.
    docs-actions changelog upload workflow) uploads each bundle to
    `bundle/{product}/{file}` in the **private** bucket, then refreshes
    `bundle/{product}/registry.json` for every product the run touched. The companion
-   `--artifact-type changelog` upload writes individual entries to `changelog/{repo}/{file}`
-   (one copy, keyed by the authoring repo) and refreshes `changelog/{repo}/registry.json`.
+   `--artifact-type changelog` upload writes individual entries to `changelog/{org}/{repo}/{branch}/{file}`
+   (one copy, keyed by the authoring org/repo/branch) and refreshes
+   `changelog/{org}/{repo}/{branch}/registry.json`.
 2. **Scrubber Lambda** — triggered by `s3:ObjectCreated` on the private bucket, it scrubs
    private repository references out of bundle and entry YAML and writes the sanitized copy to
    the **public** bucket. The `registry.json` object is copied through **verbatim**.
@@ -65,7 +66,7 @@ cacheable manifest at a predictable key that lists exactly which bundles exist f
 
 ## `registry.json` format
 
-Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{repo}/registry.json`
+Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{org}/{repo}/{branch}/registry.json`
 (changelog-entry index). Serialized with `snake_case` keys.
 
 ```json
@@ -83,9 +84,9 @@ Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{repo}/r
 | Field | Meaning |
 |---|---|
 | `schema_version` | Bumped when consumers must change their parser. |
-| `product` | Grouping identifier; the second S3 key segment — the product for a bundle index (`bundle/{product}/…`) or the authoring repo for a changelog-entry index (`changelog/{repo}/…`). |
+| `product` | Grouping identifier — the product for a bundle index (`bundle/{product}/…`) or the `{org}/{repo}/{branch}` prefix for a changelog-entry index (`changelog/{org}/{repo}/{branch}/…`). |
 | `generated_at` | UTC timestamp of the last regeneration. |
-| `bundles[].file` | Bundle file name, resolved at `bundle/{product}/{file}` (or entry file at `changelog/{repo}/{file}` for the entry index). |
+| `bundles[].file` | Bundle file name, resolved at `bundle/{product}/{file}` (or entry file at `changelog/{org}/{repo}/{branch}/{file}` for the entry index). |
 | `bundles[].target` | Target version/date from the bundle's declaration of **this** product (may be null). |
 | `bundles[].etag` | See the ETag caveat below. |
 
@@ -108,8 +109,9 @@ reads of the same bucket).
 The refresh runs inside `ChangelogUploadService` after a successful **bundle** upload (it is
 skipped for `--artifact-type changelog`). `RegistryBuilder`:
 
-- Groups the run's upload targets by the second key segment — product for bundles
-  (`bundle/{product}/{file}`), repo for entries (`changelog/{repo}/{file}`).
+- Groups the run's upload targets by group key — product for bundles
+  (`bundle/{product}/{file}`), the `{org}/{repo}/{branch}` prefix for entries
+  (`changelog/{org}/{repo}/{branch}/{file}`).
 - For each group, derives one `registry` entry per file (file name, locally-computed S3 ETag,
   and — for bundle indexes only — that product's target; entry indexes record no target).
 - Reads the existing manifest from S3, merges by file name (re-uploads replace their entry;
@@ -155,8 +157,9 @@ for the producer**:
 - A CloudFront cache policy tuned for the manifest already exists (default TTL 1h, min 60s).
 
 The scrubber only passes through keys accepted by `RegistryKey.IsRegistry`
-(`bundle/{product}/registry.json` or `changelog/{repo}/registry.json`, each a single middle
-segment), so arbitrary JSON cannot reach the public surface.
+(`bundle/{product}/registry.json` with a single product segment, or
+`changelog/{org}/{repo}/{branch}/registry.json` with at least three segments), so arbitrary JSON
+cannot reach the public surface.
 
 **No new docs-actions workflow logic is required** for the producer either: the refresh is a
 side-effect of the existing `changelog upload` step; docs-actions only needs a docs-builder
@@ -171,18 +174,21 @@ build that includes this feature.
 
 Consumers must therefore treat a missing bundle as non-fatal (skip + warn), not an error.
 
-## `changelog bundle` entry sourcing (repo gate)
+## `changelog bundle` entry sourcing (org/repo/branch gate)
 
 The `changelog bundle` command aggregates individual changelog **entries**. It can read those
-entries from the local folder or fetch the **authoring repo's** published entries from the CDN
-(`changelog/{repo}/registry.json` → `changelog/{repo}/{file}`, via `CdnChangelogEntryFetcher`).
+entries from the local folder or fetch the **authoring pool's** published entries from the CDN
+(`changelog/{org}/{repo}/{branch}/registry.json` → `changelog/{org}/{repo}/{branch}/{file}`, via
+`CdnChangelogEntryFetcher`).
 
-Under the artifact-root layout, entries are repo-scoped — not product-scoped — so CDN entry
-sourcing keys off the resolvable authoring repo (the same precedence as upload:
-`--repo` > `bundle.repo` > git remote), **not** off the bundle's target products. This is what lets
-one repo (for example `kibana`) produce a bundle for a shared product (for example `cloud-serverless`)
-while sourcing its own entries from `changelog/kibana/`, without that product appearing in the repo's
-own `docset.yml`. The decision is made per run by `ChangelogBundlingService`:
+Under the artifact-root layout, entries are org/repo/branch-scoped — not product-scoped — so CDN
+entry sourcing keys off the resolvable authoring pool (repo with the same precedence as upload:
+`--repo` > `bundle.repo` > git remote; owner from `--owner` > `bundle.owner`, default `elastic`;
+branch from `--branch` > `bundle.branch`, default `main`), **not** off the bundle's target products.
+This is what lets one repo (for example `kibana`) produce a bundle for a shared product (for example
+`cloud-serverless`) while sourcing its own entries from `changelog/elastic/kibana/main/`, without that
+product appearing in the repo's own `docset.yml`. The decision is made per run by
+`ChangelogBundlingService`:
 
 - **Local folder** when `bundle.use_local_changelogs: true`, when `--directory` is passed, or when
   the authoring repo cannot be resolved.
