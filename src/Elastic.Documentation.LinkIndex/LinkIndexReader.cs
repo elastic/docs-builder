@@ -9,7 +9,7 @@ using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.LinkIndex;
 
-public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elastic-docs-link-index", string registryKey = "link-index.json") : ILinkIndexReader
+public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elastic-docs-link-index", string registryKey = "link-index.json") : ILinkIndexReader, IDisposable
 {
 
 	// <summary>
@@ -52,4 +52,10 @@ public class Aws3LinkIndexReader(IAmazonS3 s3Client, string bucketName = "elasti
 	}
 
 	public string RegistryUrl { get; } = $"https://{bucketName}.s3.{s3Client.Config.RegionEndpoint.SystemName}.amazonaws.com/{registryKey}";
+
+	public void Dispose()
+	{
+		s3Client.Dispose();
+		GC.SuppressFinalize(this);
+	}
 }
