@@ -8,6 +8,7 @@ import { initImageCarousel } from './image-carousel'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initNavV2 } from './pages-nav-v2'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
@@ -128,12 +129,25 @@ function initMath() {
     })
 }
 
-// Initialize on initial page load
+function initNavAuto() {
+    const v2Nav = document.querySelector<HTMLElement>('[data-nav-v2]')
+    if (v2Nav) {
+        initNavV2(v2Nav)
+    } else {
+        initNav()
+    }
+}
+
+// htmx defers the initial htmx:load to setTimeout(0); prime V2 sidebar on first paint so isolated serve shows behaviour before that tick.
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
         ['initMath', initMath],
         ['initMermaid', initMermaid],
     ])
+    const v2Nav = document.querySelector<HTMLElement>('[data-nav-v2]')
+    if (v2Nav) {
+        initNavV2(v2Nav)
+    }
 })
 
 document.addEventListener('htmx:load', function () {
@@ -146,7 +160,7 @@ document.addEventListener('htmx:load', function () {
         ['initAppliesSwitch', initAppliesSwitch],
         ['initMath', initMath],
         ['initMermaid', initMermaid],
-        ['initNav', initNav],
+        ['initNavAuto', initNavAuto],
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],

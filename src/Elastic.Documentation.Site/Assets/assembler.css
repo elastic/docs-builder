@@ -21,6 +21,17 @@ body.air-gapped elastic-docs-header .euiHeader {
 	padding-inline: calc((100vw - var(--max-layout-width)) / 2 + 8px);
 }
 
+#elastic-nav-wrapper,
+#elastic-nav {
+	max-width: 100%;
+	overflow-x: clip;
+}
+
+#elastic-nav-wrapper {
+	position: relative;
+	z-index: 40;
+}
+
 @keyframes website-search-enter {
 	from {
 		opacity: 0;
