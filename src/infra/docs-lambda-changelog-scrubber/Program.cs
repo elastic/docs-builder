@@ -182,8 +182,8 @@ async Task CopyPassThrough(IAmazonS3 s3Client, string sourceBucket, string key, 
 async Task<string> ScrubContent(string key, string content, ILambdaContext context)
 {
 	// Artifact-root layout: bundles live under "bundle/{product}/...", entries under
-	// "changelog/{repo}/...". Match the bundle prefix (not a "/bundle/" substring, which no longer
-	// appears in the new keys) so bundles are not misclassified as changelog entries.
+	// "changelog/{org}/{repo}/{branch}/...". Match the bundle prefix (not a "/bundle/" substring, which no
+	// longer appears in the new keys) so bundles are not misclassified as changelog entries.
 	var isBundlePath = key.StartsWith("bundle/", StringComparison.OrdinalIgnoreCase);
 
 	if (isBundlePath)

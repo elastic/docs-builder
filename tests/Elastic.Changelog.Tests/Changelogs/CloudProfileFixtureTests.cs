@@ -18,7 +18,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// anonymized repo and product names only — never the real org/repo/product IDs.
 ///
 /// It verifies the artifact-root (Option AD) behaviour: entries are sourced once from the authoring
-/// repo's pool (<c>changelog/{repo}/...</c>), and the profile bundle that results is sound — resolved,
+/// pool (<c>changelog/{org}/{repo}/{branch}/...</c>), and the profile bundle that results is sound — resolved,
 /// link-scrubbed against the allowlist, with the docs entry excluded and no auto-populated release date.
 ///
 /// The authoring repo is an anonymized test name (<c>widget</c>) that deliberately differs from the
@@ -148,8 +148,9 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		// Entries are sourced once from the authoring repo's pool, not from any product-scoped path.
-		handler.RequestedPaths.Should().Contain($"/changelog/{AuthoringRepo}/registry.json");
+		// Entries are sourced once from the authoring pool (changelog/{org}/{repo}/{branch}/...), not from
+		// any product-scoped path. Owner comes from bundle.owner; branch defaults to "main".
+		handler.RequestedPaths.Should().Contain($"/changelog/elastic/{AuthoringRepo}/main/registry.json");
 		handler.RequestedPaths.Should().NotContain(p => p.Contains("/cloud-hosted/changelog/", StringComparison.Ordinal));
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");

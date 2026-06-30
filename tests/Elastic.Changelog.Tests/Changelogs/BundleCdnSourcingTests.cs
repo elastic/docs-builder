@@ -90,13 +90,38 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		// Entries are sourced from the authoring repo's pool: changelog/{repo}/...
-		handler.RequestedPaths.Should().Contain("/changelog/elasticsearch/registry.json");
+		// Entries are sourced from the authoring pool, with org/branch defaulting: changelog/{org}/{repo}/{branch}/...
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
 
 		var bundle = await FileSystem.File.ReadAllTextAsync(output, TestContext.Current.CancellationToken);
 		bundle.Should().Contain("Alpha");
 		bundle.Should().Contain("Bravo");
 		bundle.Should().Contain("name: 1-alpha.yaml");
+	}
+
+	[Fact]
+	public async Task OptionMode_OwnerAndBranchOverride_SourcesFromThatPoolOnCdn()
+	{
+		// Explicit owner/branch select a specific pool; the branch is stored verbatim (dots kept).
+		var handler = RegistryHandler();
+		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, Fetcher(Output, handler));
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Output = output,
+			Owner = "acme-corp",
+			Repo = "elasticsearch",
+			Branch = "8.x",
+			Resolve = true
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		handler.RequestedPaths.Should().Contain("/changelog/acme-corp/elasticsearch/8.x/registry.json");
 	}
 
 	[Fact]

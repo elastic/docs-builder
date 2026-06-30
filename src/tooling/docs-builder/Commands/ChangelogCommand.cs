@@ -561,6 +561,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
 	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
 	/// <param name="owner">GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
+	/// <param name="branch">Branch whose CDN changelog pool (changelog/{org}/{repo}/{branch}/...) entries are sourced from. Falls back to bundle.branch in changelog.yml, then "main".</param>
 	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
 	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
 	/// <param name="report">A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter.</param>
@@ -585,6 +586,7 @@ internal sealed partial class ChangelogCommands(
 		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? outputProducts = null,
 		string[]? issues = null,
 		string? owner = null,
+		string? branch = null,
 		bool plan = false,
 		string[]? prs = null,
 		string? releaseVersion = null,
@@ -896,6 +898,7 @@ internal sealed partial class ChangelogCommands(
 			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
 			Owner = owner,
 			Repo = repo,
+			Branch = branch,
 			Profile = profile,
 			ProfileArgument = profileArg,
 			ProfileReport = isProfileMode ? profileReport : null,
@@ -1575,10 +1578,12 @@ internal sealed partial class ChangelogCommands(
 	/// <remarks>
 	/// Uses content-hash–based incremental transfer — only changed files are uploaded.
 	/// <para>
-	/// Changelog entries are uploaded once under <c>changelog/{repo}/{file}</c>, keyed by the authoring
-	/// repository (resolved from <c>--repo</c>, then <c>bundle.repo</c> in changelog.yml, then the git
-	/// remote origin). Bundles are uploaded under <c>bundle/{product}/{file}</c>, product-scoped from
-	/// the bundle YAML, and do not require a repo.
+	/// Changelog entries are uploaded once under <c>changelog/{org}/{repo}/{branch}/{file}</c>, keyed by the
+	/// authoring owner (<c>--owner</c> &gt; <c>bundle.owner</c> &gt; git remote), repository (<c>--repo</c>
+	/// &gt; <c>bundle.repo</c> &gt; git remote), and branch (<c>--branch</c> &gt; the current checkout's
+	/// branch). The branch is stored verbatim, so a branch's <c>/</c> become real key separators. Bundles
+	/// are uploaded under <c>bundle/{product}/{file}</c>, product-scoped from the bundle YAML, and do not
+	/// require an owner/repo/branch.
 	/// </para>
 	/// </remarks>
 	/// <param name="artifactType">Artifact type to upload: 'changelog' (individual entries) or 'bundle' (consolidated bundles).</param>
@@ -1586,8 +1591,9 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="s3BucketName">S3 bucket name (required when target is 's3').</param>
 	/// <param name="config">Path to changelog.yml configuration file. Defaults to docs/changelog.yml.</param>
 	/// <param name="directory">Override changelog directory instead of reading it from config.</param>
-	/// <param name="repo">GitHub repository name used to scope uploaded changelog entry keys (changelog/{repo}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
-	/// <param name="owner">GitHub repository owner, accepted for parity with other changelog commands. Falls back to bundle.owner in changelog.yml, then the git remote origin. Not part of the S3 key.</param>
+	/// <param name="repo">GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
+	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
+	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -1597,6 +1603,7 @@ internal sealed partial class ChangelogCommands(
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
 		string? repo = null,
 		string? owner = null,
+		string? branch = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1622,9 +1629,10 @@ internal sealed partial class ChangelogCommands(
 		var resolvedDirectory = directory != null ? directory?.FullName : null;
 		var resolvedConfig = config != null ? config?.FullName : null;
 
-		// Resolve the authoring repo for entry keys: --repo > bundle.repo (changelog.yml) > git remote
-		// origin. Reduced to a single path segment (owner/repo -> repo) for the changelog/{repo}/ key.
-		var (resolvedRepo, resolvedOwner) = await ResolveUploadRepoOwner(repo, owner, resolvedConfig, resolvedDirectory, ctx);
+		// Resolve the authoring owner/repo/branch for entry keys: CLI flags > bundle.{owner,repo}
+		// (changelog.yml) > git. The repo is reduced to a single path segment (owner/repo -> repo) for the
+		// changelog/{org}/{repo}/{branch}/ key.
+		var (resolvedRepo, resolvedOwner, resolvedBranch) = await ResolveUploadRepoOwnerBranch(repo, owner, branch, resolvedConfig, resolvedDirectory, ctx);
 
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, configurationContext);
@@ -1636,7 +1644,8 @@ internal sealed partial class ChangelogCommands(
 			Config = resolvedConfig,
 			Directory = resolvedDirectory,
 			Repo = resolvedRepo,
-			Owner = resolvedOwner
+			Owner = resolvedOwner,
+			Branch = resolvedBranch
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)
@@ -1644,15 +1653,15 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>Resolves the authoring repo/owner for uploads (<c>--repo</c> &gt; <c>bundle.repo</c> &gt; git remote), reducing the repo to a single path segment.</summary>
-	private async Task<(string? Repo, string? Owner)> ResolveUploadRepoOwner(string? repoCli, string? ownerCli, string? configPath, string? uploadDirectory, CancellationToken ctx)
+	/// <summary>Resolves the authoring repo/owner/branch for uploads (CLI flags &gt; <c>bundle.{repo,owner}</c> &gt; git), reducing the repo to a single path segment.</summary>
+	private async Task<(string? Repo, string? Owner, string? Branch)> ResolveUploadRepoOwnerBranch(string? repoCli, string? ownerCli, string? branchCli, string? configPath, string? uploadDirectory, CancellationToken ctx)
 	{
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
 			.LoadChangelogConfiguration(collector, configPath, ctx);
 
-		// Anchor the git-remote fallback to the upload source (config file or changelog directory), not
-		// the process cwd, so an out-of-tree --config/--directory resolves the right origin. Both values
-		// are absolute (FileInfo/DirectoryInfo FullName) when present.
+		// Anchor the git fallbacks to the upload source (config file or changelog directory), not the
+		// process cwd, so an out-of-tree --config/--directory resolves the right origin and branch. Both
+		// values are absolute (FileInfo/DirectoryInfo FullName) when present.
 		string? anchor = null;
 		if (!string.IsNullOrWhiteSpace(configPath))
 		{
@@ -1673,6 +1682,15 @@ internal sealed partial class ChangelogCommands(
 		var resolvedRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : (bundleConfig?.Bundle?.Repo ?? gitRepo);
 		var resolvedOwner = ownerCli ?? bundleConfig?.Bundle?.Owner ?? gitOwner;
 
+		// The producer branch is the branch being published: --branch, else the current checkout's branch.
+		// bundle.branch is intentionally not consulted here — it selects which pool to read when bundling.
+		var resolvedBranch = branchCli;
+		if (string.IsNullOrWhiteSpace(resolvedBranch))
+		{
+			var checkout = GitCheckoutInformationFactory.Create(_fileSystem.DirectoryInfo.New(anchor), _fileSystem);
+			resolvedBranch = checkout.Branch;
+		}
+
 		if (!string.IsNullOrWhiteSpace(resolvedRepo))
 		{
 			var slash = resolvedRepo.LastIndexOf('/');
@@ -1680,7 +1698,7 @@ internal sealed partial class ChangelogCommands(
 				resolvedRepo = resolvedRepo[(slash + 1)..];
 		}
 
-		return (resolvedRepo, resolvedOwner);
+		return (resolvedRepo, resolvedOwner, resolvedBranch);
 	}
 
 	/// <summary>

@@ -31,12 +31,12 @@ The `bootstrap` binary should be available under:
 ## Event handling
 
 - **`s3:ObjectCreated:*`** on `.yaml`/`.yml` files: read from private bucket, scrub private references, write to public bucket
-- **`s3:ObjectCreated:*`** on `.json` files: only registry manifests (keys matching `RegistryKey.IsRegistry`, i.e. `bundle/{product}/registry.json` or `changelog/{repo}/registry.json`) are passed through as-is; any other `.json` key is skipped
+- **`s3:ObjectCreated:*`** on `.json` files: only registry manifests (keys matching `RegistryKey.IsRegistry`, i.e. `bundle/{product}/registry.json` or `changelog/{org}/{repo}/{branch}/registry.json`) are passed through as-is; any other `.json` key is skipped
 - **`s3:ObjectRemoved:*`**: delete the same key from the public bucket
 - Other keys are silently skipped
 
 ## Scrubbing logic
 
 - **Bundle files** (`bundle/{product}/*.yaml`, detected by the `bundle/` key prefix): `LinkAllowlistSanitizer.TryApplyBundle` scrubs `prs`/`issues` lists
-- **Changelog entries** (`changelog/{repo}/*.yaml`): `LinkAllowlistSanitizer.TryApplyChangelogEntry` scrubs `prs`, `issues`, `description`, `impact`, `action`
+- **Changelog entries** (`changelog/{org}/{repo}/{branch}/*.yaml`): `LinkAllowlistSanitizer.TryApplyChangelogEntry` scrubs `prs`, `issues`, `description`, `impact`, `action`
 - The allowlist is built once at cold start from the embedded `assembler.yml` via `BuildAllowReposFromAssembler`

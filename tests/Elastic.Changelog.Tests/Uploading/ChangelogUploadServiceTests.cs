@@ -48,7 +48,7 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
-	public void DiscoverUploadTargets_SingleEntry_MapsToRepoScopedKey()
+	public void DiscoverUploadTargets_SingleEntry_MapsToPoolScopedKey()
 	{
 		// language=yaml
 		var path = AddChangelog("entry.yaml", """
@@ -61,11 +61,53 @@ public class ChangelogUploadServiceTests
 			  - "100"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elasticsearch");
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", "main");
 
 		targets.Should().HaveCount(1);
 		targets[0].LocalPath.Should().Be(path);
-		targets[0].S3Key.Should().Be("changelog/elasticsearch/entry.yaml");
+		targets[0].S3Key.Should().Be("changelog/elastic/elasticsearch/main/entry.yaml");
+		_collector.Errors.Should().Be(0);
+	}
+
+	[Theory]
+	// Branch stored verbatim: dots (release trains) and slashes (feature branches) become real key segments.
+	[InlineData("8.x", "changelog/elastic/elasticsearch/8.x/entry.yaml")]
+	[InlineData("9.0", "changelog/elastic/elasticsearch/9.0/entry.yaml")]
+	[InlineData("feature/foo", "changelog/elastic/elasticsearch/feature/foo/entry.yaml")]
+	[InlineData("release/8.x", "changelog/elastic/elasticsearch/release/8.x/entry.yaml")]
+	public void DiscoverUploadTargets_BranchWithDotsOrSlashes_MapsVerbatim(string branch, string expectedKey)
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", branch);
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be(expectedKey);
+		_collector.Errors.Should().Be(0);
+	}
+
+	[Fact]
+	public void DiscoverUploadTargets_ExternalOrg_MapsToPoolScopedKey()
+	{
+		// An acquired company keeping its own GitHub org still gets a faithful pool.
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: widgets
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "acme-corp", "widgets", "main");
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("changelog/acme-corp/widgets/main/entry.yaml");
 		_collector.Errors.Should().Be(0);
 	}
 
@@ -87,10 +129,10 @@ public class ChangelogUploadServiceTests
 			  - "200"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "kibana");
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "kibana", "main");
 
 		targets.Should().ContainSingle();
-		targets[0].S3Key.Should().Be("changelog/kibana/fix.yaml");
+		targets[0].S3Key.Should().Be("changelog/elastic/kibana/main/fix.yaml");
 	}
 
 	[Fact]
@@ -106,10 +148,10 @@ public class ChangelogUploadServiceTests
 			  - "400"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elasticsearch");
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", "main");
 
 		targets.Should().ContainSingle();
-		targets[0].S3Key.Should().Be("changelog/elasticsearch/noproducts.yaml");
+		targets[0].S3Key.Should().Be("changelog/elastic/elasticsearch/main/noproducts.yaml");
 		_collector.Errors.Should().Be(0);
 	}
 
@@ -124,7 +166,41 @@ public class ChangelogUploadServiceTests
 			  - product: elasticsearch
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, repo: null);
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", repo: null, "main");
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public void DiscoverUploadTargets_MissingOwner_EmitsErrorAndReturnsEmpty()
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, org: null, "elasticsearch", "main");
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
+	public void DiscoverUploadTargets_MissingBranch_EmitsErrorAndReturnsEmpty()
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", branch: null);
 
 		targets.Should().BeEmpty();
 		_collector.Errors.Should().BeGreaterThan(0);
@@ -145,7 +221,50 @@ public class ChangelogUploadServiceTests
 			  - product: elasticsearch
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, repo);
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", repo, "main");
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Theory]
+	// Org is a GitHub login: no dots, no slashes, no spaces.
+	[InlineData("bad org")]
+	[InlineData("acme.corp")]
+	[InlineData("acme/corp")]
+	public void DiscoverUploadTargets_InvalidOrg_EmitsError(string org)
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, org, "elasticsearch", "main");
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Theory]
+	// Branch segments reject traversal, empty parts, and out-of-class characters.
+	[InlineData("bad branch")]
+	[InlineData("..")]
+	[InlineData("feature/..")]
+	[InlineData("feature//foo")]
+	public void DiscoverUploadTargets_InvalidBranch_EmitsError(string branch)
+	{
+		// language=yaml
+		AddChangelog("entry.yaml", """
+			title: New feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			""");
+
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", branch);
 
 		targets.Should().BeEmpty();
 		_collector.Errors.Should().BeGreaterThan(0);
@@ -154,7 +273,7 @@ public class ChangelogUploadServiceTests
 	[Fact]
 	public void DiscoverUploadTargets_EmptyDirectory_ReturnsEmpty()
 	{
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elasticsearch");
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", "main");
 
 		targets.Should().BeEmpty();
 		_collector.Errors.Should().Be(0);
@@ -182,11 +301,11 @@ public class ChangelogUploadServiceTests
 			  - "2"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elasticsearch");
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "elasticsearch", "main");
 
 		targets.Should().HaveCount(2);
-		targets.Should().Contain(t => t.S3Key == "changelog/elasticsearch/first.yaml");
-		targets.Should().Contain(t => t.S3Key == "changelog/elasticsearch/second.yaml");
+		targets.Should().Contain(t => t.S3Key == "changelog/elastic/elasticsearch/main/first.yaml");
+		targets.Should().Contain(t => t.S3Key == "changelog/elastic/elasticsearch/main/second.yaml");
 	}
 
 	[Theory]
@@ -206,10 +325,10 @@ public class ChangelogUploadServiceTests
 			  - "600"
 			""");
 
-		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, repo);
+		var targets = _service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", repo, "main");
 
 		targets.Should().ContainSingle();
-		targets[0].S3Key.Should().Be($"changelog/{repo}/entry.yaml");
+		targets[0].S3Key.Should().Be($"changelog/elastic/{repo}/main/entry.yaml");
 		_collector.Errors.Should().Be(0);
 		_collector.Warnings.Should().Be(0);
 	}
@@ -240,7 +359,9 @@ public class ChangelogUploadServiceTests
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
 			Directory = _changelogDir,
-			Repo = "elasticsearch"
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -249,7 +370,7 @@ public class ChangelogUploadServiceTests
 		_collector.Errors.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elasticsearch/entry.yaml" && r.BucketName == "test-bucket"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/entry.yaml" && r.BucketName == "test-bucket"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 	}
@@ -273,7 +394,9 @@ public class ChangelogUploadServiceTests
 			ArtifactType = ArtifactType.Changelog,
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
-			Directory = _changelogDir
+			Directory = _changelogDir,
+			Owner = "elastic",
+			Branch = "main"
 			// Repo intentionally unset.
 		};
 		var ct = TestContext.Current.CancellationToken;
@@ -295,7 +418,9 @@ public class ChangelogUploadServiceTests
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
 			Directory = _changelogDir,
-			Repo = "elasticsearch"
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -332,7 +457,9 @@ public class ChangelogUploadServiceTests
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
 			Directory = _changelogDir,
-			Repo = "elasticsearch"
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
@@ -567,16 +694,18 @@ public class ChangelogUploadServiceTests
 			Target = UploadTargetKind.S3,
 			S3BucketName = "test-bucket",
 			Directory = _changelogDir,
-			Repo = "elasticsearch"
+			Owner = "elastic",
+			Repo = "elasticsearch",
+			Branch = "main"
 		};
 		var ct = TestContext.Current.CancellationToken;
 		var result = await _service.Upload(_collector, args, ct);
 
 		result.Should().BeTrue();
 
-		// Changelog uploads refresh the repo-scoped entry index, not a bundle index.
+		// Changelog uploads refresh the pool-scoped entry index, not a bundle index.
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elasticsearch/registry.json"),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "changelog/elastic/elasticsearch/main/registry.json"),
 			A<CancellationToken>._
 		)).MustHaveHappenedOnceExactly();
 

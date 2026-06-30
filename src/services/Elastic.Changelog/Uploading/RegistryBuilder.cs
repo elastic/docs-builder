@@ -23,7 +23,7 @@ internal enum RegistryScope
 	/// <summary>The bundle index at <c>bundle/{product}/registry.json</c>, listing scrubbed bundle files.</summary>
 	Bundle,
 
-	/// <summary>The changelog-entry index at <c>changelog/{repo}/registry.json</c>, listing individual entry files.</summary>
+	/// <summary>The changelog-entry index at <c>changelog/{org}/{repo}/{branch}/registry.json</c>, listing individual entry files.</summary>
 	Changelog
 }
 
@@ -31,9 +31,10 @@ internal enum RegistryScope
 /// Refreshes a <c>registry.json</c> manifest in the private bucket after an upload run.
 /// Depending on <see cref="RegistryScope"/> this is either the bundle index
 /// (<c>bundle/{product}/registry.json</c>) or the changelog-entry index
-/// (<c>changelog/{repo}/registry.json</c>). Each grouping (product or repo) touched in the run gets
-/// its manifest merged with what is already known on S3 (read back, merged by file name, written with
-/// an optimistic concurrency guard so parallel uploads for the same group cannot clobber each other).
+/// (<c>changelog/{org}/{repo}/{branch}/registry.json</c>). Each grouping (product, or org/repo/branch)
+/// touched in the run gets its manifest merged with what is already known on S3 (read back, merged by
+/// file name, written with an optimistic concurrency guard so parallel uploads for the same group cannot
+/// clobber each other).
 /// </summary>
 internal sealed class RegistryBuilder(
 	ILoggerFactory logFactory,
@@ -71,8 +72,8 @@ internal sealed class RegistryBuilder(
 		RegistryScope scope = RegistryScope.Bundle)
 	{
 		// Each upload target carries an artifact-root S3 key — "bundle/{product}/{file}" or
-		// "changelog/{repo}/{file}". Group by the scope's second segment (product for bundles, repo for
-		// entries) so we produce one manifest per affected group.
+		// "changelog/{org}/{repo}/{branch}/{file}". Group by the scope's key (product for bundles, the
+		// {org}/{repo}/{branch} prefix for entries) so we produce one manifest per affected group.
 		var byProduct = uploadTargets
 			.Select(t => (Target: t, Product: ExtractGroupKey(t.S3Key, scope)))
 			.Where(x => x.Product is not null)
@@ -111,7 +112,7 @@ internal sealed class RegistryBuilder(
 		return new RefreshResult(updated, unchanged, failed);
 	}
 
-	/// <summary>Extracts the grouping segment (product for <c>bundle/{product}/…</c>, repo for <c>changelog/{repo}/…</c>) from an artifact-root S3 key, or null.</summary>
+	/// <summary>Extracts the grouping key (product for <c>bundle/{product}/…</c>, <c>{org}/{repo}/{branch}</c> for <c>changelog/{org}/{repo}/{branch}/…</c>) from an artifact-root S3 key, or null.</summary>
 	private static string? ExtractGroupKey(string s3Key, RegistryScope scope)
 	{
 		var prefix = scope == RegistryScope.Changelog ? "changelog/" : "bundle/";
@@ -119,10 +120,36 @@ internal sealed class RegistryBuilder(
 			return null;
 
 		var rest = s3Key.AsSpan(prefix.Length);
-		var slash = rest.IndexOf('/');
-		if (slash <= 0)
+
+		// Bundles group by the single product segment (bundle/{product}/{file}). Changelog entries group by
+		// the whole {org}/{repo}/{branch} prefix (changelog/{org}/{repo}/{branch...}/{file}), which can carry
+		// extra slashes when the branch itself contains them — so take everything before the final segment.
+		if (scope == RegistryScope.Bundle)
+		{
+			var slash = rest.IndexOf('/');
+			return slash <= 0 ? null : rest[..slash].ToString();
+		}
+
+		var lastSlash = rest.LastIndexOf('/');
+		if (lastSlash <= 0)
 			return null;
-		return rest[..slash].ToString();
+		var group = rest[..lastSlash];
+		// Require at least org/repo/branch (3 segments) ahead of the file name.
+		return CountSegments(group) >= 3 ? group.ToString() : null;
+	}
+
+	/// <summary>Counts the non-empty-delimited segments in a <c>/</c>-joined path span.</summary>
+	private static int CountSegments(ReadOnlySpan<char> path)
+	{
+		if (path.IsEmpty)
+			return 0;
+		var count = 1;
+		foreach (var c in path)
+		{
+			if (c == '/')
+				count++;
+		}
+		return count;
 	}
 
 	/// <summary>The S3 key of the manifest for the given <paramref name="scope"/> and grouping segment.</summary>

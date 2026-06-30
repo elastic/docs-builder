@@ -46,6 +46,12 @@ public record BundleChangelogsArguments
 	public string? Repo { get; init; }
 
 	/// <summary>
+	/// Branch whose CDN changelog pool (<c>changelog/{org}/{repo}/{branch}/…</c>) entries are sourced from.
+	/// null = use config <c>bundle.branch</c>, then the default branch (<c>main</c>).
+	/// </summary>
+	public string? Branch { get; init; }
+
+	/// <summary>
 	/// Profile name to use (from bundle.profiles in config)
 	/// </summary>
 	public string? Profile { get; init; }
@@ -145,6 +151,10 @@ public partial class ChangelogBundlingService(
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
 		: null;
 
+	// Defaults applied when sourcing CDN entries and the org/branch are not otherwise resolvable.
+	private const string DefaultOwner = "elastic";
+	private const string DefaultBranch = "main";
+
 	/// <summary>
 	/// UTF-8 encoding without BOM for writing YAML files.
 	/// </summary>
@@ -209,14 +219,16 @@ public partial class ChangelogBundlingService(
 			// Apply config defaults if available
 			input = ApplyConfigDefaults(input, config);
 
-			// Decide where the individual changelog entries come from. Under Option AD entries are
-			// repo-scoped (changelog/{repo}/...), so CDN sourcing keys off the resolvable authoring repo
-			// (bundle.repo / --repo), not the bundle's target products. Fall back to the local folder
-			// when the user forces it (bundle.use_local_changelogs / --directory), the repo is
-			// unresolvable, or no CDN base is configured. This stays in lockstep with PlanBundleAsync's
-			// needs_network decision.
+			// Decide where the individual changelog entries come from. Under Option AD entries are scoped to
+			// an org/repo/branch pool (changelog/{org}/{repo}/{branch}/...), so CDN sourcing keys off the
+			// resolvable authoring repo (bundle.repo / --repo), with org and branch defaulting when unset —
+			// not the bundle's target products. Fall back to the local folder when the user forces it
+			// (bundle.use_local_changelogs / --directory), the repo is unresolvable, or no CDN base is
+			// configured. This stays in lockstep with PlanBundleAsync's needs_network decision.
 			var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
 			var authoringRepo = NormalizeRepo(input.Repo);
+			var authoringOwner = string.IsNullOrWhiteSpace(input.Owner) ? DefaultOwner : input.Owner;
+			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
 			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
 
 			// Validate input. In CDN mode the local input directory is not read, so its existence
@@ -265,7 +277,7 @@ public partial class ChangelogBundlingService(
 			ChangelogMatchResult matchResult;
 			if (useCdn)
 			{
-				var contents = await FetchCdnEntriesAsync(collector, authoringRepo, ctx);
+				var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
 				if (contents == null)
 					return false;
 				matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
@@ -466,6 +478,7 @@ public partial class ChangelogBundlingService(
 		IReadOnlyList<ProductArgument>? outputProducts = null;
 		string? repo = null;
 		string? owner = null;
+		string? branch = null;
 		string[]? mergedHideFeatures = null;
 		string? profileDescription = null;
 		var profileSuppressReleaseDate = false;
@@ -506,9 +519,10 @@ public partial class ChangelogBundlingService(
 				outputProducts = parsedOutputProducts;
 			}
 
-			// Profile-level repo/owner takes precedence; fall back to bundle-level defaults
+			// Profile-level repo/owner/branch takes precedence; fall back to bundle-level defaults
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
+			branch = profile.Branch ?? config.Bundle.Branch;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
@@ -554,6 +568,7 @@ public partial class ChangelogBundlingService(
 			OutputProducts = outputProducts,
 			Repo = repo,
 			Owner = owner,
+			Branch = branch,
 			HideFeatures = mergedHideFeatures,
 			Description = profileDescription,
 			SuppressReleaseDate = profileSuppressReleaseDate
@@ -576,9 +591,10 @@ public partial class ChangelogBundlingService(
 		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
 		var resolve = input.Resolve ?? config.Bundle.Resolve;
 
-		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+		// Apply repo/owner/branch: CLI takes precedence; fall back to bundle-level config defaults.
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
+		var branch = input.Branch ?? config.Bundle.Branch;
 
 		// Apply description: CLI takes precedence; fall back to bundle-level config default
 		var description = input.Description ?? config.Bundle.Description;
@@ -596,6 +612,7 @@ public partial class ChangelogBundlingService(
 			Resolve = resolve,
 			Repo = repo,
 			Owner = owner,
+			Branch = branch,
 			Description = description,
 			SuppressReleaseDate = suppressReleaseDate,
 			LinkAllowRepos = config.Bundle.LinkAllowRepos
@@ -729,10 +746,12 @@ public partial class ChangelogBundlingService(
 		return null;
 	}
 
-	/// <summary>Downloads the authoring <paramref name="repo"/>'s changelog entries from the CDN (<c>changelog/{repo}/...</c>); returns null after emitting an error on any fatal fetch failure.</summary>
+	/// <summary>Downloads the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/> pool's changelog entries from the CDN (<c>changelog/{org}/{repo}/{branch}/...</c>); returns null after emitting an error on any fatal fetch failure.</summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesAsync(
 		IDiagnosticsCollector collector,
+		string? org,
 		string? repo,
+		string? branch,
 		Cancel ctx)
 	{
 		if (string.IsNullOrWhiteSpace(repo))
@@ -743,6 +762,11 @@ public partial class ChangelogBundlingService(
 				"in changelog.yml / pass --directory to bundle local changelog files.");
 			return null;
 		}
+
+		// org/branch always resolve to a default at the call site, but guard anyway so the fetcher never
+		// receives a blank pool segment.
+		var resolvedOrg = string.IsNullOrWhiteSpace(org) ? DefaultOwner : org;
+		var resolvedBranch = string.IsNullOrWhiteSpace(branch) ? DefaultBranch : branch;
 
 		var baseUri = ChangelogCdn.ResolveBaseUri();
 		if (baseUri is null)
@@ -755,7 +779,9 @@ public partial class ChangelogBundlingService(
 		var fatalFailure = false;
 		var entries = await _entryFetcher.FetchAsync(
 			baseUri,
+			resolvedOrg,
 			repo,
+			resolvedBranch,
 			msg => { fatalFailure = true; collector.EmitError(string.Empty, msg); },
 			msg => collector.EmitWarning(string.Empty, msg),
 			ctx);
@@ -770,8 +796,8 @@ public partial class ChangelogBundlingService(
 		foreach (var entry in entries)
 			byName[entry.FileName] = entry.Content;
 
-		_logger.LogInformation("Sourced {Count} changelog entr(ies) from the CDN for repo {Repo}",
-			byName.Count, repo);
+		_logger.LogInformation("Sourced {Count} changelog entr(ies) from the CDN for {Pool}",
+			byName.Count, $"{resolvedOrg}/{repo}/{resolvedBranch}");
 
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}

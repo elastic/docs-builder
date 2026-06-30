@@ -43,15 +43,35 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("1-a.yaml", "2-b.yaml");
 		entries.Should().OnlyContain(e => e.Content.Contains("Sample enhancement"));
-		// Artifact-root layout: entries and their registry live under changelog/{repo}/...
-		handler.RequestedPaths.Should().Contain("/changelog/elasticsearch/registry.json");
-		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elasticsearch/1-a.yaml", StringComparison.Ordinal));
+		// Artifact-root layout: entries and their registry live under changelog/{org}/{repo}/{branch}/...
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/main/1-a.yaml", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task FetchAsync_BranchWithSlashes_KeepsBranchSeparatorsInPath()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elastic/elasticsearch/feature/foo", "bundles": [ { "file": "1-a.yaml" } ] }""")
+				: Yaml(SampleEntry));
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "feature/foo", emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		entries.Select(e => e.FileName).Should().BeEquivalentTo("1-a.yaml");
+		// The branch's '/' stays a real path separator (not percent-encoded into one segment).
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/feature/foo/registry.json");
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/feature/foo/1-a.yaml", StringComparison.Ordinal));
 	}
 
 	[Fact]
@@ -61,7 +81,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
@@ -83,7 +103,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler, maxAttempts: 3);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("2-missing.yaml");
@@ -110,7 +130,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -126,7 +146,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
@@ -142,7 +162,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("ok.yaml");

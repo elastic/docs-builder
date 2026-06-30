@@ -408,7 +408,7 @@ public class RegistryBuilderTests
 			  - product: elasticsearch
 			    target: 9.3.0
 			"""));
-		var targets = new List<UploadTarget> { new(path, "changelog/elasticsearch/1-feature.yaml") };
+		var targets = new List<UploadTarget> { new(path, "changelog/elastic/elasticsearch/main/1-feature.yaml") };
 		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
 			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
 
@@ -416,15 +416,44 @@ public class RegistryBuilderTests
 
 		result.Updated.Should().Be(1);
 		_puts.Should().ContainSingle();
-		_puts[0].Key.Should().Be("changelog/elasticsearch/registry.json");
+		_puts[0].Key.Should().Be("changelog/elastic/elasticsearch/main/registry.json");
 
 		var manifest = Deserialize(_puts[0].ContentBody);
-		manifest.Product.Should().Be("elasticsearch");
+		// The grouping identifier for the entry index is the {org}/{repo}/{branch} prefix.
+		manifest.Product.Should().Be("elastic/elasticsearch/main");
 		manifest.Bundles.Should().ContainSingle();
 		manifest.Bundles[0].File.Should().Be("1-feature.yaml");
 		// The changelog-entry index only enumerates files; per-entry target is not recorded.
 		manifest.Bundles[0].Target.Should().BeNull();
 		manifest.Bundles[0].ETag.Should().NotBeNullOrEmpty();
+	}
+
+	[Fact]
+	public async Task Refresh_ChangelogScope_BranchWithSlashes_GroupsByFullPoolPrefix()
+	{
+		var path = _mockFileSystem.Path.Join(_bundleDir, "2-feature.yaml");
+		// language=yaml
+		_mockFileSystem.AddFile(path, new MockFileData("""
+			title: Sample on a feature branch
+			type: enhancement
+			products:
+			  - product: elasticsearch
+			"""));
+		// The branch "feature/foo" contributes two key segments; the registry must live at the pool root.
+		var targets = new List<UploadTarget> { new(path, "changelog/elastic/elasticsearch/feature/foo/2-feature.yaml") };
+		A.CallTo(() => _s3Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+
+		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken, RegistryScope.Changelog);
+
+		result.Updated.Should().Be(1);
+		_puts.Should().ContainSingle();
+		_puts[0].Key.Should().Be("changelog/elastic/elasticsearch/feature/foo/registry.json");
+
+		var manifest = Deserialize(_puts[0].ContentBody);
+		manifest.Product.Should().Be("elastic/elasticsearch/feature/foo");
+		manifest.Bundles.Should().ContainSingle();
+		manifest.Bundles[0].File.Should().Be("2-feature.yaml");
 	}
 
 	private sealed class FakeTimeProvider(DateTimeOffset now) : TimeProvider

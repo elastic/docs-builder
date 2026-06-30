@@ -8,7 +8,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
 /// Consumer-side view of the <c>bundle/{product}/registry.json</c> manifest (or the
-/// <c>changelog/{repo}/registry.json</c> entry index) published alongside scrubbed changelog content.
+/// <c>changelog/{org}/{repo}/{branch}/registry.json</c> entry index) published alongside scrubbed changelog content.
 /// Mirrors the producer's shape (see the changelog upload service) but is intentionally lenient: only
 /// the fields the <c>changelog</c> directive needs to enumerate bundles are declared, and nothing is
 /// <c>required</c> so a partially-written or future-versioned manifest still deserializes.
@@ -28,7 +28,7 @@ public sealed record ChangelogRegistry
 /// <summary>One entry in <see cref="ChangelogRegistry.Bundles"/>.</summary>
 public sealed record ChangelogRegistryBundle
 {
-	/// <summary>Bundle file name, resolved at <c>bundle/{product}/{file}</c> on the CDN (or entry file at <c>changelog/{repo}/{file}</c> for the entry index).</summary>
+	/// <summary>Bundle file name, resolved at <c>bundle/{product}/{file}</c> on the CDN (or entry file at <c>changelog/{org}/{repo}/{branch}/{file}</c> for the entry index).</summary>
 	public string? File { get; init; }
 
 	/// <summary>Target version or release date declared by the bundle (e.g. <c>9.3.0</c>).</summary>

@@ -2781,6 +2781,13 @@
             },
             {
               "role": "flag",
+              "name": "branch",
+              "type": "string",
+              "required": false,
+              "summary": "Branch whose CDN changelog pool (changelog/{org}/{repo}/{branch}/...) entries are sourced from. Falls back to bundle.branch in changelog.yml, then \u0022main\u0022."
+            },
+            {
+              "role": "flag",
               "name": "plan",
               "type": "boolean",
               "required": false,
@@ -3898,7 +3905,7 @@
           ],
           "name": "upload",
           "summary": "Upload changelog entries or bundle artifacts to S3 or Elasticsearch.",
-          "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{repo}/{file}, keyed by the authoring\nrepository (resolved from --repo, then bundle.repo in changelog.yml, then the git\nremote origin). Bundles are uploaded under bundle/{product}/{file}, product-scoped from\nthe bundle YAML, and do not require a repo.",
+          "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{org}/{repo}/{branch}/{file}, keyed by the\nauthoring owner (--owner \u003E bundle.owner \u003E git remote), repository (--repo\n\u003E bundle.repo \u003E git remote), and branch (--branch \u003E the current checkout\u0027s\nbranch). The branch is stored verbatim, so a branch\u0027s / become real key separators. Bundles\nare uploaded under bundle/{product}/{file}, product-scoped from the bundle YAML, and do not\nrequire an owner/repo/branch.",
           "usage": "docs-builder changelog upload --artifact-type \u003Cstring\u003E --target \u003Cstring\u003E [options]",
           "examples": [],
           "parameters": [
@@ -3962,14 +3969,21 @@
               "name": "repo",
               "type": "string",
               "required": false,
-              "summary": "GitHub repository name used to scope uploaded changelog entry keys (changelog/{repo}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads."
+              "summary": "GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads."
             },
             {
               "role": "flag",
               "name": "owner",
               "type": "string",
               "required": false,
-              "summary": "GitHub repository owner, accepted for parity with other changelog commands. Falls back to bundle.owner in changelog.yml, then the git remote origin. Not part of the S3 key."
+              "summary": "GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads."
+            },
+            {
+              "role": "flag",
+              "name": "branch",
+              "type": "string",
+              "required": false,
+              "summary": "Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout\u0027s branch. Required for changelog uploads; ignored for bundle uploads."
             },
             {
               "role": "flag",
