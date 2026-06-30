@@ -671,7 +671,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteChangelogBlock(HtmlRenderer renderer, ChangelogBlock block)
 	{
-		if (!block.Found || block.BundlesFolderPath is null)
+		if (!block.Found)
+			return;
+
+		// Local-folder mode must also have resolved a bundles folder; CDN-sourced bundles never set one.
+		var isCdnSourced = !string.IsNullOrWhiteSpace(block.CdnProduct);
+		if (!isCdnSourced && block.BundlesFolderPath is null)
 			return;
 
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(block);

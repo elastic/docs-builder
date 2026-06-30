@@ -31,13 +31,13 @@
     <PackageVersion Include="Amazon.Lambda.S3Events" Version="4.0.0" />
     <PackageVersion Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.0" />
     <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="3.0.0" />
-    <PackageVersion Include="AngleSharp" Version="1.4.0" />
+    <PackageVersion Include="AngleSharp" Version="1.5.0" />
     <PackageVersion Include="Aspire.Hosting" Version="13.4.3" />
     <PackageVersion Include="MessagePack" Version="2.5.302" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.4.3" />
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.7.4" />
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.8" />
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.18.5" />
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.33" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.3.1" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.23.4" />
     <PackageVersion Include="Elastic.OpenTelemetry" Version="1.4.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.8" />
@@ -48,12 +48,11 @@
     <PackageVersion Include="Generator.Equals" Version="4.0.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="KubernetesClient" Version="19.0.2" />
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
-    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.4.1" />
+    <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
     <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.45.0" />
-    <PackageVersion Include="Elastic.Mapping" Version="0.46.0" />
-    <PackageVersion Include="Elastic.Internal.Search.Contract" Version="0.9.2" />
-    <PackageVersion Include="Elastic.Internal.Search.Elasticsearch" Version="0.9.2" />
+    <PackageVersion Include="Elastic.Mapping" Version="0.48.0" />
+    <PackageVersion Include="Elastic.Internal.Search.Contract" Version="0.11.0" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.7.1" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
@@ -82,7 +81,7 @@
     <PackageVersion Include="Github.Actions.Core" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.8" />
-    <PackageVersion Include="Markdig" Version="1.1.2" />
+    <PackageVersion Include="Markdig" Version="1.2.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.19.1" />
     <PackageVersion Include="ModelContextProtocol" Version="1.4.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.4.0" />
