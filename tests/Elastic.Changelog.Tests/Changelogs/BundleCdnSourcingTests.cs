@@ -125,6 +125,30 @@ public class BundleCdnSourcingTests(ITestOutputHelper output) : ChangelogTestBas
 	}
 
 	[Fact]
+	public async Task OptionMode_OwnerFromCombinedRepo_SourcesFromThatPool()
+	{
+		// When --repo is given in owner/repo form and no explicit owner is set, the owner segment must be
+		// taken from the repo prefix (not defaulted to elastic), so the CDN pool path stays correct.
+		var handler = RegistryHandler();
+		var service = new ChangelogBundlingService(LoggerFactory, null, FileSystem, null, Fetcher(Output, handler));
+		var output = OutputPath();
+
+		var input = new BundleChangelogsArguments
+		{
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "*", Lifecycle = "*" }],
+			Output = output,
+			Repo = "acme-corp/widget",
+			Resolve = true
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+		handler.RequestedPaths.Should().Contain("/changelog/acme-corp/widget/main/registry.json");
+	}
+
+	[Fact]
 	public async Task OptionMode_NoResolvableRepo_FallsBackToLocal()
 	{
 		// With no --repo, no bundle.repo in config, and no git-remote resolution at the service layer, the

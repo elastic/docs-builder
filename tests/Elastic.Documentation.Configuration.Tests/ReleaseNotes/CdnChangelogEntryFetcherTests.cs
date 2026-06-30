@@ -74,6 +74,25 @@ public class CdnChangelogEntryFetcherTests
 		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/feature/foo/1-a.yaml", StringComparison.Ordinal));
 	}
 
+	[Theory]
+	[InlineData("..")]
+	[InlineData("feature/..")]
+	[InlineData("")]
+	public async Task FetchAsync_UnsafeBranch_EmitsErrorAndDoesNotHitCdn(string branch)
+	{
+		// A traversal/empty branch segment must be rejected before any request, so URI normalization
+		// can't redirect the fetch to a different pool.
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
+		var (errors, _, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", branch, emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		entries.Should().BeEmpty();
+		errors.Should().ContainSingle().Which.Should().Contain("Invalid changelog pool");
+		handler.RequestedPaths.Should().BeEmpty("validation must happen before any CDN request");
+	}
+
 	[Fact]
 	public async Task FetchAsync_RegistryNotFound_EmitsErrorAndReturnsEmpty()
 	{

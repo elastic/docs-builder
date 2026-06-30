@@ -106,8 +106,19 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		Action<string> emitWarning,
 		Cancel ctx)
 	{
-		var poolSegments = PoolSegments(org, repo, branch).ToArray();
 		var poolLabel = $"{org}/{repo}/{branch}";
+
+		// Defense-in-depth: org/repo come from config and branch from config or CLI on the consumer side.
+		// Reject empty or traversal segments before building the URI so it cannot normalize a "../" into a
+		// different changelog pool than intended.
+		if (!IsValidPool(org, repo, branch))
+		{
+			emitError(
+				$"Invalid changelog pool '{poolLabel}': the org, repo, and each branch segment must be non-empty, contain no path separators, and not be '.' or '..'.");
+			return [];
+		}
+
+		var poolSegments = PoolSegments(org, repo, branch).ToArray();
 		var registryUri = CombineSegments(baseUri, [.. poolSegments, "registry.json"]);
 
 		ChangelogRegistry? registry;
@@ -265,6 +276,30 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		foreach (var part in branch.Split('/'))
 			yield return part;
 	}
+
+	/// <summary>
+	/// Validates the consumer-supplied pool coordinates (org, repo, and each <c>/</c>-delimited branch
+	/// segment) so a malformed branch cannot redirect the fetch to a different pool via URI normalization.
+	/// </summary>
+	private static bool IsValidPool(string org, string repo, string branch)
+	{
+		if (!IsSafePoolSegment(org) || !IsSafePoolSegment(repo))
+			return false;
+
+		foreach (var part in branch.Split('/'))
+		{
+			if (!IsSafePoolSegment(part))
+				return false;
+		}
+
+		return true;
+	}
+
+	private static bool IsSafePoolSegment(string segment) =>
+		!string.IsNullOrEmpty(segment)
+		&& segment is not ("." or "..")
+		&& !segment.Contains('/', StringComparison.Ordinal)
+		&& !segment.Contains('\\', StringComparison.Ordinal);
 
 	/// <summary>
 	/// Guards against path traversal or nested keys sneaking in via the registry: an entry file name
