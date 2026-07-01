@@ -87,7 +87,7 @@ public abstract class RoleParser<TRole> : InlineParser
 
 		// We've already skipped the opening sticks. Account for that here.
 		startPosition -= openSticks;
-		startPosition = Math.Max(startPosition, 0);
+		startPosition = System.Math.Max(startPosition, 0);
 
 		var start = processor.GetSourcePosition(startPosition, out var line, out var column);
 		var end = processor.GetSourcePosition(slice.Start);
