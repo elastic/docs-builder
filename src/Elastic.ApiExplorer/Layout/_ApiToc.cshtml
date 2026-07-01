@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.ApiExplorer.ApiTocItem[]>
-<aside class="sidebar hidden lg:block w-full lg:max-w-65 px-6 lg:px-0">
+<aside class="sidebar hidden lg:sticky lg:top-(--offset-top) lg:self-start shrink-0 lg:block w-full lg:max-w-65 px-6 lg:px-0">
 	<nav id="toc-nav" class="sidebar-nav lg:h-full">
 		<div class="pt-6">
 			@if (Model.Length > 0)
@@ -11,8 +11,8 @@
 						<ul class="block w-full">
 							@foreach (var item in Model)
 							{
-								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.current]:border-l-blue-elastic!">
-									<a class="sidebar-link inline-block my-1.5 @(item.Level == 3 ? "ml-4" : string.Empty)"
+								<li class="has-[:hover]:border-l-grey-80 flex w-full items-stretch border-l-1 border-l-grey-20 has-[.current]:border-l-blue-elastic! @(item.Level == 3 ? "pl-8" : "pl-4")">
+									<a class="sidebar-link py-[6px]"
 									   href="#@item.Slug">
 										@item.Heading
 									</a>

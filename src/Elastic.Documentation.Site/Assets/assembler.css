@@ -1,14 +1,15 @@
 /* Assembler build type specific styles */
 
 /* Elastic global nav is position:static (scrolls with page).
-   The secondary nav (Docs sub-header) is sticky on md+ viewports. */
+   The secondary nav (Docs sub-header) is sticky on md+ viewports — match its height. */
 :root {
+	--secondary-nav-height: 55px;
 	--offset-top: 0px;
 }
 
 @media screen and (min-width: 768px) {
 	:root {
-		--offset-top: calc(var(--spacing) * 18);
+		--offset-top: var(--secondary-nav-height);
 	}
 }
 

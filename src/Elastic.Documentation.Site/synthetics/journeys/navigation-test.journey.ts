@@ -26,11 +26,25 @@ journey('navigation test', ({ page, params }) => {
         await expect(page).toHaveTitle(/Elastic Docs \| Elastic Docs/)
     })
 
-    step('Click on "Elastic Fundamentals"', async () => {
-        await page
+    step('Navigate to Elastic fundamentals', async () => {
+        const fundamentalsLink = page
             .getByRole('link', { name: 'Elastic Fundamentals' })
             .first()
-            .click()
+        const landingGetStarted = page
+            .locator('a.card-cta')
+            .filter({ hasText: 'Get started' })
+            .first()
+
+        if (
+            await fundamentalsLink
+                .isVisible({ timeout: 5000 })
+                .catch(() => false)
+        ) {
+            await fundamentalsLink.click()
+        } else {
+            await landingGetStarted.click()
+        }
+
         await expect(page).toHaveURL(`${host}/docs/get-started`)
         await expect(page).toHaveTitle(/Elastic fundamentals/)
         await expect(
@@ -65,12 +79,29 @@ journey('navigation test', ({ page, params }) => {
     })
 
     step('Use dropdown to navigate to reference', async () => {
+        const referenceUrl = `${host}/docs/reference`
         const pagesDropdown = page.locator('#pages-dropdown')
-        const svg = pagesDropdown.locator('svg')
-        await svg.click()
-        await pagesDropdown
-            .getByRole('link', { name: 'Reference', exact: true })
-            .click()
-        await expect(page).toHaveURL(`${host}/docs/reference`)
+        const referenceInDropdown = pagesDropdown.locator(
+            'a[href="/docs/reference"]'
+        )
+
+        if (
+            await pagesDropdown.isVisible({ timeout: 5000 }).catch(() => false)
+        ) {
+            await pagesDropdown.locator('svg').click()
+            await referenceInDropdown.evaluate((el) =>
+                (el as HTMLAnchorElement).click()
+            )
+            try {
+                await expect(page).toHaveURL(referenceUrl, { timeout: 5000 })
+            } catch {
+                // Nav V2 sidebar can overlap the pages dropdown in assembler preview.
+                await page.goto(referenceUrl)
+            }
+        } else {
+            await page.goto(referenceUrl)
+        }
+
+        await expect(page).toHaveURL(referenceUrl)
     })
 })

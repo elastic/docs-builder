@@ -97,10 +97,13 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 					{
 						if (!entry.TryGetValue(branch, out var entryInfo))
 						{
-							context.Collector.EmitError("", $"'{repo.Key}' does not have a '{branch}' entry in link index");
-							return;
+							// Branch has no published link index (e.g. a prototype or dev branch).
+							// Warn and check out the branch directly without a pinned git ref;
+							// cross-link resolution will use whatever index entries are available.
+							context.Collector.EmitWarning("", $"'{repo.Key}' does not have a '{branch}' entry in link index, checking out branch directly");
 						}
-						gitRef = entryInfo.GitReference;
+						else
+							gitRef = entryInfo.GitReference;
 					}
 
 					var cloneInformation = RepositorySourcer.CloneRef(repo.Value, gitRef, fetchLatest, assumeCloned: assumeCloned);

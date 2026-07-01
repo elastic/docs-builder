@@ -176,8 +176,8 @@ const SearchResultRow = ({
                 display: flex;
                 align-items: center;
                 gap: ${euiTheme.size.s};
-                padding-inline: ${euiTheme.size.l};
-                padding-block: ${euiTheme.size.base};
+                padding-inline: 8px;
+                padding-block: 6px;
                 text-decoration: none;
                 cursor: pointer;
                 border-bottom: 1px solid ${euiTheme.colors.borderBaseSubdued};

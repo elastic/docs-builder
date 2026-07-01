@@ -47,13 +47,13 @@ public class RepositoryPublishValidationService(
 			var next = repository.GetBranch(ContentSource.Next);
 			if (!registryMapping.TryGetValue(next, out _))
 			{
-				collector.EmitError(reportPath,
+				collector.EmitWarning(reportPath,
 					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {linkIndexReader.RegistryUrl}");
 			}
 
 			if (!registryMapping.TryGetValue(current, out _))
 			{
-				collector.EmitError(reportPath,
+				collector.EmitWarning(reportPath,
 					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {linkIndexReader.RegistryUrl}");
 			}
 		}

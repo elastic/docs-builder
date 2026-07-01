@@ -27,9 +27,10 @@
 @import './markdown/stepper.css';
 @import './markdown/button.css';
 @import './markdown/agent-skill.css';
-@import './markdown/cli-modifiers.css';
+@import './markdown/hub.css';
+@import './markdown/metadata-box.css';
+@import './secondary-nav-dropdown.css';
 @import './markdown/contributors.css';
-@import './markdown/storybook.css';
 @import './api-docs.css';
 @import 'tippy.js/dist/tippy.css';
 
@@ -110,19 +111,75 @@ body {
 		}
 	}
 
-	.sidebar {
-		.sidebar-nav {
-			@apply sticky top-(--offset-top) overflow-y-auto;
+	.sidebar:has(#pages-nav) {
+		@media (width >= 768px) {
+			display: flex;
+			flex-direction: column;
+			align-self: start;
+			min-height: 0;
 			max-height: calc(100vh - var(--offset-top));
-			scrollbar-gutter: stable;
-			transition:
-				top 0.3s ease,
-				max-height 0.3s ease;
+			overflow: hidden;
+		}
+	}
+
+	.sidebar:has(#toc-nav) {
+		@media (width >= 768px) {
+			display: flex;
+			flex-direction: column;
+			align-self: start;
+			min-height: 0;
+			max-height: calc(100vh - var(--offset-top));
+			overflow: hidden;
+		}
+	}
+
+	.sidebar {
+		/* Pages nav: sticky on aside; scroll clipped in .pages-nav-menu (not full tree height). */
+		#pages-nav.sidebar-nav {
+			display: flex;
+			flex: 1 1 auto;
+			flex-direction: column;
+			min-height: 0;
+			max-height: 100%;
+			overflow: hidden;
 		}
 
+		/* In-page TOC: sticky on aside.sidebar (see _TableOfContents.cshtml); scroll here. */
+		#toc-nav.sidebar-nav {
+			min-height: 0;
+			height: 100%;
+			max-height: 100%;
+			overflow-y: auto;
+			scrollbar-gutter: stable;
+		}
+
+		/* Shared by V1 and V2 base. Hover ink: V1 pages tree + non-pages sidebars only — Nav V2 keeps color on hover (see #pages-nav nav[data-nav-v2]). */
 		.sidebar-link {
-			@apply text-ink-light inline-block leading-[1.2em] text-pretty hover:text-black md:text-sm;
+			@apply text-ink-light inline-block text-[14px] leading-[20px] text-pretty;
 			word-break: break-word;
+		}
+
+		#pages-nav .pages-nav-menu > ul .sidebar-link:hover,
+		#toc-nav .sidebar-link:hover {
+			@apply text-black;
+		}
+
+		/* In-page TOC: padding on li; link fills row for full-width hit target. */
+		& #toc-nav .toc-progress-container a.sidebar-link {
+			display: block;
+			width: 100%;
+			box-sizing: border-box;
+			color: #516381;
+		}
+
+		& #toc-nav .toc-progress-container a.sidebar-link:hover,
+		& #toc-nav .toc-progress-container a.sidebar-link.current,
+		& #toc-nav .toc-progress-container a.sidebar-link.current:hover {
+			color: #516381;
+		}
+
+		& #toc-nav .toc-progress-container li:hover {
+			border-left-color: #516381 !important;
 		}
 	}
 
@@ -174,7 +231,6 @@ body {
 	.nav-subtree {
 		@apply relative ml-4 hidden w-full;
 
-		/* revealed when the sibling .peer div contains a checked checkbox */
 		.peer:has(:checked) ~ & {
 			display: block;
 		}
@@ -185,13 +241,594 @@ body {
 			left: calc(var(--spacing) * -4 + 1px);
 		}
 
-		/* darken connector line when subtree contains the current page */
 		&:has(.current)::before,
 		.peer:has(.current) ~ &::before {
 			@apply bg-grey-40;
 		}
 	}
+}
 
+/* Assembler nav V2: layout chrome (sidebar width). Figma Nav column is 279px (260 content + 19 gutter). */
+@media (width >= 768px) {
+	body:has([data-nav-v2]) div.min-h-screen.grid:has(> .sidebar > #pages-nav) {
+		grid-template-columns: minmax(0, 279px) 1fr;
+	}
+
+	body:has([data-nav-v2])
+		div.grid.w-full.h-full:has(> aside.sidebar:first-child > #pages-nav) {
+		grid-template-columns: minmax(0, 279px) 1fr;
+	}
+}
+
+body:has([data-nav-v2]) aside.sidebar:has(#pages-nav) {
+	max-width: 279px;
+	align-self: start;
+	transition: none;
+}
+
+body:has([data-nav-v2]) aside.sidebar:has(#toc-nav) {
+	align-self: start;
+	transition: none;
+}
+
+/* Figma Nav shell: Search / Back / Content (Top · Subtitle · List). */
+.pages-nav-v2-shell {
+	min-width: 279px;
+}
+
+.pages-nav-v2__search-inner {
+	border-bottom: 1px solid transparent;
+}
+
+.pages-nav-v2__search-inner[data-nav-scrolled] {
+	border-bottom-color: #e3e8f2;
+}
+
+.pages-nav-v2__scroll {
+	scrollbar-width: thin;
+	scrollbar-color: #e3e8f2 transparent;
+	scrollbar-gutter: stable;
+}
+
+.pages-nav-v2__scroll::-webkit-scrollbar {
+	width: 8px;
+}
+
+.pages-nav-v2__scroll::-webkit-scrollbar-thumb {
+	background-color: #e3e8f2;
+	border-radius: 9999px;
+}
+
+.pages-nav-v2__scroll::-webkit-scrollbar-thumb:hover {
+	background-color: #c5cedb;
+}
+
+.pages-nav-v2__content {
+	padding-top: 24px;
+}
+
+/* First Top / Subtitle in scroll: no extra top inset (Figma); siblings get pt-16. */
+.pages-nav-v2__content
+	.docs-sidebar-nav-v2__tree
+	> li
+	> .docs-sidebar-nav-v2__block-top,
+.pages-nav-v2__content
+	.docs-sidebar-nav-v2__tree
+	> li
+	> .docs-sidebar-nav-v2__block-subtitle {
+	margin: 0;
+}
+
+.pages-nav-v2__content
+	.docs-sidebar-nav-v2__tree
+	> li
+	~ li
+	> .docs-sidebar-nav-v2__block-top {
+	padding-top: 16px;
+}
+
+.pages-nav-v2__content
+	.docs-sidebar-nav-v2__tree
+	> li
+	~ li
+	> .docs-sidebar-nav-v2__block-subtitle {
+	padding-top: 16px;
+	padding-bottom: 8px;
+}
+
+.pages-nav-v2__content nav[data-nav-v2] ul.docs-sidebar-nav-v2__label-children,
+.pages-nav-v2__content nav[data-nav-v2] ul.docs-sidebar-nav-v2__subsection {
+	gap: 1px;
+}
+
+/* Nav V2: no motion on sidebar column (sticky offset / max-height). */
+#pages-nav:has(nav[data-nav-v2]).sidebar-nav {
+	transition: none;
+}
+
+/* Sticky chrome wrapper is unstyled; search row chrome lives on .pages-nav-v2__search-inner. */
+
+.sidebar #pages-nav .pages-nav-menu.pages-nav-v2__scroll {
+	padding-right: 0;
+}
+
+/* Nav V2: stack list items vertically */
+#pages-nav nav[data-nav-v2] ul {
+	display: flex;
+	flex-direction: column;
+	list-style: none;
+}
+
+/*
+ * Subsection lists (see NavV2LabelListKind + _TocTreeNavV2): ul under a label when children are
+ * nested labels / links only — not li.group-navigation rows. Non-subsection uses .docs-sidebar-nav-v2__label-children.
+ */
+
+/* No gap between rows inside a subsection list (links under a nested subtitle). */
+#pages-nav
+	nav[data-nav-v2]
+	li
+	> .docs-sidebar-nav-v2__label--nested
+	+ ul.docs-sidebar-nav-v2__subsection {
+	gap: 0 !important;
+}
+
+/* Gap between sibling subsection blocks (each li: nested subtitle + its ul) under a top icon section only. */
+#pages-nav
+	nav[data-nav-v2]
+	li
+	> .docs-sidebar-nav-v2__label--top
+	+ ul.docs-sidebar-nav-v2__subsection {
+	gap: 0 !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li
+	> .docs-sidebar-nav-v2__label--top
+	+ ul.docs-sidebar-nav-v2__subsection:has(
+		> li > .docs-sidebar-nav-v2__label--nested
+	) {
+	gap: 8px !important;
+}
+
+/*
+ * Folder groups: CSS Grid 0fr → 1fr (no scrollHeight in JS). The engine interpolates the row
+ * track instead of measuring pixel height on the main thread (avoids first-open jank).
+ */
+#pages-nav
+	nav[data-nav-v2]
+	li.group-navigation
+	> .docs-sidebar-nav-v2__folder-clip {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 220ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Hint row-track interpolation while the pointer is on this folder (cheap vs permanent will-change on every row). */
+#pages-nav
+	nav[data-nav-v2]
+	li.group-navigation:hover
+	> .docs-sidebar-nav-v2__folder-clip {
+	will-change: grid-template-rows;
+}
+
+/* Only this folder's checkbox opens its clip — :has() must not match nested descendants' peers or ancestor lis repeat-expand (duplicate-looking children). */
+#pages-nav
+	nav[data-nav-v2]
+	li.group-navigation:has(> .nav-folder-peer input[type='checkbox']:checked)
+	> .docs-sidebar-nav-v2__folder-clip {
+	grid-template-rows: 1fr;
+}
+
+#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__folder-clip-inner {
+	min-height: 0;
+	overflow: hidden;
+	transform: translateZ(0);
+}
+
+/*
+ * Folder accordion body: flat/styled link rows (chevron folders, leaves). Distinct from
+ * .docs-sidebar-nav-v2__subsection (label heading + list pattern).
+ */
+#pages-nav nav[data-nav-v2] ul.docs-sidebar-nav-v2__folder-children {
+	display: flex;
+	flex-direction: column;
+	list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#pages-nav
+		nav[data-nav-v2]
+		li.group-navigation
+		> .docs-sidebar-nav-v2__folder-clip {
+		transition: none;
+	}
+}
+
+/*
+ * Nav V2: block spacing only for root rows that start a top-level section (label--top).
+ * Leaf / folder rows without a top label do not get the 24px bottom padding.
+ */
+#pages-nav
+	nav[data-nav-v2]
+	ul.docs-sidebar-nav-v2__tree
+	> li:has(> .docs-sidebar-nav-v2__label--top) {
+	margin-top: 0;
+	padding: 0 0 16px;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	ul.docs-sidebar-nav-v2__tree
+	> li:has(> .docs-sidebar-nav-v2__label--top):last-child {
+	padding: 0 0 16px;
+}
+
+/*
+ * Breathing room when Jump-to-page is absent: <navigation-search> is not rendered
+ * (see _TocTree.cshtml). Match the first tree row regardless of label vs link — the old
+ * li:first-child:has(> .label--top) selector missed link-first sidebars (e.g. surfaced index).
+ * Top inset: 4px when search chrome is absent.
+ */
+#pages-nav
+	#pages-nav-sticky-chrome:not(:has(navigation-search))
+	+ .pages-nav-menu
+	nav[data-nav-v2]
+	ul.docs-sidebar-nav-v2__tree
+	> li:first-child {
+	padding-top: 4px;
+}
+
+/* Search supplies top chrome; keep the first row flush. */
+#pages-nav
+	#pages-nav-sticky-chrome:has(navigation-search)
+	+ .pages-nav-menu
+	nav[data-nav-v2]
+	ul.docs-sidebar-nav-v2__tree
+	> li:first-child {
+	padding-top: 0;
+}
+
+/* Tippy mounts inside nav; clip tooltips so nothing paints outside the sidebar column */
+nav.docs-sidebar-nav-v2 {
+	position: relative;
+	overflow: hidden;
+}
+
+#pages-nav
+	nav.docs-sidebar-nav-v2:has(> ul > li:first-child):not(
+		:has(> ul > li:first-child > .docs-sidebar-nav-v2__label)
+	) {
+	padding: 0 0 22px 0;
+}
+
+/* Nav V2: top-level section titles (with icon) — inherit body font stack */
+nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--top {
+	font-weight: 700;
+	font-size: 16px;
+	line-height: 24px;
+	color: #1c1e23;
+	margin: 16px 0;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__block-top.docs-sidebar-nav-v2__label--top,
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__block-subtitle.docs-sidebar-nav-v2__label--nested {
+	margin: 0;
+}
+
+/*
+ * Label--top spacing:
+ * - Default (12px 0 16px): top sections whose body is a folder list (.docs-sidebar-nav-v2__label-children).
+ * - Tighter bottom (12px 0 8px): top sections whose body is a true subsection list (nested labels only).
+ */
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__label--top:has(+ ul.docs-sidebar-nav-v2__subsection) {
+	margin: 12px 0 8px;
+}
+
+/* Nav V2: nested subgroup section titles (non-clickable; color never overridden by active path) */
+nav.docs-sidebar-nav-v2 .docs-sidebar-nav-v2__label--nested {
+	font-weight: 500;
+	margin: 16px 0;
+	color: #a2b1c9;
+}
+
+/* Nav V2: top-level section title text only (icons removed). */
+nav.docs-sidebar-nav-v2
+	.docs-sidebar-nav-v2__label--top
+	.docs-sidebar-nav-v2__label-icon {
+	display: none;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	color: #111c2c;
+}
+
+/* Nav V2: flex column needs min-width: 0 on li; labels wrap. */
+#pages-nav nav[data-nav-v2] li {
+	min-width: 0;
+	width: 100%;
+}
+
+/*
+ * Subsection heading copy (nested label + nav-text). Scoped to nested only so link/folder
+ * rows keep normal body styling.
+ */
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__label--nested.docs-sidebar-nav-v2__nav-text {
+	font-size: 12px;
+	color: #8a919e;
+	margin: 16px 0 8px;
+	font-weight: 700;
+}
+
+#pages-nav nav[data-nav-v2] .docs-sidebar-nav-v2__nav-text {
+	min-width: 0;
+	max-width: 100%;
+	white-space: normal;
+	word-break: break-word;
+	overflow-wrap: break-word;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	.docs-sidebar-nav-v2__label--top
+	.docs-sidebar-nav-v2__nav-text {
+	flex: 1 1 0%;
+}
+
+/* Folder rows: text wraps; chevron + label vertically centered (Tailwind items-center; unlayered override kept explicit) */
+#pages-nav nav[data-nav-v2] a.sidebar-link.flex {
+	min-width: 0;
+	align-items: center;
+}
+
+/* Nav V2: default link ink; placeholders keep .text-grey-40. Current row follows EUI-like selected state. */
+#pages-nav nav[data-nav-v2] a.sidebar-link {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	text-wrap: wrap;
+	font-weight: 400;
+	border-radius: 8px;
+	background-color: transparent;
+}
+
+#pages-nav nav[data-nav-v2] a.sidebar-link.nav-v2-link {
+	padding-inline-end: 10px;
+	padding-inline-start: max(10px, calc(10px + var(--nav-level, 0) * 12px));
+}
+
+#pages-nav nav[data-nav-v2] a.sidebar-link:not(.text-grey-40) {
+	color: #516381;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	a.sidebar-link:not(.text-grey-40):not(.current):hover {
+	background-color: #f6f9fc;
+}
+
+#pages-nav nav[data-nav-v2] a.sidebar-link.text-grey-40 {
+	color: var(--color-grey-40);
+}
+
+#pages-nav nav[data-nav-v2] a.sidebar-link.text-grey-40:not(.current):hover {
+	background-color: #f6f9fc;
+}
+
+#pages-nav nav[data-nav-v2] a.sidebar-link.current {
+	position: relative;
+	color: #0b64dd !important;
+	font-weight: 600 !important;
+	background-color: #ecf1f9 !important;
+}
+
+#pages-nav nav[data-nav-v2] a.sidebar-link.current:hover {
+	color: #0b64dd;
+	background-color: #ecf1f9 !important;
+}
+
+/* Vertical accent on the active page row (blue bar + blue title; chevron uses parent-path ink). */
+#pages-nav nav[data-nav-v2] a.sidebar-link.current::before {
+	content: '';
+	position: absolute;
+	inset-inline-start: 3px;
+	top: 6px;
+	bottom: 6px;
+	width: 3px;
+	border-radius: 9999px;
+	background-color: var(--color-blue-elastic);
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Nav V2: active section background — subtree vs leaf driven by pages-nav-v2.ts */
+#pages-nav nav[data-nav-v2] li.nav-v2-active-subtree {
+	background-color: #f6f9fc;
+	border-radius: 8px;
+}
+
+#pages-nav nav[data-nav-v2] li.nav-v2-active-leaf {
+	background-color: transparent;
+	border-radius: 8px;
+}
+
+#pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link,
+#pages-nav nav[data-nav-v2] li.nav-v2-active-leaf > a.sidebar-link {
+	background-color: transparent;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-subtree
+	a.sidebar-link:not(.current):hover {
+	background-color: #ecf1f9 !important;
+}
+
+#pages-nav nav[data-nav-v2] li.nav-v2-active-subtree a.sidebar-link.current,
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-subtree
+	a.sidebar-link.current:hover {
+	background-color: #ecf1f9 !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-leaf
+	> a.sidebar-link:not(.current):hover {
+	background-color: #ecf1f9 !important;
+}
+
+#pages-nav nav[data-nav-v2] li.nav-v2-active-leaf > a.sidebar-link.current,
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-leaf
+	> a.sidebar-link.current:hover {
+	background-color: #ecf1f9 !important;
+}
+
+/*
+ * Ancestor folder rows (current is deeper): semibold + dark ink on the open path.
+ * .current on the same row (folder index) uses blue text; chevron stays dark via scoped rule below.
+ */
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link {
+	color: #1d2a3e !important;
+	font-weight: 600 !important;
+}
+
+#pages-nav nav[data-nav-v2] li.nav-v2-active-parent {
+	background-color: #f6f9fc;
+	border-radius: 8px;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link.current {
+	color: #0b64dd !important;
+	font-weight: 600 !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link.text-grey-40 {
+	color: var(--color-grey-40) !important;
+	font-weight: 600 !important;
+}
+
+#pages-nav nav[data-nav-v2] li > a.sidebar-link,
+#pages-nav nav[data-nav-v2] li > .nav-folder-peer > a.sidebar-link {
+	margin-bottom: 1px;
+}
+
+#pages-nav nav[data-nav-v2] li:last-child > a.sidebar-link,
+#pages-nav nav[data-nav-v2] li:last-child > .nav-folder-peer > a.sidebar-link {
+	margin-bottom: 0;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-parent
+	a.sidebar-link:not(.current):hover {
+	background-color: #ecf1f9 !important;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-parent
+	> .nav-folder-peer
+	> a.sidebar-link:not(.current):hover {
+	background-color: #ecf1f9;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link.current:hover {
+	color: #0b64dd !important;
+}
+
+#pages-nav nav[data-nav-v2] .nav-folder-peer {
+	min-width: 0;
+}
+
+/* Chevrons: muted by default; active folder row icon follows active blue. */
+#pages-nav nav[data-nav-v2] .nav-folder-chevron {
+	color: #a2b1c9;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	.nav-folder-peer
+	> a.sidebar-link.current
+	.nav-folder-chevron {
+	color: #0b64dd;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link:not(.current)
+	.nav-folder-chevron {
+	color: currentColor;
+}
+
+#pages-nav
+	nav[data-nav-v2]
+	.nav-folder-peer
+	> a.sidebar-link.current
+	.nav-folder-chevron
+	svg,
+#pages-nav
+	nav[data-nav-v2]
+	li.nav-v2-active-ancestor
+	> .nav-folder-peer
+	> a.sidebar-link
+	.nav-folder-chevron
+	svg {
+	stroke-width: 3.5;
+}
+
+.docs-sidebar-nav-v2 .nav-folder-peer .nav-folder-chevron svg {
+	display: block;
+	width: 12px;
+	height: 12px;
+	transform: rotate(-90deg);
+}
+
+.docs-sidebar-nav-v2 .nav-item-slot {
+	display: block;
+	width: 12px;
+	height: 12px;
+}
+
+.docs-sidebar-nav-v2
+	.nav-folder-peer:has(input[type='checkbox']:checked)
+	.nav-folder-chevron
+	svg {
+	transform: rotate(0deg);
+}
+
+@layer components {
 	.sidebar-trial-card {
 		background: var(--color-green-30);
 		border-radius: 8px;
@@ -426,7 +1063,8 @@ body {
 	);
 }
 
-#pages-nav .current {
+/* V1 toc only: V2 current styling is #pages-nav nav[data-nav-v2] a.sidebar-link.current */
+#pages-nav .current:not(nav.docs-sidebar-nav-v2 a.sidebar-link) {
 	@apply text-blue-elastic! font-semibold;
 }
 
@@ -486,7 +1124,7 @@ math {
 
 * {
 	scrollbar-width: thin;
-	scrollbar-color: rgba(113, 134, 168, 0.5) transparent;
+	scrollbar-color: #e3e8f2 transparent;
 }
 
 /* Heading anchor links — show # on hover */

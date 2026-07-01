@@ -36,7 +36,7 @@
 	{
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
-		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
+		RenderHamburgerIcon = true,
 		DocSetName = Model.DocSetName,
 		Title = $"{Model.Title} | {Model.SiteName}",
 		Description = Model.Description,
@@ -49,6 +49,8 @@
 		Previous = Model.PreviousDocument,
 		Next = Model.NextDocument,
 		NavigationHtml = Model.NavigationHtml,
+		NavV2Sections = Model.NavV2Sections,
+		ActiveSectionId = Model.ActiveSectionId,
 		UrlPathPrefix = Model.UrlPathPrefix,
 		GithubEditUrl = Model.GithubEditUrl,
 		MarkdownUrl = Model.MarkdownUrl,
