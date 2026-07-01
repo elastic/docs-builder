@@ -117,6 +117,7 @@ toc:
           - file: navigation.md
           - file: extensions.md
           - file: api-explorer.md
+          - file: cta.md
       - file: page.md
       - file: content-sources.md
   - folder: syntax
