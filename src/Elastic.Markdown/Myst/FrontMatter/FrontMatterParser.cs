@@ -41,9 +41,20 @@ public class YamlFrontMatter
 	public bool? NoIndex { get; set; }
 
 	/// <summary>
-	/// Name of a right-gutter CTA template declared in the docset's <c>docset.yml</c> <c>cta</c> map.
+	/// Selects a right-gutter CTA template declared in the docset's <c>docset.yml</c> <c>cta</c> map.
 	/// Falls back to the built-in <c>trial</c> default when omitted or unknown.
 	/// </summary>
 	[YamlMember(Alias = "cta")]
-	public string? Cta { get; set; }
+	public CtaFrontMatter? Cta { get; set; }
+}
+
+/// <summary>
+/// Selects a right-gutter CTA template by <see cref="Id"/>. A dedicated type (rather than a bare string)
+/// so future per-page CTA options can be added here without another frontmatter format change.
+/// </summary>
+[YamlSerializable]
+public class CtaFrontMatter
+{
+	[YamlMember(Alias = "id")]
+	public string? Id { get; set; }
 }

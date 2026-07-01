@@ -1,6 +1,7 @@
 ---
 navigation_title: CTA
-cta: docs-builder
+cta:
+  id: docs-builder
 ---
 
 # CTA
@@ -30,15 +31,16 @@ You can also override the built-in default by defining your own `trial` entry â€
 
 ## Select a CTA on a page
 
-Use the `cta` frontmatter field to select a template by name:
+Use the `cta` frontmatter field to select a template by `id`:
 
 ```yaml
 ---
-cta: beta
+cta:
+  id: beta
 ---
 ```
 
-If a page omits `cta`, or names a template that doesn't exist in `docset.yml`, it falls back to the built-in `trial` CTA. An unknown name also emits a build warning.
+If a page omits `cta`, or its `id` doesn't match a template defined in `docset.yml`, it falls back to the built-in `trial` CTA. An unknown `id` also emits a build warning.
 
 ## Click and impression tracking
 

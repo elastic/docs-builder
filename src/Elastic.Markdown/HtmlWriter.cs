@@ -113,7 +113,7 @@ public class HtmlWriter(
 		// Resolve the right-gutter CTA: an explicit, known frontmatter name is 'custom' and renders in
 		// isolated builds too (so authors can preview it); otherwise fall back to the built-in default,
 		// which stays assembler-only to preserve today's behavior.
-		var ctaName = markdown.YamlFrontMatter?.Cta;
+		var ctaName = markdown.YamlFrontMatter?.Cta?.Id;
 		if (ctaName is null || !DocumentationSet.Configuration.Ctas.TryGetValue(ctaName, out var cta))
 		{
 			if (ctaName is not null)
