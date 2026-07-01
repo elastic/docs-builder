@@ -497,9 +497,9 @@ toc:
                 path_prefix: reference/opentelemetry/edot-sdks/browser
 
           # Managed inputs
-          # https://github.com/elastic/opentelemetry/blob/main/docs/reference/motlp/toc.yml
-          - toc: opentelemetry://reference/motlp
-            path_prefix: reference/opentelemetry/motlp
+          # https://github.com/elastic/opentelemetry/blob/main/docs/reference/managed-inputs/toc.yml
+          - toc: opentelemetry://reference/managed-inputs
+            path_prefix: reference/opentelemetry/managed-inputs
 
           # Elastic Integrations
           # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml
