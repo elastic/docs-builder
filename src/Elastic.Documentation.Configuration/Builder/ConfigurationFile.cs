@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
@@ -302,23 +303,8 @@ public record ConfigurationFile
 			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
 			foreach (var (name, definition) in docSetFile.Cta)
 			{
-				if (string.IsNullOrWhiteSpace(definition.Button?.Label) || string.IsNullOrWhiteSpace(definition.Button?.Url))
-				{
-					context.EmitError(context.ConfigurationPath, $"'cta.{name}' must define both 'button.label' and 'button.url'.");
-					continue;
-				}
-				if (definition.Benefits.Count > Cta.MaxBenefits)
-				{
-					context.EmitError(context.ConfigurationPath, $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed.");
-					continue;
-				}
-				_ctas[name] = new Cta
-				{
-					Name = name,
-					Label = definition.Button.Label,
-					Url = definition.Button.Url,
-					Benefits = definition.Benefits
-				};
+				if (ValidateCta(name, definition, context) is { } cta)
+					_ctas[name] = cta;
 			}
 
 			// Process features
@@ -358,6 +344,56 @@ public record ConfigurationFile
 			context.EmitError(context.ConfigurationPath, $"Could not load docset.yml: {e.Message}");
 			throw;
 		}
+	}
+
+	/// <summary>
+	/// Resolves a page's <c>cta</c> frontmatter id to a template, falling back to <see cref="Cta.DefaultName"/>
+	/// when <paramref name="id"/> is omitted or doesn't match a configured template.
+	/// </summary>
+	/// <param name="warning">Set when <paramref name="id"/> is unknown, so the caller can report it.</param>
+	public Cta ResolveCta(string? id, out string? warning)
+	{
+		warning = null;
+		if (id is not null && Ctas.TryGetValue(id, out var cta))
+			return cta;
+		if (id is not null)
+			warning = UnknownCtaWarning(id, Ctas.Keys);
+		return Ctas[Cta.DefaultName];
+	}
+
+	private static string UnknownCtaWarning(string ctaName, IEnumerable<string> knownCtaNames)
+	{
+		var known = knownCtaNames.ToHashSet();
+		var hint = new Suggestion(known, ctaName).GetSuggestionQuestion();
+		if (string.IsNullOrEmpty(hint))
+		{
+			hint = known.Count > 1
+				? $"Available: {string.Join(", ", known.Order())}."
+				: "No 'cta' templates are defined in this docset.yml yet. Add one under a top-level 'cta:' map, e.g.:\n" +
+					"cta:\n  mp:\n    button:\n      label: Get started on MP\n      url: https://example.com\n    benefits:\n      - \"Some benefit\"";
+		}
+		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml. Falling back to '{Cta.DefaultName}'. {hint}";
+	}
+
+	private static Cta? ValidateCta(string name, CtaDefinition definition, IDocumentationSetContext context)
+	{
+		if (string.IsNullOrWhiteSpace(definition.Button?.Label) || string.IsNullOrWhiteSpace(definition.Button?.Url))
+		{
+			context.EmitError(context.ConfigurationPath, $"'cta.{name}' must define both 'button.label' and 'button.url'.");
+			return null;
+		}
+		if (definition.Benefits.Count > Cta.MaxBenefits)
+		{
+			context.EmitError(context.ConfigurationPath, $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed.");
+			return null;
+		}
+		return new Cta
+		{
+			Name = name,
+			Label = definition.Button.Label,
+			Url = definition.Button.Url,
+			Benefits = definition.Benefits
+		};
 	}
 
 	private static readonly HashSet<string> AllowedImageExtensions =

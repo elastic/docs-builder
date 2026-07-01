@@ -149,11 +149,11 @@ function ctaAttributes(cta: HTMLAnchorElement) {
 let ctaImpressionObserver: IntersectionObserver | null = null
 
 // Fires 'cta_viewed' the first time a CTA becomes at least half visible, then stops
-// observing it (one impression per page view). Recreated on every load/swap so
-// htmx-replaced CTAs get (re-)observed against their current page path.
+// observing it (one impression per page view). The observer is created once and
+// reused across htmx swaps; re-observing an already-observed element is a no-op per
+// spec, so this only needs to (re-)register CTAs that are new since the last swap.
 function initCtaImpressions() {
-    ctaImpressionObserver?.disconnect()
-    ctaImpressionObserver = new IntersectionObserver(
+    ctaImpressionObserver ??= new IntersectionObserver(
         (entries, observer) => {
             for (const entry of entries) {
                 if (!entry.isIntersecting) continue
