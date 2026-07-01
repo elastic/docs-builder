@@ -11,7 +11,14 @@ import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
-import { logError } from './telemetry/logging'
+import { logError, logInfo } from './telemetry/logging'
+import {
+    ATTR_CTA_NAME,
+    ATTR_CTA_URL,
+    ATTR_CTA_LABEL,
+    ATTR_CTA_LOCATION,
+    ATTR_URL_PATH,
+} from './telemetry/semconv'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -128,11 +135,48 @@ function initMath() {
     })
 }
 
+// Attributes shared by cta_viewed and cta_clicked so the two are directly comparable (CTR).
+function ctaAttributes(cta: HTMLAnchorElement) {
+    return {
+        [ATTR_CTA_NAME]: cta.dataset.cta ?? '',
+        [ATTR_CTA_URL]: cta.dataset.ctaUrl ?? '',
+        [ATTR_CTA_LABEL]: cta.dataset.ctaLabel ?? '',
+        [ATTR_CTA_LOCATION]: cta.dataset.ctaLocation ?? '',
+        [ATTR_URL_PATH]: window.location.pathname,
+    }
+}
+
+let ctaImpressionObserver: IntersectionObserver | null = null
+
+// Fires 'cta_viewed' the first time a CTA becomes at least half visible, then stops
+// observing it (one impression per page view). Recreated on every load/swap so
+// htmx-replaced CTAs get (re-)observed against their current page path.
+function initCtaImpressions() {
+    ctaImpressionObserver?.disconnect()
+    ctaImpressionObserver = new IntersectionObserver(
+        (entries, observer) => {
+            for (const entry of entries) {
+                if (!entry.isIntersecting) continue
+                logInfo(
+                    'cta_viewed',
+                    ctaAttributes(entry.target as HTMLAnchorElement)
+                )
+                observer.unobserve(entry.target)
+            }
+        },
+        { threshold: 0.5 }
+    )
+    $$optional('a[data-cta]').forEach((cta) =>
+        ctaImpressionObserver?.observe(cta)
+    )
+}
+
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
         ['initMath', initMath],
         ['initMermaid', initMermaid],
+        ['initCtaImpressions', initCtaImpressions],
     ])
 })
 
@@ -152,7 +196,21 @@ document.addEventListener('htmx:load', function () {
         ['initImageCarousel', initImageCarousel],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
+        ['initCtaImpressions', initCtaImpressions],
     ])
+})
+
+// Delegated listener: survives htmx swaps without needing re-init, unlike the
+// runInitSteps above which bind directly to elements that get replaced.
+// logInfo's export survives this same-tab navigation: the batch processor flushes on
+// 'pagehide' (registered in initializeOtel) via a keepalive fetch, which browsers keep
+// alive past unload.
+document.addEventListener('click', function (event: MouseEvent) {
+    const cta = (event.target as HTMLElement)?.closest<HTMLAnchorElement>(
+        'a[data-cta]'
+    )
+    if (!cta) return
+    logInfo('cta_clicked', ctaAttributes(cta))
 })
 
 // Don't remove style tags because they are used by the elastic global nav.

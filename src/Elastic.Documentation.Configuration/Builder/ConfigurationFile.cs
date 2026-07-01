@@ -90,6 +90,14 @@ public record ConfigurationFile
 	/// </summary>
 	public BrandingConfiguration? Branding { get; private set; }
 
+	private readonly Dictionary<string, Cta> _ctas = new(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
+
+	/// <summary>
+	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
+	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
+	/// </summary>
+	public IReadOnlyDictionary<string, Cta> Ctas => _ctas;
+
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
 	public bool DevelopmentDocs { get; }
@@ -290,6 +298,28 @@ public record ConfigurationFile
 			// Process branding with validation
 			if (docSetFile.Branding is not null)
 				Branding = ValidateBranding(docSetFile.Branding, context);
+
+			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
+			foreach (var (name, definition) in docSetFile.Cta)
+			{
+				if (string.IsNullOrWhiteSpace(definition.Button?.Label) || string.IsNullOrWhiteSpace(definition.Button?.Url))
+				{
+					context.EmitError(context.ConfigurationPath, $"'cta.{name}' must define both 'button.label' and 'button.url'.");
+					continue;
+				}
+				if (definition.Benefits.Count > Cta.MaxBenefits)
+				{
+					context.EmitError(context.ConfigurationPath, $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed.");
+					continue;
+				}
+				_ctas[name] = new Cta
+				{
+					Name = name,
+					Label = definition.Button.Label,
+					Url = definition.Button.Url,
+					Benefits = definition.Benefits
+				};
+			}
 
 			// Process features
 			_features = [with(StringComparer.OrdinalIgnoreCase)];

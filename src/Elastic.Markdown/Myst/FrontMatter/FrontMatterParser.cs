@@ -39,4 +39,11 @@ public class YamlFrontMatter
 
 	[YamlMember(Alias = "noindex")]
 	public bool? NoIndex { get; set; }
+
+	/// <summary>
+	/// Name of a right-gutter CTA template declared in the docset's <c>docset.yml</c> <c>cta</c> map.
+	/// Falls back to the built-in <c>trial</c> default when omitted or unknown.
+	/// </summary>
+	[YamlMember(Alias = "cta")]
+	public string? Cta { get; set; }
 }

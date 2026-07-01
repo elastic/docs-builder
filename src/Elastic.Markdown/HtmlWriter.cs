@@ -8,6 +8,8 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Suggestions;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -108,6 +110,17 @@ public class HtmlWriter(
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
+		// Resolve the right-gutter CTA: an explicit, known frontmatter name is 'custom' and renders in
+		// isolated builds too (so authors can preview it); otherwise fall back to the built-in default,
+		// which stays assembler-only to preserve today's behavior.
+		var ctaName = markdown.YamlFrontMatter?.Cta;
+		if (ctaName is null || !DocumentationSet.Configuration.Ctas.TryGetValue(ctaName, out var cta))
+		{
+			if (ctaName is not null)
+				DocumentationSet.Context.Collector.EmitWarning(markdown.FilePath, UnknownCtaWarning(ctaName, DocumentationSet.Configuration.Ctas.Keys));
+			cta = DocumentationSet.Configuration.Ctas[Cta.DefaultName];
+		}
+
 		// Use DocumentInferrerService to get merged products and versioning info
 		var inference = DocumentInferrerService.InferForMarkdown(
 			DocumentationSet.Context.Git.RepositoryName,
@@ -197,7 +210,8 @@ public class HtmlWriter(
 			GitHubDocsUrl = gitHubDocsUrl,
 			GitHubRef = DocumentationSet.Context.Git.GitHubRef,
 			Branding = DocumentationSet.Configuration.Branding,
-			RedirectUrl = markdown.RedirectUrl
+			RedirectUrl = markdown.RedirectUrl,
+			Cta = cta
 		});
 
 		return new RenderResult
@@ -205,6 +219,20 @@ public class HtmlWriter(
 			Html = await slice.RenderAsync(cancellationToken: ctx)
 		};
 
+	}
+
+	private static string UnknownCtaWarning(string ctaName, IEnumerable<string> knownCtaNames)
+	{
+		var known = knownCtaNames.ToHashSet();
+		var hint = new Suggestion(known, ctaName).GetSuggestionQuestion();
+		if (string.IsNullOrEmpty(hint))
+		{
+			hint = known.Count > 1
+				? $"Available: {string.Join(", ", known.Order())}."
+				: "No 'cta' templates are defined in this docset.yml yet. Add one under a top-level 'cta:' map, e.g.:\n" +
+					"cta:\n  mp:\n    button:\n      label: Get started on MP\n      url: https://example.com\n    benefits:\n      - \"Some benefit\"";
+		}
+		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml. Falling back to '{Cta.DefaultName}'. {hint}";
 	}
 
 	private BreadcrumbsList CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] crumbs)
