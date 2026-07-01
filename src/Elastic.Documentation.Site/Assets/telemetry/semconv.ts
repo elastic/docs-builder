@@ -17,6 +17,7 @@ export {
     ATTR_ERROR_TYPE,
     ATTR_EXCEPTION_MESSAGE,
     ATTR_URL_PATH,
+    ATTR_URL_FULL,
 } from '@opentelemetry/semantic-conventions'
 
 // ============================================================================
