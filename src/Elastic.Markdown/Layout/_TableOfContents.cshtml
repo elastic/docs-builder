@@ -72,7 +72,7 @@
 				</li>
 			}
 		</ul>
-		@if (Model.BuildType == BuildType.Assembler || (Model.Cta.Name != Cta.DefaultName && Model.BuildType != BuildType.Codex))
+		@if (Model.BuildType != BuildType.Codex && (Model.Cta.Name != Cta.DefaultName || (Model.BuildType == BuildType.Assembler && Model.Branding is null)))
 		{
 		<div class="mt-4 hidden lg:block">
 			<div class="sidebar-trial-card">
