@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Net;
 using Markdig.Renderers;
 
 namespace Elastic.Markdown.Myst.Directives.Math;
@@ -14,7 +15,7 @@ internal static class MathMarkup
 {
 	public static void WriteHtml(HtmlRenderer renderer, string? content, bool isDisplay, string? label = null)
 	{
-		var labelAttr = !string.IsNullOrEmpty(label) ? $" id=\"{label}\"" : "";
+		var labelAttr = !string.IsNullOrEmpty(label) ? $" id=\"{WebUtility.HtmlEncode(label)}\"" : "";
 		var tag = isDisplay ? "div" : "span";
 		_ = renderer.Write($"<{tag} class=\"math\"{labelAttr}>");
 		_ = renderer.WriteEscape(content ?? "");
