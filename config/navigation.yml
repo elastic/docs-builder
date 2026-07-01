@@ -466,8 +466,6 @@ toc:
           - toc: opentelemetry://reference
             path_prefix: reference/opentelemetry
             children:
-              - toc: opentelemetry://reference/motlp
-                path_prefix: reference/opentelemetry/motlp
               - toc: opentelemetry://reference/edot-cloud-forwarder
                 path_prefix: reference/opentelemetry/edot-cloud-forwarder
                 children:
@@ -497,6 +495,11 @@ toc:
               # https://github.com/elastic/elastic-otel-rum-js/blob/main/docs/reference/edot-browser/toc.yml
               - toc: elastic-otel-rum-js://reference/edot-browser
                 path_prefix: reference/opentelemetry/edot-sdks/browser
+
+          # Managed inputs
+          # https://github.com/elastic/opentelemetry/blob/main/docs/reference/motlp/toc.yml
+          - toc: opentelemetry://reference/motlp
+            path_prefix: reference/opentelemetry/motlp
 
           # Elastic Integrations
           # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml
