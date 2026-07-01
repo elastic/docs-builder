@@ -13,10 +13,10 @@ namespace Elastic.Markdown.Myst.Directives.Math;
 /// </summary>
 internal static class MathMarkup
 {
-	public static void WriteHtml(HtmlRenderer renderer, string? content, bool isDisplay, string? label = null)
+	public static void WriteHtml(HtmlRenderer renderer, string? content, bool isDisplayMath, string? label = null)
 	{
 		var labelAttr = !string.IsNullOrEmpty(label) ? $" id=\"{WebUtility.HtmlEncode(label)}\"" : "";
-		var tag = isDisplay ? "div" : "span";
+		var tag = isDisplayMath ? "div" : "span";
 		_ = renderer.Write($"<{tag} class=\"math\"{labelAttr}>");
 		_ = renderer.WriteEscape(content ?? "");
 		_ = renderer.Write($"</{tag}>");

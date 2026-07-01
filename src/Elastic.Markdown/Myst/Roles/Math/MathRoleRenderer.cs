@@ -15,7 +15,7 @@ public class MathRoleHtmlRenderer : HtmlObjectRenderer<MathRole>
 {
 	protected override void Write(HtmlRenderer renderer, MathRole role) =>
 		// Inline math is always rendered as a span, KaTeX renders it client-side.
-		MathMarkup.WriteHtml(renderer, role.Content, isDisplay: false);
+		MathMarkup.WriteHtml(renderer, role.Content, isDisplayMath: false);
 }
 
 public static class InlineMathExtensions
