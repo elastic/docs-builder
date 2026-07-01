@@ -382,6 +382,13 @@ public record ConfigurationFile
 			context.EmitError(context.ConfigurationPath, $"'cta.{name}' must define both 'button.label' and 'button.url'.");
 			return null;
 		}
+		var url = definition.Button.Url.Trim();
+		if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri) && uri.IsAbsoluteUri &&
+			uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+		{
+			context.EmitError(context.ConfigurationPath, $"'cta.{name}.button.url' must use http/https or a relative URL.");
+			return null;
+		}
 		if (definition.Benefits.Count > Cta.MaxBenefits)
 		{
 			context.EmitError(context.ConfigurationPath, $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed.");
@@ -391,7 +398,7 @@ public record ConfigurationFile
 		{
 			Name = name,
 			Label = definition.Button.Label,
-			Url = definition.Button.Url,
+			Url = url,
 			Benefits = definition.Benefits
 		};
 	}
