@@ -84,6 +84,13 @@ public class DocumentationSetFile : TableOfContentsFile
 	[YamlMember(Alias = "storybook")]
 	public DocumentationSetStorybook? Storybook { get; set; }
 
+	/// <summary>
+	/// Named, reusable right-gutter CTA templates. Selected per-page via frontmatter <c>cta: &lt;name&gt;</c>;
+	/// pages that omit it fall back to the built-in <c>trial</c> default.
+	/// </summary>
+	[YamlMember(Alias = "cta")]
+	public Dictionary<string, CtaDefinition> Cta { get; set; } = [];
+
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
 	{
 		if (item is FileRef fileRef)
@@ -810,4 +817,57 @@ public class BrandingConfiguration
 	/// </summary>
 	[YamlMember(Alias = "apple-touch-icon", ApplyNamingConventions = false)]
 	public string? AppleTouchIcon { get; set; }
+}
+
+/// <summary>
+/// A single named right-gutter CTA template, as declared under <c>docset.yml</c>'s <c>cta</c> map.
+/// </summary>
+[YamlSerializable]
+public class CtaDefinition
+{
+	[YamlMember(Alias = "button")]
+	public CtaButton? Button { get; set; }
+
+	[YamlMember(Alias = "benefits")]
+	public List<string> Benefits { get; set; } = [];
+}
+
+/// <summary>
+/// The clickable button portion of a <see cref="CtaDefinition"/>.
+/// </summary>
+[YamlSerializable]
+public class CtaButton
+{
+	[YamlMember(Alias = "label")]
+	public string? Label { get; set; }
+
+	[YamlMember(Alias = "url")]
+	public string? Url { get; set; }
+}
+
+/// <summary>
+/// A resolved, validated right-gutter CTA, ready to render. See <see cref="CtaDefinition"/> for the raw
+/// <c>docset.yml</c> shape this is parsed from.
+/// </summary>
+public record Cta
+{
+	/// <summary>Name of the template this was resolved from; <see cref="DefaultName"/> for the built-in default.</summary>
+	public required string Name { get; init; }
+	public required string Label { get; init; }
+	public required string Url { get; init; }
+	public IReadOnlyList<string> Benefits { get; init; } = [];
+
+	/// <summary>The built-in default, reproducing the CTA that renders when no <c>cta:</c> config exists.</summary>
+	public const string DefaultName = "trial";
+
+	/// <summary>Right-gutter card space is limited; benefit bullet lists are capped at this many entries.</summary>
+	public const int MaxBenefits = 3;
+
+	public static Cta Default { get; } = new()
+	{
+		Name = DefaultName,
+		Label = "Get started free",
+		Url = "https://cloud.elastic.co/registration?page=docs&placement=docs-siderail",
+		Benefits = ["14-day free trial", "All features included", "No setup required"]
+	};
 }
