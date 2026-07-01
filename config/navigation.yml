@@ -499,7 +499,7 @@ toc:
           # Managed inputs
           # https://github.com/elastic/opentelemetry/blob/main/docs/reference/managed-inputs/toc.yml
           - toc: opentelemetry://reference/managed-inputs
-            path_prefix: reference/managed-inputs
+            path_prefix: reference/opentelemetry/managed-inputs
 
           # Elastic Integrations
           # https://github.com/elastic/integration-docs/blob/main/docs/reference/toc.yml
