@@ -34,7 +34,7 @@ jobs:
             edot-cloud-forwarder-azure
             edot-cloud-forwarder-gcp
 
-      - uses: elastic/oblt-actions/updatecli/run@v1
+      - uses: elastic/oblt-actions/updatecli/run@v1.39.7
         with:
           command: apply --config .github/updatecli/updatecli.d/versions.yml --values .github/updatecli/values.d/scm.yml
           version-file: .updatecli-version
@@ -42,7 +42,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
 
       - if: ${{ failure()  }}
-        uses: elastic/oblt-actions/slack/send@v1
+        uses: elastic/oblt-actions/slack/send@v1.39.7
         with:
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: "#docs-team"
