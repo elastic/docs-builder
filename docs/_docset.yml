@@ -44,7 +44,17 @@ features:
 
 storybook:
   registry: https://ci-artifacts.kibana.dev/storybooks/pr-272388/storybook-docs/docs_registry.json
-  
+
+cta:
+  docs-builder:
+    button:
+      label: Star docs-builder on GitHub
+      url: https://github.com/elastic/docs-builder
+    benefits:
+      - "Open source"
+      - "Built with .NET"
+      - "Contributions welcome"
+
 suppress:
   - AutolinkElasticCoDocs
   - DeepLinkingVirtualFile
