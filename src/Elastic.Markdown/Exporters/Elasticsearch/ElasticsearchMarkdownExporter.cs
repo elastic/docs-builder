@@ -14,7 +14,6 @@ using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Ingest.Elasticsearch.Indices;
-using Elastic.Internal.Search;
 using Elastic.Internal.Search.Mapping;
 using Elastic.Mapping;
 using Elastic.Transport;
@@ -50,9 +49,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	// Content date tracking - enrich policy + pipeline for content_last_updated
 	private readonly ContentDateEnrichment _contentDateEnrichment;
 
-	// Read aliases resolved during StartAsync, used for post-indexing operations
+	// Read alias resolved during StartAsync, used for post-indexing operations
 	private string _lexicalReadAlias = string.Empty;
-	private string _semanticReadAlias = string.Empty;
 
 	// Per-channel running totals for progress logging
 	private int _primaryIndexed;
@@ -177,7 +175,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ExportMaxConcurrency = _endpoint.IndexNumThreads,
 			ExportMaxRetries = _endpoint.MaxRetries
 		};
-		options.SerializerContext = Documentation.Serialization.SourceGenerationContext.Default;
+		options.SerializerContext = SourceGenerationContext.Default;
 		options.ExportResponseCallback = (response, buffer) =>
 		{
 			var sent = response.Items?.Count ?? 0;
@@ -215,7 +213,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		var orchestratorContext = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
 		_lexicalReadAlias = orchestratorContext.PrimaryReadAlias;
-		_semanticReadAlias = orchestratorContext.SecondaryReadAlias;
 
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
@@ -229,9 +226,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		// Resolve content_last_updated for documents where the ingest pipeline didn't fire.
 		// HashedBulkUpdate uses bulk update actions, which skip ingest pipelines.
+		// Only needed for the lexical index — the semantic index gets dates resolved during
+		// the _reindex step (CompleteAsync), which triggers its final_pipeline.
 		// Use the read alias (-latest) rather than WriteTarget, which is removed after CompleteAsync.
 		await _contentDateEnrichment.ResolveContentDatesAsync(_lexicalReadAlias, ctx);
-		await _contentDateEnrichment.ResolveContentDatesAsync(_semanticReadAlias, ctx);
 
 		await _contentDateEnrichment.SyncLookupIndexAsync(_lexicalReadAlias, ctx);
 	}

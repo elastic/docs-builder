@@ -36,6 +36,7 @@ module CrossLinkResolverAssertions =
                 member _.ConfigurationPath = mockFileSystem.FileInfo.New("mock_docset.yml")
                 member _.OutputDirectory = mockFileSystem.DirectoryInfo.New(".artifacts")
                 member _.BuildType = BuildType.Isolated
+                member _.Environment = SystemEnvironmentVariables.Instance
             }
         let redirectFileParser = RedirectFile(docContext, mockRedirectsFile)
         redirectFileParser.Redirects

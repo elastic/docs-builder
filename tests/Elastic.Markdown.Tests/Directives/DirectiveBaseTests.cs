@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Markdown.IO;
@@ -72,7 +73,9 @@ $"""
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		var environment = GetEnvironment();
+		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext, environment);
 		var linkResolver = new TestCrossLinkResolver();
 		// ReSharper disable once VirtualMemberCallInConstructor
 		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
@@ -96,6 +99,9 @@ $"""
 	/// <c>:cdn:</c> directive. Returns null by default (no-op resolver), so non-CDN tests are unaffected.
 	/// </summary>
 	protected virtual IReleaseNotesResolver? GetReleaseNotesResolver() => null;
+
+	/// <summary>Override to inject a deterministic environment for env-dependent config (e.g. <c>storybook.registry</c>).</summary>
+	protected virtual IEnvironmentVariables? GetEnvironment() => null;
 
 	public virtual async ValueTask InitializeAsync()
 	{
