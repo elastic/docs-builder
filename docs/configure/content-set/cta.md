@@ -13,13 +13,14 @@ Add a `cta` map to your `docset.yml` file. Each key is a template name; the valu
 
 ```yaml
 cta:
-  mp:
+  beta:
     button:
-      label: Get started on Elastic Cloud
-      url: https://cloud.elastic.co/registration?page=docs&placement=docs-siderail
+      label: Join the private beta
+      url: https://example.com/beta-signup
     benefits:
-      - "14-day free trial"
-      - "All features included"
+      - "Early access to new features"
+      - "Direct line to the team"
+      - "Free for beta participants"
 ```
 
 - `button.label` and `button.url` are required.
@@ -33,7 +34,7 @@ Use the `cta` frontmatter field to select a template by name:
 
 ```yaml
 ---
-cta: mp
+cta: beta
 ---
 ```
 

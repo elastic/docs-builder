@@ -17,7 +17,7 @@ products: <4>
   - id: edot-sdk
 sub: <5>
   key: value 
-cta: mp <6>
+cta: beta <6>
 ---
 ```
 
