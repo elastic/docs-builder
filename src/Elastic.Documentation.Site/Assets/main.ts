@@ -209,17 +209,24 @@ document.addEventListener('htmx:load', function () {
     ])
 })
 
-// Delegated listener: survives htmx swaps without needing re-init, unlike the
+// Delegated listeners: survive htmx swaps without needing re-init, unlike the
 // runInitSteps above which bind directly to elements that get replaced.
 // logInfo's export survives this same-tab navigation: the batch processor flushes on
 // 'pagehide' (registered in initializeOtel) via a keepalive fetch, which browsers keep
 // alive past unload.
-document.addEventListener('click', function (event: MouseEvent) {
+function handleCtaActivation(event: MouseEvent) {
     const cta = (event.target as HTMLElement)?.closest<HTMLAnchorElement>(
         'a[data-cta]'
     )
     if (!cta) return
     logCtaEvent('cta_clicked', cta)
+}
+document.addEventListener('click', handleCtaActivation)
+// 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
+// fire 'click' per the DOM spec - without this those opens went untracked. Button 2
+// (right-click / context menu) also fires auxclick but isn't a real engagement.
+document.addEventListener('auxclick', function (event: MouseEvent) {
+    if (event.button === 1) handleCtaActivation(event)
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
