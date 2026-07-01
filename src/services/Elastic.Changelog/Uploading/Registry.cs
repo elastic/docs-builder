@@ -12,8 +12,9 @@ namespace Elastic.Changelog.Uploading;
 /// bundle files without an S3 listing call.
 /// </summary>
 /// <remarks>
-/// Stored at <c>{product}/registry.json</c> in the changelog bundles bucket.
-/// The scrubber Lambda mirrors it verbatim to the public bucket (pass-through).
+/// Stored at <c>bundle/{product}/registry.json</c> (bundle index) or
+/// <c>changelog/{org}/{repo}/{branch}/registry.json</c> (changelog-entry index) in the changelog bundles
+/// bucket. The scrubber Lambda mirrors it verbatim to the public bucket (pass-through).
 /// </remarks>
 public sealed record Registry
 {
@@ -23,7 +24,9 @@ public sealed record Registry
 	public int SchemaVersion { get; init; } = 1;
 
 	/// <summary>
-	/// Product identifier (matches the first segment of the S3 key).
+	/// Grouping identifier: the product for a bundle index (<c>bundle/{product}/…</c>) or the
+	/// <c>{org}/{repo}/{branch}</c> prefix for a changelog-entry index
+	/// (<c>changelog/{org}/{repo}/{branch}/…</c>). Informational only; consumers locate the manifest by key.
 	/// </summary>
 	public required string Product { get; init; }
 
@@ -45,8 +48,9 @@ public sealed record Registry
 public sealed record RegistryBundle
 {
 	/// <summary>
-	/// Bundle file name (e.g. <c>9.3.0.yaml</c> or <c>2025-11.yaml</c>),
-	/// resolved at <c>{product}/bundle/{file}</c>.
+	/// Bundle file name (e.g. <c>9.3.0.yaml</c> or <c>cloud-2025-11.yaml</c>),
+	/// resolved at <c>bundle/{product}/{file}</c>. For changelog-entry indexes this is the entry
+	/// file name resolved at <c>changelog/{org}/{repo}/{branch}/{file}</c>.
 	/// </summary>
 	public required string File { get; init; }
 
