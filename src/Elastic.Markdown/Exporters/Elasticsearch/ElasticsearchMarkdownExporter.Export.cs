@@ -44,7 +44,8 @@ public partial class ElasticsearchMarkdownExporter
 	private static void AssignContentHash(DocumentationDocument doc) =>
 		doc.ContentBodyHash = ContentHash.CreateNormalized(doc.StrippedBody ?? string.Empty);
 
-	private static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
+	/// <summary>Internal (rather than private) so tests can assert navigation_* rank features never fall back to the contract's penalty default.</summary>
+	internal static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
 	{
 		doc.SearchTitle = CreateSearchTitle();
 		// if we have no navigation, initialize to 20 since rank_feature would score 0 too high
@@ -59,7 +60,9 @@ public partial class ElasticsearchMarkdownExporter
 			_ => 100
 		};
 		doc.NavigationSection = navigationItem?.NavigationSection;
-		if (doc.Type == "api")
+		// doc.Type is the fixed CLR/$type discriminator ("docs" for every DocumentationDocument) —
+		// ContentType is the field OpenApiDocumentExporter actually sets to "api" per-document.
+		if (doc.ContentType == "api")
 			doc.NavigationSection = "api";
 
 		// this section gets promoted in the navigation we don't want it to be promoted in the search results
