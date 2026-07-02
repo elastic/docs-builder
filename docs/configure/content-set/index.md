@@ -20,3 +20,4 @@ A content set in `docs-builder` is equivalent to an AsciiDoc book. At this level
 * [Attributes](./attributes.md).
 * [Extensions](./extensions.md).
 * [API Explorer](./api-explorer.md).
+* [CTA](./cta.md).

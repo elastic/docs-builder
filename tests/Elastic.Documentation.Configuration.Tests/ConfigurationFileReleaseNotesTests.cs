@@ -163,5 +163,12 @@ public class ConfigurationFileReleaseNotesTests
 		public BuildType BuildType => BuildType.Isolated;
 		public IDirectoryInfo DocumentationSourceDirectory => documentationSourceDirectory;
 		public GitCheckoutInformation Git => GitCheckoutInformationFactory.Create(documentationSourceDirectory, fileSystem);
+		public IEnvironmentVariables Environment { get; } = new DeterministicEnvironment();
+	}
+
+	private sealed class DeterministicEnvironment : IEnvironmentVariables
+	{
+		public string? GetEnvironmentVariable(string name) => null;
+		public bool IsRunningOnCI => false;
 	}
 }
