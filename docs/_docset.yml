@@ -122,6 +122,8 @@ toc:
       - folder: content-set
         children:
           - file: index.md
+          - file: docset-reference.md
+          - file: toc-reference.md
           - file: file-structure.md
           - file: attributes.md
           - file: navigation.md

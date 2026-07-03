@@ -2,7 +2,9 @@
 navigation_title: Extensions
 ---
 
-# Content set extensions. 
+# Content set extensions.
+
+For the full list of `docset.yml` keys, see [`docset.yml` reference](docset-reference.md).
 
 The documentation engineering team will on occasion built extensions for specific use-cases.
 
@@ -21,7 +23,7 @@ extensions:
   - detection-rules
 ```
 
-This now allows you to use the special `detection_rules` instruction in the [Table of Contents](navigation.md)
+This now allows you to use the special `detection_rules` instruction in the [TOC reference](toc-reference.md#detection_rules)
 As a means to pick up `toml` files as `children`
 
 ```yaml

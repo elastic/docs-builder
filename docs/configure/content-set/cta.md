@@ -6,6 +6,8 @@ cta:
 
 # CTA
 
+For the full list of `docset.yml` keys, see [`docset.yml` reference](docset-reference.md).
+
 The CTA (call-to-action) feature renders a card in the right-hand sidebar of a page, with a button and a short list of benefits. By default, every page shows the built-in `trial` card. Docsets can define their own named CTA templates and have individual pages opt into them.
 
 ## Define CTA templates

@@ -1,5 +1,7 @@
 # Attributes
 
+For the full list of `docset.yml` keys, see [`docset.yml` reference](docset-reference.md).
+
 To promote consistency across documentation, AsciiDoc uses shared attributes for common terms, URLs, and versions.
 
 In the AsciiDoctor-based system, shared attributes are defined at the site-level and live in the [`shared/` directory](https://github.com/elastic/docs/blob/master/shared) in the elastic/docs repo. The most used files in this directory are:
