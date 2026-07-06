@@ -75,8 +75,12 @@ that slice's `_Partials/`; only genuinely cross-slice partials live in the root 
 
 ## Testing
 
-`tests/Elastic.ApiExplorer.Tests` renders fixture pages (`TestData/api-explorer-fixture.json`)
-through the production path and compares byte-for-byte against `ReferenceHtml/*.html`. Any rendering
-change must either keep snapshots identical or include a reviewed regeneration
-(`UPDATE_SNAPSHOTS=1 dotnet test tests/Elastic.ApiExplorer.Tests/`) in the same commit.
-Pure refactors (moves, renames, view-model extraction) must stay byte-identical.
+`tests/Elastic.ApiExplorer.Tests` exercises the view-model builders against a hand-written fixture
+spec (`TestData/api-explorer-fixture.json`) covering unions, `X | X[]` simple unions, dictionaries,
+recursion, enums, allOf and the Elastic `x-*` extensions; `ApiExplorerFixture` loads the spec and
+builds its navigation tree once per test class.
+
+During the MVVM refactor a byte-for-byte HTML snapshot harness guarded every change (render fixture
+pages through the production path, diff against checked-in reference HTML). It was removed once the
+refactor landed to avoid freezing the current markup; if you undertake another must-not-change-output
+refactor, resurrect that approach first.
