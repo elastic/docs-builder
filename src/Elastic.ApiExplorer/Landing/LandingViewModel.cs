@@ -10,4 +10,7 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiLanding Landing { get; init; }
 	public required OpenApiInfo ApiInfo { get; init; }
+
+	/// <summary>Flattened overview table rows; built before the slice renders.</summary>
+	public required IReadOnlyList<ApiOverviewRow> OverviewRows { get; init; }
 }

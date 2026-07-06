@@ -45,7 +45,11 @@ public record ApiTag(
 	/// <inheritdoc />
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
-		var viewModel = new TagLandingViewModel(context) { Tag = this };
+		var viewModel = new TagLandingViewModel(context)
+		{
+			Tag = this,
+			OverviewRows = ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation)
+		};
 		var slice = TagLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}

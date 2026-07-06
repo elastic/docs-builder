@@ -17,7 +17,8 @@ public class ApiLanding : IApiGroupingModel
 		var viewModel = new LandingViewModel(context)
 		{
 			Landing = this,
-			ApiInfo = context.Model.Info
+			ApiInfo = context.Model.Info,
+			OverviewRows = ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot)
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
