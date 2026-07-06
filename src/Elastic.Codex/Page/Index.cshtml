@@ -2,12 +2,10 @@
 @using Elastic.Documentation
 @using Elastic.Documentation.Configuration
 @using Elastic.Documentation.Extensions
-@using Elastic.Documentation.Site
-@using Elastic.Markdown
 @using Elastic.Markdown.Myst.Components
 @using Markdig
 @using ViewModelSerializerContext = Elastic.Markdown.Page.ViewModelSerializerContext
-@inherits RazorSliceHttpResult<Elastic.Markdown.Page.IndexViewModel>
+@inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
 @implements IUsesLayout<Elastic.Codex._MarkdownLayout, MarkdownLayoutViewModel>
 @functions {
 	static string GetRootPath(string? siteRootPath, string? urlPathPrefix)
