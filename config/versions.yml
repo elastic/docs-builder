@@ -50,7 +50,7 @@ versioning_systems:
     current: 1.56.0
   apm-agent-node:
     base: 4.0
-    current: 4.15.0
+    current: 4.17.0
   apm-agent-php:
     base: 1.0
     current: 1.17.0
@@ -73,7 +73,7 @@ versioning_systems:
   # EDOTs
   edot-collector:
     base: 9.0
-    current: 9.4.2
+    current: 9.4.3
   edot-ios:
     base: 1.0
     current: 2.0.1
@@ -152,7 +152,7 @@ versioning_systems:
     current: 9.4.2
   elasticsearch-client-java:
     base: 9.0
-    current: 9.4.2
+    current: 9.4.3
   elasticsearch-client-javascript:
     base: 9.0
     current: 9.4.2

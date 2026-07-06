@@ -20,20 +20,21 @@ namespace Elastic.Changelog.Uploading;
 /// </summary>
 internal enum RegistryScope
 {
-	/// <summary>The bundle index at <c>{product}/registry.json</c>, listing scrubbed bundle files.</summary>
+	/// <summary>The bundle index at <c>bundle/{product}/registry.json</c>, listing scrubbed bundle files.</summary>
 	Bundle,
 
-	/// <summary>The changelog-entry index at <c>{product}/changelog/registry.json</c>, listing individual entry files.</summary>
+	/// <summary>The changelog-entry index at <c>changelog/{org}/{repo}/{branch}/registry.json</c>, listing individual entry files.</summary>
 	Changelog
 }
 
 /// <summary>
-/// Refreshes a per-product <c>registry.json</c> manifest in the private bucket after an upload run.
+/// Refreshes a <c>registry.json</c> manifest in the private bucket after an upload run.
 /// Depending on <see cref="RegistryScope"/> this is either the bundle index
-/// (<c>{product}/registry.json</c>) or the changelog-entry index
-/// (<c>{product}/changelog/registry.json</c>). Each product touched in the run gets its manifest
-/// merged with what is already known on S3 (read back, merged by file name, written with an
-/// optimistic concurrency guard so parallel uploads for the same product cannot clobber each other).
+/// (<c>bundle/{product}/registry.json</c>) or the changelog-entry index
+/// (<c>changelog/{org}/{repo}/{branch}/registry.json</c>). Each grouping (product, or org/repo/branch)
+/// touched in the run gets its manifest merged with what is already known on S3 (read back, merged by
+/// file name, written with an optimistic concurrency guard so parallel uploads for the same group cannot
+/// clobber each other).
 /// </summary>
 internal sealed class RegistryBuilder(
 	ILoggerFactory logFactory,
@@ -70,10 +71,11 @@ internal sealed class RegistryBuilder(
 		Cancel ctx,
 		RegistryScope scope = RegistryScope.Bundle)
 	{
-		// Each upload target carries a "{product}/{bundle|changelog}/{file}" S3 key. Group by product
-		// so we can produce one manifest per affected product.
+		// Each upload target carries an artifact-root S3 key — "bundle/{product}/{file}" or
+		// "changelog/{org}/{repo}/{branch}/{file}". Group by the scope's key (product for bundles, the
+		// {org}/{repo}/{branch} prefix for entries) so we produce one manifest per affected group.
 		var byProduct = uploadTargets
-			.Select(t => (Target: t, Product: ExtractProduct(t.S3Key)))
+			.Select(t => (Target: t, Product: ExtractGroupKey(t.S3Key, scope)))
 			.Where(x => x.Product is not null)
 			.GroupBy(x => x.Product!, StringComparer.Ordinal);
 
@@ -110,20 +112,51 @@ internal sealed class RegistryBuilder(
 		return new RefreshResult(updated, unchanged, failed);
 	}
 
-	/// <summary>Extracts the leading <c>product</c> segment from a <c>{product}/bundle/{file}</c> or <c>{product}/changelog/{file}</c> S3 key, or null.</summary>
-	private static string? ExtractProduct(string s3Key)
+	/// <summary>Extracts the grouping key (product for <c>bundle/{product}/…</c>, <c>{org}/{repo}/{branch}</c> for <c>changelog/{org}/{repo}/{branch}/…</c>) from an artifact-root S3 key, or null.</summary>
+	private static string? ExtractGroupKey(string s3Key, RegistryScope scope)
 	{
-		var firstSlash = s3Key.IndexOf('/');
-		if (firstSlash <= 0)
+		var prefix = scope == RegistryScope.Changelog ? "changelog/" : "bundle/";
+		if (!s3Key.StartsWith(prefix, StringComparison.Ordinal))
 			return null;
-		return s3Key.AsSpan(0, firstSlash).ToString();
+
+		var rest = s3Key.AsSpan(prefix.Length);
+
+		// Bundles group by the single product segment (bundle/{product}/{file}). Changelog entries group by
+		// the whole {org}/{repo}/{branch} prefix (changelog/{org}/{repo}/{branch...}/{file}), which can carry
+		// extra slashes when the branch itself contains them — so take everything before the final segment.
+		if (scope == RegistryScope.Bundle)
+		{
+			var slash = rest.IndexOf('/');
+			return slash <= 0 ? null : rest[..slash].ToString();
+		}
+
+		var lastSlash = rest.LastIndexOf('/');
+		if (lastSlash <= 0)
+			return null;
+		var group = rest[..lastSlash];
+		// Require at least org/repo/branch (3 segments) ahead of the file name.
+		return CountSegments(group) >= 3 ? group.ToString() : null;
 	}
 
-	/// <summary>The S3 key of the per-product manifest for the given <paramref name="scope"/>.</summary>
-	private static string RegistryKeyFor(string product, RegistryScope scope) => scope switch
+	/// <summary>Counts the non-empty-delimited segments in a <c>/</c>-joined path span.</summary>
+	private static int CountSegments(ReadOnlySpan<char> path)
 	{
-		RegistryScope.Changelog => $"{product}/changelog/registry.json",
-		_ => $"{product}/registry.json"
+		if (path.IsEmpty)
+			return 0;
+		var count = 1;
+		foreach (var c in path)
+		{
+			if (c == '/')
+				count++;
+		}
+		return count;
+	}
+
+	/// <summary>The S3 key of the manifest for the given <paramref name="scope"/> and grouping segment.</summary>
+	private static string RegistryKeyFor(string group, RegistryScope scope) => scope switch
+	{
+		RegistryScope.Changelog => $"changelog/{group}/registry.json",
+		_ => $"bundle/{group}/registry.json"
 	};
 
 	/// <summary>Builds manifest entries for this run's bundles, recording the per-<paramref name="product"/> target for the bundle index.</summary>
