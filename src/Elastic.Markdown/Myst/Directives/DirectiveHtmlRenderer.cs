@@ -874,23 +874,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)
 	{
-		// Output HTML that KaTeX can render client-side
-		var labelAttr = !string.IsNullOrEmpty(block.Label) ? $" id=\"{block.Label}\"" : "";
-
-		if (block.IsDisplayMath)
-		{
-			// Display math should be a block element
-			_ = renderer.Write($"<div class=\"math\"{labelAttr}>");
-			_ = renderer.WriteEscape(block.Content ?? "");
-			_ = renderer.Write("</div>");
-		}
-		else
-		{
-			// Inline math should be a span element to behave like text
-			_ = renderer.Write($"<span class=\"math\"{labelAttr}>");
-			_ = renderer.WriteEscape(block.Content ?? "");
-			_ = renderer.Write("</span>");
-		}
+		MathMarkup.WriteHtml(renderer, block.Content, block.IsDisplayMath, block.Label);
 		_ = renderer.EnsureLine();
 	}
 }

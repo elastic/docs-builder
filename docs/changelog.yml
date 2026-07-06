@@ -1,0 +1,41 @@
+# Changelog configuration for docs-builder's own release notes.
+#
+# docs-builder publishes its release notes with the `changelog gh-release` flow:
+# the `Release` workflow (release-drafter) publishes a GitHub release, and
+# `.github/workflows/changelog-publish.yml` turns that release into a CDN-hosted
+# bundle. There are no hand-authored entry files — entries are derived from the
+# release's PRs and their labels.
+#
+# Generated with `docs-builder changelog init`, then edited for this repo.
+
+# Map docs-builder's PR labels to changelog types.
+# The label set is the same one enforced by `.github/workflows/required-labels.yml`,
+# which derives it from `.github/release-drafter.yml` (every PR carries exactly one).
+# Keep this in sync with release-drafter.yml if labels ever change.
+pivot:
+  types:
+    breaking-change: "breaking"
+    feature: "feature"
+    enhancement: "enhancement"
+    bug-fix: "bug, fix"
+    docs: "documentation"
+    # Maintenance/automation labels (chore, dependencies, automation, ci, redesign)
+    # are intentionally not mapped — they're excluded from release notes below.
+
+# Controls which PRs become changelog entries.
+rules:
+  # `changelog:skip` is already dropped from the release body by release-drafter
+  # (exclude-labels); the rest keep maintenance/automation churn out of the notes.
+  create:
+    exclude: "changelog:skip, chore, dependencies, automation, ci, redesign"
+
+# Bundle defaults (owner/repo/link_allow_repos seeded by `changelog init`).
+bundle:
+  output_directory: docs/releases
+  resolve: true
+  owner: elastic
+  repo: docs-builder
+  # Keep only docs-builder's own PR/issue links in resolved bundles; anything else
+  # is scrubbed to a private sentinel.
+  link_allow_repos:
+    - elastic/docs-builder

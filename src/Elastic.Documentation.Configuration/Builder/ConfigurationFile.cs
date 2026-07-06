@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Suggestions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
@@ -69,6 +70,13 @@ public record ConfigurationFile
 	public string? StorybookRegistry { get; }
 
 	/// <summary>
+	/// Environment-independent <c>storybook.registry</c> value (committed default). Non-null only when an allow-listed
+	/// environment variable changed <see cref="StorybookRegistry"/>, so the directive can degrade to the committed
+	/// registry when the environment-supplied one is unreachable (e.g. an ephemeral PR registry that is not yet published).
+	/// </summary>
+	public string? StorybookRegistryFallback { get; }
+
+	/// <summary>
 	/// Resolved API configurations with template and specification file information.
 	/// </summary>
 	public IReadOnlyDictionary<string, ResolvedApiConfiguration>? ApiConfigurations { get; }
@@ -82,6 +90,14 @@ public record ConfigurationFile
 	/// White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.
 	/// </summary>
 	public BrandingConfiguration? Branding { get; private set; }
+
+	private readonly Dictionary<string, Cta> _ctas = new(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
+
+	/// <summary>
+	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
+	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
+	/// </summary>
+	public IReadOnlyDictionary<string, Cta> Ctas => _ctas;
 
 	/// This is a documentation set not linked to by assembler.
 	/// Setting this to true relaxes a few restrictions such as mixing toc references with file and folder reference
@@ -258,7 +274,18 @@ public record ConfigurationFile
 			}
 
 			if (docSetFile.Storybook is not null)
-				StorybookRegistry = docSetFile.Storybook.Registry?.Trim();
+			{
+				var interpolated = EnvironmentInterpolation.Interpolate(
+					docSetFile.Storybook.Registry?.Trim(),
+					context.Environment,
+					name => context.EmitWarning(
+						context.ConfigurationPath,
+						$"'storybook.registry' references environment variable '{name}' which is not allow-listed for interpolation and is left literal. Allowed: {string.Join(", ", EnvironmentInterpolation.AllowedVariables)}."
+					)
+				);
+				StorybookRegistry = interpolated.Value;
+				StorybookRegistryFallback = interpolated.Fallback;
+			}
 
 			// Process products from docset - resolve ProductLinks to Product objects
 			if (docSetFile.Products.Count > 0)
@@ -272,6 +299,13 @@ public record ConfigurationFile
 			// Process branding with validation
 			if (docSetFile.Branding is not null)
 				Branding = ValidateBranding(docSetFile.Branding, context);
+
+			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
+			foreach (var (name, definition) in docSetFile.Cta)
+			{
+				if (ValidateCta(name, definition, context) is { } cta)
+					_ctas[name] = cta;
+			}
 
 			// Process features
 			_features = [with(StringComparer.OrdinalIgnoreCase)];
@@ -310,6 +344,63 @@ public record ConfigurationFile
 			context.EmitError(context.ConfigurationPath, $"Could not load docset.yml: {e.Message}");
 			throw;
 		}
+	}
+
+	/// <summary>
+	/// Resolves a page's <c>cta</c> frontmatter id to a template, falling back to <see cref="Cta.DefaultName"/>
+	/// when <paramref name="id"/> is omitted or doesn't match a configured template.
+	/// </summary>
+	/// <param name="warning">Set when <paramref name="id"/> is unknown, so the caller can report it.</param>
+	public Cta ResolveCta(string? id, out string? warning)
+	{
+		warning = null;
+		if (id is not null && Ctas.TryGetValue(id, out var cta))
+			return cta;
+		if (id is not null)
+			warning = UnknownCtaWarning(id, Ctas.Keys);
+		return Ctas[Cta.DefaultName];
+	}
+
+	private static string UnknownCtaWarning(string ctaName, IEnumerable<string> knownCtaNames)
+	{
+		var known = knownCtaNames.ToHashSet();
+		var hint = new Suggestion(known, ctaName).GetSuggestionQuestion();
+		if (string.IsNullOrEmpty(hint))
+		{
+			hint = known.Count > 1
+				? $"Available: {string.Join(", ", known.Order())}."
+				: "No 'cta' templates are defined in this docset.yml yet. Add one under a top-level 'cta:' map, e.g.:\n" +
+					"cta:\n  mp:\n    button:\n      label: Get started on MP\n      url: https://example.com\n    benefits:\n      - \"Some benefit\"";
+		}
+		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml. Falling back to '{Cta.DefaultName}'. {hint}";
+	}
+
+	private static Cta? ValidateCta(string name, CtaDefinition definition, IDocumentationSetContext context)
+	{
+		if (string.IsNullOrWhiteSpace(definition.Button?.Label) || string.IsNullOrWhiteSpace(definition.Button?.Url))
+		{
+			context.EmitError(context.ConfigurationPath, $"'cta.{name}' must define both 'button.label' and 'button.url'.");
+			return null;
+		}
+		var url = definition.Button.Url.Trim();
+		if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri) && uri.IsAbsoluteUri &&
+			uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+		{
+			context.EmitError(context.ConfigurationPath, $"'cta.{name}.button.url' must use http/https or a relative URL.");
+			return null;
+		}
+		if (definition.Benefits.Count > Cta.MaxBenefits)
+		{
+			context.EmitError(context.ConfigurationPath, $"'cta.{name}.benefits' has {definition.Benefits.Count} entries; a maximum of {Cta.MaxBenefits} is allowed.");
+			return null;
+		}
+		return new Cta
+		{
+			Name = name,
+			Label = definition.Button.Label,
+			Url = url,
+			Benefits = definition.Benefits
+		};
 	}
 
 	private static readonly HashSet<string> AllowedImageExtensions =

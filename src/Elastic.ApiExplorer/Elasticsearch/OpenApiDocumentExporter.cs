@@ -11,8 +11,8 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
-using Elastic.Internal.Search;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
@@ -106,8 +106,9 @@ public partial class OpenApiDocumentExporter(
 
 	/// <summary>
 	/// Converts an OpenAPI document to DocumentationDocument instances.
+	/// Internal (rather than private) so tests can exercise it against an in-memory spec.
 	/// </summary>
-	private IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
+	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
 	{
 		foreach (var path in openApiDocument.Paths)
 		{
@@ -126,7 +127,10 @@ public partial class OpenApiDocumentExporter(
 
 				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
 				// inject product name into title to ensure differentiation and better scoring
-				var title = $"{operation.Value.Summary ?? operationId} - {productName} API ";
+				var title = $"{operation.Value.Summary ?? operationId} - {productName} API";
+				// append the raw operation id (e.g. "_bulk") so the REST endpoint name is searchable —
+				// keep it verbatim (no case/underscore normalization) since that's exactly what users type.
+				var searchTitle = $"{title} - {operationId}";
 				var description = TransformOperationListToMarkdown(operation.Value.Description);
 
 				// Build body content from operation details
@@ -173,7 +177,7 @@ public partial class OpenApiDocumentExporter(
 					ContentType = "api",
 					Url = url,
 					Title = title,
-					SearchTitle = title,
+					SearchTitle = searchTitle,
 					Description = description,
 					Body = body,
 					StrippedBody = body,
