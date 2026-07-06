@@ -40,13 +40,11 @@
 		};
 
 	// Helper to create SchemaTypeContext
-	private static readonly TypeInfo _defaultTypeInfo = new("unknown", null, false, false, false, null, false, null);
-
 	private SchemaTypeContext CreateSchemaTypeContext(IOpenApiSchema schema)
 		=> new SchemaTypeContext
 		{
 			Schema = schema,
-			TypeInfo = GetTypeInfo(schema) ?? _defaultTypeInfo,
+			TypeInfo = GetTypeInfo(schema),
 			HasActualProperties = GetSchemaProperties(schema)?.Count > 0
 		};
 }
@@ -320,8 +318,6 @@
 					}
 				@if (qsUnionOptions.Count > 0 && qsEnumValues.Count == 0)
 				{
-					var primitiveTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-						{ "boolean", "number", "string", "integer", "object", "null", "array" };
 					<dd class="union-options">
 						<span class="values-label">One of:</span>
 						@{var optIndex = 0;}
@@ -331,8 +327,8 @@
 							{
 								<span class="union-inline-separator">or</span>
 							}
-							var isTypeOption = primitiveTypes.Contains(unionOpt) ||
-								primitiveTypes.Contains(unionOpt.TrimEnd('[', ']')) ||
+							var isTypeOption = SchemaHelpers.PrimitiveTypeNames.Contains(unionOpt) ||
+								SchemaHelpers.PrimitiveTypeNames.Contains(unionOpt.TrimEnd('[', ']')) ||
 								char.IsUpper(unionOpt[0]) || unionOpt.EndsWith("[]");
 							<code class="@(isTypeOption ? "union-type-option" : "union-option")">@unionOpt</code>
 							optIndex++;

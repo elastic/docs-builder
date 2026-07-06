@@ -189,12 +189,10 @@
 			.OrderByDescending(o => o.EndsWith("[]"))
 			.ToArray();
 
-		var primitiveTypeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-			{ "boolean", "number", "string", "integer", "object", "null", "array" };
 		var allEnumLike = sortedOptions.Length > 0 && sortedOptions.All(o =>
 			!o.EndsWith("[]") &&
 			!string.IsNullOrEmpty(o) &&
-			!primitiveTypeNames.Contains(o) &&
+			!SchemaHelpers.PrimitiveTypeNames.Contains(o) &&
 			(char.IsLower(o[0]) || o.All(c => !char.IsLetter(c) || char.IsLower(c) || c == '_')));
 
 		if (allEnumLike)
@@ -242,8 +240,6 @@
 		else if (sortedOptions.Length > 0 || hasUnionOptions)
 		{
 			var badgeOptions = hasUnionOptions ? Array.Empty<string>() : sortedOptions;
-			var primitiveTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-				{ "boolean", "number", "string", "integer", "object", "null", "array" };
 
 			<dd class="union-options">
 				<span class="values-label">One of:</span>
@@ -258,8 +254,8 @@
 					{
 						<span class="union-inline-separator">or</span>
 					}
-					var isTypeOption = primitiveTypes.Contains(unionOpt) ||
-						primitiveTypes.Contains(unionOpt.TrimEnd('[', ']')) ||
+					var isTypeOption = SchemaHelpers.PrimitiveTypeNames.Contains(unionOpt) ||
+						SchemaHelpers.PrimitiveTypeNames.Contains(unionOpt.TrimEnd('[', ']')) ||
 						char.IsUpper(unionOpt[0]) || unionOpt.EndsWith("[]");
 					<code class="@(isTypeOption ? "union-type-option" : "union-option")">@unionOpt</code>
 					badgeIndex++;

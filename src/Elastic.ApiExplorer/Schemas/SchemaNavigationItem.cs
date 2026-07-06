@@ -13,10 +13,6 @@ namespace Elastic.ApiExplorer.Schemas;
 
 public record ApiSchema(string SchemaId, string DisplayName, string Category, IOpenApiSchema Schema) : IApiModel
 {
-	// For aggregations, we may have both an Aggregation and Aggregate type
-	public IOpenApiSchema? RelatedAggregate { get; init; }
-	public IOpenApiSchema? RelatedAggregation { get; init; }
-
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
 	{
 		var viewModel = new SchemaViewModel(context)

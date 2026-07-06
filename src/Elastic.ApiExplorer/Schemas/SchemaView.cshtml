@@ -74,7 +74,6 @@
 @{
 	var schema = Model.Schema;
 	var openApiSchema = schema.Schema;
-	var isAggregation = schema.Category == "aggregations";
 
 	// Set the current page type for self-link prevention
 	_currentPageType = schema.DisplayName;
@@ -95,9 +94,7 @@
 	var hasEnum = openApiSchema.Enum is { Count: > 0 };
 	var hasOneOf = openApiSchema.OneOf is { Count: > 0 };
 	var hasAnyOf = openApiSchema.AnyOf is { Count: > 0 };
-	var hasAggRequest = isAggregation && schema.RelatedAggregation is not null;
-	var hasProperties = !hasAggRequest && GetSchemaProperties(openApiSchema) is { Count: > 0 };
-	var hasAggResponse = isAggregation && schema.RelatedAggregate is not null;
+	var hasProperties = GetSchemaProperties(openApiSchema) is { Count: > 0 };
 	var hasAdditionalProps = openApiSchema.AdditionalProperties is IOpenApiSchema;
 	var hasExample = openApiSchema.Example is not null;
 }
@@ -170,30 +167,12 @@
 		@(await RenderPartialAsync<_UnionOptions, UnionVariantsContext>(CreateUnionContext(openApiSchema.AnyOf!, "anyof", rootAncestors)))
 	}
 
-	@* For aggregations, show both aggregation request and aggregate response *@
-	@if (hasAggRequest)
-	{
-		<h3 class="section-header" id="aggregation-request" data-section="aggregation-request">
-			<span>Aggregation Request</span>
-		</h3>
-		<p>Properties for configuring the <code>@(schema.DisplayName)</code> aggregation:</p>
-		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(schema.RelatedAggregation, "agg", rootAncestors)))
-	}
-	else if (hasProperties)
+	@if (hasProperties)
 	{
 		<h3 class="section-header" id="properties" data-section="properties">
 			<span>Properties</span>
 		</h3>
 		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(openApiSchema, "", rootAncestors)))
-	}
-
-	@if (hasAggResponse)
-	{
-		<h3 class="section-header" id="aggregate-response" data-section="aggregate-response">
-			<span>Aggregate Response</span>
-		</h3>
-		<p>Properties returned in the <code>@(schema.DisplayName)</code> aggregate response:</p>
-		@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(schema.RelatedAggregate, "result", rootAncestors)))
 	}
 
 	@if (hasAdditionalProps && openApiSchema.AdditionalProperties is IOpenApiSchema addPropsSchema)

@@ -552,13 +552,6 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		}
 	}
 
-	private static string FormatSchemaDisplayName(string schemaId)
-	{
-		// Convert schema IDs like "_types.query_dsl.QueryContainer" to "QueryContainer"
-		var parts = schemaId.Split('.');
-		return parts.Length > 0 ? parts[^1] : schemaId;
-	}
-
 	private string ResolveTagClassification(string? tag, XTagGroupsDocument? xTagGroups, HashSet<string> orphanTagsLogged)
 	{
 		if (xTagGroups is null)

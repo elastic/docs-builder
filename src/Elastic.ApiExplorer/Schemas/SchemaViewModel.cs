@@ -14,7 +14,6 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
 	{
 		var openApiSchema = Schema.Schema;
-		var isAggregation = Schema.Category == "aggregations";
 		var tocItems = new List<ApiTocItem>();
 
 		// Description
@@ -29,33 +28,14 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 		if (openApiSchema.OneOf is { Count: > 0 } || openApiSchema.AnyOf is { Count: > 0 })
 			tocItems.Add(new ApiTocItem("Union Types", "union-types"));
 
-		// Aggregation request (for aggregations)
-		if (isAggregation && Schema.RelatedAggregation is not null)
-		{
-			tocItems.Add(new ApiTocItem("Aggregation Request", "aggregation-request"));
-			// Add top-level properties nested under Aggregation Request
-			var aggProps = GetSchemaPropertyNames(Schema.RelatedAggregation);
-			foreach (var propName in aggProps)
-				tocItems.Add(new ApiTocItem(propName, $"agg-{propName}", 3));
-		}
-		// Properties (for non-aggregations with properties)
-		else if (HasSchemaProperties(openApiSchema))
+		// Properties
+		if (HasSchemaProperties(openApiSchema))
 		{
 			tocItems.Add(new ApiTocItem("Properties", "properties"));
 			// Add top-level properties nested under Properties
 			var props = GetSchemaPropertyNames(openApiSchema);
 			foreach (var propName in props)
 				tocItems.Add(new ApiTocItem(propName, propName, 3));
-		}
-
-		// Aggregate response (for aggregations)
-		if (isAggregation && Schema.RelatedAggregate is not null)
-		{
-			tocItems.Add(new ApiTocItem("Aggregate Response", "aggregate-response"));
-			// Add top-level properties nested under Aggregate Response
-			var resultProps = GetSchemaPropertyNames(Schema.RelatedAggregate);
-			foreach (var propName in resultProps)
-				tocItems.Add(new ApiTocItem(propName, $"result-{propName}", 3));
 		}
 
 		// Additional properties
