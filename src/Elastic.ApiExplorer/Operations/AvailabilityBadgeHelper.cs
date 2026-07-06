@@ -13,6 +13,9 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
+/// <summary>Model for the <c>_AppliesToBadge</c> partial.</summary>
+public sealed record AppliesToBadgeDisplay(AvailabilityBadgeData Data, bool IsInline);
+
 /// <summary>
 /// Badge data needed by the applies-to-popover web component.
 /// </summary>

@@ -27,21 +27,8 @@
 	</h1>
 	@if (pageModel.Availability is not null)
 	{
-		var badgeData = pageModel.Availability;
 		<p class="applies applies-block">
-			<applies-to-popover
-				badge-key="@badgeData.BadgeKey"
-				badge-lifecycle-text="@badgeData.BadgeLifecycleText"
-				badge-version="@badgeData.BadgeVersion"
-				lifecycle-class="@badgeData.LifecycleClass"
-				lifecycle-name="@badgeData.LifecycleName"
-				show-lifecycle-name="@badgeData.ShowLifecycleName.ToString().ToLowerInvariant()"
-				show-version="@badgeData.ShowVersion.ToString().ToLowerInvariant()"
-				has-multiple-lifecycles="false"
-				popover-data=""
-				show-popover="false"
-				is-inline="false"
-			></applies-to-popover>
+			@(await RenderPartialAsync<_AppliesToBadge, AppliesToBadgeDisplay>(new AppliesToBadgeDisplay(pageModel.Availability, IsInline: false)))
 		</p>
 	}
 	@if (pageModel.Servers is { Count: > 0 })
@@ -61,14 +48,7 @@
 		</div>
 	}
 
-	<h3 class="section-header" id="paths" data-section="paths">
-		<span>Paths</span>
-		<span class="section-nav">
-			<span class="section-path">@Model.Operation.Route</span>
-			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-		</span>
-	</h3>
+	@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Paths", "paths", Model.Operation.Route)))
 	<ul class="api-url-listing">
 		@foreach (var overload in pageModel.Overloads)
 		{
@@ -92,14 +72,7 @@
 	}
 	@if (prerequisiteLines is { Count: > 0 })
 	{
-		<h3 class="section-header" id="prerequisites" data-section="prerequisites">
-			<span>Prerequisites</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Prerequisites", "prerequisites", Model.Operation.Route)))
 		<ul class="prerequisite-list">
 		@foreach (var line in prerequisiteLines)
 		{
@@ -131,14 +104,7 @@
 
 	@if (!string.IsNullOrWhiteSpace(operation.Description))
 	{
-		<h3 class="section-header" id="description" data-section="description">
-			<span>Description</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Description", "description", Model.Operation.Route)))
 		<p>
 			@(Model.RenderMarkdown(operation.Description))
 		</p>
@@ -178,14 +144,7 @@
 
 	@if (pageModel.QueryParameters.Count > 0)
 	{
-		<h3 class="section-header" id="query-params" data-section="query-params">
-			<span>Query String Parameters</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Query String Parameters", "query-params", Model.Operation.Route)))
 		<dl class="property-list">
 			@foreach (var qp in pageModel.QueryParameters)
 			{
@@ -240,15 +199,7 @@
 	}
 	@if (operation.RequestBody is not null)
 	{
-		<h3 class="section-header" id="request-body" data-section="request-body">
-			<span>Request Body</span>
-			<span class="content-type-badge">@pageModel.RequestContentType</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Request Body", "request-body", Model.Operation.Route, pageModel.RequestContentType)))
 		if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
@@ -269,18 +220,7 @@
 		var isSingleResponse = pageModel.Responses.Count == 1;
 		var singleContentType = isSingleResponse ? pageModel.Responses[0].FirstContentType : null;
 
-		<h3 class="section-header" id="responses" data-section="responses">
-			<span>@(isSingleResponse ? "Response" : "Responses")</span>
-			@if (!string.IsNullOrEmpty(singleContentType))
-			{
-				<span class="content-type-badge">@singleContentType</span>
-			}
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader(isSingleResponse ? "Response" : "Responses", "responses", Model.Operation.Route, singleContentType)))
 		@foreach (var response in pageModel.Responses)
 		{
 			<div class="response-section">
@@ -361,14 +301,7 @@
 	}
 	@if (codeSamples.Count == 1)
 	{
-		<h3 class="section-header" id="code-examples" data-section="code-examples">
-			<span>Code Examples</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Code Examples", "code-examples", Model.Operation.Route)))
 		<div class="example-block">
 			<h4>@codeSamples[0].Language</h4>
 			@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(codeSamples[0].HighlightClass, codeSamples[0].Source)))
@@ -376,14 +309,7 @@
 	}
 	else if (codeSamples.Count > 1)
 	{
-		<h3 class="section-header" id="code-examples" data-section="code-examples">
-			<span>Code Examples</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Code Examples", "code-examples", Model.Operation.Route)))
 		<div class="tabs">
 			@for (var i = 0; i < codeSamples.Count; i++)
 			{
@@ -399,61 +325,11 @@
 	}
 	@if (pageModel.ShowRequestExamples)
 	{
-		<h3 class="section-header" id="request-examples" data-section="request-examples">
-			<span>Request Examples</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
-		@foreach (var example in pageModel.RequestExamples!)
-		{
-			<div class="example-block">
-				<h4>@(string.IsNullOrEmpty(example.Value?.Summary) ? example.Key : example.Value.Summary)</h4>
-				@if (!string.IsNullOrEmpty(example.Value?.Description))
-				{
-					<div class="example-description">@Model.RenderMarkdown(example.Value.Description)</div>
-				}
-				@if (example.Value?.Value is not null)
-				{
-					@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-json", example.Value.Value.ToString()!)))
-				}
-				@if (!string.IsNullOrEmpty(example.Value?.ExternalValue))
-				{
-					<p class="external-example">External example: <a href="@example.Value.ExternalValue">@example.Value.ExternalValue</a></p>
-				}
-			</div>
-		}
+		@(await RenderPartialAsync<_ExamplesSection, ExamplesSection>(new ExamplesSection(new SectionHeader("Request Examples", "request-examples", Model.Operation.Route), pageModel.RequestExamples)))
 	}
 	@if (pageModel.ShowResponseExamples)
 	{
-		<h3 class="section-header" id="response-examples" data-section="response-examples">
-			<span>Response Examples</span>
-			<span class="section-nav">
-				<span class="section-path">@Model.Operation.Route</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
-		@foreach (var example in pageModel.ResponseExamples!)
-		{
-			<div class="example-block">
-				<h4>@(string.IsNullOrEmpty(example.Value?.Summary) ? example.Key : example.Value.Summary)</h4>
-				@if (!string.IsNullOrEmpty(example.Value?.Description))
-				{
-					<div class="example-description">@Model.RenderMarkdown(example.Value.Description)</div>
-				}
-				@if (example.Value?.Value is not null)
-				{
-					@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-json", example.Value.Value.ToString()!)))
-				}
-				@if (!string.IsNullOrEmpty(example.Value?.ExternalValue))
-				{
-					<p class="external-example">External example: <a href="@example.Value.ExternalValue">@example.Value.ExternalValue</a></p>
-				}
-			</div>
-		}
+		@(await RenderPartialAsync<_ExamplesSection, ExamplesSection>(new ExamplesSection(new SectionHeader("Response Examples", "response-examples", Model.Operation.Route), pageModel.ResponseExamples)))
 	}
 	@if (pageModel.ExamplesAnchor != null)
 	{

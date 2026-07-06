@@ -25,20 +25,7 @@
 			}
 		@if (Model.Availability is not null)
 		{
-			var propBadgeData = Model.Availability;
-				<applies-to-popover
-					badge-key="@propBadgeData.BadgeKey"
-					badge-lifecycle-text="@propBadgeData.BadgeLifecycleText"
-					badge-version="@propBadgeData.BadgeVersion"
-					lifecycle-class="@propBadgeData.LifecycleClass"
-					lifecycle-name="@propBadgeData.LifecycleName"
-					show-lifecycle-name="@propBadgeData.ShowLifecycleName.ToString().ToLowerInvariant()"
-					show-version="@propBadgeData.ShowVersion.ToString().ToLowerInvariant()"
-					has-multiple-lifecycles="false"
-					popover-data=""
-					show-popover="false"
-					is-inline="true"
-				></applies-to-popover>
+			@(await RenderPartialAsync<_AppliesToBadge, Elastic.ApiExplorer.Operations.AppliesToBadgeDisplay>(new Elastic.ApiExplorer.Operations.AppliesToBadgeDisplay(Model.Availability, IsInline: true)))
 		}
 		</a>
 	</dt>

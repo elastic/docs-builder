@@ -4,17 +4,17 @@
 	</h1>
 		<p class="applies applies-block">
 			<applies-to-popover
-				badge-key="Stack"
-				badge-version="7.7&#x2B;"
-				lifecycle-class="ga"
-				lifecycle-name="GA"
-				show-lifecycle-name="false"
-				show-version="true"
-				has-multiple-lifecycles="false"
-				popover-data=""
-				show-popover="false"
-				is-inline="false"
-			></applies-to-popover>
+	badge-key="Stack"
+	badge-version="7.7&#x2B;"
+	lifecycle-class="ga"
+	lifecycle-name="GA"
+	show-lifecycle-name="false"
+	show-version="true"
+	has-multiple-lifecycles="false"
+	popover-data=""
+	show-popover="false"
+	is-inline="false"
+></applies-to-popover>
 		</p>
 		<div class="server-info">
 			<span class="server-label">Server:</span>
@@ -25,13 +25,14 @@
 		</div>
 
 	<h3 class="section-header" id="paths" data-section="paths">
-		<span>Paths</span>
+	<span>Paths</span>
 		<span class="section-nav">
 			<span class="section-path">/{index}/_search</span>
 			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
 			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
 		</span>
-	</h3>
+</h3>
+
 	<ul class="api-url-listing">
 			<li class="api-url-list-item ">
 				<a href="/api/fixture/search" class="current" hx-disable="true">
@@ -40,14 +41,14 @@
 				</a>
 			</li>
 	</ul>
-		<h3 class="section-header" id="prerequisites" data-section="prerequisites">
-			<span>Prerequisites</span>
-			<span class="section-nav">
-				<span class="section-path">/{index}/_search</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+<h3 class="section-header" id="prerequisites" data-section="prerequisites">
+	<span>Prerequisites</span>
+		<span class="section-nav">
+			<span class="section-path">/{index}/_search</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+</h3>
 		<ul class="prerequisite-list">
 			<li><p>Requires the `read` index privilege for the target data stream or index.</p></li>
 			<li><p>Requires the `monitor` cluster privilege when profiling is enabled.</p></li>
@@ -64,14 +65,14 @@
 			</div>
 		</dl>
 
-		<h3 class="section-header" id="description" data-section="description">
-			<span>Description</span>
-			<span class="section-nav">
-				<span class="section-path">/{index}/_search</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+<h3 class="section-header" id="description" data-section="description">
+	<span>Description</span>
+		<span class="section-nav">
+			<span class="section-path">/{index}/_search</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+</h3>
 		<p>
 			<p>Returns hits that match the query defined in the request.
 
@@ -88,14 +89,14 @@ Supports pagination through `size` and `from`.</p>
 					</span>
 		</div>
 
-		<h3 class="section-header" id="query-params" data-section="query-params">
-			<span>Query String Parameters</span>
-			<span class="section-nav">
-				<span class="section-path">/{index}/_search</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+<h3 class="section-header" id="query-params" data-section="query-params">
+	<span>Query String Parameters</span>
+		<span class="section-nav">
+			<span class="section-path">/{index}/_search</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+</h3>
 		<dl class="property-list">
 				<div class="query-param ">
 					<dt id="query-expand_wildcards">
@@ -157,15 +158,15 @@ Supports pagination through `size` and `from`.</p>
 					<dd><p>Pretty-print the response body.</p></dd>
 				</div>
 		</dl>
-		<h3 class="section-header" id="request-body" data-section="request-body">
-			<span>Request Body</span>
-			<span class="content-type-badge">application/json</span>
-			<span class="section-nav">
-				<span class="section-path">/{index}/_search</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+<h3 class="section-header" id="request-body" data-section="request-body">
+	<span>Request Body</span>
+		<span class="content-type-badge">application/json</span>
+		<span class="section-nav">
+			<span class="section-path">/{index}/_search</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+</h3>
 			<p><p>The search definition using the fixture Query DSL.</p></p>
 <dl class="property-list">
 <div class="property-item depth-0    ">
@@ -406,19 +407,18 @@ Supports pagination through `size` and `from`.</p>
 			<code class="schema-type"><span>integer</span></code>
 
 				<span class="deprecated-badge">deprecated</span>
-				<applies-to-popover
-					badge-key="Stack"
-					badge-version="7.0&#x2B;"
-					lifecycle-class="deprecated"
-					lifecycle-name="Deprecated"
-					show-lifecycle-name="true"
-					show-version="true"
-					has-multiple-lifecycles="false"
-					popover-data=""
-					show-popover="false"
-					is-inline="true"
-				></applies-to-popover>
-		</a>
+<applies-to-popover
+	badge-key="Stack"
+	badge-version="7.0&#x2B;"
+	lifecycle-class="deprecated"
+	lifecycle-name="Deprecated"
+	show-lifecycle-name="true"
+	show-version="true"
+	has-multiple-lifecycles="false"
+	popover-data=""
+	show-popover="false"
+	is-inline="true"
+></applies-to-popover>		</a>
 	</dt>
 		<dd>
 			<p>Use `size` on the query string instead.</p>
@@ -427,14 +427,14 @@ Supports pagination through `size` and `from`.</p>
 </div>
 </dl>
 
-		<h3 class="section-header" id="responses" data-section="responses">
-			<span>Responses</span>
-			<span class="section-nav">
-				<span class="section-path">/{index}/_search</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+<h3 class="section-header" id="responses" data-section="responses">
+	<span>Responses</span>
+		<span class="section-nav">
+			<span class="section-path">/{index}/_search</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+</h3>
 			<div class="response-section">
 					<h4>
 						<span class="status-code status-success">200</span>
@@ -627,14 +627,14 @@ Supports pagination through `size` and `from`.</p>
 </div>
 </dl>
 			</div>
-		<h3 class="section-header" id="code-examples" data-section="code-examples">
-			<span>Code Examples</span>
-			<span class="section-nav">
-				<span class="section-path">/{index}/_search</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
+<h3 class="section-header" id="code-examples" data-section="code-examples">
+	<span>Code Examples</span>
+		<span class="section-nav">
+			<span class="section-path">/{index}/_search</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+</h3>
 		<div class="tabs">
 				<input class="tabs-input" checked="checked" id="code-sample-0" name="code-samples" type="radio" tabindex="0">
 				<label class="tabs-label" data-sync-id="Console" data-sync-group="api-language" for="code-sample-0">Console</label>
@@ -657,48 +657,50 @@ Supports pagination through `size` and `from`.</p>
 
 				</div>
 		</div>
-		<h3 class="section-header" id="request-examples" data-section="request-examples">
-			<span>Request Examples</span>
-			<span class="section-nav">
-				<span class="section-path">/{index}/_search</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
-			<div class="example-block">
-				<h4>Match all documents</h4>
-					<div class="example-description"><p>The simplest possible search request.</p></div>
+<h3 class="section-header" id="request-examples" data-section="request-examples">
+	<span>Request Examples</span>
+		<span class="section-nav">
+			<span class="section-path">/{index}/_search</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+</h3>
+
+	<div class="example-block">
+		<h4>Match all documents</h4>
+			<div class="example-description"><p>The simplest possible search request.</p></div>
 <div class="highlight-json notranslate">
 	<div class="highlight">
 		<pre><code class="language-json">{&#xA;  &quot;query&quot;: {&#xA;    &quot;match_all&quot;: {}&#xA;  }&#xA;}</code></pre>
 	</div>
 </div>
-			</div>
-			<div class="example-block">
-				<h4>Boolean query</h4>
+	</div>
+	<div class="example-block">
+		<h4>Boolean query</h4>
 <div class="highlight-json notranslate">
 	<div class="highlight">
 		<pre><code class="language-json">{&#xA;  &quot;query&quot;: {&#xA;    &quot;bool&quot;: {&#xA;      &quot;must&quot;: [&#xA;        {&#xA;          &quot;match_all&quot;: {}&#xA;        }&#xA;      ]&#xA;    }&#xA;  }&#xA;}</code></pre>
 	</div>
 </div>
-			</div>
-		<h3 class="section-header" id="response-examples" data-section="response-examples">
-			<span>Response Examples</span>
-			<span class="section-nav">
-				<span class="section-path">/{index}/_search</span>
-				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
-				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
-			</span>
-		</h3>
-			<div class="example-block">
-				<h4>A successful response</h4>
-					<div class="example-description"><p>Two documents matched.</p></div>
+	</div>
+<h3 class="section-header" id="response-examples" data-section="response-examples">
+	<span>Response Examples</span>
+		<span class="section-nav">
+			<span class="section-path">/{index}/_search</span>
+			<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
+			<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
+		</span>
+</h3>
+
+	<div class="example-block">
+		<h4>A successful response</h4>
+			<div class="example-description"><p>Two documents matched.</p></div>
 <div class="highlight-json notranslate">
 	<div class="highlight">
 		<pre><code class="language-json">{&#xA;  &quot;took&quot;: 5,&#xA;  &quot;timed_out&quot;: false,&#xA;  &quot;hits&quot;: [&#xA;    {&#xA;      &quot;_id&quot;: &quot;1&quot;,&#xA;      &quot;_score&quot;: 1.0&#xA;    }&#xA;  ]&#xA;}</code></pre>
 	</div>
 </div>
-			</div>
+	</div>
 		<a href="#code-examples" class="examples-jump-btn" id="examples-jump-btn">
 			<span class="icon">&#x2193;</span>
 			<span>Examples</span>

@@ -5,9 +5,16 @@
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Schema;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
+
+/// <summary>A request/response example with its markdown description prerendered.</summary>
+public record ExampleDisplay(string Title, HtmlString? DescriptionHtml, string? JsonValue, string? ExternalValue);
+
+/// <summary>Model for the <c>_ExamplesSection</c> partial.</summary>
+public record ExamplesSection(SectionHeader Header, IReadOnlyList<ExampleDisplay> Examples);
 
 /// <summary>A query string parameter with its structural display data precomputed.</summary>
 public record ApiQueryParameter
@@ -71,8 +78,8 @@ public record OperationPageModel
 	public required TypeAnnotation? RequestType { get; init; }
 	public required IReadOnlyList<ApiResponse> Responses { get; init; }
 	public required IReadOnlyList<CodeSample> CodeSamples { get; init; }
-	public required IDictionary<string, IOpenApiExample>? RequestExamples { get; init; }
-	public required IDictionary<string, IOpenApiExample>? ResponseExamples { get; init; }
+	public required IReadOnlyList<ExampleDisplay> RequestExamples { get; init; }
+	public required IReadOnlyList<ExampleDisplay> ResponseExamples { get; init; }
 	public required bool ShowRequestExamples { get; init; }
 	public required bool ShowResponseExamples { get; init; }
 
@@ -133,13 +140,22 @@ public record OperationPageModel
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
 			CodeSamples = codeSamples,
-			RequestExamples = requestExamples,
-			ResponseExamples = responseExamples,
+			RequestExamples = MapExamples(requestExamples, options.RenderMarkdown),
+			ResponseExamples = MapExamples(responseExamples, options.RenderMarkdown),
 			ShowRequestExamples = showRequestExamples,
 			ShowResponseExamples = showResponseExamples,
 			ExamplesAnchor = examplesAnchor
 		};
 	}
+
+	private static IReadOnlyList<ExampleDisplay> MapExamples(IDictionary<string, IOpenApiExample>? examples, Func<string?, HtmlString> renderMarkdown) =>
+		examples is null
+			? []
+			: examples.Select(e => new ExampleDisplay(
+				string.IsNullOrEmpty(e.Value?.Summary) ? e.Key : e.Value.Summary,
+				string.IsNullOrEmpty(e.Value?.Description) ? null : renderMarkdown(e.Value.Description),
+				e.Value?.Value?.ToString(),
+				string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue)).ToArray();
 
 	private static bool ParseBetaFlag(OpenApiOperation operation) =>
 		operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true
