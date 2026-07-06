@@ -7,6 +7,7 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -165,7 +166,8 @@ public class PlaceholderPageWriter(
 			VersioningSystem = context.VersionsConfiguration.GetVersioningSystem(VersioningSystemId.All),
 			VersionDropdownSerializedModel = null,
 			CurrentVersion = null,
-			AllVersionsUrl = null
+			AllVersionsUrl = null,
+			Cta = Cta.Default
 		};
 	}
 }
