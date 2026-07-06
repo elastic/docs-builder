@@ -42,8 +42,10 @@ subs:
 features:
   primary-nav: false
 
-storybook:
-  registry: https://ci-artifacts.kibana.dev/storybooks/pr-272388/storybook-docs/docs_registry.json
+# Temporarily disabled: the pr-272388 preview registry artifact is gone and there is no
+# working `main` registry to fall back to yet. Re-enable once a registry URL resolves.
+# storybook:
+#   registry: https://ci-artifacts.kibana.dev/storybooks/pr-272388/storybook-docs/docs_registry.json
 
 cta:
   docs-builder:
