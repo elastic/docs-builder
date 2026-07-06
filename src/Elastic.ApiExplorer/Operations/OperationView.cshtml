@@ -1,7 +1,4 @@
-@using Elastic.ApiExplorer.Landing
 @using Elastic.ApiExplorer.Operations
-@using Elastic.ApiExplorer.Components.PropertyTree
-@using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
@@ -15,7 +12,7 @@
 <section id="elastic-api-v3">
 	<h1>
 		@operation.Summary
-		@if (operation.Deprecated is true)
+		@if (operation.Deprecated)
 		{
 			<span class="deprecated-badge">deprecated</span>
 		}
