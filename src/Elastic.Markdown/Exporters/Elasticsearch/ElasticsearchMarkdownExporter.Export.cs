@@ -34,6 +34,7 @@ public partial class ElasticsearchMarkdownExporter
 			doc.SearchTitle ?? string.Empty,
 			doc.NavigationSection ?? string.Empty, doc.NavigationDepth.ToString("N0"),
 			doc.NavigationTableOfContents.ToString("N0"),
+			doc.ContentTier,
 			_fixedSynonymsHash,
 			string.Join(",", doc.Parents?.Select(p => $"{p.Url}:{p.Title}") ?? [])
 		);
@@ -43,6 +44,40 @@ public partial class ElasticsearchMarkdownExporter
 	/// <summary>Computes and assigns the whitespace-normalized content hash for change detection.</summary>
 	private static void AssignContentHash(DocumentationDocument doc) =>
 		doc.ContentBodyHash = ContentHash.CreateNormalized(doc.StrippedBody ?? string.Empty);
+
+	/// <summary>
+	/// Classifies a docs page into the shared <see cref="ContentTiers"/> taxonomy. docs-builder owns
+	/// this classification for its own docs/api content — it only agrees with other producers
+	/// (e.g. essc) on the <see cref="ContentTiers"/> string constants themselves.
+	/// </summary>
+	internal static string ClassifyContentTier(INavigationItem? navigationItem, string url)
+	{
+		var section = navigationItem?.NavigationSection;
+		if (IsReleaseNotes(section, url))
+			return ContentTiers.Peripheral;
+		if (IsSupplementary(section, url))
+			return ContentTiers.Supplementary;
+		if (IsPrimary(navigationItem, section))
+			return ContentTiers.Primary;
+		return ContentTiers.Reference;
+
+		static bool IsReleaseNotes(string? section, string url) =>
+			section == "release notes" || url.Contains("/release-notes/", StringComparison.OrdinalIgnoreCase);
+
+		// Aligns with the existing `diminish_terms` in search.yml (plugin, glossary, curator, hadoop, integration, client).
+		static bool IsSupplementary(string? section, string url) =>
+			ContainsAny(section, "deprecat", "plugin", "glossary")
+			|| url.Contains("/docs/extend/", StringComparison.OrdinalIgnoreCase);
+
+		// A section's root/index page is effectively that section's overview — treat it as primary
+		// alongside pages explicitly living under a "get started"/"getting started"/"overview" section.
+		static bool IsPrimary(INavigationItem? navigationItem, string? section) =>
+			navigationItem is IRootNavigationItem<INavigationModel, INavigationItem>
+			|| ContainsAny(section, "get started", "getting started", "overview");
+
+		static bool ContainsAny(string? value, params string[] fragments) =>
+			value is not null && fragments.Any(f => value.Contains(f, StringComparison.OrdinalIgnoreCase));
+	}
 
 	/// <summary>Internal (rather than private) so tests can assert navigation_* rank features never fall back to the contract's penalty default.</summary>
 	internal static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
@@ -69,6 +104,11 @@ public partial class ElasticsearchMarkdownExporter
 		// e.g. `Use high-contrast mode in Kibana - ( docs cloud-account high contrast`
 		if (doc.NavigationSection == "manage your cloud account and preferences")
 			doc.NavigationDepth *= 2;
+
+		// API reference pages have no navigation item to classify from — treat them as plain reference content.
+		// (doc.Type is a fixed CLR/$type discriminator, always "docs" — ContentType is the field
+		// OpenApiDocumentExporter actually sets to "api".)
+		doc.ContentTier = doc.ContentType == "api" ? ContentTiers.Reference : ClassifyContentTier(navigationItem, doc.Url);
 
 		string CreateSearchTitle()
 		{
