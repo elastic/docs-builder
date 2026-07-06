@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DotNet.Globbing;
 using Elastic.Documentation.Integrations.S3;
 using Microsoft.Extensions.Logging;
 
@@ -27,8 +28,22 @@ public class AwsS3SyncPlanStrategy(
 		return fileInfo.LinkTarget != null;
 	}
 
-	public async Task<SyncPlan> Plan(float? deleteThreshold, Cancel ctx = default)
+	private static bool IsExcluded(string destinationPath, Glob[] globs) =>
+		globs.Length > 0 && globs.Any(g => g.IsMatch(destinationPath));
+
+	/// <summary>
+	/// Normalize an exclude pattern so it behaves like <c>aws s3 sync --exclude</c>, where
+	/// <c>*</c> matches path separators (e.g. <c>_preview/*</c> matches
+	/// <c>_preview/pr-42/index.html</c>).  A trailing <c>/*</c> is expanded to <c>/**</c> so
+	/// DotNet.Glob treats it as a recursive wildcard.
+	/// </summary>
+	private static string NormalizePattern(string pattern) =>
+		pattern.EndsWith("/*", StringComparison.Ordinal) ? string.Concat(pattern.AsSpan(0, pattern.Length - 2), "/**") : pattern;
+
+	public async Task<SyncPlan> Plan(float? deleteThreshold, string[] excludePatterns, Cancel ctx = default)
 	{
+		var excludeGlobs = excludePatterns.Select(p => Glob.Parse(NormalizePattern(p))).ToArray();
+
 		// Start S3 listing in background while scanning local files concurrently
 		var listTask = ListObjects(ctx);
 		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories)
@@ -44,6 +59,9 @@ public class AwsS3SyncPlanStrategy(
 		{
 			var relativePath = Path.GetRelativePath(context.OutputDirectory.FullName, localFile.FullName);
 			var destinationPath = relativePath.Replace('\\', '/');
+
+			if (IsExcluded(destinationPath, excludeGlobs))
+				return;
 
 			if (remoteObjects.TryGetValue(destinationPath, out var remoteObject))
 			{
@@ -80,9 +98,11 @@ public class AwsS3SyncPlanStrategy(
 			}
 		});
 
-		// Find deletions (files in S3 but not locally)
+		// Find deletions (files in S3 but not locally), honouring excludes
 		foreach (var remoteObject in remoteObjects)
 		{
+			if (IsExcluded(remoteObject.Key, excludeGlobs))
+				continue;
 			var localPath = Path.Join(context.OutputDirectory.FullName, remoteObject.Key.Replace('/', Path.DirectorySeparatorChar));
 			if (context.ReadFileSystem.File.Exists(localPath))
 				continue;
@@ -97,6 +117,7 @@ public class AwsS3SyncPlanStrategy(
 		{
 			RemoteListingCompleted = readToCompletion,
 			DeleteThresholdDefault = deleteThreshold,
+			ExcludePatterns = excludePatterns,
 			TotalRemoteFiles = remoteObjects.Count,
 			TotalSourceFiles = localObjects.Length,
 			DeleteRequests = deleteRequests.ToList(),

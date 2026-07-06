@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -611,6 +612,44 @@ public class TagMetadataTests
 	}
 
 	[Fact]
+	public async Task XTagGroups_Classification_Url_PointsToApiOverview_NotFirstTag()
+	{
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "ES", "version": "1.0" },
+		  "paths": {
+		    "/a": { "get": { "operationId": "a1", "tags": ["watcher"], "responses": { "200": { "description": "ok" } } } },
+		    "/b": { "get": { "operationId": "b1", "tags": ["tasks"], "responses": { "200": { "description": "ok" } } } },
+		    "/c": { "get": { "operationId": "c1", "tags": ["search"], "responses": { "200": { "description": "ok" } } } }
+		  },
+		  "tags": [
+		    { "name": "watcher", "x-displayName": "Watcher" },
+		    { "name": "tasks", "x-displayName": "Task management" },
+		    { "name": "search" }
+		  ],
+		  "x-tagGroups": [
+		    { "name": "Information", "tags": ["watcher", "tasks"] },
+		    { "name": "Search", "tags": ["search"] }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+
+		var expectedOverviewUrl = navigation.Index.Url;
+		var informationGroup = navigation.NavigationItems
+			.OfType<ClassificationNavigationItem>()
+			.First(c => c.NavigationTitle == "Information");
+		informationGroup.Url.Should().Be(expectedOverviewUrl);
+
+		var firstTag = informationGroup.NavigationItems.OfType<TagNavigationItem>().First();
+		informationGroup.Url.Should().NotBe(firstTag.Url);
+		firstTag.Url.Should().Contain("/tags/");
+	}
+
+	[Fact]
 	public async Task WithoutXTagGroups_ElasticsearchTitle_UsesFlatTagNavigation()
 	{
 		var openApiJson = /*lang=json,strict*/ """
@@ -707,8 +746,7 @@ public class TagMetadataTests
 	[Fact]
 	public async Task XTagGroups_OrphanTag_AssignsUnknownGroup()
 	{
-		// Two unlisted tags so the "unknown" classification has multiple tags; with a single tag,
-		// CreateTagNavigationItems attaches operations directly to the parent (no TagNavigationItem).
+		// Two unlisted tags so the "unknown" classification has multiple tags; each is still a TagNavigationItem.
 		var openApiJson = /*lang=json,strict*/ """
 		{
 		  "openapi": "3.0.3",
@@ -763,5 +801,130 @@ public class TagMetadataTests
 			.OrderBy(name => name, StringComparer.Ordinal)
 			.Should()
 			.Equal("not_in_any_group", "other_orphan");
+	}
+
+	[Fact]
+	public async Task Single_Tag_Still_Creates_TagNavigationItem()
+	{
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Solo", "version": "1.0" },
+		  "paths": {
+		    "/solo": {
+		      "get": {
+		        "operationId": "solo-op",
+		        "tags": ["only"],
+		        "responses": { "200": { "description": "ok" } }
+		      }
+		    }
+		  },
+		  "tags": [
+		    { "name": "only", "description": "Solo tag group." }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("test", openApiDocument);
+
+		var items = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
+		items.Should().HaveCount(1);
+		var tag = items[0].Index.Model.Should().BeOfType<ApiTag>().Subject;
+		tag.Name.Should().Be("only");
+		tag.TagUrlSegment.Should().Be("only");
+		tag.Description.Should().Be("Solo tag group.");
+	}
+
+	[Fact]
+	public void GenerateTagMoniker_DataStream_Uses_Hyphen()
+	{
+		OpenApiGenerator.GenerateTagMoniker("data stream").Should().Be("data-stream");
+	}
+
+	[Fact]
+	public async Task Tag_Url_Uses_Tags_Segment()
+	{
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "T", "version": "1.0" },
+		  "paths": {
+		    "/a": { "get": { "operationId": "a1", "tags": ["alpha"], "responses": { "200": { "description": "ok" } } } },
+		    "/b": { "get": { "operationId": "b1", "tags": ["beta"], "responses": { "200": { "description": "ok" } } } }
+		  },
+		  "tags": [ { "name": "alpha" }, { "name": "beta" } ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("es", openApiDocument);
+
+		var alpha = FindTagNavigationItem(navigation, "alpha");
+		alpha.Should().NotBeNull();
+		alpha.Url.Should().EndWith("/api/es/tags/alpha/");
+
+		alpha.Index.Model.Should().BeOfType<ApiTag>().Which.TagUrlSegment.Should().Be("alpha");
+	}
+
+	[Fact]
+	public async Task Tag_Landing_Parses_Description_And_ExternalDocs_Like_Elasticsearch_Connector_Tag()
+	{
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "ES", "version": "1.0" },
+		  "paths": {
+		    "/c": { "get": { "operationId": "c1", "tags": ["connector"], "responses": { "200": { "description": "ok" } } } }
+		  },
+		  "tags": [
+		    {
+		      "name": "connector",
+		      "description": "The connector and sync jobs APIs provide a convenient way to create and manage Elastic connectors and sync jobs in an internal index.",
+		      "externalDocs": {
+		        "description": "Learn more.",
+		        "url": "https://www.elastic.co/docs/reference/search-connectors/api-tutorial"
+		      },
+		      "x-displayName": "Connector"
+		    }
+		  ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
+
+		var t = FindTagNavigationItem(navigation, "connector");
+		t.Should().NotBeNull();
+		t.NavigationTitle.Should().Be("Connector");
+		var model = t.Index.Model.Should().BeOfType<ApiTag>().Subject;
+		model.Description.Should().Contain("sync jobs");
+		model.DisplayName.Should().Be("Connector");
+		model.ExternalDocs.Should().NotBeNull();
+		model.ExternalDocs.Url.Should().Be("https://www.elastic.co/docs/reference/search-connectors/api-tutorial");
+		model.ExternalDocs.Description.Should().Be("Learn more.");
+	}
+
+	[Fact]
+	public async Task CreateNavigation_Throws_When_Two_Tag_Names_Normalize_To_Same_Url_Segment()
+	{
+		var openApiJson = /*lang=json,strict*/ """
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "X", "version": "1.0" },
+		  "paths": {
+		    "/a": { "get": { "operationId": "a1", "tags": ["a b"], "responses": { "200": { "description": "ok" } } } },
+		    "/b": { "get": { "operationId": "b1", "tags": ["a  b"], "responses": { "200": { "description": "ok" } } } }
+		  },
+		  "tags": [ { "name": "a b" }, { "name": "a  b" } ]
+		}
+		""";
+
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+
+		var act = () => generator.CreateNavigation("test", openApiDocument);
+		act.Should()
+			.Throw<InvalidOperationException>()
+			.WithMessage("*tag URL segment conflict*");
 	}
 }

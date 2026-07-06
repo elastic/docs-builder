@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using JetBrains.Annotations;
@@ -71,9 +73,12 @@ $"""
 
 		Collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		var environment = GetEnvironment();
+		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext, environment);
 		var linkResolver = new TestCrossLinkResolver();
-		Set = new DocumentationSet(context, logger, linkResolver);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
 		File = Set.TryFindDocument(FileSystem.FileInfo.New("docs/index.md")) as MarkdownFile ?? throw new NullReferenceException();
 		Html = default!; //assigned later
 		Document = default!;
@@ -88,6 +93,15 @@ $"""
 	protected virtual IReadOnlyList<string>? GetDocsetProducts() => null;
 
 	protected virtual string? GetDocsetExtraYaml() => null;
+
+	/// <summary>
+	/// Override to inject a resolver of CDN-prefetched changelog bundles for the <c>{changelog}</c>
+	/// <c>:cdn:</c> directive. Returns null by default (no-op resolver), so non-CDN tests are unaffected.
+	/// </summary>
+	protected virtual IReleaseNotesResolver? GetReleaseNotesResolver() => null;
+
+	/// <summary>Override to inject a deterministic environment for env-dependent config (e.g. <c>storybook.registry</c>).</summary>
+	protected virtual IEnvironmentVariables? GetEnvironment() => null;
 
 	public virtual async ValueTask InitializeAsync()
 	{

@@ -24,10 +24,12 @@ public class IncrementalDeployService(
 	private readonly ILogger _logger = logFactory.CreateLogger<IncrementalDeployService>();
 	private readonly IAmazonS3 _s3 = s3Client ?? new AmazonS3Client();
 
-	public async Task<bool> Plan(IDiagnosticsCollector collector, IDocsSyncContext context, string s3BucketName, string @out, float? deleteThreshold, Cancel ctx)
+	public async Task<bool> Plan(IDiagnosticsCollector collector, IDocsSyncContext context, string s3BucketName, string @out, float? deleteThreshold, string[] excludePatterns, Cancel ctx)
 	{
+		if (excludePatterns.Length > 0)
+			_logger.LogInformation("Excluding patterns from sync: {ExcludePatterns}", string.Join(", ", excludePatterns));
 		var planner = new AwsS3SyncPlanStrategy(logFactory, _s3, s3BucketName, context, etagCalculator);
-		var plan = await planner.Plan(deleteThreshold, ctx);
+		var plan = await planner.Plan(deleteThreshold, excludePatterns, ctx);
 		LogPlanSummary(plan);
 		var validator = new DocsSyncPlanValidator(logFactory);
 		var validationResult = validator.Validate(plan);

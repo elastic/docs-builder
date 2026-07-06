@@ -120,9 +120,14 @@ public static class NavigationItemExtensions
 				_ = navigationByOrder.TryAdd(leaf.NavigationIndex, leaf);
 				break;
 			case INodeNavigationItem<IDocumentationFile, INavigationItem> documentationFileNode:
-				_ = navigationDocumentationFileLookup.TryAdd(documentationFileNode.Index.Model, documentationFileNode);
 				_ = navigationByOrder.TryAdd(documentationFileNode.NavigationIndex, documentationFileNode);
-				_ = navigationByOrder.TryAdd(documentationFileNode.Index.NavigationIndex, documentationFileNode.Index);
+				// Index is a null sentinel when this node's table of contents produced no items; the
+				// validation error is emitted upstream, so skip registering a missing index here.
+				if (documentationFileNode.Index is { } documentationFileIndex)
+				{
+					_ = navigationDocumentationFileLookup.TryAdd(documentationFileIndex.Model, documentationFileNode);
+					_ = navigationByOrder.TryAdd(documentationFileIndex.NavigationIndex, documentationFileIndex);
+				}
 				foreach (var child in documentationFileNode.NavigationItems)
 					BuildNavigationLookupsRecursive(child, navigationDocumentationFileLookup, navigationByOrder);
 				break;

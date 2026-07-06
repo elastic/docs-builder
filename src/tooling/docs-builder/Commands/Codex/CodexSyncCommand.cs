@@ -33,6 +33,11 @@ internal sealed class CodexSyncCommand(
 	/// <param name="s3BucketName">S3 bucket to deploy to.</param>
 	/// <param name="out">Path to write the plan file. Defaults to <c>stdout</c>.</param>
 	/// <param name="deleteThreshold">Abort if the plan would delete more than this percentage of objects (0–100).</param>
+	/// <param name="exclude">
+	/// Glob patterns to exclude from both upload and deletion (repeatable).
+	/// For example: <c>--exclude '_preview/*' --exclude '403/*'</c>.
+	/// Matched against the S3 key / relative path of each object.
+	/// </param>
 	[RequiresAuth]
 	[MutationScope(MutationScope.Global)]
 	[NoOptionsInjection]
@@ -42,12 +47,14 @@ internal sealed class CodexSyncCommand(
 		string s3BucketName,
 		[ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null,
 		float? deleteThreshold = null,
+		string[]? exclude = null,
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var (context, service) = LoadContext(config);
-		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold),
-			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, ctx)
+		var excludePatterns = exclude ?? [];
+		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold, excludePatterns),
+			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, state.excludePatterns, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}

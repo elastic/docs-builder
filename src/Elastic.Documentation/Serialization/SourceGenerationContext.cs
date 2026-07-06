@@ -8,7 +8,6 @@ using Elastic.Documentation.Links;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.State;
 using Elastic.Documentation.Versions;
-using Elastic.Internal.Search;
 
 namespace Elastic.Documentation.Serialization;
 
@@ -22,6 +21,8 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(LinkRegistryEntry))]
 [JsonSerializable(typeof(DocumentationDocument))]
 [JsonSerializable(typeof(AppliesToEntry))]
+[JsonSerializable(typeof(IndexedProduct))]
+[JsonSerializable(typeof(IndexedProduct[]))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(ApplicableTo))]
 [JsonSerializable(typeof(AppliesCollection))]
