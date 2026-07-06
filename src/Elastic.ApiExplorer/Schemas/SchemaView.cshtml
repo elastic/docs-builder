@@ -30,6 +30,7 @@
 			IsRequest = false,
 			Analyzer = Analyzer,
 			RenderMarkdown = Model.RenderMarkdown,
+			ApiRootUrl = Model.CurrentNavigationItem.NavigationRoot.Url,
 			// SchemaView defaults - disable OperationView-specific features
 			ShowDeprecated = false,
 			ShowVersionInfo = false,
@@ -66,6 +67,7 @@
 			IsRequest = false,
 			Analyzer = Analyzer,
 			RenderMarkdown = Model.RenderMarkdown,
+			ApiRootUrl = Model.CurrentNavigationItem.NavigationRoot.Url,
 			UseHiddenUntilFound = false,
 			CollapseMode = CollapseMode.DepthBased
 		};

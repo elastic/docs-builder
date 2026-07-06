@@ -53,15 +53,20 @@ public static class SchemaHelpers
 	];
 
 	/// <summary>
-	/// Gets the URL for a container type's dedicated page.
+	/// Gets the URL for a container type's dedicated page under the given API root
+	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
 	/// </summary>
-	public static string? GetContainerPageUrl(string typeName) => typeName switch
+	public static string? GetContainerPageUrl(string apiRootUrl, string typeName)
 	{
-		"QueryContainer" => "/api/elasticsearch/types/_types-query_dsl-querycontainer",
-		"AggregationContainer" => "/api/elasticsearch/types/_types-aggregations-aggregationcontainer",
-		"Aggregate" => "/api/elasticsearch/types/_types-aggregations-aggregate",
-		_ => null
-	};
+		var schemaId = typeName switch
+		{
+			"QueryContainer" => "_types.query_dsl.QueryContainer",
+			"AggregationContainer" => "_types.aggregations.AggregationContainer",
+			"Aggregate" => "_types.aggregations.Aggregate",
+			_ => null
+		};
+		return schemaId is null ? null : $"{apiRootUrl.TrimEnd('/')}/types/{ApiUrlBuilder.SchemaMoniker(schemaId)}";
+	}
 
 	/// <summary>
 	/// Determines if a type should link to its container page.

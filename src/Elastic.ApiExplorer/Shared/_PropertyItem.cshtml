@@ -291,7 +291,7 @@
 	}
 	@if (!string.IsNullOrEmpty(linkedTypeName))
 	{
-		var typePageUrl = SchemaHelpers.GetContainerPageUrl(linkedTypeName);
+		var typePageUrl = SchemaHelpers.GetContainerPageUrl(ctx.ApiRootUrl, linkedTypeName);
 		<dd class="type-link-description">
 			<a href="@typePageUrl" data-hx-boost="false">See @linkedTypeName type →</a>
 		</dd>
@@ -334,6 +334,7 @@
 			IsRequest = ctx.IsRequest,
 			Analyzer = ctx.Analyzer,
 			RenderMarkdown = ctx.RenderMarkdown,
+			ApiRootUrl = ctx.ApiRootUrl,
 			MaxDepth = ctx.MaxDepth,
 			ShowDeprecated = ctx.ShowDeprecated,
 			ShowVersionInfo = ctx.ShowVersionInfo,
@@ -435,6 +436,7 @@
 				IsRequest = ctx.IsRequest,
 				Analyzer = ctx.Analyzer,
 				RenderMarkdown = ctx.RenderMarkdown,
+				ApiRootUrl = ctx.ApiRootUrl,
 				UseHiddenUntilFound = ctx.UseHiddenUntilFound,
 				CollapseMode = ctx.CollapseMode,
 				MaxDepth = ctx.MaxDepth,
@@ -455,6 +457,7 @@
 				IsRequest = ctx.IsRequest,
 				Analyzer = ctx.Analyzer,
 				RenderMarkdown = ctx.RenderMarkdown,
+				ApiRootUrl = ctx.ApiRootUrl,
 				UseHiddenUntilFound = ctx.UseHiddenUntilFound,
 				CollapseMode = ctx.CollapseMode,
 				MaxDepth = ctx.MaxDepth,

@@ -49,6 +49,9 @@ public record PropertyRenderContext
 	/// <summary>Function to render markdown to HTML.</summary>
 	public required Func<string?, HtmlString> RenderMarkdown { get; init; }
 
+	/// <summary>Root URL of the current API product (e.g. <c>/api/elasticsearch</c>) used for type page links.</summary>
+	public string ApiRootUrl { get; init; } = "";
+
 	/// <summary>Maximum depth for property expansion.</summary>
 	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
 
@@ -141,6 +144,9 @@ public record UnionVariantsContext
 
 	/// <summary>Function to render markdown to HTML.</summary>
 	public required Func<string?, HtmlString> RenderMarkdown { get; init; }
+
+	/// <summary>Root URL of the current API product (e.g. <c>/api/elasticsearch</c>) used for type page links.</summary>
+	public string ApiRootUrl { get; init; } = "";
 
 	/// <summary>Whether to use hidden="until-found" for collapsed sections (enables browser find-in-page).</summary>
 	public bool UseHiddenUntilFound { get; init; } = true;
