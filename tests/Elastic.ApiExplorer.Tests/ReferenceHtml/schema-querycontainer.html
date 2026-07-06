@@ -1,0 +1,142 @@
+<section id="schema-definition">
+	<h1>QueryContainer</h1>
+	<p class="schema-id"><code>_types.query_dsl.QueryContainer</code></p>
+
+
+		<h3 class="section-header" id="description" data-section="description">
+			<span>Description</span>
+		</h3>
+		<p><p>A container for a single query variant. Query containers can nest other query containers, which exercises recursion detection.</p></p>
+			<a href="https://www.elastic.co/docs/fixture/query-dsl" class="docs-reference-btn" >
+				Read the reference documentation
+			</a>
+
+
+
+		<h3 class="section-header" id="properties" data-section="properties">
+			<span>Properties</span>
+		</h3>
+<dl class="property-list">
+<div class="property-item depth-0  has-children collapsed ">
+	<dt id="bool">
+		<a href="#bool">
+			<code>bool</code>
+			<code class="schema-type"><span class="object-icon">{} </span><span title="_types.query_dsl.BoolQuery">BoolQuery</span></code>
+
+				<span class="optional">optional</span>
+		</a>
+	</dt>
+		<dd>
+			<p>A query that matches documents matching boolean combinations of other queries.</p>
+		</dd>
+	
+		<dd class="expand-toggle-row">
+			<button class="expand-toggle" aria-expanded="false" aria-controls="bool-children" title="Expand 3 properties">
+				<span class="toggle-icon">&#x2B;</span>
+				<span class="toggle-label">Show 3 properties</span>
+			</button>
+		</dd>
+				<div class="nested-properties" id="bool-children">
+					<dl class="property-list">
+<div class="property-item depth-1    ">
+	<dt id="bool-must">
+		<a href="#bool-must">
+			<code>must</code>
+			<code class="schema-type"><span class="array-icon">[] </span><span title="_types.query_dsl.QueryContainer">QueryContainer</span></code>
+
+				<span class="optional">optional</span>
+<span class="recursive">recursive</span>
+		</a>
+	</dt>
+		<dd>
+			<p>Queries that must match.</p>
+		</dd>
+	
+		<dd class="primitive-array">
+			<span class="values-label">Array of:</span>
+			<code class="primitive-type">QueryContainer</code>
+		</dd>
+</div>
+<div class="property-item depth-1    ">
+	<dt id="bool-must_not">
+		<a href="#bool-must_not">
+			<code>must_not</code>
+			<code class="schema-type"><span class="array-icon">[] </span><span title="_types.query_dsl.QueryContainer">QueryContainer</span></code>
+
+				<span class="optional">optional</span>
+<span class="recursive">recursive</span>
+		</a>
+	</dt>
+		<dd>
+			<p>Queries that must not match.</p>
+		</dd>
+	
+		<dd class="primitive-array">
+			<span class="values-label">Array of:</span>
+			<code class="primitive-type">QueryContainer</code>
+		</dd>
+</div>
+<div class="property-item depth-1 last-sibling   ">
+	<dt id="bool-minimum_should_match">
+		<a href="#bool-minimum_should_match">
+			<code>minimum_should_match</code>
+			<code class="schema-type"><span>integer</span></code>
+
+				<span class="optional">optional</span>
+		</a>
+	</dt>
+	<dd class="validation-constraints"><span class="constraints-label">Constraints:</span><span class="constraint">min: 0</span></dd>
+</div>
+</dl>
+
+				</div>
+</div>
+<div class="property-item depth-0  has-children  ">
+	<dt id="match_all">
+		<a href="#match_all">
+			<code>match_all</code>
+			<code class="schema-type"><span class="object-icon">{} </span><span title="_types.query_dsl.MatchAllQuery">MatchAllQuery</span></code>
+
+				<span class="optional">optional</span>
+		</a>
+	</dt>
+		<dd>
+			<p>Matches every document.</p>
+		</dd>
+	
+				<div class="nested-properties" id="match_all-children">
+					<dl class="property-list">
+<div class="property-item depth-1 last-sibling   ">
+	<dt id="match_all-boost">
+		<a href="#match_all-boost">
+			<code>boost</code>
+			<code class="schema-type"><span>number</span></code>
+
+				<span class="optional">optional</span>
+		</a>
+	</dt>
+	
+</div>
+</dl>
+
+				</div>
+</div>
+<div class="property-item depth-0 last-sibling   ">
+	<dt id="term">
+		<a href="#term">
+			<code>term</code>
+			<code class="schema-type"><span class="map-keyword">map </span><span>string</span><span class="map-keyword"> to </span><span>string</span></code>
+
+				<span class="optional">optional</span>
+		</a>
+	</dt>
+		<dd>
+			<p>A single-key dictionary mapping a field name to a term value.</p>
+		</dd>
+	
+</div>
+</dl>
+
+
+
+</section>
