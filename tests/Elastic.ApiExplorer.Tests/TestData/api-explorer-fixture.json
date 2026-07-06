@@ -302,6 +302,17 @@
         }
       }
     },
+    "/_fixture/anonymous": {
+      "post": {
+        "description": "Has no operation id, summary or x-api-name on purpose: pins the deterministic route:method fallback grouping key.",
+        "tags": ["misc"],
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
     "/_fixture/cleanup": {
       "delete": {
         "summary": "Clean up fixture data",

@@ -90,8 +90,10 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
 				var tagClassification = ResolveTagClassification(tag, xTagGroups, orphanTagsLogged);
 
+				// Fall back to a deterministic route:method key; Guid.NewGuid() made grouping keys
+				// (and thus navigation titles) change on every build.
 				var apiString = ns is null
-					? api ?? op.Value.Summary ?? Guid.NewGuid().ToString("N") : $"{ns}.{api}";
+					? api ?? op.Value.Summary ?? $"{pair.Path.Key}:{op.Key}" : $"{ns}.{api}";
 				return new
 				{
 					Classification = tagClassification,

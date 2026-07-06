@@ -110,9 +110,18 @@ public class HtmlSnapshotTests(ApiExplorerFixture fixture) : IClassFixture<ApiEx
 	[Fact]
 	public async Task RenderAsync_OperationWithoutOperationId_MatchesReference()
 	{
-		var operation = fixture.Walk().OfType<OperationNavigationItem>().First(o => o.Model.Operation.OperationId is null);
+		var operation = fixture.Walk().OfType<OperationNavigationItem>().First(o => o.Model.Route == "/_fixture/cleanup");
+		operation.Model.Operation.OperationId.Should().BeNull();
 		var html = await RenderAsync(operation.Model, operation);
 		HtmlSnapshot.MatchesReference("operation-cleanup", HtmlSnapshot.ExtractSection(html, OperationSection));
+	}
+
+	[Fact]
+	public async Task RenderAsync_OperationWithoutAnyName_MatchesReference()
+	{
+		var operation = fixture.Walk().OfType<OperationNavigationItem>().First(o => o.Model.Route == "/_fixture/anonymous");
+		var html = await RenderAsync(operation.Model, operation);
+		HtmlSnapshot.MatchesReference("operation-anonymous", HtmlSnapshot.ExtractSection(html, OperationSection));
 	}
 
 	[Fact]
