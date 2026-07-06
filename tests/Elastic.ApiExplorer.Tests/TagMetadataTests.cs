@@ -282,7 +282,7 @@ public class TagMetadataTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, FileSystemFactory.RealRead, configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.RealGitRootForPath(null), configurationContext);
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
