@@ -42,6 +42,7 @@ rules:
 
 synonyms:
   - [ ".net", "c#", "csharp", "dotnet", "net" ]
+  - [ "agg", "aggs => aggregations" ]
   - [ "apm", "application performance monitoring" ]
   - [ "aws", "amazon" ]
   - [ "ccr", "cross-cluster replication", "cross cluster replication" ]
