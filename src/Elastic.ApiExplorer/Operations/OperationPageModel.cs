@@ -135,7 +135,7 @@ public record OperationPageModel
 				.ToArray(),
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = requestSchema is not null
-				? builder.BuildPropertyList(requestSchema, "req", isRequest: true)
+				? builder.BuildPropertyList(requestSchema, new PropertyTreeScope { Prefix = "req", IsRequest = true })
 				: null,
 			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
@@ -266,7 +266,8 @@ public record OperationPageModel
 	private static ApiResponseContent BuildResponseContent(
 		string contentType, IOpenApiSchema responseSchema, string statusCode, SchemaAnalyzer analyzer, ApiPropertyTreeBuilder builder)
 	{
-		var properties = builder.BuildPropertyList(responseSchema, $"res-{statusCode}", isRequest: false);
+		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}" };
+		var properties = builder.BuildPropertyList(responseSchema, scope);
 
 		// For arrays, check if the item type has properties we should render
 		ApiPropertyList? arrayItemProperties = null;
@@ -274,7 +275,7 @@ public record OperationPageModel
 		{
 			var arrayItemSchema = ResolveArrayItems(responseSchema, analyzer);
 			if (arrayItemSchema is not null)
-				arrayItemProperties = builder.BuildPropertyList(arrayItemSchema, $"res-{statusCode}", isRequest: false);
+				arrayItemProperties = builder.BuildPropertyList(arrayItemSchema, scope);
 		}
 
 		return new ApiResponseContent

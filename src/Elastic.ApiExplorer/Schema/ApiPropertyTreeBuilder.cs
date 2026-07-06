@@ -13,20 +13,35 @@ namespace Elastic.ApiExplorer.Schema;
 /// decision (recursion, unions, dictionaries, collapse state) out of the views. The tree is built
 /// eagerly; recursion detection prunes descent exactly where rendering previously stopped.
 /// </summary>
+/// <summary>Position of one level of the property tree walk: anchor prefix, depth and recursion ancestry.</summary>
+public sealed record PropertyTreeScope
+{
+	public required string Prefix { get; init; }
+	public bool IsRequest { get; init; }
+	public int Depth { get; init; }
+	public IReadOnlySet<string>? Ancestors { get; init; }
+
+	/// <summary>Overrides the schema's own required set at the top level; never inherited by children.</summary>
+	public ISet<string>? RequiredProperties { get; init; }
+}
+
 public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOptions options, string? currentPageType = null)
 {
 	private readonly SchemaAnalyzer _analyzer = new(document, currentPageType);
 
+	/// <summary>One renderable property before its display fields are derived.</summary>
+	private sealed record PropertyRow(
+		string Name, IOpenApiSchema Schema, TypeInfo TypeInfo, string AnchorId,
+		bool IsRequired, bool IsLast, bool IsRecursive);
+
 	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
-	public ApiPropertyList? BuildPropertyList(
-		IOpenApiSchema? schema, string prefix, bool isRequest,
-		int depth = 0, IReadOnlySet<string>? ancestors = null, ISet<string>? requiredProperties = null)
+	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope)
 	{
 		var properties = _analyzer.GetSchemaProperties(schema);
 		if (properties is null || properties.Count == 0)
 			return null;
 
-		var requiredProps = requiredProperties ?? schema?.Required ?? new HashSet<string>();
+		var requiredProps = scope.RequiredProperties ?? schema?.Required ?? new HashSet<string>();
 		var propArray = properties.ToArray();
 		var items = new List<ApiProperty>(propArray.Length);
 		for (var i = 0; i < propArray.Length; i++)
@@ -36,13 +51,13 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				continue;
 
 			var typeInfo = _analyzer.GetTypeInfo(propSchema);
-			var propId = string.IsNullOrEmpty(prefix) ? name : $"{prefix}-{name}";
-			var isRecursive = DetectRecursion(propSchema, typeInfo, ancestors);
-			items.Add(BuildProperty(
+			var propId = string.IsNullOrEmpty(scope.Prefix) ? name : $"{scope.Prefix}-{name}";
+			var row = new PropertyRow(
 				name, propSchema, typeInfo, propId,
-				isRequired: requiredProps.Contains(name),
-				isLast: i == propArray.Length - 1,
-				isRecursive, isRequest, depth, ancestors));
+				IsRequired: requiredProps.Contains(name),
+				IsLast: i == propArray.Length - 1,
+				IsRecursive: DetectRecursion(propSchema, typeInfo, scope.Ancestors));
+			items.Add(BuildProperty(row, scope));
 		}
 
 		return new ApiPropertyList(items);
@@ -57,7 +72,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			var displayName = info.IsArray ? $"{info.TypeName}[]" : info.TypeName;
 			return new UnionOption(displayName, info.SchemaRef, info.IsObject, s);
 		}).ToList();
-		return BuildUnionVariants(unionOptions, prefix, depth: 0, isRequest: false, ancestors);
+		return BuildUnionVariants(unionOptions, new PropertyTreeScope { Prefix = prefix, Ancestors = ancestors });
 	}
 
 	/// <summary>The display form (icons, keywords, name) of a schema's type.</summary>
@@ -107,22 +122,21 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private bool HasActualProperties(IOpenApiSchema? schema) =>
 		_analyzer.GetSchemaProperties(schema)?.Count > 0;
 
-	private ApiProperty BuildProperty(
-		string name, IOpenApiSchema propSchema, TypeInfo typeInfo, string propId,
-		bool isRequired, bool isLast, bool isRecursive, bool isRequest, int depth, IReadOnlySet<string>? ancestors)
+	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
-		var expansion = ComputeExpansion(propSchema, typeInfo, depth, isRecursive);
+		var (_, propSchema, typeInfo, _, _, _, isRecursive) = row;
+		var expansion = ComputeExpansion(propSchema, typeInfo, scope.Depth, isRecursive);
 
 		return new ApiProperty
 		{
-			Name = name,
+			Name = row.Name,
 			Schema = propSchema,
-			AnchorId = propId,
-			Depth = depth,
-			IsRequired = isRequired,
-			IsLast = isLast,
+			AnchorId = row.AnchorId,
+			Depth = scope.Depth,
+			IsRequired = row.IsRequired,
+			IsLast = row.IsLast,
 			IsRecursive = isRecursive,
-			IsRequest = isRequest,
+			IsRequest = scope.IsRequest,
 			Type = BuildAnnotation(typeInfo, HasActualProperties(propSchema)),
 			DescriptionHtml = string.IsNullOrWhiteSpace(propSchema.Description)
 				? HtmlString.Empty
@@ -142,7 +156,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			NestedCount = expansion.NestedCount,
 			Children = isRecursive
 				? ApiPropertyChildren.None
-				: BuildChildren(propSchema, typeInfo, propId, isRequest, depth, ancestors, expansion)
+				: BuildChildren(row, scope, expansion)
 		};
 	}
 
@@ -332,15 +346,20 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		SchemaHelpers.PrimitiveTypeNames.Contains(option.TrimEnd('[', ']')) ||
 		char.IsUpper(option[0]) || option.EndsWith("[]");
 
-	private ApiPropertyChildren BuildChildren(
-		IOpenApiSchema propSchema, TypeInfo typeInfo, string propId, bool isRequest,
-		int depth, IReadOnlySet<string>? ancestors, Expansion expansion)
+	private ApiPropertyChildren BuildChildren(PropertyRow row, PropertyTreeScope scope, Expansion expansion)
 	{
-		var newAncestors = AugmentAncestors(typeInfo, ancestors);
+		var typeInfo = row.TypeInfo;
+		var childScope = scope with
+		{
+			Prefix = row.AnchorId,
+			Depth = scope.Depth + 1,
+			Ancestors = AugmentAncestors(typeInfo, scope.Ancestors),
+			RequiredProperties = null
+		};
 		var useHidden = options.UseHiddenUntilFound && expansion.IsCollapsible && !expansion.DefaultExpanded;
 
 		if (expansion.HasDictValueProps)
-			return BuildDictionaryChildren(typeInfo, propId, isRequest, depth, newAncestors, expansion);
+			return BuildDictionaryChildren(row, childScope, expansion);
 
 		if (expansion.HasNestedProps)
 		{
@@ -348,7 +367,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.PropertyList,
 				UseHidden = useHidden,
-				Properties = BuildPropertyList(propSchema, propId, isRequest, depth + 1, newAncestors) ?? new ApiPropertyList([])
+				Properties = BuildPropertyList(row.Schema, childScope) ?? new ApiPropertyList([])
 			};
 		}
 
@@ -358,7 +377,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.PropertyList,
 				UseHidden = useHidden,
-				Properties = BuildPropertyList(expansion.ArrayItemSchema, propId, isRequest, depth + 1, newAncestors) ?? new ApiPropertyList([])
+				Properties = BuildPropertyList(expansion.ArrayItemSchema, childScope) ?? new ApiPropertyList([])
 			};
 		}
 
@@ -368,7 +387,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.UnionVariants,
 				UseHidden = false,
-				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, propId, depth + 1, isRequest, newAncestors) ?? ApiUnionVariants.Empty
+				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, childScope) ?? ApiUnionVariants.Empty
 			};
 		}
 
@@ -378,7 +397,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.SimpleUnionVariants,
 				UseHidden = useHidden,
-				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, propId, depth + 1, isRequest, newAncestors) ?? ApiUnionVariants.Empty
+				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, childScope) ?? ApiUnionVariants.Empty
 			};
 		}
 
@@ -388,19 +407,18 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.PropertyList,
 				UseHidden = useHidden,
-				Properties = BuildPropertyList(expansion.SimpleUnionSchema, propId, isRequest, depth + 1, newAncestors) ?? new ApiPropertyList([])
+				Properties = BuildPropertyList(expansion.SimpleUnionSchema, childScope) ?? new ApiPropertyList([])
 			};
 		}
 
 		return ApiPropertyChildren.None;
 	}
 
-	private ApiPropertyChildren BuildDictionaryChildren(
-		TypeInfo typeInfo, string propId, bool isRequest, int depth, IReadOnlySet<string> newAncestors, Expansion expansion)
+	private ApiPropertyChildren BuildDictionaryChildren(PropertyRow row, PropertyTreeScope childScope, Expansion expansion)
 	{
-		var keyAnchorId = $"{propId}-string";
+		var keyAnchorId = $"{row.AnchorId}-string";
 		var dictIsCollapsible = expansion.NestedCount > 1;
-		var dictDefaultExpanded = ComputeDefaultExpanded(depth + 1, expansion.NestedCount);
+		var dictDefaultExpanded = ComputeDefaultExpanded(childScope.Depth, expansion.NestedCount);
 		return new ApiPropertyChildren
 		{
 			Kind = ChildKind.Dictionary,
@@ -408,13 +426,13 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			Dictionary = new DictionaryChildDisplay
 			{
 				KeyAnchorId = keyAnchorId,
-				Depth = depth + 1,
+				Depth = childScope.Depth,
 				IsCollapsible = dictIsCollapsible,
 				DefaultExpanded = dictDefaultExpanded,
 				NestedCount = expansion.NestedCount,
 				UseHidden = options.UseHiddenUntilFound && dictIsCollapsible && !dictDefaultExpanded,
-				ValueType = Describe(typeInfo.DictValueSchema),
-				Properties = BuildPropertyList(typeInfo.DictValueSchema, keyAnchorId, isRequest, depth + 2, newAncestors)
+				ValueType = Describe(row.TypeInfo.DictValueSchema),
+				Properties = BuildPropertyList(row.TypeInfo.DictValueSchema, childScope with { Prefix = keyAnchorId, Depth = childScope.Depth + 1 })
 					?? new ApiPropertyList([])
 			}
 		};
@@ -488,8 +506,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 	private static bool IsAncestorType(string? typeName, IReadOnlySet<string> ancestors) =>
 		!string.IsNullOrEmpty(typeName) && !SchemaHelpers.IsPrimitiveTypeName(typeName) && ancestors.Contains(typeName);
 
-	private ApiUnionVariants? BuildUnionVariants(
-		List<UnionOption> unionOptions, string prefix, int depth, bool isRequest, IReadOnlySet<string>? ancestors)
+	private ApiUnionVariants? BuildUnionVariants(List<UnionOption> unionOptions, PropertyTreeScope scope)
 	{
 		if (unionOptions.Count == 0 || !unionOptions.Any(o => o.IsObject))
 			return null;
@@ -507,17 +524,17 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		foreach (var variant in variantsToRender)
 		{
 			var hasProperties = variant.Props is { Count: > 0 };
-			var optionId = $"{prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}";
+			var optionId = $"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}";
 			var hasBothVariants = variantsToRender.Count(v => v.BaseName == variant.BaseName) > 1;
 			var showProperties = hasProperties && (!variant.IsArray || !hasBothVariants);
 
-			var newAncestors = ancestors is not null ? new HashSet<string>(ancestors) : [];
+			var newAncestors = scope.Ancestors is not null ? new HashSet<string>(scope.Ancestors) : [];
 			if (!string.IsNullOrEmpty(variant.BaseName))
 				_ = newAncestors.Add(variant.BaseName);
 
 			var nestedCount = variant.Props?.Count ?? 0;
 			var isCollapsible = showProperties && nestedCount > 1;
-			var defaultExpanded = ComputeDefaultExpanded(depth, nestedCount);
+			var defaultExpanded = ComputeDefaultExpanded(scope.Depth, nestedCount);
 
 			variants.Add(new ApiUnionVariant
 			{
@@ -531,7 +548,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				NestedCount = nestedCount,
 				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
 				Properties = showProperties && variant.Schema is not null
-					? childBuilder.BuildPropertyList(variant.Schema, optionId, isRequest, depth + 1, newAncestors) ?? new ApiPropertyList([])
+					? childBuilder.BuildPropertyList(variant.Schema,
+						scope with { Prefix = optionId, Depth = scope.Depth + 1, Ancestors = newAncestors, RequiredProperties = null })
+						?? new ApiPropertyList([])
 					: null
 			});
 		}
@@ -540,7 +559,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		{
 			Variants = variants,
 			ShouldCollapse = variantsToRender.Count > 2,
-			ContainerId = $"{prefix}-union-options",
+			ContainerId = $"{scope.Prefix}-union-options",
 			UseHiddenUntilFound = options.UseHiddenUntilFound
 		};
 	}

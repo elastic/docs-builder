@@ -30,7 +30,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 		var builder = CreateBuilder(currentPageType: "QueryContainer");
 		var ancestors = new HashSet<string> { "QueryContainer" };
 
-		var list = builder.BuildPropertyList(Schema("_types.query_dsl.QueryContainer"), "", isRequest: false, ancestors: ancestors);
+		var list = builder.BuildPropertyList(Schema("_types.query_dsl.QueryContainer"), new PropertyTreeScope { Prefix = "", Ancestors = ancestors });
 
 		list.Should().NotBeNull();
 		var boolProp = list.Items.Single(p => p.Name == "bool");
@@ -47,7 +47,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 	{
 		var builder = CreateBuilder();
 
-		var list = builder.BuildPropertyList(Schema("fixture.SearchRequestBody"), "req", isRequest: true);
+		var list = builder.BuildPropertyList(Schema("fixture.SearchRequestBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
 
 		var fields = list!.Items.Single(p => p.Name == "fields");
 		fields.Union.Should().NotBeNull();
@@ -62,7 +62,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 	{
 		var builder = CreateBuilder();
 
-		var list = builder.BuildPropertyList(Schema("fixture.SearchRequestBody"), "req", isRequest: true);
+		var list = builder.BuildPropertyList(Schema("fixture.SearchRequestBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
 
 		var aggs = list!.Items.Single(p => p.Name == "aggs");
 		aggs.Children.Kind.Should().Be(ChildKind.None, "the dictionary value type has its own page");
@@ -76,7 +76,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture) : IClassFix
 	{
 		var builder = CreateBuilder();
 
-		var list = builder.BuildPropertyList(Schema("fixture.SearchRequestBody"), "req", isRequest: true);
+		var list = builder.BuildPropertyList(Schema("fixture.SearchRequestBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
 
 		list!.Items.Single(p => p.Name == "query").IsRequired.Should().BeTrue();
 		list.Items.Single(p => p.Name == "sort").IsRequired.Should().BeFalse();

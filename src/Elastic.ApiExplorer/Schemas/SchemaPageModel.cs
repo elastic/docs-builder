@@ -59,7 +59,7 @@ public record SchemaPageModel
 			AnyOfVariants = openApiSchema.AnyOf is { Count: > 0 }
 				? builder.BuildUnionVariantsForSchemas(openApiSchema.AnyOf, "anyof", rootAncestors) ?? ApiUnionVariants.Empty
 				: null,
-			Properties = builder.BuildPropertyList(openApiSchema, "", isRequest: false, ancestors: rootAncestors),
+			Properties = builder.BuildPropertyList(openApiSchema, new PropertyTreeScope { Prefix = "", Ancestors = rootAncestors }),
 			AdditionalPropertiesType = openApiSchema.AdditionalProperties is { } addProps
 				? builder.Describe(addProps)
 				: null
