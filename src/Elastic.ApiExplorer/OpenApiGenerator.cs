@@ -75,8 +75,8 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		var url = $"{context.UrlPathPrefix}/api/" + apiUrlSuffix;
 		var rootNavigation = new LandingNavigationItem(url);
 
-		var tagMetadataByName = ParseOpenApiTagMetadata(openApiDocument);
-		var xTagGroups = TryParseXTagGroups(openApiDocument);
+		var tagMetadataByName = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
+		var xTagGroups = OpenApiExtensionReader.ParseXTagGroups(openApiDocument);
 		var orphanTagsLogged = new HashSet<string>(StringComparer.Ordinal);
 
 		var ops = openApiDocument.Paths
@@ -84,13 +84,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 			.Select(pair =>
 			{
 				var op = pair.Operation;
-				var extensions = op.Value.Extensions;
-				var ns = (extensions?.TryGetValue("x-namespace", out var n) ?? false) && n is JsonNodeExtension anyNs
-					? anyNs.Node.GetValue<string>()
-					: null;
-				var api = (extensions?.TryGetValue("x-api-name", out var a) ?? false) && a is JsonNodeExtension anyApi
-					? anyApi.Node.GetValue<string>()
-					: null;
+				var (ns, api) = OpenApiExtensionReader.GetNamespaceAndApiName(op.Value);
 				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
 				var tagClassification = ResolveTagClassification(tag, xTagGroups, orphanTagsLogged);
 
@@ -147,7 +141,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 				}
 				var tagName = tagGroup.Key ?? "unknown";
 				if (!tagMetadataByName.TryGetValue(tagName, out var tagMeta))
-					tagMeta = new OpenApiTagMetadataEntry(tagName, string.Empty, null);
+					tagMeta = new OpenApiTagMetadata(tagName, string.Empty, null);
 				if (!tagNameToUrlSegment.TryGetValue(tagName, out var urlSegment))
 					throw new InvalidOperationException(
 						$"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
@@ -552,7 +546,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		}
 	}
 
-	private string ResolveTagClassification(string? tag, XTagGroupsDocument? xTagGroups, HashSet<string> orphanTagsLogged)
+	private string ResolveTagClassification(string? tag, XTagGroups? xTagGroups, HashSet<string> orphanTagsLogged)
 	{
 		if (xTagGroups is null)
 			return TagOnlyClassificationKey;
@@ -572,7 +566,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		return UnknownTagGroupName;
 	}
 
-	private static List<string> GetOrderedClassificationKeys(XTagGroupsDocument xTagGroups, HashSet<string> presentClassifications)
+	private static List<string> GetOrderedClassificationKeys(XTagGroups xTagGroups, HashSet<string> presentClassifications)
 	{
 		var ordered = new List<string>();
 		foreach (var g in xTagGroups.OrderedGroupNames)
@@ -591,94 +585,6 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		}
 
 		return ordered;
-	}
-
-	private static XTagGroupsDocument? TryParseXTagGroups(OpenApiDocument openApiDocument)
-	{
-		if (openApiDocument.Extensions?.TryGetValue("x-tagGroups", out var extension) != true || extension is not JsonNodeExtension jsonExt)
-			return null;
-
-		if (jsonExt.Node is not JsonArray array || array.Count == 0)
-			return null;
-
-		var orderedGroupNames = new List<string>();
-		var tagToGroup = new Dictionary<string, string>(StringComparer.Ordinal);
-
-		foreach (var element in array)
-		{
-			if (element is not JsonObject groupObj)
-				continue;
-
-			if (!groupObj.TryGetPropertyValue("name", out var nameNode))
-				continue;
-
-			var groupName = nameNode?.GetValue<string>();
-			if (string.IsNullOrWhiteSpace(groupName))
-				continue;
-
-			if (!orderedGroupNames.Contains(groupName))
-				orderedGroupNames.Add(groupName);
-
-			if (!groupObj.TryGetPropertyValue("tags", out var tagsNode) || tagsNode is not JsonArray tagNames)
-				continue;
-
-			foreach (var tagElement in tagNames)
-			{
-				var tagName = tagElement?.GetValue<string>();
-				if (string.IsNullOrEmpty(tagName))
-					continue;
-
-				if (!tagToGroup.ContainsKey(tagName))
-					tagToGroup[tagName] = groupName;
-			}
-		}
-
-		if (orderedGroupNames.Count == 0 || tagToGroup.Count == 0)
-			return null;
-
-		return new XTagGroupsDocument(orderedGroupNames, tagToGroup);
-	}
-
-	private sealed record XTagGroupsDocument(IReadOnlyList<string> OrderedGroupNames, IReadOnlyDictionary<string, string> TagToGroup);
-
-	/// <summary>
-	/// Parses global OpenAPI tag objects: description, <c>externalDocs</c>, and <c>x-displayName</c>.
-	/// </summary>
-	private static Dictionary<string, OpenApiTagMetadataEntry> ParseOpenApiTagMetadata(OpenApiDocument openApiDocument)
-	{
-		var result = new Dictionary<string, OpenApiTagMetadataEntry>(StringComparer.Ordinal);
-
-		if (openApiDocument.Tags is null)
-			return result;
-
-		foreach (var tag in openApiDocument.Tags)
-		{
-			var tagName = tag.Name;
-			if (string.IsNullOrEmpty(tagName))
-				continue;
-
-			var displayName = tagName;
-			if (tag.Extensions?.TryGetValue("x-displayName", out var ext) == true &&
-				ext is JsonNodeExtension jsonExt)
-			{
-				var v = jsonExt.Node.GetValue<string>();
-				if (!string.IsNullOrWhiteSpace(v))
-					displayName = v;
-			}
-
-			var description = tag.Description ?? string.Empty;
-			ApiTagExternalDoc? extDoc = null;
-			if (tag.ExternalDocs?.Url is not null)
-			{
-				var url = tag.ExternalDocs.Url.ToString();
-				if (!string.IsNullOrEmpty(url))
-					extDoc = new ApiTagExternalDoc(tag.ExternalDocs.Description, url);
-			}
-
-			result[tagName] = new OpenApiTagMetadataEntry(displayName, description, extDoc);
-		}
-
-		return result;
 	}
 
 	/// <summary>Deterministic single URL segment for <c>.../tags/{segment}/</c> from the canonical tag name.</summary>
@@ -720,6 +626,4 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 		return toSegment;
 	}
-
-	private sealed record OpenApiTagMetadataEntry(string DisplayName, string Description, ApiTagExternalDoc? ExternalDocs);
 }

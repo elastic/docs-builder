@@ -83,41 +83,4 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 
 		return tocItems;
 	}
-
-	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation)
-	{
-		if (operation.Extensions?.TryGetValue("x-codeSamples", out var ext) != true
-			|| ext is not JsonNodeExtension jsonExt
-			|| jsonExt.Node is not JsonArray samplesArray)
-			return [];
-
-		var samples = new List<CodeSample>();
-		foreach (var item in samplesArray)
-		{
-			if (item is not JsonObject obj)
-				continue;
-
-			var lang = obj["lang"]?.GetValue<string>();
-			var source = obj["source"]?.GetValue<string>();
-
-			if (string.IsNullOrEmpty(lang) || string.IsNullOrEmpty(source))
-				continue;
-
-			samples.Add(new CodeSample(lang, source, CodeSample.GetHighlightClass(lang)));
-		}
-
-		// Console first when present, then preserve spec order
-		samples.Sort((a, b) =>
-		{
-			var aIsConsole = string.Equals(a.Language, "Console", StringComparison.OrdinalIgnoreCase);
-			var bIsConsole = string.Equals(b.Language, "Console", StringComparison.OrdinalIgnoreCase);
-			if (aIsConsole && !bIsConsole)
-				return -1;
-			if (!aIsConsole && bIsConsole)
-				return 1;
-			return 0;
-		});
-
-		return samples;
-	}
 }

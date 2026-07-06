@@ -99,7 +99,7 @@ public record OperationPageModel
 		};
 		var builder = new ApiPropertyTreeBuilder(document, options);
 
-		var codeSamples = OperationViewModel.ParseCodeSamples(operation);
+		var codeSamples = OpenApiExtensionReader.ParseCodeSamples(operation);
 		var requestExamples = operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples;
 		var successResponse = operation.Responses?.FirstOrDefault(r => r.Key.StartsWith('2')).Value;
 		var responseExamples = successResponse?.Content?.FirstOrDefault().Value?.Examples;
@@ -124,7 +124,7 @@ public record OperationPageModel
 		return new OperationPageModel
 		{
 			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
-			IsBeta = ParseBetaFlag(operation),
+			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers,
 			Overloads = ResolveOverloads(context),
@@ -156,12 +156,6 @@ public record OperationPageModel
 				string.IsNullOrEmpty(e.Value?.Description) ? null : renderMarkdown(e.Value.Description),
 				e.Value?.Value?.ToString(),
 				string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue)).ToArray();
-
-	private static bool ParseBetaFlag(OpenApiOperation operation) =>
-		operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true
-		&& betaValue is JsonNodeExtension betaExtension
-		&& betaExtension.Node is JsonValue betaJsonValue
-		&& betaJsonValue.TryGetValue<bool>(out var betaFlag) && betaFlag;
 
 	private static IReadOnlyCollection<OperationNavigationItem> ResolveOverloads(ApiRenderContext context)
 	{

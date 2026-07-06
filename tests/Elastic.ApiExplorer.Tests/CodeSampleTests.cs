@@ -24,7 +24,7 @@ public class CodeSampleTests
 	{
 		var operation = new OpenApiOperation();
 
-		var result = OperationViewModel.ParseCodeSamples(operation);
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
 		result.Should().BeEmpty();
 	}
@@ -38,7 +38,7 @@ public class CodeSampleTests
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
-		var result = OperationViewModel.ParseCodeSamples(operation);
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
 		result.Should().HaveCount(2);
 		result[0].Language.Should().Be("Console");
@@ -58,7 +58,7 @@ public class CodeSampleTests
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
-		var result = OperationViewModel.ParseCodeSamples(operation);
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
 		result[0].Language.Should().Be("Console");
 	}
@@ -74,7 +74,7 @@ public class CodeSampleTests
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
-		var result = OperationViewModel.ParseCodeSamples(operation);
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
 		result.Should().HaveCount(4);
 		result[0].Language.Should().Be("Console");
@@ -91,7 +91,7 @@ public class CodeSampleTests
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
-		var result = OperationViewModel.ParseCodeSamples(operation);
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
 		result.Should().HaveCount(1);
 		result[0].Language.Should().Be("Console");
@@ -106,7 +106,7 @@ public class CodeSampleTests
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
-		var result = OperationViewModel.ParseCodeSamples(operation);
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
 		result.Should().HaveCount(1);
 		result[0].Language.Should().Be("Console");
@@ -118,7 +118,7 @@ public class CodeSampleTests
 		var samples = new JsonArray();
 		var operation = CreateOperationWithCodeSamples(samples);
 
-		var result = OperationViewModel.ParseCodeSamples(operation);
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
 		result.Should().BeEmpty();
 	}
@@ -146,7 +146,7 @@ public class CodeSampleTests
 		);
 		var operation = CreateOperationWithCodeSamples(samples);
 
-		var result = OperationViewModel.ParseCodeSamples(operation);
+		var result = OpenApiExtensionReader.ParseCodeSamples(operation);
 
 		result[0].HighlightClass.Should().Be("language-bash");
 	}
