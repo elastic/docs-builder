@@ -1,2 +1,0 @@
-@inherits RazorSlice<Elastic.ApiExplorer.Schema.TypeAnnotation>
-<code class="schema-type">@foreach (var s in Model.Spans){if (s.Bare){@(s.Text)}else{<span class="@s.CssClass" title="@s.Title">@s.Text</span>}}</code>

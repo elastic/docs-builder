@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Microsoft.OpenApi;

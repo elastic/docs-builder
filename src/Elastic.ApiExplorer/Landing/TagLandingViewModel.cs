@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.ApiExplorer;
-using Elastic.ApiExplorer.Schema;
+using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 
 namespace Elastic.ApiExplorer.Landing;
 

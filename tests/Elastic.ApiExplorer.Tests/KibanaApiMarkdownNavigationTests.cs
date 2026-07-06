@@ -5,7 +5,10 @@
 using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;

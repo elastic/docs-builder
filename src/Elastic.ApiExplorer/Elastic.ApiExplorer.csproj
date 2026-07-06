@@ -29,8 +29,4 @@
     </AssemblyAttribute>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Elasticsearch\" />
-  </ItemGroup>
-
 </Project>

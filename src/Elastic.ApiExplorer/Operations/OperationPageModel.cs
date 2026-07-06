@@ -3,8 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Nodes;
+using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
-using Elastic.ApiExplorer.Schema;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Types;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 

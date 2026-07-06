@@ -4,6 +4,7 @@
 
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Microsoft.OpenApi;
 
