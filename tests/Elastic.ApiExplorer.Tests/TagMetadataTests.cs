@@ -839,7 +839,7 @@ public class TagMetadataTests
 	[Fact]
 	public void GenerateTagMoniker_DataStream_Uses_Hyphen()
 	{
-		OpenApiGenerator.GenerateTagMoniker("data stream").Should().Be("data-stream");
+		ApiUrlBuilder.TagMoniker("data stream").Should().Be("data-stream");
 	}
 
 	[Fact]

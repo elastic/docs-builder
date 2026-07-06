@@ -249,7 +249,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName, operationMonikers);
 
 		var url = $"{context.UrlPathPrefix}/api/{apiUrlSuffix}/{slug}/";
-		var title = GetNavigationTitleFromFile(markdownFile);
+		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
 
 		// Create simple navigation item - will be handled by regular documentation system
 		var navItem = new SimpleMarkdownNavigationItem(url, title, markdownFile, rootNavigation)
@@ -258,68 +258,6 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		};
 
 		return navItem;
-	}
-
-	private string GetNavigationTitleFromFile(IFileInfo markdownFile)
-	{
-		try
-		{
-			// Read file content to parse frontmatter
-			var content = context.ReadFileSystem.File.ReadAllText(markdownFile.FullName);
-
-			// Simple frontmatter parsing - look for navigation_title
-			if (content.StartsWith("---"))
-			{
-				var lines = content.Split('\n');
-				var frontMatterEndIndex = -1;
-
-				for (var i = 1; i < lines.Length; i++)
-				{
-					if (lines[i].TrimStart().StartsWith("---"))
-					{
-						frontMatterEndIndex = i;
-						break;
-					}
-				}
-
-				if (frontMatterEndIndex > 0)
-				{
-					for (var i = 1; i < frontMatterEndIndex; i++)
-					{
-						var line = lines[i].Trim();
-						if (line.StartsWith("navigation_title:"))
-						{
-							var title = line.Substring("navigation_title:".Length).Trim();
-							// Remove quotes if present
-							if ((title.StartsWith('"') && title.EndsWith('"')) ||
-								(title.StartsWith('\'') && title.EndsWith('\'')))
-							{
-								title = title.Substring(1, title.Length - 2);
-							}
-							if (!string.IsNullOrEmpty(title))
-							{
-								return title;
-							}
-						}
-					}
-				}
-			}
-		}
-		catch (Exception)
-		{
-			// Fall back to filename-based title if parsing fails
-		}
-
-		// Fallback: Extract a friendly navigation title from the filename
-		var fileName = Path.GetFileNameWithoutExtension(markdownFile.Name);
-
-		// Convert kebab-case/snake_case to title case
-		return fileName
-			.Replace('-', ' ')
-			.Replace('_', ' ')
-			.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-			.Select(word => char.ToUpper(word[0]) + word[1..].ToLower())
-			.Aggregate((current, next) => $"{current} {next}");
 	}
 
 	private void CreateTagNavigationItems(
@@ -587,24 +525,6 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		return ordered;
 	}
 
-	/// <summary>Deterministic single URL segment for <c>.../tags/{segment}/</c> from the canonical tag name.</summary>
-	public static string GenerateTagMoniker(string? tagName)
-	{
-		if (string.IsNullOrWhiteSpace(tagName))
-			return "unknown";
-
-		var s = tagName.Trim();
-		s = string.Join(" ", s.Split(' ', StringSplitOptions.RemoveEmptyEntries));
-		s = s.Replace("{", string.Empty, StringComparison.Ordinal);
-		s = s.Replace("}", string.Empty, StringComparison.Ordinal);
-		s = s.Replace("/", "-", StringComparison.Ordinal);
-		s = s.Replace(" ", "-", StringComparison.Ordinal);
-		if (string.IsNullOrEmpty(s))
-			return "unknown";
-
-		return s;
-	}
-
 	private static IReadOnlyDictionary<string, string> BuildTagMonikerMap(IReadOnlyList<string> distinctTagNames)
 	{
 		var toSegment = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -612,7 +532,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 
 		foreach (var name in distinctTagNames)
 		{
-			var segment = GenerateTagMoniker(name);
+			var segment = ApiUrlBuilder.TagMoniker(name);
 			if (segmentToTagName.TryGetValue(segment, out var existing) && !string.Equals(existing, name, StringComparison.Ordinal))
 			{
 				throw new InvalidOperationException(
