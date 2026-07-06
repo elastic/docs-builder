@@ -141,13 +141,14 @@ toc:
       - file: dropdowns.md
       - file: definition-lists.md
       - file: example_blocks.md
+      - file: explore.md
       - file: file_inclusion.md
       - file: footnotes.md
       - file: frontmatter.md
       - file: hero.md
       - file: hub-pages.md
       - file: icons.md
-      - file: intro.md
+      - file: get-started.md
       - file: images.md
       - file: videos.md
       - file: kbd.md

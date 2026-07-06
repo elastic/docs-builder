@@ -4,4 +4,9 @@
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
-public class IntroViewModel : DirectiveViewModel;
+public class ExploreViewModel : DirectiveViewModel
+{
+	public required string? Title { get; init; }
+	public required string? Intro { get; init; }
+	public required string? Anchor { get; init; }
+}

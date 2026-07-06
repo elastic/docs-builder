@@ -2,74 +2,124 @@
 
 @{
 	var d = Model.Data;
+	var upgrade = d.UpgradeLink;
+	var hasUpgrade = upgrade is not null && !string.IsNullOrWhiteSpace(upgrade.Url) && !string.IsNullOrWhiteSpace(upgrade.Label);
 }
 
 <section class="hub-whats-new" id="@d.Id">
 	<header class="hub-wn-header">
-		@if (!string.IsNullOrWhiteSpace(d.Badge))
-		{
-			<span class="hub-wn-badge">@d.Badge</span>
-		}
-		@if (!string.IsNullOrWhiteSpace(d.Title))
-		{
-			<span class="hub-wn-title">@d.Title</span>
-		}
+		<div class="hub-wn-heading">
+			@if (!string.IsNullOrWhiteSpace(d.Title))
+			{
+				<h2 class="hub-wn-title">@d.Title</h2>
+			}
+			@if (!string.IsNullOrWhiteSpace(d.Intro))
+			{
+				<p class="hub-wn-intro">@d.Intro</p>
+			}
+		</div>
 		@if (d.ReleaseLinks.Length > 0)
 		{
-			<span class="hub-wn-rn-links">
-				<span class="hub-wn-rn-label">Release notes:</span>
-				@for (var i = 0; i < d.ReleaseLinks.Length; i++)
-				{
-					var link = d.ReleaseLinks[i];
-					if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
-						continue;
-					<a href="@Model.PrefixUrl(link.Url)" hx-boost="false">@link.Label</a>
-					@if (i < d.ReleaseLinks.Length - 1)
+			<div class="hub-wn-rn">
+				<span class="hub-wn-rn-label">Latest release notes:</span>
+				<ul class="hub-wn-rn-list">
+					@foreach (var link in d.ReleaseLinks)
 					{
-						<span class="hub-wn-rn-sep" aria-hidden="true">·</span>
+						if (string.IsNullOrWhiteSpace(link.Url) || string.IsNullOrWhiteSpace(link.Label))
+						{
+							continue;
+						}
+						<li><a href="@Model.PrefixUrl(link.Url)" hx-boost="false" class="hub-wn-rn-link">@link.Label</a></li>
 					}
-				}
-			</span>
+				</ul>
+			</div>
 		}
 	</header>
+
 	@if (d.Items.Length > 0)
 	{
-		<ul class="hub-wn-items">
+		<ul class="hub-wn-grid">
 			@foreach (var item in d.Items)
 			{
 				if (string.IsNullOrWhiteSpace(item.Title))
+				{
 					continue;
-				<li class="hub-wn-item">
+				}
+				var cardClass = item.Featured ? "hub-wn-card hub-wn-card-featured" : "hub-wn-card";
+				<li class="@cardClass">
 					@if (!string.IsNullOrWhiteSpace(item.Link))
 					{
-						<a href="@Model.PrefixUrl(item.Link)" hx-boost="false" class="hub-wn-item-link">
-							<strong class="hub-wn-item-title">@item.Title</strong>
+						<a href="@Model.PrefixUrl(item.Link)" hx-boost="false" class="hub-wn-card-link">
+							<div class="hub-wn-card-meta">
+								<span class="hub-wn-card-meta-left">
+									@if (!string.IsNullOrWhiteSpace(item.Badge))
+									{
+										<span class="hub-wn-card-badge">@item.Badge</span>
+									}
+									@if (!string.IsNullOrWhiteSpace(item.Date))
+									{
+										<span class="hub-wn-card-date">@item.Date</span>
+									}
+								</span>
+								@if (!string.IsNullOrWhiteSpace(item.Tag))
+								{
+									<span class="hub-wn-card-tag">@item.Tag</span>
+								}
+							</div>
+							<h3 class="hub-wn-card-title">@item.Title</h3>
 							@if (!string.IsNullOrWhiteSpace(item.Description))
 							{
-								<span class="hub-wn-item-desc">@item.Description</span>
+								<p class="hub-wn-card-desc">@item.Description</p>
 							}
-							@if (!string.IsNullOrWhiteSpace(item.Meta))
-							{
-								<span class="hub-wn-item-meta">@item.Meta</span>
-							}
+							<span class="hub-wn-card-more">
+								<span>Read more</span>
+								<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+									<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+							</span>
 						</a>
 					}
 					else
 					{
-						<div class="hub-wn-item-link">
-							<strong class="hub-wn-item-title">@item.Title</strong>
+						<div class="hub-wn-card-link">
+							<div class="hub-wn-card-meta">
+								<span class="hub-wn-card-meta-left">
+									@if (!string.IsNullOrWhiteSpace(item.Badge))
+									{
+										<span class="hub-wn-card-badge">@item.Badge</span>
+									}
+									@if (!string.IsNullOrWhiteSpace(item.Date))
+									{
+										<span class="hub-wn-card-date">@item.Date</span>
+									}
+								</span>
+								@if (!string.IsNullOrWhiteSpace(item.Tag))
+								{
+									<span class="hub-wn-card-tag">@item.Tag</span>
+								}
+							</div>
+							<h3 class="hub-wn-card-title">@item.Title</h3>
 							@if (!string.IsNullOrWhiteSpace(item.Description))
 							{
-								<span class="hub-wn-item-desc">@item.Description</span>
-							}
-							@if (!string.IsNullOrWhiteSpace(item.Meta))
-							{
-								<span class="hub-wn-item-meta">@item.Meta</span>
+								<p class="hub-wn-card-desc">@item.Description</p>
 							}
 						</div>
 					}
 				</li>
 			}
 		</ul>
+	}
+
+	@if (hasUpgrade)
+	{
+		<div class="hub-wn-footer">
+			<span class="hub-wn-footer-text">Ready to move to the latest version?</span>
+			<a href="@Model.PrefixUrl(upgrade!.Url)" hx-boost="false" class="hub-wn-upgrade">
+				<span>@upgrade.Label</span>
+				<svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+					<path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</a>
+		</div>
 	}
 </section>

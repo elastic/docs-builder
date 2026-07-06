@@ -143,6 +143,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{hero}") > 0)
 			return new HeroBlock(this, context);
 
+		if (info.IndexOf("{explore}") > 0)
+			return new ExploreBlock(this, context);
+
 		if (info.IndexOf("{card-group}") > 0)
 			return new CardGroupBlock(this, context);
 
@@ -152,8 +155,8 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{whats-new}") > 0)
 			return new WhatsNewBlock(this, context);
 
-		if (info.IndexOf("{intro}") > 0)
-			return new IntroBlock(this, context);
+		if (info.IndexOf("{get-started}") > 0)
+			return new GetStartedBlock(this, context);
 
 		if (info.IndexOf("{on-this-page}") > 0)
 			return new OnThisPageBlock(this, context);
@@ -252,6 +255,13 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			return base.TryContinue(processor, block);
 
 		if (block is not DirectiveBlock directiveBlock)
+			return base.TryContinue(processor, block);
+
+		// Once a directive has opened a nested directive child (e.g. a {card-group}
+		// inside {explore}), an option line belongs to that inner directive, not this
+		// ancestor. Without this guard the ancestor would swallow every descendant's
+		// `:title:`/`:id:` options (last one wins), corrupting its own.
+		if (directiveBlock.LastChild is DirectiveBlock)
 			return base.TryContinue(processor, block);
 
 		var tokens = line.ToString().Split(':', 2, RemoveEmptyEntries | TrimEntries);

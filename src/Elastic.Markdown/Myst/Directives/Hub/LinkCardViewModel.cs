@@ -9,5 +9,9 @@ public class LinkCardViewModel : DirectiveViewModel
 	public required LinkCardData Data { get; init; }
 	public required string? IconSvg { get; init; }
 	public required string? SitePathPrefix { get; init; }
+
+	/// <summary>Rendered as a titled link column inside an {explore} accordion.</summary>
+	public bool IsColumn { get; init; }
+
 	public string? PrefixUrl(string? url) => HubUrl.Prefix(url, SitePathPrefix);
 }

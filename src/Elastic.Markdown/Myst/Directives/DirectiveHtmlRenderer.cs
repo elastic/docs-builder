@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Svg;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
@@ -131,6 +132,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case HeroBlock heroBlock:
 				WriteHero(renderer, heroBlock);
 				return;
+			case ExploreBlock exploreBlock:
+				WriteExplore(renderer, exploreBlock);
+				return;
 			case CardGroupBlock cardGroupBlock:
 				WriteCardGroup(renderer, cardGroupBlock);
 				return;
@@ -140,8 +144,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			case WhatsNewBlock whatsNewBlock:
 				WriteWhatsNew(renderer, whatsNewBlock);
 				return;
-			case IntroBlock introBlock:
-				WriteIntro(renderer, introBlock);
+			case GetStartedBlock getStartedBlock:
+				WriteGetStarted(renderer, getStartedBlock);
 				return;
 			case OnThisPageBlock onThisPageBlock:
 				WriteOnThisPage(renderer, onThisPageBlock);
@@ -424,10 +428,6 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteHero(HtmlRenderer renderer, HeroBlock block)
 	{
-		var releasesHtml = string.IsNullOrWhiteSpace(block.Releases)
-			? null
-			: RenderInlineMarkdown(block.Releases);
-
 		var descriptionHtml = string.IsNullOrWhiteSpace(block.Description)
 			? null
 			: RenderInlineMarkdown(block.Description);
@@ -439,21 +439,44 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			IconSvg = block.IconSvg,
 			Title = block.Title,
 			DescriptionHtml = descriptionHtml,
-			ReleasesHtml = releasesHtml,
+			PrimaryActionLabel = block.PrimaryActionLabel,
+			PrimaryActionUrl = block.PrimaryActionUrl,
+			SecondaryActionLabel = block.SecondaryActionLabel,
+			SecondaryActionUrl = block.SecondaryActionUrl,
+			TertiaryActionLabel = block.TertiaryActionLabel,
+			TertiaryActionUrl = block.TertiaryActionUrl,
 			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteExplore(HtmlRenderer renderer, ExploreBlock block)
+	{
+		var slice = ExploreView.Create(new ExploreViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor
 		});
 		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteCardGroup(HtmlRenderer renderer, CardGroupBlock block)
 	{
+		var explore = HubExplore.FindAncestor(block);
 		var slice = CardGroupView.Create(new CardGroupViewModel
 		{
 			DirectiveBlock = block,
 			Title = block.Title,
 			Intro = block.Intro,
 			Anchor = block.Anchor,
-			Variant = block.Variant
+			Variant = block.Variant,
+			IsAccordion = explore is not null,
+			IsOpen = explore is not null && HubExplore.IsFirstCardGroup(explore, block),
+			AccordionGroup = explore is null
+				? null
+				: string.IsNullOrWhiteSpace(explore.Anchor) ? "hub-explore" : $"hub-explore-{explore.Anchor}"
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -465,7 +488,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			DirectiveBlock = block,
 			Data = block.Data,
 			IconSvg = ProductIcons.Get(block.Data.Icon),
-			SitePathPrefix = block.Build.UrlPathPrefix
+			SitePathPrefix = block.Build.UrlPathPrefix,
+			IsColumn = HubExplore.FindAncestor(block) is not null
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -481,9 +505,57 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		RenderRazorSlice(slice, renderer);
 	}
 
-	private static void WriteIntro(HtmlRenderer renderer, IntroBlock block)
+	private static void WriteGetStarted(HtmlRenderer renderer, GetStartedBlock block)
 	{
-		var slice = IntroView.Create(new IntroViewModel { DirectiveBlock = block });
+		var data = block.Data;
+		var steps = new List<GetStartedStepViewModel>(data.Steps.Length);
+		for (var i = 0; i < data.Steps.Length; i++)
+		{
+			var step = data.Steps[i];
+			var options = new List<GetStartedOptionViewModel>(step.Options.Length);
+			foreach (var option in step.Options)
+			{
+				options.Add(new GetStartedOptionViewModel
+				{
+					Label = option.Label,
+					DescriptionHtml = string.IsNullOrWhiteSpace(option.Description)
+						? null
+						: RenderInlineMarkdown(option.Description),
+					Code = option.Code,
+					Language = option.Language,
+					Url = option.Url,
+					UrlLabel = option.UrlLabel
+				});
+			}
+
+			steps.Add(new GetStartedStepViewModel
+			{
+				Number = i + 1,
+				IconSvg = string.IsNullOrWhiteSpace(step.Icon)
+					? null
+					: EuiSvgIcons.GetIcon(step.Icon, "hub-get-started-step-icon-svg"),
+				Title = step.Title,
+				DescriptionHtml = string.IsNullOrWhiteSpace(step.Description)
+					? null
+					: RenderInlineMarkdown(step.Description),
+				Link = step.Link,
+				LinkLabel = step.LinkLabel,
+				Options = options
+			});
+		}
+
+		var slice = GetStartedView.Create(new GetStartedViewModel
+		{
+			DirectiveBlock = block,
+			Title = data.Title,
+			IntroHtml = string.IsNullOrWhiteSpace(data.Intro) ? null : RenderInlineMarkdown(data.Intro),
+			InstallCode = data.Install?.Code,
+			InstallLanguage = data.Install?.Language,
+			TutorialLabel = data.Tutorial?.Label,
+			TutorialUrl = data.Tutorial?.Url,
+			Steps = steps,
+			SitePathPrefix = block.Build.UrlPathPrefix
+		});
 		RenderRazorSlice(slice, renderer);
 	}
 

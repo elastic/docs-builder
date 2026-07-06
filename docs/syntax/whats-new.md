@@ -1,6 +1,6 @@
 # What's new
 
-A panel with a "New" badge, section title, optional release-notes link list on the right, and rows of recent highlights. Each row has a title, description, and right-aligned meta pill (e.g. `9.4 preview`, `Mar 2026`).
+A section with a heading, subtitle, and a "View release notes" link on the right, followed by a grid of highlight cards. Each card has an optional badge, a date and category tag, a title, a description, and a "Read more" link. One card can be marked `featured` to span two columns.
 
 ## Centralized lookup (recommended)
 
@@ -19,19 +19,22 @@ products:
   kibana:
     title: What's new in Kibana
     id: whats-new                     # used as the section anchor
-    badge: New                        # optional, default 'New'
-    release-links:
-      - { label: '9.4', url: /release-notes/kibana }
-      - { label: Serverless, url: /release-notes/serverless }
+    release-links:                        # rendered as "Latest release notes: <label> · <label>"
+      - { label: Stack 9.4.1, url: /release-notes/kibana }
+      - { label: Serverless · Apr 1, 2026, url: /release-notes/cloud-serverless }
     items:
-      - title: Dashboards APIs
+      - title: Dashboards and visualizations APIs
         description: Programmatically create and manage dashboards
         link: /api/dashboards
-        meta: 9.4 preview
+        badge: New                    # optional per-card badge
+        date: 9.4 preview             # left meta (date or version)
+        tag: Dashboards               # right meta (category)
+        featured: true                # spans two columns; use for one card
       - title: AI agent skills
         description: Teach AI coding agents to work with the Elastic stack
         link: /ai/agent-skills
-        meta: Mar 2026
+        date: Mar 2026
+        tag: AI Assistant
 ```
 
 ## Inline override
@@ -41,11 +44,14 @@ If `:product:` is omitted, the directive expects the same schema as a YAML body.
 ```markdown
 :::{whats-new}
 title: What's new in this release
+intro: Stay up to date with the latest features.
 items:
   - title: Custom feature A
     description: Details
     link: /feature-a
-    meta: 9.4
+    date: 9.4
+    tag: Search
+    featured: true
 :::
 ```
 
@@ -57,4 +63,4 @@ items:
 
 ## Anchor
 
-`{whats-new}` registers its `id` as a section anchor — `{on-this-page}` automatically picks it up alongside `{card-group}` sections.
+`{whats-new}` registers its `id` as a section anchor so it can be linked to directly.

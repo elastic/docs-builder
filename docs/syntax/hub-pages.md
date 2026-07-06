@@ -24,10 +24,11 @@ The `hub` layout drops the right-rail "On this page" TOC and the prev/next nav. 
 |-----------|---------|
 | [`{hero}`](hero.md) | Full-bleed page hero with product icon, title, search, version dropdown, and quick-action pills. |
 | [`{on-this-page}`](on-this-page.md) | Auto-generated inline TOC linking each section anchor on the page. |
-| [`{intro}`](intro.md) | Small "getting started" callout panel with a teal accent bar. |
+| [`{get-started}`](get-started.md) | Onboarding funnel: intro line, install snippet, tutorial link, and numbered steps. |
 | [`{whats-new}`](whats-new.md) | "What's new" panel populated from `config/whats-new.yml`. |
-| [`{card-group}`](card-group.md) | Section heading + card grid container. |
-| [`{link-card}`](link-card.md) | Rich card with title, description, primary link list, and optional aside. |
+| [`{card-group}`](card-group.md) | Section heading + card grid container. Renders as an accordion group inside `{explore}`. |
+| [`{link-card}`](link-card.md) | Rich card with title, description, primary link list, and optional aside. Renders as a link column inside `{explore}`. |
+| [`{explore}`](explore.md) | "Explore {product}" section: a stack of collapsible accordion groups wrapping several `{card-group}`s. |
 
 ## Page skeleton
 
@@ -46,8 +47,16 @@ layout: hub
 :::{on-this-page}
 :::
 
-:::{intro}
-**New to Kibana?** [Take the tutorial](/tutorial) — 30 minutes, hands-on.
+:::{get-started}
+title: Get started in 3 steps
+intro: Spin up Kibana, connect your data, and start exploring in minutes.
+tutorial:
+  label: Tutorial
+  url: /tutorial
+steps:
+  - icon: launch
+    title: Run Kibana
+    description: Start locally, run in Docker, or open a free Cloud trial.
 :::
 
 :::{whats-new}
@@ -67,6 +76,28 @@ links:
   - { label: Configure, url: /deploy/configure }
 :::
 ::::
+```
+
+Group the remaining card-groups under an [`{explore}`](explore.md) section so they render
+as a stack of collapsible accordions:
+
+```markdown
+:::::{explore}
+:title: Explore Kibana
+:intro: Explore the apps and capabilities that help you act on your data.
+
+::::{card-group}
+:title: Install and administer
+:id: install
+
+:::{link-card}
+title: Self-managed
+link: /deploy-manage/deploy/self-managed
+links:
+  - { label: Docker, url: /deploy/docker }
+:::
+::::
+:::::
 ```
 
 ## Product badges

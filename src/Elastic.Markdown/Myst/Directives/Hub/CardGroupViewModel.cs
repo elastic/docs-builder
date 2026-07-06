@@ -10,4 +10,16 @@ public class CardGroupViewModel : DirectiveViewModel
 	public required string? Intro { get; init; }
 	public required string? Anchor { get; init; }
 	public required string? Variant { get; init; }
+
+	/// <summary>Rendered as a collapsible accordion group inside an {explore} section.</summary>
+	public bool IsAccordion { get; init; }
+
+	/// <summary>The accordion is expanded by default (the first group in an Explore stack).</summary>
+	public bool IsOpen { get; init; }
+
+	/// <summary>
+	/// Shared &lt;details name&gt; group so the accordions open exclusively: expanding one
+	/// collapses the others in the same Explore section.
+	/// </summary>
+	public string? AccordionGroup { get; init; }
 }

@@ -77,6 +77,8 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 	{
 		foreach (var link in Data.ReleaseLinks)
 			link.Url = HubLinkValidator.ValidateAndResolve(link.Url, this, context);
+		if (Data.UpgradeLink is { } upgrade)
+			upgrade.Url = HubLinkValidator.ValidateAndResolve(upgrade.Url, this, context);
 		foreach (var item in Data.Items)
 			item.Link = HubLinkValidator.ValidateAndResolve(item.Link, this, context);
 	}
@@ -125,11 +127,17 @@ public record WhatsNewData
 	[YamlMember(Alias = "id")]
 	public string? Id { get; set; }
 
+	[YamlMember(Alias = "intro")]
+	public string? Intro { get; set; }
+
 	[YamlMember(Alias = "badge")]
 	public string? Badge { get; set; } = "New";
 
 	[YamlMember(Alias = "release-links")]
 	public LinkCardLink[] ReleaseLinks { get; set; } = [];
+
+	[YamlMember(Alias = "upgrade-link")]
+	public LinkCardLink? UpgradeLink { get; set; }
 
 	[YamlMember(Alias = "items")]
 	public WhatsNewItem[] Items { get; set; } = [];
@@ -151,4 +159,16 @@ public record WhatsNewItem
 
 	[YamlMember(Alias = "meta")]
 	public string? Meta { get; set; }
+
+	[YamlMember(Alias = "date")]
+	public string? Date { get; set; }
+
+	[YamlMember(Alias = "tag")]
+	public string? Tag { get; set; }
+
+	[YamlMember(Alias = "badge")]
+	public string? Badge { get; set; }
+
+	[YamlMember(Alias = "featured")]
+	public bool Featured { get; set; }
 }
