@@ -69,7 +69,10 @@
 			<span class="deprecated-badge">deprecated</span>
 		}
 		@{
-			var isBeta = operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true && betaValue is System.Text.Json.Nodes.JsonNode betaNode && betaNode.GetValue<bool>();
+			var isBeta = operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true
+				&& betaValue is JsonNodeExtension betaExtension
+				&& betaExtension.Node is System.Text.Json.Nodes.JsonValue betaJsonValue
+				&& betaJsonValue.TryGetValue<bool>(out var betaFlag) && betaFlag;
 		}
 		@if (isBeta)
 		{
