@@ -2,63 +2,15 @@
 @using Elastic.ApiExplorer.Operations
 @using Elastic.ApiExplorer.Schema
 @using Elastic.ApiExplorer.Shared
-@using Elastic.Documentation.Configuration.Versions
 @using Microsoft.OpenApi
 @inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
-
-	// Schema analyzer instance - created lazily
-	private SchemaAnalyzer? _analyzer;
-	private SchemaAnalyzer Analyzer => _analyzer ??= new SchemaAnalyzer(Model.Document);
-
-	// Delegate schema analysis to Analyzer
-	private IOpenApiSchema? ResolveSchema(IOpenApiSchema? schema) => Analyzer.ResolveSchema(schema);
-	private IDictionary<string, IOpenApiSchema>? GetSchemaProperties(IOpenApiSchema? schema) => Analyzer.GetSchemaProperties(schema);
-	private TypeInfo GetTypeInfo(IOpenApiSchema? schema) => Analyzer.GetTypeInfo(schema);
-
-	// Helper to create PropertyRenderContext for OperationView
-	private PropertyRenderContext CreatePropertyContext(IOpenApiSchema? schema, string prefix, bool isRequest = false)
-		=> new PropertyRenderContext
-		{
-			Schema = schema,
-			RequiredProperties = null,
-			Prefix = prefix,
-			Depth = 0,
-			AncestorTypes = null,
-			IsRequest = isRequest,
-			Analyzer = Analyzer,
-			RenderMarkdown = Model.RenderMarkdown,
-			ApiRootUrl = Model.CurrentNavigationItem.NavigationRoot.Url,
-			// OperationView defaults - all features enabled
-			ShowDeprecated = true,
-			ShowVersionInfo = true,
-			ShowExternalDocs = true,
-			UseHiddenUntilFound = true,
-			CollapseMode = CollapseMode.AlwaysCollapsed,
-			VersionsConfiguration = Model.BuildContext.VersionsConfiguration
-		};
-
-	// Helper to create SchemaTypeContext
-	private SchemaTypeContext CreateSchemaTypeContext(IOpenApiSchema schema)
-		=> new SchemaTypeContext
-		{
-			Schema = schema,
-			TypeInfo = GetTypeInfo(schema),
-			HasActualProperties = GetSchemaProperties(schema)?.Count > 0
-		};
 }
 @{
-	var self = Model.CurrentNavigationItem as OperationNavigationItem;
-	var allOperations =
-		Model.CurrentNavigationItem.Parent is EndpointNavigationItem { NavigationItems.Count: > 0 } parent && parent.NavigationItems.All(n => n.Hidden)
-			? parent.NavigationItems
-			: self is not null
-				? [self]
-				: [];
-
 	var operation = Model.Operation.Operation;
+	var pageModel = Model.Page;
 }
 
 <section id="elastic-api-v3">
@@ -68,22 +20,14 @@
 		{
 			<span class="deprecated-badge">deprecated</span>
 		}
-		@{
-			var isBeta = operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true
-				&& betaValue is JsonNodeExtension betaExtension
-				&& betaExtension.Node is System.Text.Json.Nodes.JsonValue betaJsonValue
-				&& betaJsonValue.TryGetValue<bool>(out var betaFlag) && betaFlag;
-		}
-		@if (isBeta)
+		@if (pageModel.IsBeta)
 		{
 			<span class="beta-badge">Beta</span>
 		}
 	</h1>
-	@{
-		var badgeData = AvailabilityBadgeHelper.FromOperation(operation, Model.BuildContext.VersionsConfiguration);
-	}
-	@if (badgeData is not null)
+	@if (pageModel.Availability is not null)
 	{
+		var badgeData = pageModel.Availability;
 		<p class="applies applies-block">
 			<applies-to-popover
 				badge-key="@badgeData.BadgeKey"
@@ -100,15 +44,11 @@
 			></applies-to-popover>
 		</p>
 	}
-	@{
-		// Servers can be at operation level or document level
-		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : Model.Document.Servers;
-	}
-	@if (servers is { Count: > 0 })
+	@if (pageModel.Servers is { Count: > 0 })
 	{
 		<div class="server-info">
-			<span class="server-label">Server@(servers.Count > 1 ? "s" : ""):</span>
-			@foreach (var server in servers)
+			<span class="server-label">Server@(pageModel.Servers.Count > 1 ? "s" : ""):</span>
+			@foreach (var server in pageModel.Servers)
 			{
 				<span class="server-url">
 					<code>@server.Url</code>
@@ -130,7 +70,7 @@
 		</span>
 	</h3>
 	<ul class="api-url-listing">
-		@foreach (var overload in allOperations)
+		@foreach (var overload in pageModel.Overloads)
 		{
 			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
 			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
@@ -147,9 +87,6 @@
 			</li>
 		}
 	</ul>
-	@{
-		var pathParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Path).ToArray() ?? [];
-	}
 	@{
 		var prerequisiteLines = Model.RequiredAuthItems;
 	}
@@ -170,11 +107,11 @@
 		}
 		</ul>
 	}
-	@if (pathParameters.Length > 0)
+	@if (pageModel.PathParameters.Count > 0)
 	{
 		<h4>Path Parameters</h4>
 		<dl class="property-list">
-		@foreach (var path in pathParameters)
+		@foreach (var path in pageModel.PathParameters)
 		{
 			<div class="path-param @(path.Deprecated is true ? "deprecated" : "")">
 				<dt id="path-@path.Name">
@@ -205,21 +142,17 @@
 		<p>
 			@(Model.RenderMarkdown(operation.Description))
 		</p>
-		@if (operation.ExternalDocs?.Url != null)
+		@if (pageModel.ExternalDocs is not null)
 		{
-			var externalDocsUrl = operation.ExternalDocs.Url.ToString();
-			var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
-			<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
-				@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+			<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+				@pageModel.ExternalDocs.LinkText
 			</a>
 		}
 	}
-	else if (operation.ExternalDocs?.Url != null)
+	else if (pageModel.ExternalDocs is not null)
 	{
-		var externalDocsUrl = operation.ExternalDocs.Url.ToString();
-		var isElasticDocs = externalDocsUrl.Contains("www.elastic.co/docs") || externalDocsUrl.Contains("elastic.co/guide");
-		<a href="@externalDocsUrl" class="docs-reference-btn" @(isElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
-			@(isElasticDocs ? "Read the reference documentation" : "External documentation")
+		<a href="@pageModel.ExternalDocs.Url" class="docs-reference-btn" @(pageModel.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
+			@pageModel.ExternalDocs.LinkText
 		</a>
 	}
 
@@ -243,10 +176,7 @@
 		</div>
 	}
 
-	@{
-		var queryStringParameters = operation.Parameters?.Where(p => p.In == ParameterLocation.Query).ToArray() ?? [];
-	}
-	@if (queryStringParameters.Length > 0)
+	@if (pageModel.QueryParameters.Count > 0)
 	{
 		<h3 class="section-header" id="query-params" data-section="query-params">
 			<span>Query String Parameters</span>
@@ -257,57 +187,16 @@
 			</span>
 		</h3>
 		<dl class="property-list">
-			@foreach (var qs in queryStringParameters)
+			@foreach (var qp in pageModel.QueryParameters)
 			{
-				var qsSchema = qs.Schema;
-				var resolvedQsSchema = qsSchema != null ? ResolveSchema(qsSchema) : null;
-
-				// Collect enum values from direct enum, resolved enum, or union of string literals
-				var qsEnumValues = new List<string>();
-				if (qsSchema?.Enum is { Count: > 0 })
-					qsEnumValues.AddRange(qsSchema.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-				else if (resolvedQsSchema?.Enum is { Count: > 0 })
-					qsEnumValues.AddRange(resolvedQsSchema.Enum.Select(e => e?.ToString()?.Trim('"') ?? "").Where(e => !string.IsNullOrEmpty(e)));
-
-				// Check for oneOf/anyOf with string literals (union enums)
-				if (qsEnumValues.Count == 0)
-				{
-					var unionSchemas = resolvedQsSchema?.OneOf is { Count: > 0 } ? resolvedQsSchema.OneOf
-						: resolvedQsSchema?.AnyOf is { Count: > 0 } ? resolvedQsSchema.AnyOf
-						: null;
-					if (unionSchemas != null)
-					{
-						qsEnumValues.AddRange(
-							unionSchemas
-								.Select(ResolveSchema)
-								.Where(resolved => resolved?.Enum is { Count: > 0 })
-								.SelectMany(resolved => resolved!.Enum!
-									.Select(e => e?.ToString()?.Trim('"') ?? "")
-									.Where(e => !string.IsNullOrEmpty(e))));
-					}
-				}
-
-					// Get TypeInfo for union options display
-				var qsTypeInfo = qsSchema != null ? GetTypeInfo(qsSchema) : null;
-
-					// Collect union option names for "One of:" display
-				var qsUnionOptions = new List<string>();
-				if (qsTypeInfo?.AnyOfOptions is { Count: > 0 })
-				{
-					qsUnionOptions.AddRange(qsTypeInfo.AnyOfOptions.Select(o => o.Name).Where(n => !string.IsNullOrEmpty(n)));
-				}
-				else if (qsTypeInfo?.UnionOptions is { Length: > 0 })
-				{
-					qsUnionOptions.AddRange(qsTypeInfo.UnionOptions.Where(n => !string.IsNullOrEmpty(n)));
-				}
-
+				var qs = qp.Parameter;
 				<div class="query-param @(qs.Deprecated == true ? "deprecated" : "")">
 					<dt id="query-@qs.Name">
 						<a href="#query-@qs.Name">
 							<code>@qs.Name</code>
-							@if (qsSchema != null)
+							@if (qp.Type is not null)
 							{
-								@(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(qsSchema)))
+								@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(qp.Type))
 							}
 							@if (qs.Deprecated == true)
 							{
@@ -316,34 +205,30 @@
 						</a>
 					</dt>
 					<dd>@Model.RenderMarkdown(qs.Description)</dd>
-					@if (qsSchema != null)
+					@if (qp.Type is not null)
 					{
-						@ValidationConstraintsRenderer.Render(qsSchema)
+						@(await RenderPartialAsync<_ValidationConstraints, IReadOnlyList<ConstraintDisplay>>(qp.Constraints))
 					}
-				@if (qsUnionOptions.Count > 0 && qsEnumValues.Count == 0)
+				@if (qp.UnionOptions.Count > 0 && qp.EnumValues.Count == 0)
 				{
 					<dd class="union-options">
 						<span class="values-label">One of:</span>
-						@{var optIndex = 0;}
-						@foreach (var unionOpt in qsUnionOptions)
+						@for (var optIndex = 0; optIndex < qp.UnionOptions.Count; optIndex++)
 						{
+							var unionOpt = qp.UnionOptions[optIndex];
 							if (optIndex > 0)
 							{
 								<span class="union-inline-separator">or</span>
 							}
-							var isTypeOption = SchemaHelpers.PrimitiveTypeNames.Contains(unionOpt) ||
-								SchemaHelpers.PrimitiveTypeNames.Contains(unionOpt.TrimEnd('[', ']')) ||
-								char.IsUpper(unionOpt[0]) || unionOpt.EndsWith("[]");
-							<code class="@(isTypeOption ? "union-type-option" : "union-option")">@unionOpt</code>
-							optIndex++;
+							<code class="@(unionOpt.IsTypeOption ? "union-type-option" : "union-option")">@unionOpt.Text</code>
 						}
 					</dd>
 				}
-				@if (qsEnumValues.Count > 0)
+				@if (qp.EnumValues.Count > 0)
 				{
 					<dd class="enum-values">
 						<span class="values-label">Values:</span>
-						@foreach (var enumVal in qsEnumValues)
+						@foreach (var enumVal in qp.EnumValues)
 						{
 							<code class="enum-value">@enumVal</code>
 						}
@@ -355,12 +240,9 @@
 	}
 	@if (operation.RequestBody is not null)
 	{
-		var requestContentEntry = operation.RequestBody.Content?.FirstOrDefault();
-		var requestContentType = requestContentEntry?.Key ?? "application/json";
-		var requestMediaType = requestContentEntry?.Value;
 		<h3 class="section-header" id="request-body" data-section="request-body">
 			<span>Request Body</span>
-			<span class="content-type-badge">@requestContentType</span>
+			<span class="content-type-badge">@pageModel.RequestContentType</span>
 			<span class="section-nav">
 				<span class="section-path">@Model.Operation.Route</span>
 				<button class="section-nav-btn" data-dir="up" title="Previous section">&#x25B2;</button>
@@ -372,28 +254,20 @@
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
 		}
 
-		var requestSchema = requestMediaType?.Schema;
-		if (requestSchema is not null)
+		if (pageModel.RequestProperties is not null)
 		{
-			var props = GetSchemaProperties(requestSchema);
-			if (props is { Count: > 0 })
-			{
-				@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(requestSchema, "req", isRequest: true)))
-			}
-			else
-			{
-				<p>Type: @(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(requestSchema)))</p>
-			}
+			@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
+		}
+		else if (pageModel.RequestType is not null)
+		{
+			<p>Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(pageModel.RequestType))</p>
 		}
 	}
 
-	@if (operation.Responses is { Count: > 0 })
+	@if (pageModel.Responses.Count > 0)
 	{
-		var isSingleResponse = operation.Responses.Count == 1;
-		var singleResponse = isSingleResponse ? operation.Responses.First() : default;
-		var singleContentType = isSingleResponse && singleResponse.Value?.Content?.Count > 0
-			? singleResponse.Value.Content.First().Key
-			: null;
+		var isSingleResponse = pageModel.Responses.Count == 1;
+		var singleContentType = isSingleResponse ? pageModel.Responses[0].FirstContentType : null;
 
 		<h3 class="section-header" id="responses" data-section="responses">
 			<span>@(isSingleResponse ? "Response" : "Responses")</span>
@@ -407,101 +281,72 @@
 				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
 			</span>
 		</h3>
-		@foreach (var response in operation.Responses)
+		@foreach (var response in pageModel.Responses)
 		{
-			var statusCode = response.Key;
-			var responseValue = response.Value;
-			if (responseValue is null) continue;
-			var statusClass = statusCode.StartsWith("2") ? "success" : statusCode.StartsWith("4") || statusCode.StartsWith("5") ? "error" : "info";
 			<div class="response-section">
 				@if (!isSingleResponse)
 				{
 					<h4>
-						<span class="status-code status-@statusClass">@statusCode</span>
-						@if (!string.IsNullOrEmpty(responseValue.Description))
+						<span class="status-code status-@response.StatusClass">@response.StatusCode</span>
+						@if (!string.IsNullOrEmpty(response.Response.Description))
 						{
-							<span class="response-description">@responseValue.Description</span>
+							<span class="response-description">@response.Response.Description</span>
 						}
 					</h4>
 				}
-				@if (responseValue.Content is { Count: > 0 })
+				@if (response.Contents.Count > 0)
 				{
-					foreach (var contentType in responseValue.Content.Where(ct => ct.Value?.Schema is not null))
+					foreach (var content in response.Contents)
 					{
-						var responseSchema = contentType.Value!.Schema!;
 						@if (!isSingleResponse)
 						{
-							<p class="content-type">Content-Type: <code>@contentType.Key</code></p>
-						}
-						var responseProps = GetSchemaProperties(responseSchema);
-						var responseTypeInfo = GetTypeInfo(responseSchema);
-
-						// For arrays, check if the item type has properties we should render
-						IOpenApiSchema? arrayItemSchema = null;
-						IDictionary<string, IOpenApiSchema>? arrayItemProps = null;
-						if (responseTypeInfo.IsArray)
-						{
-							// Try getting Items - handle schema references which may need explicit resolution
-							arrayItemSchema = responseSchema.Items;
-							if (arrayItemSchema is null && responseSchema is OpenApiSchemaReference respSchemaRef)
-							{
-								var respRefId = respSchemaRef.Reference?.Id;
-								if (!string.IsNullOrEmpty(respRefId) &&
-									Model.Document.Components?.Schemas?.TryGetValue(respRefId, out var resolvedRespSchema) == true)
-								{
-									arrayItemSchema = resolvedRespSchema.Items;
-								}
-							}
-							if (arrayItemSchema is not null)
-							{
-								arrayItemProps = GetSchemaProperties(arrayItemSchema);
-							}
+							<p class="content-type">Content-Type: <code>@content.ContentType</code></p>
 						}
 
-						if (responseProps is { Count: > 0 })
+						if (content.Properties is not null)
 						{
-							@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(responseSchema, $"res-{statusCode}")))
+							@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
 						}
-						else if (arrayItemProps is { Count: > 0 } && arrayItemSchema is not null)
+						else if (content.ArrayItemProperties is not null)
 						{
 							// Array of objects - show the type annotation and render item properties
-							<p>Response Type: @(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(responseSchema)))</p>
-							@(await RenderPartialAsync<_PropertyList, PropertyRenderContext>(CreatePropertyContext(arrayItemSchema, $"res-{statusCode}")))
+							<p>Response Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
+							@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.ArrayItemProperties))
 						}
 						else
 						{
-							<p>Response Type: @(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(responseSchema)))</p>
+							<p>Response Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
 						}
 					}
 				}
-				@if (responseValue.Headers is { Count: > 0 })
+				@if (response.Headers.Count > 0)
 				{
 					<div class="response-headers">
 						<h5>Response Headers</h5>
 						<dl class="property-list">
-							@foreach (var header in responseValue.Headers)
+							@foreach (var header in response.Headers)
 							{
 								<div class="header-item">
-									<dt id="header-@statusCode-@header.Key">
-										<a href="#header-@statusCode-@header.Key">
-											<code>@header.Key</code>
-											@if (header.Value?.Schema != null)
+									<dt id="header-@response.StatusCode-@header.Name">
+										<a href="#header-@response.StatusCode-@header.Name">
+											<code>@header.Name</code>
+											@if (header.Type != null)
 											{
-												@(await RenderPartialAsync<_SchemaType, SchemaTypeContext>(CreateSchemaTypeContext(header.Value.Schema)))
+												@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(header.Type))
 											}
-											@if (header.Value?.Required == true)
+											@if (header.Header?.Required == true)
 											{
 												<span class="required">required</span>
 											}
-											@if (header.Value?.Deprecated == true)
+											@if (header.Header?.Deprecated == true)
 											{
 												<span class="deprecated-badge">deprecated</span>
 											}
 										</a>
 									</dt>
-									@if (!string.IsNullOrEmpty(header.Value?.Description))
+									@if (!string.IsNullOrEmpty(header.Header?.Description))
 									{
-										<dd>@Model.RenderMarkdown(header.Value.Description)</dd>
+										<dd>@Model.RenderMarkdown(header.Header.Description)</dd>
 									}
 								</div>
 							}
@@ -512,7 +357,7 @@
 		}
 	}
 	@{
-		var codeSamples = Model.CodeSamples;
+		var codeSamples = pageModel.CodeSamples;
 	}
 	@if (codeSamples.Count == 1)
 	{
@@ -552,17 +397,7 @@
 			}
 		</div>
 	}
-	@{
-		// Check for examples in request body
-		var requestBodyContent = operation.RequestBody?.Content?.FirstOrDefault().Value;
-		var requestExamples = requestBodyContent?.Examples;
-
-		// Check for examples in the response
-		var successResponse = operation.Responses?.FirstOrDefault(r => r.Key.StartsWith("2")).Value;
-		var responseContent = successResponse?.Content?.FirstOrDefault().Value;
-		var responseExamples = responseContent?.Examples;
-	}
-	@if (requestExamples is { Count: > 0 } && !(requestExamples.Count == 1 && codeSamples.Count > 0))
+	@if (pageModel.ShowRequestExamples)
 	{
 		<h3 class="section-header" id="request-examples" data-section="request-examples">
 			<span>Request Examples</span>
@@ -572,7 +407,7 @@
 				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
 			</span>
 		</h3>
-		@foreach (var example in requestExamples)
+		@foreach (var example in pageModel.RequestExamples!)
 		{
 			<div class="example-block">
 				<h4>@(string.IsNullOrEmpty(example.Value?.Summary) ? example.Key : example.Value.Summary)</h4>
@@ -591,7 +426,7 @@
 			</div>
 		}
 	}
-	@if (responseExamples is { Count: > 0 })
+	@if (pageModel.ShowResponseExamples)
 	{
 		<h3 class="section-header" id="response-examples" data-section="response-examples">
 			<span>Response Examples</span>
@@ -601,7 +436,7 @@
 				<button class="section-nav-btn" data-dir="down" title="Next section">&#x25BC;</button>
 			</span>
 		</h3>
-		@foreach (var example in responseExamples)
+		@foreach (var example in pageModel.ResponseExamples!)
 		{
 			<div class="example-block">
 				<h4>@(string.IsNullOrEmpty(example.Value?.Summary) ? example.Key : example.Value.Summary)</h4>
@@ -620,15 +455,9 @@
 			</div>
 		}
 	}
-	@{
-		var hasExamples = codeSamples.Count > 0 || requestExamples is { Count: > 0 } || responseExamples is { Count: > 0 };
-		var examplesAnchor = codeSamples.Count > 0 ? "code-examples"
-			: requestExamples is { Count: > 0 } ? "request-examples"
-			: "response-examples";
-	}
-	@if (hasExamples)
+	@if (pageModel.ExamplesAnchor != null)
 	{
-		<a href="#@examplesAnchor" class="examples-jump-btn" id="examples-jump-btn">
+		<a href="#@pageModel.ExamplesAnchor" class="examples-jump-btn" id="examples-jump-btn">
 			<span class="icon">&#x2193;</span>
 			<span>Examples</span>
 		</a>

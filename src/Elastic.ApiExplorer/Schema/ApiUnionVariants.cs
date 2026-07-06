@@ -23,6 +23,9 @@ public record ApiUnionVariant
 /// <summary>The expanded variants of a union; the model for <c>_UnionOptions</c>.</summary>
 public record ApiUnionVariants
 {
+	/// <summary>Renders nothing; used where the original template early-returned but its wrapper still rendered.</summary>
+	public static readonly ApiUnionVariants Empty = new() { Variants = [], ShouldCollapse = false, ContainerId = "", UseHiddenUntilFound = false };
+
 	public required IReadOnlyList<ApiUnionVariant> Variants { get; init; }
 	public required bool ShouldCollapse { get; init; }
 	public required string ContainerId { get; init; }

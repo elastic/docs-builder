@@ -71,8 +71,11 @@ public enum ChildKind
 	/// <summary>A plain nested property list (object, array items or simple-union base type).</summary>
 	PropertyList,
 
-	/// <summary>Union variants; <see cref="ApiPropertyChildren.UseHidden"/> controls hidden="until-found".</summary>
-	UnionVariants
+	/// <summary>Union variants of a regular union property; always visible.</summary>
+	UnionVariants,
+
+	/// <summary>Union variants nested under an X | X[] simple union; participates in hidden="until-found".</summary>
+	SimpleUnionVariants
 }
 
 /// <summary>The synthetic <c>&lt;string&gt;</c> key row a dictionary property nests its value properties under.</summary>

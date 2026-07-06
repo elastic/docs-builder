@@ -11,6 +11,9 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiSchema Schema { get; init; }
 
+	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
+	public required SchemaPageModel Page { get; init; }
+
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
 	{
 		var openApiSchema = Schema.Schema;

@@ -17,7 +17,8 @@ public record ApiOperation(HttpMethod OperationType, OpenApiOperation Operation,
 	{
 		var viewModel = new OperationViewModel(context)
 		{
-			Operation = this
+			Operation = this,
+			Page = OperationPageModel.Create(this, context)
 		};
 		var slice = OperationView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

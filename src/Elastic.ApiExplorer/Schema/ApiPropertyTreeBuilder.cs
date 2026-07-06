@@ -327,7 +327,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		};
 	}
 
-	private static bool IsTypeOptionBadge(string option) =>
+	internal static bool IsTypeOptionBadge(string option) =>
 		SchemaHelpers.PrimitiveTypeNames.Contains(option) ||
 		SchemaHelpers.PrimitiveTypeNames.Contains(option.TrimEnd('[', ']')) ||
 		char.IsUpper(option[0]) || option.EndsWith("[]");
@@ -348,7 +348,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.PropertyList,
 				UseHidden = useHidden,
-				Properties = BuildPropertyList(propSchema, propId, isRequest, depth + 1, newAncestors)
+				Properties = BuildPropertyList(propSchema, propId, isRequest, depth + 1, newAncestors) ?? new ApiPropertyList([])
 			};
 		}
 
@@ -358,7 +358,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.PropertyList,
 				UseHidden = useHidden,
-				Properties = BuildPropertyList(expansion.ArrayItemSchema, propId, isRequest, depth + 1, newAncestors)
+				Properties = BuildPropertyList(expansion.ArrayItemSchema, propId, isRequest, depth + 1, newAncestors) ?? new ApiPropertyList([])
 			};
 		}
 
@@ -368,7 +368,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.UnionVariants,
 				UseHidden = false,
-				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, propId, depth + 1, isRequest, newAncestors)
+				Variants = BuildUnionVariants(typeInfo.AnyOfOptions!, propId, depth + 1, isRequest, newAncestors) ?? ApiUnionVariants.Empty
 			};
 		}
 
@@ -376,9 +376,9 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 		{
 			return new ApiPropertyChildren
 			{
-				Kind = ChildKind.UnionVariants,
+				Kind = ChildKind.SimpleUnionVariants,
 				UseHidden = useHidden,
-				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, propId, depth + 1, isRequest, newAncestors)
+				Variants = BuildUnionVariants(expansion.SimpleUnionNestedOptions, propId, depth + 1, isRequest, newAncestors) ?? ApiUnionVariants.Empty
 			};
 		}
 
@@ -388,7 +388,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 			{
 				Kind = ChildKind.PropertyList,
 				UseHidden = useHidden,
-				Properties = BuildPropertyList(expansion.SimpleUnionSchema, propId, isRequest, depth + 1, newAncestors)
+				Properties = BuildPropertyList(expansion.SimpleUnionSchema, propId, isRequest, depth + 1, newAncestors) ?? new ApiPropertyList([])
 			};
 		}
 
@@ -531,7 +531,7 @@ public class ApiPropertyTreeBuilder(OpenApiDocument document, PropertyDisplayOpt
 				NestedCount = nestedCount,
 				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
 				Properties = showProperties && variant.Schema is not null
-					? childBuilder.BuildPropertyList(variant.Schema, optionId, isRequest, depth + 1, newAncestors)
+					? childBuilder.BuildPropertyList(variant.Schema, optionId, isRequest, depth + 1, newAncestors) ?? new ApiPropertyList([])
 					: null
 			});
 		}

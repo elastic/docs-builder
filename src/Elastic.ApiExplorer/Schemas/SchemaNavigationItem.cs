@@ -17,7 +17,8 @@ public record ApiSchema(string SchemaId, string DisplayName, string Category, IO
 	{
 		var viewModel = new SchemaViewModel(context)
 		{
-			Schema = this
+			Schema = this,
+			Page = SchemaPageModel.Create(this, context)
 		};
 		var slice = SchemaView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

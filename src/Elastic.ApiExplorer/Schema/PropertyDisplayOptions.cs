@@ -8,6 +8,18 @@ using Microsoft.AspNetCore.Html;
 namespace Elastic.ApiExplorer.Schema;
 
 /// <summary>
+/// Controls how property sections collapse/expand by default.
+/// </summary>
+public enum CollapseMode
+{
+	/// <summary>Properties always start collapsed when toggle is shown (OperationView behavior).</summary>
+	AlwaysCollapsed,
+
+	/// <summary>Depth-based: depth 0 collapsed, deeper levels expand if less than 5 properties (SchemaView behavior).</summary>
+	DepthBased
+}
+
+/// <summary>
 /// Page-level display settings consumed by <see cref="ApiPropertyTreeBuilder"/>; views never see this.
 /// </summary>
 public record PropertyDisplayOptions

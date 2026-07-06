@@ -41,11 +41,8 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 {
 	public required ApiOperation Operation { get; init; }
 
-	/// <summary>
-	/// Code samples parsed from the x-codeSamples extension, ordered with Console first.
-	/// Populated during <see cref="GetTocItems"/>, which runs before the template body.
-	/// </summary>
-	public IReadOnlyList<CodeSample> CodeSamples { get; private set; } = [];
+	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
+	public required OperationPageModel Page { get; init; }
 
 	public IReadOnlyList<string>? RequiredAuthItems =>
 		OpenApiXReqAuthParser.TryGetPrerequisiteLines(
@@ -57,8 +54,6 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
 	{
-		CodeSamples = ParseCodeSamples(Operation.Operation);
-
 		var operation = Operation.Operation;
 		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
 
@@ -68,8 +63,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (!string.IsNullOrWhiteSpace(operation.Description))
 			tocItems.Add(new ApiTocItem("Description", "description"));
 
-		var queryParams = operation.Parameters?.Where(p => p.In == ParameterLocation.Query).ToArray() ?? [];
-		if (queryParams.Length > 0)
+		if (Page.QueryParameters.Count > 0)
 			tocItems.Add(new ApiTocItem("Query String Parameters", "query-params"));
 
 		if (operation.RequestBody is not null)
@@ -78,18 +72,13 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (operation.Responses is { Count: > 0 })
 			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
 
-		if (CodeSamples.Count > 0)
+		if (Page.CodeSamples.Count > 0)
 			tocItems.Add(new ApiTocItem("Code Examples", "code-examples"));
 
-		// Request body examples (skip when single example duplicates code samples)
-		var reqContent = operation.RequestBody?.Content?.FirstOrDefault().Value;
-		if (reqContent?.Examples is { Count: > 0 } && !(reqContent.Examples.Count == 1 && CodeSamples.Count > 0))
+		if (Page.ShowRequestExamples)
 			tocItems.Add(new ApiTocItem("Request Examples", "request-examples"));
 
-		// Response examples
-		var successResp = operation.Responses?.FirstOrDefault(r => r.Key.StartsWith('2')).Value;
-		var respContent = successResp?.Content?.FirstOrDefault().Value;
-		if (respContent?.Examples is { Count: > 0 })
+		if (Page.ShowResponseExamples)
 			tocItems.Add(new ApiTocItem("Response Examples", "response-examples"));
 
 		return tocItems;

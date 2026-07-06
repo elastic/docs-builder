@@ -1,0 +1,7 @@
+@inherits RazorSlice<IReadOnlyList<Elastic.ApiExplorer.Schema.ConstraintDisplay>>
+@{
+	if (Model.Count == 0)
+	{
+		return;
+	}
+}<dd class="validation-constraints"><span class="constraints-label">Constraints:</span>@foreach (var c in Model){<span class="constraint">@c.Text@if (c.Code != null){<code>@c.Code</code>}</span>}</dd>
