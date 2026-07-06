@@ -236,6 +236,9 @@ bundle:
   # repo: elasticsearch
   # Optional: default GitHub owner applied to all profiles that do not specify their own.
   # owner: elastic
+  # Optional: branch whose CDN changelog pool (changelog/{org}/{repo}/{branch}/...) is sourced from when
+  # bundling entries from the CDN. Defaults to "main" when unset. Can be overridden per profile.
+  # branch: main
   # Optional: control auto-population of release-date for all profiles by default.
   # When true (default), auto-populate release dates. Profiles can override this setting.
   # release_dates: true

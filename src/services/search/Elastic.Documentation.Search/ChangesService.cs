@@ -7,9 +7,9 @@ using System.Text;
 using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search.Common;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.Logging;
-using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Internal.Search.DocumentationDocument>;
+using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 

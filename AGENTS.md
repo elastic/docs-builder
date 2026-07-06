@@ -8,6 +8,8 @@ Elastic's documentation build toolchain. Processes Markdown from multiple repos 
 |---|---|
 | `src/Elastic.Markdown/` | Core Markdown parser and Myst directive/role engine |
 | `src/tooling/docs-builder/` | CLI — entry point `Program.cs`, commands in `Commands/` |
+| `src/tooling/essc/` | AOT CLI indexing elastic.co content (Contentstack, Labs) into Elasticsearch; ships as `ghcr.io/elastic/website-search-essc` |
+| `src/services/search/Elastic.Documentation.Search.Contract/` | Shared search document/mapping/API contract used by docs search and essc |
 | `src/Elastic.Documentation.Site/` | Frontend (TypeScript · React · Parcel) |
 | `src/Elastic.Documentation.Configuration/` | YAML config schema and loading |
 | `src/Elastic.Documentation.Navigation/` | Nav tree assembly and validation |

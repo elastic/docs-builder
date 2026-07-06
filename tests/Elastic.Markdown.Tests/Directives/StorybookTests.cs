@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Storybook;
 
@@ -108,6 +109,67 @@ public class StorybookInlineIdTests(ITestOutputHelper output) : StorybookRegistr
 		Html.Should().Contain("https://fonts.googleapis.com");
 		Html.Should().NotContain("kibana:shared_ux:ai-components-aibutton--default");
 	}
+}
+
+/// <summary>Deterministic <see cref="IEnvironmentVariables"/> so storybook interpolation tests don't depend on the host shell.</summary>
+internal sealed class TestEnvironmentVariables : IEnvironmentVariables
+{
+	private readonly Dictionary<string, string?> _variables = [with(StringComparer.Ordinal)];
+
+	public string? this[string name]
+	{
+		set => _variables[name] = value;
+	}
+
+	public string? GetEnvironmentVariable(string name) => _variables.GetValueOrDefault(name);
+
+	public bool IsRunningOnCI => false;
+}
+
+public class StorybookInterpolatedRegistryTests(ITestOutputHelper output) : StorybookRegistryTest(output,
+"""
+:::{storybook}
+:id: kibana:shared_ux:ai-components-aibutton--default
+:::
+"""
+)
+{
+	protected override IEnvironmentVariables? GetEnvironment() => new TestEnvironmentVariables();
+
+	protected override string? GetDocsetExtraYaml() =>
+"""
+storybook:
+  registry: ${KIBANA_STORYBOOK_REGISTRY:-docs_registry.json}
+""";
+
+	[Fact]
+	public void ResolvesDefaultWhenEnvironmentVariableUnset() =>
+		Block!.StoryId.Should().Be("ai-components-aibutton--default");
+}
+
+public class StorybookDisallowedRegistryVariableTests(ITestOutputHelper output) : StorybookRegistryTest(output,
+"""
+:::{storybook}
+:id: kibana:shared_ux:ai-components-aibutton--default
+:::
+"""
+)
+{
+	// A disallowed variable must not be read even when present in the environment.
+	protected override IEnvironmentVariables? GetEnvironment() =>
+		new TestEnvironmentVariables { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" };
+
+	protected override string? GetDocsetExtraYaml() =>
+"""
+storybook:
+  registry: ${AWS_SECRET_ACCESS_KEY:-docs_registry.json}
+""";
+
+	[Fact]
+	public void WarnsAndLeavesExpressionLiteral() =>
+		Collector.Diagnostics.Should().Contain(d =>
+			d.Severity == Severity.Warning
+			&& d.Message.Contains("not allow-listed for interpolation"));
 }
 
 public class StorybookStructuredReferenceTests(ITestOutputHelper output) : StorybookRegistryTest(output,

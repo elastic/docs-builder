@@ -5,7 +5,7 @@
 using System.Globalization;
 using Elastic.Clients.Elasticsearch.Core.Explain;
 using Elastic.Clients.Elasticsearch.QueryDsl;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 
 namespace Elastic.Documentation.Search.Diagnostics;
 

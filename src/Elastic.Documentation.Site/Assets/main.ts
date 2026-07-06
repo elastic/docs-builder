@@ -12,7 +12,16 @@ import { initNavV2 } from './pages-nav-v2'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
-import { logError } from './telemetry/logging'
+import { logError, logInfo } from './telemetry/logging'
+import {
+    ATTR_CTA_NAME,
+    ATTR_CTA_URL,
+    ATTR_CTA_LABEL,
+    ATTR_CTA_LOCATION,
+    ATTR_EVENT_NAME,
+    ATTR_URL_PATH,
+    ATTR_URL_FULL,
+} from './telemetry/semconv'
 import { initTocNav } from './toc-nav'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
@@ -138,11 +147,55 @@ function initNavAuto() {
     }
 }
 
+// Attributes shared by cta_viewed and cta_clicked so the two are directly comparable (CTR).
+function ctaAttributes(cta: HTMLAnchorElement) {
+    return {
+        [ATTR_CTA_NAME]: cta.dataset.cta ?? '',
+        [ATTR_CTA_URL]: cta.dataset.ctaUrl ?? '',
+        [ATTR_CTA_LABEL]: cta.dataset.ctaLabel ?? '',
+        [ATTR_CTA_LOCATION]: cta.dataset.ctaLocation ?? '',
+        [ATTR_URL_PATH]: window.location.pathname,
+        [ATTR_URL_FULL]: window.location.href,
+    }
+}
+
+// Emit a CTA event: event.name mirrors the body so records can be filtered by
+// exact keyword (attributes.event.name) instead of a text match on body.
+function logCtaEvent(eventName: string, cta: HTMLAnchorElement) {
+    logInfo(eventName, {
+        [ATTR_EVENT_NAME]: eventName,
+        ...ctaAttributes(cta),
+    })
+}
+
+let ctaImpressionObserver: IntersectionObserver | null = null
+
+// Fires 'cta_viewed' the first time a CTA becomes at least half visible, then stops
+// observing it (one impression per page view). The observer is created once and
+// reused across htmx swaps; re-observing an already-observed element is a no-op per
+// spec, so this only needs to (re-)register CTAs that are new since the last swap.
+function initCtaImpressions() {
+    ctaImpressionObserver ??= new IntersectionObserver(
+        (entries, observer) => {
+            for (const entry of entries) {
+                if (!entry.isIntersecting) continue
+                logCtaEvent('cta_viewed', entry.target as HTMLAnchorElement)
+                observer.unobserve(entry.target)
+            }
+        },
+        { threshold: 0.5 }
+    )
+    $$optional('a[data-cta]').forEach((cta) =>
+        ctaImpressionObserver?.observe(cta)
+    )
+}
+
 // htmx defers the initial htmx:load to setTimeout(0); prime V2 sidebar on first paint so isolated serve shows behaviour before that tick.
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
         ['initMath', initMath],
         ['initMermaid', initMermaid],
+        ['initCtaImpressions', initCtaImpressions],
     ])
     const v2Nav = document.querySelector<HTMLElement>('[data-nav-v2]')
     if (v2Nav) {
@@ -166,7 +219,28 @@ document.addEventListener('htmx:load', function () {
         ['initImageCarousel', initImageCarousel],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
+        ['initCtaImpressions', initCtaImpressions],
     ])
+})
+
+// Delegated listeners: survive htmx swaps without needing re-init, unlike the
+// runInitSteps above which bind directly to elements that get replaced.
+// logInfo's export survives this same-tab navigation: the batch processor flushes on
+// 'pagehide' (registered in initializeOtel) via a keepalive fetch, which browsers keep
+// alive past unload.
+function handleCtaActivation(event: MouseEvent) {
+    const cta = (event.target as HTMLElement)?.closest<HTMLAnchorElement>(
+        'a[data-cta]'
+    )
+    if (!cta) return
+    logCtaEvent('cta_clicked', cta)
+}
+document.addEventListener('click', handleCtaActivation)
+// 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
+// fire 'click' per the DOM spec - without this those opens went untracked. Button 2
+// (right-click / context menu) also fires auxclick but isn't a real engagement.
+document.addEventListener('auxclick', function (event: MouseEvent) {
+    if (event.button === 1) handleCtaActivation(event)
 })
 
 // Don't remove style tags because they are used by the elastic global nav.
