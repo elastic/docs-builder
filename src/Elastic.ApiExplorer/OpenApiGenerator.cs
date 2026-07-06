@@ -190,13 +190,7 @@ public class OpenApiGenerator(ILoggerFactory logFactory, BuildContext context, I
 		foreach (var path in openApiDocument.Paths)
 		{
 			foreach (var operation in path.Value.Operations ?? [])
-			{
-				// Use same moniker logic as OperationNavigationItem
-				var moniker = !string.IsNullOrWhiteSpace(operation.Value.OperationId)
-					? operation.Value.OperationId
-					: path.Key.Replace("}", "").Replace("{", "").Replace('/', '-');
-				_ = operationMonikers.Add(moniker);
-			}
+				_ = operationMonikers.Add(ApiUrlBuilder.OperationMoniker(operation.Value.OperationId, path.Key));
 		}
 
 		// Add intro and outro markdown pages if available
