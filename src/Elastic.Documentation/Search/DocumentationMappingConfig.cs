@@ -29,7 +29,7 @@ namespace Elastic.Documentation.Search;
 )]
 [AiEnrichment<DocumentationDocument>(
 	Role = "Expert technical writer creating search metadata for Elastic documentation (Elasticsearch, Kibana, Beats, Logstash). Audience: developers, DevOps, data engineers.",
-	MatchField = "url",
+	MatchField = "path",
 	IndexVariant = "Semantic"
 )]
 public static partial class DocumentationMappingContext;

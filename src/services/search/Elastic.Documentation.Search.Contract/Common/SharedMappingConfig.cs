@@ -34,31 +34,45 @@ public static class SharedMappingConfig
 			.MultiField("completion", mf => mf.SearchAsYouType()))
 		.SearchTitle(f => f
 			.MultiField("completion", mf => mf.SearchAsYouType()))
-		.Url(f => f
+		.Path(f => f
 			.MultiField("match", mf => mf.Text())
 			.MultiField("prefix", mf => mf.Text().Analyzer(HierarchyAnalyzer)));
 
 	private static MappingsBuilder<T> AddNavigationFields<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase => m
-		.NavigationSection(f => f.Normalizer(KeywordNormalizer).CopyTo("content_tags"))
-		.AddField("navigation_depth", f => f.RankFeature().PositiveScoreImpact(false))
-		.AddField("navigation_table_of_contents", f => f.RankFeature().PositiveScoreImpact(false))
+		.Section(f => f.Normalizer(KeywordNormalizer).CopyTo("tags"))
+		.AddProperty("navigation.depth", f => f.RankFeature().PositiveScoreImpact(false))
+		.AddProperty("navigation.table_of_contents", f => f.RankFeature().PositiveScoreImpact(false))
 		.AiAutocompleteQuestions(f => f.MultiField("completion", mf => mf.SearchAsYouType()));
 
-	// content_type/navigation_section are set on every doc — copy_to routes both into a single
-	// content_tags field so a query term naming a type/section ("labs", "blog", "api") rises by
-	// native BM25 with no client-side term->type re-promotion rules.
+	// content_type/section are set on every doc — copy_to routes both into a single tags field
+	// so a query term naming a type/section ("labs", "blog", "api") rises by native BM25 with no
+	// client-side term->type re-promotion rules.
 	private static MappingsBuilder<T> AddContentTagsField<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase => m
-		.ContentType(f => f.CopyTo("content_tags"))
-		.AddField("content_tags", f => f.Text().Analyzer(ContentTagsAnalyzer));
+		.ContentType(f => f.CopyTo("tags"))
+		.AddField("tags", f => f.Text().Analyzer(ContentTagsAnalyzer));
 
 	private static MappingsBuilder<T> AddSemanticFields<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase => m
 		// All parents are [Text] leaf fields — AddField places the semantic child under "fields"
 		.AddField("title.semantic_text", f => f.SemanticText())
-		.AddField("abstract.semantic_text", f => f.SemanticText())
+		.AddField("summary.semantic_text", f => f.SemanticText())
 		.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText())
 		.AddField("ai_questions.semantic_text", f => f.SemanticText())
 		.AddField("ai_use_cases.semantic_text", f => f.SemanticText())
-		.AddField("stripped_body.semantic_text", f => f.SemanticText());
+		.AddField("body.semantic_text", f => f.SemanticText());
+
+	/// <summary>
+	/// Elasticsearch <c>alias</c> fields for pre-restructure flat field names, so in-flight consumers
+	/// (dashboards, saved searches, external queries) resolve during rollout without changes.
+	/// Remove once all indices are rebuilt under the new shape and no consumer queries the old names.
+	/// </summary>
+	private static MappingsBuilder<T> AddLegacyFieldAliases<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase => m
+		.AddField("url", f => f.Alias("path"))
+		.AddField("abstract", f => f.Alias("summary"))
+		.AddField("navigation_section", f => f.Alias("section"))
+		.AddField("content_tags", f => f.Alias("tags"))
+		.AddField("stripped_body", f => f.Alias("body"))
+		.AddField("navigation_depth", f => f.Alias("navigation.depth"))
+		.AddField("navigation_table_of_contents", f => f.Alias("navigation.table_of_contents"));
 
 	/// <summary>
 	/// Full standard field set shared by Site, Labs, Guide, and WebsiteSearch lexical/semantic indices.
@@ -71,6 +85,7 @@ public static class SharedMappingConfig
 			.AddNavigationFields()
 			.AddContentTagsField()
 			.AddCommonTitleMappings()
+			.AddLegacyFieldAliases()
 			.SearchTitle(f => f
 				.Analyzer(SynonymsFixedAnalyzer)
 				.SearchAnalyzer(SynonymsAnalyzer)
@@ -90,16 +105,12 @@ public static class SharedMappingConfig
 			// search_as_you_type only — no semantic_text here; this field is used by downstream typeahead.
 			.AiSearchQuery(f => f
 				.MultiField("completion", mf => mf.SearchAsYouType()))
-			.Abstract(f => f
+			.Summary(f => f
 				.Analyzer(SynonymsFixedAnalyzer)
 				.SearchAnalyzer(SynonymsAnalyzer))
 			.Headings(f => f
 				.Analyzer(SynonymsFixedAnalyzer)
 				.SearchAnalyzer(SynonymsAnalyzer))
-			.StrippedBody(f => f
-				.Analyzer(SynonymsFixedAnalyzer)
-				.SearchAnalyzer(SynonymsAnalyzer)
-				.TermVector("with_positions_offsets"))
 			.AiRagOptimizedSummary(f => f
 				.Analyzer(SynonymsFixedAnalyzer)
 				.SearchAnalyzer(SynonymsAnalyzer))
@@ -119,6 +130,9 @@ public static class SharedMappingConfig
 					.IndexOptions("offsets"))
 				.MultiField("suggest", mf => mf.Completion()))
 			.Body(f => f
+				.Analyzer(SynonymsFixedAnalyzer)
+				.SearchAnalyzer(SynonymsAnalyzer)
+				.TermVector("with_positions_offsets")
 				.MultiField("en", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.English))
 				.MultiField("de", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.German))
 				.MultiField("fr", mf => mf.Text().Analyzer(BuiltInAnalysis.Analyzers.Language.French))

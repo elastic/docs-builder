@@ -201,7 +201,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			foreach (var (doc, responseItem) in items)
 			{
 				_collector.EmitGlobalError(
-					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Url}");
+					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Path}");
 			}
 		};
 	}

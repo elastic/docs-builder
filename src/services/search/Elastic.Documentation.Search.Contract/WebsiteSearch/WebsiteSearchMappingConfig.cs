@@ -30,7 +30,7 @@ public class WebsiteSearchLexicalConfig : IConfigureElasticsearch<WebsiteSearchD
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
-		mappings.AddSearchDocumentMappings();
+		mappings.AddSearchDocumentMappings().AddSiteMappings();
 }
 
 public class WebsiteSearchSemanticConfig : IConfigureElasticsearch<WebsiteSearchDocument>
@@ -40,5 +40,5 @@ public class WebsiteSearchSemanticConfig : IConfigureElasticsearch<WebsiteSearch
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
-		mappings.AddSearchDocumentMappings(semantic: true);
+		mappings.AddSearchDocumentMappings(semantic: true).AddSiteMappings();
 }

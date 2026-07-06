@@ -29,10 +29,15 @@ public static class DocumentationMappingExtensions
 			.AddProperty("applies_to.lifecycle", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.version", f => f.Version())
 			// parents is an object array — AddProperty places sub-fields under "properties".
-			.AddProperty("parents.url", f => f.Keyword()
+			.AddProperty("parents.path", f => f.Keyword()
 				.MultiField("match", mf => mf.Text())
 				.MultiField("prefix", mf => mf.Text().Analyzer(SharedMappingConfig.HierarchyAnalyzer)))
 			.AddProperty("parents.title", f => f.Text()
 				.SearchAnalyzer(SharedMappingConfig.SynonymsAnalyzer)
-				.MultiField("keyword", mf => mf.Keyword()));
+				.MultiField("keyword", mf => mf.Keyword()))
+			// Alias for the pre-rename field name — remove once all indices are rebuilt under the
+			// new `parents.path` shape and no consumer queries the old name. "parents" is an
+			// object array, so the alias sibling goes in its "properties" container (AddProperty),
+			// not "fields" (AddField requires a leaf-typed parent).
+			.AddProperty("parents.url", f => f.Alias("parents.path"));
 }

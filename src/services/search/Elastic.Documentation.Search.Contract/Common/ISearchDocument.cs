@@ -26,6 +26,6 @@ public interface ISearchDocument
 	string SearchTitle { get; }
 	string Type { get; }
 	string ContentType { get; }
-	string Url { get; }
+	string Path { get; }
 	string Hash { get; }
 }

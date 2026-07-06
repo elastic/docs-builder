@@ -46,11 +46,11 @@ public class OpenApiDocumentExporterTests
 		var documents = new List<(string Url, string Source)>();
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current.CancellationToken))
 		{
-			if (!string.IsNullOrEmpty(doc.Url))
+			if (!string.IsNullOrEmpty(doc.Path))
 			{
 				// Determine source from URL
-				var source = doc.Url.Contains("/elasticsearch/") ? "elasticsearch" : "kibana";
-				documents.Add((doc.Url, source));
+				var source = doc.Path.Contains("/elasticsearch/") ? "elasticsearch" : "kibana";
+				documents.Add((doc.Path, source));
 			}
 		}
 

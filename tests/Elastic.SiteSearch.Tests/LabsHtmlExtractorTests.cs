@@ -89,7 +89,7 @@ public class LabsHtmlExtractorTests
 , TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
-		doc.Url.Should().Be("/search-labs/blog/elasticsearch-synonyms-ui");
+		doc.Path.Should().Be("/search-labs/blog/elasticsearch-synonyms-ui");
 	}
 
 	[Fact]
@@ -99,7 +99,7 @@ public class LabsHtmlExtractorTests
 , TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
-		doc.Url.Should().Be("/search-labs/blog/post");
+		doc.Path.Should().Be("/search-labs/blog/post");
 	}
 
 	[Fact]
@@ -230,7 +230,7 @@ public class LabsHtmlExtractorTests
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Improving the ES|QL editor experience in Kibana");
 		doc.SearchTitle.Should().Be("Improving the ES|QL editor experience in Kibana - Search Labs Blog");
-		doc.OgTitle.Should().Be("ES|QL Kibana: The ES|QL editor experience in Kibana");
+		doc.Og.Title.Should().Be("ES|QL Kibana: The ES|QL editor experience in Kibana");
 	}
 
 	[Fact]
@@ -240,9 +240,9 @@ public class LabsHtmlExtractorTests
 , TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
-		doc.Abstract.Should().StartWith("With the new ES|QL language becoming GA");
-		doc.Abstract.Should().NotContain("[");
-		doc.Abstract.Should().NotContain("]");
+		doc.Summary.Should().StartWith("With the new ES|QL language becoming GA");
+		doc.Summary.Should().NotContain("[");
+		doc.Summary.Should().NotContain("]");
 	}
 
 	[Fact]
@@ -258,7 +258,7 @@ public class LabsHtmlExtractorTests
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Search Labs");
 		doc.SearchTitle.Should().Be("Search Labs");
-		doc.NavigationTableOfContents.Should().Be(10); // depth <= 1 → 10
+		doc.Navigation.TableOfContents.Should().Be(10); // depth <= 1 → 10
 	}
 
 	private const string TagListingHtml = """
@@ -291,7 +291,7 @@ public class LabsHtmlExtractorTests
 		doc.Description.Should().Be(
 			"Recent Observability Labs articles tagged google-cloud. A curated listing of Observability " +
 			"Labs blog posts, tutorials, and articles about google-cloud.");
-		doc.Abstract.Should().Be(doc.Description);
+		doc.Summary.Should().Be(doc.Description);
 		doc.Body.Should().BeEmpty();
 		doc.Headings.Should().BeEmpty();
 	}
@@ -314,7 +314,7 @@ public class LabsHtmlExtractorTests
 
 		doc.Should().NotBeNull();
 		// 4 URL tokens (observability-labs, blog, tag, google-cloud) → depth > 1 → 100
-		doc.NavigationTableOfContents.Should().Be(100);
+		doc.Navigation.TableOfContents.Should().Be(100);
 	}
 
 	[Fact]

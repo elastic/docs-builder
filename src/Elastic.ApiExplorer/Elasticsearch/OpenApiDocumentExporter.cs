@@ -175,23 +175,20 @@ public partial class OpenApiDocumentExporter(
 				yield return new DocumentationDocument
 				{
 					ContentType = "api",
-					Url = url,
+					Path = url,
 					Title = title,
 					SearchTitle = searchTitle,
 					Description = description,
 					Body = body,
-					StrippedBody = body,
 					Headings = headings,
 					Links = [],
 					Applies = applies?.ToAppliesTo(),
 					Parents =
 					[
-						new ParentDocument { Title = "API Reference", Url = "/docs/api" },
-						new ParentDocument { Title = product, Url = $"/docs/api/doc/{product}" }
+						new ParentDocument { Title = "API Reference", Path = "/docs/api" },
+						new ParentDocument { Title = product, Path = $"/docs/api/doc/{product}" }
 					],
-					Product = inference?.Product is not null
-						? new IndexedProduct { Id = inference.Product.Id, Repository = inference.Repository }
-						: null,
+					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
 						? inference.RelatedProducts.Select(p => new IndexedProduct
 						{

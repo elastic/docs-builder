@@ -46,7 +46,7 @@ internal static partial class ContentStackMapper
 
 		var abstractText = CreateAbstract(strippedBody, description);
 
-		var navigationSection = GetNavigationSection(url);
+		var navigationSection = GetNavigationSection(url, item.ContentTypeUid);
 		var language = GetLanguageFromUrl(url);
 		var publishedDate = GetPublishedDate(data);
 		var modifiedDate = ParseDate(GetString(data, "updated_at"));
@@ -55,29 +55,33 @@ internal static partial class ContentStackMapper
 		{
 			Title = title,
 			SearchTitle = BuildSearchTitle(title, navigationSection),
-			Url = url,
+			Path = url,
 			Hash = ComputeHash(title + strippedBody),
 			BatchIndexDate = DateTimeOffset.UtcNow,
 			LastUpdated = modifiedDate ?? publishedDate ?? DateTimeOffset.UtcNow,
 			Description = description,
 			Headings = headings,
 			Body = strippedBody,
-			StrippedBody = strippedBody,
-			Abstract = abstractText,
-			NavigationSection = navigationSection,
+			Summary = abstractText,
+			Section = navigationSection,
 			ContentTier = ContentTierClassifier.FromNavigationSection(navigationSection),
 			Translated = true,
-			// navigation_depth/navigation_table_of_contents are rank features with positive_score_impact:false,
+			// navigation.depth/navigation.table_of_contents are rank features with positive_score_impact:false,
 			// designed for hierarchical docs: lower values score higher.
-			NavigationDepth = ComputeNavigationDepth(url) + 1,
-			NavigationTableOfContents = 100,
-			Language = language,
+			Navigation = new NavigationMetrics
+			{
+				Depth = ComputeNavigationDepth(url) + 1,
+				TableOfContents = 100
+			},
+			Locale = language,
 			PublishedDate = publishedDate,
 			ModifiedDate = modifiedDate,
-			OgTitle = GetSeoString(data, "seo_title_l10n") ?? GetSeoString(data, "seo_title"),
-			OgDescription = GetSeoString(data, "seo_description_l10n") ?? GetSeoString(data, "seo_description"),
-			OgImage = GetSeoString(data, "seo_image"),
-			EnrichmentKey = item.ContentTypeUid
+			Og = new OpenGraphData
+			{
+				Title = GetSeoString(data, "seo_title_l10n") ?? GetSeoString(data, "seo_title"),
+				Description = GetSeoString(data, "seo_description_l10n") ?? GetSeoString(data, "seo_description"),
+				Image = GetSeoString(data, "seo_image")
+			}
 		};
 	}
 
@@ -314,7 +318,28 @@ internal static partial class ContentStackMapper
 		return path.Split('/', StringSplitOptions.RemoveEmptyEntries).Length;
 	}
 
-	internal static string GetNavigationSection(string url)
+	/// <summary>
+	/// ContentStack's <c>ContentTypeUid</c> (CMS schema/template, e.g. "product_versions", "forms",
+	/// "faq") is a finer-grained, orthogonal signal to the URL. It has no dedicated bucket of its own
+	/// on <see cref="SiteDocument.Section"/> — instead it fills in a better answer than the generic
+	/// "marketing" catch-all for content types the URL heuristic below can't otherwise classify.
+	/// URL-matched categories always win where the URL is already specific enough (no behavior change
+	/// there); this only improves classification for the entries that would previously all collapse
+	/// into "marketing" regardless of what kind of page they actually are.
+	/// </summary>
+	private static string? GetSectionFromContentType(string? contentTypeUid) => contentTypeUid switch
+	{
+		"product_versions" or "product_detail" or "default_detail" => "product",
+		"blog_v2" or "blog_overview" => "blog",
+		"videos" => "demo",
+		"forms" or "use_cases" => "marketing",
+		"faq" => "reference",
+		"agreements" => "legal",
+		"customer_tile" => "customer-story",
+		_ => null
+	};
+
+	internal static string GetNavigationSection(string url, string? contentTypeUid = null)
 	{
 		if (url.Contains("/blog/", StringComparison.OrdinalIgnoreCase))
 			return "blog";
@@ -356,7 +381,7 @@ internal static partial class ContentStackMapper
 			return "product";
 		if (url.Contains("/observability", StringComparison.OrdinalIgnoreCase))
 			return "product";
-		return "marketing";
+		return GetSectionFromContentType(contentTypeUid) ?? "marketing";
 	}
 
 	private static string BuildSearchTitle(string title, string navigationSection)

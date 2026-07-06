@@ -204,8 +204,8 @@ internal sealed class LabsDocumentExporter : IDocumentExporter<LabsDocument>, ID
 			_ = Interlocked.Add(ref _rejectedCount, items.Count);
 			foreach (var (doc, responseItem) in items)
 			{
-				_logger.LogError("[{Label}] Server rejection: {Status} {Type} {Reason} for {Url}",
-					label, responseItem.Status, responseItem.Error?.Type, responseItem.Error?.Reason, doc.Url);
+				_logger.LogError("[{Label}] Server rejection: {Status} {Type} {Reason} for {Path}",
+					label, responseItem.Status, responseItem.Error?.Type, responseItem.Error?.Reason, doc.Path);
 			}
 		};
 	}

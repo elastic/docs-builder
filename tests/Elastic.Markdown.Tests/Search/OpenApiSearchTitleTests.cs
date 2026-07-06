@@ -23,7 +23,7 @@ public class OpenApiSearchTitleTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "api",
-			Url = "/docs/api/doc/elasticsearch/operation/operation-_bulk",
+			Path = "/docs/api/doc/elasticsearch/operation/operation-_bulk",
 			Title = "Bulk index or delete documents - Elasticsearch API",
 			SearchTitle = "Bulk index or delete documents - Elasticsearch API - _bulk"
 		};
@@ -39,7 +39,7 @@ public class OpenApiSearchTitleTests
 	{
 		var doc = new DocumentationDocument
 		{
-			Url = "/docs/reference/elasticsearch/settings",
+			Path = "/docs/reference/elasticsearch/settings",
 			Title = "Settings",
 			SearchTitle = "Settings"
 		};

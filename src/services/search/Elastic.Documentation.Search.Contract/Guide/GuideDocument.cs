@@ -27,12 +27,7 @@ public record GuideDocument : SearchDocumentBase, ICrawlDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? Version { get; set; }
 
-	[Keyword(Index = false)]
-	[JsonPropertyName("http_etag")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? HttpEtag { get; set; }
-
-	[JsonPropertyName("http_last_modified")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public DateTimeOffset? HttpLastModified { get; set; }
+	[Object]
+	[JsonPropertyName("http")]
+	public HttpMetadata Http { get; set; } = new();
 }

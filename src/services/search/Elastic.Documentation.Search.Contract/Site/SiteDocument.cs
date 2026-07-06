@@ -17,8 +17,8 @@ public record SiteDocument : SearchDocumentBase, ICrawlDocument
 	public override string Type { get; } = "site";
 
 	[Keyword]
-	[JsonPropertyName("language")]
-	public string Language { get; set; } = "en";
+	[JsonPropertyName("locale")]
+	public string Locale { get; set; } = "en";
 
 	[Keyword]
 	[JsonPropertyName("author")]
@@ -33,42 +33,15 @@ public record SiteDocument : SearchDocumentBase, ICrawlDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public DateTimeOffset? ModifiedDate { get; set; }
 
-	[Text]
-	[JsonPropertyName("og_title")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? OgTitle { get; set; }
+	[Object]
+	[JsonPropertyName("og")]
+	public OpenGraphData Og { get; set; } = new();
 
-	[Text]
-	[JsonPropertyName("og_description")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? OgDescription { get; set; }
+	[Object]
+	[JsonPropertyName("twitter")]
+	public TwitterCardData Twitter { get; set; } = new();
 
-	[Keyword(Index = false)]
-	[JsonPropertyName("og_image")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? OgImage { get; set; }
-
-	[Keyword(Index = false)]
-	[JsonPropertyName("twitter_image")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? TwitterImage { get; set; }
-
-	[Keyword]
-	[JsonPropertyName("twitter_card")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? TwitterCard { get; set; }
-
-	[Keyword]
-	[JsonPropertyName("enrichment_key")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? EnrichmentKey { get; set; }
-
-	[Keyword(Index = false)]
-	[JsonPropertyName("http_etag")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? HttpEtag { get; set; }
-
-	[JsonPropertyName("http_last_modified")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public DateTimeOffset? HttpLastModified { get; set; }
+	[Object]
+	[JsonPropertyName("http")]
+	public HttpMetadata Http { get; set; } = new();
 }

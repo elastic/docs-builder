@@ -43,11 +43,11 @@ public partial class NavigationSearchService(
 			Results = resp.Results.Select(item => new NavigationSearchResultItem
 			{
 				Type = item.Document.ContentType,
-				Url = item.Document.Url,
+				Url = item.Document.Path,
 				Title = item.Title,
 				Description = item.Description,
 				Parents = (item.Document.Parents ?? [])
-					.Select(p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Url })
+					.Select(p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path })
 					.ToArray(),
 				Score = item.Score
 			}).ToList()
