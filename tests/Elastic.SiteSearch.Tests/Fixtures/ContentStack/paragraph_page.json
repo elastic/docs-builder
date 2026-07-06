@@ -1,0 +1,29 @@
+{
+  "title": "Elastic Cloud Terms of Service",
+  "url": "/agreements/cloud-terms-of-service",
+  "uid": "blt000000000000006f",
+  "_version": 4,
+  "locale": "en-us",
+  "ACL": {},
+  "created_at": "2022-06-01T10:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2024-01-15T08:30:00.000Z",
+  "updated_by": "bltuser00000000002b",
+  "tags": [],
+  "main_header": {
+    "title_l10n": "Elastic Cloud Terms of Service"
+  },
+  "paragraph_l10n": "<p>These Terms of Service govern your use of Elastic Cloud services.</p><h2>1. Definitions</h2><p>\"Service\" means the Elastic Cloud hosted service provided by Elastic.</p><h2>2. Account Registration</h2><p>You must register for an account to use the Service. You agree to provide accurate information.</p>",
+  "seo": {
+    "seo_title_l10n": "Cloud Terms of Service | Elastic",
+    "seo_description_l10n": "Review the terms of service for Elastic Cloud.",
+    "seo_keywords_l10n": "terms of service, elastic cloud",
+    "seo_image": null
+  },
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2024-01-15T09:00:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}
