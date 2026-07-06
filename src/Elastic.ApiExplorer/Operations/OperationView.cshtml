@@ -1,5 +1,5 @@
 @using Elastic.ApiExplorer.Operations
-@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Operations.OperationViewModel>
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.OperationViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
