@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// Lean base record for every indexed search document. Carries fields shared by every concrete
-/// subclass (e.g. <c>DocumentationDocument</c>, <see cref="SiteDocument"/>); the
+/// subclass (e.g. <see cref="DocumentationDocument"/>, <see cref="SiteDocument"/>); the
 /// polymorphic dispatch attributes live on <see cref="ISearchDocument"/>, not here, so reads
 /// declared as <c>SearchDocumentBase</c> stay flat. Read as <c>ISearchDocument</c> if you need
 /// <c>$type</c>-driven dispatch into the concrete subtype. For a fallback-safe polymorphic read

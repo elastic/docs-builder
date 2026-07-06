@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
-using Elastic.Documentation.Search.Contract;
 using Elastic.Mapping;
 
-namespace Elastic.Documentation.Search;
+namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// Concrete document type for <c>/docs</c> pages indexed by docs-builder. Carries the docs-specific

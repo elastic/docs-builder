@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Markdown.Exporters.Elasticsearch;
 
 namespace Elastic.Markdown.Tests.Search;

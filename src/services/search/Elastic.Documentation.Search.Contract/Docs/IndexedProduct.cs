@@ -5,7 +5,7 @@
 using System.Text.Json.Serialization;
 using Elastic.Mapping;
 
-namespace Elastic.Documentation.Search;
+namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// JSON-serializable product reference embedded on <see cref="DocumentationDocument.Product"/> /

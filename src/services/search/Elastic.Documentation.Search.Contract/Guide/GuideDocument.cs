@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// Document type for legacy <c>/guide</c> documentation pages on elastic.co.
-/// Narrower than <c>DocumentationDocument</c> (no applies_to/products); narrower
+/// Narrower than <see cref="DocumentationDocument"/> (no applies_to/products); narrower
 /// language matrix than <see cref="SiteDocument"/>.
 /// </summary>
 public record GuideDocument : SearchDocumentBase, ICrawlDocument

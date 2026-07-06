@@ -9,7 +9,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.Logging;
-using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.DocumentationDocument>;
+using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.Contract.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 

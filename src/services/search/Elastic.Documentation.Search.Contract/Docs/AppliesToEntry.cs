@@ -4,7 +4,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace Elastic.Documentation.Search;
+namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// Flat wire-format entry for the <c>applies_to</c> nested array on <see cref="DocumentationDocument"/>.
