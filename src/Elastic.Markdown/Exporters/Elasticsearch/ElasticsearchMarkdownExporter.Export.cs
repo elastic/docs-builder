@@ -44,10 +44,18 @@ public partial class ElasticsearchMarkdownExporter
 	private static void AssignContentHash(DocumentationDocument doc) =>
 		doc.ContentBodyHash = ContentHash.CreateNormalized(doc.StrippedBody ?? string.Empty);
 
-	/// <summary>Internal (rather than private) so tests can assert navigation_* rank features never fall back to the contract's penalty default.</summary>
+	/// <summary>
+	/// Internal (rather than private) so tests can assert navigation_* rank features never fall back
+	/// to the contract's penalty default, and that search_title construction is correct.
+	/// </summary>
 	internal static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
 	{
-		doc.SearchTitle = CreateSearchTitle();
+		// OpenApiDocumentExporter builds its own search title, including the raw operation id
+		// (e.g. "_bulk") — CreateSearchTitle below is tuned for markdown pages and derives extra
+		// tokens from the URL by splitting on '_' among other chars, which would strip that
+		// leading underscore. Leave API docs' search_title alone.
+		if (doc.ContentType != "api")
+			doc.SearchTitle = CreateSearchTitle();
 		// if we have no navigation, initialize to 20 since rank_feature would score 0 too high
 		doc.NavigationDepth = navigationItem?.NavigationDepth ?? 20;
 		doc.NavigationTableOfContents = navigationItem switch
