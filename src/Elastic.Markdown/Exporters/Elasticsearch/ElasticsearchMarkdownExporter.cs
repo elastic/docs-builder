@@ -10,11 +10,11 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Ingest.Elasticsearch.Indices;
-using Elastic.Internal.Search.Mapping;
 using Elastic.Mapping;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
@@ -81,13 +81,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_operations = new ElasticsearchOperations(_transport, _logger, collector);
 		_contentDateEnrichment = new ContentDateEnrichment(_transport, _operations, _logger, endpoints.BuildType, endpoints.Environment);
 
-		// Keep in sync with website-search-data's IndexTimeSynonyms.Docs — these are baked into the
-		// index-time analyzer (synonyms_fixed_filter) rather than the updateable search-time set.
-		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning", "agg"];
-		var indexTimeSynonyms = _synonyms
-			.Where(s => s.Any(t => fixedSynonyms.Contains(t)))
-			.Select(s => string.Join(", ", s))
-			.ToArray();
+		// Baked into the index-time analyzer (synonyms_fixed_filter) rather than the updateable search-time set.
+		var indexTimeSynonyms = IndexTimeSynonyms.Docs;
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
 		var synonymSetName = $"docs-{_buildType}-{_environment}";
