@@ -757,7 +757,7 @@
 		display: none;
 	}
 	.hub-accordion-summary::marker {
-		content: "";
+		content: '';
 	}
 	.hub-accordion-title {
 		font-size: 1.143rem;
