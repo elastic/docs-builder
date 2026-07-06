@@ -23,7 +23,7 @@ public class IndicesCleanupPlannerTests
 			e => (IReadOnlySet<string>)e.Aliases.ToHashSet(StringComparer.OrdinalIgnoreCase),
 			StringComparer.OrdinalIgnoreCase);
 
-	[Test]
+	[Fact]
 	public void Empty_input_returns_empty_plan()
 	{
 		var plan = IndicesCleanupPlanner.Plan(Idx(), [TestEntry], keep: 2);
@@ -33,7 +33,7 @@ public class IndicesCleanupPlannerTests
 		plan.Warnings.Should().BeEmpty();
 	}
 
-	[Test]
+	[Fact]
 	public void Single_active_index_is_always_kept()
 	{
 		var indexAliases = Idx(
@@ -45,7 +45,7 @@ public class IndicesCleanupPlannerTests
 		plan.ToDelete.Should().BeEmpty();
 	}
 
-	[Test]
+	[Fact]
 	public void Active_is_newest_keep2_deletes_older_two()
 	{
 		var indexAliases = Idx(
@@ -65,7 +65,7 @@ public class IndicesCleanupPlannerTests
 		plan.ToDelete.Should().Contain(i => i.Name == "test-source.lexical-prod-2026.04.12.000000");
 	}
 
-	[Test]
+	[Fact]
 	public void Active_is_middle_keep2_is_still_retained()
 	{
 		// Active is NOT the newest — it still must survive
@@ -87,7 +87,7 @@ public class IndicesCleanupPlannerTests
 		plan.ToDelete.Should().Contain(i => i.Name == "test-source.lexical-prod-2026.04.12.000000");
 	}
 
-	[Test]
+	[Fact]
 	public void Keep1_active_counts_no_non_active_kept()
 	{
 		var indexAliases = Idx(
@@ -101,7 +101,7 @@ public class IndicesCleanupPlannerTests
 		plan.ToDelete.Should().HaveCount(2);
 	}
 
-	[Test]
+	[Fact]
 	public void Indices_with_non_date_suffix_are_skipped_with_warning()
 	{
 		var indexAliases = Idx(
@@ -116,7 +116,7 @@ public class IndicesCleanupPlannerTests
 		plan.ToDelete.Should().BeEmpty();
 	}
 
-	[Test]
+	[Fact]
 	public void Multiple_groups_are_planned_independently()
 	{
 		var lexicalEntry = new AliasEntry("test-source", "lexical", "prod", "test-source.lexical-prod-latest", "test-source.lexical-prod-*");
@@ -139,7 +139,7 @@ public class IndicesCleanupPlannerTests
 		plan.ToDelete.Should().Contain(i => i.Name == "test-source.semantic-prod-2026.04.13.000000");
 	}
 
-	[Test]
+	[Fact]
 	public void Unrelated_indices_in_response_are_ignored()
 	{
 		var indexAliases = Idx(
@@ -153,7 +153,7 @@ public class IndicesCleanupPlannerTests
 		plan.ToDelete.Should().BeEmpty();
 	}
 
-	[Test]
+	[Fact]
 	public void BuildAliasEntries_returns_ten_entries()
 	{
 		var entries = IndicesCleanupPlanner.BuildAliasEntries("public", "prod");
@@ -170,7 +170,7 @@ public class IndicesCleanupPlannerTests
 		entries.Should().OnlyContain(e => e.IndexPattern.EndsWith("-*"));
 	}
 
-	[Test]
+	[Fact]
 	public void PageAlias_on_older_index_keeps_it_regardless_of_keep_budget()
 	{
 		// ws-content-prod points to an older index that -latest does not; it must not be deleted
@@ -192,7 +192,7 @@ public class IndicesCleanupPlannerTests
 		plan.ToDelete.Should().ContainSingle(i => i.Name == "website-search.semantic-prod-2026.04.13.000000");
 	}
 
-	[Test]
+	[Fact]
 	public void PageAlias_pointing_to_different_index_than_semantic_latest_emits_warning()
 	{
 		var semanticEntry = new AliasEntry("website-search", "semantic", "prod",

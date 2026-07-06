@@ -2,24 +2,10 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Elastic.SiteSearch.Tests</RootNamespace>
-    <NoWarn>CA1707</NoWarn>
-    <!-- TUnit runs on Microsoft.Testing.Platform, not VSTest; opts out of the xunit packages
-         injected by tests/Directory.Build.props. IsTestProject=false keeps solution-wide
-         `dotnet test` (VSTest) from erroring on this project — it runs via `dotnet run` instead
-         (see runTests in build/Targets.fs). -->
-    <UseTUnit>true</UseTUnit>
-    <IsTestProject>false</IsTestProject>
-    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
-    <DisableTestingPlatformServerCapability>false</DisableTestingPlatformServerCapability>
-    <!-- Solution-wide `dotnet test` (VSTest mode) would hit MTP's hard error target; mask the
-         MTP application flag for that invocation only (VSTestSessionCorrelationId is set by the
-         dotnet test CLI). Execution happens via `dotnet run` instead. -->
-    <IsTestingPlatformApplication Condition="'$(VSTestSessionCorrelationId)' != ''">false</IsTestingPlatformApplication>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AutoBogus" />
     <PackageReference Include="Elastic.Mapping" />
-    <PackageReference Include="TUnit" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\services\search\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />

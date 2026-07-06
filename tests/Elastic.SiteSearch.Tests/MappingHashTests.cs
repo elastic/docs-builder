@@ -152,48 +152,48 @@ public class MappingHashTests
 {
 	// ── Baseline: re-registering the same type + config produces the same hash ─
 
-	[Test]
+	[Fact]
 	public void SiteDocument_SameConfig_ProducesSameHash() =>
 		TestSiteMappingContext.SiteDocument.Hash
 			.Should().Be(SiteMappingContext.SiteDocument.Hash);
 
-	[Test]
+	[Fact]
 	public void GuideDocument_SameConfig_ProducesSameHash() =>
 		TestGuideMappingContext.GuideDocument.Hash
 			.Should().Be(GuideMappingContext.GuideDocument.Hash);
 
 	// ── Adding a keyword field changes the hash ───────────────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_ExtraField_ChangesHash() =>
 		SiteExtraFieldMappingContext.SiteDocumentWithExtraField.Hash
 			.Should().NotBe(SiteMappingContext.SiteDocument.Hash);
 
-	[Test]
+	[Fact]
 	public void GuideDocument_ExtraField_ChangesHash() =>
 		GuideExtraFieldMappingContext.GuideDocumentWithExtraField.Hash
 			.Should().NotBe(GuideMappingContext.GuideDocument.Hash);
 
 	// ── Adding an AI field changes the hash ───────────────────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_ExtraAiField_ChangesHash() =>
 		SiteExtraAiFieldMappingContext.SiteDocumentWithExtraAiField.Hash
 			.Should().NotBe(SiteMappingContext.SiteDocument.Hash);
 
-	[Test]
+	[Fact]
 	public void GuideDocument_ExtraAiField_ChangesHash() =>
 		GuideExtraAiFieldMappingContext.GuideDocumentWithExtraAiField.Hash
 			.Should().NotBe(GuideMappingContext.GuideDocument.Hash);
 
 	// ── Extra field vs extra AI field are different from each other ────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_ExtraField_DiffersFrom_ExtraAiField() =>
 		SiteExtraFieldMappingContext.SiteDocumentWithExtraField.Hash
 			.Should().NotBe(SiteExtraAiFieldMappingContext.SiteDocumentWithExtraAiField.Hash);
 
-	[Test]
+	[Fact]
 	public void GuideDocument_ExtraField_DiffersFrom_ExtraAiField() =>
 		GuideExtraFieldMappingContext.GuideDocumentWithExtraField.Hash
 			.Should().NotBe(GuideExtraAiFieldMappingContext.GuideDocumentWithExtraAiField.Hash);

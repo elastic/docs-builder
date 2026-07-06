@@ -82,46 +82,31 @@ public class LabsHtmlExtractorTests
 		</html>
 		""";
 
-	[Test]
+	[Fact]
 	public async Task Url_Uses_Path_When_Absolute_Uri()
 	{
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/search-labs/blog/elasticsearch-synonyms-ui",
-			SynonymsHtml,
-			null,
-			"en",
-			"search-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/elasticsearch-synonyms-ui", SynonymsHtml, null, "en", "search-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.Url.Should().Be("/search-labs/blog/elasticsearch-synonyms-ui");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Url_Strips_Query_And_Fragment()
 	{
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/search-labs/blog/post?utm=foo#section",
-			SynonymsHtml,
-			null,
-			"en",
-			"search-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/post?utm=foo#section", SynonymsHtml, null, "en", "search-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.Url.Should().Be("/search-labs/blog/post");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Extracts_Title_And_Headings()
 	{
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/search-labs/blog/elasticsearch-synonyms-ui",
-			SynonymsHtml,
-			null,
-			"en",
-			"search-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/elasticsearch-synonyms-ui", SynonymsHtml, null, "en", "search-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("How to use the Synonyms UI");
@@ -129,25 +114,20 @@ public class LabsHtmlExtractorTests
 		doc.Headings.Should().Contain("Equivalent synonyms (bidirectional)");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Returns_Null_For_Missing_Title()
 	{
 		const string html = """
 			<html><head></head><body><main><p>No title here</p></main></body></html>
 			""";
 
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/search-labs/blog/no-title",
-			html,
-			null,
-			"en",
-			"search-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/no-title", html, null, "en", "search-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().BeNull();
 	}
 
-	[Test]
+	[Fact]
 	public async Task Body_Excludes_Cta_Banner()
 	{
 		var doc = await ExtractSynonymsDoc();
@@ -158,7 +138,7 @@ public class LabsHtmlExtractorTests
 		doc.Body.Should().NotContain("free cloud trial");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Body_Excludes_Feedback_Widget()
 	{
 		var doc = await ExtractSynonymsDoc();
@@ -168,7 +148,7 @@ public class LabsHtmlExtractorTests
 		doc.Body.Should().NotContain("Not helpful");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Body_Excludes_Related_Content()
 	{
 		var doc = await ExtractSynonymsDoc();
@@ -179,7 +159,7 @@ public class LabsHtmlExtractorTests
 		doc.Body.Should().NotContain("Another related article");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Body_Excludes_Share_Buttons()
 	{
 		var doc = await ExtractSynonymsDoc();
@@ -188,7 +168,7 @@ public class LabsHtmlExtractorTests
 		doc.Body.Should().NotContain("CopyShare");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Headings_Exclude_Boilerplate_Headings()
 	{
 		var doc = await ExtractSynonymsDoc();
@@ -200,7 +180,7 @@ public class LabsHtmlExtractorTests
 		doc.Headings.Should().Contain("Conclusion");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Body_Retains_Article_Content()
 	{
 		var doc = await ExtractSynonymsDoc();
@@ -210,11 +190,11 @@ public class LabsHtmlExtractorTests
 		doc.Body.Should().Contain("Synonyms are essential in search");
 	}
 
-	[Test]
-	[Arguments("https://www.elastic.co/search-labs/blog/post", "search-labs")]
-	[Arguments("https://www.elastic.co/security-labs/research/finding", "security-labs")]
-	[Arguments("https://www.elastic.co/blog/news-post", "blog")]
-	[Arguments("https://www.elastic.co/what-is/elasticsearch", "concept")]
+	[Theory]
+	[InlineData("https://www.elastic.co/search-labs/blog/post", "search-labs")]
+	[InlineData("https://www.elastic.co/security-labs/research/finding", "security-labs")]
+	[InlineData("https://www.elastic.co/blog/news-post", "blog")]
+	[InlineData("https://www.elastic.co/what-is/elasticsearch", "concept")]
 	public void GetNavigationSection_Resolves_Correctly(string url, string expected) =>
 		LabsHtmlExtractor.GetNavigationSection(url).Should().Be(expected);
 
@@ -241,16 +221,11 @@ public class LabsHtmlExtractorTests
 		</html>
 		""";
 
-	[Test]
+	[Fact]
 	public async Task Title_Prefers_Article_Heading_Over_Seo_Title()
 	{
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/search-labs/blog/improving-esql-editor-experience-in-kibana",
-			EsqlEditorHtml,
-			null,
-			"en",
-			"search-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/improving-esql-editor-experience-in-kibana", EsqlEditorHtml, null, "en", "search-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Improving the ES|QL editor experience in Kibana");
@@ -258,16 +233,11 @@ public class LabsHtmlExtractorTests
 		doc.OgTitle.Should().Be("ES|QL Kibana: The ES|QL editor experience in Kibana");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Abstract_Folds_In_Description_Without_Heading_Brackets()
 	{
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/search-labs/blog/improving-esql-editor-experience-in-kibana",
-			EsqlEditorHtml,
-			null,
-			"en",
-			"search-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs/blog/improving-esql-editor-experience-in-kibana", EsqlEditorHtml, null, "en", "search-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.Abstract.Should().StartWith("With the new ES|QL language becoming GA");
@@ -275,7 +245,7 @@ public class LabsHtmlExtractorTests
 		doc.Abstract.Should().NotContain("]");
 	}
 
-	[Test]
+	[Fact]
 	public async Task Root_Overview_Title_Gets_No_Redundant_SearchTitle_Suffix()
 	{
 		const string html = """
@@ -283,7 +253,7 @@ public class LabsHtmlExtractorTests
 			<body><main><h1>Search Labs</h1><p>Technical content from the team behind Elasticsearch.</p></main></body></html>
 			""";
 
-		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs", html, null, "en", "search-labs");
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/search-labs", html, null, "en", "search-labs", TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Search Labs");
@@ -310,16 +280,11 @@ public class LabsHtmlExtractorTests
 		</html>
 		""";
 
-	[Test]
+	[Fact]
 	public async Task Tag_Listing_Gets_Clean_Title_And_Static_Description()
 	{
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/observability-labs/blog/tag/google-cloud",
-			TagListingHtml,
-			null,
-			"en",
-			"observability-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/observability-labs/blog/tag/google-cloud", TagListingHtml, null, "en", "observability-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Articles tagged with 'Google Cloud'");
@@ -331,38 +296,28 @@ public class LabsHtmlExtractorTests
 		doc.Headings.Should().BeEmpty();
 	}
 
-	[Test]
+	[Fact]
 	public async Task Tag_Listing_Uses_Most_Recent_Article_Date_As_Published_Date()
 	{
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/observability-labs/blog/tag/google-cloud",
-			TagListingHtml,
-			null,
-			"en",
-			"observability-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/observability-labs/blog/tag/google-cloud", TagListingHtml, null, "en", "observability-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.PublishedDate.Should().Be(DateTimeOffset.Parse("2025-08-15T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 	}
 
-	[Test]
+	[Fact]
 	public async Task Tag_Listing_NavigationTableOfContents_Is_Not_Penalized_By_Missing_Headings()
 	{
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/observability-labs/blog/tag/google-cloud",
-			TagListingHtml,
-			null,
-			"en",
-			"observability-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/observability-labs/blog/tag/google-cloud", TagListingHtml, null, "en", "observability-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		// 4 URL tokens (observability-labs, blog, tag, google-cloud) → depth > 1 → 100
 		doc.NavigationTableOfContents.Should().Be(100);
 	}
 
-	[Test]
+	[Fact]
 	public async Task Author_Listing_Gets_Clean_Title_And_Static_Description()
 	{
 		const string html = """
@@ -372,13 +327,8 @@ public class LabsHtmlExtractorTests
 			</html>
 			""";
 
-		var doc = await _extractor.ExtractAsync(
-			"https://www.elastic.co/security-labs/author/elastic-security-labs",
-			html,
-			null,
-			"en",
-			"security-labs"
-		);
+		var doc = await _extractor.ExtractAsync("https://www.elastic.co/security-labs/author/elastic-security-labs", html, null, "en", "security-labs"
+, TestContext.Current.CancellationToken);
 
 		doc.Should().NotBeNull();
 		doc.Title.Should().Be("Articles written by Elastic Security Labs");
@@ -388,11 +338,11 @@ public class LabsHtmlExtractorTests
 		doc.Body.Should().BeEmpty();
 	}
 
-	[Test]
-	[Arguments("https://www.elastic.co/search-labs/blog/post", "en")]
-	[Arguments("https://www.elastic.co/de/blog/post", "de")]
-	[Arguments("https://www.elastic.co/fr/blog/post", "fr")]
-	[Arguments("https://www.elastic.co/jp/blog/post", "ja")]
+	[Theory]
+	[InlineData("https://www.elastic.co/search-labs/blog/post", "en")]
+	[InlineData("https://www.elastic.co/de/blog/post", "de")]
+	[InlineData("https://www.elastic.co/fr/blog/post", "fr")]
+	[InlineData("https://www.elastic.co/jp/blog/post", "ja")]
 	public void GetLanguageFromUrl_Resolves_Correctly(string url, string expected) =>
 		LabsHtmlExtractor.GetLanguageFromUrl(url).Should().Be(expected);
 

@@ -154,10 +154,6 @@ let private runTests (testSuite: TestSuite) _ =
             @ ["--"; "RunConfiguration.CollectSourceInformation=true"]
         )
     }
-    // TUnit projects run on Microsoft.Testing.Platform and are invisible to VSTest's `dotnet test`
-    match testSuite with
-    | Unit | All -> exec { run "dotnet" ["run"; "--project"; "tests/Elastic.SiteSearch.Tests"; "-c"; "release"; "--no-build"] }
-    | Integration -> ()
     
 let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
 

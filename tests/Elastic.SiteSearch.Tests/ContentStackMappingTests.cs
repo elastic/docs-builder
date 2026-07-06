@@ -28,7 +28,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: blog (legacy v1 with flat body_l10n)</summary>
-	[Test]
+	[Fact]
 	public void BlogLegacy_Maps_BodyAndMetadata()
 	{
 		var item = LoadFixture("blog_legacy.json", "blog");
@@ -54,7 +54,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: blog_v2 (modular blocks with nested title_text arrays)</summary>
-	[Test]
+	[Fact]
 	public void BlogModern_Maps_ModularBlocksBody()
 	{
 		var item = LoadFixture("blog_modern.json", "blog_v2");
@@ -75,7 +75,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: videos (paragraph_l10n body, presentation_date)</summary>
-	[Test]
+	[Fact]
 	public void Video_Maps_ParagraphAndPresenter()
 	{
 		var item = LoadFixture("video.json", "videos");
@@ -95,7 +95,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: press (intro_paragraph_l10n + paragraph_l10n, date field)</summary>
-	[Test]
+	[Fact]
 	public void PressRelease_Maps_CombinedParagraphs()
 	{
 		var item = LoadFixture("press_release.json", "press");
@@ -115,7 +115,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: product_versions (release_notes body, date, version_number)</summary>
-	[Test]
+	[Fact]
 	public void ProductRelease_Maps_ReleaseNotes()
 	{
 		var item = LoadFixture("product_release.json", "product_versions");
@@ -134,7 +134,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: agreements, forms (paragraph_l10n as single body)</summary>
-	[Test]
+	[Fact]
 	public void ParagraphPage_Maps_SingleBody()
 	{
 		var item = LoadFixture("paragraph_page.json", "agreements");
@@ -154,7 +154,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: default_detail, account_based_marketing, product_detail (modular_blocks with flat title_text)</summary>
-	[Test]
+	[Fact]
 	public void ModularPage_Maps_FlatModularBlocks()
 	{
 		var item = LoadFixture("modular_page.json", "default_detail");
@@ -174,7 +174,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: use_cases (introduction + challenge_solution + modular_blocks)</summary>
-	[Test]
+	[Fact]
 	public void UseCase_Maps_IntroAndChallenges()
 	{
 		var item = LoadFixture("use_case.json", "use_cases");
@@ -194,7 +194,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: faq (topic[].subtopic[].paragraph_l10n)</summary>
-	[Test]
+	[Fact]
 	public void FaqPage_Maps_NestedTopics()
 	{
 		var item = LoadFixture("faq_page.json", "faq");
@@ -213,7 +213,7 @@ public class ContentStackMappingTests
 	}
 
 	/// <summary>Covers: customer_tile (short paragraph_l10n, partial URL coverage)</summary>
-	[Test]
+	[Fact]
 	public void CustomerTile_Maps_ShortContent()
 	{
 		var item = LoadFixture("customer_tile.json", "customer_tile");
@@ -238,7 +238,7 @@ public class ContentStackMappingTests
 	/// downloads_redesign, blog_category_detail, demo_gallery_detail,
 	/// about_leadership_and_board, pricing_calculator, events_overview, timeline
 	/// </summary>
-	[Test]
+	[Fact]
 	public void MinimalPage_Maps_TitleUrlSeo()
 	{
 		var item = LoadFixture("minimal_page.json", "blog_overview");
@@ -261,21 +261,21 @@ public class ContentStackMappingTests
 
 	// --- Body projection helper tests ---
 
-	[Test]
+	[Fact]
 	public void StripHtml_Removes_Tags_And_Entities()
 	{
 		var result = ContentStackMapper.StripHtml("<p>Hello &amp; <strong>world</strong>.</p>");
 		result.Should().Be("Hello world .");
 	}
 
-	[Test]
+	[Fact]
 	public void StripHtml_Collapses_Whitespace()
 	{
 		var result = ContentStackMapper.StripHtml("<p>Line one</p>\n\n<p>  Line two  </p>");
 		result.Should().Be("Line one Line two");
 	}
 
-	[Test]
+	[Fact]
 	public void ExtractHeadings_Finds_All_Levels()
 	{
 		var html = "<h1>Title</h1><p>text</p><h2>Subtitle</h2><h3>Sub-sub</h3>";
@@ -283,7 +283,7 @@ public class ContentStackMappingTests
 		headings.Should().BeEquivalentTo(["Title", "Subtitle", "Sub-sub"]);
 	}
 
-	[Test]
+	[Fact]
 	public void ExtractHeadings_Strips_Inner_Tags()
 	{
 		var html = "<h2><a href=\"#anchor\">Linked Heading</a></h2>";
@@ -291,14 +291,14 @@ public class ContentStackMappingTests
 		headings.Should().ContainSingle().Which.Should().Be("Linked Heading");
 	}
 
-	[Test]
+	[Fact]
 	public void ExtractHeadings_Returns_Empty_For_No_Headings()
 	{
 		var headings = ContentStackMapper.ExtractHeadings("<p>Just a paragraph</p>");
 		headings.Should().BeEmpty();
 	}
 
-	[Test]
+	[Fact]
 	public void GetNavigationSection_Classifies_Known_Paths()
 	{
 		ContentStackMapper.GetNavigationSection("/blog/some-post").Should().Be("blog");
@@ -314,7 +314,7 @@ public class ContentStackMappingTests
 		ContentStackMapper.GetNavigationSection("/cloud/signup").Should().Be("marketing");
 	}
 
-	[Test]
+	[Fact]
 	public void NavigationDepth_And_Toc_Are_Populated()
 	{
 		// /blog/getting-started-with-kibana-dashboards → 2 segments + 1 = 3
@@ -330,7 +330,7 @@ public class ContentStackMappingTests
 		minimalDoc.NavigationTableOfContents.Should().Be(100);
 	}
 
-	[Test]
+	[Fact]
 	public void GetLanguageFromUrl_Detects_Locale_Prefixes()
 	{
 		ContentStackMapper.GetLanguageFromUrl("/de/blog/post").Should().Be("de");
@@ -356,7 +356,7 @@ public class ContentStackMappingTests
 	/// share the same (unlocalized) url. An unprefixed url with an unrecognized locale code must
 	/// still resolve to English — the locale field alone is not authoritative.
 	/// </summary>
-	[Test]
+	[Fact]
 	public void ToSiteDocument_UnprefixedUrl_UnrecognizedLocale_ResolvesToEnglish()
 	{
 		var item = LoadFromJson(/*lang=json,strict*/ """
@@ -373,7 +373,7 @@ public class ContentStackMappingTests
 	/// <summary>
 	/// A locale-prefixed url is trusted as-is even when the entry's own locale disagrees.
 	/// </summary>
-	[Test]
+	[Fact]
 	public void ToSiteDocument_PrefixedUrl_ResolvesPerPrefix_RegardlessOfLocale()
 	{
 		var item = LoadFromJson(/*lang=json,strict*/ """
@@ -393,7 +393,7 @@ public class ContentStackMappingTests
 	/// so they land on their own document instead of colliding with the master (en-us) variant at
 	/// the same Elasticsearch id.
 	/// </summary>
-	[Test]
+	[Fact]
 	public void ToSiteDocument_NonMasterLocale_NamespacesUrlUnderSitePrefix()
 	{
 		var item = LoadFromJson(/*lang=json,strict*/ """
@@ -407,7 +407,7 @@ public class ContentStackMappingTests
 		doc.Language.Should().Be("es");
 	}
 
-	[Test]
+	[Fact]
 	public void ToSiteDocument_SetsTranslated_ForContentStackContent()
 	{
 		var item = LoadFixture("blog_legacy.json", "blog");
@@ -419,14 +419,14 @@ public class ContentStackMappingTests
 
 	// --- Edge cases ---
 
-	[Test]
+	[Fact]
 	public void NullData_Returns_Null()
 	{
 		var item = new SyncItem { Type = "entry_published", ContentTypeUid = "blog", Data = null };
 		ContentStackMapper.ToSiteDocument(item).Should().BeNull();
 	}
 
-	[Test]
+	[Fact]
 	public void MissingUrl_Returns_Null()
 	{
 		var json = """{"title": "No URL Page"}""";
@@ -435,7 +435,7 @@ public class ContentStackMappingTests
 		ContentStackMapper.ToSiteDocument(item).Should().BeNull();
 	}
 
-	[Test]
+	[Fact]
 	public void MissingTitle_Returns_Null()
 	{
 		var json = """{"url": "/some/page"}""";

@@ -21,7 +21,7 @@ public class MappingStructureTests
 {
 	// ── [Id] resolves to Url for every document type ─────────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_GetId_ReturnsUrl()
 	{
 		var ctx = SiteMappingContext.SiteDocument.CreateContext(type: "blog", env: "test");
@@ -29,7 +29,7 @@ public class MappingStructureTests
 		ctx.GetId!(doc).Should().Be("https://www.elastic.co/blog/test");
 	}
 
-	[Test]
+	[Fact]
 	public void GuideDocument_GetId_ReturnsUrl()
 	{
 		var ctx = GuideMappingContext.GuideDocument.CreateContext(type: "en", env: "test");
@@ -39,7 +39,7 @@ public class MappingStructureTests
 
 	// ── Base fields from SearchDocumentBase present in SiteDocument mapping ──
 
-	[Test]
+	[Fact]
 	public void SiteDocument_MappingJson_ContainsBaseFields()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -60,7 +60,7 @@ public class MappingStructureTests
 
 	// ── Base fields from SearchDocumentBase present in GuideDocument mapping ─
 
-	[Test]
+	[Fact]
 	public void GuideDocument_MappingJson_ContainsBaseFields()
 	{
 		var json = GuideMappingContext.GuideDocument.GetMappingJson();
@@ -80,7 +80,7 @@ public class MappingStructureTests
 
 	// ── Url: [Id][Keyword] must map as keyword ────────────────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_UrlField_IsKeyword()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -89,7 +89,7 @@ public class MappingStructureTests
 			.GetProperty("type").GetString().Should().Be("keyword");
 	}
 
-	[Test]
+	[Fact]
 	public void GuideDocument_UrlField_IsKeyword()
 	{
 		var json = GuideMappingContext.GuideDocument.GetMappingJson();
@@ -100,7 +100,7 @@ public class MappingStructureTests
 
 	// ── content_type: [Keyword] on base ──────────────────────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_ContentTypeField_IsKeyword()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -111,7 +111,7 @@ public class MappingStructureTests
 
 	// ── content_tags: copy_to target for content_type/navigation_section ─────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_ContentTypeField_CopiesToContentTags()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -120,7 +120,7 @@ public class MappingStructureTests
 			.GetProperty("copy_to").GetString().Should().Be("content_tags");
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_NavigationSectionField_CopiesToContentTags()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -129,7 +129,7 @@ public class MappingStructureTests
 			.GetProperty("copy_to").GetString().Should().Be("content_tags");
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_ContentTagsField_IsTextWithContentTagsAnalyzer()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -141,7 +141,7 @@ public class MappingStructureTests
 
 	// ── content_tier: [Keyword] on base, neutral default ──────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_ContentTierField_IsKeyword()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -150,7 +150,7 @@ public class MappingStructureTests
 			.GetProperty("type").GetString().Should().Be("keyword");
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_ContentTier_DefaultsToNeutralReference()
 	{
 		var document = new SiteDocument { Title = "t", SearchTitle = "t", Url = "https://www.elastic.co/blog/test" };
@@ -159,7 +159,7 @@ public class MappingStructureTests
 
 	// ── hash: [Keyword] on base ───────────────────────────────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_HashField_IsKeyword()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -170,7 +170,7 @@ public class MappingStructureTests
 
 	// ── Title multi-fields from AddSearchDocumentMappings ────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_TitleField_HasKeywordNormalizedMultiField()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -182,7 +182,7 @@ public class MappingStructureTests
 		keyword.GetProperty("normalizer").GetString().Should().Be("keyword_normalizer");
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_TitleField_HasStartsWithMultiField()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -192,7 +192,7 @@ public class MappingStructureTests
 		titleFields.TryGetProperty("starts_with", out _).Should().BeTrue("starts_with is configured in AddSearchDocumentMappings");
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_TitleField_HasCompletionMultiField()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -204,7 +204,7 @@ public class MappingStructureTests
 
 	// ── ai_search_query: search_as_you_type completion sub-field, no semantic_text ──
 
-	[Test]
+	[Fact]
 	public void SiteDocument_AiSearchQueryField_IsKeywordWithCompletionMultiField()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -216,7 +216,7 @@ public class MappingStructureTests
 		completion.GetProperty("type").GetString().Should().Be("search_as_you_type");
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_SemanticVariant_AiSearchQueryHasNoSemanticTextField()
 	{
 		var json = SiteMappingContext.SiteDocumentSemantic.GetMappingJson();
@@ -228,7 +228,7 @@ public class MappingStructureTests
 
 	// ── Url multi-fields from AddCommonTitleMappings ──────────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_UrlField_HasMatchAndPrefixMultiFields()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -242,7 +242,7 @@ public class MappingStructureTests
 
 	// ── Navigation fields must be rank_feature with negative score impact ─────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_NavigationDepth_IsRankFeatureWithNegativeImpact()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -252,7 +252,7 @@ public class MappingStructureTests
 		depth.GetProperty("positive_score_impact").GetBoolean().Should().BeFalse();
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_NavigationTableOfContents_IsRankFeatureWithNegativeImpact()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -264,7 +264,7 @@ public class MappingStructureTests
 
 	// ── Body multi-language fields from AddSearchDocumentMappings ────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_BodyField_HasLanguageMultiFields()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -283,7 +283,7 @@ public class MappingStructureTests
 
 	// ── Semantic variant adds semantic_text multi-fields ─────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_SemanticVariant_TitleHasSemanticTextField()
 	{
 		var json = SiteMappingContext.SiteDocumentSemantic.GetMappingJson();
@@ -292,7 +292,7 @@ public class MappingStructureTests
 		titleFields.GetProperty("semantic_text").GetProperty("type").GetString().Should().Be("semantic_text");
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_SemanticVariant_StrippedBodyHasSemanticTextField()
 	{
 		var json = SiteMappingContext.SiteDocumentSemantic.GetMappingJson();
@@ -301,7 +301,7 @@ public class MappingStructureTests
 		strippedBodyFields.GetProperty("semantic_text").GetProperty("type").GetString().Should().Be("semantic_text");
 	}
 
-	[Test]
+	[Fact]
 	public void SiteDocument_LexicalVariant_DoesNotHaveSemanticTextField()
 	{
 		var json = SiteMappingContext.SiteDocument.GetMappingJson();
@@ -313,19 +313,19 @@ public class MappingStructureTests
 
 	// ── Field name constants match JSON property names ────────────────────────
 
-	[Test]
+	[Fact]
 	public void SiteDocument_Fields_UrlMatchesJsonPropertyName() =>
 		SiteMappingContext.SiteDocument.Fields.Url.Should().Be("url");
 
-	[Test]
+	[Fact]
 	public void SiteDocument_Fields_TitleMatchesJsonPropertyName() =>
 		SiteMappingContext.SiteDocument.Fields.Title.Should().Be("title");
 
-	[Test]
+	[Fact]
 	public void SiteDocument_Fields_HashMatchesJsonPropertyName() =>
 		SiteMappingContext.SiteDocument.Fields.Hash.Should().Be("hash");
 
-	[Test]
+	[Fact]
 	public void GuideDocument_Fields_UrlMatchesJsonPropertyName() =>
 		GuideMappingContext.GuideDocument.Fields.Url.Should().Be("url");
 }

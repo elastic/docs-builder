@@ -13,21 +13,18 @@
     <OutputType>Exe</OutputType>
 
   </PropertyGroup>
-  <!-- xunit/VSTest packages; TUnit projects (Microsoft.Testing.Platform) opt out via UseTUnit -->
-  <ItemGroup Condition="'$(UseTUnit)' != 'true'">
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="GitHubActionsTestLogger" />
-  </ItemGroup>
 
-  <ItemGroup>
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(UseTUnit)' != 'true'">
+  <ItemGroup>
     <Using Include="Xunit"/>
   </ItemGroup>
 </Project>
