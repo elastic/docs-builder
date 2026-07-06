@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Mapping;
 
 namespace Elastic.Documentation.Search;

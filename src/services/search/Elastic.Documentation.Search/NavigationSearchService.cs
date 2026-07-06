@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Diagnostics;
-using Elastic.Internal.Search;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Search;

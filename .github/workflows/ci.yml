@@ -224,8 +224,8 @@ jobs:
           ES_KEY=$(aws ssm get-parameter --name /elastic-docs-v3/prod/docs-elasticsearch-github-actions-readonly-api-key --with-decryption --query Parameter.Value --output text)
           echo "::add-mask::$ES_URL"
           echo "::add-mask::$ES_KEY"
-          dotnet user-secrets set "DocumentationElasticUrl" "$ES_URL" --project aspire
-          dotnet user-secrets set "DocumentationElasticApiKey" "$ES_KEY" --project aspire
+          dotnet user-secrets set "Parameters:ElasticsearchUrl" "$ES_URL" --project aspire
+          dotnet user-secrets set "Parameters:ElasticsearchApiKey" "$ES_KEY" --project aspire
 
       - name: Integration Tests
         env:

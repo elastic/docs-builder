@@ -77,10 +77,12 @@
   </Folder>
   <Folder Name="/src/services/search/">
     <Project Path="src/services/search/Elastic.Documentation.Search/Elastic.Documentation.Search.csproj" />
+    <Project Path="src/services/search/Elastic.Documentation.Search.Contract/Elastic.Documentation.Search.Contract.csproj" />
   </Folder>
   <Folder Name="/src/tooling/">
     <File Path="src/tooling/Directory.Build.props" />
     <Project Path="src/tooling/docs-builder/docs-builder.csproj" />
+    <Project Path="src/tooling/essc/essc.csproj" />
   </Folder>
   <Folder Name="/tests-integration/">
     <File Path="tests-integration/Directory.Build.props" />
@@ -102,6 +104,7 @@
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
     <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Integrations.Tests/Elastic.Documentation.Integrations.Tests.csproj" />
+    <Project Path="tests/Elastic.SiteSearch.Tests/Elastic.SiteSearch.Tests.csproj" />
   </Folder>
   <Project Path=".github/.github.csproj">
     <Build Project="false" />
