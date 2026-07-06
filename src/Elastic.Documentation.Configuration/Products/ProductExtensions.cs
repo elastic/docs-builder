@@ -34,7 +34,8 @@ public static class ProductExtensions
 					DisplayName = kvp.Value.Display,
 					VersioningSystem = versioningSystem,
 					Repository = kvp.Value.Repository ?? kvp.Key,
-					Features = features
+					Features = features,
+					Hub = kvp.Value.Hub
 				};
 			});
 
@@ -103,4 +104,7 @@ internal sealed record ProductDto
 
 	[YamlMember(Alias = "features")]
 	public Dictionary<string, bool>? Features { get; set; }
+
+	[YamlMember(Alias = "hub")]
+	public string? Hub { get; set; }
 }

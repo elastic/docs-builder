@@ -112,6 +112,7 @@ public partial class ConfigurationFileProvider
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
 		// reading from synonyms.yml is temporary. If you spot this again as a future reader, feel free to remove it.
 		SearchFile = CreateTemporaryConfigurationFile("search.yml", "synonyms.yml");
+		WhatsNewFile = TryCreateTemporaryConfigurationFile("whats-new.yml");
 	}
 
 	public bool SkipPrivateRepositories { get; }
@@ -126,6 +127,9 @@ public partial class ConfigurationFileProvider
 	public IFileInfo VersionFile { get; }
 
 	public IFileInfo ProductsFile { get; }
+
+	/// <summary>Optional — present only when <c>config/whats-new.yml</c> exists.</summary>
+	public IFileInfo? WhatsNewFile { get; }
 
 	public IFileInfo AssemblerFile { get; }
 

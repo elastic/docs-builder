@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Svg;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
@@ -16,6 +17,7 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Dropdown;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
@@ -126,6 +128,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case AgentSkillBlock agentSkillBlock:
 				WriteAgentSkill(renderer, agentSkillBlock);
+				return;
+			case HeroBlock heroBlock:
+				WriteHero(renderer, heroBlock);
+				return;
+			case ExploreBlock exploreBlock:
+				WriteExplore(renderer, exploreBlock);
+				return;
+			case CardGroupBlock cardGroupBlock:
+				WriteCardGroup(renderer, cardGroupBlock);
+				return;
+			case LinkCardBlock linkCardBlock:
+				WriteLinkCard(renderer, linkCardBlock);
+				return;
+			case WhatsNewBlock whatsNewBlock:
+				WriteWhatsNew(renderer, whatsNewBlock);
+				return;
+			case GetStartedBlock getStartedBlock:
+				WriteGetStarted(renderer, getStartedBlock);
+				return;
+			case OnThisPageBlock onThisPageBlock:
+				WriteOnThisPage(renderer, onThisPageBlock);
 				return;
 			case CliModifiersBlock cliModifiersBlock:
 				WriteCliModifiers(renderer, cliModifiersBlock);
@@ -401,6 +424,160 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	{
 		var slice = TabSetView.Create(new TabSetViewModel { DirectiveBlock = block });
 		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteHero(HtmlRenderer renderer, HeroBlock block)
+	{
+		var descriptionHtml = string.IsNullOrWhiteSpace(block.Description)
+			? null
+			: RenderInlineMarkdown(block.Description);
+
+		var slice = HeroView.Create(new HeroViewModel
+		{
+			DirectiveBlock = block,
+			IconKey = block.Icon,
+			IconSvg = block.IconSvg,
+			Title = block.Title,
+			DescriptionHtml = descriptionHtml,
+			PrimaryActionLabel = block.PrimaryActionLabel,
+			PrimaryActionUrl = block.PrimaryActionUrl,
+			SecondaryActionLabel = block.SecondaryActionLabel,
+			SecondaryActionUrl = block.SecondaryActionUrl,
+			TertiaryActionLabel = block.TertiaryActionLabel,
+			TertiaryActionUrl = block.TertiaryActionUrl,
+			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteExplore(HtmlRenderer renderer, ExploreBlock block)
+	{
+		var slice = ExploreView.Create(new ExploreViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteCardGroup(HtmlRenderer renderer, CardGroupBlock block)
+	{
+		var explore = HubExplore.FindAncestor(block);
+		var slice = CardGroupView.Create(new CardGroupViewModel
+		{
+			DirectiveBlock = block,
+			Title = block.Title,
+			Intro = block.Intro,
+			Anchor = block.Anchor,
+			Variant = block.Variant,
+			IsAccordion = explore is not null,
+			IsOpen = explore is not null && HubExplore.IsFirstCardGroup(explore, block),
+			AccordionGroup = explore is null
+				? null
+				: string.IsNullOrWhiteSpace(explore.Anchor) ? "hub-explore" : $"hub-explore-{explore.Anchor}"
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteLinkCard(HtmlRenderer renderer, LinkCardBlock block)
+	{
+		var slice = LinkCardView.Create(new LinkCardViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data,
+			IconSvg = ProductIcons.Get(block.Data.Icon),
+			SitePathPrefix = block.Build.UrlPathPrefix,
+			IsColumn = HubExplore.FindAncestor(block) is not null
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteWhatsNew(HtmlRenderer renderer, WhatsNewBlock block)
+	{
+		var slice = WhatsNewView.Create(new WhatsNewViewModel
+		{
+			DirectiveBlock = block,
+			Data = block.Data,
+			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteGetStarted(HtmlRenderer renderer, GetStartedBlock block)
+	{
+		var data = block.Data;
+		var steps = new List<GetStartedStepViewModel>(data.Steps.Length);
+		for (var i = 0; i < data.Steps.Length; i++)
+		{
+			var step = data.Steps[i];
+			var options = new List<GetStartedOptionViewModel>(step.Options.Length);
+			foreach (var option in step.Options)
+			{
+				options.Add(new GetStartedOptionViewModel
+				{
+					Label = option.Label,
+					DescriptionHtml = string.IsNullOrWhiteSpace(option.Description)
+						? null
+						: RenderInlineMarkdown(option.Description),
+					Code = option.Code,
+					Language = option.Language,
+					Url = option.Url,
+					UrlLabel = option.UrlLabel
+				});
+			}
+
+			steps.Add(new GetStartedStepViewModel
+			{
+				Number = i + 1,
+				IconSvg = string.IsNullOrWhiteSpace(step.Icon)
+					? null
+					: EuiSvgIcons.GetIcon(step.Icon, "hub-get-started-step-icon-svg"),
+				Title = step.Title,
+				DescriptionHtml = string.IsNullOrWhiteSpace(step.Description)
+					? null
+					: RenderInlineMarkdown(step.Description),
+				Link = step.Link,
+				LinkLabel = step.LinkLabel,
+				Options = options
+			});
+		}
+
+		var slice = GetStartedView.Create(new GetStartedViewModel
+		{
+			DirectiveBlock = block,
+			Title = data.Title,
+			IntroHtml = string.IsNullOrWhiteSpace(data.Intro) ? null : RenderInlineMarkdown(data.Intro),
+			InstallCode = data.Install?.Code,
+			InstallLanguage = data.Install?.Language,
+			TutorialLabel = data.Tutorial?.Label,
+			TutorialUrl = data.Tutorial?.Url,
+			Steps = steps,
+			SitePathPrefix = block.Build.UrlPathPrefix
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteOnThisPage(HtmlRenderer renderer, OnThisPageBlock block)
+	{
+		var slice = OnThisPageView.Create(new OnThisPageViewModel
+		{
+			DirectiveBlock = block,
+			Items = block.CollectItems()
+		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static string RenderInlineMarkdown(string source)
+	{
+		var html = Markdig.Markdown.ToHtml(source).Trim();
+		// Strip a single wrapping <p>...</p> so the result can drop into a span/p directly.
+		const string open = "<p>";
+		const string close = "</p>";
+		if (html.StartsWith(open, StringComparison.Ordinal) && html.EndsWith(close, StringComparison.Ordinal))
+			html = html[open.Length..^close.Length];
+		return html;
 	}
 
 	private static void WriteTabItem(HtmlRenderer renderer, TabItemBlock block)

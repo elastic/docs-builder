@@ -10,6 +10,7 @@ using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Navigation.Tests.Isolation;
+using Elastic.Documentation.Navigation.V2;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
@@ -304,5 +305,143 @@ public class SiteNavigationTests(ITestOutputHelper output)
 
 		var searchItem = navigation.NavigationItems.Skip(1).First();
 		searchItem.Url.Should().Be(expectedSearchUrl, $"search URL should be '{expectedSearchUrl}' with sitePrefix '{sitePrefix}'");
+	}
+
+	[Fact]
+	public void SiteNavigationV2PageEntriesResolveFilesFromUnseenChildTocs()
+	{
+		var fileSystem = new MockFileSystem();
+		var docsContentDir = "/checkouts/current/docs-content";
+
+		// language=yaml
+		var docsetYaml = """
+		                 project: Docs content
+		                 toc:
+		                   - file: index.md
+		                   - toc: products
+		                 """;
+		fileSystem.AddFile($"{docsContentDir}/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/index.md", new MockFileData("# Docs content"));
+
+		// language=yaml
+		var productsTocYaml = """
+		                      toc:
+		                        - file: index.md
+		                        - toc: elasticsearch
+		                      """;
+		fileSystem.AddFile($"{docsContentDir}/docs/products/toc.yml", new MockFileData(productsTocYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/products/index.md", new MockFileData("# Product hubs"));
+
+		// language=yaml
+		var elasticsearchTocYaml = """
+		                           toc:
+		                             - file: v9.md
+		                           """;
+		fileSystem.AddFile($"{docsContentDir}/docs/products/elasticsearch/toc.yml", new MockFileData(elasticsearchTocYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/products/elasticsearch/v9.md", new MockFileData("# Elasticsearch"));
+
+		// language=yaml
+		var siteNavYaml = """
+		                  toc:
+		                    - toc: products
+		                  """;
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+
+		// language=yaml
+		var v2NavYaml = """
+		                nav:
+		                  - section: Product hubs
+		                    url: /products/
+		                    children:
+		                      - page: docs-content://products/elasticsearch/v9.md
+		                        title: Elasticsearch
+		                """;
+		var v2File = NavigationV2File.Deserialize(v2NavYaml);
+
+		var docsContentContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, docsContentDir, output);
+		var docset = DocumentationSetFile.LoadAndResolve(
+			docsContentContext.Collector,
+			fileSystem.FileInfo.New($"{docsContentDir}/docs/docset.yml"),
+			FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts")
+		);
+		var docsContentNav = new DocumentationSetNavigation<IDocumentationFile>(
+			docset,
+			docsContentContext,
+			GenericDocumentationFileFactory.Instance
+		);
+
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, docsContentDir, output);
+		var navigation = new SiteNavigationV2(v2File, siteNavFile, siteContext, [docsContentNav], sitePrefix: "docs");
+
+		var elasticsearchToc = navigation.Nodes[new Uri("docs-content://products/elasticsearch")];
+		var elasticsearchFile = elasticsearchToc.Index.Model;
+
+		navigation.NavigationDocumentationFileLookup.TryGetValue(elasticsearchFile, out var navigationItem)
+			.Should().BeTrue("V2 page entries should map docs files even when their child TOC is not declared in navigation.yml");
+		navigationItem.Should().BeOfType<PageCrossLinkLeaf>();
+		navigationItem.Url.Should().Be("/docs/products/elasticsearch/v9");
+	}
+
+	[Fact]
+	public void SiteNavigationResolvesFilesFromUnseenChildTocs()
+	{
+		var fileSystem = new MockFileSystem();
+		var docsContentDir = "/checkouts/current/docs-content";
+
+		// language=yaml
+		var docsetYaml = """
+		                 project: Docs content
+		                 toc:
+		                   - file: index.md
+		                   - toc: products
+		                 """;
+		fileSystem.AddFile($"{docsContentDir}/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/index.md", new MockFileData("# Docs content"));
+
+		// language=yaml
+		var productsTocYaml = """
+		                      toc:
+		                        - file: index.md
+		                        - toc: elasticsearch
+		                      """;
+		fileSystem.AddFile($"{docsContentDir}/docs/products/toc.yml", new MockFileData(productsTocYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/products/index.md", new MockFileData("# Product hubs"));
+
+		// language=yaml
+		var elasticsearchTocYaml = """
+		                           toc:
+		                             - file: v9.md
+		                           """;
+		fileSystem.AddFile($"{docsContentDir}/docs/products/elasticsearch/toc.yml", new MockFileData(elasticsearchTocYaml));
+		fileSystem.AddFile($"{docsContentDir}/docs/products/elasticsearch/v9.md", new MockFileData("# Elasticsearch"));
+
+		// language=yaml
+		var siteNavYaml = """
+		                  toc:
+		                    - toc: products
+		                  """;
+		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+
+		var docsContentContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, docsContentDir, output);
+		var docset = DocumentationSetFile.LoadAndResolve(
+			docsContentContext.Collector,
+			fileSystem.FileInfo.New($"{docsContentDir}/docs/docset.yml"),
+			FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts")
+		);
+		var docsContentNav = new DocumentationSetNavigation<IDocumentationFile>(
+			docset,
+			docsContentContext,
+			GenericDocumentationFileFactory.Instance
+		);
+
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, docsContentDir, output);
+		var navigation = new SiteNavigation(siteNavFile, siteContext, [docsContentNav], sitePrefix: "docs");
+
+		var elasticsearchToc = navigation.Nodes[new Uri("docs-content://products/elasticsearch")];
+		var elasticsearchFile = elasticsearchToc.Index.Model;
+
+		navigation.NavigationDocumentationFileLookup.TryGetValue(elasticsearchFile, out var navigationItem)
+			.Should().BeTrue("unseen child TOCs can still own files that the assembler processes");
+		navigationItem.Should().BeSameAs(elasticsearchToc);
 	}
 }

@@ -1,0 +1,39 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.CardGroupViewModel>
+
+@if (Model.IsAccordion)
+{
+	<details class="hub-accordion"@(string.IsNullOrWhiteSpace(Model.AccordionGroup) ? "" : $" name={Model.AccordionGroup}")@(string.IsNullOrWhiteSpace(Model.Anchor) ? "" : $" id={Model.Anchor}")@(Model.IsOpen ? " open" : "")>
+		<summary class="hub-accordion-summary">
+			<span class="hub-accordion-title">@Model.Title</span>
+			<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+				<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+				<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+			</svg>
+		</summary>
+		<div class="hub-accordion-body">
+			@if (!string.IsNullOrWhiteSpace(Model.Intro))
+			{
+				<p class="hub-accordion-intro">@Model.Intro</p>
+			}
+			<ul class="hub-explore-cols">
+				@Model.RenderBlock()
+			</ul>
+		</div>
+	</details>
+}
+else
+{
+	@if (!string.IsNullOrWhiteSpace(Model.Title))
+	{
+		<div class="hub-zone" id="@Model.Anchor">
+			<h2 class="hub-zone-title">@Model.Title</h2>
+			@if (!string.IsNullOrWhiteSpace(Model.Intro))
+			{
+				<p class="hub-zone-intro">@Model.Intro</p>
+			}
+		</div>
+	}
+	<ul class="hub-card-grid@(Model.Variant == "solutions" ? " hub-card-grid-solutions" : "")">
+		@Model.RenderBlock()
+	</ul>
+}
