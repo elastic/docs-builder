@@ -120,7 +120,7 @@ public partial class OpenApiDocumentExporter(
 				var operationId = operation.Value.OperationId ?? GenerateOperationId(operation.Key, path.Key);
 
 				// Check x-state extension for version filtering
-				if (!ShouldIncludeOperation(operation.Value, product))
+				if (!ShouldIncludeOperation(operation.Value))
 					continue;
 
 				var url = $"/docs/api/doc/{product}/operation/operation-{operationId.ToLowerInvariant()}";
@@ -207,7 +207,7 @@ public partial class OpenApiDocumentExporter(
 	/// <summary>
 	/// Determines if an operation should be included based on its x-state extension.
 	/// </summary>
-	private bool ShouldIncludeOperation(OpenApiOperation operation, string product)
+	private bool ShouldIncludeOperation(OpenApiOperation operation)
 	{
 		// Try to get x-state extension
 		if (operation.Extensions == null || !operation.Extensions.TryGetValue("x-state", out var stateExtension))
@@ -230,12 +230,8 @@ public partial class OpenApiDocumentExporter(
 		if (!SemVersion.TryParse(versionString, out var addedInVersion))
 			return true; // Could not parse version, safe to include
 
-		// Get current version for the product
-		var versioningSystemId = product.Equals("elasticsearch", StringComparison.OrdinalIgnoreCase)
-			? VersioningSystemId.Stack
-			: VersioningSystemId.Stack; // Both use Stack for now
-
-		var versioningSystem = versionsConfiguration.GetVersioningSystem(versioningSystemId);
+		// All API products currently version against Stack
+		var versioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack);
 		var currentVersion = versioningSystem.Current;
 
 		// Include if added version is <= current version
