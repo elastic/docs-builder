@@ -51,13 +51,16 @@ public static class SharedMappingConfig
 		.ContentType(f => f.CopyTo("tags"))
 		.AddField("tags", f => f.Text().Analyzer(ContentTagsAnalyzer));
 
+	// ai_use_cases.semantic_text was dropped: no query anywhere (this repo's SearchQueryBuilder,
+	// or website-search's DEFAULT_SEMANTIC_FIELDS) matches against it — ai_use_cases is only ever
+	// read as a flat _source value (MCP get_doc/get_doc_structure), never queried semantically.
+	// Removing it avoids paying embedding-inference cost per document for a subfield nothing queries.
 	private static MappingsBuilder<T> AddSemanticFields<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase => m
 		// All parents are [Text] leaf fields — AddField places the semantic child under "fields"
 		.AddField("title.semantic_text", f => f.SemanticText())
 		.AddField("summary.semantic_text", f => f.SemanticText())
 		.AddField("ai_rag_optimized_summary.semantic_text", f => f.SemanticText())
 		.AddField("ai_questions.semantic_text", f => f.SemanticText())
-		.AddField("ai_use_cases.semantic_text", f => f.SemanticText())
 		.AddField("body.semantic_text", f => f.SemanticText());
 
 	/// <summary>
