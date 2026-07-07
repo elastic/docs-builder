@@ -34,8 +34,6 @@ public class AssemblerAiEnrichService(
 		ScopedFileSystem writeFs,
 		ElasticsearchIndexOptions es,
 		string? environment,
-		int maxRunDocs,
-		TimeSpan? maxRunTime,
 		Cancel ctx
 	)
 	{
@@ -57,11 +55,12 @@ public class AssemblerAiEnrichService(
 		// Bootstraps and resolves the existing aliases only; never writes or deletes documents.
 		await exporter.StartAsync(ctx);
 
-		using var deadline = AiEnrichmentDeadline.Create(maxRunTime, ctx);
+		var budget = new AiEnrichmentBudget(cfg.MaxAiDocs, cfg.MaxAiTime);
+		using var deadline = AiEnrichmentDeadline.Create(budget.MaxTime, ctx);
 		AiEnrichmentProgress? last = null;
 		try
 		{
-			await foreach (var p in exporter.RunAiEnrichmentAsync(maxRunDocs, deadline.Token))
+			await foreach (var p in exporter.RunAiEnrichmentAsync(budget.EffectiveMaxDocs, deadline.Token))
 			{
 				_logger.LogInformation(
 					"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",

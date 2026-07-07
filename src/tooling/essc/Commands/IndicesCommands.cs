@@ -93,11 +93,11 @@ internal sealed class IndicesCleanupOptions
 	public bool DryRun { get; set; }
 
 	/// <summary>Override Elasticsearch API key (otherwise from configuration).</summary>
-	public string? EsApiKey { get; set; }
+	public string? ApiKey { get; set; }
 
 	/// <summary>Override Elasticsearch base URL (absolute URI).</summary>
 	[Url]
-	public Uri? EsUrl { get; set; }
+	public Uri? Endpoint { get; set; }
 }
 
 /// <summary>
@@ -128,8 +128,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// marked with the current batch timestamp; docs in semantic that were not marked are removed.
 	/// The <c>unify_source</c> field on each doc records which source alias it came from.
 	/// </remarks>
-	/// <param name="esApiKey">Override Elasticsearch API key.</param>
-	/// <param name="esUrl">Override Elasticsearch base URL.</param>
+	/// <param name="apiKey">Override Elasticsearch API key.</param>
+	/// <param name="endpoint">Override Elasticsearch base URL.</param>
 	/// <param name="environment">Override target environment (e.g. <c>prod</c>, <c>staging</c>, <c>dev</c>). Defaults to the configured environment.</param>
 	/// <param name="slices">Reindex parallelism: <c>auto</c> or a numeric string. Defaults to <c>auto</c>.</param>
 	/// <param name="rps">Requests-per-second throttle for reindex operations. <c>-1</c> means unlimited (default).</param>
@@ -152,8 +152,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// </param>
 	/// <param name="ct">Cancellation token.</param>
 	public async Task Unify(
-		string? esApiKey = null,
-		[Url] Uri? esUrl = null,
+		string? apiKey = null,
+		[Url] Uri? endpoint = null,
 		string? environment = null,
 		string slices = "auto",
 		[Range(-1, int.MaxValue)] float rps = -1,
@@ -164,7 +164,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		Cancel ct = default
 	)
 	{
-		var endpoint = ResolveEndpoint(esUrl, esApiKey);
+		var cfg = ResolveEndpoint(endpoint, apiKey);
 		var env = environment ?? config.ElasticsearchEnvironment;
 		var buildType = config.BuildType;
 		var batchTs = DateTimeOffset.UtcNow;
@@ -181,7 +181,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var pageAlias = IndicesCleanupPlanner.PageAliasName(env);
 
 		AnsiConsole.MarkupLine("[aqua bold]Indices unify[/] — [dim]docs-assembler + site + labs → website-search[/]");
-		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(endpoint.Uri.ToString())}");
+		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(cfg.Uri.ToString())}");
 		AnsiConsole.MarkupLine($"[dim]Environment:[/]   [white]{Markup.Escape(env)}[/]");
 		AnsiConsole.MarkupLine($"[dim]Sources:[/]       [white]{Markup.Escape(string.Join(", ", sourceAliases))}[/]");
 		AnsiConsole.MarkupLine($"[dim]Alias:[/]         [white]{Markup.Escape(pageAlias)}[/]");
@@ -190,7 +190,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			AnsiConsole.MarkupLine($"[dim]Aliases:[/]       [white]{Markup.Escape(string.Join(", ", extraLabels))}[/]");
 		AnsiConsole.WriteLine();
 
-		var transport = ElasticsearchTransportFactory.Create(endpoint);
+		var transport = ElasticsearchTransportFactory.Create(cfg);
 		var logger = loggerFactory.CreateLogger<IndicesCommands>();
 
 		var synonymSetName = $"docs-assembler-{env}";
@@ -211,8 +211,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine("[dim]Bootstrapping index templates...[/]");
 		using var orchestrator = new IncrementalSyncOrchestrator<WebsiteSearchDocument>(transport, lexicalContext, semanticContext)
 		{
-			ConfigurePrimary = o => ConfigureChannelOptions("primary", o, endpoint),
-			ConfigureSecondary = o => ConfigureChannelOptions("secondary", o, endpoint, semantic: true),
+			ConfigurePrimary = o => ConfigureChannelOptions("primary", o, cfg),
+			ConfigureSecondary = o => ConfigureChannelOptions("secondary", o, cfg, semantic: true),
 			OnRolloverDecision = info =>
 			{
 				var roll = info.RolledOver ? "new backing index" : "reuse";
@@ -1353,7 +1353,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// <param name="ct">Cancellation token.</param>
 	public async Task Cleanup([AsParameters] IndicesCleanupOptions options, Cancel ct = default)
 	{
-		var endpoint = ResolveEndpoint(options.EsUrl, options.EsApiKey);
+		var cfg = ResolveEndpoint(options.Endpoint, options.ApiKey);
 		var environment = options.Environment ?? config.ElasticsearchEnvironment;
 		var buildType = config.BuildType;
 		var keep = options.Keep;
@@ -1361,7 +1361,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var pageAlias = IndicesCleanupPlanner.PageAliasName(environment);
 
 		AnsiConsole.MarkupLine("[aqua bold]Indices cleanup[/]");
-		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(endpoint.Uri.ToString())}");
+		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(cfg.Uri.ToString())}");
 		AnsiConsole.MarkupLine($"[dim]Environment:[/]   [white]{Markup.Escape(environment)}[/]");
 		AnsiConsole.MarkupLine($"[dim]Keep:[/]          [white]{keep}[/] per alias family");
 		if (dryRun)
@@ -1376,7 +1376,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine($"[dim]Protected alias:[/]  [white]{Markup.Escape(pageAlias)}[/]");
 		AnsiConsole.WriteLine();
 
-		var transport = ElasticsearchTransportFactory.Create(endpoint);
+		var transport = ElasticsearchTransportFactory.Create(cfg);
 
 		// Single round-trip: GET all matching index patterns and their aliases
 		var patterns = string.Join(",", knownAliases.Select(a => a.IndexPattern));
@@ -1633,17 +1633,17 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		return resp.Get<long?>("count") ?? 0;
 	}
 
-	private ElasticsearchEndpoint ResolveEndpoint(Uri? esUrl, string? esApiKey)
+	private ElasticsearchEndpoint ResolveEndpoint(Uri? endpoint, string? apiKey)
 	{
-		var endpoint = config.Elasticsearch;
-		if (esUrl is not null)
-			endpoint.Uri = esUrl;
-		if (esApiKey is not null)
+		var cfg = config.Elasticsearch;
+		if (endpoint is not null)
+			cfg.Uri = endpoint;
+		if (apiKey is not null)
 		{
-			endpoint.ApiKey = esApiKey;
-			endpoint.Username = null;
-			endpoint.Password = null;
+			cfg.ApiKey = apiKey;
+			cfg.Username = null;
+			cfg.Password = null;
 		}
-		return endpoint;
+		return cfg;
 	}
 }

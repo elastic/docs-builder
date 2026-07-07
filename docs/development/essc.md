@@ -39,7 +39,7 @@ dotnet run --project src/tooling/essc -- --help
 
 `essc` resolves credentials in this order of precedence:
 
-1. CLI flags (`--es-url`, `--es-api-key`)
+1. CLI flags (`--endpoint`, `--api-key`)
 2. Environment variables (see table below)
 3. Dotnet user-secrets store `docs-builder` (local development) — the same store the
    rest of this repository uses, so aspire and essc share `Parameters:ElasticsearchUrl`
@@ -99,8 +99,8 @@ essc contentstack sync
 | `--no-ai`        | false              | Skip generative AI (no post-sync enrich batch)                          |
 | `--max-ai-docs`  | 100 (when omitted) | Positive cap on documents enriched after finalize; omit for default 100 |
 | `--max-ai-time`  | none               | Wall-clock cap for post-sync AI (minimum `1m` when set)                 |
-| `--es-url`       | from secrets       | Override Elasticsearch endpoint                                         |
-| `--es-api-key`   | from secrets       | Override Elasticsearch API key                                          |
+| `--endpoint`     | from secrets       | Override Elasticsearch endpoint                                         |
+| `--api-key`      | from secrets       | Override Elasticsearch API key                                          |
 | `--page-per`     | 0 (unlimited)      | Max pages per content type (useful for testing)                         |
 | `--cache-folder` | OS app data        | Override cursor state directory                                         |
 
@@ -122,12 +122,12 @@ Runs generative AI enrichment on existing **`site-*`** semantic indices without 
 essc contentstack ai-enrich
 ```
 
-| Flag             | Default       | Description                               |
-| ---------------- | ------------- | ----------------------------------------- |
-| `--max-run-time` | unlimited     | Stop enrichment after N minutes           |
-| `--max-run-docs` | 0 (unlimited) | Enrich at most N documents (`0` = no cap) |
-| `--es-url`       | from secrets  | Override Elasticsearch endpoint           |
-| `--es-api-key`   | from secrets  | Override Elasticsearch API key            |
+| Flag            | Default       | Description                               |
+| --------------- | ------------- | ----------------------------------------- |
+| `--max-ai-time` | unlimited     | Stop enrichment after N minutes           |
+| `--max-ai-docs` | 0 (unlimited) | Enrich at most N documents (`0` = no cap) |
+| `--endpoint`    | from secrets  | Override Elasticsearch endpoint           |
+| `--api-key`     | from secrets  | Override Elasticsearch API key            |
 
 ### `contentstack types`
 
@@ -154,7 +154,7 @@ Discovers labs URLs from sitemaps, crawls HTML, and bulk-ingests into **`labs-*`
 
 ### `labs ai-enrich`
 
-Runs generative AI enrichment on existing **`labs-*`** semantic indices without re-crawling. Flags match **`contentstack ai-enrich`** (`--max-run-time`, `--max-run-docs`, `--es-url`, `--es-api-key`).
+Runs generative AI enrichment on existing **`labs-*`** semantic indices without re-crawling. Flags match **`contentstack ai-enrich`** (`--max-ai-time`, `--max-ai-docs`, `--endpoint`, `--api-key`).
 
 ```bash
 essc labs ai-enrich

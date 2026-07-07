@@ -21,11 +21,11 @@ internal sealed class LabsSyncOptions
 	public bool DryRun { get; set; }
 
 	/// <summary>Override Elasticsearch API key (otherwise from configuration).</summary>
-	public string? EsApiKey { get; set; }
+	public string? ApiKey { get; set; }
 
 	/// <summary>Override Elasticsearch base URL (absolute URI).</summary>
 	[Url]
-	public Uri? EsUrl { get; set; }
+	public Uri? Endpoint { get; set; }
 
 	/// <summary>
 	/// Comma-separated extra path segments to exclude after default labs exclusions.
@@ -101,8 +101,8 @@ internal sealed class LabsCommands(
 	public async Task Sync([AsParameters] LabsSyncOptions options, Cancel ct = default)
 	{
 		var dryRun = options.DryRun;
-		var esApiKey = options.EsApiKey;
-		var esUrl = options.EsUrl;
+		var apiKey = options.ApiKey;
+		var endpoint = options.Endpoint;
 		var excludePaths = options.ExcludePaths;
 		var fair = options.Fair;
 		var force = options.Force;
@@ -129,13 +129,13 @@ internal sealed class LabsCommands(
 			return;
 		}
 
-		var endpoint = ResolveEndpoint(esUrl, esApiKey);
+		var cfg = ResolveEndpoint(endpoint, apiKey);
 		var buildType = config.BuildType;
 		var env = config.ElasticsearchEnvironment;
 		var indexAlias = LabsSiteCrawlPlanner.ResolveLexicalReadAlias(buildType, env);
 
 		AnsiConsole.MarkupLine("[aqua bold]Labs crawl[/] — [dim]search-labs, security-labs, observability-labs[/]");
-		AnsiConsole.MarkupLine($"[dim]Elasticsearch:{Markup.Escape(endpoint.Uri.ToString())}[/]");
+		AnsiConsole.MarkupLine($"[dim]Elasticsearch:{Markup.Escape(cfg.Uri.ToString())}[/]");
 		AnsiConsole.MarkupLine($"[dim]Incremental cache alias:[/] [white]{Markup.Escape(indexAlias)}[/]");
 		if (force)
 			AnsiConsole.MarkupLine("[yellow]Force:[/] [dim]skipping Elasticsearch crawl cache (full crawl plan)[/]");
@@ -143,7 +143,7 @@ internal sealed class LabsCommands(
 			AnsiConsole.MarkupLine("[yellow]Dry run[/]");
 		AnsiConsole.WriteLine();
 
-		var transport = ElasticsearchTransportFactory.Create(endpoint);
+		var transport = ElasticsearchTransportFactory.Create(cfg);
 
 		LabsSiteCrawlPlanner.LabsSitemapDiscoveryResult discovery;
 		if (IsInteractive())
@@ -203,7 +203,7 @@ internal sealed class LabsCommands(
 		{
 			exporter = new LabsDocumentExporter(
 				loggerFactory,
-				endpoint,
+				cfg,
 				transport,
 				buildType,
 				env,
@@ -348,21 +348,21 @@ internal sealed class LabsCommands(
 	/// Run generative AI enrichment on existing <c>labs-*</c> semantic indices (no labs crawl).
 	/// </summary>
 	/// <remarks>
-	/// <paramref name="maxRunDocs"/> is an optional cap; <c>0</c> means no document limit.
-	/// Omit <paramref name="maxRunTime"/> for no wall-clock limit, or set a duration of at least one minute (for example <c>1h</c>, <c>90m</c>).
+	/// <paramref name="maxAiDocs"/> is an optional cap; <c>0</c> means no document limit.
+	/// Omit <paramref name="maxAiTime"/> for no wall-clock limit, or set a duration of at least one minute (for example <c>1h</c>, <c>90m</c>).
 	/// </remarks>
 	[CommandName("ai-enrich")]
 	public async Task AiEnrich(
-		string? esApiKey = null,
-		[Url] Uri? esUrl = null,
-		[Range(0, int.MaxValue)] int maxRunDocs = 0,
-		TimeSpan? maxRunTime = null,
+		string? apiKey = null,
+		[Url] Uri? endpoint = null,
+		[Range(0, int.MaxValue)] int maxAiDocs = 0,
+		TimeSpan? maxAiTime = null,
 		Cancel ct = default
 	)
 	{
-		if (!AiEnrichmentBudget.TryValidateMaxTime(maxRunTime, out var maxRunTimeError))
+		if (!AiEnrichmentBudget.TryValidateMaxTime(maxAiTime, out var maxAiTimeError))
 		{
-			await Console.Error.WriteLineAsync($"Error: --max-run-time {maxRunTimeError}");
+			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}");
 			await Console.Error.WriteLineAsync("Run 'essc labs ai-enrich --help' for usage.");
 			Environment.Exit(2);
 		}
@@ -370,19 +370,19 @@ internal sealed class LabsCommands(
 		AnsiConsole.MarkupLine("[aqua bold]Labs AI enrichment[/] [dim](labs-* indices)[/]");
 		AnsiConsole.WriteLine();
 
-		var endpoint = ResolveEndpoint(esUrl, esApiKey);
+		var cfg = ResolveEndpoint(endpoint, apiKey);
 
-		AnsiConsole.MarkupLine($"[dim]Elasticsearch: {Markup.Escape(endpoint.Uri.ToString())}[/]");
+		AnsiConsole.MarkupLine($"[dim]Elasticsearch: {Markup.Escape(cfg.Uri.ToString())}[/]");
 
-		var transport = ElasticsearchTransportFactory.Create(endpoint);
+		var transport = ElasticsearchTransportFactory.Create(cfg);
 
-		using var deadline = AiEnrichmentDeadline.Create(maxRunTime, ct);
+		using var deadline = AiEnrichmentDeadline.Create(maxAiTime, ct);
 		var effectiveToken = deadline.Token;
 
-		if (maxRunTime is { } limit)
+		if (maxAiTime is { } limit)
 			AnsiConsole.MarkupLine($"[dim]Time limit: [yellow]{Markup.Escape(limit.ToString())}[/][/]");
-		if (maxRunDocs > 0)
-			AnsiConsole.MarkupLine($"[dim]Document limit: [yellow]{maxRunDocs:N0}[/] documents[/]");
+		if (maxAiDocs > 0)
+			AnsiConsole.MarkupLine($"[dim]Document limit: [yellow]{maxAiDocs:N0}[/] documents[/]");
 
 		AnsiConsole.WriteLine();
 
@@ -390,7 +390,7 @@ internal sealed class LabsCommands(
 		{
 			using var exporter = new LabsDocumentExporter(
 				loggerFactory,
-				endpoint,
+				cfg,
 				transport,
 				config.BuildType,
 				config.ElasticsearchEnvironment,
@@ -412,9 +412,9 @@ internal sealed class LabsCommands(
 			var aiResult = await AiEnrichmentConsole.RunInteractiveAsync(
 				exporter.AiEnrichmentEnabled,
 				(max, token) => exporter.RunAiEnrichmentAsync(max, token),
-				maxRunDocs,
+				maxAiDocs,
 				effectiveToken);
-			AiEnrichmentConsole.DisplaySummary(aiResult, maxRunTime, maxRunDocs);
+			AiEnrichmentConsole.DisplaySummary(aiResult, maxAiTime, maxAiDocs);
 		}
 		catch (OperationCanceledException) when (deadline.TimedOut)
 		{
@@ -509,18 +509,18 @@ internal sealed class LabsCommands(
 			: languages.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-	private ElasticsearchEndpoint ResolveEndpoint(Uri? esUrl, string? esApiKey)
+	private ElasticsearchEndpoint ResolveEndpoint(Uri? endpoint, string? apiKey)
 	{
-		var endpoint = config.Elasticsearch;
-		if (esUrl is not null)
-			endpoint.Uri = esUrl;
-		if (esApiKey is not null)
+		var cfg = config.Elasticsearch;
+		if (endpoint is not null)
+			cfg.Uri = endpoint;
+		if (apiKey is not null)
 		{
-			endpoint.ApiKey = esApiKey;
-			endpoint.Username = null;
-			endpoint.Password = null;
+			cfg.ApiKey = apiKey;
+			cfg.Username = null;
+			cfg.Password = null;
 		}
-		return endpoint;
+		return cfg;
 	}
 
 	private static int ParseOptionalNonNegativeInt(string? value)

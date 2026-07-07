@@ -915,7 +915,7 @@
           ],
           "name": "ai-enrich",
           "summary": "Run generative AI enrichment against an already-indexed semantic index, without a full assembler build.",
-          "notes": "Bootstraps and resolves the existing Elasticsearch aliases for environment, then runs a\nbounded generative AI enrichment pass on the semantic index. Does not crawl, build, or index documents \u2014\nrun assemble or assembler index first.",
+          "notes": "Bootstraps and resolves the existing Elasticsearch aliases for environment, then runs a\nbounded generative AI enrichment pass on the semantic index, budgeted by --max-ai-docs/--max-ai-time\n(the same flags used by index and assembler index). Does not crawl, build, or index documents \u2014\nrun assemble or assembler index first.",
           "usage": "docs-builder assembler ai-enrich [options]",
           "examples": [],
           "parameters": [
@@ -1163,36 +1163,6 @@
               "type": "string",
               "required": false,
               "summary": "Named deployment target whose existing indices should be enriched."
-            },
-            {
-              "role": "flag",
-              "name": "max-run-docs",
-              "type": "integer",
-              "required": false,
-              "summary": "Maximum documents to enrich; 0 means no cap.",
-              "defaultValue": "0",
-              "validations": [
-                {
-                  "kind": "range",
-                  "min": "0",
-                  "max": "2147483647"
-                }
-              ]
-            },
-            {
-              "role": "flag",
-              "name": "max-run-time",
-              "type": "string",
-              "required": false,
-              "summary": "Optional wall-clock limit for the run (e.g. 10m, 1h); minimum 1 minute when set.",
-              "defaultValue": "default",
-              "validations": [
-                {
-                  "kind": "timeSpanRange",
-                  "min": "\u00221m\u0022",
-                  "max": "\u002224h\u0022"
-                }
-              ]
             },
             {
               "role": "flag",
