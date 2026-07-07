@@ -128,8 +128,11 @@ public partial class OpenApiDocumentExporter(
 				var url = $"/docs/api/doc/{product}/operation/operation-{operationId.ToLowerInvariant()}";
 
 				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
+				// Trim: spec summaries occasionally carry stray leading/trailing whitespace or a
+				// trailing newline, which would otherwise flow verbatim into the indexed title.
+				var summary = operation.Value.Summary?.Trim();
 				// inject product name into title to ensure differentiation and better scoring
-				var title = $"{operation.Value.Summary ?? operationId} - {productName} API";
+				var title = $"{(string.IsNullOrEmpty(summary) ? operationId : summary)} - {productName} API";
 				// append the raw operation id (e.g. "_bulk") so the REST endpoint name is searchable —
 				// keep it verbatim (no case/underscore normalization) since that's exactly what users type.
 				var searchTitle = $"{title} - {operationId}";
