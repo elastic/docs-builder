@@ -38,6 +38,25 @@ public static class SharedMappingConfig
 			.MultiField("match", mf => mf.Text())
 			.MultiField("prefix", mf => mf.Text().Analyzer(HierarchyAnalyzer)));
 
+	// Parents is declared on SearchDocumentBase, so every document type shares this topology —
+	// keyword+multi-field on .path (breadcrumb-prefix search/exact-match) and a synonyms-aware
+	// analyzer on .title. ParentDocument's own properties carry no [Keyword]/[Text] attributes,
+	// so without this override every document type would fall back to a plain generator-default
+	// text mapping with no multi-fields at all.
+	private static MappingsBuilder<T> AddParentsFields<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase => m
+		// parents is an object array — AddProperty places sub-fields under "properties".
+		.AddProperty("parents.path", f => f.Keyword()
+			.MultiField("match", mf => mf.Text())
+			.MultiField("prefix", mf => mf.Text().Analyzer(HierarchyAnalyzer)))
+		.AddProperty("parents.title", f => f.Text()
+			.SearchAnalyzer(SynonymsAnalyzer)
+			.MultiField("keyword", mf => mf.Keyword()))
+		// Alias for the pre-rename field name — remove once all indices are rebuilt under the
+		// new `parents.path` shape and no consumer queries the old name. "parents" is an
+		// object array, so the alias sibling goes in its "properties" container (AddProperty),
+		// not "fields" (AddField requires a leaf-typed parent).
+		.AddProperty("parents.url", f => f.Alias("parents.path"));
+
 	private static MappingsBuilder<T> AddNavigationFields<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase => m
 		.Section(f => f.Normalizer(KeywordNormalizer).CopyTo("tags"))
 		.AddProperty("navigation.depth", f => f.RankFeature().PositiveScoreImpact(false))
@@ -88,6 +107,7 @@ public static class SharedMappingConfig
 			.AddNavigationFields()
 			.AddContentTagsField()
 			.AddCommonTitleMappings()
+			.AddParentsFields()
 			.AddLegacyFieldAliases()
 			.SearchTitle(f => f
 				.Analyzer(SynonymsFixedAnalyzer)

@@ -12,10 +12,6 @@ namespace Elastic.SiteSearch.Tests;
 /// Verifies that fields inherited from <see cref="SearchDocumentBase"/> appear in the
 /// mapping JSON of every concrete document type, and that the <c>[Id]</c> attribute on
 /// <c>Url</c> resolves correctly through each context's <c>GetId</c> delegate.
-/// <para>
-/// Note: <c>DocumentationDocument</c> mapping tests live in the docs-builder repo
-/// (where the type now resides) rather than here.
-/// </para>
 /// </summary>
 public class MappingStructureTests
 {
@@ -324,4 +320,49 @@ public class MappingStructureTests
 	[Fact]
 	public void GuideDocument_Fields_UrlMatchesJsonPropertyName() =>
 		GuideMappingContext.GuideDocument.Fields.Path.Should().Be("path");
+
+	// ── parents: shared topology declared once in SharedMappingConfig ────────
+
+	[Fact]
+	public void SiteDocument_ParentsPath_IsKeywordWithMatchAndPrefixMultiFields()
+	{
+		var json = SiteMappingContext.SiteDocument.GetMappingJson();
+		using var doc = JsonDocument.Parse(json);
+		var path = doc.RootElement.GetProperty("properties").GetProperty("parents").GetProperty("properties").GetProperty("path");
+
+		path.GetProperty("type").GetString().Should().Be("keyword");
+		var fields = path.GetProperty("fields");
+		fields.TryGetProperty("match", out _).Should().BeTrue();
+		fields.GetProperty("prefix").GetProperty("analyzer").GetString().Should().Be("hierarchy_analyzer");
+	}
+
+	// ── Unified index (WebsiteSearchDocument) merges in DocumentationDocument's
+	// applies_to topology, which it has no C# property for ─────────────────────
+
+	[Fact]
+	public void WebsiteSearchDocument_MergesDocumentationAppliesTo()
+	{
+		var json = WebsiteSearchMappingContext.WebsiteSearchDocument.GetMappingJson();
+		using var doc = JsonDocument.Parse(json);
+		var appliesTo = doc.RootElement.GetProperty("properties").GetProperty("applies_to");
+
+		appliesTo.GetProperty("type").GetString().Should().Be("nested");
+		var props = appliesTo.GetProperty("properties");
+		props.GetProperty("type").GetProperty("type").GetString().Should().Be("keyword");
+		props.GetProperty("type").GetProperty("normalizer").GetString().Should().Be("keyword_normalizer");
+		props.GetProperty("version").GetProperty("type").GetString().Should().Be("version");
+	}
+
+	[Fact]
+	public void WebsiteSearchDocument_ParentsPath_IsKeywordWithMatchAndPrefixMultiFields()
+	{
+		var json = WebsiteSearchMappingContext.WebsiteSearchDocument.GetMappingJson();
+		using var doc = JsonDocument.Parse(json);
+		var path = doc.RootElement.GetProperty("properties").GetProperty("parents").GetProperty("properties").GetProperty("path");
+
+		path.GetProperty("type").GetString().Should().Be("keyword");
+		var fields = path.GetProperty("fields");
+		fields.TryGetProperty("match", out _).Should().BeTrue();
+		fields.GetProperty("prefix").GetProperty("analyzer").GetString().Should().Be("hierarchy_analyzer");
+	}
 }
