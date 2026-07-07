@@ -68,6 +68,7 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				AiQuestions = result.AiQuestions,
 				AiUseCases = result.AiUseCases,
 				LastUpdated = result.LastUpdated,
+				SourceUrl = result.SourceUrl,
 				Parents = result.Parents.Select(p => new ParentDto
 				{
 					Title = p.Title,

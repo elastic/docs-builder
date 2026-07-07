@@ -110,6 +110,7 @@ public sealed record DocumentResponse
 	public string[]? AiQuestions { get; init; }
 	public string[]? AiUseCases { get; init; }
 	public DateTimeOffset? LastUpdated { get; init; }
+	public string? SourceUrl { get; init; }
 	public required List<ParentDto> Parents { get; init; }
 	public required List<string> Headings { get; init; }
 	public ProductDto? Product { get; init; }

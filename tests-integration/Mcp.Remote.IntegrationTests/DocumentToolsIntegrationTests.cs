@@ -73,6 +73,33 @@ public class DocumentToolsIntegrationTests(ITestOutputHelper output) : McpToolsI
 	}
 
 	[Fact]
+	public async Task GetDocumentByUrl_SourceUrlIsGitHubBlobUrlWhenPresent()
+	{
+		// Arrange
+		var (documentTools, clientAccessor) = CreateDocumentTools();
+		Assert.SkipUnless(documentTools is not null, "Elasticsearch is not configured");
+		LogDiagnostics(clientAccessor);
+		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
+		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
+
+		// Act
+		var resultJson = await documentTools.GetDocumentByUrl(
+			"/docs/reference/elasticsearch",
+			cancellationToken: TestContext.Current.CancellationToken);
+
+		if (resultJson.Contains("\"error\""))
+			Assert.Skip("Test document not found in index");
+
+		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.DocumentResponse);
+		response.Should().NotBeNull();
+		Output.WriteLine($"source_url: {response!.SourceUrl ?? "(null — document predates indexing of this field)"}");
+
+		// source_url is null for docs indexed before this field was added; when present it must be a GitHub blob URL
+		if (response.SourceUrl is not null)
+			response.SourceUrl.Should().StartWith("https://github.com/").And.Contain("/blob/");
+	}
+
+	[Fact]
 	public async Task AnalyzeDocumentStructure_ReturnsStructure()
 	{
 		// Arrange
