@@ -108,6 +108,13 @@ public class HtmlWriter(
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
 
+		// Resolve the right-gutter CTA: an explicit, known frontmatter id is 'custom' and renders in
+		// isolated builds too (so authors can preview it); otherwise fall back to the built-in default,
+		// which stays assembler-only to preserve today's behavior.
+		var cta = DocumentationSet.Configuration.ResolveCta(markdown.YamlFrontMatter?.Cta?.Id, out var ctaWarning);
+		if (ctaWarning is not null)
+			DocumentationSet.Context.Collector.EmitWarning(markdown.FilePath, ctaWarning);
+
 		// Use DocumentInferrerService to get merged products and versioning info
 		var inference = DocumentInferrerService.InferForMarkdown(
 			DocumentationSet.Context.Git.RepositoryName,
@@ -199,7 +206,8 @@ public class HtmlWriter(
 			GitHubDocsUrl = gitHubDocsUrl,
 			GitHubRef = DocumentationSet.Context.Git.GitHubRef,
 			Branding = DocumentationSet.Configuration.Branding,
-			RedirectUrl = markdown.RedirectUrl
+			RedirectUrl = markdown.RedirectUrl,
+			Cta = cta
 		});
 
 		return new RenderResult

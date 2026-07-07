@@ -8,9 +8,9 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Versions;
-using Elastic.Internal.Search;
 
 namespace Elastic.Markdown.Tests.Search;
 

@@ -98,6 +98,9 @@ public class IndexViewModel
 
 	/// <summary>When set, the page performs a client-side redirect to this URL (used for alias pages).</summary>
 	public string? RedirectUrl { get; init; }
+
+	/// <summary>The resolved right-gutter CTA for this page (docset.yml template, or the built-in default).</summary>
+	public required Cta Cta { get; init; }
 }
 
 public class VersionDropDownItemViewModel

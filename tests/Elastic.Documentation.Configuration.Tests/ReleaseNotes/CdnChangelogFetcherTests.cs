@@ -53,6 +53,10 @@ public class CdnChangelogFetcherTests
 		bundles.Should().ContainSingle();
 		bundles[0].Version.Should().Be("9.3.0");
 		bundles[0].Entries.Should().ContainSingle().Which.Title.Should().Be("Sample enhancement");
+
+		// Artifact-root layout: bundles and their registry live under bundle/{product}/...
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/registry.json");
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.yaml");
 	}
 
 	[Fact]

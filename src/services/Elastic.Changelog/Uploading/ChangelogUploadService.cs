@@ -29,6 +29,30 @@ public record ChangelogUploadArguments
 	public required string S3BucketName { get; init; }
 	public string? Config { get; init; }
 	public string? Directory { get; init; }
+
+	/// <summary>
+	/// Authoring repository identifier used to scope changelog-entry keys
+	/// (<c>changelog/{org}/{repo}/{branch}/{file}</c>). Required for <see cref="ArtifactType.Changelog"/>
+	/// uploads; unused for bundle uploads (which are product-scoped from the bundle YAML). Resolved by the
+	/// CLI via the precedence <c>--repo</c> &gt; <c>bundle.repo</c> &gt; git remote origin.
+	/// </summary>
+	public string? Repo { get; init; }
+
+	/// <summary>
+	/// GitHub owner (org), the first segment of changelog-entry keys
+	/// (<c>changelog/{org}/{repo}/{branch}/{file}</c>). Required for <see cref="ArtifactType.Changelog"/>
+	/// uploads; unused for bundle uploads. Resolved by the CLI via the precedence
+	/// <c>--owner</c> &gt; <c>bundle.owner</c> &gt; git remote origin.
+	/// </summary>
+	public string? Owner { get; init; }
+
+	/// <summary>
+	/// Branch segment of changelog-entry keys (<c>changelog/{org}/{repo}/{branch}/{file}</c>), stored
+	/// verbatim so any <c>/</c> in the branch become real key separators (e.g. <c>feature/foo</c>).
+	/// Required for <see cref="ArtifactType.Changelog"/> uploads; unused for bundle uploads. Resolved by the
+	/// CLI via the precedence <c>--branch</c> &gt; the current git branch.
+	/// </summary>
+	public string? Branch { get; init; }
 }
 
 public partial class ChangelogUploadService(
@@ -47,8 +71,15 @@ public partial class ChangelogUploadService(
 	[GeneratedRegex(@"^[a-zA-Z0-9_-]+$")]
 	private static partial Regex ProductNameRegex();
 
-	private static readonly YamlDotNet.Serialization.IDeserializer EntryDeserializer =
-		ReleaseNotesSerialization.GetEntryDeserializer();
+	// Authoring repo identifier used as a single S3 path segment (changelog/{org}/{repo}/{branch}/{file}).
+	// Same character class as product names but also allows "."; "." / ".." are rejected to prevent traversal.
+	[GeneratedRegex(@"^[a-zA-Z0-9._-]+$")]
+	private static partial Regex RepoNameRegex();
+
+	// GitHub owner (org) login used as the first changelog key segment (changelog/{org}/...). GitHub logins
+	// are ASCII alphanumerics with single hyphens; "." is intentionally excluded.
+	[GeneratedRegex(@"^[a-zA-Z0-9-]+$")]
+	private static partial Regex OrgNameRegex();
 
 	public async Task<bool> Upload(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
@@ -73,7 +104,12 @@ public partial class ChangelogUploadService(
 
 		var targets = args.ArtifactType == ArtifactType.Bundle
 			? DiscoverBundleUploadTargets(collector, directory)
-			: DiscoverUploadTargets(collector, directory);
+			: DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch);
+
+		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
+		// unscoped and a silent skip would look like "nothing to upload".
+		if (collector.Errors > 0)
+			return false;
 
 		if (targets.Count == 0)
 		{
@@ -132,8 +168,35 @@ public partial class ChangelogUploadService(
 		}
 	}
 
-	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir)
+	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir, string? org, string? repo, string? branch)
 	{
+		// Option AD: entries live once, under the authoring org/repo/branch pool — independent of which
+		// products later consume them. Org, repo, and branch must all resolve (CLI flags > bundle config >
+		// git); a missing/invalid value is fatal because every entry key derives from them.
+		if (string.IsNullOrWhiteSpace(org) || !OrgNameRegex().IsMatch(org))
+		{
+			collector.EmitError(string.Empty,
+				$"A valid GitHub owner is required to upload changelog entries (resolved: \"{org ?? "<none>"}\"). " +
+				"Set --owner, bundle.owner in changelog.yml, or run inside a checkout with a github.com origin remote.");
+			return [];
+		}
+
+		if (string.IsNullOrWhiteSpace(repo) || !RepoNameRegex().IsMatch(repo) || repo is "." or "..")
+		{
+			collector.EmitError(string.Empty,
+				$"A valid repository identifier is required to upload changelog entries (resolved: \"{repo ?? "<none>"}\"). " +
+				"Set --repo, bundle.repo in changelog.yml, or run inside a checkout with a github.com origin remote.");
+			return [];
+		}
+
+		if (string.IsNullOrWhiteSpace(branch) || !IsValidBranch(branch))
+		{
+			collector.EmitError(string.Empty,
+				$"A valid branch is required to upload changelog entries (resolved: \"{branch ?? "<none>"}\"). " +
+				"Set --branch or run inside a checkout with a current branch.");
+			return [];
+		}
+
 		var rootDir = _fileSystem.DirectoryInfo.New(changelogDir);
 
 		var yamlFiles = _fileSystem.Directory.GetFiles(changelogDir, "*.yaml", SearchOption.TopDirectoryOnly)
@@ -151,52 +214,25 @@ public partial class ChangelogUploadService(
 				continue;
 			}
 
-			var products = ReadProductsFromFragment(filePath);
-			if (products.Count == 0)
-			{
-				_logger.LogDebug("No products found in {File}, skipping", filePath);
-				continue;
-			}
-
 			var fileName = _fileSystem.Path.GetFileName(filePath);
-
-			foreach (var product in products)
-			{
-				if (!ProductNameRegex().IsMatch(product))
-				{
-					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
-					continue;
-				}
-
-				var s3Key = $"{product}/changelog/{fileName}";
-				targets.Add(new UploadTarget(filePath, s3Key));
-			}
+			var s3Key = $"changelog/{org}/{repo}/{branch}/{fileName}";
+			targets.Add(new UploadTarget(filePath, s3Key));
 		}
 
 		return targets;
 	}
 
-	private List<string> ReadProductsFromFragment(string filePath)
+	// Validates a branch used verbatim as one-or-more changelog key segments
+	// (changelog/{org}/{repo}/{branch}/…). Each "/"-delimited part uses the repo-name class; empty parts
+	// and "." / ".." are rejected so slashes stay meaningful without enabling traversal.
+	private static bool IsValidBranch(string branch)
 	{
-		try
+		foreach (var part in branch.Split('/'))
 		{
-			var content = _fileSystem.File.ReadAllText(filePath);
-			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var entry = EntryDeserializer.Deserialize<ChangelogEntryDto>(normalized);
-			if (entry?.Products == null)
-				return [];
-
-			return entry.Products
-				.Select(p => p?.Product)
-				.Where(p => !string.IsNullOrWhiteSpace(p))
-				.Select(p => p!)
-				.ToList();
+			if (part.Length == 0 || part is "." or ".." || !RepoNameRegex().IsMatch(part))
+				return false;
 		}
-		catch (Exception ex)
-		{
-			_logger.LogWarning(ex, "Could not read products from {File}", filePath);
-			return [];
-		}
+		return true;
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
@@ -235,7 +271,7 @@ public partial class ChangelogUploadService(
 					continue;
 				}
 
-				var s3Key = $"{product}/bundle/{fileName}";
+				var s3Key = $"bundle/{product}/{fileName}";
 				targets.Add(new UploadTarget(filePath, s3Key));
 			}
 		}

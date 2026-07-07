@@ -155,14 +155,42 @@ public class StorybookBlock(DirectiveBlockParser parser, ParserContext context) 
 			return false;
 		}
 
+		if (TryReadRegistry(rawRegistry, out var registryJson, out var error))
+			return TryDeserializeRegistry(rawRegistry, registryJson, out registry);
+
+		// Only an environment-supplied registry is treated as best-effort: an ephemeral per-PR URL may not be published
+		// yet, so degrade to the committed default. A committed/static registry (no env fallback) that fails to read is
+		// an authoring error and stays a hard error so typos and broken paths don't silently drop every embed.
+		var fallback = Build.Configuration.StorybookRegistryFallback;
+		var hasEnvironmentFallback = !string.IsNullOrWhiteSpace(fallback)
+			&& !string.Equals(fallback, rawRegistry, StringComparison.Ordinal);
+		if (!hasEnvironmentFallback)
+		{
+			this.EmitError($"storybook registry could not be read: {rawRegistry}", error);
+			return false;
+		}
+
+		this.EmitWarning($"storybook registry '{rawRegistry}' could not be read; falling back to the committed default '{fallback}'.");
+
+		if (TryReadRegistry(fallback!, out registryJson, out error))
+			return TryDeserializeRegistry(fallback!, registryJson, out registry);
+
+		this.EmitError($"storybook registry could not be read: {fallback}", error);
+		return false;
+	}
+
+	private bool TryReadRegistry(string rawRegistry, out string registryJson, out Exception? error)
+	{
 		try
 		{
-			var registryJson = ReadRegistry(rawRegistry);
-			return TryDeserializeRegistry(rawRegistry, registryJson, out registry);
+			registryJson = ReadRegistry(rawRegistry);
+			error = null;
+			return true;
 		}
 		catch (Exception e)
 		{
-			this.EmitError($"storybook registry could not be read: {rawRegistry}", e);
+			registryJson = string.Empty;
+			error = e;
 			return false;
 		}
 	}

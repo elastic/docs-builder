@@ -1,0 +1,64 @@
+{
+  "locale": "en-us",
+  "title": "Acme Corp",
+  "url": "/customers/acme-corp",
+  "uid": "blt0000000000000080",
+  "_version": 3,
+  "ACL": {},
+  "created_at": "2023-04-01T10:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2023-08-15T14:30:00.000Z",
+  "updated_by": "bltuser00000000002b",
+  "tags": [],
+  "publish_date": null,
+  "main_header": {
+    "title_l10n": "Acme Corp",
+    "subtitle_l10n": "How Acme Corp uses Elastic to power real-time analytics",
+    "background_color": "dark",
+    "use_case": ["blt_usecase_00001"],
+    "industry": ["blt_industry_0001"],
+    "content_type": ["blt_contenttype_01"]
+  },
+  "introduction": {
+    "topic_heading_l10n": "Overview",
+    "paragraph_l10n": "<p>Acme Corp processes millions of events per day and needed a scalable solution for real-time analytics and monitoring.</p>"
+  },
+  "challenge_solution": [
+    {
+      "title_l10n": "Challenge",
+      "paragraph_l10n": "<p>The existing solution could not handle the growing data volume and lacked real-time capabilities.</p>"
+    },
+    {
+      "title_l10n": "Solution",
+      "paragraph_l10n": "<p>By deploying Elastic, Acme Corp achieved sub-second query times across petabytes of data.</p>"
+    }
+  ],
+  "modular_blocks": [
+    {
+      "title_text": {
+        "paragraph_l10n": "<p>The engineering team integrated Elasticsearch into their data pipeline within weeks.</p>"
+      }
+    },
+    {
+      "quote": {
+        "quote_l10n": "Elastic transformed how we approach observability and analytics.",
+        "author_l10n": "CTO, Acme Corp"
+      }
+    }
+  ],
+  "products_used": {},
+  "data_table_section": {},
+  "benefits": {},
+  "seo": {
+    "seo_title_l10n": "Acme Corp Customer Story | Elastic",
+    "seo_description_l10n": "Learn how Acme Corp uses Elastic for real-time analytics.",
+    "seo_keywords_l10n": "customer story, analytics",
+    "seo_image": null
+  },
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2023-04-02T08:00:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}

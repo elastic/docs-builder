@@ -14,11 +14,11 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 public readonly record struct CdnChangelogEntry(string FileName, string Content);
 
 /// <summary>
-/// Fetches the individual (scrubbed) changelog entries for a single product from the public CDN, for
-/// the <c>changelog bundle</c> command when sourcing entries from S3 rather than a local folder. It
-/// reads <c>{base}/{product}/changelog/registry.json</c> to enumerate entries and downloads each
-/// <c>{base}/{product}/changelog/{file}</c> as raw YAML; the bundle command then applies its usual
-/// filter (products / prs / issues) to the downloaded set.
+/// Fetches the individual (scrubbed) changelog entries for a single authoring org/repo/branch pool from
+/// the public CDN, for the <c>changelog bundle</c> command when sourcing entries from S3 rather than a
+/// local folder. It reads <c>{base}/changelog/{org}/{repo}/{branch}/registry.json</c> to enumerate entries
+/// and downloads each <c>{base}/changelog/{org}/{repo}/{branch}/{file}</c> as raw YAML; the bundle command
+/// then applies its usual filter (products / prs / issues) to the downloaded set.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -92,19 +92,34 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	}
 
 	/// <summary>
-	/// Downloads the changelog entries for <paramref name="product"/> from the CDN at
-	/// <paramref name="baseUri"/>. Returns an empty list after emitting an error when the registry cannot
-	/// be read or when a registry-listed entry cannot be fetched within the retry budget. Entries are
-	/// returned in registry order; the caller owns filtering and de-duplication.
+	/// Downloads the changelog entries for the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/>
+	/// pool from the CDN at <paramref name="baseUri"/>. Returns an empty list after emitting an error when
+	/// the registry cannot be read or when a registry-listed entry cannot be fetched within the retry budget.
+	/// Entries are returned in registry order; the caller owns filtering and de-duplication.
 	/// </summary>
 	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchAsync(
 		Uri baseUri,
-		string product,
+		string org,
+		string repo,
+		string branch,
 		Action<string> emitError,
 		Action<string> emitWarning,
 		Cancel ctx)
 	{
-		var registryUri = Combine(baseUri, product, "changelog", "registry.json");
+		var poolLabel = $"{org}/{repo}/{branch}";
+
+		// Defense-in-depth: org/repo come from config and branch from config or CLI on the consumer side.
+		// Reject empty or traversal segments before building the URI so it cannot normalize a "../" into a
+		// different changelog pool than intended.
+		if (!IsValidPool(org, repo, branch))
+		{
+			emitError(
+				$"Invalid changelog pool '{poolLabel}': the org, repo, and each branch segment must be non-empty, contain no path separators, and not be '.' or '..'.");
+			return [];
+		}
+
+		var poolSegments = PoolSegments(org, repo, branch).ToArray();
+		var registryUri = CombineSegments(baseUri, [.. poolSegments, "registry.json"]);
 
 		ChangelogRegistry? registry;
 		try
@@ -113,20 +128,20 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
-			emitError($"Could not fetch changelog entry registry for product '{product}' from {registryUri}: {ex.Message}");
+			emitError($"Could not fetch changelog entry registry for '{poolLabel}' from {registryUri}: {ex.Message}");
 			return [];
 		}
 
 		if (registry is null)
 		{
-			emitError($"Changelog entry registry for product '{product}' at {registryUri} was empty or unparseable.");
+			emitError($"Changelog entry registry for '{poolLabel}' at {registryUri} was empty or unparseable.");
 			return [];
 		}
 
 		if (registry.SchemaVersion > SupportedSchemaVersion)
 		{
 			emitError(
-				$"Changelog entry registry for product '{product}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
+				$"Changelog entry registry for '{poolLabel}' uses schema version {registry.SchemaVersion}, but this build only understands version {SupportedSchemaVersion}. Update docs-builder.");
 			return [];
 		}
 
@@ -138,12 +153,12 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			var fileName = entry.File;
 			if (string.IsNullOrWhiteSpace(fileName) || !IsSafeFileName(fileName))
 			{
-				emitWarning($"Changelog entry registry for '{product}' lists an invalid file name '{fileName}'; skipping.");
+				emitWarning($"Changelog entry registry for '{poolLabel}' lists an invalid file name '{fileName}'; skipping.");
 				continue;
 			}
 
-			var entryUri = Combine(baseUri, product, "changelog", fileName);
-			var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, product, ctx).ConfigureAwait(false);
+			var entryUri = CombineSegments(baseUri, [.. poolSegments, fileName]);
+			var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, poolLabel, ctx).ConfigureAwait(false);
 			if (fetched)
 			{
 				entries.Add(new CdnChangelogEntry(fileName, content));
@@ -154,12 +169,12 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			// scrubbed to the public one within milliseconds. Still missing after the retry budget means
 			// a genuine propagation/scrub failure — fail rather than ship a bundle missing this entry.
 			emitError(
-				$"Changelog entry '{fileName}' for product '{product}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
+				$"Changelog entry '{fileName}' for '{poolLabel}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
 				"The scrubbed copy may not have propagated to the CDN yet; retry shortly, and if it persists check the changelog scrubber pipeline.");
 			return [];
 		}
 
-		_logger.LogInformation("Fetched {Count} changelog entry(ies) for {Product} from {BaseUri}", entries.Count, product, baseUri);
+		_logger.LogInformation("Fetched {Count} changelog entry(ies) for {Pool} from {BaseUri}", entries.Count, poolLabel, baseUri);
 		return entries;
 	}
 
@@ -168,7 +183,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// up to <see cref="_maxAttempts"/> times with exponential backoff. Retry requests are cache-busted
 	/// so a CloudFront-cached 404 cannot pin the result for the whole window.
 	/// </summary>
-	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchEntryAsync(Uri uri, string fileName, string product, Cancel ctx)
+	private async Task<(bool Fetched, string Content, string? LastError)> TryFetchEntryAsync(Uri uri, string fileName, string poolLabel, Cancel ctx)
 	{
 		string? lastError = null;
 
@@ -179,7 +194,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			{
 				var content = await FetchTextAsync(uri, attempt, ctx).ConfigureAwait(false);
 				if (attempt > 1)
-					_logger.LogInformation("Fetched changelog entry '{File}' for {Product} on attempt {Attempt}/{Max}", fileName, product, attempt, _maxAttempts);
+					_logger.LogInformation("Fetched changelog entry '{File}' for {Pool} on attempt {Attempt}/{Max}", fileName, poolLabel, attempt, _maxAttempts);
 				return (true, content, null);
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
@@ -190,8 +205,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 
 				var delay = RetryDelay(attempt);
 				_logger.LogDebug(
-					"Changelog entry '{File}' for {Product} not yet available (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
-					fileName, product, attempt, _maxAttempts, ex.Message, delay);
+					"Changelog entry '{File}' for {Pool} not yet available (attempt {Attempt}/{Max}: {Error}); retrying in {Delay}",
+					fileName, poolLabel, attempt, _maxAttempts, ex.Message, delay);
 				await _sleep(delay, ctx).ConfigureAwait(false);
 			}
 		}
@@ -241,7 +256,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		return new Uri($"{uri.AbsoluteUri}{separator}_={DateTimeOffset.UtcNow.Ticks:x}");
 	}
 
-	private static Uri Combine(Uri baseUri, params string[] segments)
+	private static Uri CombineSegments(Uri baseUri, IReadOnlyList<string> segments)
 	{
 		var basePath = baseUri.AbsoluteUri.TrimEnd('/');
 		var suffix = string.Join('/', segments.Select(Uri.EscapeDataString));
@@ -249,8 +264,46 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	}
 
 	/// <summary>
+	/// Expands the pool into individually-escapable path segments — <c>changelog</c>, org, repo, then each
+	/// <c>/</c>-delimited part of the branch — so a branch's slashes stay real CDN key separators rather
+	/// than being percent-encoded into a single segment.
+	/// </summary>
+	private static IEnumerable<string> PoolSegments(string org, string repo, string branch)
+	{
+		yield return "changelog";
+		yield return org;
+		yield return repo;
+		foreach (var part in branch.Split('/'))
+			yield return part;
+	}
+
+	/// <summary>
+	/// Validates the consumer-supplied pool coordinates (org, repo, and each <c>/</c>-delimited branch
+	/// segment) so a malformed branch cannot redirect the fetch to a different pool via URI normalization.
+	/// </summary>
+	private static bool IsValidPool(string org, string repo, string branch)
+	{
+		if (!IsSafePoolSegment(org) || !IsSafePoolSegment(repo))
+			return false;
+
+		foreach (var part in branch.Split('/'))
+		{
+			if (!IsSafePoolSegment(part))
+				return false;
+		}
+
+		return true;
+	}
+
+	private static bool IsSafePoolSegment(string segment) =>
+		!string.IsNullOrEmpty(segment)
+		&& segment is not ("." or "..")
+		&& !segment.Contains('/', StringComparison.Ordinal)
+		&& !segment.Contains('\\', StringComparison.Ordinal);
+
+	/// <summary>
 	/// Guards against path traversal or nested keys sneaking in via the registry: an entry file name
-	/// must be a single path segment (the producer always writes <c>{product}/changelog/{file}</c>).
+	/// must be a single path segment (the producer always writes <c>changelog/{org}/{repo}/{branch}/{file}</c>).
 	/// </summary>
 	private static bool IsSafeFileName(string fileName) =>
 		!fileName.Contains('/', StringComparison.Ordinal)

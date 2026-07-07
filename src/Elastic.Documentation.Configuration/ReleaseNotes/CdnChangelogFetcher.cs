@@ -12,8 +12,8 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
 /// Fetches changelog bundles for a single product from the public CDN. It reads
-/// <c>{base}/{product}/registry.json</c> to enumerate bundles, downloads each
-/// <c>{base}/{product}/bundle/{file}</c>, and parses them via
+/// <c>{base}/bundle/{product}/registry.json</c> to enumerate bundles, downloads each
+/// <c>{base}/bundle/{product}/{file}</c>, and parses them via
 /// <see cref="BundleLoader.LoadBundlesFromContent"/>.
 /// </summary>
 /// <remarks>
@@ -93,7 +93,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 		Action<string> emitWarning,
 		Cancel ctx)
 	{
-		var registryUri = Combine(baseUri, product, "registry.json");
+		var registryUri = Combine(baseUri, "bundle", product, "registry.json");
 
 		ChangelogRegistry? registry;
 		try
@@ -164,7 +164,7 @@ public sealed class CdnChangelogFetcher : IDisposable
 				continue;
 			}
 
-			var bundleUri = Combine(baseUri, product, "bundle", fileName);
+			var bundleUri = Combine(baseUri, "bundle", product, fileName);
 			try
 			{
 				contents.Add((fileName, await FetchTextAsync(bundleUri, ctx).ConfigureAwait(false)));

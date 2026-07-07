@@ -256,9 +256,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 			RulesetName = clientAccessor.RulesetName,
 			SemanticEnabled = true
 		};
-		var inner = new DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>(
+		var inner = new DefaultSearchService<DocumentationDocument>(
 			clientAccessor.Client, clientAccessor.SearchIndex, queryConfig,
-			NullLogger<DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>>.Instance);
+			NullLogger<DefaultSearchService<DocumentationDocument>>.Instance);
 
 		var gateway = new NavigationSearchService(inner, clientAccessor, NullLogger<NavigationSearchService>.Instance);
 		return (gateway, clientAccessor);

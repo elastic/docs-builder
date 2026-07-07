@@ -37,19 +37,60 @@ public class CdnChangelogEntryFetcherTests
 	public async Task FetchAsync_HappyPath_ReturnsAllEntriesFromRegistry()
 	{
 		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/changelog/registry.json", StringComparison.Ordinal)
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
 				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-b.yaml" } ] }""")
 				: Yaml(SampleEntry));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("1-a.yaml", "2-b.yaml");
 		entries.Should().OnlyContain(e => e.Content.Contains("Sample enhancement"));
-		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/elasticsearch/changelog/1-a.yaml", StringComparison.Ordinal));
+		// Artifact-root layout: entries and their registry live under changelog/{org}/{repo}/{branch}/...
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/main/1-a.yaml", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task FetchAsync_BranchWithSlashes_KeepsBranchSeparatorsInPath()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elastic/elasticsearch/feature/foo", "bundles": [ { "file": "1-a.yaml" } ] }""")
+				: Yaml(SampleEntry));
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "feature/foo", emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		entries.Select(e => e.FileName).Should().BeEquivalentTo("1-a.yaml");
+		// The branch's '/' stays a real path separator (not percent-encoded into one segment).
+		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/feature/foo/registry.json");
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/feature/foo/1-a.yaml", StringComparison.Ordinal));
+	}
+
+	[Theory]
+	[InlineData("..")]
+	[InlineData("feature/..")]
+	[InlineData("")]
+	public async Task FetchAsync_UnsafeBranch_EmitsErrorAndDoesNotHitCdn(string branch)
+	{
+		// A traversal/empty branch segment must be rejected before any request, so URI normalization
+		// can't redirect the fetch to a different pool.
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
+		var (errors, _, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", branch, emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		entries.Should().BeEmpty();
+		errors.Should().ContainSingle().Which.Should().Contain("Invalid changelog pool");
+		handler.RequestedPaths.Should().BeEmpty("validation must happen before any CDN request");
 	}
 
 	[Fact]
@@ -59,7 +100,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
@@ -72,7 +113,7 @@ public class CdnChangelogEntryFetcherTests
 		// (not skipped) so the bundle fails rather than silently dropping a release entry.
 		var handler = new StubHandler(req =>
 		{
-			if (req.RequestUri!.AbsolutePath.EndsWith("/changelog/registry.json", StringComparison.Ordinal))
+			if (req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-missing.yaml" } ] }""");
 			return req.RequestUri!.AbsolutePath.EndsWith("/2-missing.yaml", StringComparison.Ordinal)
 				? new HttpResponseMessage(HttpStatusCode.NotFound)
@@ -81,7 +122,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler, maxAttempts: 3);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("2-missing.yaml");
@@ -97,7 +138,7 @@ public class CdnChangelogEntryFetcherTests
 		var handler = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
-			if (path.EndsWith("/changelog/registry.json", StringComparison.Ordinal))
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" } ] }""");
 			if (path.EndsWith("/1-a.yaml", StringComparison.Ordinal))
 				return Interlocked.Increment(ref entryAttempts) == 1
@@ -108,7 +149,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -124,7 +165,7 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
@@ -134,13 +175,13 @@ public class CdnChangelogEntryFetcherTests
 	public async Task FetchAsync_UnsafeFileName_EmitsWarningAndSkips()
 	{
 		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/changelog/registry.json", StringComparison.Ordinal)
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
 				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "../escape.yaml" }, { "file": "ok.yaml" } ] }""")
 				: Yaml(SampleEntry));
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elasticsearch", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
 
 		errors.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("ok.yaml");

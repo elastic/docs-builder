@@ -1,0 +1,88 @@
+{
+  "description": "Maps anonymized test fixture files to the Contentstack content types they represent.",
+  "groups": {
+    "blog_legacy": {
+      "fixture": "blog_legacy.json",
+      "body_strategy": "body_l10n (flat HTML string)",
+      "content_types": ["blog"]
+    },
+    "blog_modern": {
+      "fixture": "blog_modern.json",
+      "body_strategy": "modular_blocks[].title_text.title_text[].paragraph_l10n",
+      "content_types": ["blog_v2"]
+    },
+    "video": {
+      "fixture": "video.json",
+      "body_strategy": "paragraph_l10n",
+      "content_types": ["videos"]
+    },
+    "press_release": {
+      "fixture": "press_release.json",
+      "body_strategy": "intro_paragraph_l10n + paragraph_l10n",
+      "content_types": ["press"]
+    },
+    "product_release": {
+      "fixture": "product_release.json",
+      "body_strategy": "release_notes / v5_release_notes",
+      "content_types": ["product_versions"]
+    },
+    "paragraph_page": {
+      "fixture": "paragraph_page.json",
+      "body_strategy": "paragraph_l10n (single HTML body)",
+      "content_types": ["agreements", "forms"]
+    },
+    "modular_page": {
+      "fixture": "modular_page.json",
+      "body_strategy": "modular_blocks[].title_text.paragraph_l10n",
+      "content_types": ["default_detail", "account_based_marketing", "product_detail"]
+    },
+    "use_case": {
+      "fixture": "use_case.json",
+      "body_strategy": "introduction.paragraph_l10n + challenge_solution[].paragraph_l10n + modular_blocks",
+      "content_types": ["use_cases"]
+    },
+    "faq_page": {
+      "fixture": "faq_page.json",
+      "body_strategy": "topic[].subtopic[].paragraph_l10n",
+      "content_types": ["faq"]
+    },
+    "customer_tile": {
+      "fixture": "customer_tile.json",
+      "body_strategy": "paragraph_l10n (short text)",
+      "content_types": ["customer_tile"]
+    },
+    "minimal_page": {
+      "fixture": "minimal_page.json",
+      "body_strategy": "No body content - title/url/seo only",
+      "content_types": [
+        "product_icons",
+        "blog_overview",
+        "press_overview",
+        "videos_overview",
+        "elasticon_videos_overview",
+        "customers_overview",
+        "integrations",
+        "cloud_regions",
+        "subscriptions_redesign",
+        "subscriptions_cloud",
+        "pricing_redesign",
+        "contact_redesign",
+        "features_overview",
+        "demo_gallery_overview",
+        "blog_archive_overview",
+        "search",
+        "past_releases",
+        "about_our_source_code",
+        "site_navigation",
+        "support_matrix",
+        "downloads_redesign",
+        "blog_category_detail",
+        "demo_gallery_detail",
+        "about_leadership_and_board",
+        "pricing_calculator",
+        "events_overview",
+        "timeline"
+      ]
+    }
+  }
+}

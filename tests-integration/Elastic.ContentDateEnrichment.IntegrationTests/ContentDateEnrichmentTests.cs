@@ -9,8 +9,9 @@ using AwesomeAssertions;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Documentation.Serialization;
-using Elastic.Internal.Search;
+using Elastic.Ingest.Elasticsearch;
 using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -57,7 +58,8 @@ public class ElasticsearchTestCluster : ICollectionFixture<ElasticsearchFixture>
 /// <summary>
 /// Integration tests verifying that content_last_updated is correctly resolved
 /// via the enrichment pipeline, even when documents are written via bulk update
-/// actions that skip ingest pipelines.
+/// actions that skip ingest pipelines. Uses the real IngestChannel (HashedBulkUpdate)
+/// from Elastic.Ingest.Elasticsearch — the same code path as production.
 /// </summary>
 [Collection("Elasticsearch")]
 public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutputHelper output)
@@ -75,24 +77,92 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		);
 	}
 
+	/// <summary>
+	/// Creates an IngestChannel using the same type context and serializer as production.
+	/// On first bootstrap (no existing index), the channel uses index bulk actions.
+	/// When <paramref name="indexNameOverride"/> is provided (pointing to an existing index),
+	/// the channel reuses that index and switches to update bulk actions (HashedBulkUpdate) —
+	/// the same scripted-upsert path that production uses on subsequent deploys.
+	/// </summary>
+	private async Task<IngestChannel<DocumentationDocument>> CreateChannelAsync(
+		Elastic.Markdown.Exporters.Elasticsearch.ContentDateEnrichment enrichment,
+		string testName,
+		string? indexNameOverride = null)
+	{
+		var synonymSetName = $"docs-{testName}-test";
+
+		// Register an empty synonym set — the analyzer references it by name
+		var synonymBody = new JsonObject { ["synonyms_set"] = new JsonArray() };
+		await _transport.PutAsync<StringResponse>(
+			$"_synonyms/{synonymSetName}",
+			PostData.String(synonymBody.ToJsonString()),
+			CancellationToken.None
+		);
+
+		var typeContext = DocumentationMappingContext.DocumentationDocument
+			.CreateContext(type: testName, env: "test") with
+		{
+			ConfigureAnalysis = a => SharedAnalysisFactory.BuildAnalysis(a, synonymSetName, ["test, testing"]),
+			IndexSettings = new Dictionary<string, string>
+			{
+				["index.default_pipeline"] = enrichment.PipelineName
+			}
+		};
+
+		var options = new IngestChannelOptions<DocumentationDocument>(_transport, typeContext, indexNameOverride: indexNameOverride)
+		{
+			SerializerContext = SourceGenerationContext.Default
+		};
+		return new IngestChannel<DocumentationDocument>(options);
+	}
+
+	/// <summary>
+	/// Writes documents through the real IngestChannel (HashedBulkUpdate) and waits for drain.
+	/// </summary>
+	private static async Task WriteDocuments(
+		IngestChannel<DocumentationDocument> channel,
+		params DocumentationDocument[] docs)
+	{
+		foreach (var doc in docs)
+			await channel.WaitToWriteAsync(doc, CancellationToken.None);
+
+		await channel.WaitForDrainAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
+	}
+
+	private static DocumentationDocument CreateDoc(string url, string contentHash, string title) => new()
+	{
+		Url = url,
+		Title = title,
+		SearchTitle = title,
+		Hash = contentHash,
+		ContentBodyHash = contentHash
+	};
+
 	[Fact]
 	public async Task FirstRun_AllDocumentsGetCurrentTimestamp()
 	{
 		var enrichment = CreateEnrichment("first-run");
-		var index = "test-first-run";
 
 		// Arrange: initialize enrichment infrastructure (empty lookup)
 		await enrichment.InitializeAsync(CancellationToken.None);
-		await CreateTestIndex(index, enrichment.PipelineName);
-		await IndexDocumentsDirectly(index,
-			("url1", "hash_a", "Doc 1"),
-			("url2", "hash_b", "Doc 2")
+		using var channel = await CreateChannelAsync(enrichment, "first-run");
+		await channel.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+		var index = channel.IndexName;
+
+		await WriteDocuments(channel,
+			CreateDoc("url1", "hash_a", "Doc 1"),
+			CreateDoc("url2", "hash_b", "Doc 2")
 		);
-		await RefreshIndex(index);
+		await channel.RefreshAsync(CancellationToken.None);
+		index = await ResolveIndexName(index);
+
+		// Diagnostic: read back what the channel actually stored
+		var beforeResolve = await GetDocument(index, "url1");
+		output.WriteLine($"Before resolve — url1 content_last_updated: {beforeResolve.ContentLastUpdated?.ToString("O") ?? "NULL"}");
 
 		// Act: run the post-indexing resolution
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
-		await RefreshIndex(index);
+		await channel.RefreshAsync(CancellationToken.None);
 
 		// Assert: all docs should have content_last_updated near "now" (not 0001-01-01)
 		var docs = await GetAllDocuments(index);
@@ -109,16 +179,22 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	public async Task SecondRun_UnchangedContentPreservesOldDate()
 	{
 		var enrichment = CreateEnrichment("unchanged");
-		var index = "test-unchanged";
 
-		// === First run: establish baseline ===
+		// === First run: new index, channel uses index actions (pipeline fires) ===
 		await enrichment.InitializeAsync(CancellationToken.None);
-		await CreateTestIndex(index, enrichment.PipelineName);
-		await IndexDocumentsDirectly(index,
-			("url1", "hash_a", "Doc 1"),
-			("url2", "hash_b", "Doc 2")
-		);
-		await RefreshIndex(index);
+		string index;
+		using (var channel1 = await CreateChannelAsync(enrichment, "unchanged"))
+		{
+			await channel1.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+			index = channel1.IndexName; // wildcard — resolved to concrete name below
+
+			await WriteDocuments(channel1,
+				CreateDoc("url1", "hash_a", "Doc 1"),
+				CreateDoc("url2", "hash_b", "Doc 2")
+			);
+			await channel1.RefreshAsync(CancellationToken.None);
+		}
+		index = await ResolveIndexName(index);
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
 		await enrichment.SyncLookupIndexAsync(index, CancellationToken.None);
@@ -132,12 +208,22 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		// Re-initialize for second run (re-executes enrich policy with updated lookup data)
 		await enrichment.InitializeAsync(CancellationToken.None);
 
-		// === Second run: same content_hash, simulating no content change ===
-		await IndexDocumentsDirectly(index,
-			("url1", "hash_a", "Doc 1 (re-indexed)"),
-			("url2", "hash_b", "Doc 2 (re-indexed)")
-		);
-		await RefreshIndex(index);
+		// === Second run: reuse existing index → channel uses update actions (HashedBulkUpdate) ===
+		using (var channel2 = await CreateChannelAsync(enrichment, "unchanged", indexNameOverride: index))
+		{
+			await channel2.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+
+			await WriteDocuments(channel2,
+				CreateDoc("url1", "hash_a", "Doc 1 (re-indexed)"),
+				CreateDoc("url2", "hash_b", "Doc 2 (re-indexed)")
+			);
+			await channel2.RefreshAsync(CancellationToken.None);
+		}
+
+		// Diagnostic: check what HashedBulkUpdate stored before resolve
+		var url1Before = await GetDocument(index, "url1");
+		output.WriteLine($"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
 
@@ -155,16 +241,22 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	public async Task SecondRun_ChangedContentGetsNewDate()
 	{
 		var enrichment = CreateEnrichment("changed");
-		var index = "test-changed";
 
-		// === First run: establish baseline ===
+		// === First run: new index, channel uses index actions (pipeline fires) ===
 		await enrichment.InitializeAsync(CancellationToken.None);
-		await CreateTestIndex(index, enrichment.PipelineName);
-		await IndexDocumentsDirectly(index,
-			("url1", "hash_a", "Doc 1"),
-			("url2", "hash_b", "Doc 2")
-		);
-		await RefreshIndex(index);
+		string index;
+		using (var channel1 = await CreateChannelAsync(enrichment, "changed"))
+		{
+			await channel1.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+			index = channel1.IndexName; // wildcard — resolved to concrete name below
+
+			await WriteDocuments(channel1,
+				CreateDoc("url1", "hash_a", "Doc 1"),
+				CreateDoc("url2", "hash_b", "Doc 2")
+			);
+			await channel1.RefreshAsync(CancellationToken.None);
+		}
+		index = await ResolveIndexName(index);
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
 		await enrichment.SyncLookupIndexAsync(index, CancellationToken.None);
@@ -176,12 +268,23 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		await enrichment.InitializeAsync(CancellationToken.None);
 
-		// === Second run: url1 content changed, url2 unchanged ===
-		await IndexDocumentsDirectly(index,
-			("url1", "hash_CHANGED", "Doc 1 (updated content)"),
-			("url2", "hash_b", "Doc 2 (same content)")
-		);
-		await RefreshIndex(index);
+		// === Second run: reuse existing index → channel uses update actions (HashedBulkUpdate) ===
+		using (var channel2 = await CreateChannelAsync(enrichment, "changed", indexNameOverride: index))
+		{
+			await channel2.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+
+			// url1 content changed, url2 unchanged
+			await WriteDocuments(channel2,
+				CreateDoc("url1", "hash_CHANGED", "Doc 1 (updated content)"),
+				CreateDoc("url2", "hash_b", "Doc 2 (same content)")
+			);
+			await channel2.RefreshAsync(CancellationToken.None);
+		}
+
+		// Diagnostic: check url1 before resolve
+		var url1Before = await GetDocument(index, "url1");
+		output.WriteLine($"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
 
@@ -195,42 +298,6 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		unchanged.ContentLastUpdated.Should().Be(firstRunDates["url2"]!.Value,
 			"url2 content didn't change, so content_last_updated should be preserved");
-	}
-
-	[Fact]
-	public async Task BulkUpdateAction_SkipsPipeline_ResolveContentDatesFixes()
-	{
-		var enrichment = CreateEnrichment("bulk-update");
-		var index = "test-bulk-update";
-
-		await enrichment.InitializeAsync(CancellationToken.None);
-		await CreateTestIndex(index, enrichment.PipelineName);
-
-		// Step 1: Verify that _index action DOES trigger the pipeline
-		await IndexViaIndexAction(index, "url1", "hash_a", "Doc 1");
-		await RefreshIndex(index);
-		var afterIndex = await GetDocument(index, "url1");
-		afterIndex.ContentLastUpdated.Should().NotBeNull(
-			"_index action should trigger the default_pipeline, setting content_last_updated");
-		afterIndex.ContentLastUpdated.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
-
-		// Step 2: Verify that scripted upsert (HashedBulkUpdate) does NOT trigger the pipeline.
-		// The full DocumentationDocument includes content_last_updated at default (0001-01-01).
-		await IndexDocumentsDirectly(index, ("url2", "hash_b", "Doc 2"));
-		await RefreshIndex(index);
-		var afterUpdate = await GetDocument(index, "url2");
-		afterUpdate.ContentLastUpdated.Should().NotBeNull(
-			"scripted upsert writes content_last_updated from the serialized document");
-		afterUpdate.ContentLastUpdated.Value.Should().BeBefore(DateTimeOffset.UnixEpoch,
-			"scripted upsert skips the pipeline — content_last_updated is the unresolved default (0001-01-01)");
-
-		// Step 3: Verify that ResolveContentDatesAsync fixes documents missed by the pipeline
-		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
-		await RefreshIndex(index);
-		var afterResolve = await GetDocument(index, "url2");
-		afterResolve.ContentLastUpdated.Should().NotBeNull(
-			"ResolveContentDatesAsync should apply the pipeline via _update_by_query");
-		afterResolve.ContentLastUpdated.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
 	}
 
 	/// <summary>
@@ -258,7 +325,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			Hash = "testhash123",
 			ContentBodyHash = "contenthash123"
 		};
-		var serializedDoc = JsonSerializer.Serialize(doc, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+		var serializedDoc = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
 
 		// Index via scripted upsert (same as HashedBulkUpdate)
 		await IndexFullDocumentViaScriptedUpsert(index, doc.Url, serializedDoc);
@@ -276,7 +343,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		var esDateValue = source["content_last_updated"]?.ToString();
 
-		// The default DateTimeOffset (0001-01-01) should be stored — verify it's pre-epoch
+		// The default DateTimeOffset (0001-01-01) should be stored -- verify it's pre-epoch
 		esDateValue.Should().NotBeNull("content_last_updated should be present in ES document");
 		var esDate = DateTimeOffset.Parse(esDateValue, CultureInfo.InvariantCulture);
 		esDate.Year.Should().Be(1, "default DateTimeOffset.MinValue should serialize as year 0001");
@@ -285,92 +352,31 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	}
 
 	/// <summary>
-	/// Verifies the filter approach: after a scripted upsert writes a full DocumentationDocument
-	/// with default content_last_updated, the must_not range filter correctly matches it.
-	/// Also verifies a document with a real date is NOT matched.
+	/// Verifies the filter approach: on the second run (reuse path with HashedBulkUpdate),
+	/// the filter only processes documents that were changed (unresolved dates),
+	/// while unchanged documents (noop) retain their existing resolved dates.
 	/// </summary>
 	[Fact]
 	public async Task FilteredResolve_SkipsDocumentsWithExistingDates()
 	{
 		var enrichment = CreateEnrichment("filtered");
-		var index = "test-filtered";
 
+		// === First run: all docs get resolved dates via pipeline ===
 		await enrichment.InitializeAsync(CancellationToken.None);
-		await CreateTestIndex(index, enrichment.PipelineName);
-
-		// doc1: content_last_updated at default (0001-01-01) via scripted upsert
-		await IndexDocumentsDirectly(index, ("url1", "hash_a", "Doc 1"));
-
-		// doc2: content_last_updated at default DateTimeOffset.MinValue (simulates production)
-		var doc2 = new DocumentationDocument
+		string index;
+		using (var channel1 = await CreateChannelAsync(enrichment, "filtered"))
 		{
-			Url = "url2",
-			Title = "Doc 2",
-			SearchTitle = "Doc 2",
-			ContentType = "doc",
-			ContentBodyHash = "hash_b"
-		};
-		var serialized2 = JsonSerializer.Serialize(doc2, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
-		await IndexFullDocumentViaScriptedUpsert(index, "url2", serialized2);
+			await channel1.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+			index = channel1.IndexName; // wildcard -- resolved to concrete name below
 
-		// doc3: content_last_updated set to a real date (simulates unchanged doc from previous run)
-		var doc3Json = new JsonObject
-		{
-			["url"] = "url3",
-			["content_hash"] = "hash_c",
-			["title"] = "Doc 3",
-			["content_last_updated"] = "2026-01-15T12:00:00Z"
-		};
-		var putResponse = await _transport.PutAsync<StringResponse>(
-			$"{index}/_doc/url3?pipeline=_none",
-			PostData.String(doc3Json.ToJsonString()),
-			CancellationToken.None
-		);
-		putResponse.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
-
-		await RefreshIndex(index);
-
-		// Act: resolve content dates (with filter — after we apply the fix)
-		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
-		await RefreshIndex(index);
-
-		// Assert
-		var docs = await GetAllDocuments(index);
-
-		var result1 = docs.Single(d => d.Url == "url1");
-		result1.ContentLastUpdated.Should().NotBeNull("doc1 had no date and should have been resolved");
-		result1.ContentLastUpdated!.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
-
-		var result2 = docs.Single(d => d.Url == "url2");
-		result2.ContentLastUpdated.Should().NotBeNull("doc2 had default date and should have been resolved");
-		result2.ContentLastUpdated!.Value.Year.Should().BeGreaterThanOrEqualTo(2026);
-
-		var result3 = docs.Single(d => d.Url == "url3");
-		result3.ContentLastUpdated!.Value.Should().Be(
-			DateTimeOffset.Parse("2026-01-15T12:00:00Z", CultureInfo.InvariantCulture),
-			"doc3 already had a valid date and should NOT have been touched by the filter");
-	}
-
-	/// <summary>
-	/// End-to-end test: first run resolves all docs. Second run only re-indexes
-	/// the changed doc (unchanged docs are left alone, simulating HashedBulkUpdate noop).
-	/// The filter should only process the changed doc.
-	/// </summary>
-	[Fact]
-	public async Task SecondRun_WithFilter_OnlyChangedDocGetsNewDate()
-	{
-		var enrichment = CreateEnrichment("filter-e2e");
-		var index = "test-filter-e2e";
-
-		// === First run ===
-		await enrichment.InitializeAsync(CancellationToken.None);
-		await CreateTestIndex(index, enrichment.PipelineName);
-		await IndexDocumentsDirectly(index,
-			("url1", "hash_a", "Doc 1"),
-			("url2", "hash_b", "Doc 2"),
-			("url3", "hash_c", "Doc 3")
-		);
-		await RefreshIndex(index);
+			await WriteDocuments(channel1,
+				CreateDoc("url1", "hash_a", "Doc 1"),
+				CreateDoc("url2", "hash_b", "Doc 2"),
+				CreateDoc("url3", "hash_c", "Doc 3")
+			);
+			await channel1.RefreshAsync(CancellationToken.None);
+		}
+		index = await ResolveIndexName(index);
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
 		await enrichment.SyncLookupIndexAsync(index, CancellationToken.None);
@@ -381,11 +387,101 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
 		await enrichment.InitializeAsync(CancellationToken.None);
 
-		// === Second run: only url1 changed, url2 and url3 are noops ===
-		// Re-index ONLY url1 (simulating HashedBulkUpdate replacing a changed doc).
-		// url2 and url3 are left untouched (simulating noop — content_last_updated preserved).
-		await IndexDocumentsDirectly(index, ("url1", "hash_CHANGED", "Doc 1 updated"));
+		// === Second run: reuse index → HashedBulkUpdate. Only url1 changed. ===
+		using (var channel2 = await CreateChannelAsync(enrichment, "filtered", indexNameOverride: index))
+		{
+			await channel2.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+
+			await WriteDocuments(channel2,
+				CreateDoc("url1", "hash_CHANGED", "Doc 1 updated"),
+				CreateDoc("url2", "hash_b", "Doc 2"),
+				CreateDoc("url3", "hash_c", "Doc 3")
+			);
+			await channel2.RefreshAsync(CancellationToken.None);
+		}
+
+		// Diagnostic: check what HashedBulkUpdate stored
+		var url1Before = await GetDocument(index, "url1");
+		output.WriteLine($"Before resolve — url1 (changed) content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		var url2Before = await GetDocument(index, "url2");
+		output.WriteLine($"Before resolve — url2 (noop) content_last_updated: {url2Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+
+		// Act: resolve content dates
+		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
+
+		// Assert
+		var docs = await GetAllDocuments(index);
+
+		var result1 = docs.Single(d => d.Url == "url1");
+		result1.ContentLastUpdated.Should().NotBeNull("url1 changed — should have been resolved");
+		result1.ContentLastUpdated!.Value.Should().BeAfter(firstRunDates["url1"]!.Value,
+			"url1 content changed — date should advance");
+
+		var result2 = docs.Single(d => d.Url == "url2");
+		result2.ContentLastUpdated!.Value.Should().Be(firstRunDates["url2"]!.Value,
+			"url2 was a noop — filter should have skipped it");
+
+		var result3 = docs.Single(d => d.Url == "url3");
+		result3.ContentLastUpdated!.Value.Should().Be(firstRunDates["url3"]!.Value,
+			"url3 was a noop — filter should have skipped it");
+	}
+
+	/// <summary>
+	/// End-to-end test: first run resolves all docs. Second run reuses the index
+	/// (HashedBulkUpdate path): unchanged docs are noop (date preserved),
+	/// changed doc gets replaced (needs resolve).
+	/// </summary>
+	[Fact]
+	public async Task SecondRun_WithFilter_OnlyChangedDocGetsNewDate()
+	{
+		var enrichment = CreateEnrichment("filter-e2e");
+
+		// === First run: new index, pipeline fires on all docs ===
+		await enrichment.InitializeAsync(CancellationToken.None);
+		string index;
+		using (var channel1 = await CreateChannelAsync(enrichment, "filter-e2e"))
+		{
+			await channel1.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+			index = channel1.IndexName; // wildcard — resolved to concrete name below
+
+			await WriteDocuments(channel1,
+				CreateDoc("url1", "hash_a", "Doc 1"),
+				CreateDoc("url2", "hash_b", "Doc 2"),
+				CreateDoc("url3", "hash_c", "Doc 3")
+			);
+			await channel1.RefreshAsync(CancellationToken.None);
+		}
+		index = await ResolveIndexName(index);
+		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
+		await RefreshIndex(index);
+		await enrichment.SyncLookupIndexAsync(index, CancellationToken.None);
+
+		var firstRunDocs = await GetAllDocuments(index);
+		var firstRunDates = firstRunDocs.ToDictionary(d => d.Url, d => d.ContentLastUpdated);
+
+		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+		await enrichment.InitializeAsync(CancellationToken.None);
+
+		// === Second run: reuse index → HashedBulkUpdate. Only url1 changed. ===
+		using (var channel2 = await CreateChannelAsync(enrichment, "filter-e2e", indexNameOverride: index))
+		{
+			await channel2.BootstrapElasticsearchAsync(BootstrapMethod.Failure, CancellationToken.None);
+
+			await WriteDocuments(channel2,
+				CreateDoc("url1", "hash_CHANGED", "Doc 1 updated"),
+				CreateDoc("url2", "hash_b", "Doc 2"),
+				CreateDoc("url3", "hash_c", "Doc 3")
+			);
+			await channel2.RefreshAsync(CancellationToken.None);
+		}
+
+		// Diagnostic: check url1 after HashedBulkUpdate, before resolve
+		var url1Before = await GetDocument(index, "url1");
+		output.WriteLine($"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		var url2Before = await GetDocument(index, "url2");
+		output.WriteLine($"Before resolve — url2 content_last_updated: {url2Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
 
@@ -458,7 +554,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 				Hash = contentHash,
 				ContentBodyHash = contentHash
 			};
-			var serialized = JsonSerializer.Serialize(doc, Documentation.Serialization.SourceGenerationContext.Default.DocumentationDocument);
+			var serialized = JsonSerializer.Serialize(doc, SourceGenerationContext.Default.DocumentationDocument);
 			await IndexFullDocumentViaScriptedUpsert(index, url, serialized);
 		}
 	}
@@ -482,6 +578,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			$"Failed to index document {url}: {response.ApiCallDetails.DebugInformation}");
 	}
 
+
 	private async Task<TestDocument> GetDocument(string index, string id)
 	{
 		var response = await _transport.GetAsync<StringResponse>($"{index}/_doc/{id}", CancellationToken.None);
@@ -499,6 +596,22 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			source["content_hash"]?.GetValue<string>() ?? "",
 			date
 		);
+	}
+
+	/// <summary>Resolves the concrete index name from a wildcard pattern or alias.</summary>
+	private async Task<string> ResolveIndexName(string indexPattern)
+	{
+		var response = await _transport.GetAsync<StringResponse>(
+			$"/_resolve/index/{indexPattern}", CancellationToken.None
+		);
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue(
+			$"Failed to resolve index pattern {indexPattern}: {response.ApiCallDetails.DebugInformation}");
+
+		var json = JsonNode.Parse(response.Body);
+		var indices = json?["indices"]?.AsArray();
+		indices.Should().NotBeNull();
+		indices!.Count.Should().Be(1, $"expected exactly one index for pattern {indexPattern}");
+		return indices[0]!["name"]!.GetValue<string>();
 	}
 
 	private async Task RefreshIndex(string index) =>
@@ -557,7 +670,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 			}
 		};
 
-		// Matches HashedBulkUpdate's script: if hash matches → noop, else replace source
+		// Matches HashedBulkUpdate's script: if hash matches -> noop, else replace source
 		var bodyLine = new JsonObject
 		{
 			["scripted_upsert"] = true,

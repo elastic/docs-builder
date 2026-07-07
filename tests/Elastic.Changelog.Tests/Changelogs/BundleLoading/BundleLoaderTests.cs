@@ -593,6 +593,49 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
+	public void LoadBundles_WithExcludeAmendFile_RemovesEntryFromParent()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Original feature
+			    type: feature
+			    file:
+			      name: original.yaml
+			      checksum: abc
+			  - title: Removed feature
+			    type: bug-fix
+			    file:
+			      name: removed.yaml
+			      checksum: def
+			""";
+		// language=yaml
+		var excludeAmend =
+			"""
+			exclude-entries:
+			  - file:
+			      name: removed.yaml
+			      checksum: def
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", excludeAmend);
+
+		var service = CreateService();
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Entries.Should().HaveCount(1);
+		bundles[0].Entries[0].Title.Should().Be("Original feature");
+	}
+
+	[Fact]
 	public void LoadBundles_AmendFileWithoutParent_RemainsStandalone()
 	{
 		// Arrange

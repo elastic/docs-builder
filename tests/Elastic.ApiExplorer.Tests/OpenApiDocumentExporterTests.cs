@@ -4,12 +4,14 @@
 
 using System.Collections.Concurrent;
 using AwesomeAssertions;
-using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
-using Elastic.Internal.Search;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;

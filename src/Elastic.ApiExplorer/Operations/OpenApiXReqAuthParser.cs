@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;

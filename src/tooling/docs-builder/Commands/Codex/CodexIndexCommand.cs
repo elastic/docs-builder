@@ -14,7 +14,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
-using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -65,11 +64,9 @@ internal sealed class CodexIndexCommand(
 
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
 
-		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
-		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
-		var cloneResult = await cloneService.CloneAll(codexContext, fetchLatest: false, assumeCloned: true, ct);
+		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
-		if (cloneResult.Checkouts.Count == 0)
+		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
 		{
 			collector.EmitGlobalError("No documentation sets found. Run 'docs-builder codex clone' first.");
 			return 1;

@@ -23,7 +23,7 @@ public class NavigationTestsBase : IAsyncLifetime
 		{
 			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
 		});
-		ReadFileSystem = FileSystemFactory.RealRead;
+		ReadFileSystem = FileSystemFactory.RealGitRootForPath(null);
 		WriteFileSystem = FileSystemFactory.ScopeCurrentWorkingDirectory(mockWriteFs);
 		var collector = new TestDiagnosticsCollector(output);
 		var configurationContext = TestHelpers.CreateConfigurationContext(ReadFileSystem);

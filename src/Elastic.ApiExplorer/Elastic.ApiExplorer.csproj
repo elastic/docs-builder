@@ -10,12 +10,17 @@
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
     <StartupHookSupport Condition="'$(Configuration)' == 'Debug'">true</StartupHookSupport>
+    <EnableDefaultRazorSlices>false</EnableDefaultRazorSlices>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.OpenApi"/>
     <PackageReference Include="RazorSlices"/>
     <PackageReference Include="Utf8StreamReader"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <RazorSlice Include="**/*.cshtml" Exclude="**/_ViewImports.cshtml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,10 +32,6 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Elastic.ApiExplorer.Tests</_Parameter1>
     </AssemblyAttribute>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Elasticsearch\" />
   </ItemGroup>
 
 </Project>

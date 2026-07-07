@@ -4,6 +4,8 @@
 
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;

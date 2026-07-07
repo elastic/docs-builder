@@ -94,8 +94,8 @@ public static class SearchQueryBuilder
 		|| new SemanticQuery(QueryFieldNames.AiRagSummarySemanticText, searchQuery) { Boost = 4.0f }
 		|| new SemanticQuery(QueryFieldNames.AiQuestionsSemanticText, searchQuery) { Boost = 2.0f };
 
-	// NOTE: BuildSemanticQueryProbe / BuildLexicalQueryProbe require SearchQueryComponents from
-	// Elastic.Internal.Search.Contract — restore these when that type is in the published package.
+	// NOTE: BuildSemanticQueryProbe / BuildLexicalQueryProbe use SearchQueryComponents, now available
+	// from the in-repo contract — restore these in a follow-up.
 
 	public static Query BuildUrlMatchQuery(string searchQuery) =>
 		new ConstantScoreQuery

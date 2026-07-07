@@ -251,6 +251,48 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 		Collector.Warnings.Should().Be(0, "normalized checksum matches regardless of comments");
 	}
 
+	[Fact]
+	public async Task ExcludeAmendFile_OmitsEntryFromRenderedOutput()
+	{
+		var (bundleDir, changelogDir) = CreateTestDirs();
+
+		var file1 = "1000000001-feature.yaml";
+		var file2 = "1000000002-enhancement.yaml";
+		await WriteFileAsync(changelogDir, file1, ChangelogFeature1);
+		await WriteFileAsync(changelogDir, file2, ChangelogFeature2);
+
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
+		await WriteBundleWithEntriesAsync(
+			bundleFile,
+			(file1, ComputeSha1(ChangelogFeature1)),
+			(file2, ComputeSha1(ChangelogFeature2)));
+
+		var amend1 = FileSystem.Path.Join(bundleDir, "bundle.amend-1.yaml");
+		await FileSystem.File.WriteAllTextAsync(
+			amend1,
+			// language=yaml
+			$"""
+			exclude-entries:
+			  - file:
+			      name: {file2}
+			      checksum: {ComputeSha1(ChangelogFeature2)}
+			""",
+			TestContext.Current.CancellationToken);
+
+		var input = CreateRenderInput(bundleFile, changelogDir);
+
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output ?? throw new InvalidOperationException("Output must be set");
+		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
+		var content = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		content.Should().Contain("Feature one");
+		content.Should().NotContain("Feature two");
+	}
+
 	private (string BundleDir, string ChangelogDir) CreateTestDirs()
 	{
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -276,6 +318,31 @@ public class BundleValidationTests(ITestOutputHelper output) : RenderChangelogTe
 			  - file:
 			      name: {entryFileName}
 			      checksum: {checksum}
+			""";
+		await FileSystem.File.WriteAllTextAsync(bundlePath, content, TestContext.Current.CancellationToken);
+	}
+
+	private async Task WriteBundleWithEntriesAsync(
+		string bundlePath,
+		params (string FileName, string Checksum)[] entries)
+	{
+		var entryLines = entries
+			.Select(entry =>
+				$"""
+				  - file:
+				      name: {entry.FileName}
+				      checksum: {entry.Checksum}
+				""")
+			.ToList();
+
+		// language=yaml
+		var content =
+			$"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			{string.Join('\n', entryLines)}
 			""";
 		await FileSystem.File.WriteAllTextAsync(bundlePath, content, TestContext.Current.CancellationToken);
 	}

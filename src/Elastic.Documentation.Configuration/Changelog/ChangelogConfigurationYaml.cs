@@ -302,6 +302,11 @@ internal sealed record BundleConfigurationYaml
 	public string? Owner { get; set; }
 
 	/// <summary>
+	/// Branch whose CDN changelog pool entries are sourced from when bundling. Defaults to <c>main</c>.
+	/// </summary>
+	public string? Branch { get; set; }
+
+	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
 	public bool? ReleaseDates { get; set; }
@@ -355,6 +360,11 @@ internal sealed record BundleProfileYaml
 	/// Defaults to "elastic" when not specified.
 	/// </summary>
 	public string? Owner { get; set; }
+
+	/// <summary>
+	/// Branch whose CDN changelog pool entries this profile sources from. Overrides <c>bundle.branch</c>.
+	/// </summary>
+	public string? Branch { get; set; }
 
 	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output (string or list).

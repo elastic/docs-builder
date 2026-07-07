@@ -57,7 +57,7 @@ jobs:
             }
 
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           ref: ${{ steps.pr-details.outputs.result || github.event.pull_request.head.sha }}
           persist-credentials: false

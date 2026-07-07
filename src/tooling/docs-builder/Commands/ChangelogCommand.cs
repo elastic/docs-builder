@@ -542,31 +542,37 @@ internal sealed partial class ChangelogCommands(
 
 	/// <summary>Aggregate changelog entries matching a filter into a single bundle YAML.</summary>
 	/// <remarks>
-	/// Accepts either a named profile from <c>changelog.yml</c> (e.g. <c>bundle my-release 9.2.0</c>) or
-	/// an explicit filter flag. Exactly one filter must be specified: <c>--all</c>, <c>--input-products</c>,
-	/// <c>--prs</c>, <c>--issues</c>, <c>--release-version</c>, or <c>--report</c>.
+	/// <para><b>Profile-based commands</b> (<c>bundle &lt;profile&gt; &lt;version|report&gt; [report] [--plan]</c>): filters, paths, repo metadata,
+	/// resolve, description, hide-features, and release-date behaviour come from <c>changelog.yml</c>. Only <c>--plan</c> is supported
+	/// alongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in
+	/// configuration instead. Config is auto-discovered from <c>./changelog.yml</c> or <c>./docs/changelog.yml</c>. Use
+	/// <c>bundle.release_dates</c> or <c>bundle.profiles.&lt;name&gt;.release_dates</c> to control auto-population;
+	/// <c>--release-date</c> and <c>--no-release-date</c> require option-based mode.</para>
+	/// <para><b>Option-based mode</b> (no profile argument): exactly one filter must be specified —
+	/// <c>--all</c>, <c>--input-products</c>, <c>--prs</c>, <c>--issues</c>, <c>--release-version</c>, or <c>--report</c>.</para>
 	/// </remarks>
-	/// <param name="profile">Optional: Profile name from bundle.profiles in config (for example, "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
-	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html")</param>
-	/// <param name="profileReport">Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source (for example, "bundle serverless-release 2026-02 ./report.html").</param>
-	/// <param name="all">Include all changelogs in the directory.</param>
-	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
-	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
-	/// <param name="description">Optional: Bundle description text with placeholder support. Supports VERSION, LIFECYCLE, OWNER, and REPO placeholders. Overrides bundle.description from config. In option-based mode, placeholders require --output-products to be explicitly specified.</param>
-	/// <param name="hideFeatures">Optional: Filter by feature IDs (comma-separated) or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out when the bundle is rendered (by CLI render or changelog directive).</param>
-	/// <param name="noReleaseDate">Optional: Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. Not available in profile mode.</param>
-	/// <param name="releaseDate">Optional: Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behavior. Mutually exclusive with --no-release-date. Not available in profile mode.</param>
-	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). When specified, all three parts (product, target, lifecycle) are required but can be wildcards (*). Examples: "elasticsearch * *" matches all elasticsearch changelogs, "cloud-serverless 2025-12-02 *" matches cloud-serverless 2025-12-02 with any lifecycle, "* 9.3.* *" matches any product with target starting with "9.3.", "* * *" matches all changelogs (equivalent to --all).</param>
-	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
-	/// <param name="output">Optional: Output path for the bundled changelog. Can be either (1) a directory path, in which case 'changelog-bundle.yaml' is created in that directory, or (2) a file path ending in .yml or .yaml. Uses config bundle.output_directory or defaults to 'changelog-bundle.yaml' in the input directory</param>
-	/// <param name="outputProducts">Optional: Explicitly set the products array in the output file in format "product target lifecycle, ...". Overrides any values from changelogs.</param>
-	/// <param name="owner">GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
-	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
-	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
-	/// <param name="report">A URL or file path to a promotion report. Extracts PR URLs and uses them as the filter.</param>
-	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). When specified, fetches the release, parses PR references from the release notes, and uses those PRs as the filter — equivalent to passing the PR list via --prs. When --output-products is not specified, it is inferred from the release tag and repository name.</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false.</param>
-	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>, and <c>cdn_url</c> when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions.</param>
+	/// <param name="profile">Profile name from <c>bundle.profiles</c> in config (for example, "elasticsearch-release"). Used as the first positional argument in profile-based commands. The equivalent configuration entry is <c>bundle.profiles.&lt;name&gt;</c>.</param>
+	/// <param name="profileArg">Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html"). Required second positional argument in profile-based commands.</param>
+	/// <param name="profileReport">Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source (for example, "bundle serverless-release 2026-02 ./report.html"). Optional third positional argument in profile-based commands.</param>
+	/// <param name="all">Include all changelogs in the directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products: "* * *"</c>.</param>
+	/// <param name="config">Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' in option-based mode. This option is not supported in profile-based commands; configuration is auto-discovered.</param>
+	/// <param name="directory">Directory containing changelog YAML files. Uses config <c>bundle.directory</c> or defaults to current directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.directory</c>.</param>
+	/// <param name="description">Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides <c>bundle.description</c> from config. In option-based mode, placeholders require --output-products. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.description</c> or <c>bundle.profiles.&lt;name&gt;.description</c>.</param>
+	/// <param name="hideFeatures">Feature IDs (comma-separated) or a path to a newline-delimited file. Entries with matching feature-id values are hidden when the bundle is rendered. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.hide_features</c>.</param>
+	/// <param name="noReleaseDate">Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.release_dates: false</c> or <c>bundle.profiles.&lt;name&gt;.release_dates: false</c>.</param>
+	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
+	/// <param name="inputProducts">Filter by products in format "product target lifecycle, ..." (for example, "cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta"). All three parts are required but can be wildcards (*). This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products</c>.</param>
+	/// <param name="issues">Filter by issue URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
+	/// <param name="output">Output path for the bundled changelog (directory or .yml/.yaml file). Uses config <c>bundle.output_directory</c> or defaults to 'changelog-bundle.yaml' in the input directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output</c>.</param>
+	/// <param name="outputProducts">Explicitly set the products array in the output file in format "product target lifecycle, ...". This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.output_products</c>.</param>
+	/// <param name="owner">GitHub repository owner for PR/issue numbers or --release-version. Falls back to <c>bundle.owner</c> or "elastic". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.owner</c> or <c>bundle.profiles.&lt;name&gt;.owner</c>.</param>
+	/// <param name="branch">Branch whose CDN changelog entry pool (<c>changelog/{org}/{repo}/{branch}/...</c>) is sourced from. Falls back to <c>bundle.branch</c> or "main". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.branch</c> or <c>bundle.profiles.&lt;name&gt;.branch</c>.</param>
+	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
+	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
+	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
+	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.source: github_release</c>.</param>
+	/// <param name="resolve">Copy the contents of each changelog file into the entries array. Uses config <c>bundle.resolve</c> or defaults to false. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.resolve</c>.</param>
+	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>, and <c>cdn_url</c> when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions. Supported in profile-based commands.</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> Bundle(
@@ -585,6 +591,7 @@ internal sealed partial class ChangelogCommands(
 		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? outputProducts = null,
 		string[]? issues = null,
 		string? owner = null,
+		string? branch = null,
 		bool plan = false,
 		string[]? prs = null,
 		string? releaseVersion = null,
@@ -896,6 +903,7 @@ internal sealed partial class ChangelogCommands(
 			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
 			Owner = owner,
 			Repo = repo,
+			Branch = branch,
 			Profile = profile,
 			ProfileArgument = profileArg,
 			ProfileReport = isProfileMode ? profileReport : null,
@@ -1280,16 +1288,22 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>Append additional changelog entries to a published bundle without modifying it.</summary>
+	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
 	/// <remarks>Creates an immutable <c>.amend-N.yaml</c> sidecar file alongside the original bundle.</remarks>
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
-	/// <param name="add">Required: Path(s) to changelog YAML file(s) to add as comma-separated values (e.g., --add "file1.yaml,file2.yaml"). Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="resolve">Optional: Copy the contents of each changelog file into the entries array. Use --no-resolve to explicitly turn off resolve (overrides inference from original bundle).</param>
+	/// <param name="add">Optional: Changelog YAML paths to add. Repeat <c>--add</c> or pass a comma-separated list in one value (for example, <c>--add "file1.yaml,file2.yaml"</c>). Supports tilde (~) expansion and relative paths.</param>
+	/// <param name="remove">Optional: Changelog YAML paths to exclude from the effective bundle. Repeat <c>--remove</c> or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.</param>
+	/// <param name="resolve">Optional: When using <c>--add</c>, inline each added changelog's content in the amend file. Use <c>--no-resolve</c> to record file references only. When omitted, inferred from the parent bundle. Does not apply to <c>--remove</c>.</param>
+	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.</param>
+	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
 		string[]? add = null,
+		string[]? remove = null,
 		bool? resolve = null,
+		bool force = false,
+		bool dryRun = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1298,30 +1312,32 @@ internal sealed partial class ChangelogCommands(
 
 		var service = new ChangelogBundleAmendService(logFactory, configurationContext: configurationContext);
 
-		if (add == null || add.Length == 0)
+		var normalizedAddFiles = add != null
+			? ExpandCommaSeparated(add).Select(NormalizePath).ToList()
+			: [];
+		var normalizedRemoveFiles = remove != null
+			? ExpandCommaSeparated(remove).Select(NormalizePath).ToList()
+			: [];
+
+		if (normalizedAddFiles.Count == 0 && normalizedRemoveFiles.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one file must be specified with --add");
+			collector.EmitError(string.Empty, "At least one file must be specified with --add or --remove");
 			_ = collector.StartAsync(ctx);
 			await collector.WaitForDrain();
 			await collector.StopAsync(ctx);
 			return 1;
 		}
 
-		// Normalize the bundle path
 		var normalizedBundlePath = bundlePath.FullName;
-
-		var normalizedAddFiles = ExpandCommaSeparated(add)
-			.Select(NormalizePath)
-			.ToList();
-
-		// Determine resolve: CLI --no-resolve takes precedence, then CLI --resolve, then infer from bundle
-		var shouldResolve = resolve;
 
 		var input = new AmendBundleArguments
 		{
 			BundlePath = normalizedBundlePath,
-			AddFiles = normalizedAddFiles.ToArray(),
-			Resolve = shouldResolve
+			AddFiles = normalizedAddFiles,
+			RemoveFiles = normalizedRemoveFiles,
+			Resolve = resolve,
+			Force = force,
+			DryRun = dryRun
 		};
 
 		serviceInvoker.AddCommand(service, input,
@@ -1572,12 +1588,25 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Upload changelog entries or bundle artifacts to S3 or Elasticsearch.</summary>
-	/// <remarks>Uses content-hash–based incremental transfer — only changed files are uploaded.</remarks>
+	/// <remarks>
+	/// Uses content-hash–based incremental transfer — only changed files are uploaded.
+	/// <para>
+	/// Changelog entries are uploaded once under <c>changelog/{org}/{repo}/{branch}/{file}</c>, keyed by the
+	/// authoring owner (<c>--owner</c> &gt; <c>bundle.owner</c> &gt; git remote), repository (<c>--repo</c>
+	/// &gt; <c>bundle.repo</c> &gt; git remote), and branch (<c>--branch</c> &gt; the current checkout's
+	/// branch). The branch is stored verbatim, so a branch's <c>/</c> become real key separators. Bundles
+	/// are uploaded under <c>bundle/{product}/{file}</c>, product-scoped from the bundle YAML, and do not
+	/// require an owner/repo/branch.
+	/// </para>
+	/// </remarks>
 	/// <param name="artifactType">Artifact type to upload: 'changelog' (individual entries) or 'bundle' (consolidated bundles).</param>
 	/// <param name="target">Upload destination: 's3' or 'elasticsearch'.</param>
 	/// <param name="s3BucketName">S3 bucket name (required when target is 's3').</param>
 	/// <param name="config">Path to changelog.yml configuration file. Defaults to docs/changelog.yml.</param>
 	/// <param name="directory">Override changelog directory instead of reading it from config.</param>
+	/// <param name="repo">GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
+	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
+	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -1585,6 +1614,9 @@ internal sealed partial class ChangelogCommands(
 		string s3BucketName = "",
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
+		string? repo = null,
+		string? owner = null,
+		string? branch = null,
 		CancellationToken ct = default
 	)
 	{
@@ -1610,6 +1642,11 @@ internal sealed partial class ChangelogCommands(
 		var resolvedDirectory = directory != null ? directory?.FullName : null;
 		var resolvedConfig = config != null ? config?.FullName : null;
 
+		// Resolve the authoring owner/repo/branch for entry keys: CLI flags > bundle.{owner,repo}
+		// (changelog.yml) > git. The repo is reduced to a single path segment (owner/repo -> repo) for the
+		// changelog/{org}/{repo}/{branch}/ key.
+		var (resolvedRepo, resolvedOwner, resolvedBranch) = await ResolveUploadRepoOwnerBranch(repo, owner, branch, resolvedConfig, resolvedDirectory, ctx);
+
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var service = new ChangelogUploadService(logFactory, configurationContext);
 		var args = new ChangelogUploadArguments
@@ -1618,12 +1655,63 @@ internal sealed partial class ChangelogCommands(
 			Target = parsedTarget,
 			S3BucketName = s3BucketName,
 			Config = resolvedConfig,
-			Directory = resolvedDirectory
+			Directory = resolvedDirectory,
+			Repo = resolvedRepo,
+			Owner = resolvedOwner,
+			Branch = resolvedBranch
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)
 		);
 		return await serviceInvoker.InvokeAsync(ctx);
+	}
+
+	/// <summary>Resolves the authoring repo/owner/branch for uploads (CLI flags &gt; <c>bundle.{repo,owner}</c> &gt; git), reducing the repo to a single path segment.</summary>
+	private async Task<(string? Repo, string? Owner, string? Branch)> ResolveUploadRepoOwnerBranch(string? repoCli, string? ownerCli, string? branchCli, string? configPath, string? uploadDirectory, CancellationToken ctx)
+	{
+		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
+			.LoadChangelogConfiguration(collector, configPath, ctx);
+
+		// Anchor the git fallbacks to the upload source (config file or changelog directory), not the
+		// process cwd, so an out-of-tree --config/--directory resolves the right origin and branch. Both
+		// values are absolute (FileInfo/DirectoryInfo FullName) when present.
+		string? anchor = null;
+		if (!string.IsNullOrWhiteSpace(configPath))
+		{
+			var configDir = _fileSystem.Path.GetDirectoryName(configPath);
+			if (!string.IsNullOrWhiteSpace(configDir) && _fileSystem.Directory.Exists(configDir))
+				anchor = configDir;
+		}
+		if (anchor is null && !string.IsNullOrWhiteSpace(uploadDirectory) && _fileSystem.Directory.Exists(uploadDirectory))
+			anchor = uploadDirectory;
+		anchor ??= Directory.GetCurrentDirectory();
+
+		string? gitOwner = null;
+		string? gitRepo = null;
+		var repoRoot = Paths.FindGitRoot(_fileSystem.DirectoryInfo.New(anchor))?.FullName ?? anchor;
+		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
+			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
+
+		var resolvedRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : (bundleConfig?.Bundle?.Repo ?? gitRepo);
+		var resolvedOwner = ownerCli ?? bundleConfig?.Bundle?.Owner ?? gitOwner;
+
+		// The producer branch is the branch being published: --branch, else the current checkout's branch.
+		// bundle.branch is intentionally not consulted here — it selects which pool to read when bundling.
+		var resolvedBranch = branchCli;
+		if (string.IsNullOrWhiteSpace(resolvedBranch))
+		{
+			var checkout = GitCheckoutInformationFactory.Create(_fileSystem.DirectoryInfo.New(anchor), _fileSystem);
+			resolvedBranch = checkout.Branch;
+		}
+
+		if (!string.IsNullOrWhiteSpace(resolvedRepo))
+		{
+			var slash = resolvedRepo.LastIndexOf('/');
+			if (slash >= 0 && slash < resolvedRepo.Length - 1)
+				resolvedRepo = resolvedRepo[(slash + 1)..];
+		}
+
+		return (resolvedRepo, resolvedOwner, resolvedBranch);
 	}
 
 	/// <summary>

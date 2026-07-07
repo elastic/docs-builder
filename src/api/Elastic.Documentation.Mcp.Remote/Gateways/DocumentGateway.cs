@@ -5,7 +5,6 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
-using Elastic.Internal.Search;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Mcp.Remote.Gateways;

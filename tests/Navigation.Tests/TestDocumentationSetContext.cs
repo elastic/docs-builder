@@ -108,6 +108,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public GitCheckoutInformation Git { get; }
 	public IFileInfo ConfigurationPath { get; }
+	public IEnvironmentVariables Environment { get; init; } = SystemEnvironmentVariables.Instance;
 
 	/// <inheritdoc />
 	public BuildType BuildType { get; set; }

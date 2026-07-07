@@ -355,6 +355,12 @@ See https://www.elastic.co/docs/solutions/search for more details.
 See [docs](docs-content://index.md) for more details.
 ```
 
+### `cta`
+
+Defines named right-gutter call-to-action templates that pages can opt into via frontmatter.
+
+See [CTA](cta.md) for full configuration details and examples.
+
 ## Navigation configuration patterns
 
 ### Single file reference

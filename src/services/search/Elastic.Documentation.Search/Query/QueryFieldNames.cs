@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
 namespace Elastic.Documentation.Search;
