@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;

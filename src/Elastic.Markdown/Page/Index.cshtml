@@ -7,7 +7,7 @@
 @using Elastic.Markdown.Myst.Components
 @using Markdig
 @using ViewModelSerializerContext = Elastic.Markdown.Page.ViewModelSerializerContext
-@inherits RazorSliceHttpResult<Elastic.Markdown.Page.IndexViewModel>
+@inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
 @implements IUsesLayout<Elastic.Markdown._Layout, MarkdownLayoutViewModel>
 @functions {
 	static string GetRootPath(string? siteRootPath, string? urlPathPrefix)

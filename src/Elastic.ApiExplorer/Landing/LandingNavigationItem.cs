@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -17,7 +20,8 @@ public class ApiLanding : IApiGroupingModel
 		var viewModel = new LandingViewModel(context)
 		{
 			Landing = this,
-			ApiInfo = context.Model.Info
+			ApiInfo = context.Model.Info,
+			OverviewRows = ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot)
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

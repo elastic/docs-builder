@@ -1,108 +1,9 @@
-@inherits RazorSliceHttpResult<Elastic.ApiExplorer.Landing.LandingViewModel>
-@using Elastic.ApiExplorer
-@using Elastic.ApiExplorer.Landing
+@inherits RazorSlice<Elastic.ApiExplorer.Landing.LandingViewModel>
 @using Elastic.ApiExplorer.Operations
-@using Elastic.ApiExplorer.Schemas
-@using Elastic.Documentation.Navigation
-@using Elastic.Documentation.Site.Navigation
-@implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
+@using Elastic.ApiExplorer.Landing;
+@implements IUsesLayout<Elastic.ApiExplorer._Layout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
-
-	private IHtmlContent RenderOp(IReadOnlyCollection<OperationNavigationItem> endpointOperations)
-	{
-		<ul class="api-url-listing">
-		@foreach (var overload in endpointOperations)
-		{
-			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
-			<li class="api-url-list-item">
-				<a href="@overload.Url" class="current api-url-list-item-landing" hx-disable="true">
-					<span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
-					<span class="api-url">@overload.Model.Route</span>
-				</a>
-			</li>
-		}
-		</ul>
-
-		return HtmlString.Empty;
-	}
-
-	private IHtmlContent RenderProduct(INavigationItem item)
-	{
-		if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
-		{
-			foreach (var navigationItem in node.NavigationItems)
-			{
-				if (navigationItem is ClassificationNavigationItem classification)
-				{
-					<tr>
-						<td colspan="2"><h2>@(classification.NavigationTitle)</h2></td>
-					</tr>
-					@RenderProduct(classification)
-				}
-				else if (navigationItem is TagNavigationItem tag)
-				{
-					<tr>
-						<td colspan="2"><h3><a href="@tag.Url" class="api-tag-landing-link">@tag.NavigationTitle</a></h3></td>
-					</tr>
-					@RenderProduct(tag)
-				}
-				else if (navigationItem is EndpointNavigationItem endpoint)
-				{
-					var endpointOperations =
-						endpoint is { NavigationItems.Count: > 0 } && endpoint.NavigationItems.All(n => n.Hidden)
-							? endpoint.NavigationItems
-							: [];
-						if (endpointOperations.Count > 0)
-						{
-							<tr>
-								<td class="api-name">@(endpoint.NavigationTitle)</td>
-								<td>@RenderOp(endpointOperations)</td>
-							</tr>
-						}
-						else
-						{
-							@RenderProduct(endpoint)
-						}
-				}
-				else if (navigationItem is OperationNavigationItem operation)
-				{
-					<tr>
-						<td class="api-name">@(operation.NavigationTitle)</td>
-						<td>@RenderOp([operation])</td>
-					</tr>
-				}
-				else if (navigationItem is SchemaCategoryNavigationItem schemaCategory)
-				{
-					<tr>
-						<td colspan="2"><h3>@(schemaCategory.NavigationTitle)</h3></td>
-					</tr>
-					@RenderProduct(schemaCategory)
-				}
-				else if (navigationItem is SchemaNavigationItem schemaItem)
-				{
-					<tr>
-						<td class="api-name"><a href="@schemaItem.Url">@(schemaItem.NavigationTitle)</a></td>
-						<td><code>@schemaItem.Model.SchemaId</code></td>
-					</tr>
-				}
-				else if (navigationItem is SimpleMarkdownNavigationItem markdownPage)
-				{
-					<tr>
-						<td class="api-name"><a href="@markdownPage.Url">@(markdownPage.NavigationTitle)</a></td>
-						<td>Additional documentation</td>
-					</tr>
-				}
-				else
-				{
-					throw new Exception($"Unexpected type: {navigationItem.GetType().FullName}");
-				}
-			}
-		}
-
-		return HtmlString.Empty;
-
-	}
 }
 <section id="elastic-docs-v3">
 	<h1>@Model.ApiInfo.Title</h1>
@@ -110,7 +11,51 @@
 	<p>License: @Model.ApiInfo.License?.Name</p>
 	<div class="api-overview">
 		<table>
-			@RenderProduct(Model.CurrentNavigationItem.NavigationRoot)
+			@foreach (var row in Model.OverviewRows)
+			{
+				switch (row.Kind)
+				{
+					case OverviewRowKind.ClassificationHeading:
+					<tr>
+						<td colspan="2"><h2>@(row.Title)</h2></td>
+					</tr>
+						break;
+					case OverviewRowKind.TagHeading:
+					<tr>
+						<td colspan="2"><h3><a href="@row.Url" class="api-tag-landing-link">@row.Title</a></h3></td>
+					</tr>
+						break;
+					case OverviewRowKind.Endpoint:
+							<tr>
+								<td class="api-name">@(row.Title)</td>
+								<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
+							</tr>
+						break;
+					case OverviewRowKind.Operation:
+					<tr>
+						<td class="api-name">@(row.Title)</td>
+						<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
+					</tr>
+						break;
+					case OverviewRowKind.SchemaCategoryHeading:
+					<tr>
+						<td colspan="2"><h3>@(row.Title)</h3></td>
+					</tr>
+						break;
+					case OverviewRowKind.Schema:
+					<tr>
+						<td class="api-name"><a href="@row.Url">@(row.Title)</a></td>
+						<td><code>@row.SchemaId</code></td>
+					</tr>
+						break;
+					case OverviewRowKind.MarkdownPage:
+					<tr>
+						<td class="api-name"><a href="@row.Url">@(row.Title)</a></td>
+						<td>Additional documentation</td>
+					</tr>
+						break;
+				}
+			}
 		</table>
 	</div>
 </section>

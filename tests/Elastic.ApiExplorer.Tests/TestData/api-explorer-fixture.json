@@ -1,0 +1,678 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fixture API",
+    "description": "A hand-written OpenAPI document exercising every ApiExplorer rendering path: unions, dictionaries, recursion, enums, code samples, availability badges and auth prerequisites.",
+    "version": "1.2.3",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://fixture.example.com",
+      "description": "Fixture server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "search",
+      "description": "Operations that run *queries* against fixture data.",
+      "x-displayName": "Search APIs",
+      "externalDocs": {
+        "description": "Search reference",
+        "url": "https://www.elastic.co/docs/fixture/search"
+      }
+    },
+    {
+      "name": "documents",
+      "description": "Document retrieval operations.",
+      "externalDocs": {
+        "url": "https://example.com/fixture/documents"
+      }
+    },
+    {
+      "name": "misc",
+      "description": "Deliberately absent from x-tagGroups to exercise the orphan-tag path."
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Search",
+      "tags": ["search"]
+    },
+    {
+      "name": "Data",
+      "tags": ["documents"]
+    }
+  ],
+  "paths": {
+    "/{index}/_search": {
+      "post": {
+        "operationId": "search",
+        "x-api-name": "search",
+        "x-state": "Generally available; Added in 7.7.0",
+        "x-req-auth": [
+          "Requires the `read` index privilege for the target data stream or index.",
+          "Requires the `monitor` cluster privilege when profiling is enabled."
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "resp = client.search(index=\"my-index\", query={\"match_all\": {}})"
+          },
+          {
+            "lang": "Console",
+            "source": "POST /my-index/_search\n{\n  \"query\": { \"match_all\": {} }\n}"
+          }
+        ],
+        "tags": ["search"],
+        "summary": "Run a search",
+        "description": "Returns hits that match the query defined in the request.\n\nSupports pagination through `size` and `from`.",
+        "externalDocs": {
+          "url": "https://www.elastic.co/docs/fixture/search-reference"
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "description": "A comma-separated list of index names to search.",
+            "schema": {
+              "$ref": "#/components/schemas/_types.IndexName"
+            }
+          },
+          {
+            "name": "expand_wildcards",
+            "in": "query",
+            "description": "The type of index that wildcard patterns can match.",
+            "schema": {
+              "$ref": "#/components/schemas/_types.ExpandWildcard"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "A query in the Lucene query string syntax.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "routing",
+            "in": "query",
+            "description": "A custom value used to route operations to a specific shard.",
+            "schema": {
+              "$ref": "#/components/schemas/_types.Routing"
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "description": "The period to wait for a response, as an integer number of milliseconds or a duration string.",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pretty",
+            "in": "query",
+            "deprecated": true,
+            "description": "Pretty-print the response body.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The search definition using the fixture Query DSL.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/fixture.SearchRequestBody"
+              },
+              "examples": {
+                "matchAllExample": {
+                  "summary": "Match all documents",
+                  "description": "The simplest possible search request.",
+                  "value": {
+                    "query": {
+                      "match_all": {}
+                    }
+                  }
+                },
+                "boolExample": {
+                  "summary": "Boolean query",
+                  "value": {
+                    "query": {
+                      "bool": {
+                        "must": [{ "match_all": {} }]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "headers": {
+              "X-Found": {
+                "description": "Whether any documents matched.",
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fixture.SearchResponse"
+                },
+                "examples": {
+                  "successExample": {
+                    "summary": "A successful response",
+                    "description": "Two documents matched.",
+                    "value": {
+                      "took": 5,
+                      "timed_out": false,
+                      "hits": [{ "_id": "1", "_score": 1.0 }]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The target index does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/fixture.ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{index}/_doc/{id}": {
+      "get": {
+        "operationId": "docs-get",
+        "x-namespace": "docs",
+        "x-api-name": "get",
+        "tags": ["documents"],
+        "summary": "Get a document by id",
+        "description": "Retrieves the document with the specified id from the index.",
+        "parameters": [
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "description": "The name of the index that contains the document.",
+            "schema": {
+              "$ref": "#/components/schemas/_types.IndexName"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique document id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The matching documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/fixture.DocumentHit"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{index}/_source/{id}": {
+      "get": {
+        "operationId": "docs-get-source",
+        "x-namespace": "docs",
+        "x-api-name": "get",
+        "tags": ["documents"],
+        "summary": "Get the source of a document by id",
+        "description": "Retrieves only the `_source` of the document with the specified id.",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "description": "The name of the index that contains the document.",
+            "schema": {
+              "$ref": "#/components/schemas/_types.IndexName"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique document id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document source",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/_fixture/anonymous": {
+      "post": {
+        "description": "Has no operation id, summary or x-api-name on purpose: pins the deterministic route:method fallback grouping key.",
+        "tags": ["misc"],
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/_fixture/cleanup": {
+      "delete": {
+        "summary": "Clean up fixture data",
+        "description": "Removes all fixture data. Has no operation id on purpose so the route-derived moniker path is exercised.",
+        "x-beta": true,
+        "tags": ["misc"],
+        "responses": {
+          "200": {
+            "description": "Cleanup acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "acknowledged": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization"
+      }
+    },
+    "schemas": {
+      "_types.IndexName": {
+        "type": "string",
+        "description": "The name of an index."
+      },
+      "_types.Field": {
+        "type": "string",
+        "description": "A field name or field path."
+      },
+      "_types.Routing": {
+        "type": "string",
+        "description": "A shard routing value."
+      },
+      "_types.ExpandWildcard": {
+        "type": "string",
+        "enum": ["all", "open", "closed", "hidden"],
+        "description": "Wildcard expansion mode."
+      },
+      "_types.SearchMode": {
+        "type": "string",
+        "enum": ["fast", "accurate"],
+        "description": "Trade accuracy for speed."
+      },
+      "_types.SortOrder": {
+        "type": "string",
+        "enum": ["asc", "desc"]
+      },
+      "_types.SortField": {
+        "type": "object",
+        "description": "Sort by a field value.",
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/_types.Field"
+          },
+          "order": {
+            "$ref": "#/components/schemas/_types.SortOrder"
+          }
+        },
+        "required": ["field"]
+      },
+      "_types.ScoreSort": {
+        "type": "object",
+        "description": "Sort by relevance score.",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/_types.SortOrder"
+          }
+        }
+      },
+      "_types.query_dsl.QueryContainer": {
+        "type": "object",
+        "description": "A container for a single query variant. Query containers can nest other query containers, which exercises recursion detection.",
+        "externalDocs": {
+          "url": "https://www.elastic.co/docs/fixture/query-dsl"
+        },
+        "properties": {
+          "bool": {
+            "$ref": "#/components/schemas/_types.query_dsl.BoolQuery"
+          },
+          "match_all": {
+            "$ref": "#/components/schemas/_types.query_dsl.MatchAllQuery"
+          },
+          "term": {
+            "type": "object",
+            "description": "A single-key dictionary mapping a field name to a term value.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "_types.query_dsl.BoolQuery": {
+        "type": "object",
+        "description": "A query that matches documents matching boolean combinations of other queries.",
+        "properties": {
+          "must": {
+            "type": "array",
+            "description": "Queries that must match.",
+            "items": {
+              "$ref": "#/components/schemas/_types.query_dsl.QueryContainer"
+            }
+          },
+          "must_not": {
+            "type": "array",
+            "description": "Queries that must not match.",
+            "items": {
+              "$ref": "#/components/schemas/_types.query_dsl.QueryContainer"
+            }
+          },
+          "minimum_should_match": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "_types.query_dsl.MatchAllQuery": {
+        "type": "object",
+        "description": "Matches every document.",
+        "properties": {
+          "boost": {
+            "type": "number"
+          }
+        }
+      },
+      "_types.aggregations.AggregationContainer": {
+        "type": "object",
+        "description": "A container for a single aggregation variant, optionally holding nested sub-aggregations.",
+        "properties": {
+          "aggregations": {
+            "type": "object",
+            "description": "Nested sub-aggregations keyed by name.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/_types.aggregations.AggregationContainer"
+            }
+          },
+          "terms": {
+            "$ref": "#/components/schemas/_types.aggregations.TermsAggregation"
+          }
+        }
+      },
+      "_types.aggregations.TermsAggregation": {
+        "type": "object",
+        "description": "A multi-bucket aggregation of unique field values.",
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/_types.Field"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65536
+          }
+        }
+      },
+      "_types.aggregations.Aggregate": {
+        "description": "The response variant for a single aggregation.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/_types.aggregations.TermsAggregate"
+          },
+          {
+            "$ref": "#/components/schemas/_types.aggregations.MaxAggregate"
+          }
+        ]
+      },
+      "_types.aggregations.TermsAggregate": {
+        "type": "object",
+        "description": "The buckets produced by a terms aggregation.",
+        "properties": {
+          "buckets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "doc_count": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "_types.aggregations.MaxAggregate": {
+        "type": "object",
+        "description": "The maximum value produced by a max aggregation.",
+        "properties": {
+          "value": {
+            "type": "number"
+          }
+        }
+      },
+      "fixture.SearchRequestBody": {
+        "type": "object",
+        "description": "The body of a search request.",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "$ref": "#/components/schemas/_types.query_dsl.QueryContainer"
+          },
+          "fields": {
+            "description": "A field or list of fields to return, exercising the X | X[] simple-union path.",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/_types.Field"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/_types.Field"
+                }
+              }
+            ]
+          },
+          "aggs": {
+            "type": "object",
+            "description": "Aggregations to run, keyed by name.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/_types.aggregations.AggregationContainer"
+            }
+          },
+          "settings": {
+            "type": "object",
+            "description": "Free-form string settings, exercising the plain dictionary path.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "sort": {
+            "description": "How to sort matching documents.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/_types.SortField"
+              },
+              {
+                "$ref": "#/components/schemas/_types.ScoreSort"
+              }
+            ]
+          },
+          "mode": {
+            "$ref": "#/components/schemas/_types.SearchMode"
+          },
+          "pit": {
+            "type": "object",
+            "description": "A point in time to search, exercising inline nested object expansion.",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "keep_alive": {
+                "type": "string"
+              }
+            },
+            "required": ["id"]
+          },
+          "legacy_size": {
+            "type": "integer",
+            "deprecated": true,
+            "x-state": "Deprecated; Deprecated in 7.0.0",
+            "description": "Use `size` on the query string instead."
+          }
+        }
+      },
+      "fixture.SearchResponse": {
+        "description": "A search response composed via allOf.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/fixture.ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "hits": {
+                "type": "array",
+                "description": "The matching documents.",
+                "items": {
+                  "$ref": "#/components/schemas/fixture.DocumentHit"
+                }
+              },
+              "aggregations": {
+                "type": "object",
+                "description": "Aggregation results keyed by name.",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/_types.aggregations.Aggregate"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "fixture.ResponseBase": {
+        "type": "object",
+        "properties": {
+          "took": {
+            "type": "integer",
+            "description": "The time the request took in milliseconds."
+          },
+          "timed_out": {
+            "type": "boolean"
+          }
+        }
+      },
+      "fixture.DocumentHit": {
+        "type": "object",
+        "description": "A single matching document.",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "_score": {
+            "type": "number"
+          },
+          "_source": {
+            "type": "object"
+          }
+        }
+      },
+      "fixture.ErrorResponse": {
+        "type": "object",
+        "description": "An error response.",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          },
+          "status": {
+            "type": "integer"
+          }
+        },
+        "example": {
+          "error": {
+            "type": "index_not_found_exception",
+            "reason": "no such index [my-index]"
+          },
+          "status": 404
+        }
+      }
+    }
+  }
+}
