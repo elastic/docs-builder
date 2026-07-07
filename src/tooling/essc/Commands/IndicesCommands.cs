@@ -351,7 +351,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			await PointAliasAsync(transport, pageAlias, semanticIndex, logger, ct);
 			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(semanticAlias)} → {Markup.Escape(semanticIndex)}");
 			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(pageAlias)} → {Markup.Escape(semanticIndex)}");
-			_ = await PruneOldIndicesAsync(transport, $"website-search.semantic-{env}-*", keepCount: 3, logger, ct);
+			_ = await PruneOldIndicesAsync(transport, $"ws-catalog.semantic-{env}-*", keepCount: 3, logger, ct);
 		}
 		else // Reindex mode — incremental
 		{
