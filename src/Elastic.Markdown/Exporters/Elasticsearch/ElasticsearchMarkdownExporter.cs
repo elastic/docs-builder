@@ -9,6 +9,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
@@ -237,22 +238,11 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		if (_aiEnrichment is null)
 			return;
 
-		_logger.LogInformation("Starting post-indexing AI enrichment for {Alias}...", context.SecondaryWriteAlias);
 		var sw = System.Diagnostics.Stopwatch.StartNew();
-
 		AiEnrichmentProgress? last = null;
-		var options = new AiEnrichmentOptions
-		{
-			CompletionTimeout = TimeSpan.FromMinutes(2),
-			CompletionMaxRetries = 2,
-		};
-		await foreach (var p in _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, options, ctx))
-		{
-			_logger.LogInformation(
-				"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",
-				p.Phase, p.Enriched, p.Failed, p.TotalCandidates, p.Message is not null ? $" — {p.Message}" : "");
-			last = p;
-		}
+		var budget = new AiEnrichmentBudget(_endpoint.MaxAiDocs, _endpoint.MaxAiTime);
+
+		await AiEnrichmentRunner.RunPostSyncAsync(_aiEnrichment, context, budget, _logger, ctx, p => last = p);
 
 		if (last is not null)
 			_logger.LogInformation(

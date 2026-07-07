@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using Elastic.Documentation.Indexing;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 using Elastic.SiteSearch.Cli.LabsCrawl;
 using Microsoft.Extensions.Logging;
@@ -111,10 +112,9 @@ internal sealed class LabsCommands(
 		var rps = ParseOptionalPositiveInt(options.Rps);
 		var unchanged = options.Unchanged;
 
-		if (options.MaxAiTime is { } wall && wall < TimeSpan.FromMinutes(1))
+		if (!AiEnrichmentBudget.TryValidateMaxTime(options.MaxAiTime, out var maxAiTimeError))
 		{
-			await Console.Error.WriteLineAsync(
-				"Error: --max-ai-time must be at least 1m (for example 1m, 90m, 2h) when specified.");
+			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}");
 			await Console.Error.WriteLineAsync("Run 'essc labs sync --help' for usage.");
 			Environment.Exit(2);
 		}
@@ -210,7 +210,7 @@ internal sealed class LabsCommands(
 				enableAiEnrichment: !noAi);
 
 			if (!noAi)
-				exporter.ConfigurePostSyncAiBatch(options.MaxAiDocs ?? 100, options.MaxAiTime);
+				exporter.ConfigurePostSyncAiBatch(options.MaxAiDocs, options.MaxAiTime);
 
 			if (IsInteractive())
 			{
@@ -359,10 +359,9 @@ internal sealed class LabsCommands(
 		Cancel ct = default
 	)
 	{
-		if (maxRunTime is { } wall && wall < TimeSpan.FromMinutes(1))
+		if (!AiEnrichmentBudget.TryValidateMaxTime(maxRunTime, out var maxRunTimeError))
 		{
-			await Console.Error.WriteLineAsync(
-				"Error: --max-run-time must be at least 1m (for example 1m, 90m, 2h) when specified.");
+			await Console.Error.WriteLineAsync($"Error: --max-run-time {maxRunTimeError}");
 			await Console.Error.WriteLineAsync("Run 'essc labs ai --help' for usage.");
 			Environment.Exit(2);
 		}
@@ -376,11 +375,8 @@ internal sealed class LabsCommands(
 
 		var transport = ElasticsearchTransportFactory.Create(endpoint);
 
-		using var timeoutCts = maxRunTime is { } d ? new CancellationTokenSource(d) : null;
-		using var linkedCts = timeoutCts is not null
-			? CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token)
-			: null;
-		var effectiveToken = linkedCts?.Token ?? ct;
+		using var deadline = AiEnrichmentDeadline.Create(maxRunTime, ct);
+		var effectiveToken = deadline.Token;
 
 		if (maxRunTime is { } limit)
 			AnsiConsole.MarkupLine($"[dim]Time limit: [yellow]{Markup.Escape(limit.ToString())}[/][/]");
@@ -419,7 +415,7 @@ internal sealed class LabsCommands(
 				effectiveToken);
 			AiEnrichmentConsole.DisplaySummary(aiResult, maxRunTime, maxRunDocs);
 		}
-		catch (OperationCanceledException) when (timeoutCts?.IsCancellationRequested == true)
+		catch (OperationCanceledException) when (deadline.TimedOut)
 		{
 			AnsiConsole.MarkupLine("[yellow]AI enrichment stopped — time limit reached[/]");
 		}

@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Elastic.Documentation.Indexing;
 using Elastic.SiteSearch.Cli.ContentStack;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -57,10 +58,9 @@ internal sealed class SyncCommand(
 		Cancel ct = default
 	)
 	{
-		if (maxAiTime is { } wall && wall < TimeSpan.FromMinutes(1))
+		if (!AiEnrichmentBudget.TryValidateMaxTime(maxAiTime, out var maxAiTimeError))
 		{
-			await Console.Error.WriteLineAsync(
-				"Error: --max-ai-time must be at least 1m (for example 1m, 90m, 2h) when specified.");
+			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}");
 			await Console.Error.WriteLineAsync("Run 'essc contentstack sync --help' for usage.");
 			Environment.Exit(2);
 		}
@@ -109,7 +109,7 @@ internal sealed class SyncCommand(
 			);
 
 			if (!noAi)
-				exporter.ConfigurePostSyncAiBatch(maxAiDocs ?? 100, maxAiTime);
+				exporter.ConfigurePostSyncAiBatch(maxAiDocs, maxAiTime);
 
 			if (IsInteractive())
 			{

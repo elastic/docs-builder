@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using Elastic.Documentation.Indexing;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -119,10 +120,9 @@ internal sealed class ContentStackCommands(
 		Cancel ct = default
 	)
 	{
-		if (maxRunTime is { } wall && wall < TimeSpan.FromMinutes(1))
+		if (!AiEnrichmentBudget.TryValidateMaxTime(maxRunTime, out var maxRunTimeError))
 		{
-			await Console.Error.WriteLineAsync(
-				"Error: --max-run-time must be at least 1m (for example 1m, 90m, 2h) when specified.");
+			await Console.Error.WriteLineAsync($"Error: --max-run-time {maxRunTimeError}");
 			await Console.Error.WriteLineAsync("Run 'essc contentstack ai --help' for usage.");
 			Environment.Exit(2);
 		}
@@ -144,11 +144,8 @@ internal sealed class ContentStackCommands(
 
 		var transport = ElasticsearchTransportFactory.Create(endpoint);
 
-		using var timeoutCts = maxRunTime is { } d ? new CancellationTokenSource(d) : null;
-		using var linkedCts = timeoutCts is not null
-			? CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token)
-			: null;
-		var effectiveToken = linkedCts?.Token ?? ct;
+		using var deadline = AiEnrichmentDeadline.Create(maxRunTime, ct);
+		var effectiveToken = deadline.Token;
 
 		if (maxRunTime is { } limit)
 			AnsiConsole.MarkupLine($"[dim]Time limit: [yellow]{Markup.Escape(limit.ToString())}[/][/]");
@@ -186,7 +183,7 @@ internal sealed class ContentStackCommands(
 				effectiveToken);
 			AiEnrichmentConsole.DisplaySummary(aiResult, maxRunTime, maxRunDocs);
 		}
-		catch (OperationCanceledException) when (timeoutCts?.IsCancellationRequested == true)
+		catch (OperationCanceledException) when (deadline.TimedOut)
 		{
 			AnsiConsole.MarkupLine("[yellow]AI enrichment stopped — time limit reached[/]");
 		}

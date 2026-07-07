@@ -503,6 +503,34 @@
         },
         {
           "role": "flag",
+          "name": "max-ai-docs",
+          "type": "integer",
+          "required": false,
+          "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+          "validations": [
+            {
+              "kind": "range",
+              "min": "1",
+              "max": "2147483647"
+            }
+          ]
+        },
+        {
+          "role": "flag",
+          "name": "max-ai-time",
+          "type": "string",
+          "required": false,
+          "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+          "validations": [
+            {
+              "kind": "timeSpanRange",
+              "min": "\u00221m\u0022",
+              "max": "\u002224h\u0022"
+            }
+          ]
+        },
+        {
+          "role": "flag",
           "name": "search-num-threads",
           "type": "integer",
           "required": false,
@@ -1114,6 +1142,34 @@
             },
             {
               "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
+            },
+            {
+              "role": "flag",
               "name": "search-num-threads",
               "type": "integer",
               "required": false,
@@ -1449,6 +1505,34 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
             },
             {
               "role": "flag",
@@ -4434,6 +4518,34 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
             },
             {
               "role": "flag",

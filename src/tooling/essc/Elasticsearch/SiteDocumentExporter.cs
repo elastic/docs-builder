@@ -4,6 +4,7 @@
 
 using System.Threading;
 using Elastic.Channels;
+using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Ingest.Elasticsearch;
@@ -30,19 +31,15 @@ internal sealed class SiteDocumentExporter : IDisposable
 	private long _reindexTotal;
 	private long _reindexProcessed;
 	private long _reindexVersionConflicts;
-	private int _postSyncAiMaxDocs = 100;
-	private TimeSpan? _postSyncAiWallClock;
+	private AiEnrichmentBudget _postSyncAiBudget = AiEnrichmentBudget.Default;
 
 	public bool AiEnrichmentEnabled => _aiEnrichment is not null;
 
 	/// <summary>
 	/// Caps generative AI enrichment executed in <see cref="IncrementalSyncOrchestrator{T}.OnPostComplete"/> after each sync <see cref="FinalizeAsync"/>.
 	/// </summary>
-	public void ConfigurePostSyncAiBatch(int maxDocsPerRun, TimeSpan? maxWallClock)
-	{
-		_postSyncAiMaxDocs = maxDocsPerRun;
-		_postSyncAiWallClock = maxWallClock;
-	}
+	public void ConfigurePostSyncAiBatch(int? maxDocsPerRun, TimeSpan? maxWallClock) =>
+		_postSyncAiBudget = new AiEnrichmentBudget(maxDocsPerRun, maxWallClock);
 
 	public IngestSyncStrategy Strategy => _orchestrator.Strategy;
 
@@ -156,11 +153,10 @@ internal sealed class SiteDocumentExporter : IDisposable
 	}
 
 	private Task OnPostCompleteAiAsync(OrchestratorContext<SiteDocument> context, ITransport _, CancellationToken ct) =>
-		AiPostSyncBatch.RunAsync(
+		AiEnrichmentRunner.RunPostSyncAsync(
 			_aiEnrichment!,
 			context,
-			_postSyncAiMaxDocs,
-			_postSyncAiWallClock,
+			_postSyncAiBudget,
 			_logger,
 			ct,
 			p => OnSyncProgress?.Invoke(SyncProgressConsole.FromAiProgress(p)));
@@ -265,15 +261,7 @@ internal sealed class SiteDocumentExporter : IDisposable
 		if (_aiEnrichment is null || _secondaryWriteAlias is null)
 			yield break;
 
-		var options = new AiEnrichmentOptions
-		{
-			CompletionTimeout = TimeSpan.FromMinutes(5),
-			CompletionMaxRetries = 2,
-		};
-		if (maxDocs > 0)
-			options.MaxEnrichmentsPerRun = maxDocs;
-
-		await foreach (var p in _aiEnrichment.EnrichAsync(_secondaryWriteAlias, options, ctx))
+		await foreach (var p in AiEnrichmentRunner.EnrichAsync(_aiEnrichment, _secondaryWriteAlias, maxDocs, ctx))
 			yield return p;
 	}
 
