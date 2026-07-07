@@ -11,12 +11,12 @@ namespace Elastic.Documentation.Search.Contract;
 
 [ElasticsearchMappingContext]
 [Index<WebsiteSearchDocument>(
-	NameTemplate = "website-search.lexical-{env}",
+	NameTemplate = "ws-catalog.lexical-{env}",
 	DatePattern = "yyyy.MM.dd.HHmmss",
 	Configuration = typeof(WebsiteSearchLexicalConfig)
 )]
 [Index<WebsiteSearchDocument>(
-	NameTemplate = "website-search.semantic-{env}",
+	NameTemplate = "ws-catalog.semantic-{env}",
 	Variant = "Semantic",
 	DatePattern = "yyyy.MM.dd.HHmmss",
 	Configuration = typeof(WebsiteSearchSemanticConfig)
