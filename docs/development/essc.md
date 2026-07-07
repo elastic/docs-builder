@@ -47,12 +47,14 @@ dotnet run --project src/tooling/essc -- --help
 
 ### Environment variables
 
-| Environment variable          | Description                           |
-| ----------------------------- | ------------------------------------- |
-| `ELASTICSEARCH_URL`           | Full Elasticsearch URL including port |
-| `ELASTICSEARCH_API_KEY`       | Elasticsearch API key                 |
-| `CONTENTSTACK_API_KEY`        | Contentstack Content Delivery API key |
-| `CONTENTSTACK_DELIVERY_TOKEN` | Contentstack delivery token           |
+| Environment variable          | Description                                                          |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `ELASTICSEARCH_URL`           | Full Elasticsearch URL including port                                |
+| `ELASTICSEARCH_API_KEY`       | Elasticsearch API key                                                |
+| `DESTINATION_ELASTIC_URL`     | Destination cluster URL for cross-cluster commands (`indices copy`, `indices sync-remote`, `indices unify-incremental-sync`). Only needed when the destination differs from the source — it otherwise seeds from `Parameters:ElasticsearchUrl` / `ELASTICSEARCH_URL` |
+| `DESTINATION_ELASTIC_APIKEY`  | Destination cluster API key — same seeding rule as above             |
+| `CONTENTSTACK_API_KEY`        | Contentstack Content Delivery API key                                |
+| `CONTENTSTACK_DELIVERY_TOKEN` | Contentstack delivery token                                          |
 
 The dotnet configuration section keys (`Parameters:ElasticsearchUrl`, `ContentStack:ApiKey`,
 etc.) are also accepted. For CI, use the flat environment variable names above.
@@ -65,6 +67,13 @@ dotnet user-secrets set --id docs-builder Parameters:ElasticsearchApiKey <key>
 dotnet user-secrets set --id docs-builder ContentStack:ApiKey <key>
 dotnet user-secrets set --id docs-builder ContentStack:DeliveryToken <token>
 ```
+
+For cross-cluster commands (`indices copy`, `indices sync-remote`, `indices unify-incremental-sync`),
+the destination cluster seeds from the same `Parameters:ElasticsearchUrl` / `Parameters:ElasticsearchApiKey`
+secret as the source — so configuring just one cluster in the secrets store is enough; pass
+`--to-url`/`--to-api-key` (or `--from-url`/`--from-api-key`) on the command to point only one side
+at a different cluster, or set `DESTINATION_ELASTIC_URL`/`DESTINATION_ELASTIC_APIKEY` to override
+the destination for every run.
 
 If you previously used essc from the website-search-data repository, copy the
 `Parameters:Elasticsearch*` and `ContentStack:*` values from your old
@@ -150,6 +159,35 @@ Runs generative AI enrichment on existing **`labs-*`** semantic indices without 
 ```bash
 essc labs ai
 ```
+
+## Indices commands
+
+### `indices copy`
+
+Copies one or more indices verbatim between clusters using the Elasticsearch server-side remote
+reindex API. Unlike `indices sync-remote` / `indices unify-incremental-sync`, this command is not
+docs-search specific — it copies no synonym/query-rule resources and runs no lexical/semantic
+inference phases. Useful for pulling standalone indices (e.g. AI-enrichment `-ai-cache` lookup
+indices) from production down to a local cluster.
+
+```bash
+essc indices copy docs-assembler.semantic-prod-ai-cache labs-public.semantic-prod-ai-cache \
+  --from-url https://<prod-es> --from-api-key <key> \
+  --to-url http://localhost:9200
+```
+
+- Takes one or more source index/alias names as positional arguments.
+- `--rename-from` / `--rename-to` — regex rename applied to each source name to derive its
+  destination name (back-references supported), e.g. `--rename-from 'semantic-prod-' --rename-to
+  'semantic-local-'`.
+- `--force` — delete and recreate an existing destination index from the source's mapping and
+  settings before reindexing. Without it, an existing destination index is reindexed into as-is.
+- `--strip-semantic-fields` — strip `_inference_fields` metadata when the source has
+  `semantic_text` mappings (see `indices sync-remote`).
+- Shares `--from-url` / `--from-api-key` / `--to-url` / `--to-api-key` / `--slices` / `--rps` /
+  `--aliases` with `indices sync-remote` and `indices unify-incremental-sync`. `--slices` has no
+  effect on `indices copy` — every reindex it does is a remote reindex, and Elasticsearch rejects
+  `slices > 1` for reindex from a remote source.
 
 ## CI behaviour
 
