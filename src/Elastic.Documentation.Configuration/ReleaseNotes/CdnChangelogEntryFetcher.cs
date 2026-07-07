@@ -109,17 +109,17 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		var poolLabel = $"{org}/{repo}/{branch}";
 
 		// Defense-in-depth: org/repo come from config and branch from config or CLI on the consumer side.
-		// Reject empty or traversal segments before building the URI so it cannot normalize a "../" into a
-		// different changelog pool than intended.
-		if (!IsValidPool(org, repo, branch))
+		// Reject anything the producer would have refused to upload before building the URI, so it cannot
+		// normalize a "../" into a different changelog pool than intended.
+		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
 		{
 			emitError(
-				$"Invalid changelog pool '{poolLabel}': the org, repo, and each branch segment must be non-empty, contain no path separators, and not be '.' or '..'.");
+				$"Invalid changelog pool '{poolLabel}': the org, repo, and each '/'-delimited branch segment must be non-empty ASCII letters, digits, '.', '_' or '-' (org allows only letters, digits and '-') and must not be '.' or '..'.");
 			return [];
 		}
 
-		var poolSegments = PoolSegments(org, repo, branch).ToArray();
-		var registryUri = CombineSegments(baseUri, [.. poolSegments, "registry.json"]);
+		var poolSegments = ChangelogKeys.PoolSegments(org, repo, branch);
+		var registryUri = CombineSegments(baseUri, [.. poolSegments, ChangelogKeys.RegistryFileName]);
 
 		ChangelogRegistry? registry;
 		try
@@ -151,7 +151,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			ctx.ThrowIfCancellationRequested();
 
 			var fileName = entry.File;
-			if (string.IsNullOrWhiteSpace(fileName) || !IsSafeFileName(fileName))
+			if (!ChangelogKeys.IsSafeFileName(fileName))
 			{
 				emitWarning($"Changelog entry registry for '{poolLabel}' lists an invalid file name '{fileName}'; skipping.");
 				continue;
@@ -262,53 +262,6 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		var suffix = string.Join('/', segments.Select(Uri.EscapeDataString));
 		return new Uri($"{basePath}/{suffix}");
 	}
-
-	/// <summary>
-	/// Expands the pool into individually-escapable path segments — <c>changelog</c>, org, repo, then each
-	/// <c>/</c>-delimited part of the branch — so a branch's slashes stay real CDN key separators rather
-	/// than being percent-encoded into a single segment.
-	/// </summary>
-	private static IEnumerable<string> PoolSegments(string org, string repo, string branch)
-	{
-		yield return "changelog";
-		yield return org;
-		yield return repo;
-		foreach (var part in branch.Split('/'))
-			yield return part;
-	}
-
-	/// <summary>
-	/// Validates the consumer-supplied pool coordinates (org, repo, and each <c>/</c>-delimited branch
-	/// segment) so a malformed branch cannot redirect the fetch to a different pool via URI normalization.
-	/// </summary>
-	private static bool IsValidPool(string org, string repo, string branch)
-	{
-		if (!IsSafePoolSegment(org) || !IsSafePoolSegment(repo))
-			return false;
-
-		foreach (var part in branch.Split('/'))
-		{
-			if (!IsSafePoolSegment(part))
-				return false;
-		}
-
-		return true;
-	}
-
-	private static bool IsSafePoolSegment(string segment) =>
-		!string.IsNullOrEmpty(segment)
-		&& segment is not ("." or "..")
-		&& !segment.Contains('/', StringComparison.Ordinal)
-		&& !segment.Contains('\\', StringComparison.Ordinal);
-
-	/// <summary>
-	/// Guards against path traversal or nested keys sneaking in via the registry: an entry file name
-	/// must be a single path segment (the producer always writes <c>changelog/{org}/{repo}/{branch}/{file}</c>).
-	/// </summary>
-	private static bool IsSafeFileName(string fileName) =>
-		!fileName.Contains('/', StringComparison.Ordinal)
-		&& !fileName.Contains('\\', StringComparison.Ordinal)
-		&& fileName is not ("." or "..");
 
 	/// <summary>
 	/// Disposes the per-instance <see cref="HttpClient"/> created for an injected handler. The shared
