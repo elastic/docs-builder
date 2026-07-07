@@ -104,7 +104,7 @@ essc contentstack sync
 | `--page-per`     | 0 (unlimited)      | Max pages per content type (useful for testing)                         |
 | `--cache-folder` | OS app data        | Override cursor state directory                                         |
 
-`--max-ai-docs` uses DataAnnotations: it must be at least **1** when passed; **`0` is invalid**. For a large or unbounded batch without re-syncing, use **`contentstack ai`** instead.
+`--max-ai-docs` uses DataAnnotations: it must be at least **1** when passed; **`0` is invalid**. For a large or unbounded batch without re-syncing, use **`contentstack ai-enrich`** instead.
 
 The sync runs in two phases:
 
@@ -114,12 +114,12 @@ The sync runs in two phases:
    the semantic index, publishes synonyms and query rules, then runs a **bounded**
    generative AI enrichment pass on the semantic write index (unless `--no-ai`).
 
-### `contentstack ai`
+### `contentstack ai-enrich`
 
 Runs generative AI enrichment on existing **`site-*`** semantic indices without calling Contentstack. Same Elasticsearch overrides as `contentstack sync`.
 
 ```bash
-essc contentstack ai
+essc contentstack ai-enrich
 ```
 
 | Flag             | Default       | Description                               |
@@ -152,12 +152,12 @@ essc contentstack samples <content-type>
 
 Discovers labs URLs from sitemaps, crawls HTML, and bulk-ingests into **`labs-*`** indices. See `essc labs sync --help` for crawl flags (`--dry-run`, `--force`, `--no-ai`, `--max-ai-docs`, `--max-ai-time`, etc.).
 
-### `labs ai`
+### `labs ai-enrich`
 
-Runs generative AI enrichment on existing **`labs-*`** semantic indices without re-crawling. Flags match **`contentstack ai`** (`--max-run-time`, `--max-run-docs`, `--es-url`, `--es-api-key`).
+Runs generative AI enrichment on existing **`labs-*`** semantic indices without re-crawling. Flags match **`contentstack ai-enrich`** (`--max-run-time`, `--max-run-docs`, `--es-url`, `--es-api-key`).
 
 ```bash
-essc labs ai
+essc labs ai-enrich
 ```
 
 ## Indices commands

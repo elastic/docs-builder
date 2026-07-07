@@ -54,6 +54,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	// Read alias resolved during StartAsync, used for post-indexing operations
 	private string _lexicalReadAlias = string.Empty;
 
+	// Secondary (semantic) write alias resolved during StartAsync, used for standalone enrichment runs
+	private string? _secondaryWriteAlias;
+
 	// Per-channel running totals for progress logging
 	private int _primaryIndexed;
 	private int _secondaryIndexed;
@@ -212,6 +215,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		var orchestratorContext = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
 		_lexicalReadAlias = orchestratorContext.PrimaryReadAlias;
+		_secondaryWriteAlias = orchestratorContext.SecondaryWriteAlias;
 
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
@@ -248,6 +252,28 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			_logger.LogInformation(
 				"AI enrichment complete in {Elapsed}: {Enriched} enriched, {Failed} failed, {Candidates} candidates",
 				sw.Elapsed.ToString(@"hh\:mm\:ss"), last.Enriched, last.Failed, last.TotalCandidates);
+	}
+
+	/// <summary>Whether AI enrichment infrastructure is wired up for this endpoint.</summary>
+	public bool AiEnrichmentEnabled => _aiEnrichment is not null;
+
+	/// <summary>
+	/// Runs AI enrichment against the secondary (semantic) alias resolved by <see cref="StartAsync"/>, without
+	/// indexing any documents. Used by standalone ai-enrich commands — call <see cref="StartAsync"/> first, and
+	/// do not call <see cref="StopAsync"/> afterwards, since completing a zero-write sync would delete existing documents.
+	/// </summary>
+	/// <param name="maxDocs">Maximum documents to enrich; <c>0</c> or less means no cap.</param>
+	/// <param name="ctx">Cancellation token — pass an <see cref="AiEnrichmentDeadline"/>'s token to bound by wall clock.</param>
+	public async IAsyncEnumerable<AiEnrichmentProgress> RunAiEnrichmentAsync(
+		int maxDocs = 0,
+		[System.Runtime.CompilerServices.EnumeratorCancellation] Cancel ctx = default
+	)
+	{
+		if (_aiEnrichment is null || _secondaryWriteAlias is null)
+			yield break;
+
+		await foreach (var p in AiEnrichmentRunner.EnrichAsync(_aiEnrichment, _secondaryWriteAlias, maxDocs, ctx))
+			yield return p;
 	}
 
 	private async Task PublishSynonymsAsync(Cancel ctx)

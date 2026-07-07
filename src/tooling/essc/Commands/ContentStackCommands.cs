@@ -112,7 +112,8 @@ internal sealed class ContentStackCommands(
 	/// <paramref name="maxRunDocs"/> is an optional cap; <c>0</c> means no document limit.
 	/// Omit <paramref name="maxRunTime"/> for no wall-clock limit, or set a duration of at least one minute (for example <c>1h</c>, <c>90m</c>).
 	/// </remarks>
-	public async Task Ai(
+	[CommandName("ai-enrich")]
+	public async Task AiEnrich(
 		string? esApiKey = null,
 		[Url] Uri? esUrl = null,
 		[Range(0, int.MaxValue)] int maxRunDocs = 0,
@@ -123,7 +124,7 @@ internal sealed class ContentStackCommands(
 		if (!AiEnrichmentBudget.TryValidateMaxTime(maxRunTime, out var maxRunTimeError))
 		{
 			await Console.Error.WriteLineAsync($"Error: --max-run-time {maxRunTimeError}");
-			await Console.Error.WriteLineAsync("Run 'essc contentstack ai --help' for usage.");
+			await Console.Error.WriteLineAsync("Run 'essc contentstack ai-enrich --help' for usage.");
 			Environment.Exit(2);
 		}
 
