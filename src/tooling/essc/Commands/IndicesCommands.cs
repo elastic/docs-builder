@@ -551,22 +551,32 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			}
 		}
 
+		// Per-document bulk failures (checked before Error — when Failures is non-empty and no
+		// task-level error occurred, the library also populates Error with a one-line summary for
+		// backward compat, but the grouped breakdown below is far more actionable).
+		if (last?.Failures.Count > 0)
+		{
+			AnsiConsole.MarkupLine($"[yellow]⚠ {label} — {last.Failures.Count:N0} document(s) failed[/]");
+			foreach (var group in last.Failures
+				.GroupBy(f => (f.CauseType, f.CauseReason))
+				.OrderByDescending(g => g.Count())
+				.Take(10))
+			{
+				var sample = group.First();
+				AnsiConsole.MarkupLine(
+					$"[dim]  ×{group.Count():N0}[/] [red]{Markup.Escape(sample.CauseType ?? "unknown")}[/]: " +
+					$"{Markup.Escape(sample.CauseReason ?? "no reason given")} " +
+					$"[dim](e.g. {Markup.Escape(sample.Index ?? "?")}/{Markup.Escape(sample.Id ?? "?")})[/]");
+			}
+			if (last.Failures.Count > 10)
+				AnsiConsole.MarkupLine($"[dim]  ... {last.Failures.Count - 10:N0} more failure(s) not shown[/]");
+			return false;
+		}
+
 		if (last?.Error is { } err)
 		{
 			AnsiConsole.MarkupLine($"[red]✗ {label} failed:[/] {Markup.Escape(err)}");
 			AnsiConsole.MarkupLine($"[dim]  created={last.Created:N0} out of total={last.Total:N0} before failure[/]");
-			return false;
-		}
-
-		// ReindexProgress.failures is a JSON array that the library reads as string (returns null).
-		// Compute silent per-document failures from the arithmetic gap in the status counts.
-		var silentFailures = last is null ? 0
-			: last.Total - last.Created - last.Updated - last.Deleted - last.Noops - last.VersionConflicts;
-
-		if (silentFailures > 0)
-		{
-			AnsiConsole.MarkupLine($"[yellow]⚠ {label} — {silentFailures:N0} document(s) failed (check response.failures for details)[/]");
-			AnsiConsole.MarkupLine($"[dim]  created={last!.Created:N0} failures={silentFailures:N0} total={last.Total:N0}[/]");
 			return false;
 		}
 
