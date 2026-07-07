@@ -297,13 +297,63 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		// overwhelming the Jina endpoint with concurrent bulk requests.
 		const string semanticSlices = "1";
 
+		var state = new UnifyRunState(
+			sourceAliases, lexicalIndex, semanticIndex, originalSemanticIndex, semanticWasRenamed,
+			lexicalAlias, semanticAlias, pageAlias, extraLabels, env, isFullReindex, batchTsStr,
+			currentSourceHash, semanticSlices, slices, rpsOpt);
+
+		try
+		{
+			await RunUnifySteps(transport, state, logger, ct);
+		}
+		catch (OperationCanceledException) when (ct.IsCancellationRequested)
+		{
+			AnsiConsole.WriteLine();
+			AnsiConsole.MarkupLine("[yellow]Cancelled.[/]");
+			if (isFullReindex)
+			{
+				// A full reindex creates a brand-new semantic backing index that no alias points at
+				// yet — cancelling mid-run leaves it partially populated. Safe to delete; the next
+				// run's Multiplex/source-hash-changed path will recreate it from scratch.
+				AnsiConsole.MarkupLine("[dim]Cleaning up partial index...[/]");
+				// ct is already cancelled — use a fresh token so the cleanup call itself can run.
+				_ = await transport.DeleteAsync<StringResponse>(semanticIndex, cancellationToken: CancellationToken.None);
+				AnsiConsole.MarkupLine($"[dim]Deleted partial index {Markup.Escape(semanticIndex)}[/]");
+			}
+			Environment.Exit(130);
+			return;
+		}
+	}
+
+	/// <summary>Bundles the values <see cref="RunUnifySteps"/> needs — resolved once in <see cref="Unify"/>
+	/// before the cancellable work begins, so the cleanup handler there can also read them.</summary>
+	private sealed record UnifyRunState(
+		string[] SourceAliases,
+		string LexicalIndex,
+		string SemanticIndex,
+		string OriginalSemanticIndex,
+		bool SemanticWasRenamed,
+		string LexicalAlias,
+		string SemanticAlias,
+		string PageAlias,
+		string[] ExtraLabels,
+		string Env,
+		bool IsFullReindex,
+		string BatchTsStr,
+		string CurrentSourceHash,
+		string SemanticSlices,
+		string Slices,
+		float? RpsOpt);
+
+	private async Task RunUnifySteps(DistributedTransport transport, UnifyRunState state, ILogger logger, Cancel ct)
+	{
 		// ── Step 1: Populate lexical from all 3 sources ──────────────────────────
 		// Fast bulk copy, no inference. Stamps batch_index_date and unify_source on each doc.
-		foreach (var source in sourceAliases)
+		foreach (var source in state.SourceAliases)
 		{
-			var fillBody = BuildLexicalFillBody(source, lexicalIndex, batchTsStr);
+			var fillBody = BuildLexicalFillBody(source, state.LexicalIndex, state.BatchTsStr);
 			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = fillBody, Slices = slices, RequestsPerSecond = rpsOpt },
+				new ServerReindexOptions { Body = fillBody, Slices = state.Slices, RequestsPerSecond = state.RpsOpt },
 				$"fill-lexical ({Markup.Escape(source)})", ct))
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — lexical fill failed.[/]");
@@ -314,50 +364,50 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 		// Refresh lexical so all 3 fill reindexes are visible before the semantic reindex opens its PIT.
 		// _reindex does not refresh the destination — docs written to un-refreshed segments are invisible.
-		_ = await transport.PostAsync<StringResponse>($"{lexicalIndex}/_refresh", PostData.Empty, ct);
+		_ = await transport.PostAsync<StringResponse>($"{state.LexicalIndex}/_refresh", PostData.Empty, ct);
 		AnsiConsole.MarkupLine("[dim]Lexical refreshed[/]");
 
 		// Point -latest alias at the (now populated) lexical backing index.
-		await PointAliasAsync(transport, lexicalAlias, lexicalIndex, logger, ct);
-		AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(lexicalAlias)} → {Markup.Escape(lexicalIndex)}");
+		await PointAliasAsync(transport, state.LexicalAlias, state.LexicalIndex, logger, ct);
+		AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(state.LexicalAlias)} → {Markup.Escape(state.LexicalIndex)}");
 
-		if (semanticWasRenamed)
+		if (state.SemanticWasRenamed)
 		{
 			// The orchestrator created and template-mapped the original semantic index.
 			// Copy its settings+mapping to the renamed index so semantic_text fields and
 			// custom analyzers are present before the inference reindex runs.
-			await BootstrapSemanticIndexAsync(transport, transport, originalSemanticIndex, semanticIndex, logger, ct);
+			await BootstrapSemanticIndexAsync(transport, transport, state.OriginalSemanticIndex, state.SemanticIndex, logger, ct);
 		}
 
-		if (isFullReindex)
+		if (state.IsFullReindex)
 		{
 			// ── Full reindex to semantic (all docs trigger inference) ────────────
 			// slices=1: prevents es_rejected_execution_exception from concurrent inference bulk.
 			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Source = lexicalIndex, Destination = semanticIndex, Slices = semanticSlices, RequestsPerSecond = rpsOpt },
+				new ServerReindexOptions { Source = state.LexicalIndex, Destination = state.SemanticIndex, Slices = state.SemanticSlices, RequestsPerSecond = state.RpsOpt },
 				"full-semantic", ct))
 			{
 				// Reindex failed mid-way. The semantic backing index is partial — delete it so
 				// the next run starts clean (Multiplex will recreate it).
 				AnsiConsole.MarkupLine("[red]Reindex to semantic failed — cleaning up partial index...[/]");
-				_ = await transport.DeleteAsync<StringResponse>(semanticIndex, cancellationToken: ct);
-				AnsiConsole.MarkupLine($"[dim]Deleted partial index {Markup.Escape(semanticIndex)}[/]");
+				_ = await transport.DeleteAsync<StringResponse>(state.SemanticIndex, cancellationToken: ct);
+				AnsiConsole.MarkupLine($"[dim]Deleted partial index {Markup.Escape(state.SemanticIndex)}[/]");
 				Environment.Exit(1);
 				return;
 			}
 
 			// Point -latest and ws-content-{env} aliases only after a successful reindex.
-			await PointAliasAsync(transport, semanticAlias, semanticIndex, logger, ct);
-			await PointAliasAsync(transport, pageAlias, semanticIndex, logger, ct);
-			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(semanticAlias)} → {Markup.Escape(semanticIndex)}");
-			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(pageAlias)} → {Markup.Escape(semanticIndex)}");
-			_ = await PruneOldIndicesAsync(transport, $"ws-catalog.semantic-{env}-*", keepCount: 3, logger, ct);
+			await PointAliasAsync(transport, state.SemanticAlias, state.SemanticIndex, logger, ct);
+			await PointAliasAsync(transport, state.PageAlias, state.SemanticIndex, logger, ct);
+			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(state.SemanticAlias)} → {Markup.Escape(state.SemanticIndex)}");
+			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(state.PageAlias)} → {Markup.Escape(state.SemanticIndex)}");
+			_ = await PruneOldIndicesAsync(transport, $"ws-catalog.semantic-{state.Env}-*", keepCount: 3, logger, ct);
 		}
 		else // Reindex mode — incremental
 		{
 			// Global cutoff: max(last_updated) across all docs currently in semantic.
 			// Changed/new source docs have newer last_updated from their sync → caught by inference step.
-			var cutoff = await QueryMaxLastUpdatedAsync(transport, semanticIndex, ct);
+			var cutoff = await QueryMaxLastUpdatedAsync(transport, state.SemanticIndex, ct);
 			AnsiConsole.MarkupLine($"[dim]Cutoff (max last_updated in semantic):[/] [white]{cutoff:o}[/]");
 			AnsiConsole.WriteLine();
 
@@ -365,11 +415,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			// Reindex only docs whose last_updated > cutoff from lexical → semantic (slices=1, inference).
 			// These are docs that changed in any source since the last unify run.
 			var inferenceBody =
-				"{\"source\":{\"index\":\"" + lexicalIndex +
+				"{\"source\":{\"index\":\"" + state.LexicalIndex +
 				"\",\"query\":{\"range\":{\"last_updated\":{\"gt\":\"" + cutoff.ToString("o") + "\"}}}}," +
-				"\"dest\":{\"index\":\"" + semanticIndex + "\"}}";
+				"\"dest\":{\"index\":\"" + state.SemanticIndex + "\"}}";
 			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = inferenceBody, Slices = semanticSlices, RequestsPerSecond = rpsOpt },
+				new ServerReindexOptions { Body = inferenceBody, Slices = state.SemanticSlices, RequestsPerSecond = state.RpsOpt },
 				"inference-reindex", ct))
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — inference reindex failed.[/]");
@@ -380,9 +430,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			// ── Delete step ──────────────────────────────────────────────────────
 			// Reindex stale lexical docs (batch_index_date < batchTimestamp = not in current fill)
 			// to semantic using a delete script. This removes docs deleted from all sources.
-			var deleteBody = BuildDeleteScriptBody(lexicalIndex, semanticIndex, batchTsStr);
+			var deleteBody = BuildDeleteScriptBody(state.LexicalIndex, state.SemanticIndex, state.BatchTsStr);
 			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = deleteBody, Slices = slices },
+				new ServerReindexOptions { Body = deleteBody, Slices = state.Slices },
 				"reindex-deletes", ct))
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — delete step failed.[/]");
@@ -392,20 +442,20 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 			// ── Lexical cleanup ──────────────────────────────────────────────────
 			// Remove the stale docs from lexical too now that they've been deleted from semantic.
-			var staleQuery = "{\"range\":{\"batch_index_date\":{\"lt\":\"" + batchTsStr + "\"}}}";
-			await RunDeleteByQueryAsync(transport, lexicalIndex, staleQuery, slices, "cleanup-lexical", ct);
+			var staleQuery = "{\"range\":{\"batch_index_date\":{\"lt\":\"" + state.BatchTsStr + "\"}}}";
+			await RunDeleteByQueryAsync(transport, state.LexicalIndex, staleQuery, state.Slices, "cleanup-lexical", ct);
 
 			// Reindex mode does not create new backing indices — aliases are already correct.
 		}
 
 		// Persist combined source hash into component template for next-run rollover detection.
-		await WriteStoredSourceHashAsync(transport, env, currentSourceHash, ct);
-		AnsiConsole.MarkupLine($"[dim]Stored source hash {Markup.Escape(currentSourceHash)} → {Markup.Escape(UnifyStateTemplateName(env))}[/]");
+		await WriteStoredSourceHashAsync(transport, state.Env, state.CurrentSourceHash, ct);
+		AnsiConsole.MarkupLine($"[dim]Stored source hash {Markup.Escape(state.CurrentSourceHash)} → {Markup.Escape(UnifyStateTemplateName(state.Env))}[/]");
 
-		foreach (var label in extraLabels)
+		foreach (var label in state.ExtraLabels)
 		{
-			await PointAliasAsync(transport, label, semanticIndex, logger, ct);
-			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(label)} → {Markup.Escape(semanticIndex)}");
+			await PointAliasAsync(transport, label, state.SemanticIndex, logger, ct);
+			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(label)} → {Markup.Escape(state.SemanticIndex)}");
 		}
 
 		AnsiConsole.MarkupLine("[green]✓[/] Done");
