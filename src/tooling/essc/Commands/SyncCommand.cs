@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Elastic.Documentation.Indexing;
 using Elastic.SiteSearch.Cli.ContentStack;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 using Microsoft.Extensions.Logging;
@@ -35,8 +36,8 @@ internal sealed class SyncCommand(
 	/// (default <c>100</c> enrichment candidates per run; see <paramref name="maxAiDocs"/>).
 	/// </remarks>
 	/// <param name="cacheFolder">See <see cref="ContentStackCommands.Sync"/>.</param>
-	/// <param name="esApiKey">See <see cref="ContentStackCommands.Sync"/>.</param>
-	/// <param name="esUrl">See <see cref="ContentStackCommands.Sync"/>.</param>
+	/// <param name="apiKey">See <see cref="ContentStackCommands.Sync"/>.</param>
+	/// <param name="endpoint">See <see cref="ContentStackCommands.Sync"/>.</param>
 	/// <param name="force">See <see cref="ContentStackCommands.Sync"/>.</param>
 	/// <param name="noAi">See <see cref="ContentStackCommands.Sync"/>.</param>
 	/// <param name="maxAiDocs">See <see cref="ContentStackCommands.Sync"/>.</param>
@@ -46,8 +47,8 @@ internal sealed class SyncCommand(
 	/// <param name="ct">Cancellation token.</param>
 	public async Task Sync(
 		string? cacheFolder = null,
-		string? esApiKey = null,
-		Uri? esUrl = null,
+		string? apiKey = null,
+		Uri? endpoint = null,
 		bool force = false,
 		bool noAi = false,
 		int? maxAiDocs = null,
@@ -57,10 +58,9 @@ internal sealed class SyncCommand(
 		Cancel ct = default
 	)
 	{
-		if (maxAiTime is { } wall && wall < TimeSpan.FromMinutes(1))
+		if (!AiEnrichmentBudget.TryValidateMaxTime(maxAiTime, out var maxAiTimeError))
 		{
-			await Console.Error.WriteLineAsync(
-				"Error: --max-ai-time must be at least 1m (for example 1m, 90m, 2h) when specified.");
+			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}");
 			await Console.Error.WriteLineAsync("Run 'essc contentstack sync --help' for usage.");
 			Environment.Exit(2);
 		}
@@ -73,12 +73,12 @@ internal sealed class SyncCommand(
 		var cursorMap = store.Load(StateFile, StateJsonContext.Default.SyncCursorMap)
 			?? new SyncCursorMap();
 
-		var endpoint = ResolveEndpoint(esUrl, esApiKey);
+		var cfg = ResolveEndpoint(endpoint, apiKey);
 
 		AnsiConsole.MarkupLine("[aqua bold]Contentstack Parallel Sync[/]");
 		AnsiConsole.MarkupLine($"[dim]Cache: {Markup.Escape(store.CacheFolder)}[/]");
 		if (!noIndex)
-			AnsiConsole.MarkupLine($"[dim]Elasticsearch: {Markup.Escape(endpoint.Uri.ToString())}[/]");
+			AnsiConsole.MarkupLine($"[dim]Elasticsearch: {Markup.Escape(cfg.Uri.ToString())}[/]");
 		var pagesInfo = pagePer > 0 ? $" | Max pages/type: {pagePer}" : "";
 		var indexInfo = noIndex ? " | [yellow]indexing disabled[/]" : "";
 		AnsiConsole.MarkupLine($"[dim]Content types: {PageContentTypes.All.Length} | Lanes: {LaneCount}{pagesInfo}{indexInfo}[/]");
@@ -98,10 +98,10 @@ internal sealed class SyncCommand(
 		SiteDocumentExporter? exporter = null;
 		if (!noIndex)
 		{
-			var transport = ElasticsearchTransportFactory.Create(endpoint);
+			var transport = ElasticsearchTransportFactory.Create(cfg);
 			exporter = new SiteDocumentExporter(
 				loggerFactory,
-				endpoint,
+				cfg,
 				transport,
 				config.BuildType,
 				config.ElasticsearchEnvironment,
@@ -109,7 +109,7 @@ internal sealed class SyncCommand(
 			);
 
 			if (!noAi)
-				exporter.ConfigurePostSyncAiBatch(maxAiDocs ?? 100, maxAiTime);
+				exporter.ConfigurePostSyncAiBatch(maxAiDocs, maxAiTime);
 
 			if (IsInteractive())
 			{
@@ -226,18 +226,18 @@ internal sealed class SyncCommand(
 		}
 	}
 
-	private ElasticsearchEndpoint ResolveEndpoint(Uri? esUrl, string? esApiKey)
+	private ElasticsearchEndpoint ResolveEndpoint(Uri? endpoint, string? apiKey)
 	{
-		var endpoint = config.Elasticsearch;
-		if (esUrl is not null)
-			endpoint.Uri = esUrl;
-		if (esApiKey is not null)
+		var cfg = config.Elasticsearch;
+		if (endpoint is not null)
+			cfg.Uri = endpoint;
+		if (apiKey is not null)
 		{
-			endpoint.ApiKey = esApiKey;
-			endpoint.Username = null;
-			endpoint.Password = null;
+			cfg.ApiKey = apiKey;
+			cfg.Username = null;
+			cfg.Password = null;
 		}
-		return endpoint;
+		return cfg;
 	}
 
 	private async Task RunLaneAsync(
