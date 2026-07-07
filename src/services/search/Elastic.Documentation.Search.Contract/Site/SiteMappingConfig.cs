@@ -23,7 +23,7 @@ namespace Elastic.Documentation.Search.Contract;
 )]
 [AiEnrichment<SiteDocument>(
 	Role = "Expert content analyst creating search metadata for Elastic's website pages (blogs, labs articles, product pages, events). Audience: developers, DevOps engineers, security analysts, and IT decision-makers.",
-	MatchField = "path",
+	MatchField = "url",
 	IndexVariant = "Semantic"
 )]
 public static partial class SiteMappingContext;
