@@ -32,11 +32,13 @@ internal sealed class AssemblerAiEnrichCommand(
 	/// </para>
 	/// </remarks>
 	/// <param name="environment">Named deployment target whose existing indices should be enriched.</param>
+	/// <param name="bootstrapOnly">Bootstrap the enrich policy, pipeline, and lookup index, then exit without enriching any documents.</param>
 	[CommandName("ai-enrich")]
 	public async Task<int> AiEnrich(
 		GlobalCliOptions _,
 		[AsParameters] ElasticsearchIndexOptions es,
 		string? environment = null,
+		bool bootstrapOnly = false,
 		CancellationToken ct = default
 	)
 	{
@@ -45,7 +47,7 @@ internal sealed class AssemblerAiEnrichCommand(
 		var writeFs = FileSystemFactory.RealWrite;
 		var service = new AssemblerAiEnrichService(logFactory, configuration, configurationContext, githubActionsService);
 		serviceInvoker.AddCommand(service,
-			async (s, col, ctx) => await s.AiEnrich(col, readFs, writeFs, es, environment, ctx)
+			async (s, col, ctx) => await s.AiEnrich(col, readFs, writeFs, es, environment, bootstrapOnly, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
