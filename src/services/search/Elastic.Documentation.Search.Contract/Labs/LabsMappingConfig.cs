@@ -23,7 +23,7 @@ namespace Elastic.Documentation.Search.Contract;
 )]
 [AiEnrichment<LabsDocument>(
 	Role = "Expert content analyst creating search metadata for Elastic's website pages (blogs, labs articles, product pages, events). Audience: developers, DevOps engineers, security analysts, and IT decision-makers.",
-	MatchField = "url",
+	MatchField = "path",
 	IndexVariant = "Semantic"
 )]
 public static partial class LabsMappingContext;
@@ -35,7 +35,7 @@ public class LabsLexicalConfig : IConfigureElasticsearch<LabsDocument>
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<LabsDocument> ConfigureMappings(MappingsBuilder<LabsDocument> mappings) =>
-		mappings.AddSearchDocumentMappings();
+		mappings.AddSearchDocumentMappings().AddSiteMappings();
 }
 
 public class LabsSemanticConfig : IConfigureElasticsearch<LabsDocument>
@@ -45,5 +45,5 @@ public class LabsSemanticConfig : IConfigureElasticsearch<LabsDocument>
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<LabsDocument> ConfigureMappings(MappingsBuilder<LabsDocument> mappings) =>
-		mappings.AddSearchDocumentMappings(semantic: true);
+		mappings.AddSearchDocumentMappings(semantic: true).AddSiteMappings();
 }

@@ -2,13 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Mapping;
 using Elastic.Mapping.Analysis;
 using Elastic.Mapping.Mappings;
 
-namespace Elastic.Documentation.Search;
+namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// docs-builder index topology: <c>docs-{type}.{lexical|semantic}-{env}</c>.
@@ -29,7 +28,7 @@ namespace Elastic.Documentation.Search;
 )]
 [AiEnrichment<DocumentationDocument>(
 	Role = "Expert technical writer creating search metadata for Elastic documentation (Elasticsearch, Kibana, Beats, Logstash). Audience: developers, DevOps, data engineers.",
-	MatchField = "url",
+	MatchField = "path",
 	IndexVariant = "Semantic"
 )]
 public static partial class DocumentationMappingContext;

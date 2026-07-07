@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
@@ -172,7 +173,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ExportMaxConcurrency = _endpoint.IndexNumThreads,
 			ExportMaxRetries = _endpoint.MaxRetries
 		};
-		options.SerializerContext = SourceGenerationContext.Default;
+		options.SerializerContext = Documentation.Search.Contract.SourceGenerationContext.Default;
 		options.ExportResponseCallback = (response, buffer) =>
 		{
 			var sent = response.Items?.Count ?? 0;
@@ -200,7 +201,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			foreach (var (doc, responseItem) in items)
 			{
 				_collector.EmitGlobalError(
-					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Url}");
+					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Path}");
 			}
 		};
 	}

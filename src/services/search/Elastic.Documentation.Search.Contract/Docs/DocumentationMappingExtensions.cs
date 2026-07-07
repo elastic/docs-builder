@@ -5,18 +5,21 @@
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Mapping.Mappings;
 
-namespace Elastic.Documentation.Search;
+namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// Documentation-specific mapping extensions for <c>docs-{type}.{lexical|semantic}-{env}</c> indices.
-/// Layers the <c>applies_to</c> nested and <c>parents</c> object sub-field definitions on top of
-/// <see cref="SharedMappingConfig.AddSearchDocumentMappings{T}"/>.
+/// Layers the <c>applies_to</c> nested sub-field definitions on top of
+/// <see cref="SharedMappingConfig.AddSearchDocumentMappings{T}"/>. <c>parents</c> topology lives in
+/// <see cref="SharedMappingConfig"/> itself since <c>Parents</c> is declared on
+/// <see cref="SearchDocumentBase"/> and shared by every document type, not just documentation.
 /// </summary>
 public static class DocumentationMappingExtensions
 {
 	/// <summary>
-	/// Applies documentation-specific field topology to a <see cref="DocumentationDocument"/> mappings builder:
-	/// keyword overrides for <c>applies_to</c> sub-fields and multi-field configuration for <c>parents</c>.
+	/// Applies documentation-specific field topology to a <see cref="DocumentationDocument"/> mappings
+	/// builder: keyword overrides for <c>applies_to</c> sub-fields (the only field unique to
+	/// <see cref="DocumentationDocument"/> among the shared search document types).
 	/// </summary>
 	public static MappingsBuilder<DocumentationDocument> AddDocumentationMappings(this MappingsBuilder<DocumentationDocument> m) =>
 		m
@@ -26,12 +29,5 @@ public static class DocumentationMappingExtensions
 			.AddProperty("applies_to.type", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.sub_type", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.lifecycle", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
-			.AddProperty("applies_to.version", f => f.Version())
-			// parents is an object array — AddProperty places sub-fields under "properties".
-			.AddProperty("parents.url", f => f.Keyword()
-				.MultiField("match", mf => mf.Text())
-				.MultiField("prefix", mf => mf.Text().Analyzer(SharedMappingConfig.HierarchyAnalyzer)))
-			.AddProperty("parents.title", f => f.Text()
-				.SearchAnalyzer(SharedMappingConfig.SynonymsAnalyzer)
-				.MultiField("keyword", mf => mf.Keyword()));
+			.AddProperty("applies_to.version", f => f.Version());
 }

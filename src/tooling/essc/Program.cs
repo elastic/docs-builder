@@ -87,6 +87,7 @@ ConfigureLabsCrawlHttp(builder.Services.AddHttpClient<IAdaptiveCrawler, Adaptive
 builder.Services.AddSingleton<SyncCommand>();
 builder.Services.AddSingleton<ContentTypesCommand>();
 builder.Services.AddSingleton<DumpSamplesCommand>();
+builder.Services.AddSingleton<FindUrlCommand>();
 builder.Services.AddSingleton<LabsCommands>();
 builder.Services.AddSingleton<IndicesCommands>();
 

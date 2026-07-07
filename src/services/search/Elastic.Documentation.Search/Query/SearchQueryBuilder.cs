@@ -21,8 +21,8 @@ public static class SearchQueryBuilder
 	[
 		new RankFeatureQuery { Field = QueryFieldNames.NavigationDepth, Boost = 0.8f },
 		new RankFeatureQuery { Field = QueryFieldNames.NavigationTableOfContents, Boost = 0.8f },
-		new TermQuery { Field = QueryFieldNames.NavigationSection, Value = "reference", Boost = 0.15f },
-		new TermQuery { Field = QueryFieldNames.NavigationSection, Value = "getting-started", Boost = 0.1f }
+		new TermQuery { Field = QueryFieldNames.Section, Value = "reference", Boost = 0.15f },
+		new TermQuery { Field = QueryFieldNames.Section, Value = "getting-started", Boost = 0.1f }
 	];
 
 	/// <summary>Excludes hidden documents and bare root-URL placeholders.</summary>
@@ -32,7 +32,7 @@ public static class SearchQueryBuilder
 			MustNot =
 			[
 				new TermsQuery(
-					QueryFieldNames.UrlKeyword,
+					QueryFieldNames.PathKeyword,
 					new TermsQueryField(["/docs", "/docs/", "/docs/404", "/docs/404/"])),
 				new TermQuery { Field = QueryFieldNames.Hidden, Value = true }
 			]
@@ -47,7 +47,7 @@ public static class SearchQueryBuilder
 		{
 			Query = string.Join(' ', diminishTerms),
 			Operator = Operator.Or,
-			Fields = new[] { QueryFieldNames.SearchTitle, QueryFieldNames.UrlMatch }
+			Fields = new[] { QueryFieldNames.SearchTitle, QueryFieldNames.PathMatch }
 		};
 	}
 
@@ -90,7 +90,7 @@ public static class SearchQueryBuilder
 
 	public static Query BuildSemanticQuery(string searchQuery) =>
 		(Query)new SemanticQuery(QueryFieldNames.TitleSemanticText, searchQuery) { Boost = 5.0f }
-		|| new SemanticQuery(QueryFieldNames.AbstractSemanticText, searchQuery) { Boost = 3.0f }
+		|| new SemanticQuery(QueryFieldNames.SummarySemanticText, searchQuery) { Boost = 3.0f }
 		|| new SemanticQuery(QueryFieldNames.AiRagSummarySemanticText, searchQuery) { Boost = 4.0f }
 		|| new SemanticQuery(QueryFieldNames.AiQuestionsSemanticText, searchQuery) { Boost = 2.0f };
 
@@ -100,7 +100,7 @@ public static class SearchQueryBuilder
 	public static Query BuildUrlMatchQuery(string searchQuery) =>
 		new ConstantScoreQuery
 		{
-			Filter = new MatchQuery { Field = QueryFieldNames.UrlMatch, Query = searchQuery },
+			Filter = new MatchQuery { Field = QueryFieldNames.PathMatch, Query = searchQuery },
 			Boost = 0.3f
 		};
 
@@ -136,7 +136,7 @@ public static class SearchQueryBuilder
 			Type = TextQueryType.Phrase,
 			Analyzer = "synonyms_analyzer",
 			Boost = 0.2f,
-			Fields = new[] { QueryFieldNames.StrippedBody }
+			Fields = new[] { QueryFieldNames.Body }
 		};
 
 	/// <summary>
@@ -178,7 +178,7 @@ public static class SearchQueryBuilder
 				Type = TextQueryType.BestFields,
 				Analyzer = "synonyms_analyzer",
 				Boost = 0.1f,
-				Fields = new[] { QueryFieldNames.StrippedBody }
+				Fields = new[] { QueryFieldNames.Body }
 			};
 
 		var titleKeywordQuery = GenerateTitleKeywordQuery(searchQuery, synonymBiDirectional);

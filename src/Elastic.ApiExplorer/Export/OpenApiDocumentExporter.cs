@@ -128,8 +128,11 @@ public partial class OpenApiDocumentExporter(
 				var url = $"/docs/api/doc/{product}/operation/operation-{operationId.ToLowerInvariant()}";
 
 				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
+				// Trim: spec summaries occasionally carry stray leading/trailing whitespace or a
+				// trailing newline, which would otherwise flow verbatim into the indexed title.
+				var summary = operation.Value.Summary?.Trim();
 				// inject product name into title to ensure differentiation and better scoring
-				var title = $"{operation.Value.Summary ?? operationId} - {productName} API";
+				var title = $"{(string.IsNullOrEmpty(summary) ? operationId : summary)} - {productName} API";
 				// append the raw operation id (e.g. "_bulk") so the REST endpoint name is searchable —
 				// keep it verbatim (no case/underscore normalization) since that's exactly what users type.
 				var searchTitle = $"{title} - {operationId}";
@@ -177,23 +180,20 @@ public partial class OpenApiDocumentExporter(
 				yield return new DocumentationDocument
 				{
 					ContentType = "api",
-					Url = url,
+					Path = url,
 					Title = title,
 					SearchTitle = searchTitle,
 					Description = description,
 					Body = body,
-					StrippedBody = body,
 					Headings = headings,
 					Links = [],
 					Applies = applies?.ToAppliesTo(),
 					Parents =
 					[
-						new ParentDocument { Title = "API Reference", Url = "/docs/api" },
-						new ParentDocument { Title = product, Url = $"/docs/api/doc/{product}" }
+						new ParentDocument { Title = "API Reference", Path = "/docs/api" },
+						new ParentDocument { Title = product, Path = $"/docs/api/doc/{product}" }
 					],
-					Product = inference?.Product is not null
-						? new IndexedProduct { Id = inference.Product.Id, Repository = inference.Repository }
-						: null,
+					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
 						? inference.RelatedProducts.Select(p => new IndexedProduct
 						{
