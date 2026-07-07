@@ -2,11 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Mapping.Mappings;
 
-namespace Elastic.Documentation.Search;
+namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// Documentation-specific mapping extensions for <c>docs-{type}.{lexical|semantic}-{env}</c> indices.
