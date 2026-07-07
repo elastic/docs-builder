@@ -344,14 +344,50 @@ public class ContentStackMappingTests
 
 	/// <summary>
 	/// Root cause: ContentStack "publishes" the same entry into multiple locale variants that
-	/// share the same (unlocalized) url. An unprefixed url with an unrecognized locale code must
-	/// still resolve to English — the locale field alone is not authoritative.
+	/// share the same (unlocalized) url. A locale outside <c>LocaleUrlPrefixes</c> still must get
+	/// its own document id — falling back to its base language subtag as the prefix (site-served
+	/// prefixes are always two letters, never the full locale code) — otherwise it silently
+	/// collides with (and can 409 against) another locale variant of the same url.
+	/// Known gap: <see cref="ContentStackMapper.GetLanguageFromUrl"/> only recognizes the short
+	/// prefixes in <c>LocaleUrlPrefixes</c>, so the reported <c>Locale</c> still falls back to
+	/// "en" for an unmapped fallback prefix — the path is correctly namespaced (collision avoided)
+	/// even though the locale label itself isn't accurate for this case.
 	/// </summary>
 	[Fact]
-	public void ToSiteDocument_UnprefixedUrl_UnrecognizedLocale_ResolvesToEnglish()
+	public void ToSiteDocument_UnprefixedUrl_UnmappedNonEnglishLocale_NamespacesUnderBaseLanguageSubtag()
 	{
 		var item = LoadFromJson(/*lang=json,strict*/ """
 			{ "title": "Support Matrix", "url": "/support/matrix", "locale": "xx-yy",
+			  "paragraph_l10n": "Supported versions." }
+			""", "support_matrix");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Path.Should().Be("/xx/support/matrix");
+		doc.Locale.Should().Be("en");
+	}
+
+	/// <summary>Missing locale is treated as the master (en-us) locale — no prefix.</summary>
+	[Fact]
+	public void ToSiteDocument_MissingLocale_ResolvesToEnglish()
+	{
+		var item = LoadFromJson(/*lang=json,strict*/ """
+			{ "title": "Support Matrix", "url": "/support/matrix",
+			  "paragraph_l10n": "Supported versions." }
+			""", "support_matrix");
+		var doc = ContentStackMapper.ToSiteDocument(item);
+
+		doc.Should().NotBeNull();
+		doc.Path.Should().Be("/support/matrix");
+		doc.Locale.Should().Be("en");
+	}
+
+	/// <summary>Any en-* locale variant (not just the en-us master) is treated as English — no prefix.</summary>
+	[Fact]
+	public void ToSiteDocument_EnglishVariantLocale_ResolvesToEnglish()
+	{
+		var item = LoadFromJson(/*lang=json,strict*/ """
+			{ "title": "Support Matrix", "url": "/support/matrix", "locale": "en-gb",
 			  "paragraph_l10n": "Supported versions." }
 			""", "support_matrix");
 		var doc = ContentStackMapper.ToSiteDocument(item);

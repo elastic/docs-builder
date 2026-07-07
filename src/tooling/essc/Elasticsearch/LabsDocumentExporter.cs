@@ -19,7 +19,10 @@ internal sealed class LabsDocumentExporter : IDocumentExporter<LabsDocument>, ID
 	private readonly ILogger _logger;
 	private readonly IncrementalSyncOrchestrator<LabsDocument> _orchestrator;
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
+	private readonly DistributedTransport _transport;
 	private string? _secondaryWriteAlias;
+	private bool _primaryRolledOver;
+	private bool _secondaryRolledOver;
 	private int _primaryIndexed;
 	private int _secondaryIndexed;
 	private int _rejectedCount;
@@ -48,6 +51,8 @@ internal sealed class LabsDocumentExporter : IDocumentExporter<LabsDocument>, ID
 	public long ReindexProcessed => _reindexProcessed;
 	public long ReindexVersionConflicts => _reindexVersionConflicts;
 	public string? ReindexError { get; private set; }
+	public IndexBootstrapInfo? PrimaryBootstrap { get; private set; }
+	public IndexBootstrapInfo? SecondaryBootstrap { get; private set; }
 
 	public Action<SyncProgressInfo>? OnSyncProgress { get; set; }
 
@@ -61,6 +66,7 @@ internal sealed class LabsDocumentExporter : IDocumentExporter<LabsDocument>, ID
 	)
 	{
 		_logger = loggerFactory.CreateLogger<LabsDocumentExporter>();
+		_transport = transport;
 
 		var synonymSetName = $"docs-assembler-{environment}";
 		var indexTimeSynonyms = IndexTimeSynonyms.Docs;
@@ -99,9 +105,14 @@ internal sealed class LabsDocumentExporter : IDocumentExporter<LabsDocument>, ID
 			ConfigureSecondary = o => ConfigureChannelOptions("secondary", o, endpoint, semantic: true),
 			OnRolloverDecision = info =>
 			{
+				var decision = info.RolledOver ? "NEW" : "EXISTING";
 				_logger.LogInformation(
-					"[{Label}] rollover={RolledOver}, localHash={LocalHash}, remoteHash={RemoteHash}",
-					info.Label, info.RolledOver, info.LocalHash, info.RemoteHash);
+					"[{Label}] bootstrap decision: targeting {Decision} index (localHash={LocalHash}, remoteHash={RemoteHash})",
+					info.Label, decision, info.LocalHash, info.RemoteHash);
+				if (info.Label == "primary")
+					_primaryRolledOver = info.RolledOver;
+				else
+					_secondaryRolledOver = info.RolledOver;
 				var roll = info.RolledOver ? "new write index" : "unchanged";
 				OnSyncProgress?.Invoke(new SyncProgressInfo($"Index rollover — {info.Label} ({roll})", 0, 0, false));
 			},
@@ -215,6 +226,16 @@ internal sealed class LabsDocumentExporter : IDocumentExporter<LabsDocument>, ID
 		var context = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
 		_secondaryWriteAlias = context.SecondaryWriteAlias;
 		_logger.LogInformation("Exporter started with {Strategy} strategy", _orchestrator.Strategy);
+
+		var primaryIndex = await IndexResolution.ResolveConcreteIndexAsync(_transport, context.PrimaryWriteAlias, ctx);
+		PrimaryBootstrap = new IndexBootstrapInfo(context.PrimaryWriteAlias, primaryIndex, _primaryRolledOver);
+		_logger.LogInformation("[primary] target index: {Index} (alias: {Alias})",
+			primaryIndex ?? "<unresolved>", context.PrimaryWriteAlias);
+
+		var secondaryIndex = await IndexResolution.ResolveConcreteIndexAsync(_transport, context.SecondaryWriteAlias, ctx);
+		SecondaryBootstrap = new IndexBootstrapInfo(context.SecondaryWriteAlias, secondaryIndex, _secondaryRolledOver);
+		_logger.LogInformation("[secondary] target index: {Index} (alias: {Alias})",
+			secondaryIndex ?? "<unresolved>", context.SecondaryWriteAlias);
 	}
 
 	public async Task ExportAsync(LabsDocument document, Cancel ct = default)

@@ -226,6 +226,7 @@ internal sealed class LabsCommands(
 			}
 
 			AnsiConsole.MarkupLine($"[green]✓[/] Ready [dim]({exporter.Strategy})[/]");
+			WriteBootstrapSummary(exporter);
 			var loop = new LabsCrawlLoop(
 				crawler,
 				new LabsHtmlExtractor(loggerFactory.CreateLogger<LabsHtmlExtractor>()),
@@ -408,6 +409,7 @@ internal sealed class LabsCommands(
 				});
 
 			AnsiConsole.MarkupLine($"[green]✓[/] Elasticsearch indices ready [dim]({exporter.Strategy})[/]");
+			WriteBootstrapSummary(exporter);
 			AnsiConsole.WriteLine();
 
 			var aiResult = await AiEnrichmentConsole.RunInteractiveAsync(
@@ -421,6 +423,16 @@ internal sealed class LabsCommands(
 		{
 			AnsiConsole.MarkupLine("[yellow]AI enrichment stopped — time limit reached[/]");
 		}
+	}
+
+	/// <summary>Prints the resolved bootstrap decision (new/existing index) and target index for both write targets.</summary>
+	private static void WriteBootstrapSummary(LabsDocumentExporter exporter)
+	{
+		var rows = new List<Markup>();
+		SyncProgressConsole.AddBootstrapRows(rows, "primary", exporter.PrimaryBootstrap);
+		SyncProgressConsole.AddBootstrapRows(rows, "secondary", exporter.SecondaryBootstrap);
+		foreach (var row in rows)
+			AnsiConsole.Write(new Rows(row));
 	}
 
 	private sealed class CrawlOutcomeCounters

@@ -5,6 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 using Spectre.Console;
 
 namespace Elastic.SiteSearch.Cli.Commands;
@@ -21,6 +22,7 @@ internal sealed class ContentStackCommands(
 	SyncCommand sync,
 	ContentTypesCommand types,
 	DumpSamplesCommand samples,
+	FindUrlCommand findUrl,
 	SourcingConfiguration config,
 	ILoggerFactory loggerFactory
 )
@@ -83,6 +85,24 @@ internal sealed class ContentStackCommands(
 		[StringLength(4096)] string? outputDir = null,
 		Cancel ct = default) =>
 		samples.Samples(outputDir, ct);
+
+	/// <summary>
+	/// Diagnostic: scan Contentstack's sync stream (the same paginated, cursor-based API
+	/// <c>sync</c> uses) for every item whose resolved path contains a fragment, flagging any path
+	/// delivered more than once within a single pass. Read-only — no Elasticsearch writes.
+	/// </summary>
+	/// <remarks>
+	/// Useful for tracking down <c>version_conflict_engine_exception</c> errors during sync — a
+	/// path delivered twice in one pass races itself across concurrent bulk batches.
+	/// </remarks>
+	/// <param name="pathPrefix">Path fragment to search for, e.g. <c>/elasticon/archive/2020</c>.</param>
+	/// <param name="contentType">Restrict the scan to one content type uid; omit to scan all types.</param>
+	/// <param name="ct">Cancellation token.</param>
+	public Task FindUrl(
+		[Argument] string pathPrefix,
+		string? contentType = null,
+		Cancel ct = default) =>
+		findUrl.FindUrl(pathPrefix, contentType, ct);
 
 	/// <summary>
 	/// Run generative AI enrichment on existing <c>site-*</c> semantic indices (no Contentstack fetch).

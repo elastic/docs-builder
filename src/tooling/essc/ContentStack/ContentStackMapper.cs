@@ -22,13 +22,21 @@ internal static partial class ContentStackMapper
 		if (string.IsNullOrWhiteSpace(rawUrl))
 			return null;
 
+		// ContentStack's top-level `locale` field is the entry's fixed master/base locale (almost
+		// always "en-us") — it never changes across sync events. The locale actually being
+		// published *in this event* lives at `publish_details.locale`. Reading the top-level field
+		// here would make every locale-specific publish of the same entry resolve to the identical
+		// (unprefixed English) path, so concurrent locale publishes race each other on the same
+		// Elasticsearch document id (surfacing as version_conflict_engine_exception).
+		//
 		// ContentStack's `url` field is not locale-scoped: the same entry gets "published" under
 		// several locales while keeping the exact same (English-authored) url. The live site
 		// resolves any published locale at /{locale-prefix}{url} (e.g. /es/support/matrix), so
 		// namespace non-master-locale variants under their site-served prefix before using the
 		// url as our document id — otherwise every locale variant collides on one Elasticsearch
 		// document and whichever synced last silently wins.
-		var url = ResolveUrlForLocale(rawUrl, GetString(data, "locale"));
+		var publishLocale = GetNestedString(data, "publish_details", "locale") ?? GetString(data, "locale");
+		var url = ResolveUrlForLocale(rawUrl, publishLocale);
 
 		var title = GetString(data, "title") ?? GetString(data, "title_l10n") ?? GetNestedString(data, "main_header", "title_l10n");
 		if (string.IsNullOrWhiteSpace(title))
@@ -267,16 +275,21 @@ internal static partial class ContentStackMapper
 	// overwrite the others).
 	private static string ResolveUrlForLocale(string url, string? locale)
 	{
-		if (string.IsNullOrWhiteSpace(locale) || locale.Equals("en-us", StringComparison.OrdinalIgnoreCase))
-			return url;
-
-		if (!LocaleUrlPrefixes.TryGetValue(locale, out var prefix))
+		if (string.IsNullOrWhiteSpace(locale) || locale.StartsWith("en", StringComparison.OrdinalIgnoreCase))
 			return url;
 
 		// Already carries a recognized locale prefix (author-managed localized url) — trust it as-is.
 		if (TryGetLanguageFromUrlPrefix(url, out _))
 			return url;
 
+		// Prefer the short prefix the live site actually serves this locale at. Fall back to the
+		// locale's base language subtag (e.g. "xx-yy" -> "xx") for locales we haven't mapped yet —
+		// site-served prefixes are always two letters, never the full locale code — so every
+		// non-English variant still gets its own document id, or it silently collides with (and
+		// can 409 against) the entry for another locale of the same underlying ContentStack url.
+		var prefix = LocaleUrlPrefixes.TryGetValue(locale, out var mapped)
+			? mapped
+			: locale.Split('-')[0].ToLowerInvariant();
 		return $"/{prefix}{url}";
 	}
 

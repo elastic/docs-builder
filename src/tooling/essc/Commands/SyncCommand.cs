@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Elastic.SiteSearch.Cli.ContentStack;
 using Elastic.SiteSearch.Cli.Elasticsearch;
@@ -142,6 +143,10 @@ internal sealed class SyncCommand(
 			var runCounts = new Dictionary<string, int>();
 			var indexedCounts = new Dictionary<string, int>();
 			var skippedCounts = new Dictionary<string, int>();
+			var duplicateCounts = new Dictionary<string, int>();
+			// Concurrent: incremented from every lane as items are indexed, unlike the per-content-type
+			// dictionaries above (each content type is only ever owned by one lane at a time).
+			var localeCounts = new ConcurrentDictionary<string, int>();
 
 			if (IsInteractive())
 			{
@@ -166,7 +171,7 @@ internal sealed class SyncCommand(
 							var laneTask = ctx.AddTask($"[dim]Lane {i + 1}: idle[/]", maxValue: 100);
 							laneTask.IsIndeterminate = true;
 							return RunLaneAsync(i + 1, laneTask, channel.Reader, cursorMap, runCounts, indexedCounts, skippedCounts,
-								pagePer, exporter, store, writeSemaphore, overallTask, ct);
+								duplicateCounts, localeCounts, pagePer, exporter, store, writeSemaphore, overallTask, ct);
 						}).ToArray();
 
 						await Task.WhenAll(lanes);
@@ -179,7 +184,7 @@ internal sealed class SyncCommand(
 			{
 				var lanes = Enumerable.Range(0, LaneCount).Select(i =>
 					RunLaneAsync(i + 1, null, channel.Reader, cursorMap, runCounts, indexedCounts, skippedCounts,
-						pagePer, exporter, store, writeSemaphore, null, ct)
+						duplicateCounts, localeCounts, pagePer, exporter, store, writeSemaphore, null, ct)
 				).ToArray();
 				await Task.WhenAll(lanes);
 				AnsiConsole.MarkupLine($"[green]✓[/] All {PageContentTypes.All.Length} content types synced");
@@ -213,7 +218,7 @@ internal sealed class SyncCommand(
 			}
 
 			AnsiConsole.WriteLine();
-			DisplaySummary(cursorMap, runCounts, indexedCounts, skippedCounts, exporter, noIndex, store.CacheFolder);
+			DisplaySummary(cursorMap, runCounts, indexedCounts, skippedCounts, duplicateCounts, localeCounts, exporter, noIndex, store.CacheFolder);
 		}
 		finally
 		{
@@ -243,6 +248,8 @@ internal sealed class SyncCommand(
 		Dictionary<string, int> runCounts,
 		Dictionary<string, int> indexedCounts,
 		Dictionary<string, int> skippedCounts,
+		Dictionary<string, int> duplicateCounts,
+		ConcurrentDictionary<string, int> localeCounts,
 		int maxPages,
 		SiteDocumentExporter? exporter,
 		StateManager store,
@@ -267,7 +274,15 @@ internal sealed class SyncCommand(
 			var itemsThisType = 0;
 			var indexedThisType = 0;
 			var skippedThisType = 0;
+			var duplicatesThisType = 0;
 			var totalThisType = 0;
+
+			// Contentstack's sync log can emit the exact same publish event twice within a single
+			// pass (same uid, same eventAt, byte-identical payload) — exporting both races the same
+			// document id across bulk batches and Elasticsearch rejects the loser with a 409. Track
+			// paths already exported in this pass only (never persisted, cleared per content type)
+			// so the second identical delivery is skipped instead of racing the first.
+			var exportedPaths = new HashSet<string>(StringComparer.Ordinal);
 
 			var progress = new Progress<SyncProgress>(p =>
 			{
@@ -294,13 +309,21 @@ internal sealed class SyncCommand(
 					foreach (var item in response.Items)
 					{
 						var doc = ContentStackMapper.ToSiteDocument(item);
-						if (doc is not null)
+						if (doc is null)
 						{
-							await exporter.ExportAsync(doc, ct);
-							_ = Interlocked.Increment(ref indexedThisType);
-						}
-						else
 							_ = Interlocked.Increment(ref skippedThisType);
+							continue;
+						}
+
+						if (!exportedPaths.Add(doc.Path))
+						{
+							_ = Interlocked.Increment(ref duplicatesThisType);
+							continue;
+						}
+
+						_ = localeCounts.AddOrUpdate(doc.Locale, 1, (_, c) => c + 1);
+						await exporter.ExportAsync(doc, ct);
+						_ = Interlocked.Increment(ref indexedThisType);
 					}
 				}
 
@@ -348,6 +371,7 @@ internal sealed class SyncCommand(
 				runCounts[contentType] = itemsThisType;
 				indexedCounts[contentType] = indexedThisType;
 				skippedCounts[contentType] = skippedThisType;
+				duplicateCounts[contentType] = duplicatesThisType;
 				store.Save(StateFile, cursorMap, StateJsonContext.Default.SyncCursorMap);
 			}
 			finally
@@ -381,6 +405,8 @@ internal sealed class SyncCommand(
 		Dictionary<string, int> runCounts,
 		Dictionary<string, int> indexedCounts,
 		Dictionary<string, int> skippedCounts,
+		Dictionary<string, int> duplicateCounts,
+		ConcurrentDictionary<string, int> localeCounts,
 		SiteDocumentExporter? exporter,
 		bool noIndex,
 		string cacheFolder
@@ -391,6 +417,7 @@ internal sealed class SyncCommand(
 		var totalThisRun = runCounts.Values.Sum();
 		var totalIndexed = indexedCounts.Values.Sum();
 		var totalSkipped = skippedCounts.Values.Sum();
+		var totalDuplicates = duplicateCounts.Values.Sum();
 
 		var table = new Table()
 			.Border(TableBorder.Rounded)
@@ -433,6 +460,22 @@ internal sealed class SyncCommand(
 		AnsiConsole.Write(table);
 		AnsiConsole.WriteLine();
 
+		if (!localeCounts.IsEmpty)
+		{
+			var localeTable = new Table()
+				.Border(TableBorder.Rounded)
+				.BorderColor(Color.Grey)
+				.Title("[aqua]Observed Locales[/]")
+				.AddColumn("[aqua]Locale[/]")
+				.AddColumn(new TableColumn("[aqua]Count[/]").RightAligned());
+
+			foreach (var (locale, count) in localeCounts.OrderByDescending(kvp => kvp.Value))
+				_ = localeTable.AddRow(new Markup(Markup.Escape(locale)), new Markup($"[white]{count:N0}[/]"));
+
+			AnsiConsole.Write(localeTable);
+			AnsiConsole.WriteLine();
+		}
+
 		var summaryRows = new List<Markup>
 		{
 			new($"[green]Fetched this run:[/] [white]{totalThisRun:N0}[/]"),
@@ -443,6 +486,8 @@ internal sealed class SyncCommand(
 			summaryRows.Add(new Markup($"[green]Indexed this run:[/] [white]{totalIndexed:N0}[/]"));
 			if (totalSkipped > 0)
 				summaryRows.Add(new Markup($"[yellow]Skipped (no URL/title):[/] [white]{totalSkipped:N0}[/]"));
+			if (totalDuplicates > 0)
+				summaryRows.Add(new Markup($"[yellow]Duplicate deliveries skipped (this pass):[/] [white]{totalDuplicates:N0}[/]"));
 			if (exporter is not null)
 			{
 				if (exporter.ReindexTotal > 0)
@@ -462,6 +507,8 @@ internal sealed class SyncCommand(
 					summaryRows.Add(new Markup($"[red]ES rejections (4xx):[/] [white]{exporter.RejectedCount:N0}[/]"));
 				if (exporter.FailedCount > 0)
 					summaryRows.Add(new Markup($"[red]ES failures (timeout/retry):[/] [white]{exporter.FailedCount:N0}[/]"));
+				SyncProgressConsole.AddBootstrapRows(summaryRows, "primary", exporter.PrimaryBootstrap);
+				SyncProgressConsole.AddBootstrapRows(summaryRows, "secondary", exporter.SecondaryBootstrap);
 			}
 		}
 
