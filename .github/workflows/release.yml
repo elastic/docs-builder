@@ -229,8 +229,9 @@ jobs:
       - deploy-link-index-updater-lambda-prod
       - deploy-changelog-scrubber-lambda-prod
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       contents: write
+      id-token: write
     steps:
       - name: Publish release
         env:
@@ -239,3 +240,18 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           gh release edit "$TAG_NAME" --draft=false --latest --repo "$REPO"
+
+      - name: Fetch ephemeral GitHub token
+        id: fetch-ephemeral-token
+        uses: elastic/ci-gh-actions/fetch-github-token@v1
+        with:
+          vault-instance: "ci-prod"
+
+      - name: Notify docs-internal-workflows
+        env:
+          GH_TOKEN: ${{ steps.fetch-ephemeral-token.outputs.token }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+        run: |
+          gh api repos/elastic/docs-internal-workflows/dispatches \
+            -f event_type=docs-builder-released \
+            -F client_payload[tag_name]="$TAG_NAME"
