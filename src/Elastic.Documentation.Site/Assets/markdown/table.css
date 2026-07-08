@@ -76,12 +76,13 @@
 
 	/* Cross-hair hover (row + column highlight): opt-in via {table} :matrix:
 	   for lookup-style tables with a row-heading first column and a header
-	   row, always on in the fullscreen dialog. Row and column share the same
-	   highlight color so they read as one crosshair rather than a faint row
-	   plus a visible column. The column is lit by an oversized pseudo-element
-	   clipped by overflow:hidden on the table. */
-	.table-matrix,
-	.table-modal {
+	   row. The class survives cloning into the fullscreen dialog, so this
+	   still applies there for matrix tables without forcing it on plain
+	   ones. Row and column share the same highlight color so they read as
+	   one crosshair rather than a faint row plus a visible column. The
+	   column is lit by an oversized pseudo-element clipped by
+	   overflow:hidden on the table. */
+	.table-matrix {
 		--crosshair-tint: color-mix(
 			in srgb,
 			var(--color-grey-30) 25%,

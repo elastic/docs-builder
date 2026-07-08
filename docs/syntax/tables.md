@@ -105,7 +105,7 @@ Every table is responsive by default. The table will automatically scroll horizo
 
 ## Matrix highlight
 
-The `{table}` directive's `:matrix:` option highlights the whole row *and* column of the hovered cell. It only makes sense for lookup-style tables: a header row across the top and a row-heading first column — like the sprint velocity table below — where readers cross-reference a row label against a column label to find a value. In the fullscreen view this is enabled for every table.
+The `{table}` directive's `:matrix:` option highlights the whole row *and* column of the hovered cell. It only makes sense for lookup-style tables: a header row across the top and a row-heading first column — like the sprint velocity table below — where readers cross-reference a row label against a column label to find a value. This also applies in the fullscreen view for tables that use `:matrix:`.
 
 :::::{tab-set}
 
