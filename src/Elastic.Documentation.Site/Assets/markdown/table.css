@@ -74,7 +74,17 @@
 		tbody {
 			@apply align-top;
 			tr {
-				@apply border-grey-20 hover:bg-grey-10 not-last:border-b-1;
+				@apply border-grey-20 not-last:border-b-1;
+
+				/* Same reasoning as the crosshair highlight below: a flat
+				   hover background covers the scroll-shadow instead of
+				   composing with it. grey-10 is opaque, so multiply alone
+				   (no translucent tint needed) reproduces today's look on
+				   white and darkens further over the shadow. */
+				&:hover {
+					background: var(--color-grey-10);
+					mix-blend-mode: multiply;
+				}
 			}
 		}
 	}
