@@ -154,6 +154,11 @@ public class ChangelogKeysTests
 	[InlineData("bundle/entry.yaml")]
 	[InlineData("bundle//entry.yaml")]
 	[InlineData("other/elasticsearch/entry.yaml")]
+	// The product segment is validated on extraction so an out-of-class group can never be
+	// re-composed into a registry key or URI (e.g. via BundleRegistryKey).
+	[InlineData("bundle/../entry.yaml")]
+	[InlineData("bundle/foo.bar/entry.yaml")]
+	[InlineData("bundle/elastic search/entry.yaml")]
 	public void ExtractBundleGroup_NonBundleKeys_ReturnsNull(string key) =>
 		ChangelogKeys.ExtractBundleGroup(key).Should().BeNull();
 
@@ -170,6 +175,13 @@ public class ChangelogKeysTests
 	[InlineData("changelog/elastic/kibana/entry.yaml")]
 	[InlineData("changelog/entry.yaml")]
 	[InlineData("other/elastic/kibana/main/entry.yaml")]
+	// Each group segment is validated per position on extraction (same rules as IsRegistry),
+	// so traversal, empty, or out-of-class segments can never be re-composed into keys or URIs.
+	[InlineData("changelog/elastic//main/entry.yaml")]
+	[InlineData("changelog/../kibana/main/entry.yaml")]
+	[InlineData("changelog/elastic/../main/entry.yaml")]
+	[InlineData("changelog/acme.corp/widgets/main/entry.yaml")]
+	[InlineData("changelog/elastic/elastic search/main/entry.yaml")]
 	public void ExtractChangelogGroup_NonEntryKeys_ReturnsNull(string key) =>
 		ChangelogKeys.ExtractChangelogGroup(key).Should().BeNull();
 

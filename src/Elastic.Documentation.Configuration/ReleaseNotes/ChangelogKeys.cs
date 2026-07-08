@@ -100,7 +100,9 @@ public static class ChangelogKeys
 
 	/// <summary>
 	/// Extracts the product group from a <c>bundle/{product}/{file}</c> key, or null when
-	/// <paramref name="s3Key"/> is not a bundle key with a product segment ahead of the file name.
+	/// <paramref name="s3Key"/> is not a bundle key with a valid product segment ahead of the file name.
+	/// The segment is validated on extraction so an out-of-class group can never be re-composed into a
+	/// registry key or URI.
 	/// </summary>
 	public static string? ExtractBundleGroup(string s3Key)
 	{
@@ -109,14 +111,19 @@ public static class ChangelogKeys
 
 		var rest = s3Key.AsSpan(BundlePrefix.Length);
 		var slash = rest.IndexOf('/');
-		return slash <= 0 ? null : rest[..slash].ToString();
+		if (slash <= 0)
+			return null;
+
+		var group = rest[..slash];
+		return IsValidSegment(group, SegmentKind.Product) ? group.ToString() : null;
 	}
 
 	/// <summary>
 	/// Extracts the <c>{org}/{repo}/{branch}</c> group from a <c>changelog/{org}/{repo}/{branch}/{file}</c>
-	/// key, or null when <paramref name="s3Key"/> is not a changelog key with at least three group segments
-	/// ahead of the file name. The branch may carry extra slashes, so the group is everything before the
-	/// final segment.
+	/// key, or null when <paramref name="s3Key"/> is not a changelog key with at least three valid group
+	/// segments ahead of the file name. The branch may carry extra slashes, so the group is everything
+	/// before the final segment; each segment is validated per position (same rules as
+	/// <see cref="IsRegistry"/>) so traversal or out-of-class segments can never be re-composed into keys.
 	/// </summary>
 	public static string? ExtractChangelogGroup(string s3Key)
 	{
@@ -129,7 +136,7 @@ public static class ChangelogKeys
 			return null;
 
 		var group = rest[..lastSlash];
-		return CountSegments(group) >= 3 ? group.ToString() : null;
+		return IsValidChangelogGroup(group) ? group.ToString() : null;
 	}
 
 	/// <summary>The CDN path segments of a product's bundle pool (<c>["bundle", product]</c>), for per-segment URI escaping.</summary>
@@ -169,11 +176,15 @@ public static class ChangelogKeys
 		&& group.IndexOf('/') < 0
 		&& IsValidSegment(group, SegmentKind.Product);
 
-	private static bool IsChangelogRegistry(string key)
-	{
-		if (!TryGetRegistryGroup(key, ChangelogPrefix, out var group))
-			return false;
+	private static bool IsChangelogRegistry(string key) =>
+		TryGetRegistryGroup(key, ChangelogPrefix, out var group) && IsValidChangelogGroup(group);
 
+	/// <summary>
+	/// Validates an <c>{org}/{repo}/{branch}</c> group span per position — org, then repo, then
+	/// one-or-more branch parts — requiring at least three segments overall.
+	/// </summary>
+	private static bool IsValidChangelogGroup(ReadOnlySpan<char> group)
+	{
 		var segments = 0;
 		var start = 0;
 		for (var i = 0; i <= group.Length; i++)
@@ -181,12 +192,7 @@ public static class ChangelogKeys
 			if (i != group.Length && group[i] != '/')
 				continue;
 
-			// Per-position rules: org, then repo, then one-or-more branch parts.
-			var kind = segments switch
-			{
-				0 => SegmentKind.Org,
-				_ => SegmentKind.RepoOrBranch
-			};
+			var kind = segments == 0 ? SegmentKind.Org : SegmentKind.RepoOrBranch;
 			if (!IsValidSegment(group[start..i], kind))
 				return false;
 
@@ -241,18 +247,4 @@ public static class ChangelogKeys
 		};
 	}
 
-	/// <summary>Counts the <c>/</c>-delimited segments in a joined path span (empty span → 0).</summary>
-	private static int CountSegments(ReadOnlySpan<char> path)
-	{
-		if (path.IsEmpty)
-			return 0;
-
-		var count = 1;
-		foreach (var c in path)
-		{
-			if (c == '/')
-				count++;
-		}
-		return count;
-	}
 }
