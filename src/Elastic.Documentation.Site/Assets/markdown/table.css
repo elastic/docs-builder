@@ -167,7 +167,7 @@
 		   other paragraph-to-table gap on the page. */
 		&[data-overflowing] {
 			.table-expand-btn {
-				@apply border-grey-20 text-ink hidden h-8 w-8 cursor-pointer items-center justify-center rounded-t-sm border-1 border-b-0 bg-white md:flex;
+				@apply border-grey-20 text-ink h-8 w-8 cursor-pointer items-center justify-center rounded-t-sm border-1 border-b-0 bg-white md:flex;
 			}
 
 			.table-wrapper {

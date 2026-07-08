@@ -14,6 +14,13 @@ const overflowObserver = new ResizeObserver((entries) => {
     }
 })
 
+// Wrappers currently being watched. htmx swaps detach old table-wrappers
+// from the DOM without ever removing them from the observer, so this lets
+// initTable() drop exactly the ones that left instead of disconnecting and
+// re-observing everything - which would re-trigger ResizeObserver's initial
+// callback for every table still on the page, not just the ones that changed.
+const observedWrappers = new Set<HTMLElement>()
+
 function openTableModal(wrapper: HTMLElement): void {
     const dialog = document.createElement('dialog')
     dialog.className = 'table-modal'
@@ -46,6 +53,12 @@ function openTableModal(wrapper: HTMLElement): void {
  * Adds a fullscreen button to markdown tables that overflow the content column.
  */
 export function initTable(): void {
+    for (const wrapper of observedWrappers) {
+        if (wrapper.isConnected) continue
+        overflowObserver.unobserve(wrapper)
+        observedWrappers.delete(wrapper)
+    }
+
     const newWrappers = document.querySelectorAll<HTMLElement>(
         '.markdown-content .table-wrapper:not([data-table-expand])'
     )
@@ -65,14 +78,7 @@ export function initTable(): void {
         expandBtn.addEventListener('click', () => openTableModal(wrapper))
 
         container.append(expandBtn, wrapper)
+        overflowObserver.observe(wrapper)
+        observedWrappers.add(wrapper)
     })
-
-    // Re-sync to exactly the wrappers on the page now. htmx swaps detach old
-    // table-wrappers from the DOM without ever removing them from this
-    // observer, so without this it would keep a strong reference to every
-    // table wrapper ever seen this session, across every past page.
-    overflowObserver.disconnect()
-    document
-        .querySelectorAll<HTMLElement>('.markdown-content .table-wrapper')
-        .forEach((wrapper) => overflowObserver.observe(wrapper))
 }
