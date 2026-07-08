@@ -44,13 +44,14 @@ jobs:
           
       - name: Deploy artifact
         id: deployment
-        uses: actions/deploy-pages@v5.0.0 
-        
+        uses: actions/deploy-pages@v5.0.0
+
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
@@ -74,3 +75,18 @@ jobs:
 
       - name: Publish Containers
         run: ./build.sh publishcontainers
+
+      - name: Fetch ephemeral GitHub token
+        id: fetch-ephemeral-token
+        uses: elastic/ci-gh-actions/fetch-github-token@v1
+        with:
+          vault-instance: "ci-prod"
+
+      - name: Notify docs-internal-workflows
+        env:
+          GH_TOKEN: ${{ steps.fetch-ephemeral-token.outputs.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          gh api repos/elastic/docs-internal-workflows/dispatches \
+            -f event_type=docs-builder-prereleased \
+            -F client_payload[sha]="$SHA"
