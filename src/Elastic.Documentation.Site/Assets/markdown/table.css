@@ -1,6 +1,11 @@
 @layer components {
 	.table-wrapper {
 		@apply my-4 w-full overflow-x-auto;
+		--table-edge-fade: 24px;
+		/* Scopes mix-blend-mode:multiply (used by the crosshair highlight
+		   below) to blend only with this wrapper's own scroll-shadow, not
+		   with unrelated content elsewhere on the page. */
+		isolation: isolate;
 
 		/* Scroll shadows on both edges when the table is horizontally
 		   scrollable, signalling there's more content without needing a
@@ -25,8 +30,8 @@
 			);
 		background-repeat: no-repeat;
 		background-size:
-			24px 100%,
-			24px 100%,
+			var(--table-edge-fade) 100%,
+			var(--table-edge-fade) 100%,
 			10px 100%,
 			10px 100%;
 		background-position:
@@ -103,8 +108,19 @@
 			@apply relative;
 		}
 
+		/* mix-blend-mode:multiply instead of a flat background: a plain
+		   background is a descendant paint layer that always covers the
+		   wrapper's scroll-shadow beneath it, edge to edge, whether or not
+		   a shadow is actually there at that scroll position - fading the
+		   tint near the edges (tried first) fixed the overlap but then
+		   faded for no reason whenever no shadow was present. Multiply
+		   composes with whatever's beneath instead of covering it: over
+		   plain white it reads as the normal tint, and over the shadow it
+		   darkens further, so the two effects layer correctly wherever
+		   they happen to overlap without knowing scroll position at all. */
 		tbody tr:hover {
 			background: var(--crosshair-tint);
+			mix-blend-mode: multiply;
 		}
 
 		/* Skip the row-heading column and its header corner cell: they're
@@ -121,6 +137,7 @@
 			bottom: -5000px;
 			width: 100%;
 			background: var(--crosshair-tint);
+			mix-blend-mode: multiply;
 			pointer-events: none;
 		}
 
@@ -134,13 +151,17 @@
 	/* First column styled like the header row so it reads as a row heading.
 	   The tint is semi-transparent (not solid bg-grey-10) so it layers over
 	   tbody tr:hover instead of masking it - otherwise this column looks
-	   the same whether or not its row is hovered. Only for :matrix: tables,
-	   not every table in the fullscreen dialog: the class survives cloning
-	   into the modal, so this still applies there for matrix tables without
-	   forcing the look on plain ones. */
+	   the same whether or not its row is hovered. multiply blends it with
+	   the wrapper's scroll-shadow beneath instead of covering it, same
+	   reasoning as the crosshair hover above - this column sits exactly
+	   where the left shadow lives. Only for :matrix: tables, not every
+	   table in the fullscreen dialog: the class survives cloning into the
+	   modal, so this still applies there for matrix tables without forcing
+	   the look on plain ones. */
 	.table-matrix tbody td:first-child {
 		@apply font-semibold;
 		background: var(--row-heading-tint);
+		mix-blend-mode: multiply;
 	}
 
 	/* Fullscreen view for tables that overflow the content column. The
