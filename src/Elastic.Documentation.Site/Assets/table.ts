@@ -46,10 +46,10 @@ function openTableModal(wrapper: HTMLElement): void {
  * Adds a fullscreen button to markdown tables that overflow the content column.
  */
 export function initTable(): void {
-    const wrappers = document.querySelectorAll<HTMLElement>(
+    const newWrappers = document.querySelectorAll<HTMLElement>(
         '.markdown-content .table-wrapper:not([data-table-expand])'
     )
-    wrappers.forEach((wrapper) => {
+    newWrappers.forEach((wrapper) => {
         wrapper.setAttribute('data-table-expand', '')
 
         const container = document.createElement('div')
@@ -65,6 +65,14 @@ export function initTable(): void {
         expandBtn.addEventListener('click', () => openTableModal(wrapper))
 
         container.append(expandBtn, wrapper)
-        overflowObserver.observe(wrapper)
     })
+
+    // Re-sync to exactly the wrappers on the page now. htmx swaps detach old
+    // table-wrappers from the DOM without ever removing them from this
+    // observer, so without this it would keep a strong reference to every
+    // table wrapper ever seen this session, across every past page.
+    overflowObserver.disconnect()
+    document
+        .querySelectorAll<HTMLElement>('.markdown-content .table-wrapper')
+        .forEach((wrapper) => overflowObserver.observe(wrapper))
 }
