@@ -2,6 +2,41 @@
 	.table-wrapper {
 		@apply my-4 w-full overflow-x-auto;
 
+		/* Scroll shadows on both edges when the table is horizontally
+		   scrollable, signalling there's more content without needing a
+		   visible scrollbar (which touch devices don't show anyway). Pure
+		   CSS: two "cover" gradients scroll with the content (local) and
+		   mask the shadows beneath, which stay fixed to the viewport edges
+		   (scroll) - so a shadow only shows on the edge you can still
+		   scroll toward. Self-adjusting: tables that don't overflow never
+		   show a shadow, since the covers already mask them at rest. */
+		background-image:
+			linear-gradient(to right, var(--color-white) 30%, transparent),
+			linear-gradient(to left, var(--color-white) 30%, transparent),
+			radial-gradient(
+				farthest-side at 0 50%,
+				rgba(0, 0, 0, 0.15),
+				transparent
+			),
+			radial-gradient(
+				farthest-side at 100% 50%,
+				rgba(0, 0, 0, 0.15),
+				transparent
+			);
+		background-repeat: no-repeat;
+		background-size:
+			24px 100%,
+			24px 100%,
+			10px 100%,
+			10px 100%;
+		background-position:
+			0 0,
+			100% 0,
+			0 0,
+			100% 0;
+		background-attachment: local, local, scroll, scroll;
+		background-color: var(--color-white);
+
 		&::-webkit-scrollbar {
 			@apply bg-grey-10 border-grey-20 h-2 border-b-1;
 		}
