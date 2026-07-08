@@ -226,8 +226,8 @@ public partial class ChangelogBundlingService(
 			// (bundle.use_local_changelogs / --directory), the repo is unresolvable, or no CDN base is
 			// configured. This stays in lockstep with PlanBundleAsync's needs_network decision.
 			var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
-			var authoringRepo = NormalizeRepo(input.Repo);
-			var authoringOwner = ResolveAuthoringOwner(input.Owner, input.Repo);
+			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
+			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
 			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
 			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
 
@@ -666,7 +666,7 @@ public partial class ChangelogBundlingService(
 		// local sourcing, and a CDN base is configured.
 		var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
-		var authoringRepo = NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
+		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
 		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
 			needsNetwork = true;
 
@@ -800,35 +800,6 @@ public partial class ChangelogBundlingService(
 			byName.Count, $"{resolvedOrg}/{repo}/{resolvedBranch}");
 
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
-	}
-
-	/// <summary>Reduces a configured repo value to the single CDN-key path segment (<c>owner/repo</c> -&gt; <c>repo</c>); null/empty unchanged.</summary>
-	private static string? NormalizeRepo(string? repo)
-	{
-		if (string.IsNullOrWhiteSpace(repo))
-			return repo;
-		var slash = repo.LastIndexOf('/');
-		return slash >= 0 && slash < repo.Length - 1 ? repo[(slash + 1)..] : repo;
-	}
-
-	/// <summary>
-	/// Resolves the org segment for the CDN entry pool: the explicit <paramref name="owner"/> when set,
-	/// otherwise the <c>owner/</c> prefix of a combined <paramref name="repo"/> value (e.g. <c>acme/widget</c>
-	/// -&gt; <c>acme</c>) so it is not lost, falling back to <see cref="DefaultOwner"/>.
-	/// </summary>
-	private static string ResolveAuthoringOwner(string? owner, string? repo)
-	{
-		if (!string.IsNullOrWhiteSpace(owner))
-			return owner;
-
-		if (!string.IsNullOrWhiteSpace(repo))
-		{
-			var slash = repo.IndexOf('/', StringComparison.Ordinal);
-			if (slash > 0)
-				return repo[..slash];
-		}
-
-		return DefaultOwner;
 	}
 
 	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--directory</c>), and a CDN base is configured.</summary>

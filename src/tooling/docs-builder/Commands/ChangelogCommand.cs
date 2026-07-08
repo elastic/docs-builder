@@ -1666,7 +1666,7 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>Resolves the authoring repo/owner/branch for uploads (CLI flags &gt; <c>bundle.{repo,owner}</c> &gt; git), reducing the repo to a single path segment.</summary>
+	/// <summary>Resolves the authoring repo/owner/branch for uploads (CLI flags &gt; <c>bundle.{repo,owner}</c> &gt; git); owner falls back to the <c>owner/</c> prefix of repo (<see cref="ChangelogRepoOwnerResolver"/>) before git, reducing the repo to a single path segment.</summary>
 	private async Task<(string? Repo, string? Owner, string? Branch)> ResolveUploadRepoOwnerBranch(string? repoCli, string? ownerCli, string? branchCli, string? configPath, string? uploadDirectory, CancellationToken ctx)
 	{
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
@@ -1692,8 +1692,9 @@ internal sealed partial class ChangelogCommands(
 		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
 			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
 
-		var resolvedRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : (bundleConfig?.Bundle?.Repo ?? gitRepo);
-		var resolvedOwner = ownerCli ?? bundleConfig?.Bundle?.Owner ?? gitOwner;
+		var explicitRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : bundleConfig?.Bundle?.Repo;
+		var resolvedRepo = explicitRepo ?? gitRepo;
+		var resolvedOwner = ChangelogRepoOwnerResolver.ResolveOwner(ownerCli ?? bundleConfig?.Bundle?.Owner, explicitRepo, gitOwner);
 
 		// The producer branch is the branch being published: --branch, else the current checkout's branch.
 		// bundle.branch is intentionally not consulted here — it selects which pool to read when bundling.
@@ -1704,12 +1705,7 @@ internal sealed partial class ChangelogCommands(
 			resolvedBranch = checkout.Branch;
 		}
 
-		if (!string.IsNullOrWhiteSpace(resolvedRepo))
-		{
-			var slash = resolvedRepo.LastIndexOf('/');
-			if (slash >= 0 && slash < resolvedRepo.Length - 1)
-				resolvedRepo = resolvedRepo[(slash + 1)..];
-		}
+		resolvedRepo = ChangelogRepoOwnerResolver.NormalizeRepo(resolvedRepo);
 
 		return (resolvedRepo, resolvedOwner, resolvedBranch);
 	}
