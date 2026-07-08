@@ -149,7 +149,9 @@
 	   (no bottom border, no gap, no shadow, square bottom corners) rather
 	   than floating above it as a separate chip - and is always visible
 	   (not hover-revealed) so it's discoverable at a glance and reachable
-	   on touch devices, which have no hover state. */
+	   on touch devices, which have no hover state. Hidden below md: mobile
+	   tables already scroll full-width with native touch panning, so a
+	   fullscreen dialog on an already-small screen adds little. */
 	.table-container {
 		@apply flex flex-col items-end;
 
@@ -157,18 +159,19 @@
 			display: none;
 		}
 
-		/* Only when the button is actually showing does it provide top
-		   spacing before the table - drop .table-wrapper's own top margin
-		   just then, otherwise the two stack into an oversized gap. A
-		   non-overflowing table has no button and needs its normal margin,
-		   same as any other paragraph-to-table gap on the page. */
+		/* Only when the button is actually showing (md and up) does it
+		   provide top spacing before the table - drop .table-wrapper's own
+		   top margin just then, otherwise the two stack into an oversized
+		   gap. A non-overflowing table, or an overflowing one on mobile
+		   where the button is hidden, needs its normal margin, same as any
+		   other paragraph-to-table gap on the page. */
 		&[data-overflowing] {
 			.table-expand-btn {
-				@apply border-grey-20 text-ink flex h-8 w-8 cursor-pointer items-center justify-center rounded-t-sm border-1 border-b-0 bg-white;
+				@apply border-grey-20 text-ink hidden h-8 w-8 cursor-pointer items-center justify-center rounded-t-sm border-1 border-b-0 bg-white md:flex;
 			}
 
 			.table-wrapper {
-				@apply mt-0;
+				@apply md:mt-0;
 			}
 		}
 
