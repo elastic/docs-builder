@@ -38,4 +38,137 @@
 			}
 		}
 	}
+
+	/* Cross-hair hover (row + column highlight): opt-in via {table} :matrix:
+	   for lookup-style tables with a row-heading first column and a header
+	   row, always on in the fullscreen dialog. Row and column share the same
+	   highlight color so they read as one crosshair rather than a faint row
+	   plus a visible column. The column is lit by an oversized pseudo-element
+	   clipped by overflow:hidden on the table. */
+	.table-matrix,
+	.table-modal {
+		--crosshair-tint: color-mix(
+			in srgb,
+			var(--color-grey-30) 25%,
+			transparent
+		);
+		--row-heading-tint: color-mix(
+			in srgb,
+			var(--color-grey-30) 12%,
+			transparent
+		);
+
+		table {
+			overflow: hidden;
+		}
+
+		th,
+		td {
+			@apply relative;
+		}
+
+		tbody tr:hover {
+			background: var(--crosshair-tint);
+		}
+
+		/* Skip the row-heading column and its header corner cell: they're
+		   labels, not values, so crosshairing their whole column doesn't
+		   help look anything up. Hovering a row heading still highlights
+		   its own row via tbody tr:hover; hovering a column heading (th)
+		   highlights its own column here, mirroring that. */
+		tbody td:not(:first-child):hover::after,
+		thead th:not(:first-child):hover::after {
+			content: '';
+			position: absolute;
+			left: 0;
+			top: -5000px;
+			bottom: -5000px;
+			width: 100%;
+			background: var(--crosshair-tint);
+			pointer-events: none;
+		}
+
+		/* The hovered cell itself is the answer to the lookup, so it reads
+		   stronger than the dimmed row/column highlight around it. */
+		td:hover {
+			@apply text-ink-dark font-semibold;
+		}
+	}
+
+	/* First column styled like the header row so it reads as a row heading.
+	   The tint is semi-transparent (not solid bg-grey-10) so it layers over
+	   tbody tr:hover instead of masking it - otherwise this column looks
+	   the same whether or not its row is hovered. Only for :matrix: tables,
+	   not every table in the fullscreen dialog: the class survives cloning
+	   into the modal, so this still applies there for matrix tables without
+	   forcing the look on plain ones. */
+	.table-matrix tbody td:first-child {
+		@apply font-semibold;
+		background: var(--row-heading-tint);
+	}
+
+	/* Fullscreen view for tables that overflow the content column. The
+	   button is injected by table.ts; data-overflowing is kept in sync by
+	   a ResizeObserver. It docks onto the table's top-right corner like a
+	   tab built into the frame - flush against the table's own top border
+	   (no bottom border, no gap, no shadow, square bottom corners) rather
+	   than floating above it as a separate chip - and is always visible
+	   (not hover-revealed) so it's discoverable at a glance and reachable
+	   on touch devices, which have no hover state. */
+	.table-container {
+		@apply flex flex-col items-end;
+
+		.table-expand-btn {
+			display: none;
+		}
+
+		/* Only when the button is actually showing does it provide top
+		   spacing before the table - drop .table-wrapper's own top margin
+		   just then, otherwise the two stack into an oversized gap. A
+		   non-overflowing table has no button and needs its normal margin,
+		   same as any other paragraph-to-table gap on the page. */
+		&[data-overflowing] {
+			.table-expand-btn {
+				@apply border-grey-20 text-ink flex h-8 w-8 cursor-pointer items-center justify-center rounded-t-sm border-1 border-b-0 bg-white;
+			}
+
+			.table-wrapper {
+				@apply mt-0;
+			}
+		}
+
+		.table-expand-btn:hover {
+			@apply bg-grey-10;
+		}
+	}
+
+	dialog.table-modal {
+		@apply m-auto max-h-[90vh] max-w-[95vw] rounded-lg bg-white p-0;
+
+		&::backdrop {
+			background: rgba(0, 0, 0, 0.5);
+		}
+
+		.table-modal-content {
+			@apply flex flex-col items-end p-4;
+		}
+
+		.table-modal-close {
+			@apply text-grey-100 hover:text-ink mb-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm bg-white;
+		}
+
+		.table-wrapper {
+			@apply my-0 max-h-[calc(90vh-4rem)] overflow-auto;
+		}
+
+		thead th {
+			@apply bg-grey-10 sticky top-0 z-1;
+		}
+	}
+}
+
+@media print {
+	.table-expand-btn {
+		display: none !important;
+	}
 }
