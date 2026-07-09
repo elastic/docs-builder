@@ -1,13 +1,20 @@
+import { config } from '../../../../config'
 import type { HtmxUrlStrategy } from './types'
 
+// rootPath is '/docs' on prod but varies on PR previews (e.g.
+// '/elastic/docs-builder/docs/3634'), so it can't be hardcoded.
+const root = () => config.rootPath.replace(/\/$/, '')
+
 export const assemblerStrategy: HtmxUrlStrategy = {
-    isExternalDocsUrl: (url) =>
-        url.startsWith('/docs/api/') || url === '/docs/api',
+    isExternalDocsUrl: (url) => {
+        const apiRoot = `${root()}/api`
+        return url === apiRoot || url.startsWith(`${apiRoot}/`)
+    },
 
     getPathFromUrl: (url) => {
         try {
             const isDocsPath = (path: string) =>
-                path === '/docs' || path.startsWith('/docs/')
+                path === root() || path.startsWith(`${root()}/`)
             if (url.startsWith('/')) return isDocsPath(url) ? url : null
             const parsed = new URL(url)
             if (
@@ -20,13 +27,5 @@ export const assemblerStrategy: HtmxUrlStrategy = {
         } catch {
             return null
         }
-    },
-
-    getFirstSegment: (path) => path.replace('/docs/', '/').split('/')[1] ?? '',
-
-    isSimpleSwapPath: (path) => {
-        const normalizedPath = path.endsWith('/') ? path.slice(0, -1) : path
-        if (normalizedPath === '/docs') return true
-        return path.startsWith('/docs/api/') || path === '/docs/api'
     },
 }
