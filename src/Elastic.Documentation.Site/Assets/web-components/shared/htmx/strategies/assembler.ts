@@ -6,11 +6,13 @@ export const assemblerStrategy: HtmxUrlStrategy = {
 
     getPathFromUrl: (url) => {
         try {
-            if (url.startsWith('/')) return url
+            const isDocsPath = (path: string) =>
+                path === '/docs' || path.startsWith('/docs/')
+            if (url.startsWith('/')) return isDocsPath(url) ? url : null
             const parsed = new URL(url)
             if (
                 parsed.hostname.endsWith('elastic.co') &&
-                parsed.pathname.startsWith('/docs')
+                isDocsPath(parsed.pathname)
             ) {
                 return parsed.pathname
             }

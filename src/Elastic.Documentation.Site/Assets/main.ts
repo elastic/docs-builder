@@ -23,6 +23,10 @@ import {
     ATTR_URL_FULL,
 } from './telemetry/semconv'
 import { initTocNav } from './toc-nav'
+import {
+    getPathFromUrl,
+    isExternalDocsUrl,
+} from './web-components/shared/htmx/utils'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import * as katex from 'katex'
@@ -254,38 +258,36 @@ document.addEventListener(
 )
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
-    if (
-        event.detail.requestConfig.verb === 'get' &&
-        event.detail.requestConfig.triggeringEvent
-    ) {
+    if (event.detail.requestConfig.verb !== 'get') return
+    const path: string = event.detail.requestConfig.path
+    if (event.detail.requestConfig.triggeringEvent) {
         const { ctrlKey, metaKey, shiftKey }: PointerEvent =
             event.detail.requestConfig.triggeringEvent
         const { name: os } = getOS()
         const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey
         if (shiftKey || modifierKey) {
             event.preventDefault()
-            window.open(
-                event.detail.requestConfig.path,
-                '_blank',
-                'noopener,noreferrer'
-            )
+            window.open(path, '_blank', 'noopener,noreferrer')
+            return
         }
+    }
+    // hx-boost intercepts every same-origin link, but only internal docs URLs should
+    // navigate through htmx (for assembler that means /docs/*; isolated and codex own
+    // their whole origin). Anything else — marketing pages on the same domain, the
+    // separate /docs/api app — gets a normal full page load.
+    const docsPath = getPathFromUrl(new URL(path, location.href).pathname)
+    if (!docsPath || isExternalDocsUrl(docsPath)) {
+        event.preventDefault()
+        window.location.assign(path)
     }
 })
 
-document.body.addEventListener(
-    'htmx:oobBeforeSwap',
-    function (event: HtmxEvent) {
-        // Scroll to the top of the page when the content is swapped
-        if (
-            event.target?.id === 'main-container' ||
-            event.target?.id === 'markdown-content' ||
-            event.target?.id === 'content-container'
-        ) {
-            window.scrollTo(0, 0)
-        }
+// Boosted navigations swap the whole <body>; scroll to top like a normal page load
+document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
+    if (event.target === document.body) {
+        window.scrollTo(0, 0)
     }
-)
+})
 
 document.body.addEventListener(
     'htmx:responseError',

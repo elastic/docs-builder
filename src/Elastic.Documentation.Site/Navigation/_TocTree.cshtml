@@ -9,7 +9,7 @@
 	<div class="sticky top-0 z-10 bg-white">
 		@if (Model.BuildType != BuildType.Codex && Model.Branding is null)
 		{
-			<navigation-search></navigation-search>
+			<navigation-search id="navigation-search" hx-preserve></navigation-search>
 		}
 		<div id="nav-dropdown">
 		@if (Model.IsUsingNavigationDropdown)
@@ -62,7 +62,10 @@
 		</div>
 	</div>
 
-	<ul class="block px-4" id="nav-tree" @Model.Htmx.GetNavHxAttributes(true)>
+	@* Group-scoped id: hx-preserve keeps the tree (and its expand/collapse state) across
+	   same-group navigations; a different group renders a different id, so no match and
+	   the new tree swaps in. *@
+	<ul class="block px-4" id="nav-tree-@(Model.Tree.Id)" hx-preserve>
 		@await RenderPartialAsync(_TocTreeNav.Create(new NavigationTreeItem
 		{
 			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,

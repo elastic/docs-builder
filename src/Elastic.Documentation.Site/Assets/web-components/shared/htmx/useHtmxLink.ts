@@ -1,9 +1,4 @@
-import {
-    applyHtmxAttributes,
-    getPathFromUrl,
-    isExternalDocsUrl,
-    useCurrentPathname,
-} from './utils'
+import { getPathFromUrl, isExternalDocsUrl } from './utils'
 import htmx from 'htmx.org'
 import { RefObject, useEffect, useMemo, useRef } from 'react'
 
@@ -37,7 +32,6 @@ export interface UseHtmxLinkResult {
  */
 export const useHtmxLink = (url: string): UseHtmxLinkResult => {
     const anchorRef = useRef<HTMLAnchorElement>(null)
-    const currentPathname = useCurrentPathname()
 
     // Normalize URL to path, returns null for external non-elastic.co URLs
     const path = useMemo(() => getPathFromUrl(url), [url])
@@ -54,11 +48,10 @@ export const useHtmxLink = (url: string): UseHtmxLinkResult => {
             // Explicitly disable HTMX for external links
             anchorRef.current.setAttribute('hx-disable', 'true')
         } else {
-            // Apply HTMX attributes for internal docs links
-            applyHtmxAttributes(anchorRef.current, path, currentPathname)
+            // Internal docs links inherit hx-boost from <body>; processing wires them up
             htmx.process(anchorRef.current)
         }
-    }, [path, currentPathname])
+    }, [path])
 
     return { ref: anchorRef, href }
 }

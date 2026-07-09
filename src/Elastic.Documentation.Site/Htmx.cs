@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text;
-
 namespace Elastic.Documentation.Site;
 
 /// <summary>Default HTMX provider for isolated and assembler builds.</summary>
@@ -18,25 +16,17 @@ public class DefaultHtmxAttributeProvider(string rootPath) : IHtmxAttributeProvi
 			? "#content-container,#toc-nav"
 			: "#content-container,#toc-nav,#nav-tree,#nav-dropdown";
 
+	// PoC: boosted links now use htmx's default whole-body swap with hx-preserve islands,
+	// so links no longer carry hx-select-oob. The preload extension still needs the
+	// attribute on each link itself (it ignores ancestors). Call sites left intact;
+	// delete this provider plumbing entirely if the PoC lands.
 	public string GetHxAttributes(
 		bool hasSameTopLevelGroup = false,
 		string? preload = Preload,
 		string? hxSwapOob = null
-	)
-	{
-		var attributes = new StringBuilder();
-		_ = attributes.Append($" hx-select-oob={hxSwapOob ?? GetHxSelectOob(hasSameTopLevelGroup)}");
-		_ = attributes.Append($" preload={preload}");
-		return attributes.ToString();
-	}
+	) => $" preload={preload}";
 
-	public string GetNavHxAttributes(bool hasSameTopLevelGroup = false, string? preload = Preload)
-	{
-		var attributes = new StringBuilder();
-		_ = attributes.Append($" hx-select-oob={GetHxSelectOob(hasSameTopLevelGroup)}");
-		_ = attributes.Append($" preload={preload}");
-		return attributes.ToString();
-	}
+	public string GetNavHxAttributes(bool hasSameTopLevelGroup = false, string? preload = Preload) => $" preload={preload}";
 }
 
 /// <summary>Static facade for backward compatibility. Prefer injecting IHtmxAttributeProvider.</summary>

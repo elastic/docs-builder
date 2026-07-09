@@ -1,9 +1,4 @@
-import {
-    applyHtmxAttributes,
-    getPathFromUrl,
-    isExternalDocsUrl,
-    useCurrentPathname,
-} from './utils'
+import { getPathFromUrl, isExternalDocsUrl } from './utils'
 import htmx from 'htmx.org'
 import { RefObject, useEffect } from 'react'
 
@@ -24,8 +19,6 @@ export const useHtmxContainer = (
     containerRef: RefObject<HTMLElement | null>,
     dependencies: unknown[] = []
 ): void => {
-    const currentPathname = useCurrentPathname()
-
     useEffect(() => {
         if (!containerRef.current) return
 
@@ -50,9 +43,8 @@ export const useHtmxContainer = (
                 return
             }
 
-            // Internal docs links - apply htmx attributes
+            // Internal docs links inherit hx-boost from <body>
             anchor.setAttribute('href', path)
-            applyHtmxAttributes(anchor, path, currentPathname)
             hasProcessedLinks = true
         })
 
@@ -60,5 +52,5 @@ export const useHtmxContainer = (
         if (hasProcessedLinks) {
             htmx.process(containerRef.current)
         }
-    }, [currentPathname, ...dependencies])
+    }, [...dependencies])
 }

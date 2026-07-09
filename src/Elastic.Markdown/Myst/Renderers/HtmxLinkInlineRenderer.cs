@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Markdown.IO;
 using Markdig;
@@ -41,15 +40,10 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 			_ = renderer.Write('"');
 			_ = renderer.WriteAttributes(link);
 
+			// PoC: internal links rely on body-level hx-boost for navigation (no hx-select-oob);
+			// preload stays per-link because the preload extension ignores ancestor attributes.
 			if (link.Url?.StartsWith('/') == true || isCrossLink)
-			{
-				var currentRootNavigation = link.GetData("NavigationRoot") as INodeNavigationItem<INavigationModel, INavigationItem>;
-				var targetRootNavigation = link.GetData("TargetNavigationRoot") as INodeNavigationItem<INavigationModel, INavigationItem>;
-				var hasSameTopLevelGroup = !isCrossLink && (currentRootNavigation?.Id == targetRootNavigation?.Id);
-				var htmx = GetHtmxProvider(link) ?? new DefaultHtmxAttributeProvider("/");
-				_ = renderer.Write($" hx-select-oob=\"{htmx.GetHxSelectOob(hasSameTopLevelGroup)}\"");
 				_ = renderer.Write($" preload=\"{DefaultHtmxAttributeProvider.Preload}\"");
-			}
 			if (isHttpLink && !isCrossLink)
 			{
 				_ = renderer.Write(" target=\"_blank\"");
@@ -111,9 +105,6 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 		_ = renderer.Write(" />");
 	}
-
-	private static IHtmxAttributeProvider? GetHtmxProvider(LinkInline link) =>
-		link.GetData(nameof(IHtmxAttributeProvider)) as IHtmxAttributeProvider;
 
 	private static bool IsNestedInsideLink(LinkInline link)
 	{
