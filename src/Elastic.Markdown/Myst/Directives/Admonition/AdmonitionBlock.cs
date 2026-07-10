@@ -53,6 +53,9 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle, IBlockAppliesTo
 		else if (!string.IsNullOrEmpty(Arguments))
 			Title += $" {Arguments}";
 		Title = Title.ReplaceSubstitutions(context);
+
+		if (Admonition is "dropdown")
+			Title = Title.StripMarkdown();
 	}
 
 	private ApplicableTo? ParseApplicableTo(string yaml)

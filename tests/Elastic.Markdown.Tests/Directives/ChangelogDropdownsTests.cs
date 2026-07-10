@@ -388,3 +388,43 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 		Html.Should().NotContain("<li><p>Known issue with search.");
 	}
 }
+
+/// <summary>
+/// Changelog-generated dropdown titles pass through the dropdown parser, which strips inline markdown markers.
+/// </summary>
+public class ChangelogDropdownsPlainTextTitleTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDropdownsPlainTextTitleTests(ITestOutputHelper output) : base(output,
+		// language=markdown
+		"""
+		:::{changelog}
+		:type: known-issue
+		:dropdowns:
+		:description-visibility: keep-descriptions
+		:::
+		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
+		// language=yaml
+		"""
+		products:
+		- product: elasticsearch
+		  target: 9.3.0
+		entries:
+		- title: "The `ElasticAgentVersion` parameter is malformed"
+		  type: known-issue
+		  products:
+		  - product: elasticsearch
+		    target: 9.3.0
+		  description: The default value has a space instead of a plus sign.
+		  impact: Deployments fail.
+		  action: Update the template.
+		  prs:
+		  - "242365"
+		"""));
+
+	[Fact]
+	public void ChangelogDropdownTitleStripsBackticksInHtml()
+	{
+		Html.Should().Contain("The ElasticAgentVersion parameter is malformed.");
+		Html.Should().NotContain("`ElasticAgentVersion`");
+	}
+}
