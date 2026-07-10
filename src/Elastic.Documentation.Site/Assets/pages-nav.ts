@@ -30,18 +30,15 @@ function restoreNavState(nav: HTMLElement) {
     }
 }
 
-function expandAllParents(navItem: HTMLElement): Set<string> {
-    const expandedIds = new Set<string>()
+function expandAllParents(navItem: HTMLElement) {
     let parent: HTMLLIElement | null | undefined = navItem?.closest('li')
     while (parent) {
         const input = parent.querySelector('input')
         if (input instanceof HTMLInputElement) {
             input.checked = true
-            expandedIds.add(input.id)
         }
         parent = parent.parentElement?.closest('li')
     }
-    return expandedIds
 }
 
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
@@ -151,19 +148,9 @@ export function initNav() {
         'a[href="' + activePathname + '"], a[href="' + activePathname + '/"]',
         pagesNav
     )
-    const expandedIds = new Set<string>()
     navItems.forEach((el) => {
         el.classList.add('current')
-        expandAllParents(el).forEach((id) => expandedIds.add(id))
     })
-    // Collapse folders left open from previous navigations that aren't on the
-    // current item's path — without this, every random click accumulates more
-    // open sections and the tree keeps growing underneath the user.
-    for (const cb of $$optional('input[type="checkbox"]', pagesNav)) {
-        if (!expandedIds.has(cb.id)) {
-            cb.checked = false
-        }
-    }
     scrollCurrentNaviItemIntoView(pagesNav)
 
     if (isDevMode()) {
