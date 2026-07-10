@@ -1,10 +1,10 @@
 # File structure
 
-The file structure of each content set directly impacts the URL path of each page. The directory structure you pull into docs-builder is the same as the directory structure it produces, but paths are resolved **relative to the location of your `docset.yml` file**, not the repository root.
+The file structure of each content set directly impacts the URL path of each page. The directory structure you pull into docs-builder is the directory structure it produces.
 
-Any directories above `docset.yml` are not part of the URL path.
+Paths are relative to your `docset.yml` file, not the repository root. For example, if `docset.yml` is in `./docs/` and a page is at `./docs/a/b/c/my.md`, its URL path is `/a/b/c/my`.
 
-For example, if `docset.yml` lives in `./docs/` and a page lives at `./docs/a/b/c/my.md`, the resulting URL path is `/a/b/c/my` (the `./docs/` prefix is dropped).
+This is true for isolated builds like `docs-builder serve` and codex.elastic.dev. On elastic.co/docs, the assembled site can change this path with [`path_prefix`](./navigation.md#path_prefix-optional) in navigation.yml.
 
 ## Navigation
 
