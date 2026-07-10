@@ -21,7 +21,7 @@
 								<a
 									class="pages-dropdown_active hover:underline text-blue-elastic hover:text-blue-elastic-100"
 									href="@currentTopLevelItem.Url"
-									@Htmx.Attributes()>
+									preload="mousedown">
 									@currentTopLevelItem.NavigationTitle
 								</a>
 							</div>
@@ -39,7 +39,7 @@
 						</button>
 					<div class="hidden group-focus-within:block left-0 right-0 absolute top-full">
 						<ul class="mt-1 py-2 bg-white border-1 border-grey-20 rounded-sm shadow-md"
-						@Htmx.Attributes("mouseover")>
+						preload="mouseover">
 				@foreach (var item in Model.TopLevelItems)
 				{
 								<li class="block">
@@ -71,8 +71,7 @@
 			IsPrimaryNavEnabled = Model.IsPrimaryNavEnabled,
 			IsGlobalAssemblyBuild = Model.IsGlobalAssemblyBuild,
 			Level = 0,
-			SubTree = Model.Tree,
-			RootNavigationId = Model.Tree.Id
+			SubTree = Model.Tree
 		}))
 	</ul>
 </div>

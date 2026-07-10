@@ -12,7 +12,6 @@
 	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())@(Model.Features.AirGappedEnabled ? " air-gapped" : "")"
 	hx-ext="preload, head-support"
 	data-docs-builder-version="@Model.DocsBuilderVersion"
-	data-root-path="@Model.RootPath"
 	hx-boost="true" hx-push-url="true" hx-indicator="#htmx-indicator"
 	>
 <svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">

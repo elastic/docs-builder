@@ -26,4 +26,18 @@ describe('assemblerStrategy with a non-default rootPath', () => {
             )
         ).toBe(true)
     })
+
+    it('accepts absolute self-links on non-elastic.co hosts (previews)', () => {
+        // jsdom origin is http://localhost
+        expect(
+            assemblerStrategy.getPathFromUrl(
+                'http://localhost/elastic/docs-builder/docs/3634/get-started'
+            )
+        ).toBe('/elastic/docs-builder/docs/3634/get-started')
+        expect(
+            assemblerStrategy.getPathFromUrl(
+                'https://some-other-host.dev/elastic/docs-builder/docs/3634/get-started'
+            )
+        ).toBe(null)
+    })
 })

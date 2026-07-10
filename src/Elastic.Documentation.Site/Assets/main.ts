@@ -259,6 +259,13 @@ document.addEventListener(
 
 document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     if (event.detail.requestConfig.verb !== 'get') return
+    // Speculative prefetches from the preload extension must pass through
+    // untouched — without this, preloading a non-docs link would trigger the
+    // full-page-load fallback below on mere mousedown/hover.
+    if (event.detail.requestConfig.headers['HX-Preloaded'] === 'true') return
+    // Only boosted link navigation needs scoping; explicit hx-get widgets
+    // manage their own requests.
+    if (!event.detail.boosted) return
     const path: string = event.detail.requestConfig.path
     if (event.detail.requestConfig.triggeringEvent) {
         const { ctrlKey, metaKey, shiftKey }: PointerEvent =

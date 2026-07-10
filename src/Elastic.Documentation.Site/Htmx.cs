@@ -12,6 +12,4 @@ namespace Elastic.Documentation.Site;
 public static class Htmx
 {
 	public const string Preload = "mousedown";
-
-	public static string Attributes(string? preload = Preload) => $" preload={preload}";
 }

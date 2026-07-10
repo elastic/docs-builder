@@ -3,9 +3,9 @@ import htmx from 'htmx.org'
 import { RefObject, useEffect } from 'react'
 
 /**
- * Hook that processes all links in a container element.
- * For internal docs links, applies htmx attributes for SPA navigation.
- * For external links (non-elastic.co or /docs/api), adds hx-disable to prevent htmx processing.
+ * Hook that normalizes all links in a container element: internal docs links
+ * get path hrefs and inherit hx-boost from <body>; external links (other
+ * domains, /docs/api) get hx-disable so htmx leaves them alone.
  *
  * @param containerRef - Ref to the container element
  * @param dependencies - Additional dependencies that should trigger reprocessing (e.g., content)
@@ -52,5 +52,5 @@ export const useHtmxContainer = (
         if (hasProcessedLinks) {
             htmx.process(containerRef.current)
         }
-    }, [...dependencies])
+    }, dependencies)
 }

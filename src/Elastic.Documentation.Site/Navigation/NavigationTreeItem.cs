@@ -13,5 +13,4 @@ public class NavigationTreeItem
 	public required INodeNavigationItem<INavigationModel, INavigationItem> SubTree { get; init; }
 	public required bool IsPrimaryNavEnabled { get; init; }
 	public required bool IsGlobalAssemblyBuild { get; init; }
-	public required string RootNavigationId { get; set; }
 }

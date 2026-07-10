@@ -10,13 +10,11 @@ export interface UseHtmxLinkResult {
 }
 
 /**
- * Hook that applies htmx attributes to a single anchor element.
- * Returns a ref to attach to the anchor element and the normalized href.
+ * Hook that normalizes a single anchor: internal docs links get a path href
+ * and inherit hx-boost from <body>; external links (other domains, /docs/api)
+ * get hx-disable so htmx leaves them alone.
  *
  * Handles both paths (/docs/...) and full URLs (https://elastic.co/docs/...).
- * HTMX attributes are not applied for:
- * - External non-elastic.co URLs
- * - External docs URLs (e.g., /docs/api) which are served from separate sites
  *
  * @param url - The path or full URL for the link
  * @returns Object with ref and normalized href

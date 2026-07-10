@@ -10,14 +10,6 @@
 @inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
 @implements IUsesLayout<Elastic.Markdown._Layout, MarkdownLayoutViewModel>
 @functions {
-	static string GetRootPath(string? siteRootPath, string? urlPathPrefix)
-	{
-		if (!string.IsNullOrEmpty(siteRootPath))
-			return siteRootPath;
-		var prefix = urlPathPrefix?.Trim('/') ?? "";
-		return string.IsNullOrEmpty(prefix) ? "/" : $"/{prefix}/";
-	}
-
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
 		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
@@ -49,7 +41,6 @@
 		ReportIssueUrl = Model.ReportIssueUrl,
 		Breadcrumbs = Model.Breadcrumbs,
 		NavigationActiveUrl = Model.NavigationActiveUrl,
-		RootPath = GetRootPath(Model.SiteRootPath, Model.UrlPathPrefix),
 		CurrentVersion = Model.CurrentDocument.YamlFrontMatter?.Layout == MarkdownPageLayout.LandingPage ? Model.VersionsConfig.VersioningSystems[0].Current : Model.CurrentVersion,
 		AllVersionsUrl = Model.AllVersionsUrl,
 		VersioningSystem = Model.VersioningSystem,
