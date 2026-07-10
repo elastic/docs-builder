@@ -9,6 +9,13 @@ export default () => {
         },
         playwrightOptions: {
             ignoreHTTPSErrors: false,
+            // Lets the backend exclude our own monitor traffic from tracing/metrics.
+            // Keep in sync with TelemetryConstants.SyntheticMonitorHeaderName (.NET).
+            // Applies to both the browser context (page) and the API request context (request),
+            // so it covers every journey in ./journeys automatically.
+            extraHTTPHeaders: {
+                'X-Docs-Synthetic-Monitor': 'true',
+            },
         },
         /**
          * Configure global monitor settings
