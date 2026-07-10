@@ -42,7 +42,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 
 			// Internal links rely on body-level hx-boost for navigation (no hx-select-oob);
 			// preload stays per-link because the preload extension ignores ancestor attributes.
-			if (link.Url?.StartsWith('/') == true || isCrossLink)
+			if (url?.StartsWith('/') == true || isCrossLink)
 				_ = renderer.Write($" preload=\"{Htmx.Preload}\"");
 			if (isHttpLink && !isCrossLink)
 			{
