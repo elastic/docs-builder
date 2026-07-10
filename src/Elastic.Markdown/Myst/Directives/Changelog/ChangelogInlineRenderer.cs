@@ -613,7 +613,7 @@ public static class ChangelogInlineRenderer
 			}
 		}
 
-		return linksParts.Count > 0 ? $"[{string.Join(", ", linksParts)}]" : string.Empty;
+		return linksParts.Count > 0 ? string.Join(" ", linksParts) : string.Empty;
 	}
 
 	private static void RenderDetailedEntry(StringBuilder sb, ChangelogEntry entry, string repo, string owner, bool hideLinks, bool hideEntryDescriptions)
