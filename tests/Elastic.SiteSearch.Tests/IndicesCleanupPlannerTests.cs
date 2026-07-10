@@ -154,6 +154,31 @@ public class IndicesCleanupPlannerTests
 	}
 
 	[Fact]
+	public void Applying_the_plan_then_replanning_yields_no_further_deletions()
+	{
+		// f1 (idempotency): a cleanup run is safe to retry. Simulate applying plan #1 (removing
+		// exactly the indices it deleted) and re-planning against the resulting state — the second
+		// plan must delete nothing further and keep exactly what the first plan kept.
+		var indexAliases = Idx(
+			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"]),
+			("test-source.lexical-prod-2026.04.14.000000", []),
+			("test-source.lexical-prod-2026.04.13.000000", []),
+			("test-source.lexical-prod-2026.04.12.000000", []));
+
+		var firstPlan = IndicesCleanupPlanner.Plan(indexAliases, [TestEntry], keep: 2);
+		firstPlan.ToDelete.Should().HaveCount(2); // sanity check against the scenario above
+
+		var afterApply = indexAliases
+			.Where(kv => firstPlan.ToDelete.All(d => d.Name != kv.Key))
+			.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+
+		var secondPlan = IndicesCleanupPlanner.Plan(afterApply, [TestEntry], keep: 2);
+
+		secondPlan.ToDelete.Should().BeEmpty();
+		secondPlan.ToKeep.Select(i => i.Name).Should().BeEquivalentTo(firstPlan.ToKeep.Select(i => i.Name));
+	}
+
+	[Fact]
 	public void BuildAliasEntries_returns_ten_entries()
 	{
 		var entries = IndicesCleanupPlanner.BuildAliasEntries("public", "prod");
