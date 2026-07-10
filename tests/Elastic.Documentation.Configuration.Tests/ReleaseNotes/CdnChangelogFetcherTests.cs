@@ -123,6 +123,28 @@ public class CdnChangelogFetcherTests
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
 	}
 
+	[Theory]
+	[InlineData("")]
+	[InlineData(".")]
+	[InlineData("..")]
+	// Products never contain dots or spaces; the producer would have refused to upload such a bundle key.
+	[InlineData("foo.bar")]
+	[InlineData("elastic search")]
+	public async Task FetchAsync_InvalidProduct_EmitsErrorAndDoesNotHitCdn(string product)
+	{
+		// A malformed product must be rejected before any request, mirroring the entry fetcher's pool
+		// validation, so URI normalization can't redirect the fetch outside the bundle layout.
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
+		var (errors, _, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var bundles = await fetcher.FetchAsync(BaseUri, product, version: null, emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		bundles.Should().BeEmpty();
+		errors.Should().ContainSingle().Which.Should().Contain("Invalid changelog product");
+		handler.RequestedPaths.Should().BeEmpty("validation must happen before any CDN request");
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 

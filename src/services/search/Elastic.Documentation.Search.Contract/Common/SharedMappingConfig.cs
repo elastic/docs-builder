@@ -88,7 +88,6 @@ public static class SharedMappingConfig
 	/// Remove once all indices are rebuilt under the new shape and no consumer queries the old names.
 	/// </summary>
 	private static MappingsBuilder<T> AddLegacyFieldAliases<T>(this MappingsBuilder<T> m) where T : SearchDocumentBase => m
-		.AddField("url", f => f.Alias("path"))
 		.AddField("abstract", f => f.Alias("summary"))
 		.AddField("navigation_section", f => f.Alias("section"))
 		.AddField("content_tags", f => f.Alias("tags"))

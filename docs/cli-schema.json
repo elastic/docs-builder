@@ -1166,6 +1166,14 @@
             },
             {
               "role": "flag",
+              "name": "bootstrap-only",
+              "type": "boolean",
+              "required": false,
+              "summary": "Bootstrap the enrich policy, pipeline, and lookup index, then exit without enriching any documents.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",

@@ -23,7 +23,7 @@ namespace Elastic.Documentation.Search.Contract;
 )]
 [AiEnrichment<GuideDocument>(
 	Role = "Expert content analyst creating search metadata for Elastic's legacy /guide documentation pages.",
-	MatchField = "path",
+	MatchField = "url",
 	IndexVariant = "Semantic"
 )]
 public static partial class GuideMappingContext;

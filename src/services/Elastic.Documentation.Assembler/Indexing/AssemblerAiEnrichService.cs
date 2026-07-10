@@ -28,12 +28,17 @@ public class AssemblerAiEnrichService(
 	private readonly ILogger _logger = logFactory.CreateLogger<AssemblerAiEnrichService>();
 
 	/// <summary>Enrich the existing semantic index for <paramref name="environment"/>; does not crawl, build, or index documents.</summary>
+	/// <param name="bootstrapOnly">
+	/// When <see langword="true"/>, bootstrap the enrich policy, pipeline, and lookup index and then return without
+	/// enriching any documents.
+	/// </param>
 	public async Task<bool> AiEnrich(
 		IDiagnosticsCollector collector,
 		ScopedFileSystem readFs,
 		ScopedFileSystem writeFs,
 		ElasticsearchIndexOptions es,
 		string? environment,
+		bool bootstrapOnly,
 		Cancel ctx
 	)
 	{
@@ -54,6 +59,12 @@ public class AssemblerAiEnrichService(
 
 		// Bootstraps and resolves the existing aliases only; never writes or deletes documents.
 		await exporter.StartAsync(ctx);
+
+		if (bootstrapOnly)
+		{
+			_logger.LogInformation("--bootstrap-only set — skipping AI enrichment");
+			return true;
+		}
 
 		var budget = new AiEnrichmentBudget(cfg.MaxAiDocs, cfg.MaxAiTime);
 		using var deadline = AiEnrichmentDeadline.Create(budget.MaxTime, ctx);

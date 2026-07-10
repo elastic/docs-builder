@@ -93,7 +93,16 @@ public sealed class CdnChangelogFetcher : IDisposable
 		Action<string> emitWarning,
 		Cancel ctx)
 	{
-		var registryUri = Combine(baseUri, "bundle", product, "registry.json");
+		// Defense-in-depth mirroring the entry fetcher's pool validation: reject anything the producer
+		// would have refused to upload before building the URI, so normalization (e.g. a ".." product)
+		// cannot redirect the fetch outside the bundle layout.
+		if (!ChangelogKeys.IsValidProduct(product))
+		{
+			emitError($"Invalid changelog product '{product}': must be non-empty ASCII letters, digits, '_' or '-'.");
+			return [];
+		}
+
+		var registryUri = Combine(baseUri, [.. ChangelogKeys.BundleSegments(product), ChangelogKeys.RegistryFileName]);
 
 		ChangelogRegistry? registry;
 		try
@@ -158,13 +167,13 @@ public sealed class CdnChangelogFetcher : IDisposable
 				continue;
 
 			var fileName = bundle.File;
-			if (string.IsNullOrWhiteSpace(fileName) || !IsSafeBundleFileName(fileName))
+			if (!ChangelogKeys.IsSafeFileName(fileName))
 			{
 				emitWarning($"Changelog registry for '{product}' lists an invalid bundle file name '{fileName}'; skipping.");
 				continue;
 			}
 
-			var bundleUri = Combine(baseUri, "bundle", product, fileName);
+			var bundleUri = Combine(baseUri, [.. ChangelogKeys.BundleSegments(product), fileName]);
 			try
 			{
 				contents.Add((fileName, await FetchTextAsync(bundleUri, ctx).ConfigureAwait(false)));
@@ -187,18 +196,12 @@ public sealed class CdnChangelogFetcher : IDisposable
 		return await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
 	}
 
-	private static Uri Combine(Uri baseUri, params string[] segments)
+	private static Uri Combine(Uri baseUri, IReadOnlyList<string> segments)
 	{
 		var basePath = baseUri.AbsoluteUri.TrimEnd('/');
 		var suffix = string.Join('/', segments.Select(Uri.EscapeDataString));
 		return new Uri($"{basePath}/{suffix}");
 	}
-
-	/// <summary>Guards against registry-supplied path traversal: a bundle file name must be a single path segment.</summary>
-	private static bool IsSafeBundleFileName(string fileName) =>
-		!fileName.Contains('/', StringComparison.Ordinal)
-		&& !fileName.Contains('\\', StringComparison.Ordinal)
-		&& fileName is not ("." or "..");
 
 	/// <summary>
 	/// Disposes the per-instance <see cref="HttpClient"/> created for an injected handler. The shared

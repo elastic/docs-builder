@@ -350,6 +350,7 @@ internal sealed class LabsCommands(
 	/// <remarks>
 	/// <paramref name="maxAiDocs"/> is an optional cap; <c>0</c> means no document limit.
 	/// Omit <paramref name="maxAiTime"/> for no wall-clock limit, or set a duration of at least one minute (for example <c>1h</c>, <c>90m</c>).
+	/// Use <paramref name="bootstrapOnly"/> to create the enrich policy, pipeline, and lookup index without enriching any documents.
 	/// </remarks>
 	[CommandName("ai-enrich")]
 	public async Task AiEnrich(
@@ -357,6 +358,7 @@ internal sealed class LabsCommands(
 		[Url] Uri? endpoint = null,
 		[Range(0, int.MaxValue)] int maxAiDocs = 0,
 		TimeSpan? maxAiTime = null,
+		bool bootstrapOnly = false,
 		Cancel ct = default
 	)
 	{
@@ -408,6 +410,12 @@ internal sealed class LabsCommands(
 			AnsiConsole.MarkupLine($"[green]✓[/] Elasticsearch indices ready [dim]({exporter.Strategy})[/]");
 			WriteBootstrapSummary(exporter);
 			AnsiConsole.WriteLine();
+
+			if (bootstrapOnly)
+			{
+				AnsiConsole.MarkupLine("[dim]--bootstrap-only set — skipping AI enrichment[/]");
+				return;
+			}
 
 			var aiResult = await AiEnrichmentConsole.RunInteractiveAsync(
 				exporter.AiEnrichmentEnabled,

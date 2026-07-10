@@ -9,6 +9,7 @@ import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
+import { initTable } from './table'
 import { initTabs } from './tabs'
 import { initializeOtel } from './telemetry/instrumentation'
 import { logError, logInfo } from './telemetry/logging'
@@ -203,6 +204,7 @@ document.addEventListener('htmx:load', function () {
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
         ['initImageCarousel', initImageCarousel],
+        ['initTable', initTable],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
         ['initCtaImpressions', initCtaImpressions],

@@ -61,6 +61,15 @@ public record SearchDocumentBase : ISearchDocument
 	[JsonPropertyName("path")]
 	public required string Path { get; set; } = string.Empty;
 
+	/// <summary>
+	/// Concrete mirror of <see cref="Path"/>, kept so AI enrichment can match against <c>url</c> —
+	/// the field the existing AI-cache lookup indices and enrich policies are keyed on. Do not use
+	/// this as the canonical identifier; <see cref="Path"/> is.
+	/// </summary>
+	[Keyword]
+	[JsonPropertyName("url")]
+	public string Url => Path;
+
 	[ContentHash]
 	[Keyword]
 	[JsonPropertyName("hash")]
