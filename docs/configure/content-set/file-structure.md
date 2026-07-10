@@ -4,7 +4,7 @@ The file structure of each content set directly impacts the URL path of each pag
 
 Paths are relative to your `docset.yml` file, not the repository root. For example, if `docset.yml` is in `./docs/` and a page is at `./docs/a/b/c/my.md`, its URL path is `/a/b/c/my`.
 
-This is true for isolated builds like `docs-builder serve` and codex.elastic.dev. On elastic.co/docs, the assembled site can change this path with [`path_prefix`](./navigation.md#path_prefix-optional) in navigation.yml.
+This is true for isolated builds like `docs-builder serve` and codex.elastic.dev. On elastic.co/docs, the assembled site can change this path with [`path_prefix`](../site/navigation.md#path_prefix-optional) in navigation.yml.
 
 ## Navigation
 
