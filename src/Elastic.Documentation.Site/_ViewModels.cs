@@ -40,7 +40,7 @@ public record GlobalLayoutViewModel
 
 	public required string NavigationHtml { get; init; }
 	public required string? UrlPathPrefix { get; init; }
-	public required IHtmxAttributeProvider Htmx { get; init; }
+	public required string RootPath { get; init; }
 	public required Uri? CanonicalBaseUrl { get; init; }
 
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>

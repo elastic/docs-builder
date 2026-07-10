@@ -83,7 +83,7 @@ public abstract class CodexViewModel(CodexRenderContext context)
 			Next = null,
 			NavigationHtml = NavigationHtml,
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
-			Htmx = new DefaultHtmxAttributeProvider(rootPath),
+			RootPath = rootPath,
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = new GoogleTagManagerConfiguration(),

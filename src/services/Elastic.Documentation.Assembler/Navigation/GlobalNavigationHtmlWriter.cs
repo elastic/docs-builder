@@ -76,7 +76,6 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 			IsUsingNavigationDropdown = true,
 			IsGlobalAssemblyBuild = true,
 			TopLevelItems = topLevelItems,
-			Htmx = new DefaultHtmxAttributeProvider("/"),
 			BuildType = BuildType.Assembler
 		};
 	}

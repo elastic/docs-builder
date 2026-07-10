@@ -15,9 +15,7 @@
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<a
 						href="@Model.Link("/release-notes/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
+						@Htmx.Attributes()
 					>
 						Release notes
 					</a>
@@ -25,9 +23,7 @@
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<a
 						href="@Model.Link("/troubleshoot/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
+						@Htmx.Attributes()
 					>
 						Troubleshoot
 					</a>
@@ -35,9 +31,7 @@
 				<li class="text-nowrap hover:text-blue-elastic active:text-blue-elastic-100">
 					<a
 						href="@Model.Link("/reference/")"
-						@Model.Htmx.GetHxAttributes(
-							hxSwapOob: "#main-container,#secondary-nav"
-						)
+						@Htmx.Attributes()
 					>
 						Reference
 					</a>
