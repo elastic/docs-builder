@@ -69,8 +69,8 @@ describe('useHtmxContainer', () => {
         })
     })
 
-    describe('/docs/api paths use htmx', () => {
-        it('should apply htmx for /docs/api paths', () => {
+    describe('/docs/api paths should be disabled', () => {
+        it('should add hx-disable for /docs/api paths', () => {
             render(
                 <TestContainer html='<a href="/docs/api/elasticsearch">API Link</a>' />
             )
@@ -79,11 +79,11 @@ describe('useHtmxContainer', () => {
             const anchor = container.querySelector('a')
 
             expect(anchor).toHaveAttribute('href', '/docs/api/elasticsearch')
-            expect(anchor).not.toHaveAttribute('hx-disable')
-            expect(mockHtmx.process).toHaveBeenCalled()
+            expect(anchor).toHaveAttribute('hx-disable', 'true')
+            expect(mockHtmx.process).not.toHaveBeenCalled()
         })
 
-        it('should apply htmx for full elastic.co/docs/api URLs', () => {
+        it('should add hx-disable for full elastic.co/docs/api URLs', () => {
             render(
                 <TestContainer html='<a href="https://www.elastic.co/docs/api/kibana">API Link</a>' />
             )
@@ -92,8 +92,8 @@ describe('useHtmxContainer', () => {
             const anchor = container.querySelector('a')
 
             expect(anchor).toHaveAttribute('href', '/docs/api/kibana')
-            expect(anchor).not.toHaveAttribute('hx-disable')
-            expect(mockHtmx.process).toHaveBeenCalled()
+            expect(anchor).toHaveAttribute('hx-disable', 'true')
+            expect(mockHtmx.process).not.toHaveBeenCalled()
         })
     })
 
@@ -184,9 +184,9 @@ describe('useHtmxContainer', () => {
             expect(internalLink).toHaveAttribute('href', '/docs/elasticsearch')
             expect(internalLink).not.toHaveAttribute('hx-disable')
 
-            // API link - htmx enabled (built locally in assembler)
+            // API link - htmx disabled
             expect(apiLink).toHaveAttribute('href', '/docs/api/kibana')
-            expect(apiLink).not.toHaveAttribute('hx-disable')
+            expect(apiLink).toHaveAttribute('hx-disable', 'true')
 
             // External link - htmx disabled
             expect(externalLink).toHaveAttribute(
@@ -199,7 +199,7 @@ describe('useHtmxContainer', () => {
             expect(mockHtmx.process).toHaveBeenCalledWith(container)
         })
 
-        it('should call htmx.process if at least one link is internal', () => {
+        it('should not call htmx.process if all links are external', () => {
             render(
                 <TestContainer
                     html={`
@@ -209,7 +209,7 @@ describe('useHtmxContainer', () => {
                 />
             )
 
-            expect(mockHtmx.process).toHaveBeenCalled()
+            expect(mockHtmx.process).not.toHaveBeenCalled()
         })
     })
 })
