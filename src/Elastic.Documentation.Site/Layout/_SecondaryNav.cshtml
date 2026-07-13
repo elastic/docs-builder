@@ -41,8 +41,10 @@
 	</nav>
 	@* Anchored below the nav (top-full) so it tracks it in both scroll states —
 	   a fixed/--offset-top indicator can't account for the variable-height
-	   elastic-nav global header above. *@
-	<div class="w-full absolute top-full left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+	   elastic-nav global header above. hx-preserve keeps the element (and its
+	   running animation) across body swaps; otherwise settle briefly re-shows
+	   the swapped-in copy with the animation restarted from zero. *@
+	<div class="w-full absolute top-full left-0 right-0 htmx-indicator" id="htmx-indicator" role="status" hx-preserve>
 		<div class="h-px w-full overflow-hidden">
 			<div class="progress w-full h-full bg-pink-70 left-right"></div>
 		</div>

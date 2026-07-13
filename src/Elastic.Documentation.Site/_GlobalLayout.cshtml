@@ -32,7 +32,7 @@
    in _SecondaryNav.cshtml instead of this viewport-fixed variant. *@
 @if (Model.BuildType != BuildType.Assembler || Model.Features.AirGappedEnabled)
 {
-	<div class="w-full fixed top-(--offset-top) left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+	<div class="w-full fixed top-(--offset-top) left-0 right-0 htmx-indicator" id="htmx-indicator" role="status" hx-preserve>
 		<div class="h-px w-full overflow-hidden">
 			<div class="progress w-full h-full bg-pink-70 left-right"></div>
 		</div>
