@@ -94,7 +94,7 @@ public partial class OpenApiDocumentExporter(
 			_ = response.EnsureSuccessStatusCode();
 
 			await using var stream = await response.Content.ReadAsStreamAsync(ctx);
-			var settings = new OpenApiReaderSettings { LeaveStreamOpen = false };
+			var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
 			var openApiDocument = await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx);
 
 			return openApiDocument.Document;

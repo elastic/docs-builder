@@ -18,7 +18,8 @@ public static class OpenApiReader
 
 		var settings = new OpenApiReaderSettings
 		{
-			LeaveStreamOpen = false
+			LeaveStreamOpen = false,
+			RuleSet = ValidationRuleSet.GetEmptyRuleSet()
 		};
 		await using var fs = openApiSpecification.OpenRead();
 		var openApiDocument = await OpenApiDocument.LoadAsync(fs, settings: settings);
