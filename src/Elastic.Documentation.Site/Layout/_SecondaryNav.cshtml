@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<div class="md:sticky md:top-0 md:z-30 bg-grey-10">
+<div class="relative md:sticky md:top-0 md:z-30 bg-grey-10">
 	<ask-ai id="ask-ai" hx-preserve></ask-ai>
 	<nav id="secondary-nav"
 	     class="bg-grey-10 border-b border-grey-20">
@@ -39,4 +39,13 @@
 			</ul>
 		</div>
 	</nav>
+	@* Anchored below the nav (top-full) so it tracks it in both scroll states —
+	   a fixed/--offset-top indicator can't account for the variable-height
+	   elastic-nav global header above. *@
+	<div class="w-full absolute top-full left-0 right-0 htmx-indicator" id="htmx-indicator" role="status">
+		<div class="h-px w-full overflow-hidden">
+			<div class="progress w-full h-full bg-pink-70 left-right"></div>
+		</div>
+		<div class="sr-only">Loading</div>
+	</div>
 </div>
