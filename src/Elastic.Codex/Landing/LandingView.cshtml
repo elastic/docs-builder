@@ -131,14 +131,14 @@
 			.OrderBy(x => x.sortKey, StringComparer.OrdinalIgnoreCase)
 			.ToList();
 	}
-	<div id="codex-grid" class="pt-8 pb-8 max-w-7xl p-4 mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style="position: relative; z-index: 1;">
+	<div id="codex-grid" class="pt-8 pb-8 max-w-7xl p-4 mx-auto grid grid-cols-1 md:grid-cols-2 gap-4" style="position: relative; z-index: 1;">
 		@foreach (var item in sortedSections)
 		{
 			@if (item.group is { } group)
 			{
 				var repoCount = group.DocumentationSetInfos.Count;
-				var colSpan = repoCount >= 5 || repoCount == 3 ? "col-span-full" : repoCount >= 2 ? "col-span-1 md:col-span-2" : "col-span-1";
-				var innerCols = repoCount >= 5 || repoCount == 3 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : repoCount >= 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1";
+				var colSpan = repoCount >= 2 ? "col-span-full" : "col-span-1";
+				var innerCols = repoCount >= 3 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : repoCount >= 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1";
 				<div class="@colSpan border border-dashed border-grey-40 rounded-xl p-3">
 					<a href="@group.Url"
 					   hx-select-oob="#main-container"
