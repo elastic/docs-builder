@@ -20,7 +20,7 @@
 		 style="background-image: linear-gradient(to right, #e7e5e4 1px, transparent 1px), linear-gradient(to bottom, #e7e5e4 1px, transparent 1px); background-size: 20px 20px; background-position: 0 0, 0 0; mask-image: repeating-linear-gradient(to right, black 0px, black 3px, transparent 3px, transparent 8px), repeating-linear-gradient(to bottom, black 0px, black 3px, transparent 3px, transparent 8px), radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%); -webkit-mask-image: repeating-linear-gradient(to right, black 0px, black 3px, transparent 3px, transparent 8px), repeating-linear-gradient(to bottom, black 0px, black 3px, transparent 3px, transparent 8px), radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%); mask-composite: intersect; -webkit-mask-composite: source-in;">
 	</div>
 
-	<div class="codex-hero flex flex-col px-4 pt-10 pb-20 items-center text-center max-w-4xl mx-auto" style="position: relative; z-index: 1;" hx-select-oob="#main-container">
+	<div class="codex-hero flex flex-col px-4 pt-10 pb-20 items-center text-center max-w-4xl mx-auto" style="position: relative; z-index: 1;">
 
 		<div class="flex items-center justify-between gap-2 mb-10 w-full">
 			<img src="@LayoutModel.Static("logo-elastic-horizontal-color.svg")" alt="Elastic" class="h-10"/>
@@ -141,7 +141,6 @@
 				var innerCols = repoCount >= 3 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : repoCount >= 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1";
 				<div class="@colSpan border border-dashed border-grey-40 rounded-xl p-3">
 					<a href="@group.Url"
-					   hx-select-oob="#main-container"
 					   preload="mousedown"
 					   class="flex items-center gap-3 group bg-white docset-card rounded-lg border border-grey-20 p-4 mb-3 hover:border-blue-elastic-90 hover:bg-blue-elastic-10 transition-colors">
 						<div class="docset-icon text-blue-elastic-90 bg-blue-elastic-10 group-hover:bg-blue-elastic-20 rounded-lg p-3 shrink-0">
