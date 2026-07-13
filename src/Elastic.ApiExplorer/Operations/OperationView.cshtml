@@ -52,7 +52,7 @@
 			var current = overload.Model.Route == Model.Operation.Route && overload.Model.OperationType == Model.Operation.OperationType ? "current" : "";
 			var isDeprecated = overload.Model.Operation?.Deprecated == true;
 			<li class="api-url-list-item @(isDeprecated ? "deprecated" : "")">
-				<a href="@overload.Url" class="@current" hx-disable="true">
+				<a href="@overload.Url" class="@current" @LayoutModel.Htmx.GetHxAttributes(hasSameTopLevelGroup: true)>
 					 <span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
 					 <span class="api-url @(isDeprecated ? "deprecated-path" : "")">@overload.Model.Route</span>
 					 @if (isDeprecated)

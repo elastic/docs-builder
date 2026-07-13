@@ -24,14 +24,48 @@ public static class SchemaHelpers
 	/// </summary>
 	public static readonly HashSet<string> KnownValueTypes =
 	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"Field", "Fields", "Id", "Ids", "IndexName", "Indices", "Name", "Names",
-		"Routing", "VersionNumber", "SequenceNumber", "PropertyName", "RelationName",
-		"TaskId", "ScrollId", "SuggestionName", "Duration", "DateMath", "Fuzziness",
-		"GeoHashPrecision", "Distance", "TimeOfDay", "MinimumShouldMatch", "Script",
-		"ByteSize", "Percentage", "Stringifiedboolean", "ExpandWildcards", "float", "Stringifiedinteger",
+with(StringComparer.OrdinalIgnoreCase),
+		"Field",
+		"Fields",
+		"Id",
+		"Ids",
+		"IndexName",
+		"Indices",
+		"Name",
+		"Names",
+		"Routing",
+		"VersionNumber",
+		"SequenceNumber",
+		"PropertyName",
+		"RelationName",
+		"TaskId",
+		"ScrollId",
+		"SuggestionName",
+		"Duration",
+		"DateMath",
+		"Fuzziness",
+		"GeoHashPrecision",
+		"Distance",
+		"TimeOfDay",
+		"MinimumShouldMatch",
+		"Script",
+		"ByteSize",
+		"Percentage",
+		"Stringifiedboolean",
+		"ExpandWildcards",
+		"float",
+		"Stringifiedinteger",
 		// Numeric value types
-		"uint", "ulong", "long", "int", "short", "ushort", "byte", "sbyte", "double", "decimal"
+		"uint",
+		"ulong",
+		"long",
+		"int",
+		"short",
+		"ushort",
+		"byte",
+		"sbyte",
+		"double",
+		"decimal"
 	];
 
 	/// <summary>
@@ -40,8 +74,10 @@ public static class SchemaHelpers
 	/// </summary>
 	public static readonly HashSet<string> LinkedTypes =
 	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"QueryContainer", "AggregationContainer", "Aggregate"
+with(StringComparer.OrdinalIgnoreCase),
+		"QueryContainer",
+		"AggregationContainer",
+		"Aggregate"
 	];
 
 	/// <summary>
@@ -51,8 +87,14 @@ public static class SchemaHelpers
 	/// </summary>
 	public static readonly HashSet<string> PrimitiveTypeNames =
 	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"boolean", "number", "string", "integer", "object", "null", "array"
+with(StringComparer.OrdinalIgnoreCase),
+		"boolean",
+		"number",
+		"string",
+		"integer",
+		"object",
+		"null",
+		"array"
 	];
 
 	/// <summary>

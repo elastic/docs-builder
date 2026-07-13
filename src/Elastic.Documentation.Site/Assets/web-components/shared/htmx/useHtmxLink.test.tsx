@@ -34,14 +34,14 @@ const TestLink = ({ url }: { url: string }) => {
 }
 
 describe('isExternalDocsUrl', () => {
-    it('should return true for /docs/api', () => {
-        expect(isExternalDocsUrl('/docs/api')).toBe(true)
+    it('should return false for /docs/api (built locally)', () => {
+        expect(isExternalDocsUrl('/docs/api')).toBe(false)
     })
 
-    it('should return true for /docs/api/ paths', () => {
-        expect(isExternalDocsUrl('/docs/api/')).toBe(true)
-        expect(isExternalDocsUrl('/docs/api/elasticsearch')).toBe(true)
-        expect(isExternalDocsUrl('/docs/api/kibana/some/path')).toBe(true)
+    it('should return false for /docs/api/ paths', () => {
+        expect(isExternalDocsUrl('/docs/api/')).toBe(false)
+        expect(isExternalDocsUrl('/docs/api/elasticsearch')).toBe(false)
+        expect(isExternalDocsUrl('/docs/api/kibana/some/path')).toBe(false)
     })
 
     it('should return false for regular docs paths', () => {
@@ -232,13 +232,13 @@ describe('useHtmxLink', () => {
             expect(anchor).not.toHaveAttribute('hx-disable')
         })
 
-        it('should add hx-disable for /docs/api paths', () => {
+        it('should call htmx.process for /docs/api paths', () => {
             render(<TestLink url="/docs/api/elasticsearch" />)
 
             const anchor = screen.getByTestId('test-link')
 
-            expect(anchor).toHaveAttribute('hx-disable', 'true')
-            expect(mockHtmx.process).not.toHaveBeenCalled()
+            expect(anchor).not.toHaveAttribute('hx-disable')
+            expect(mockHtmx.process).toHaveBeenCalledWith(anchor)
         })
 
         it('should add hx-disable for external URLs', () => {

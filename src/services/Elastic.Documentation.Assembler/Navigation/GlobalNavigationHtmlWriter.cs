@@ -76,11 +76,11 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		// Islands take priority: if any ancestor toc root of the current page is an island, render the island sidebar
 		var island = navV2.GetIslandForNavigationItem(currentNavigationItem);
 		if (island is not null)
-			return await RenderIslandNavigation(island, navV2, ctx);
+			return await RenderIslandNavigation(island, navV2, currentNavigationItem, ctx);
 
 		var section = navV2.GetSectionForUrl(currentNavigationItem.Url);
 		if (section is null)
-			return await RenderFullV2Navigation(navV2, ctx);
+			return await RenderFullV2Navigation(navV2, currentNavigationItem, ctx);
 
 		var cacheKey = $"nav-v2-section-{section.Id}";
 		if (_renderedNavigationCache.TryGetValue(cacheKey, out var cachedHtml))
@@ -108,7 +108,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 				BuildType = BuildType.Assembler,
 				IsNavV2 = true,
 				IsIsolatedSection = section.Isolated,
-				SectionUrl = CombineWithSitePrefix(navV2, section.Url)
+				SectionUrl = CombineWithSitePrefix(navV2, section.Url),
+				ActiveNavigationUrl = NavigationActiveUrlResolver.Resolve(currentNavigationItem)
 			};
 
 			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
@@ -124,6 +125,7 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 	private async Task<NavigationRenderResult> RenderIslandNavigation(
 		NavigationIsland island,
 		SiteNavigationV2 navV2,
+		INavigationItem currentNavigationItem,
 		Cancel ctx
 	)
 	{
@@ -157,7 +159,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 				IsNavV2 = true,
 				IsIsolatedSection = false,
 				SectionUrl = null,
-				BackArrowUrl = CombineWithSitePrefix(navV2, island.ParentSection.Url)
+				BackArrowUrl = CombineWithSitePrefix(navV2, island.ParentSection.Url),
+				ActiveNavigationUrl = NavigationActiveUrlResolver.Resolve(currentNavigationItem)
 			};
 
 			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);
@@ -196,7 +199,11 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 		};
 
 	/// <summary>Fallback when no <c>section:</c> items exist — renders the full V2 tree as before.</summary>
-	private async Task<NavigationRenderResult> RenderFullV2Navigation(SiteNavigationV2 navV2, Cancel ctx)
+	private async Task<NavigationRenderResult> RenderFullV2Navigation(
+		SiteNavigationV2 navV2,
+		INavigationItem currentNavigationItem,
+		Cancel ctx
+	)
 	{
 		const string cacheKey = "nav-v2";
 		if (_renderedNavigationCache.TryGetValue(cacheKey, out var cachedHtml))
@@ -222,7 +229,8 @@ public class GlobalNavigationHtmlWriter(ILoggerFactory logFactory, SiteNavigatio
 				TopLevelItems = [],
 				Htmx = new DefaultHtmxAttributeProvider("/"),
 				BuildType = BuildType.Assembler,
-				IsNavV2 = true
+				IsNavV2 = true,
+				ActiveNavigationUrl = NavigationActiveUrlResolver.Resolve(currentNavigationItem)
 			};
 
 			var html = await ((INavigationHtmlWriter)this).Render(model, ctx);

@@ -11,23 +11,22 @@ else
 {
 	@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 }
-<div id="main-container" class="flex flex-col items-center">
-	<div class="max-w-(--max-layout-width) w-full h-full grid
-			grid-cols-1
-			md:grid-cols-[var(--max-sidebar-width)_1fr]
-		">
-		<div class="lg:grid lg:grid-cols-[1fr_var(--max-sidebar-width)] md:order-2">
-			<div class="justify-center px-6 lg:px-0">
-				<main id="content-container" class="w-full flex flex-col relative pb-12 overflow-x-hidden">
-					<article id="markdown-content" class="content-container markdown-content md:px-4">
-						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-						@await RenderBodyAsync()
-					</article>
-				</main>
+<div id="main-container" class="relative">
+	<div class="min-h-screen w-full max-w-(--max-layout-width) mx-auto md:px-4">
+		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+			<div class="min-w-0 lg:grid lg:grid-cols-[1fr_var(--max-sidebar-width)] md:order-2 gap-4">
+				<div class="min-w-0 pt-6">
+					<main id="content-container" class="w-full flex flex-col relative pb-12 overflow-x-hidden">
+						<article id="markdown-content" class="content-container markdown-content md:px-4 min-w-0">
+							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+							@await RenderBodyAsync()
+						</article>
+					</main>
+				</div>
+				@await RenderPartialAsync(_ApiToc.Create(Model.TocItems.ToArray()))
 			</div>
-			@await RenderPartialAsync(_ApiToc.Create(Model.TocItems.ToArray()))
+			@await RenderPartialAsync(_PagesNav.Create(Model))
 		</div>
-		@await RenderPartialAsync(_PagesNav.Create(Model))
 	</div>
 </div>
 @if (Model.BuildType == BuildType.Assembler)

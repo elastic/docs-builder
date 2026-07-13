@@ -1,6 +1,6 @@
 @inherits RazorLayoutSlice<GlobalLayoutViewModel>
 <!DOCTYPE html>
-<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
+<html lang="en" class="h-screen no-transitions" xmlns="http://www.w3.org/1999/html">
 <head hx-head="merge">
 	@await RenderPartialAsync(_Head.Create(Model))
 	@await RenderSectionAsync(GlobalSections.Head)

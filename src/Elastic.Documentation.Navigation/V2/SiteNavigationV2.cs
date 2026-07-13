@@ -85,13 +85,44 @@ public class SiteNavigationV2 : SiteNavigation
 	{
 		if (pageUrl is not null)
 		{
-			var normalized = pageUrl.TrimEnd('/');
+			var normalized = NormalizePageUrl(pageUrl);
 			if (_urlToSection.TryGetValue(normalized, out var section))
 				return section;
 			if (_urlToSection.TryGetValue(normalized + "/", out section))
 				return section;
+
+			NavigationSection? prefixMatch = null;
+			var bestLength = 0;
+			foreach (var candidate in Sections)
+			{
+				if (string.IsNullOrEmpty(candidate.Url) || candidate.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				var sectionPrefix = candidate.Url.TrimEnd('/');
+				if (!normalized.StartsWith(sectionPrefix, StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				var matchesAsPrefix = normalized.Length == sectionPrefix.Length
+					|| normalized[sectionPrefix.Length] == '/';
+				if (matchesAsPrefix && sectionPrefix.Length > bestLength)
+				{
+					bestLength = sectionPrefix.Length;
+					prefixMatch = candidate;
+				}
+			}
+
+			if (prefixMatch is not null)
+				return prefixMatch;
 		}
 		return Sections.FirstOrDefault(s => !s.Isolated);
+	}
+
+	private static string NormalizePageUrl(string pageUrl)
+	{
+		var normalized = pageUrl.Trim();
+		if (!normalized.StartsWith('/'))
+			normalized = "/" + normalized;
+		return normalized.TrimEnd('/');
 	}
 
 	private static IReadOnlyList<NavigationSection> BuildSections(IReadOnlyList<INavigationItem> items) =>

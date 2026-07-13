@@ -21,4 +21,7 @@ public class NavigationTreeItem
 	/// Links here must swap the full page chrome so clicking from a parent section's sidebar
 	/// switches into the island's focused sidebar.</summary>
 	public bool IsIslandSubtree { get; init; }
+
+	/// <summary>Normalized URL of the page whose sidebar row should show as current.</summary>
+	public string? ActiveNavigationUrl { get; init; }
 }

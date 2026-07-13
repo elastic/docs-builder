@@ -151,6 +151,15 @@ public class AssemblerBuildService(
 			var staticHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(firstBuildContext));
 			var placeholderWriter = new PlaceholderPageWriter(logFactory, navV2, htmlWriter, assembleContext, featureFlags, staticHashProvider);
 			await placeholderWriter.WriteAllAsync(ctx);
+
+			await AssemblerOpenApiBuildStep.BuildAsync(
+				logFactory,
+				assembleContext,
+				htmlWriter,
+				featureFlags,
+				checkoutResult.Checkouts,
+				configurationContext,
+				ctx);
 		}
 
 		if (exporters.Contains(Exporter.LinkMetadata))

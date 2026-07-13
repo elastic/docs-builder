@@ -102,10 +102,12 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 }
 
 public class ClassificationNavigationItem(ApiClassification classification, LandingNavigationItem rootNavigation, LandingNavigationItem parent)
-	: ApiGroupingNavigationItem<ApiClassification, INavigationItem>(classification, rootNavigation, parent), IRootNavigationItem<ApiClassification, INavigationItem>
+	: ApiGroupingNavigationItem<ApiClassification, INavigationItem>(classification, rootNavigation, parent),
+		IRootNavigationItem<ApiClassification, INavigationItem>,
+		INavigationSidebarLabel
 {
-	/// <summary>Section titles from <c>x-tagGroups</c> are not their own page; the sidebar link targets the main API overview for the product, not a tag (or the first child) page.</summary>
-	public override string Url => rootNavigation.Index.Url;
+	/// <summary>Section titles from <c>x-tagGroups</c> are not their own page; rendered as non-clickable sidebar labels.</summary>
+	public override string Url => string.Empty;
 
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = classification.Name;

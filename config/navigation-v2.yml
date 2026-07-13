@@ -4286,7 +4286,7 @@ nav:
           title: APIs
 
   - section: APIs
-    url: https://www.elastic.co/docs/api
+    url: /docs/api/
 
   - section: Reference
     url: /reference/

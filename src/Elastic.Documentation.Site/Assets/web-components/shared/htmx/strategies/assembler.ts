@@ -1,8 +1,7 @@
 import type { HtmxUrlStrategy } from './types'
 
 export const assemblerStrategy: HtmxUrlStrategy = {
-    isExternalDocsUrl: (url) =>
-        url.startsWith('/docs/api/') || url === '/docs/api',
+    isExternalDocsUrl: () => false,
 
     getPathFromUrl: (url) => {
         try {

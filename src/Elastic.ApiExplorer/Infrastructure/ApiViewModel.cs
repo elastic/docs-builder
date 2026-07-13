@@ -12,6 +12,7 @@ using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -72,13 +73,16 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Previous = null,
 			Next = null,
 			NavigationHtml = NavigationHtml,
+			NavigationActiveUrl = NavigationActiveUrlResolver.Resolve(CurrentNavigationItem),
 			UrlPathPrefix = BuildContext.UrlPathPrefix,
 			Htmx = new DefaultHtmxAttributeProvider(rootPath),
 			AllowIndexing = BuildContext.AllowIndexing,
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
-			GoogleTagManager = new GoogleTagManagerConfiguration(),
-			Optimizely = new OptimizelyConfiguration(),
-			Features = new FeatureFlags([]),
+			GoogleTagManager = BuildContext.GoogleTagManager,
+			Optimizely = BuildContext.Optimizely,
+			Features = RenderContext.FeatureFlags ?? new FeatureFlags([]),
+			NavV2Sections = RenderContext.NavV2Sections,
+			ActiveSectionId = RenderContext.ActiveSectionId,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			TocItems = GetTocItems(),

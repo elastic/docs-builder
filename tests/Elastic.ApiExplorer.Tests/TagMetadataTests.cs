@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -645,10 +646,11 @@ public class TagMetadataTests
 		var informationGroup = navigation.NavigationItems
 			.OfType<ClassificationNavigationItem>()
 			.First(c => c.NavigationTitle == "Information");
-		informationGroup.Url.Should().Be(expectedOverviewUrl);
+		informationGroup.Should().BeAssignableTo<INavigationSidebarLabel>();
+		informationGroup.Url.Should().BeEmpty("x-tagGroups sections have no landing page");
 
 		var firstTag = informationGroup.NavigationItems.OfType<TagNavigationItem>().First();
-		informationGroup.Url.Should().NotBe(firstTag.Url);
+		firstTag.Url.Should().NotBe(expectedOverviewUrl);
 		firstTag.Url.Should().Contain("/tags/");
 	}
 

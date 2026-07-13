@@ -169,7 +169,7 @@ public class IsolatedBuildService(
 		if (!skipOpenApi)
 		{
 			var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
-			await openApiGenerator.Generate(ctx);
+			await openApiGenerator.Generate(ctx: ctx);
 		}
 
 		if (runningOnCi)
