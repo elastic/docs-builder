@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Actions.Core.Services;
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using Elastic.Documentation.Deploying.Synchronization;
@@ -22,7 +23,14 @@ public class IncrementalDeployService(
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IncrementalDeployService>();
-	private readonly IAmazonS3 _s3 = s3Client ?? new AmazonS3Client();
+
+	// Standard mode retries throttling/5xx with jittered backoff; higher upload concurrency means more
+	// concurrent requests hitting S3, so let the SDK absorb transient failures instead of failing files outright.
+	private readonly IAmazonS3 _s3 = s3Client ?? new AmazonS3Client(new AmazonS3Config
+	{
+		RetryMode = RequestRetryMode.Standard,
+		MaxErrorRetry = 5
+	});
 
 	public async Task<bool> Plan(IDiagnosticsCollector collector, IDocsSyncContext context, string s3BucketName, string @out, float? deleteThreshold, string[] excludePatterns, Cancel ctx)
 	{
@@ -81,8 +89,7 @@ public class IncrementalDeployService(
 			return false;
 		}
 		var applier = new AwsS3SyncApplyStrategy(logFactory, _s3, xfer, s3BucketName, context, collector);
-		await applier.Apply(plan, ctx);
-		return true;
+		return await applier.Apply(plan, ctx);
 	}
 
 	private void LogPlanSummary(SyncPlan plan)
