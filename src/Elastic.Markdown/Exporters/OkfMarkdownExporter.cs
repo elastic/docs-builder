@@ -228,7 +228,8 @@ public class OkfMarkdownExporter : IMarkdownExporter
 			_ = frontMatter.AppendLine();
 			_ = frontMatter.AppendLine($"# {sourceFile.Title}");
 			_ = frontMatter.Append(body);
-			return frontMatter.ToString();
+			// AppendLine uses Environment.NewLine — normalize so bundle content is identical regardless of the OS the build runs on.
+			return frontMatter.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
 		}
 		finally
 		{
@@ -377,7 +378,8 @@ public class OkfMarkdownExporter : IMarkdownExporter
 				_ = sb.AppendLine();
 			}
 
-			return sb.ToString().TrimEnd() + Environment.NewLine;
+			// AppendLine uses Environment.NewLine — normalize so bundle content is identical regardless of the OS the build runs on.
+			return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd() + "\n";
 		}
 		finally
 		{
