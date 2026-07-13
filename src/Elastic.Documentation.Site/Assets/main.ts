@@ -23,6 +23,7 @@ import {
     ATTR_URL_FULL,
 } from './telemetry/semconv'
 import { initTocNav } from './toc-nav'
+import './web-components/VectorSizingCalculator/VectorSizingCalculatorComponent'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import * as katex from 'katex'
