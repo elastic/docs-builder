@@ -36,6 +36,8 @@ public class BundlePlanTests : ChangelogTestBase
 		result.NeedsNetwork.Should().BeFalse();
 		result.NeedsGithubToken.Should().BeFalse();
 		result.OutputPath.Should().Be("docs/releases/my-bundle.yaml");
+		// No product is resolvable in option mode without --input/output-products, so there is no CDN URL.
+		result.CdnUrl.Should().BeNull();
 	}
 
 	[Fact]
@@ -51,8 +53,46 @@ public class BundlePlanTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task Plan_ProfileMode_ResolvesOutputPath()
+	public async Task Plan_ProfileMode_RepoResolvable_ReturnsNeedsNetwork()
 	{
+		// A profile whose authoring repo resolves (bundle.repo) sources entries from the CDN, so the plan
+		// reports needs_network (but not a GitHub token, since this is not a github_release profile).
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  repo: elasticsearch
+			  profiles:
+			    my-profile:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "my-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath
+		};
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.NeedsNetwork.Should().BeTrue();
+		result.NeedsGithubToken.Should().BeFalse();
+		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
+		// The bundle-PR action polls this URL for the scrubbed copy: {base}/bundle/{product}/{file}.
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
+	}
+
+	[Fact]
+	public async Task Plan_ProfileMode_NoRepo_ReturnsNoNetwork()
+	{
+		// Repo gate at plan time: with no bundle.repo (and no --repo), the authoring repo is unresolvable,
+		// so the bundle run sources locally and the plan reports no network. The CDN URL is still resolved
+		// because it only describes where a (possibly local) bundle would be published, independent of the gate.
 		// language=yaml
 		var configContent =
 			"""
@@ -76,8 +116,68 @@ public class BundlePlanTests : ChangelogTestBase
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
+	}
+
+	[Fact]
+	public async Task Plan_ProfileMode_OutputProductsScopeCdnUrl()
+	{
+		// output_products takes precedence over products when scoping the CDN URL.
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  profiles:
+			    serverless:
+			      products: "cloud-serverless {version} *"
+			      output_products: "cloud-serverless {version} *"
+			      output: "serverless-{version}.yaml"
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "serverless",
+			ProfileArgument = "2026-03",
+			Config = configPath
+		};
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/serverless-2026-03.yaml");
+	}
+
+	[Fact]
+	public async Task Plan_ProfileMode_UseLocalChangelogs_ReturnsNoNetwork()
+	{
+		// With bundle.use_local_changelogs the entries come from the local folder, so no network is needed.
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  use_local_changelogs: true
+			  profiles:
+			    my-profile:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output: "elasticsearch-{version}.yaml"
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "my-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath
+		};
+
+		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.NeedsNetwork.Should().BeFalse();
 		result.NeedsGithubToken.Should().BeFalse();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 	}
 
 	[Fact]

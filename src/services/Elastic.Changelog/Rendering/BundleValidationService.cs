@@ -95,7 +95,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		IReadOnlyList<string> amendFiles,
 		Cancel ctx)
 	{
-		var mergedEntries = new List<BundledEntry>(mainBundle.Entries);
+		var amendBundles = new List<Bundle>();
 
 		foreach (var amendFile in amendFiles)
 		{
@@ -103,9 +103,12 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			{
 				var amendContent = await fileSystem.File.ReadAllTextAsync(amendFile, ctx);
 				var amendBundle = ReleaseNotesSerialization.DeserializeBundle(amendContent);
-
-				_logger.LogInformation("Merging {Count} entries from amend file {AmendFile}", amendBundle.Entries.Count, amendFile);
-				mergedEntries.AddRange(amendBundle.Entries);
+				amendBundles.Add(amendBundle);
+				_logger.LogInformation(
+					"Merging amend file {AmendFile} ({AddCount} additions, {ExcludeCount} exclusions)",
+					amendFile,
+					amendBundle.Entries.Count,
+					amendBundle.ExcludeEntries.Count);
 			}
 			catch (YamlException yamlEx)
 			{
@@ -114,9 +117,14 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 			}
 		}
 
+		var mergedEntries = BundleAmendMerger.MergeEntries(mainBundle.Entries, amendBundles);
+
 		return new Bundle
 		{
 			Products = mainBundle.Products,
+			Description = mainBundle.Description,
+			ReleaseDate = mainBundle.ReleaseDate,
+			HideFeatures = mainBundle.HideFeatures,
 			Entries = mergedEntries
 		};
 	}
@@ -153,6 +161,7 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 		Cancel ctx)
 	{
 		var fileNamesInThisBundle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var allValid = true;
 
 		foreach (var entry in bundledData.Entries)
 		{
@@ -174,21 +183,17 @@ public class BundleValidationService(ILoggerFactory logFactory, IFileSystem file
 				bundleList.Add(bundleInput.BundleFile);
 			}
 
-			// If entry has resolved data, validate it
-			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-			{
-				if (!ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs))
-					return false;
-			}
-			else
-			{
-				// Entry only has file reference - validate file exists
-				if (!await ValidateFileReferenceEntryAsync(collector, bundleInput.BundleFile, entry, bundleDirectory, seenPrs, ctx))
-					return false;
-			}
+			// If entry has resolved data, validate it; otherwise validate the file reference.
+			// Continue past invalid entries so every problem in the bundle is reported in one pass.
+			var entryValid = !string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null
+				? ValidateResolvedEntry(collector, bundleInput.BundleFile, entry, seenPrs)
+				: await ValidateFileReferenceEntryAsync(collector, bundleInput.BundleFile, entry, bundleDirectory, seenPrs, ctx);
+
+			if (!entryValid)
+				allValid = false;
 		}
 
-		return true;
+		return allValid;
 	}
 
 	private static bool ValidateResolvedEntry(

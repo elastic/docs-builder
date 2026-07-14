@@ -24,7 +24,11 @@ internal sealed record CliEntityInfo(
 	/// <summary>Ancestor namespace options ordered from closest to furthest (direct parent first).</summary>
 	IReadOnlyList<(string Segment, List<CliParamSchema>? Options)>? AncestorNamespaceOptions = null,
 	/// <summary>Relative path from this file to the alias target — set for CliShortcutSchema entities only.</summary>
-	string? AliasCanonicalRelativePath = null
+	string? AliasCanonicalRelativePath = null,
+	/// <summary>Display title for the generated CLI root page.</summary>
+	string? Title = null,
+	/// <summary>Navigation title for the generated CLI root page.</summary>
+	string? NavigationTitle = null
 );
 
 public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilderExtension
@@ -113,7 +117,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 	private MarkdownFile? CreateCliFileFromInfo(IFileInfo sourceFile, MarkdownParser markdownParser, CliEntityInfo info) =>
 		info.Entity switch
 		{
-			CliSchema schema => new CliRootFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc),
+			CliSchema schema => new CliRootFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, schema, info.SupplementalDoc, info.Title, info.NavigationTitle),
 			CliNamespaceSchema ns => new CliNamespaceFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, ns, info.SupplementalDoc, info.FullPath ?? [ns.Segment], info.Schema.Name, info.Schema.ReservedMetaCommands, info.Schema.Shortcuts),
 			CliCommandSchema cmd => new CliCommandFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, cmd, info.SupplementalDoc, info.FullPath ?? [cmd.Name], info.Schema.Name, info.Schema.ReservedMetaCommands, info.AncestorNamespaceOptions, info.Schema.GlobalOptions, info.Schema.Shortcuts),
 			CliShortcutSchema shortcut => new CliAliasFile(sourceFile, Build.DocumentationSourceDirectory, markdownParser, Build, shortcut, info.Schema.Name, info.AliasCanonicalRelativePath ?? "../"),
@@ -186,7 +190,7 @@ public class CliReferenceDocsBuilderExtension(BuildContext build) : IDocsBuilder
 			var rootSupplemental = FindSupplemental(supplementalDirPath, [], isNamespace: true, matched);
 			var rootSyntheticPath = SyntheticPath(Build.DocumentationSourceDirectory.FullName, virtualRoot, [], isNamespace: true);
 			var rootFileInfo = Build.ReadFileSystem.FileInfo.New(rootSyntheticPath);
-			var rootInfo = new CliEntityInfo(schema, schema, rootSupplemental, rootFileInfo);
+			var rootInfo = new CliEntityInfo(schema, schema, rootSupplemental, rootFileInfo, Title: cliRef.Title, NavigationTitle: cliRef.NavigationTitle);
 			_syntheticFiles![rootSyntheticPath] = rootInfo;
 			if (rootSupplemental != null)
 				_supplementalFiles![rootSupplemental.FullName] = rootInfo;

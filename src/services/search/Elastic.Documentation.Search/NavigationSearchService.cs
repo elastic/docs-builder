@@ -3,19 +3,18 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Search.Common;
-using Elastic.Internal.Search;
-using Elastic.Internal.Search.Elasticsearch;
-using Elastic.Internal.Search.Elasticsearch.Diagnostics;
+using Elastic.Documentation.Search.Contract;
+using Elastic.Documentation.Search.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Search;
 
 /// <summary>
-/// Adapter over the shared <see cref="ISearchService{TDocument}"/> from
-/// <c>Elastic.Internal.Search.Elasticsearch</c>. Translates the docs-builder-specific
+/// Adapter over <see cref="ISearchService{TDocument}"/>. Translates the docs-builder-specific
 /// <see cref="NavigationSearchRequest"/> / <see cref="NavigationSearchResponse"/> shapes into the
 /// shared <see cref="AutocompleteRequest"/> / <see cref="AutocompleteResponse{TDocument}"/> shapes
-/// and back. All query construction, highlighting, and ES interaction lives in the shared package.
+/// and back. All query construction, highlighting, and ES interaction lives in
+/// <see cref="DefaultSearchService{TDocument}"/>.
 /// </summary>
 public partial class NavigationSearchService(
 	ISearchService<DocumentationDocument> inner,
@@ -44,11 +43,11 @@ public partial class NavigationSearchService(
 			Results = resp.Results.Select(item => new NavigationSearchResultItem
 			{
 				Type = item.Document.ContentType,
-				Url = item.Document.Url,
+				Url = item.Document.Path,
 				Title = item.Title,
 				Description = item.Description,
 				Parents = (item.Document.Parents ?? [])
-					.Select(p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Url })
+					.Select(p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path })
 					.ToArray(),
 				Score = item.Score
 			}).ToList()

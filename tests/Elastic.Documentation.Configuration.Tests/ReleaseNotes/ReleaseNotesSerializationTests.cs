@@ -71,7 +71,7 @@ public class ReleaseNotesSerializationTests
 		roundTrip.Title.Should().Be("- line1\nline2");
 	}
 
-	// --- Adversarial round-trip tests 
+	// --- Adversarial round-trip tests
 
 	[Theory]
 	[InlineData("Title with \"double\" quotes")]

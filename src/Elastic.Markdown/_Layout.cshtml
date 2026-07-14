@@ -50,13 +50,14 @@
 							@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
 							{
 								<div id="elastic-website-search-input-container"
+								     hx-preserve="true"
 								     class="sticky bottom-8 mt-8 z-40">
 								</div>
 							}
 						</div>
 						@await RenderPartialAsync(_TableOfContents.Create(Model))
 					</main>
-					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
+					@await RenderPartialAsync(_PagesNav.Create(Model))
 				</div>
 			</div>
 		</div>
@@ -67,12 +68,12 @@
 {
 	if (Model.BuildType == BuildType.Assembler)
 	{
-		@(await RenderPartialAsync(_AssemblerHeader.Create<GlobalLayoutViewModel>(Model)))
+		@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))
 
 	}
 	else
 	{
-		@(await RenderPartialAsync(_IsolatedHeader.Create<GlobalLayoutViewModel>(Model)))
+		@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 	}
 }
 <div id="main-container">
@@ -98,7 +99,7 @@
 @if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
 {
 	<elastic-website-search
-		nav-mode="off"
+		nav-mode="on"
 		chat-enabled="true"
 		chat-mode="input"
 		chat-input-container="#elastic-website-search-input-container">
@@ -108,10 +109,10 @@
 {
 	if (Model.BuildType == BuildType.Assembler)
 	{
-		@(await RenderPartialAsync(_AssemblerFooter.Create<GlobalLayoutViewModel>(Model)))
+		@(await RenderPartialAsync(_AssemblerFooter.Create(Model)))
 	}
 	else
 	{
-		@(await RenderPartialAsync(_IsolatedFooter.Create<GlobalLayoutViewModel>(Model)))
+		@(await RenderPartialAsync(_IsolatedFooter.Create(Model)))
 	}
 }

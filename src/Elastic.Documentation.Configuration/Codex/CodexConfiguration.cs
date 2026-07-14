@@ -94,6 +94,12 @@ public record CodexConfiguration
 			sitePrefix = sitePrefix.TrimEnd('/');
 		}
 
-		return config with { SitePrefix = sitePrefix };
+		// Normalize environment: trim and lowercase so it maps cleanly to the
+		// lowercase Elasticsearch index namespace (e.g. "INTERNAL" / " internal " -> "internal").
+		var environment = config.Environment?.Trim().ToLowerInvariant();
+		if (string.IsNullOrEmpty(environment))
+			environment = null;
+
+		return config with { SitePrefix = sitePrefix, Environment = environment };
 	}
 }

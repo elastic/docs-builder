@@ -100,6 +100,63 @@ A regular paragraph.
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 }
 
+public class DropdownPlainTextTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{dropdown} Deprecate `elastic.apm` settings
+Dropdown body content.
+:::
+"""
+)
+{
+	[Fact]
+	public void StripsBackticksFromTitle() => Block!.Title.Should().Be("Deprecate elastic.apm settings");
+
+	[Fact]
+	public void RendersPlainTextTitleInHtml()
+	{
+		Html.Should().Contain("Deprecate elastic.apm settings");
+		Html.Should().NotContain("`elastic.apm`");
+	}
+}
+
+public class DropdownPlainTextBoldTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{dropdown} Disable **Save** button
+Dropdown body content.
+:::
+"""
+)
+{
+	[Fact]
+	public void StripsBoldMarkersFromTitle() => Block!.Title.Should().Be("Disable Save button");
+
+	[Fact]
+	public void RendersBoldTitleAsPlainTextInHtml()
+	{
+		Html.Should().Contain("Disable Save button");
+		Html.Should().NotContain("**Save**");
+	}
+}
+
+public class DropdownPlainTextItalicTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
+"""
+:::{dropdown} Use _italic_ emphasis
+Dropdown body content.
+:::
+"""
+)
+{
+	[Fact]
+	public void StripsItalicMarkersFromTitle() => Block!.Title.Should().Be("Use italic emphasis");
+
+	[Fact]
+	public void RendersItalicTitleAsPlainTextInHtml()
+	{
+		Html.Should().Contain("Use italic emphasis");
+		Html.Should().NotContain("_italic_");
+	}
+}
+
 public class DropdownAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
 """
 :::{dropdown} This is my custom dropdown

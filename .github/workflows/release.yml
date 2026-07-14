@@ -56,7 +56,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
@@ -74,7 +74,7 @@ jobs:
           path: src/Elastic.Documentation.Site
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -171,7 +171,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -212,7 +212,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-changelog-scrubber-deployer
           aws-region: us-east-1
@@ -247,7 +247,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
@@ -288,8 +288,9 @@ jobs:
       - deploy-link-index-updater-lambda-prod
       - deploy-changelog-scrubber-lambda-prod
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       contents: write
+      id-token: write
     steps:
       - name: Publish release
         env:
@@ -298,3 +299,18 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           gh release edit "$TAG_NAME" --draft=false --latest --repo "$REPO"
+
+      - name: Fetch ephemeral GitHub token
+        id: fetch-ephemeral-token
+        uses: elastic/ci-gh-actions/fetch-github-token@v1
+        with:
+          vault-instance: "ci-prod"
+
+      - name: Notify docs-internal-workflows
+        env:
+          GH_TOKEN: ${{ steps.fetch-ephemeral-token.outputs.token }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+        run: |
+          gh api repos/elastic/docs-internal-workflows/dispatches \
+            -f event_type=docs-builder-released \
+            -F client_payload[tag_name]="$TAG_NAME"

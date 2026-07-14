@@ -40,8 +40,8 @@ internal static class AspireHost
 		var llmUrl = builder.AddParameter("LlmGatewayUrl", secret: true);
 		var llmServiceAccountPath = builder.AddParameter("LlmGatewayServiceAccountPath", secret: true);
 
-		var elasticsearchUrl = builder.AddParameter("DocumentationElasticUrl", secret: true);
-		var elasticsearchApiKey = builder.AddParameter("DocumentationElasticApiKey", secret: true);
+		var elasticsearchUrl = builder.AddParameter("ElasticsearchUrl", secret: true);
+		var elasticsearchApiKey = builder.AddParameter("ElasticsearchApiKey", secret: true);
 
 		var cloneAll = builder.AddProject<Projects.docs_builder>(AssemblerClone);
 		string[] cloneArgs = assumeCloned ? ["--assume-cloned"] : [];

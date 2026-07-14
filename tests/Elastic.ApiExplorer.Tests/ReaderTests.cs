@@ -4,6 +4,9 @@
 
 using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -20,7 +23,7 @@ public class ReaderTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, FileSystemFactory.RealRead, configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.RealGitRootForPath(null), configurationContext);
 
 		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
 
@@ -35,7 +38,7 @@ public class ReaderTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, FileSystemFactory.RealRead, configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.RealGitRootForPath(null), configurationContext);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		context.Configuration.OpenApiSpecifications.Should().NotBeNull().And.NotBeEmpty();
 

@@ -1,4 +1,4 @@
-import { $$ } from 'select-dom'
+import { $$optional } from 'select-dom'
 
 class ImageCarousel {
     private container: HTMLElement
@@ -242,7 +242,7 @@ export function initImageCarousel(): void {
         if (!section) return
 
         // First, collect all images we want in the carousel
-        const allImageLinks = $$('a[href*="epr.elastic.co"]', section)
+        const allImageLinks = $$optional('a[href*="epr.elastic.co"]', section)
 
         // Track URLs to prevent duplicates
         const processedUrls = new Set()

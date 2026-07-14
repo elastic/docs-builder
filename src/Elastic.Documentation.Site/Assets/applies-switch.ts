@@ -1,5 +1,5 @@
 // TODO: refactor to typescript. this was copied from the tabs implementation
-import { $$ } from 'select-dom'
+import { $$optional } from 'select-dom'
 
 // Extra JS capability for selected applies switches to be synced
 // The selection is stored in local storage so that it persists across page loads.
@@ -23,7 +23,7 @@ function ready() {
 
     const groups: string[] = []
 
-    $$('.applies-switch-label').forEach((label) => {
+    $$optional('.applies-switch-label').forEach((label) => {
         if (label instanceof HTMLElement) {
             const data = create_key(label)
             if (data) {

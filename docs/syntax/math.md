@@ -1,6 +1,6 @@
 # Math
 
-The `math` directive renders mathematical expressions using LaTeX syntax. Mathematical expressions are rendered client-side using KaTeX for fast, accurate display.
+The `math` directive and `{math}` role render mathematical expressions using LaTeX syntax. Mathematical expressions are rendered client-side using KaTeX for fast, accurate display. Use the directive for standalone equations and the role for math inside a sentence.
 
 ## Basic usage
 
@@ -62,6 +62,26 @@ The directive automatically detects display math based on:
 - LaTeX environments: `\begin{...}` and `\end{...}`
 - Multi-line expressions
 - Complex expressions containing `\frac`, `\sum`, `\int`, `\lim`, etc.
+
+## Inline math
+
+For a short expression inside a sentence, use the `{math}` role instead of the block directive: `` {math}`x^2` ``.
+
+::::{tab-set}
+
+:::{tab-item} Output
+The area of a circle is {math}`\pi r^2`.
+:::
+
+:::{tab-item} Markdown
+```markdown
+The area of a circle is {math}`\pi r^2`.
+```
+:::
+
+::::
+
+The inline role always renders as a `<span>` and does not support the `:label:` option — use the block directive when you need a labeled, referenceable expression.
 
 ## Adding labels
 

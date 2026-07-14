@@ -27,6 +27,12 @@
 	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
 	<script src="@Model.Static("main.js")" defer></script>
+	@if (Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled)
+	{
+		@* In <head> so head-support's merge keeps the identical tag across htmx navigations
+		   instead of re-executing it in the swapped body. Fills #elastic-nav (hx-preserve). *@
+		<script src="@(Model.Features.StagingElasticNavEnabled ? "https://stag-www.elastic.co/elastic-nav.js" : "https://www.elastic.co/elastic-nav.js")" async></script>
+	}
 	@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is { } websiteSearchUrl)
 	{
 		<script type="module" src="@websiteSearchUrl"></script>

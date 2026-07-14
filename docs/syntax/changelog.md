@@ -27,7 +27,10 @@ The directive supports the following options:
 | `:link-visibility: value` | Visibility of pull request (PR) and issue links | `auto` |
 | `:description-visibility: value` | Visibility of changelog **record** descriptions (YAML `description` on each entry) | `auto` |
 | `:dropdowns:` | Render breaking changes, deprecations, known issues, and highlights as expandable dropdowns instead of flattened bulleted lists | false |
+| `:release-dates:` | Render the bundle `release-date` field as _Released: …_ after the version heading | false |
 | `:config: path` | Path to `changelog.yml` configuration | auto-discover |
+| `:cdn: [product]` | Render bundles for a product that is declared under `release_notes` in `docset.yml` and prefetched from the public changelog CDN. The product is optional and inferred from the current repository when omitted | (local folder) |
+| `:version: target` | Render only the single bundle matching this target/version | (all versions) |
 
 ### Example with options
 
@@ -38,6 +41,7 @@ The directive supports the following options:
 :link-visibility: keep-links
 :description-visibility: keep-descriptions
 :dropdowns:
+:release-dates:
 :::
 ```
 
@@ -146,6 +150,21 @@ Controls how the "separated" entry types (`breaking-change`, `deprecation`, `kno
 
 Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release-notes pages where the list itself is the primary content.
 
+Entry titles may contain inline markdown markers from changelog YAML (for example, `` `setting.name` ``). Dropdown titles are plain text; see [Plain-text titles](/syntax/dropdowns.md#plain-text-titles).
+
+#### `:release-dates:` [release-dates]
+
+Controls whether the bundle `release-date` field is rendered as italicized _Released: …_ text immediately after each version heading. Defaults to `false`.
+
+| Mode | Behavior |
+|------|----------|
+| (omitted, default) | Do not render release dates, even when the bundle YAML includes `release-date`. |
+| `:release-dates:` | Render `_Released: …_` when the bundle includes a `release-date` field. |
+
+Use this option for semver or agent releases where an explicit release date adds context. Omit it for date-based releases where the version heading already encodes the release date.
+
+This is **render-time** control only. To include or omit `release-date` in bundle YAML at build time, use `bundle.release_dates` in `changelog.yml` or the `--release-date` / `--no-release-date` flags on [`changelog bundle`](/cli/changelog/bundle.md) (option-based mode). The `changelog render` command does not provide an equivalent flag; it always renders release dates when present in the bundle.
+
 #### `:subsections:`
 
 When enabled, entries are grouped by "area" within each section.
@@ -160,6 +179,70 @@ Explicit path to a `changelog.yml` or `changelog.yaml` configuration file, relat
 2. `changelog.yml` or `changelog.yaml` in the parent directory (typically the repository root)
 
 Both explicit and auto-discovered paths must resolve within the repository checkout directory and must not traverse symlinks.
+
+#### `:cdn:` [cdn]
+
+Renders bundles for a single **product** that the docset sources from the public changelog CDN, so a docset can show release notes without vendoring bundle YAML. The directive is a *selector*: it renders bundles that docs-builder prefetched at startup, so the product must first be declared under [`release_notes`](#declaring-cdn-backed-products) in `docset.yml`.
+
+```yaml
+# docset.yml
+release_notes:
+  - product: elasticsearch
+```
+
+```markdown
+:::{changelog}
+:cdn: elasticsearch
+:::
+```
+
+The value names a product defined in [`products.yml`](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (syntactically it must match `[a-zA-Z0-9_-]+`). The value is **optional**: leave it blank to infer the product from the repository that holds the doc. The repository name is mapped to its canonical product id via `products.yml` (for example the `elastic-otel-java` repo renders the `edot-java` product).
+
+```markdown
+:::{changelog}
+:cdn:
+:::
+```
+
+If the product cannot be inferred, or is not declared under `release_notes`, the block emits an error rather than rendering empty. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:release-dates:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
+
+The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
+
+Bundles are fetched **once at build startup** for every declared product, not per directive. If a declared product's registry cannot be fetched the build fails; an individual bundle that is missing from the CDN is skipped with a warning. For the full design — including the manifest format and infrastructure — see [Changelog bundle registry and CDN delivery](/development/changelog-bundle-registry.md).
+
+##### Declaring CDN-backed products [declaring-cdn-backed-products]
+
+List each CDN-sourced product under `release_notes` in `docset.yml`. Every entry must reference a product id from `products.yml` that participates in the release-notes system:
+
+```yaml
+# docset.yml
+release_notes:
+  - product: elasticsearch
+  - product: edot-java
+```
+
+docs-builder prefetches the registry and bundles for each declared product at startup. A `:cdn:` directive that names an undeclared product is an error, which keeps the set of network sources auditable in one place rather than discovered dynamically across pages.
+
+#### `:version:` [version]
+
+Renders only the **single** bundle whose target matches the given value, instead of every bundle for the source. A bundle matches when the value equals its declared `target` (for example `9.4.0`, or a date like `2026-04-09`) or its file name (with or without extension). Matching is case-insensitive.
+
+```markdown
+:::{changelog}
+:version: 9.4.0
+:::
+```
+
+This works for both local-folder and `:cdn:` sources. In `:cdn:` mode it filters the prefetched bundles down to the matching target at render time.
+
+```markdown
+:::{changelog}
+:cdn: elasticsearch
+:version: 9.4.0
+:::
+```
+
+If no bundle matches, the directive renders nothing and emits a warning (it does not fall back to showing all versions).
 
 ## Filtering entries with bundle rules
 
@@ -220,7 +303,7 @@ Bundles with the same target version/date are automatically merged into a single
 
 Bundles can have associated **amend files** that follow the naming pattern `{bundle-name}.amend-{N}.yaml` (e.g., `9.3.0.amend-1.yaml`). When loading bundles, the directive automatically discovers and merges amend files with their parent bundles.
 
-This allows you to add late additions to a release without modifying the original bundle file:
+This allows you to add or remove late changes to a release without modifying the original bundle file:
 
 ```
 bundles/
@@ -228,6 +311,8 @@ bundles/
 ├── 9.3.0.amend-1.yaml   # First amend (auto-merged with parent)
 └── 9.3.0.amend-2.yaml   # Second amend (auto-merged with parent)
 ```
+
+Amend files may contain `entries` (additions) and `exclude-entries` (removals). Within each amend file, exclusions are applied before additions. Amend files are processed in numeric order.
 
 All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (products, hide-features, repo) is preserved.
 
@@ -266,7 +351,7 @@ Each bundle renders as a `## {version}` section with optional release date, desc
 ```markdown
 ## 0.100.0
 
-_Released: 2026-04-09_
+_Released: April 9, 2026_
 
 This release includes new features and bug fixes.
 
@@ -277,12 +362,16 @@ Download the release binaries: https://github.com/elastic/elasticsearch/releases
 ### Fixes
 ...
 
-## 0.99.0
+## 2025-08-05
 ### Features and enhancements
 ...
 ```
 
-When present, the `release-date` field is rendered immediately after the version heading as italicized text (e.g., `_Released: April 9, 2026_`). This is purely informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents. If the `release-date` field is present in a bundle, it is always displayed. To control release dates, set `release_dates: false` at the bundle or profile level in the configuration (see [profile configuration](/cli/changelog/bundle.md)); when false, this prevents the date from being written to the bundle during bundling. Defaults to true when omitted.
+When a bundle includes a `release-date` field, the directive renders it as italicized text (for example, `_Released: April 9, 2026_`) immediately after the version heading **only when** [`:release-dates:`](#release-dates) is set. This is informative for end-users and is especially useful for components released outside the usual stack lifecycle, such as APM agents and EDOT agents.
+
+**Bundle time:** set `release_dates: false` at the bundle or profile level in `changelog.yml`, or use `--no-release-date` on [`changelog bundle`](/cli/changelog/bundle.md), to omit `release-date` from bundle YAML when bundling. Defaults to auto-population when omitted.
+
+**Render time:** omit `:release-dates:` (default) to hide `_Released:_` even when the bundle YAML contains a date — for example, when the version heading already shows a release date.
 
 Bundle descriptions are rendered when present in the bundle YAML file. The description appears after the release date (if any) but before any entry sections. Descriptions support Markdown formatting including links, lists, and multiple paragraphs.
 
@@ -320,8 +409,9 @@ This prevents silent data loss where changelog entries would be quietly omitted 
 To fix this, either:
 
 - Restore the missing changelog files, or
-- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained), or
-- Remove the unresolvable entry from the bundle file.
+- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained).
+
+`bundle-amend --remove` only applies when the source changelog file is still available (for example, to drop an entry from the effective bundle before you delete the file with `changelog remove`).
 
 :::{tip}
 In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
