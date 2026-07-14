@@ -54,7 +54,7 @@ dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
 
 Commit the updated `docs/cli-schema.json` with your code changes. CI compares the schema (ignoring the `version` field) and fails if it has drifted.
 
-The schema drives auto-generated parameter tables and usage synopses on CLI reference pages. For behavior, workflows, and examples that the schema cannot express, also update supplemental files under `docs/cli/` (see [Writing supplemental content](docs/cli/cli-supplemental-docs.md)).
+The schema drives auto-generated parameter tables and usage synopses on CLI reference pages. For behavior, workflows, and examples that the schema cannot express, also update supplemental files under `docs/cli/` (see [Writing supplemental content](docs/schema-support/cli-schema/supplemental.md)).
 
 ## Working on non-trivial changes
 

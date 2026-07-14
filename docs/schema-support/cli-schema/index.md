@@ -99,7 +99,7 @@ toc:
 
 Drop a supplemental file into the folder for any namespace or command page where you want to add context, usage examples, or richer parameter descriptions. The generated parameter table and usage synopsis are always present — supplemental files let you add to them.
 
-See [Writing supplemental content](./cli-supplemental-docs.md) for the full rules on file naming and heading conventions.
+See [Writing supplemental content](./supplemental.md) for the full rules on file naming and heading conventions.
 
 ::::
 
