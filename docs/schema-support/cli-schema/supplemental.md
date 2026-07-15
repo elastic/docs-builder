@@ -32,19 +32,29 @@ cli/
 
 ```text
 cli/
-  ns-assembler.md             ← assembler namespace
-  cmd-assembler-build.md      ← assembler build command
-  cmd-assembler-deploy-apply.md
+  ns-assembler.md                    ← assembler namespace
+  ns-assembler-content-source.md     ← assembler content-source sub-namespace
+  cmd-assembler-build.md             ← assembler build command
+  cmd-assembler-deploy-apply.md      ← assembler deploy apply command (3-level flat)
 ```
 
 | File pattern | Matches |
 |---|---|
-| `ns-root.md` | Root CLI overview page |
+| `index.md` | Root CLI overview page (hierarchy style) |
+| `ns-root.md` | Root CLI overview page (flat style) |
 | `<ns>/index.md` | Namespace page for `<ns>` |
 | `ns-<ns>.md` | Namespace page for `<ns>` (flat) |
 | `<ns>/cmd-<cmd>.md` | Command `<cmd>` inside namespace `<ns>` |
 | `cmd-<ns>-<cmd>.md` | Same, flat style |
 | `cmd-<cmd>.md` | Root-level command `<cmd>` |
+
+**Ignored files:** only `index.md`, `ns-*.md`, and `cmd-*.md` files are validated against the
+schema. Any other `.md` file in the supplemental folder (such as shared include fragments) is
+silently ignored by the discovery logic.
+
+**`index`-named commands:** if a CLI command is literally named `index`, its supplemental file
+must use the `cmd-` prefix to avoid colliding with the namespace `index.md`. For example, a
+root-level command named `index` matches `cmd-index.md`, not `index.md`.
 
 ## Heading rules
 
@@ -108,7 +118,7 @@ Add a `## Options` section to replace the generated description for specific fla
 
 : `--environment`
   The environment to target. Must match the environment used when cloning.
-  See [environments](../configure/site/environments.md) for available values.
+  See [environments](../../configure/site/environments.md) for available values.
 
 : `--exporters`
   Comma-separated list of exporters to enable.

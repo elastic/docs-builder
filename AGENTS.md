@@ -38,7 +38,7 @@ dotnet test tests/Elastic.Markdown.Tests/       # single test project
 dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplemental CLI docs under `docs/cli/`.
+See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplemental CLI docs under `docs/schema-support/cli-schema/`.
 
 ### TypeScript frontend
 
