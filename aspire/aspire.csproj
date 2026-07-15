@@ -7,7 +7,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <UserSecretsId>72f50f33-6fb9-4d08-bff3-39568fe370b3</UserSecretsId>
+    <UserSecretsId>docs-builder</UserSecretsId>
     <IsTestProject>false</IsTestProject>
     <RootNamespace>Elastic.Documentation.Aspire</RootNamespace>
     <NoWarn>IDE0350;IDE0060</NoWarn>

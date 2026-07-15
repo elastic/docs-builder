@@ -55,6 +55,11 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 			: relativeToSource;
 
 		ResolvedUrl = "/" + withoutExtension.Replace('\\', '/');
+
+		// Apply URL path prefix so links work in preview/sub-path deployments (same logic as DiagnosticLinkInlineParser)
+		var urlPathPrefix = context.Build.UrlPathPrefix ?? string.Empty;
+		if (!string.IsNullOrWhiteSpace(urlPathPrefix) && !ResolvedUrl.StartsWith(urlPathPrefix, StringComparison.OrdinalIgnoreCase))
+			ResolvedUrl = $"{urlPathPrefix.TrimEnd('/')}{ResolvedUrl}";
 	}
 
 	[GeneratedRegex(@"^\[([^\]]+)\]\(([^)]+)\)$")]

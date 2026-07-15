@@ -42,15 +42,27 @@ subs:
 features:
   primary-nav: false
 
-storybook:
-  registry: https://ci-artifacts.kibana.dev/storybooks/pr-272388/storybook-docs/docs_registry.json
-  
+# Temporarily disabled: the pr-272388 preview registry artifact is gone and there is no
+# working `main` registry to fall back to yet. Re-enable once a registry URL resolves.
+# storybook:
+#   registry: https://ci-artifacts.kibana.dev/storybooks/pr-272388/storybook-docs/docs_registry.json
+
+cta:
+  docs-builder:
+    button:
+      label: Star docs-builder on GitHub
+      url: https://github.com/elastic/docs-builder
+    benefits:
+      - "Open source"
+      - "Built with .NET"
+      - "Contributions welcome"
+
 suppress:
   - AutolinkElasticCoDocs
   - DeepLinkingVirtualFile
 
 api:
-   elasticsearch: elasticsearch-openapi.json
+   elasticsearch: elasticsearch-openapi-docs.json
    kibana:
      - file: kibana-api-overview.md
      - spec: kibana-openapi.json
@@ -117,6 +129,7 @@ toc:
           - file: navigation.md
           - file: extensions.md
           - file: api-explorer.md
+          - file: cta.md
       - file: page.md
       - file: content-sources.md
   - folder: syntax

@@ -1,0 +1,40 @@
+name: Publish changelog bundle
+
+# Turns a published GitHub release (drafted by release-drafter in release.yml) into a
+# CDN-hosted changelog bundle via `changelog gh-release`. Entries are derived from the
+# release's PRs and their labels — there are no hand-authored changelog files.
+#
+# workflow_dispatch is provided to backfill past releases by tag.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag to bundle (e.g. 1.19.0). Defaults to the latest release.'
+        type: string
+        required: false
+
+permissions: {}
+
+concurrency:
+  group: changelog-publish-${{ github.event.release.tag_name || inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    uses: elastic/docs-actions/.github/workflows/changelog-bundle.yml@v1
+    with:
+      mode: gh-release
+      repo: docs-builder
+      owner: elastic
+      version: ${{ github.event.release.tag_name || inputs.version || 'latest' }}
+      config: docs/changelog.yml
+      # docs-builder image that includes the changelog bundle/registry support.
+      # Pin to a released version once one ships with it.
+      docs-builder-version: edge

@@ -239,7 +239,9 @@ body {
 .htmx-request .htmx-indicator,
 .htmx-request.htmx-indicator {
 	display: block;
-	z-index: 9999;
+	/* Elastic's global nav (elastic-nav.js) also sits at z-index 9999 and comes
+	   later in the DOM, so a tie here would let it paint over the indicator. */
+	z-index: 10000;
 }
 
 .progress {

@@ -256,7 +256,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = TableDirectiveView.Create(new TableDirectiveViewModel
 		{
 			DirectiveBlock = block,
-			ColumnWidths = block.ColumnWidths
+			ColumnWidths = block.ColumnWidths,
+			Matrix = block.Matrix
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -671,7 +672,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteChangelogBlock(HtmlRenderer renderer, ChangelogBlock block)
 	{
-		if (!block.Found || block.BundlesFolderPath is null)
+		if (!block.Found)
+			return;
+
+		// Local-folder mode must also have resolved a bundles folder; CDN-sourced bundles never set one.
+		var isCdnSourced = !string.IsNullOrWhiteSpace(block.CdnProduct);
+		if (!isCdnSourced && block.BundlesFolderPath is null)
 			return;
 
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(block);
@@ -692,23 +698,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 	private static void WriteMathBlock(HtmlRenderer renderer, MathBlock block)
 	{
-		// Output HTML that KaTeX can render client-side
-		var labelAttr = !string.IsNullOrEmpty(block.Label) ? $" id=\"{block.Label}\"" : "";
-
-		if (block.IsDisplayMath)
-		{
-			// Display math should be a block element
-			_ = renderer.Write($"<div class=\"math\"{labelAttr}>");
-			_ = renderer.WriteEscape(block.Content ?? "");
-			_ = renderer.Write("</div>");
-		}
-		else
-		{
-			// Inline math should be a span element to behave like text
-			_ = renderer.Write($"<span class=\"math\"{labelAttr}>");
-			_ = renderer.WriteEscape(block.Content ?? "");
-			_ = renderer.Write("</span>");
-		}
+		MathMarkup.WriteHtml(renderer, block.Content, block.IsDisplayMath, block.Label);
 		_ = renderer.EnsureLine();
 	}
 }

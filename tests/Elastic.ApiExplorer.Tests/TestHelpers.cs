@@ -6,6 +6,8 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;

@@ -9,6 +9,7 @@ using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -80,16 +81,16 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 
 	private static FullSearchService BuildFullSearchAdapter(ElasticsearchClientAccessor clientAccessor, ProductsConfiguration productsConfig)
 	{
-		var sharedConfig = new Elastic.Internal.Search.Configuration.SearchConfiguration
+		var queryConfig = new SearchQueryConfiguration
 		{
 			SynonymBiDirectional = clientAccessor.SynonymBiDirectional,
-			DiminishTerms = clientAccessor.DiminishTerms.ToArray(),
+			DiminishTerms = clientAccessor.DiminishTerms,
 			RulesetName = clientAccessor.RulesetName,
 			SemanticEnabled = true
 		};
-		var inner = new Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>(
-			clientAccessor.Client, clientAccessor.SearchIndex, sharedConfig,
-			NullLogger<Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>>.Instance,
+		var inner = new DefaultSearchService<DocumentationDocument>(
+			clientAccessor.Client, clientAccessor.SearchIndex, queryConfig,
+			NullLogger<DefaultSearchService<DocumentationDocument>>.Instance,
 			productsConfig);
 		return new FullSearchService(inner, productsConfig, NullLogger<FullSearchService>.Instance);
 	}

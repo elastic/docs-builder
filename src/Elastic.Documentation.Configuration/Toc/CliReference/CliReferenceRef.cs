@@ -14,6 +14,8 @@ namespace Elastic.Documentation.Configuration.Toc.CliReference;
 public record CliReferenceRef(
 	string SchemaPath,
 	string? SupplementalFolder,
+	string? Title,
+	string? NavigationTitle,
 	string PathRelativeToDocumentationSet,
 	string PathRelativeToContainer,
 	string Context,

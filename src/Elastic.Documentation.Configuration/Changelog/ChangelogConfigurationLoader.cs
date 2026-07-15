@@ -519,6 +519,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						Description = kvp.Value.Description,
 						Repo = kvp.Value.Repo,
 						Owner = kvp.Value.Owner,
+						Branch = kvp.Value.Branch,
 						HideFeatures = kvp.Value.HideFeatures?.Values,
 						ReleaseDates = kvp.Value.ReleaseDates,
 						Source = kvp.Value.Source
@@ -529,10 +530,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		{
 			Directory = yaml.Directory,
 			OutputDirectory = yaml.OutputDirectory,
+			UseLocalChangelogs = yaml.UseLocalChangelogs ?? false,
 			Resolve = yaml.Resolve ?? true,
 			Description = yaml.Description,
 			Repo = yaml.Repo,
 			Owner = yaml.Owner,
+			Branch = yaml.Branch,
 			ReleaseDates = yaml.ReleaseDates,
 			LinkAllowRepos = linkAllowRepos,
 			Profiles = profiles

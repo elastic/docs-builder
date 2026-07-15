@@ -117,7 +117,9 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		if (dictionary.TryGetValue("cli", out var cliSchemaPath) && cliSchemaPath is string cliSchema)
 		{
 			var supplementalFolder = dictionary.TryGetValue("folder", out var f) && f is string fStr ? fStr : null;
-			return new CliReferenceRef(cliSchema, supplementalFolder, cliSchema, cliSchema, placeholderContext, children);
+			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var nt) && nt is string navigationTitleStr ? navigationTitleStr : null;
+			return new CliReferenceRef(cliSchema, supplementalFolder, title, navigationTitle, cliSchema, cliSchema, placeholderContext, children);
 		}
 
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)

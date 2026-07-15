@@ -8,15 +8,14 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Search;
-using Elastic.Documentation.Serialization;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
-using Elastic.Internal.Search;
 
 namespace Elastic.Markdown.Tests.Search;
 
 public class DocumentationDocumentSerializationTests
 {
-	private readonly JsonSerializerOptions _options = new(Documentation.Serialization.SourceGenerationContext.Default.Options);
+	private readonly JsonSerializerOptions _options = new(SourceGenerationContext.Default.Options);
 
 	[Fact]
 	public void SerializeDocumentWithStackAppliesToProducesCorrectJson()
@@ -24,7 +23,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/page",
+			Path = "/test/page",
 			Title = "Test Page",
 			SearchTitle = "Test Page",
 			Applies = new ApplicableTo
@@ -58,7 +57,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/deployment",
+			Path = "/test/deployment",
 			Title = "Deployment Test",
 			SearchTitle = "Deployment Test",
 			Applies = new ApplicableTo
@@ -100,7 +99,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/serverless",
+			Path = "/test/serverless",
 			Title = "Serverless Test",
 			SearchTitle = "Serverless Test",
 			Applies = new ApplicableTo
@@ -142,7 +141,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/product",
+			Path = "/test/product",
 			Title = "Product Test",
 			SearchTitle = "Product Test",
 			Applies = new ApplicableTo
@@ -172,7 +171,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/apm",
+			Path = "/test/apm",
 			Title = "APM Test",
 			SearchTitle = "APM Test",
 			Applies = new ApplicableTo
@@ -214,7 +213,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/complex",
+			Path = "/test/complex",
 			Title = "Complex Test",
 			SearchTitle = "Complex Test",
 			Applies = new ApplicableTo
@@ -251,7 +250,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/no-applies",
+			Path = "/test/no-applies",
 			Title = "No Applies Test",
 			SearchTitle = "No Applies Test",
 			Applies = null
@@ -278,7 +277,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/empty-applies",
+			Path = "/test/empty-applies",
 			Title = "Empty Applies Test",
 			SearchTitle = "Empty Applies Test",
 			Applies = new ApplicableTo().ToAppliesTo()
@@ -308,7 +307,7 @@ public class DocumentationDocumentSerializationTests
 		var original = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/roundtrip",
+			Path = "/test/roundtrip",
 			Title = "Round Trip Test",
 			SearchTitle = "Round Trip Test",
 			Hash = "abc123",
@@ -320,7 +319,6 @@ public class DocumentationDocumentSerializationTests
 			Headings = ["Introduction", "Getting Started"],
 			Links = ["/link1", "/link2"],
 			Body = "Test body content",
-			StrippedBody = "Test body content",
 			Description = "Test description"
 		};
 
@@ -328,7 +326,7 @@ public class DocumentationDocumentSerializationTests
 		var deserialized = JsonSerializer.Deserialize<DocumentationDocument>(json, _options);
 
 		deserialized.Should().NotBeNull();
-		deserialized.Url.Should().Be(original.Url);
+		deserialized.Path.Should().Be(original.Path);
 		deserialized.Title.Should().Be(original.Title);
 		deserialized.Applies.Should().NotBeNull();
 		deserialized.Applies.Should().HaveCount(2);
@@ -347,7 +345,7 @@ public class DocumentationDocumentSerializationTests
 			var doc = new DocumentationDocument
 			{
 				ContentType = type,
-				Url = $"/test/{type}",
+				Path = $"/test/{type}",
 				Title = "T",
 				SearchTitle = "T"
 			};
@@ -368,7 +366,7 @@ public class DocumentationDocumentSerializationTests
 		{
 			"title": "Legacy",
 			"search_title": "Legacy",
-			"url": "/x",
+			"path": "/x",
 			"type": "doc",
 			"hash": "h",
 			"content_type": "archived-docs"
@@ -390,7 +388,7 @@ public class DocumentationDocumentSerializationTests
 		var doc = new DocumentationDocument
 		{
 			ContentType = "doc",
-			Url = "/test/multiple",
+			Path = "/test/multiple",
 			Title = "Multiple Test",
 			SearchTitle = "Multiple Test",
 			Applies = new ApplicableTo

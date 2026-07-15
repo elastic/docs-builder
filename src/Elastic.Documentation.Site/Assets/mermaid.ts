@@ -1,3 +1,5 @@
+import { fullscreenIcon } from './icons'
+
 // Zoom configuration
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
@@ -12,8 +14,6 @@ const icons = {
     zoomOut: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M9 7H4V6h5v1Z"/><path d="M6.5 1a5.5 5.5 0 0 1 4.729 8.308l3.421 2.933a1 1 0 0 1 .057 1.466l-1 1a1 1 0 0 1-1.466-.057l-2.933-3.42A5.5 5.5 0 1 1 6.5 1Zm4.139 9.12a5.516 5.516 0 0 1-.52.519L13 14l1-1-3.361-2.88ZM6.5 2a4.5 4.5 0 1 0 .314 8.987c.024-.001.047-.004.07-.006.207-.017.41-.048.607-.092l.066-.016a4.41 4.41 0 0 0 .588-.185c.012-.006.026-.01.039-.015.194-.079.382-.171.562-.275l.03-.017a4.52 4.52 0 0 0 1.605-1.605c.006-.01.01-.02.017-.03.104-.18.196-.368.275-.562l.018-.048c.074-.188.134-.38.182-.58l.016-.065a4.49 4.49 0 0 0 .093-.61l.005-.067a4.544 4.544 0 0 0 .007-.545A4.5 4.5 0 0 0 6.5 2Z"/></svg>`,
     // EUI refresh icon
     reset: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 8a5.98 5.98 0 0 0 1.757 4.243A5.98 5.98 0 0 0 8 14v1a6.98 6.98 0 0 1-4.95-2.05A6.98 6.98 0 0 1 1 8c0-1.79.683-3.58 2.048-4.947l.004-.004.019-.02L3.1 3H1V2h4v4H4V3.525a6.51 6.51 0 0 0-.22.21l-.013.013-.003.002-.007.007A5.98 5.98 0 0 0 2 8Zm10.243-4.243A5.98 5.98 0 0 0 8 2V1a6.98 6.98 0 0 1 4.95 2.05A6.98 6.98 0 0 1 15 8a6.98 6.98 0 0 1-2.047 4.947l-.005.004-.018.02-.03.029H15v1h-4v-4h1v2.475a6.744 6.744 0 0 0 .22-.21l.013-.013.003-.002.007-.007A5.98 5.98 0 0 0 14 8a5.98 5.98 0 0 0-1.757-4.243Z"/></svg>`,
-    // EUI fullScreen icon
-    fullscreen: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3v4h-1V4H9V3h4ZM3 3h4v1H4v3H3V3Zm10 10H9v-1h3V9h1v4ZM3 13V9h1v3h3v1H3ZM0 1.994C0 .893.895 0 1.994 0h12.012C15.107 0 16 .895 16 1.994v12.012A1.995 1.995 0 0 1 14.006 16H1.994A1.995 1.995 0 0 1 0 14.006V1.994Zm1 0v12.012c0 .548.446.994.994.994h12.012a.995.995 0 0 0 .994-.994V1.994A.995.995 0 0 0 14.006 1H1.994A.995.995 0 0 0 1 1.994Z"/></svg>`,
     // EUI cross icon
     close: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.293 8 2.646 3.354l.708-.708L8 7.293l4.646-4.647.708.708L8.707 8l4.647 4.646-.707.708L8 8.707l-4.646 4.647-.708-.707L7.293 8Z"/></svg>`,
 }
@@ -92,7 +92,7 @@ function setupControls(
         'mermaid-reset'
     )
     const fullscreenBtn = createControlButton(
-        icons.fullscreen,
+        fullscreenIcon,
         'View fullscreen',
         'mermaid-fullscreen'
     )

@@ -41,6 +41,7 @@
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
+    <ProjectReference Include="..\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>
 
