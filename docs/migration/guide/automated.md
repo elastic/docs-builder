@@ -39,7 +39,7 @@ toc:
   - file: index.md
 ```
 
-For more information, see [Navigation](../../configure/content-set/navigation.md).
+For configuration keys, see [`docset.yml` reference](../../configure/content-set/docset-reference.md). For layout patterns, see [Navigation layout](../../configure/content-set/navigation.md) and [Documentation set navigation](../../building-blocks/documentation-set-navigation.md).
 
 ## Next steps
 

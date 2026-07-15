@@ -4,6 +4,8 @@ navigation_title: API Explorer
 
 # API Explorer
 
+For the full list of `docset.yml` keys, see [`docset.yml` reference](docset-reference.md).
+
 The API Explorer renders OpenAPI specifications as interactive API documentation. When you configure it in your content set, `docs-builder` automatically generates pages for each API operation, request and response schemas, shared type definitions, and inline examples.
 
 :::{warning}

@@ -353,11 +353,9 @@ toc:
 
 ## Suppressing diagnostic hints
 
-As you build navigation, the docs-builder may emit hints suggesting improvements to your structure. These hints help maintain best practices but can be suppressed when you have valid reasons to deviate.
+As you build navigation, `docs-builder` may emit hints suggesting improvements to your structure. Suppress them when you have a valid reason to deviate — for example during a legacy migration or when external links depend on an established URL pattern.
 
-### Available suppressions
-
-Add a `suppress` section to either `docset.yml` or `toc.yml`:
+Add a `suppress` section to `docset.yml` or `toc.yml`:
 
 ```yaml
 suppress:
@@ -366,89 +364,20 @@ suppress:
 
 toc:
   - file: index.md
-  # ... rest of your navigation
 ```
 
-### DeepLinkingVirtualFile
+Valid values and what each hint detects are documented in [`docset.yml` reference](../configure/content-set/docset-reference.md#suppress) and [TOC reference](../configure/content-set/toc-reference.md#suppress).
 
-**What it detects**: Files with children that use paths containing `/`:
-
-```yaml
-toc:
-  - file: guides/advanced/performance.md
-    children:
-      - file: guides/advanced/caching.md
-      - file: guides/advanced/optimization.md
-```
-
-**Why it hints**: Virtual files (files with children) work best for grouping sibling files together. Using deep paths suggests you might benefit from proper folder structures.
-
-**When to suppress**: Rarely. This usually indicates a structural issue. Consider refactoring to use folders or nested toc files instead.
-
-**Better alternative**:
-```yaml
-toc:
-  - folder: guides
-    children:
-      - folder: advanced
-        children:
-          - file: index.md
-          - file: performance.md
-            children:
-              - file: caching.md
-              - file: optimization.md
-```
-
-### FolderFileNameMismatch
-
-**What it detects**: Folder and file combinations where names don't match:
+**Example of justified suppression:**
 
 ```yaml
-toc:
-  - folder: getting-started
-    file: overview.md      # Doesn't match folder name
-```
-
-**Why it hints**: Matching names create predictable, consistent navigation. When a folder is named "getting-started," readers expect the main file to be either `getting-started.md` or `index.md`.
-
-**When to suppress**: When you have legacy documentation with established naming conventions, or when the file name is intentionally different for clarity.
-
-**Better alternatives**:
-```yaml
-# Option 1: Match the names
-- folder: getting-started
-  file: getting-started.md
-
-# Option 2: Use index.md (conventional and always appropriate)
-- folder: getting-started
-  file: index.md
-
-# Option 3: Just use folder with children
-- folder: getting-started
-  children:
-    - file: index.md
-    - file: prerequisites.md
-```
-
-### When to use suppressions
-
-Suppressions are escape hatches, not defaults. Use them when:
-
-* **Migrating legacy content**: Existing documentation has established patterns that can't be changed immediately
-* **Valid architectural reasons**: Your specific use case genuinely benefits from the flagged pattern
-* **Temporary transitions**: You're in the middle of restructuring and need to suppress hints during the migration
-
-**Example of justified suppression**:
-```yaml
-# This section uses an established URL structure we can't change
-# without breaking external links. Suppressing the hint until we
-# can implement proper redirects.
+# Established URL structure we can't change without breaking external links.
 suppress:
   - FolderFileNameMismatch
 
 toc:
   - folder: install
-    file: setup.md  # External links point to /install/setup
+    file: setup.md
     children:
       - file: prerequisites.md
 ```
@@ -574,5 +503,6 @@ Choose names that:
 ## Related concepts
 
 * [Global Navigation](global-navigation.md) - How documentation sets are organized in assembled documentation.
-* [Content Set Configuration](../configure/content-set/index.md) - Complete `docset.yml` reference.
-* [Navigation Configuration](../configure/content-set/navigation.md) - Detailed navigation options.
+* [`docset.yml` reference](../configure/content-set/docset-reference.md) - All top-level configuration keys.
+* [TOC reference](../configure/content-set/toc-reference.md) - Syntax for `toc` array entries.
+* [Navigation layout](../configure/content-set/navigation.md) - Entry point for structuring navigation.
