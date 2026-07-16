@@ -21,7 +21,7 @@ journey('404 recovery page', ({ page, params }) => {
         await expect(
             page
                 .locator('#main-container')
-                .getByPlaceholder('Search Elastic Docs')
+                .getByRole('textbox', { name: 'Search Elastic Docs' })
         ).toBeVisible()
         await expect(
             page.getByRole('link', { name: 'Go to docs home' })
