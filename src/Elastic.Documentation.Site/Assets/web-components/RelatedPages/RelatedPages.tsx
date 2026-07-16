@@ -24,8 +24,18 @@ interface RelatedPagesResponse {
     results: RelatedPage[]
 }
 
+export const getRelatedPagesPath = (
+    pathname = window.location.pathname,
+    rootPath = config.rootPath
+) => {
+    const root = rootPath.replace(/\/$/, '')
+    if (!root || !pathname.startsWith(`${root}/`)) return pathname
+
+    return pathname.slice(root.length)
+}
+
 export const RelatedPages = ({
-    path = window.location.pathname,
+    path = getRelatedPagesPath(),
 }: {
     path?: string
 }) => {

@@ -1,5 +1,5 @@
 import * as logging from '../../telemetry/logging'
-import { RelatedPages } from './RelatedPages'
+import { getRelatedPagesPath, RelatedPages } from './RelatedPages'
 import { EuiProvider } from '@elastic/eui'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
@@ -33,6 +33,22 @@ describe('RelatedPages', () => {
     afterEach(() => {
         jest.restoreAllMocks()
     })
+
+    it.each([
+        [
+            '/elastic/docs-builder/docs/3655/opentelemetry-collector',
+            '/elastic/docs-builder/docs/3655',
+            '/opentelemetry-collector',
+        ],
+        ['/docs/missing-page', '/docs', '/missing-page'],
+        ['/docs-preview/missing-page', '/docs', '/docs-preview/missing-page'],
+        ['/missing-page', '', '/missing-page'],
+    ])(
+        'normalizes %s relative to the configured root path',
+        (pathname, rootPath, expected) => {
+            expect(getRelatedPagesPath(pathname, rootPath)).toBe(expected)
+        }
+    )
 
     it('renders related pages returned by the API and tracks clicks', async () => {
         fetchMock.mockResolvedValue({
