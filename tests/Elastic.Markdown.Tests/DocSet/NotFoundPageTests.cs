@@ -19,16 +19,19 @@ public class NotFoundPageTests(ITestOutputHelper output) : NavigationTestsBase(o
 		rendered.Html.Should().Contain("Page not found");
 		rendered.Html.Should().NotContain("<navigation-search");
 		rendered.Html.Should().Contain("<related-pages>");
-		rendered.Html.Should().Contain("Open full search");
+		rendered.Html.Should().Contain("Go to docs home");
+		rendered.Html.Should().NotContain("Open full search");
 	}
 
 	[Fact]
-	public async Task RenderLayout_RelatedPagesDisabled_OmitsRelatedPagesComponent()
+	public async Task RenderLayout_RelatedPagesDisabled_OmitsRecoveryOptions()
 	{
 		var notFound = Set.MarkdownFiles.Single(file => file.RelativePath.EndsWith("404.md", StringComparison.Ordinal));
 
 		var rendered = await Generator.RenderLayout(notFound, TestContext.Current.CancellationToken);
 
 		rendered.Html.Should().NotContain("<related-pages>");
+		rendered.Html.Should().NotContain("The page might have moved");
+		rendered.Html.Should().NotContain("Go to docs home");
 	}
 }
