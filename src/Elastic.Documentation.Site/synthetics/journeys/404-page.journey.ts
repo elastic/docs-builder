@@ -18,7 +18,11 @@ journey('404 recovery page', ({ page, params }) => {
         await expect(
             page.getByRole('heading', { name: 'Page not found' })
         ).toBeVisible()
-        await expect(page.getByPlaceholder('Search Elastic Docs')).toBeVisible()
+        await expect(
+            page
+                .locator('#main-container')
+                .getByPlaceholder('Search Elastic Docs')
+        ).toBeVisible()
         await expect(
             page.getByRole('link', { name: 'Go to docs home' })
         ).toBeVisible()

@@ -64,7 +64,7 @@ describe('RelatedPages', () => {
             expect.objectContaining({ signal: expect.any(AbortSignal) })
         )
 
-        link.addEventListener('click', event => event.preventDefault())
+        link.addEventListener('click', (event) => event.preventDefault())
         fireEvent.click(link, { button: 1 })
 
         expect(logging.logInfo).toHaveBeenCalledWith(
