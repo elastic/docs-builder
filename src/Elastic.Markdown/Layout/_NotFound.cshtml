@@ -5,17 +5,31 @@
 			<p class="font-sans font-semibold text-blue-elastic">404</p>
 			<h1 class="mt-2 text-4xl font-sans font-semibold">Page not found</h1>
 			<p class="mt-4 text-lg text-ink-light">
-				The page might have moved or the link might be outdated. Search Elastic Docs or try one of the suggested pages below.
+				The page might have moved or the link might be outdated.
+				@if (Model.Features.RelatedPagesEnabled)
+				{
+					<text>Search Elastic Docs or try one of the suggested pages below.</text>
+				}
+				else
+				{
+					<text>Search Elastic Docs or use one of the links below.</text>
+				}
 			</p>
 		</div>
 
-		<div class="max-w-xl mx-auto mt-8">
-			<navigation-search placeholder="Search Elastic Docs"></navigation-search>
-		</div>
+		@if (Model.Features.SearchOrAskAiEnabled)
+		{
+			<div class="max-w-xl mx-auto mt-8">
+				<navigation-search placeholder="Search Elastic Docs"></navigation-search>
+			</div>
+		}
 
-		<div class="mt-10">
-			<related-pages></related-pages>
-		</div>
+		@if (Model.Features.RelatedPagesEnabled)
+		{
+			<div class="mt-10">
+				<related-pages></related-pages>
+			</div>
+		}
 
 		<div class="mt-10 flex flex-wrap justify-center gap-6">
 			<a href="@Model.Link("/")" class="link">

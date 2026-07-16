@@ -32,6 +32,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["search-or-ask-ai"] = value;
 	}
 
+	public bool RelatedPagesEnabled
+	{
+		get => IsEnabled("related-pages");
+		set => _featureFlags["related-pages"] = value;
+	}
+
 	public bool StagingElasticNavEnabled
 	{
 		get => IsEnabled("staging-elastic-nav");
