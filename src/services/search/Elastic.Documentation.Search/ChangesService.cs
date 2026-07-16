@@ -7,7 +7,9 @@ using System.Text;
 using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.Logging;
+using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.Contract.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 
@@ -88,7 +90,7 @@ public partial class ChangesService(
 		}
 	}
 
-	private async Task<SearchResponse<DocumentationDocument>> Search(
+	private async Task<EsSearchResponse> Search(
 		ChangesInternalRequest request, string pitId, int fetchSize, Cancel ctx
 	) =>
 		await clientAccessor.Client.SearchAsync<DocumentationDocument>(s =>
@@ -105,15 +107,15 @@ public partial class ChangesService(
 				))
 				.Sort(
 					so => so.Field(f => f.ContentLastUpdated, sf => sf.Order(SortOrder.Asc)),
-					so => so.Field(f => f.Url, sf => sf.Order(SortOrder.Asc))
+					so => so.Field(f => f.Path, sf => sf.Order(SortOrder.Asc))
 				)
 				.Source(sf => sf
 					.Filter(f => f
 						.Includes(
-							e => e.Url,
+							e => e.Path,
 							e => e.Title,
 							e => e.SearchTitle,
-							e => e.Type,
+							e => e.ContentType,
 							e => e.ContentLastUpdated
 						)
 					)
@@ -128,12 +130,12 @@ public partial class ChangesService(
 			}
 		}, ctx);
 
-	private static bool IsExpiredPit(SearchResponse<DocumentationDocument> response) =>
+	private static bool IsExpiredPit(EsSearchResponse response) =>
 		response.ElasticsearchServerError?.Error?.Type is "search_phase_execution_exception"
 		|| response.ElasticsearchServerError?.Error?.Reason?.Contains("point in time", StringComparison.OrdinalIgnoreCase) == true
 		|| response.ElasticsearchServerError?.Error?.Reason?.Contains("No search context found", StringComparison.OrdinalIgnoreCase) == true;
 
-	private static ChangesResult BuildResult(SearchResponse<DocumentationDocument> response, int pageSize)
+	private static ChangesResult BuildResult(EsSearchResponse response, int pageSize)
 	{
 		var hits = response.Hits.ToList();
 		var hasMore = hits.Count > pageSize;
@@ -146,7 +148,7 @@ public partial class ChangesService(
 				var doc = h.Source!;
 				return new ChangedPageDto
 				{
-					Url = doc.Url,
+					Url = doc.Path,
 					Title = doc.Title,
 					LastUpdated = doc.ContentLastUpdated
 				};

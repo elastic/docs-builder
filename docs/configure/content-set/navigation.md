@@ -123,7 +123,7 @@ The sequence format allows you to add custom Markdown content:
 - **Generated content** (operations, tags, types) appears in the middle  
 - **Outro pages** (after specs) appear at the bottom
 
-See [API Explorer](api-explorer.md) for full configuration details and examples.
+See [API Explorer](../../schema-support/api-explorer/index.md) for full configuration details and examples.
 
 ### `toc`
 
@@ -354,6 +354,12 @@ See https://www.elastic.co/docs/solutions/search for more details.
 ```markdown
 See [docs](docs-content://index.md) for more details.
 ```
+
+### `cta`
+
+Defines named right-gutter call-to-action templates that pages can opt into via frontmatter.
+
+See [CTA](cta.md) for full configuration details and examples.
 
 ## Navigation configuration patterns
 

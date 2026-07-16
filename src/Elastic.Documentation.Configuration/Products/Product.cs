@@ -4,11 +4,12 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Search.Contract;
 using YamlDotNet.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
-public record ProductsConfiguration
+public record ProductsConfiguration : IProductNameLookup
 {
 	public required FrozenDictionary<string, Product> Products { get; init; }
 
@@ -53,6 +54,18 @@ public record ProductsConfiguration
 	/// </summary>
 	public string GetDisplayName(ReadOnlySpan<char> productId) =>
 		DisplayNameLookup.TryGetValue(productId, out var displayName) ? displayName : productId.ToString();
+
+	/// <inheritdoc />
+	public bool TryGetProductName(string productId, out string displayName)
+	{
+		if (ProductDisplayNames.TryGetValue(productId, out var name))
+		{
+			displayName = name;
+			return true;
+		}
+		displayName = productId;
+		return false;
+	}
 }
 
 [YamlSerializable]

@@ -82,6 +82,9 @@ public class HtmlWriter(
 		var next = NavigationTraversable.GetNext(markdown);
 		var parents = NavigationTraversable.GetParentsOfMarkdownFile(markdown);
 
+		// For hidden nav items (e.g. individual detection rule pages) there is no rendered nav link,
+		// so JS can't mark anything as current. Point it at the nearest visible ancestor instead.
+		var navActiveUrl = current.Hidden ? parents.FirstOrDefault(p => !p.Hidden)?.Url : null;
 		var gitHubRepo = DocumentationSet.Context.Git.GitHubRepository;
 		var branch = DocumentationSet.Context.Git.Branch;
 		string? editUrl = null;
@@ -104,6 +107,13 @@ public class HtmlWriter(
 
 		var siteName = DocumentationSet.Navigation.NavigationTitle;
 		var legacyPages = LegacyUrlMapper.MapLegacyUrl(markdown.YamlFrontMatter?.MappedPages);
+
+		// Resolve the right-gutter CTA: an explicit, known frontmatter id is 'custom' and renders in
+		// isolated builds too (so authors can preview it); otherwise fall back to the built-in default,
+		// which stays assembler-only to preserve today's behavior.
+		var cta = DocumentationSet.Configuration.ResolveCta(markdown.YamlFrontMatter?.Cta?.Id, out var ctaWarning);
+		if (ctaWarning is not null)
+			DocumentationSet.Context.Collector.EmitWarning(markdown.FilePath, ctaWarning);
 
 		// Use DocumentInferrerService to get merged products and versioning info
 		var inference = DocumentInferrerService.InferForMarkdown(
@@ -165,9 +175,9 @@ public class HtmlWriter(
 			PreviousDocument = previous,
 			NextDocument = next,
 			Breadcrumbs = breadcrumbs,
+			NavigationActiveUrl = navActiveUrl,
 			NavigationHtml = navigationHtmlRenderResult.Html,
 			UrlPathPrefix = markdown.UrlPathPrefix,
-			SiteRootPath = DocumentationSet.Context.SiteRootPath,
 			AppliesTo = markdown.YamlFrontMatter?.AppliesTo,
 			GithubEditUrl = editUrl,
 			MarkdownUrl = current.Url == "/" ? "/index.md" : current.Url.TrimEnd('/') + ".md",
@@ -193,7 +203,8 @@ public class HtmlWriter(
 			GitHubDocsUrl = gitHubDocsUrl,
 			GitHubRef = DocumentationSet.Context.Git.GitHubRef,
 			Branding = DocumentationSet.Configuration.Branding,
-			RedirectUrl = markdown.RedirectUrl
+			RedirectUrl = markdown.RedirectUrl,
+			Cta = cta
 		});
 
 		return new RenderResult

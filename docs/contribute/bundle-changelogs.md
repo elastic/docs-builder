@@ -249,9 +249,16 @@ docs-builder changelog bundle-amend \
 
 Amend bundles follow a specific naming convention: `{parent-bundle-name}.amend-{N}.yaml` where `{N}` is a sequence number.
 
-:::{note}
-There is currently no command to **remove** changelogs from a bundle. You must edit the bundle file manually or else re-generate the bundle with an updated source of truth or a new rule that excludes the changelog.
-:::
+To remove entries from an existing bundle without editing the parent file, use `--remove` on the same command:
+
+```sh
+docs-builder changelog bundle-amend \
+  ./docs/releases/9.3.0.yaml \
+  --remove "./docs/changelog/138723.yaml"
+```
+
+This creates an amend file with `exclude-entries` that is merged when the bundle is rendered.
+After excluding an entry from unresolved bundles, you can use `changelog remove` to delete the source changelog file.
 
 When bundles are turned into docs (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
 The changelogs from all matching amend files are combined with the parent bundle's changelogs and the result is rendered as a single release.

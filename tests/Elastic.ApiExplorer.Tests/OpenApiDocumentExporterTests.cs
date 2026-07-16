@@ -4,10 +4,13 @@
 
 using System.Collections.Concurrent;
 using AwesomeAssertions;
-using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
 using static System.StringComparison;
 
@@ -45,11 +48,11 @@ public class OpenApiDocumentExporterTests
 		var documents = new List<(string Url, string Source)>();
 		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current.CancellationToken))
 		{
-			if (!string.IsNullOrEmpty(doc.Url))
+			if (!string.IsNullOrEmpty(doc.Path))
 			{
 				// Determine source from URL
-				var source = doc.Url.Contains("/elasticsearch/") ? "elasticsearch" : "kibana";
-				documents.Add((doc.Url, source));
+				var source = doc.Path.Contains("/elasticsearch/") ? "elasticsearch" : "kibana";
+				documents.Add((doc.Path, source));
 			}
 		}
 

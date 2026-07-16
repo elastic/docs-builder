@@ -121,8 +121,7 @@ async Task ScrubAndCopyToPublicBucket(IAmazonS3 s3Client, string sourceBucket, s
 {
 	context.Logger.LogDebug("Scrubbing {Key} to public bucket", key);
 
-	var fileName = Path.GetFileName(key);
-	if (string.Equals(fileName, "registry-index.json", StringComparison.OrdinalIgnoreCase))
+	if (ChangelogKeys.IsRegistry(key))
 	{
 		await CopyPassThrough(s3Client, sourceBucket, key, context);
 		return;
@@ -181,7 +180,10 @@ async Task CopyPassThrough(IAmazonS3 s3Client, string sourceBucket, string key, 
 
 async Task<string> ScrubContent(string key, string content, ILambdaContext context)
 {
-	var isBundlePath = key.Contains("/bundles/", StringComparison.OrdinalIgnoreCase);
+	// Artifact-root layout: bundles live under "bundle/{product}/...", entries under
+	// "changelog/{org}/{repo}/{branch}/...". Match the bundle prefix (not a "/bundle/" substring, which no
+	// longer appears in the new keys) so bundles are not misclassified as changelog entries.
+	var isBundlePath = key.StartsWith(ChangelogKeys.BundlePrefix, StringComparison.OrdinalIgnoreCase);
 
 	if (isBundlePath)
 		return await ScrubBundle(content, context);

@@ -224,3 +224,54 @@ Content here...
 ## Dynamic heading levels
 
 Stepper step titles automatically adjust their heading level based on the preceding heading in the document, ensuring proper document hierarchy and semantic structure.
+
+For example, a stepper that follows an `##` heading renders each step title as `###`.
+
+### Headings inside steps
+
+You can add sub-headings inside a step to organise longer content. Each heading must be **at least one level deeper** than the step's rendered level. If you write a heading at the same level as the step (or higher), the build automatically adjusts it to the correct level and emits a hint diagnostic pointing to the offending line.
+
+The following example intentionally uses the wrong heading level to demonstrate the auto-correction. This stepper follows a `###` heading, so its steps render as `####`. The `####` sub-heading inside the step is at the same level as the step itself — it is auto-adjusted to `#####` and a hint is emitted:
+
+```
+HINT: Heading level h4 inside a step renders at the same or higher level as the step itself (h4).
+      It has been adjusted to h5 — write it as '#####' to avoid this hint.
+```
+
+:::::::{tab-set}
+::::::{tab-item} Output
+:::::{stepper}
+
+::::{step} Configure
+#### Advanced options
+
+These options override the defaults.
+::::
+
+:::::
+::::::
+
+::::::{tab-item} Markdown
+````markdown
+:::::{stepper}
+
+::::{step} Configure
+#### Advanced options
+
+These options override the defaults.
+::::
+
+:::::
+````
+::::::
+:::::::
+
+To suppress the hint, write the heading at the correct level from the start:
+
+```markdown
+::::{step} Configure
+##### Advanced options
+
+These options override the defaults.
+::::
+```

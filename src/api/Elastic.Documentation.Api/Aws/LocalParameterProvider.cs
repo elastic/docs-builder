@@ -17,11 +17,11 @@ public class LocalParameterProvider : IParameterProvider
 	{
 		// Build a new ConfigurationBuilder to read user secrets
 		var configBuilder = new ConfigurationBuilder();
-		_ = configBuilder.AddUserSecrets("72f50f33-6fb9-4d08-bff3-39568fe370b3");
+		_ = configBuilder.AddUserSecrets("docs-builder");
 		var userSecretsConfig = configBuilder.Build();
 
-		_elasticUrlFromSecret = userSecretsConfig["Parameters:DocumentationElasticUrl"];
-		_elasticApiKeyFromSecret = userSecretsConfig["Parameters:DocumentationElasticApiKey"];
+		_elasticUrlFromSecret = userSecretsConfig["Parameters:ElasticsearchUrl"];
+		_elasticApiKeyFromSecret = userSecretsConfig["Parameters:ElasticsearchApiKey"];
 		_llmGatewayUrlFromSecret = userSecretsConfig["Parameters:LlmGatewayUrl"];
 		_llmGatewayServiceAccountPath = userSecretsConfig["Parameters:LlmGatewayServiceAccountPath"];
 	}

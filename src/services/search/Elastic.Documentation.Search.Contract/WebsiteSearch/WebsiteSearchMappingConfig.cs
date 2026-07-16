@@ -1,0 +1,51 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.Documentation.Search.Contract.Mapping;
+using Elastic.Mapping;
+using Elastic.Mapping.Analysis;
+using Elastic.Mapping.Mappings;
+
+namespace Elastic.Documentation.Search.Contract;
+
+[ElasticsearchMappingContext]
+[Index<WebsiteSearchDocument>(
+	NameTemplate = "ws-catalog.lexical-{env}",
+	DatePattern = "yyyy.MM.dd.HHmmss",
+	Configuration = typeof(WebsiteSearchLexicalConfig)
+)]
+[Index<WebsiteSearchDocument>(
+	NameTemplate = "ws-catalog.semantic-{env}",
+	Variant = "Semantic",
+	DatePattern = "yyyy.MM.dd.HHmmss",
+	Configuration = typeof(WebsiteSearchSemanticConfig)
+)]
+public static partial class WebsiteSearchMappingContext;
+
+public class WebsiteSearchLexicalConfig : IConfigureElasticsearch<WebsiteSearchDocument>
+{
+	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => SharedAnalysisFactory.BuildBaseAnalysis(analysis);
+
+	public IReadOnlyDictionary<string, string>? IndexSettings => null;
+
+	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
+		mappings.AddSearchDocumentMappings().AddSiteMappings()
+			// WebsiteSearchDocument has no C# property for applies_to (DocumentationDocument-only) and
+			// its inherited parents field lacks the docs-specific keyword/multi-field topology — merge
+			// DocumentationDocument's mapping (additive-only; existing fields here always win) so docs-*
+			// documents reindexed into the unified ws-catalog index keep their field-level mapping
+			// instead of falling back to Elasticsearch dynamic mapping.
+			.Merge(DocumentationMappingContext.DocumentationDocument, d => d.AddDocumentationMappings());
+}
+
+public class WebsiteSearchSemanticConfig : IConfigureElasticsearch<WebsiteSearchDocument>
+{
+	public AnalysisBuilder ConfigureAnalysis(AnalysisBuilder analysis) => SharedAnalysisFactory.BuildBaseAnalysis(analysis);
+
+	public IReadOnlyDictionary<string, string>? IndexSettings => null;
+
+	public MappingsBuilder<WebsiteSearchDocument> ConfigureMappings(MappingsBuilder<WebsiteSearchDocument> mappings) =>
+		mappings.AddSearchDocumentMappings(semantic: true).AddSiteMappings()
+			.Merge(DocumentationMappingContext.DocumentationDocumentSemantic, d => d.AddDocumentationMappings());
+}

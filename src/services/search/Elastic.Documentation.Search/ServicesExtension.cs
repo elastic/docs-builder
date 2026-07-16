@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -14,11 +16,12 @@ namespace Elastic.Documentation.Search;
 public static class ServicesExtension
 {
 	/// <summary>
-	/// Adds search services to the service collection.
-	/// Includes Elasticsearch options, client accessor, and search gateways.
+	/// Adds search services to the service collection. Wires the shared
+	/// <see cref="ISearchService{TDocument}"/> against the docs index (resolved via
+	/// <see cref="ElasticsearchClientAccessor.SearchIndex"/>), then registers the
+	/// docs-builder-specific <see cref="INavigationSearchService"/> and
+	/// <see cref="IFullSearchService"/> adapters on top.
 	/// </summary>
-	/// <param name="services">The service collection to add services to.</param>
-	/// <returns>The service collection for chaining.</returns>
 	public static IServiceCollection AddSearchServices(this IServiceCollection services)
 	{
 		var logger = GetLogger(services);
@@ -26,10 +29,34 @@ public static class ServicesExtension
 
 		_ = services.AddSingleton<ElasticsearchClientAccessor>();
 
-		// Navigation Search (autocomplete/navigation search)
-		_ = services.AddScoped<INavigationSearchService, NavigationSearchService>();
+		// ProductsConfiguration already implements IProductNameLookup; surface it via the
+		// shared interface so both the inner DefaultSearchService (for aggregation buckets) and
+		// the FullSearchService adapter (for per-hit display names) can resolve it from DI.
+		_ = services.AddScoped<IProductNameLookup>(sp => sp.GetRequiredService<ProductsConfiguration>());
 
-		// FullSearch (full-page search with hybrid RRF)
+		// Inner search service: docs-builder pairs the typed contract with the docs index alias.
+		// SearchQueryConfiguration is a lean projection of the richer docs-builder SearchConfiguration,
+		// carrying only the four values the query path reads.
+		_ = services.AddScoped<ISearchService<DocumentationDocument>>(sp =>
+		{
+			var acc = sp.GetRequiredService<ElasticsearchClientAccessor>();
+			var lookup = sp.GetRequiredService<IProductNameLookup>();
+			var innerLogger = sp.GetRequiredService<ILogger<DefaultSearchService<DocumentationDocument>>>();
+
+			var queryConfig = new SearchQueryConfiguration
+			{
+				SynonymBiDirectional = acc.SynonymBiDirectional,
+				DiminishTerms = acc.DiminishTerms,
+				RulesetName = acc.RulesetName,
+				SemanticEnabled = true
+			};
+
+			return new DefaultSearchService<DocumentationDocument>(
+				acc.Client, acc.SearchIndex, queryConfig, innerLogger, lookup);
+		});
+
+		// Docs-specific adapters preserve the existing API/MCP wire format.
+		_ = services.AddScoped<INavigationSearchService, NavigationSearchService>();
 		_ = services.AddScoped<IFullSearchService, FullSearchService>();
 		logger?.LogInformation("Full search services registered with hybrid RRF support");
 

@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Nullean.ScopedFileSystem;
 
@@ -13,7 +14,7 @@ namespace Elastic.Codex;
 /// <summary>
 /// Context for codex operations containing configuration, file systems, and directories.
 /// </summary>
-public class CodexContext
+public class CodexContext : IDocsSyncContext
 {
 	public ScopedFileSystem ReadFileSystem { get; }
 	public ScopedFileSystem WriteFileSystem { get; }
@@ -27,9 +28,10 @@ public class CodexContext
 	/// The Elasticsearch index namespace for this codex, derived from the environment name.
 	/// Falls back to "codex" when no environment is specified.
 	/// </summary>
-	public string IndexNamespace => string.IsNullOrEmpty(Configuration.Environment)
-		? "codex"
-		: $"codex-{Configuration.Environment}";
+	public string IndexNamespace => string.IsNullOrEmpty(Configuration.Environment) ? "codex" : $"codex-{EnvironmentName}";
+
+	/// <inheritdoc cref="IDocsSyncContext.EnvironmentName"/>
+	public string EnvironmentName { get; }
 
 	public CodexContext(
 		CodexConfiguration configuration,
@@ -45,6 +47,8 @@ public class CodexContext
 		Collector = collector;
 		ReadFileSystem = readFileSystem;
 		WriteFileSystem = writeFileSystem;
+
+		EnvironmentName = string.IsNullOrEmpty(configuration.Environment) ? "codex" : configuration.Environment;
 
 		var defaultCheckoutDirectory = Path.Join(Paths.ApplicationData.FullName, "codex", "clone");
 		CheckoutDirectory = checkoutDirectory is null

@@ -115,7 +115,9 @@ public static partial class LinkAllowlistSanitizer
 
 	/// <summary>
 	/// Builds a list of allowed <c>owner/repo</c> strings from an <see cref="AssemblyConfiguration"/>
-	/// by collecting every reference repository that is not marked <c>private: true</c> or <c>skip: true</c>.
+	/// by collecting every reference repository that is not marked <c>private: true</c>.
+	/// <c>skip: true</c> only means the repository does not publish docs — it says nothing about
+	/// visibility, so public skip-repos (e.g. <c>elastic/roadmap</c>) remain linkable.
 	/// Bare keys (without a slash) are assumed to be under the <c>elastic</c> organization.
 	/// </summary>
 	public static IReadOnlyList<string> BuildAllowReposFromAssembler(AssemblyConfiguration assembly)
@@ -123,7 +125,7 @@ public static partial class LinkAllowlistSanitizer
 		var result = new List<string>();
 		foreach (var kvp in assembly.ReferenceRepositories)
 		{
-			if (kvp.Value.Private || kvp.Value.Skip)
+			if (kvp.Value.Private)
 				continue;
 
 			var key = kvp.Key;
@@ -366,6 +368,21 @@ public static partial class LinkAllowlistSanitizer
 
 			if (!ChangelogTextUtilities.TryGetGitHubRepo(r, defaultOwner, defaultBundleRepo ?? string.Empty, out var owner, out var repo))
 			{
+				// A bare numeric reference with no repo context (e.g. `prs: ['155500']` loaded by the
+				// scrubber Lambda, which doesn't know which repo a per-entry YAML belongs to) carries no
+				// repository identity, so it cannot leak a private reference on its own. Keep it as-is —
+				// downstream rendering supplies the owner/repo from runtime context — and emit a warning so
+				// the diagnostic is still visible without failing the whole entry. Anything that still
+				// encodes a repo (URL / owner/repo#N short-form) hits the explicit error branch below.
+				if (!string.IsNullOrWhiteSpace(r) && uint.TryParse(r.Trim(), out _))
+				{
+					list.Add(r);
+					collector.EmitWarning(
+						string.Empty,
+						$"Bare {referenceKind} reference '{r}' has no embedded owner/repo and no default repo was supplied; keeping as-is for downstream rendering to resolve.");
+					continue;
+				}
+
 				collector.EmitError(
 					string.Empty,
 					$"Link allowlist filtering could not parse {referenceKind} reference '{r}'. " +

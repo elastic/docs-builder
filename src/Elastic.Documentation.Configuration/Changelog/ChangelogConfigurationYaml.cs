@@ -276,6 +276,12 @@ internal sealed record BundleConfigurationYaml
 	public string? OutputDirectory { get; set; }
 
 	/// <summary>
+	/// When true, source the individual changelog entries that make up a bundle from the local
+	/// <see cref="Directory"/> instead of the public CDN. Defaults to false (CDN sourcing).
+	/// </summary>
+	public bool? UseLocalChangelogs { get; set; }
+
+	/// <summary>
 	/// Whether to resolve (copy contents) by default.
 	/// </summary>
 	public bool? Resolve { get; set; }
@@ -294,6 +300,11 @@ internal sealed record BundleConfigurationYaml
 	/// Default GitHub repository owner applied to all profiles that do not specify their own.
 	/// </summary>
 	public string? Owner { get; set; }
+
+	/// <summary>
+	/// Branch whose CDN changelog pool entries are sourced from when bundling. Defaults to <c>main</c>.
+	/// </summary>
+	public string? Branch { get; set; }
 
 	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
@@ -349,6 +360,11 @@ internal sealed record BundleProfileYaml
 	/// Defaults to "elastic" when not specified.
 	/// </summary>
 	public string? Owner { get; set; }
+
+	/// <summary>
+	/// Branch whose CDN changelog pool entries this profile sources from. Overrides <c>bundle.branch</c>.
+	/// </summary>
+	public string? Branch { get; set; }
 
 	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output (string or list).

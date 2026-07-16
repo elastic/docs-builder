@@ -9,6 +9,7 @@ using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -47,11 +48,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		var clientAccessor = CreateElasticsearchClientAccessor();
 
 		var productsConfig = CreateProductsConfiguration();
-		var fullSearchGateway = new FullSearchService(
-			clientAccessor,
-			productsConfig,
-			NullLogger<FullSearchService>.Instance
-		);
+		var fullSearchGateway = BuildFullSearchAdapter(clientAccessor, productsConfig);
 
 		var searchTools = new SearchTools(fullSearchGateway, NullLogger<SearchTools>.Instance);
 		return (searchTools, clientAccessor);
@@ -77,9 +74,25 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 		var clientAccessor = CreateElasticsearchClientAccessor();
 
 		var productsConfig = CreateProductsConfiguration();
-		var fullSearchGateway = new FullSearchService(clientAccessor, productsConfig, NullLogger<FullSearchService>.Instance);
+		var fullSearchGateway = BuildFullSearchAdapter(clientAccessor, productsConfig);
 		var coherenceTools = new CoherenceTools(fullSearchGateway, NullLogger<CoherenceTools>.Instance);
 		return (coherenceTools, clientAccessor);
+	}
+
+	private static FullSearchService BuildFullSearchAdapter(ElasticsearchClientAccessor clientAccessor, ProductsConfiguration productsConfig)
+	{
+		var queryConfig = new SearchQueryConfiguration
+		{
+			SynonymBiDirectional = clientAccessor.SynonymBiDirectional,
+			DiminishTerms = clientAccessor.DiminishTerms,
+			RulesetName = clientAccessor.RulesetName,
+			SemanticEnabled = true
+		};
+		var inner = new DefaultSearchService<DocumentationDocument>(
+			clientAccessor.Client, clientAccessor.SearchIndex, queryConfig,
+			NullLogger<DefaultSearchService<DocumentationDocument>>.Instance,
+			productsConfig);
+		return new FullSearchService(inner, productsConfig, NullLogger<FullSearchService>.Instance);
 	}
 
 	/// <summary>
@@ -87,7 +100,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// </summary>
 	private static ElasticsearchClientAccessor CreateElasticsearchClientAccessor()
 	{
-		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
+		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler");
 
 		var searchConfig = new SearchConfiguration
 		{

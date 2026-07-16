@@ -46,13 +46,15 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 
 | Setting                   | Description |
 | ------------------------- | ----------- |
+| `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. Requires `bundle.resolve: true` |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
-| `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). |
+| `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links. Only needed when the product ID doesn't match the GitHub repository name. |
+| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, and to scope uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
 | `bundle.resolve`          | When `true`, changelog contents are copied into bundle (default: `true`). |
+| `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
 :::
 
@@ -62,6 +64,19 @@ When `bundle.link_allow_repos` is omitted, no link filtering occurs.
 - For private repos, set it to `[]` or add related public repos to the list.
 - For public repos, add your `owner/repo` to the list at a minimum.
 :::
+
+### Entry sourcing [bundle-entry-sourcing]
+
+`changelog bundle` reads the individual changelog entries it aggregates either from the local folder or from the public CDN. Entries are stored on the CDN per **authoring org/repo/branch** (`changelog/{org}/{repo}/{branch}/...`), not per product, so CDN sourcing keys off the resolvable authoring org/repo/branch rather than the bundle's target products.
+
+The authoring repo is resolved with the same precedence as `changelog upload`: `--repo` > `bundle.repo` in `changelog.yml` > the git remote origin. The owner is resolved from `--owner` > `bundle.owner` (default `elastic`), and the branch from `--branch` > `bundle.branch` (default `main`).
+
+Sourcing is decided per run:
+
+- **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
+- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue filters to the downloaded set.
+
+Because entries are org/repo/branch-scoped, one repository can produce a bundle for a shared product (for example, `cloud-serverless`) while sourcing its own entries from `changelog/{org}/{repo}/{branch}/`, without that product appearing in the repository's `docset.yml`. The `{changelog}` directive's `:cdn:` mode still consumes product-scoped *bundles*, so a repository that also renders its own release notes declares each product under `release_notes` as before.
 
 ### Bundle descriptions [bundle-descriptions]
 
@@ -211,11 +226,12 @@ Specifies the allowed lifecycle values for your changelogs.
 :::{table}
 :widths: description
 
-| Value     | Description                       |
-| --------- | --------------------------------- |
-| `preview` | Technical preview or early access |
-| `beta`    | Beta release                      |
-| `ga`      | General availability              |
+| Value          | Description                       |
+| -------------- | --------------------------------- |
+| `preview`      | Tech previews are time-boxed evaluations to help us gather early feedback from customers on key upcoming features. |
+| `beta`         | Beta features are no longer supported but some products might have beta releases. |
+| `ga`           | General availability features are stable, scalable, and production-ready. |
+| `experimental` | The experimental phase exists to enable rapid iteration on new features. |
 
 :::
 

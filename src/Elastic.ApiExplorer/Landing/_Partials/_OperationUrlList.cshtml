@@ -1,0 +1,13 @@
+@inherits RazorSlice<IReadOnlyCollection<Elastic.ApiExplorer.Operations.OperationNavigationItem>>
+		<ul class="api-url-listing">
+		@foreach (var overload in Model)
+		{
+			var method = overload.Model.OperationType.ToString().ToLowerInvariant();
+			<li class="api-url-list-item">
+				<a href="@overload.Url" class="current api-url-list-item-landing" hx-disable="true">
+					<span class="api-method api-method-@method">@method.ToUpperInvariant()</span>
+					<span class="api-url">@overload.Model.Route</span>
+				</a>
+			</li>
+		}
+		</ul>

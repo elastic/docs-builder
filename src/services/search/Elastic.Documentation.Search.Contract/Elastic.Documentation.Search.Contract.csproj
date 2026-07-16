@@ -1,17 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>Elastic.Documentation.Search</RootNamespace>
-    <IsAotCompatible>true</IsAotCompatible>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1571;CS1570;CS1574</NoWarn>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Elastic.Documentation.Search.Contract</AssemblyName>
+        <RootNamespace>Elastic.Documentation.Search.Contract</RootNamespace>
+        <IsAotCompatible>true</IsAotCompatible>
+        <!-- The contract deliberately exposes two namespaces (root + .Mapping) over
+             concern-based folders (Common/, Search/, Site/, ...) -->
+        <NoWarn>$(NoWarn);IDE0130</NoWarn>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Elastic.Mapping" />
-  </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="Elastic.Mapping" />
+    </ItemGroup>
 
 </Project>
