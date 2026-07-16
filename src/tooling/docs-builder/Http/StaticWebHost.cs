@@ -103,13 +103,12 @@ public class StaticWebHost
 		return Task.FromResult(Results.Redirect("docs"));
 	}
 
-	private async Task<IResult> ServeDocumentationFile(string slug, Cancel _)
+	private async Task<IResult> ServeDocumentationFile(string slug, Cancel ctx)
 	{
 		// from the injected top level navigation which expects us to run on elastic.co
 		if (slug.StartsWith("static-res/"))
 			return Results.NotFound();
 
-		await Task.CompletedTask;
 		var contentRoot = Path.GetFullPath(_contentRoot);
 		var localPath = Path.GetFullPath(Path.Join(contentRoot, slug.Replace('/', Path.DirectorySeparatorChar)));
 		if (!localPath.StartsWith(contentRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal))
@@ -141,6 +140,30 @@ public class StaticWebHost
 			return Results.File(fileInfo.FullName, mimetype);
 		}
 
+		return await ServeNotFoundPage(slug, contentRoot, ctx);
+	}
+
+	private static async Task<IResult> ServeNotFoundPage(string slug, string contentRoot, Cancel ctx)
+	{
+		var extension = Path.GetExtension(slug);
+		if (extension.Length > 0 && extension is not ".html" and not ".md")
+			return Results.NotFound();
+
+		var firstSegment = slug.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+		string[] candidates = firstSegment is null
+			? [Path.Join(contentRoot, "404", "index.html")]
+			: [
+				Path.Join(contentRoot, firstSegment, "404", "index.html"),
+				Path.Join(contentRoot, "404", "index.html")
+			];
+
+		foreach (var candidate in candidates)
+		{
+			if (!File.Exists(candidate))
+				continue;
+			var content = await File.ReadAllTextAsync(candidate, ctx);
+			return Results.Content(content, "text/html", statusCode: StatusCodes.Status404NotFound);
+		}
 
 		return Results.NotFound();
 	}

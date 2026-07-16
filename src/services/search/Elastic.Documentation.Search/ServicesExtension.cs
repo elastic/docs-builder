@@ -58,6 +58,7 @@ public static class ServicesExtension
 		// Docs-specific adapters preserve the existing API/MCP wire format.
 		_ = services.AddScoped<INavigationSearchService, NavigationSearchService>();
 		_ = services.AddScoped<IFullSearchService, FullSearchService>();
+		_ = services.AddScoped<IRelatedPagesService, RelatedPagesService>();
 		logger?.LogInformation("Full search services registered with hybrid RRF support");
 
 		// Changes feed (cursor-paginated changes since a given date)

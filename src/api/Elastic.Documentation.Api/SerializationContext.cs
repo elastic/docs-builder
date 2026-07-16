@@ -31,6 +31,9 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(FullSearchRequest))]
 [JsonSerializable(typeof(FullSearchResponse))]
 [JsonSerializable(typeof(FullSearchAggregations))]
+[JsonSerializable(typeof(RelatedPagesResponse))]
+[JsonSerializable(typeof(RelatedPage))]
+[JsonSerializable(typeof(RelatedPageParent))]
 
 [JsonSerializable(typeof(ChangesResponse))]
 [JsonSerializable(typeof(ChangedPageDto))]
