@@ -12,13 +12,12 @@ public class NotFoundPageTests(ITestOutputHelper output) : NavigationTestsBase(o
 	public async Task RenderLayout_NotFoundPage_IncludesRecoveryOptions()
 	{
 		var notFound = Set.MarkdownFiles.Single(file => file.RelativePath.EndsWith("404.md", StringComparison.Ordinal));
-		Configuration!.Features.SearchOrAskAiEnabled = true;
 		Configuration!.Features.RelatedPagesEnabled = true;
 
 		var rendered = await Generator.RenderLayout(notFound, TestContext.Current.CancellationToken);
 
 		rendered.Html.Should().Contain("Page not found");
-		rendered.Html.Should().Contain("<navigation-search placeholder=\"Search Elastic Docs\"");
+		rendered.Html.Should().NotContain("<navigation-search");
 		rendered.Html.Should().Contain("<related-pages>");
 		rendered.Html.Should().Contain("Open full search");
 	}

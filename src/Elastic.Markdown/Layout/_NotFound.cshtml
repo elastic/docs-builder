@@ -8,21 +8,14 @@
 				The page might have moved or the link might be outdated.
 				@if (Model.Features.RelatedPagesEnabled)
 				{
-					<text>Search Elastic Docs or try one of the suggested pages below.</text>
+					<text>Try one of the suggested pages below.</text>
 				}
 				else
 				{
-					<text>Search Elastic Docs or use one of the links below.</text>
+					<text>Use one of the links below.</text>
 				}
 			</p>
 		</div>
-
-		@if (Model.Features.SearchOrAskAiEnabled)
-		{
-			<div class="max-w-xl mx-auto mt-8">
-				<navigation-search placeholder="Search Elastic Docs"></navigation-search>
-			</div>
-		}
 
 		@if (Model.Features.RelatedPagesEnabled)
 		{
