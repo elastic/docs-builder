@@ -607,7 +607,7 @@ toc:
                 # Children include the entire AsciiDoc book
 
       # Elastic CLI
-      # https://github.com/elastic/cli/blob/main/docs/toc.yml
+      # https://github.com/elastic/cli/blob/main/docs/docset.yml
       - toc: cli://
         path_prefix: reference/elastic-cli
 
