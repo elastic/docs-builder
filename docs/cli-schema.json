@@ -4398,6 +4398,14 @@
             },
             {
               "role": "flag",
+              "name": "skip-etag-check",
+              "type": "boolean",
+              "required": false,
+              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
