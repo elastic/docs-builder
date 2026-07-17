@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Markdown.Myst;
@@ -29,7 +30,8 @@ public record CliNamespaceFile : IO.MarkdownFile
 		string[]? fullPath = null,
 		string? binaryName = null,
 		string[]? reservedMetaCommands = null,
-		List<CliShortcutSchema>? shortcuts = null
+		List<CliShortcutSchema>? shortcuts = null,
+		ApplicableTo? appliesTo = null
 	) : base(sourceFile, rootPath, parser, build)
 	{
 		_namespace = @namespace;
@@ -39,6 +41,7 @@ public record CliNamespaceFile : IO.MarkdownFile
 		_reservedMetaCommands = reservedMetaCommands;
 		_shortcuts = shortcuts;
 		Title = @namespace.Segment;
+		FallbackAppliesTo = appliesTo;
 	}
 
 	public override string NavigationTitle => $"[ns]{_namespace.Segment}";
@@ -62,7 +65,9 @@ public record CliNamespaceFile : IO.MarkdownFile
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
 		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
-		return CliMarkdownGenerator.NamespacePage(_namespace, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
+		var body = CliMarkdownGenerator.NamespacePage(_namespace, supplemental, _fullPath, _binaryName, _reservedMetaCommands,
 			error => Collector.EmitError(_supplementalDoc ?? SourceFile, error), _shortcuts);
+		// Prepend supplemental front matter so applies_to (or any other field) in ns-*.md overrides the fallback
+		return supplemental?.FrontMatter is { } fm ? $"{fm}\n\n{body}" : body;
 	}
 }

@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
@@ -61,6 +62,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
+
+	/// <summary>
+	/// When set, provides a default <see cref="ApplicableTo"/> used for generated pages that have no
+	/// <c>applies_to</c> in their YAML front matter. Page-level front matter always takes priority.
+	/// </summary>
+	protected ApplicableTo? FallbackAppliesTo { get; set; }
 	public string? TitleRaw { get; protected set; }
 
 	public string Title
@@ -382,10 +389,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)
 	{
 		if (document.FirstOrDefault() is not YamlFrontMatterBlock yaml)
-			return new YamlFrontMatter { Title = Title };
+			return new YamlFrontMatter { Title = Title, AppliesTo = FallbackAppliesTo };
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
 		var fm = ReadYamlFrontMatter(raw);
+		fm.AppliesTo ??= FallbackAppliesTo;
 
 		if (fm.AppliesTo?.Diagnostics is not null)
 		{
