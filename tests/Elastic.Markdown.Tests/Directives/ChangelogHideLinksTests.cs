@@ -684,18 +684,16 @@ public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 /// CDN-sourced bundles are scrubbed for public delivery; :link-visibility: auto keeps links even when
 /// assembler.yml marks source repos private (including merged bundles with a private constituent).
 /// </summary>
-public class ChangelogCdnLinkVisibilityAutoTests : DirectiveTest<ChangelogBlock>
-{
-	private const string Product = "cloud-serverless";
-
-	public ChangelogCdnLinkVisibilityAutoTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+public class ChangelogCdnLinkVisibilityAutoTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
 		:::{changelog}
 		:cdn: cloud-serverless
 		:link-visibility: auto
 		:::
-		""") { }
+		""")
+{
+	private const string Product = "cloud-serverless";
 
 	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
 		ChangelogCdnTestResolver.For(Product,
