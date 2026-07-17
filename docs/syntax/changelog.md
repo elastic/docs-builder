@@ -121,7 +121,7 @@ Bundles whose repo is listed as private in `assembler.yml` hide links by default
 
 | Value | Behavior |
 |-------|----------|
-| `auto` | Hide all PR and issue links for bundles from private repos; show links for public repos. |
+| `auto` | Hide all PR and issue links for bundles from private repos; show links for public repos. When [`:cdn:`](#cdn) is set, **keep** links (CDN bundles are scrubbed for public delivery and assembler private-repo hiding does not apply). |
 | `keep-links` | Show PR and issue links even when the bundle source repo is private (does not undo bundle-time private-target sanitization)). |
 | `hide-links` | Hide all PR and issue links for this directive block. Refer to [Hiding links](#hide-links). |
 
@@ -206,6 +206,8 @@ The value names a product defined in [`products.yml`](https://github.com/elastic
 
 If the product cannot be inferred, or is not declared under `release_notes`, the block emits an error rather than rendering empty. When `:cdn:` is set, the local-folder argument is ignored. All other options (`:type:`, `:link-visibility:`, `:description-visibility:`, `:dropdowns:`, `:release-dates:`, `:subsections:`) and `hide-features` apply identically to CDN-sourced bundles.
 
+With `:link-visibility: auto` (the default), PR and issue links from CDN bundles are shown as-is. Public CDN copies are scrubbed before delivery, so the directive does not re-hide links based on `assembler.yml` private repositories. Explicit `:link-visibility: hide-links` still hides links for CDN-sourced bundles.
+
 The CDN base URL is build configuration, not authored per page: it defaults to the public changelog bundles distribution and can be overridden with the `DOCS_BUILDER_CHANGELOG_CDN` environment variable (an absolute `http`/`https` URL) for staging or local testing.
 
 Bundles are fetched **once at build startup** for every declared product, not per directive. If a declared product's registry cannot be fetched the build fails; an individual bundle that is missing from the CDN is skipped with a warning. For the full design — including the manifest format and infrastructure — see [Changelog bundle registry and CDN delivery](/development/changelog-bundle-registry.md).
@@ -285,15 +287,16 @@ For more details, go to [Hide features in bundles](../contribute/bundle-changelo
 
 A changelog can reference multiple pull requests and issues in the `prs` and `issues` array fields.
 
-PR and issue links are automatically hidden (commented out) for bundles from private repositories.
+PR and issue links are automatically hidden (commented out) for bundles from private repositories when loading from a **local** bundles folder.
 When links are hidden, **all** PR and issue links for an affected entry are hidden together.
 This is determined by checking the `assembler.yml` configuration:
 
 - Repositories marked with `private: true` in `assembler.yml` will have their links hidden
-- For merged bundles (for example, `elasticsearch+kibana`), links are hidden if ANY component repository is private
+- For merged bundles loaded locally (for example, `elasticsearch+kibana`), links are hidden if ANY component repository is private
 - In standalone builds without `assembler.yml`, all links are shown by default
+- When [`:cdn:`](#cdn) is set, `:link-visibility: auto` keeps links (CDN bundles are already scrubbed for public delivery). You do not need `:link-visibility: keep-links` on CDN pages for this reason alone.
 
-Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior.
+Use `:link-visibility: keep-links` or `hide-links` on the `{changelog}` directive to override this behavior. For local merged bundles where a private repo's entries were already sanitized at bundle time with [`link_allow_repos`](/contribute/configure-changelogs-ref.md#bundle-basic), use `:link-visibility: keep-links` so public constituents' links are not hidden with the private repo's.
 
 ## Bundle merging
 
