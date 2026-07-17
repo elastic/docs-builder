@@ -1647,6 +1647,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
+	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -1657,6 +1658,7 @@ internal sealed partial class ChangelogCommands(
 		string? repo = null,
 		string? owner = null,
 		string? branch = null,
+		bool skipEtagCheck = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1698,7 +1700,8 @@ internal sealed partial class ChangelogCommands(
 			Directory = resolvedDirectory,
 			Repo = resolvedRepo,
 			Owner = resolvedOwner,
-			Branch = resolvedBranch
+			Branch = resolvedBranch,
+			SkipEtagCheck = skipEtagCheck
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)

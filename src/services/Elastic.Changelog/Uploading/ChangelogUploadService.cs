@@ -51,6 +51,12 @@ public record ChangelogUploadArguments
 	/// CLI via the precedence <c>--branch</c> &gt; the current git branch.
 	/// </summary>
 	public string? Branch { get; init; }
+
+	/// <summary>
+	/// When true, upload every discovered file even when its content hash matches the remote object.
+	/// Useful to re-trigger downstream scrubbers without changing file content.
+	/// </summary>
+	public bool SkipEtagCheck { get; init; }
 }
 
 public class ChangelogUploadService(
@@ -108,7 +114,7 @@ public class ChangelogUploadService(
 		var client = s3Client ?? defaultClient!;
 		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
-		var result = await uploader.Upload(targets, ctx);
+		var result = await uploader.Upload(targets, args.SkipEtagCheck, ctx);
 
 		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed", result.Uploaded, result.Skipped, result.Failed);
 
