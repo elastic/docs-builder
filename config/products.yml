@@ -60,7 +60,7 @@ products:
     display: 'Elastic Cloud Terraform Provider'
     versioning: 'cloud-terraform'
   terraform-google-edot-cf:
-    display: 'Terraform Google EDOT CF'
+    display: 'Terraform Google Elastic Cloud Forwarder'
     versioning: 'terraform-google-edot-cf'
   curator:
     display: 'Elasticsearch Curator'
@@ -94,44 +94,44 @@ products:
   ecs-logging-ruby:
     display: 'ECS Logging Ruby'
   edot-cf:
-    display: 'EDOT Cloud Forwarder'
+    display: 'Elastic Cloud Forwarder'
     versioning: 'stack'
   edot-sdk:
-    display: 'Elastic Distribution of OpenTelemetry SDK'
+    display: 'Elastic OTel SDK'
     versioning: 'all'
   edot-collector:
-    display: 'Elastic Distribution of OpenTelemetry Collector'
+    display: 'Elastic Agent'
     versioning: 'stack'
   edot-ios:
-    display: 'Elastic Distribution of OpenTelemetry iOS'
+    display: 'Elastic OTel iOS SDK'
     repository: 'apm-agent-ios'
   edot-android:
-    display: 'Elastic Distribution of OpenTelemetry Android'
+    display: 'Elastic OTel Android SDK'
     repository: 'apm-agent-android'
   edot-dotnet:
-    display: 'Elastic Distribution of OpenTelemetry .NET'
+    display: 'Elastic OTel .NET SDK'
     repository: 'elastic-otel-dotnet'
   edot-java:
-    display: 'Elastic Distribution of OpenTelemetry Java'
+    display: 'Elastic OTel Java SDK'
     repository: 'elastic-otel-java'
   edot-node:
-    display: 'Elastic Distribution of OpenTelemetry Node'
+    display: 'Elastic OTel Node.js SDK'
     repository: 'elastic-otel-node'
   edot-browser:
-    display: 'Elastic Distribution of OpenTelemetry Browser (RUM)'
+    display: 'Elastic OTel Browser SDK (RUM)'
     repository: 'elastic-otel-rum-js'
   edot-php:
-    display: 'Elastic Distribution of OpenTelemetry PHP'
+    display: 'Elastic OTel PHP SDK'
     repository: 'elastic-otel-php'
   edot-python:
-    display: 'Elastic Distribution of OpenTelemetry Python'
+    display: 'Elastic OTel Python SDK'
     repository: 'elastic-otel-python'
   edot-cf-aws:
-    display: 'EDOT Cloud Forwarder for AWS'
+    display: 'Elastic Cloud Forwarder for AWS'
   edot-cf-azure:
-    display: 'EDOT Cloud Forwarder for Azure'
+    display: 'Elastic Cloud Forwarder for Azure'
   edot-cf-gcp:
-    display: 'EDOT Cloud Forwarder for GCP'
+    display: 'Elastic Cloud Forwarder for GCP'
   eland:
     display: 'Eland'
     versioning: 'stack'

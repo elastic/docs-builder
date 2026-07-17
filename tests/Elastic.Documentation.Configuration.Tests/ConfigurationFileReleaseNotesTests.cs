@@ -131,7 +131,7 @@ public class ConfigurationFileReleaseNotesTests
 		var products = new Dictionary<string, Product>
 		{
 			["elasticsearch"] = new() { Id = "elasticsearch", DisplayName = "Elasticsearch", Features = ProductFeatures.All },
-			["edot-java"] = new() { Id = "edot-java", DisplayName = "EDOT Java", Features = ProductFeatures.All },
+			["edot-java"] = new() { Id = "edot-java", DisplayName = "Elastic OTel Java", Features = ProductFeatures.All },
 			["reference-only"] = new()
 			{
 				Id = "reference-only",
