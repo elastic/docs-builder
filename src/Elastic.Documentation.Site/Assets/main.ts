@@ -29,7 +29,6 @@ import {
 } from './web-components/shared/htmx/utils'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import * as katex from 'katex'
 import { $, $optional, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
@@ -95,10 +94,15 @@ function applyEditParam() {
 }
 
 /**
- * Initialize KaTeX math rendering for elements with class 'math'
+ * Initialize KaTeX math rendering for elements with class 'math'.
+ * KaTeX's JS and fonts/CSS are lazy-loaded here so pages without math pay nothing for them.
  */
-function initMath() {
+async function initMath() {
     const mathElements = $$optional('.math:not([data-katex-processed])')
+    if (mathElements.length === 0) return
+
+    const [katex] = await Promise.all([import('katex'), import('./katex.css')])
+
     mathElements.forEach((element) => {
         try {
             const content = element.textContent?.trim()
