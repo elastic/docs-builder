@@ -1,6 +1,10 @@
 redirects:
   'migration/freeze/gh-action.md' : 'index.md'
   'migration/freeze/index.md' : 'index.md'
+  # Schema support docs: moved from their original locations to docs/schema-support/.
+  'cli/cli-reference-how-to.md' : 'schema-support/cli-schema/index.md'
+  'cli/cli-supplemental-docs.md' : 'schema-support/cli-schema/supplemental.md'
+  'configure/content-set/api-explorer.md' : 'schema-support/api-explorer/index.md'
   # CLI docs: old static pages replaced by schema-generated equivalents.
   # Targets use physical pages so redirect validation works in authoring tests.
   # The CLI schema-generated pages (synthetic) serve the real content in production.

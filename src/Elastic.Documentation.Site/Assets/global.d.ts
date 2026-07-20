@@ -9,3 +9,5 @@ declare module '*.svg' {
     const component: ComponentType<SVGProps<SVGSVGElement>>
     export default component
 }
+
+declare module '*.css' {}

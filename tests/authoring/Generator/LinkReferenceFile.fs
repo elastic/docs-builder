@@ -74,6 +74,9 @@ Through various means $$$including-this-inline-syntax$$$
               "and-anchored"
             ]
            },
+           "schema-support/api-explorer/index.md": {},
+           "schema-support/cli-schema/index.md": {},
+           "schema-support/cli-schema/supplemental.md": {},
            "testing/redirects/5th-page.md": {
              "anchors": [ "bb" ]
            },
@@ -95,6 +98,9 @@ Through various means $$$including-this-inline-syntax$$$
            "migration/freeze/index.md": {
              "to": "index.md"
            },
+           "cli/cli-reference-how-to.md": { "to": "schema-support/cli-schema/index.md" },
+           "cli/cli-supplemental-docs.md": { "to": "schema-support/cli-schema/supplemental.md" },
+           "configure/content-set/api-explorer.md": { "to": "schema-support/api-explorer/index.md" },
            "cli/index.md": { "to": "cli/installation.md" },
            "cli/assembler/index.md": { "to": "cli/installation.md" },
            "cli/changelog/add.md": { "to": "cli/changelog/index.md" },

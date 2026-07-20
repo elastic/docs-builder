@@ -175,6 +175,9 @@ public class IsolatedBuildService(
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
 
+		var finishTasks = markdownExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
+		_ = await Task.WhenAll(finishTasks);
+
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
@@ -234,6 +237,9 @@ public class IsolatedBuildService(
 
 		if (manageLifecycle)
 		{
+			var finishTasks = allExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
+			_ = await Task.WhenAll(finishTasks);
+
 			var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
 			await Task.WhenAll(stopTasks);
 		}
