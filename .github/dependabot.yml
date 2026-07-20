@@ -45,6 +45,14 @@ updates:
       day: 'monday'
       time: '08:00'
     groups:
+      eslint:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
+          - 'typescript-eslint'
+      eui:
+        patterns:
+          - '@elastic/eui*'
       # Keep the Tailwind toolchain compatible across dependency types.
       tailwindcss:
         patterns:
