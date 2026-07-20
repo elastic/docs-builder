@@ -22,13 +22,21 @@ internal static partial class ContentStackMapper
 		if (string.IsNullOrWhiteSpace(rawUrl))
 			return null;
 
+		// ContentStack's top-level `locale` field is the entry's fixed master/base locale (almost
+		// always "en-us") — it never changes across sync events. The locale actually being
+		// published *in this event* lives at `publish_details.locale`. Reading the top-level field
+		// here would make every locale-specific publish of the same entry resolve to the identical
+		// (unprefixed English) path, so concurrent locale publishes race each other on the same
+		// Elasticsearch document id (surfacing as version_conflict_engine_exception).
+		//
 		// ContentStack's `url` field is not locale-scoped: the same entry gets "published" under
 		// several locales while keeping the exact same (English-authored) url. The live site
 		// resolves any published locale at /{locale-prefix}{url} (e.g. /es/support/matrix), so
 		// namespace non-master-locale variants under their site-served prefix before using the
 		// url as our document id — otherwise every locale variant collides on one Elasticsearch
 		// document and whichever synced last silently wins.
-		var url = ResolveUrlForLocale(rawUrl, GetString(data, "locale"));
+		var publishLocale = GetNestedString(data, "publish_details", "locale") ?? GetString(data, "locale");
+		var url = ResolveUrlForLocale(rawUrl, publishLocale);
 
 		var title = GetString(data, "title") ?? GetString(data, "title_l10n") ?? GetNestedString(data, "main_header", "title_l10n");
 		if (string.IsNullOrWhiteSpace(title))
@@ -46,7 +54,7 @@ internal static partial class ContentStackMapper
 
 		var abstractText = CreateAbstract(strippedBody, description);
 
-		var navigationSection = GetNavigationSection(url);
+		var navigationSection = GetNavigationSection(url, item.ContentTypeUid);
 		var language = GetLanguageFromUrl(url);
 		var publishedDate = GetPublishedDate(data);
 		var modifiedDate = ParseDate(GetString(data, "updated_at"));
@@ -55,29 +63,33 @@ internal static partial class ContentStackMapper
 		{
 			Title = title,
 			SearchTitle = BuildSearchTitle(title, navigationSection),
-			Url = url,
+			Path = url,
 			Hash = ComputeHash(title + strippedBody),
 			BatchIndexDate = DateTimeOffset.UtcNow,
 			LastUpdated = modifiedDate ?? publishedDate ?? DateTimeOffset.UtcNow,
 			Description = description,
 			Headings = headings,
 			Body = strippedBody,
-			StrippedBody = strippedBody,
-			Abstract = abstractText,
-			NavigationSection = navigationSection,
+			Summary = abstractText,
+			Section = navigationSection,
 			ContentTier = ContentTierClassifier.FromNavigationSection(navigationSection),
 			Translated = true,
-			// navigation_depth/navigation_table_of_contents are rank features with positive_score_impact:false,
+			// navigation.depth/navigation.table_of_contents are rank features with positive_score_impact:false,
 			// designed for hierarchical docs: lower values score higher.
-			NavigationDepth = ComputeNavigationDepth(url) + 1,
-			NavigationTableOfContents = 100,
-			Language = language,
+			Navigation = new NavigationMetrics
+			{
+				Depth = ComputeNavigationDepth(url) + 1,
+				TableOfContents = 100
+			},
+			Locale = language,
 			PublishedDate = publishedDate,
 			ModifiedDate = modifiedDate,
-			OgTitle = GetSeoString(data, "seo_title_l10n") ?? GetSeoString(data, "seo_title"),
-			OgDescription = GetSeoString(data, "seo_description_l10n") ?? GetSeoString(data, "seo_description"),
-			OgImage = GetSeoString(data, "seo_image"),
-			EnrichmentKey = item.ContentTypeUid
+			Og = new OpenGraphData
+			{
+				Title = GetSeoString(data, "seo_title_l10n") ?? GetSeoString(data, "seo_title"),
+				Description = GetSeoString(data, "seo_description_l10n") ?? GetSeoString(data, "seo_description"),
+				Image = GetSeoString(data, "seo_image")
+			}
 		};
 	}
 
@@ -263,16 +275,21 @@ internal static partial class ContentStackMapper
 	// overwrite the others).
 	private static string ResolveUrlForLocale(string url, string? locale)
 	{
-		if (string.IsNullOrWhiteSpace(locale) || locale.Equals("en-us", StringComparison.OrdinalIgnoreCase))
-			return url;
-
-		if (!LocaleUrlPrefixes.TryGetValue(locale, out var prefix))
+		if (string.IsNullOrWhiteSpace(locale) || locale.StartsWith("en", StringComparison.OrdinalIgnoreCase))
 			return url;
 
 		// Already carries a recognized locale prefix (author-managed localized url) — trust it as-is.
 		if (TryGetLanguageFromUrlPrefix(url, out _))
 			return url;
 
+		// Prefer the short prefix the live site actually serves this locale at. Fall back to the
+		// locale's base language subtag (e.g. "xx-yy" -> "xx") for locales we haven't mapped yet —
+		// site-served prefixes are always two letters, never the full locale code — so every
+		// non-English variant still gets its own document id, or it silently collides with (and
+		// can 409 against) the entry for another locale of the same underlying ContentStack url.
+		var prefix = LocaleUrlPrefixes.TryGetValue(locale, out var mapped)
+			? mapped
+			: locale.Split('-')[0].ToLowerInvariant();
 		return $"/{prefix}{url}";
 	}
 
@@ -314,7 +331,28 @@ internal static partial class ContentStackMapper
 		return path.Split('/', StringSplitOptions.RemoveEmptyEntries).Length;
 	}
 
-	internal static string GetNavigationSection(string url)
+	/// <summary>
+	/// ContentStack's <c>ContentTypeUid</c> (CMS schema/template, e.g. "product_versions", "forms",
+	/// "faq") is a finer-grained, orthogonal signal to the URL. It has no dedicated bucket of its own
+	/// on <see cref="SiteDocument.Section"/> — instead it fills in a better answer than the generic
+	/// "marketing" catch-all for content types the URL heuristic below can't otherwise classify.
+	/// URL-matched categories always win where the URL is already specific enough (no behavior change
+	/// there); this only improves classification for the entries that would previously all collapse
+	/// into "marketing" regardless of what kind of page they actually are.
+	/// </summary>
+	private static string? GetSectionFromContentType(string? contentTypeUid) => contentTypeUid switch
+	{
+		"product_versions" or "product_detail" or "default_detail" => "product",
+		"blog_v2" or "blog_overview" => "blog",
+		"videos" => "demo",
+		"forms" or "use_cases" => "marketing",
+		"faq" => "reference",
+		"agreements" => "legal",
+		"customer_tile" => "customer-story",
+		_ => null
+	};
+
+	internal static string GetNavigationSection(string url, string? contentTypeUid = null)
 	{
 		if (url.Contains("/blog/", StringComparison.OrdinalIgnoreCase))
 			return "blog";
@@ -356,7 +394,7 @@ internal static partial class ContentStackMapper
 			return "product";
 		if (url.Contains("/observability", StringComparison.OrdinalIgnoreCase))
 			return "product";
-		return "marketing";
+		return GetSectionFromContentType(contentTypeUid) ?? "marketing";
 	}
 
 	private static string BuildSearchTitle(string title, string navigationSection)

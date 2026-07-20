@@ -154,32 +154,43 @@ public class LabsHtmlExtractor(ILogger<LabsHtmlExtractor> logger) : IDocumentExt
 		{
 			Title = title,
 			SearchTitle = searchTitle,
-			Url = indexUrl,
+			Path = indexUrl,
 			Hash = hash,
 			BatchIndexDate = DateTimeOffset.UtcNow,
 			LastUpdated = lastUpdated,
 			Description = description,
 			Headings = headings,
 			Body = textContent,
-			StrippedBody = textContent,
-			Abstract = abstractText,
-			NavigationSection = navigationSection,
+			Summary = abstractText,
+			Section = navigationSection,
 			ContentTier = ContentTierClassifier.FromNavigationSection(navigationSection),
-			// navigation_depth/navigation_table_of_contents are rank features with positive_score_impact:false,
+			// navigation.depth/navigation.table_of_contents are rank features with positive_score_impact:false,
 			// designed for hierarchical docs: lower values score higher.
-			NavigationDepth = ComputeNavigationDepth(url) + 1,
-			NavigationTableOfContents = ComputeNavigationDepth(url) <= 1 ? 10 : 100,
-			Language = language,
+			Navigation = new NavigationMetrics
+			{
+				Depth = ComputeNavigationDepth(url) + 1,
+				TableOfContents = ComputeNavigationDepth(url) <= 1 ? 10 : 100
+			},
+			Locale = language,
 			Author = author,
 			PublishedDate = publishedDate,
 			ModifiedDate = modifiedDate,
-			OgTitle = ogTitle,
-			OgDescription = ogDescription,
-			OgImage = ogImage,
-			TwitterImage = twitterImage,
-			TwitterCard = twitterCard,
-			HttpEtag = httpEtag,
-			HttpLastModified = httpLastModified
+			Og = new OpenGraphData
+			{
+				Title = ogTitle,
+				Description = ogDescription,
+				Image = ogImage
+			},
+			Twitter = new TwitterCardData
+			{
+				Image = twitterImage,
+				Card = twitterCard
+			},
+			Http = new HttpMetadata
+			{
+				Etag = httpEtag,
+				LastModified = httpLastModified
+			}
 		};
 	}
 

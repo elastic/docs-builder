@@ -16,10 +16,13 @@ using OpenTelemetry.Trace;
 
 try
 {
+	var env = SystemEnvironmentVariables.Instance;
+	var profile = McpServerProfile.Resolve(env.McpServerProfile);
+
 	var builder = WebApplication.CreateSlimBuilder(args)
 		.AddDocumentationServiceDefaults()
 		.HealthCheckBuilderExtensions()
-		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-mcp")
+		.AddDocumentationOpenTelemetry(new OtelRegistration(profile.ServiceName)
 		{
 			Tracing = (_, t) => t
 				.WithElasticDefaults()
@@ -44,9 +47,6 @@ try
 
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
-
-	var env = SystemEnvironmentVariables.Instance;
-	var profile = McpServerProfile.Resolve(env.McpServerProfile);
 
 	profile.RegisterAllServices(builder.Services);
 

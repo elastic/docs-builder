@@ -87,7 +87,7 @@ public static class SearchExplainExtensions
 		where TDocument : SearchDocumentBase
 	{
 		var top = await service.AutocompleteAsync(new AutocompleteRequest { Query = query, PageNumber = 1, PageSize = 1 }, ct).ConfigureAwait(false);
-		var topResultUrl = top.Results.Count > 0 ? top.Results[0].Document.Url : null;
+		var topResultUrl = top.Results.Count > 0 ? top.Results[0].Document.Path : null;
 
 		if (string.IsNullOrEmpty(topResultUrl))
 		{

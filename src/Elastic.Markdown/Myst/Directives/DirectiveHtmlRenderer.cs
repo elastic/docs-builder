@@ -256,7 +256,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		var slice = TableDirectiveView.Create(new TableDirectiveViewModel
 		{
 			DirectiveBlock = block,
-			ColumnWidths = block.ColumnWidths
+			ColumnWidths = block.ColumnWidths,
+			Matrix = block.Matrix
 		});
 		RenderRazorSlice(slice, renderer);
 	}

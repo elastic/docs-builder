@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Search.Contract;
 
 /// <summary>
 /// Lean base record for every indexed search document. Carries fields shared by every concrete
-/// subclass (e.g. <c>DocumentationDocument</c>, <see cref="SiteDocument"/>); the
+/// subclass (e.g. <see cref="DocumentationDocument"/>, <see cref="SiteDocument"/>); the
 /// polymorphic dispatch attributes live on <see cref="ISearchDocument"/>, not here, so reads
 /// declared as <c>SearchDocumentBase</c> stay flat. Read as <c>ISearchDocument</c> if you need
 /// <c>$type</c>-driven dispatch into the concrete subtype. For a fallback-safe polymorphic read
@@ -58,8 +58,17 @@ public record SearchDocumentBase : ISearchDocument
 
 	[Id]
 	[Keyword]
+	[JsonPropertyName("path")]
+	public required string Path { get; set; } = string.Empty;
+
+	/// <summary>
+	/// Concrete mirror of <see cref="Path"/>, kept so AI enrichment can match against <c>url</c> —
+	/// the field the existing AI-cache lookup indices and enrich policies are keyed on. Do not use
+	/// this as the canonical identifier; <see cref="Path"/> is.
+	/// </summary>
+	[Keyword]
 	[JsonPropertyName("url")]
-	public required string Url { get; set; } = string.Empty;
+	public string Url => Path;
 
 	[ContentHash]
 	[Keyword]
@@ -82,18 +91,18 @@ public record SearchDocumentBase : ISearchDocument
 	[JsonPropertyName("headings")]
 	public string[] Headings { get; set; } = [];
 
+	/// <summary>
+	/// Plain-text, markup-stripped page content. The single source of truth for full-text search,
+	/// AI enrichment input, and content hashing — producers must not feed raw Markdown/HTML here.
+	/// </summary>
+	[AiInput]
 	[Text]
 	[JsonPropertyName("body")]
 	public string? Body { get; set; }
 
-	[AiInput]
 	[Text]
-	[JsonPropertyName("stripped_body")]
-	public string? StrippedBody { get; set; }
-
-	[Text]
-	[JsonPropertyName("abstract")]
-	public string? Abstract { get; set; }
+	[JsonPropertyName("summary")]
+	public string? Summary { get; set; }
 
 	[JsonPropertyName("parents")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -148,16 +157,11 @@ public record SearchDocumentBase : ISearchDocument
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string[]? AiUseCases { get; set; }
 
-	[Keyword]
-	[JsonPropertyName("enrichment_prompt_hash")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? EnrichmentPromptHash { get; set; }
-
 	/// <summary>Top-level navigation section (e.g. "reference", "getting-started"). Used for boosting and faceting.</summary>
 	[Keyword(Normalizer = "keyword_normalizer")]
-	[JsonPropertyName("navigation_section")]
+	[JsonPropertyName("section")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? NavigationSection { get; set; }
+	public string? Section { get; set; }
 
 	/// <summary>
 	/// Editorial weight — one of <see cref="ContentTiers"/>. Used to demote low-value content
@@ -170,19 +174,10 @@ public record SearchDocumentBase : ISearchDocument
 	[JsonPropertyName("content_tier")]
 	public string ContentTier { get; set; } = ContentTiers.Reference;
 
-	/// <summary>
-	/// URL path segment depth. Mapped as <c>rank_feature</c> with negative score impact — deeper pages rank lower.
-	/// Defaults to 50 so documents without explicit navigation metadata are penalised.
-	/// </summary>
-	[JsonPropertyName("navigation_depth")]
-	public int NavigationDepth { get; set; } = 50;
-
-	/// <summary>
-	/// Number of headings on the page. Mapped as <c>rank_feature</c> with negative score impact.
-	/// Defaults to 50 so documents without explicit navigation metadata are penalised.
-	/// </summary>
-	[JsonPropertyName("navigation_table_of_contents")]
-	public int NavigationTableOfContents { get; set; } = 50;
+	/// <summary>Rank-feature signals derived from the page's position in the navigation tree.</summary>
+	[Object]
+	[JsonPropertyName("navigation")]
+	public NavigationMetrics Navigation { get; set; } = new();
 
 	[AiField("Short 2-6 word search queries a user would type into a search bar to find this page.", MinItems = 3, MaxItems = 6)]
 	[Text]

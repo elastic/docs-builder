@@ -15,7 +15,7 @@ internal static class AiEnrichmentConsole
 	internal static async Task<AiEnrichmentResult?> RunInteractiveAsync(
 		bool aiEnrichmentEnabled,
 		Func<int, CancellationToken, IAsyncEnumerable<AiEnrichmentProgress>> runEnrichment,
-		int maxRunDocs,
+		int maxAiDocs,
 		CancellationToken ct
 	)
 	{
@@ -43,20 +43,20 @@ internal static class AiEnrichmentConsole
 				var task = progressCtx.AddTask("[purple]Discovering candidates...[/]", maxValue: 100);
 				task.IsIndeterminate = true;
 
-				await foreach (var p in runEnrichment(maxRunDocs, ct).ConfigureAwait(false))
+				await foreach (var p in runEnrichment(maxAiDocs, ct).ConfigureAwait(false))
 				{
 					last = p;
 					switch (p.Phase)
 					{
 						case AiEnrichmentPhase.Querying when p.TotalCandidates > 0:
-							var effectiveMax = maxRunDocs > 0
-								? Math.Min(p.TotalCandidates, maxRunDocs)
+							var effectiveMax = maxAiDocs > 0
+								? Math.Min(p.TotalCandidates, maxAiDocs)
 								: p.TotalCandidates;
 							task.IsIndeterminate = false;
 							task.MaxValue = effectiveMax;
 							task.Value = 0;
 							task.Description = $"[purple]Found {p.TotalCandidates:N0} candidates[/]"
-								+ (maxRunDocs > 0 ? $" [dim](limit: {maxRunDocs:N0})[/]" : "");
+								+ (maxAiDocs > 0 ? $" [dim](limit: {maxAiDocs:N0})[/]" : "");
 							break;
 						case AiEnrichmentPhase.Enriching:
 							task.Value = p.Enriched + p.Failed;
@@ -102,7 +102,7 @@ internal static class AiEnrichmentConsole
 		);
 	}
 
-	internal static void DisplaySummary(AiEnrichmentResult? result, TimeSpan? maxRunTime, int maxRunDocs, string panelTitle = "[aqua]AI Enrichment Complete[/]")
+	internal static void DisplaySummary(AiEnrichmentResult? result, TimeSpan? maxAiTime, int maxAiDocs, string panelTitle = "[aqua]AI Enrichment Complete[/]")
 	{
 		if (result is null)
 			return;
@@ -143,13 +143,13 @@ internal static class AiEnrichmentConsole
 
 		rows.Add(aiGrid);
 
-		if (maxRunTime is { } || maxRunDocs > 0)
+		if (maxAiTime is { } || maxAiDocs > 0)
 		{
 			rows.Add(new Rule { Style = Style.Parse("grey") });
-			if (maxRunTime is { } wall)
+			if (maxAiTime is { } wall)
 				rows.Add(new Markup($"[dim]Time limit: {wall}[/]"));
-			if (maxRunDocs > 0)
-				rows.Add(new Markup($"[dim]Document limit: {maxRunDocs:N0}[/]"));
+			if (maxAiDocs > 0)
+				rows.Add(new Markup($"[dim]Document limit: {maxAiDocs:N0}[/]"));
 		}
 
 		var panel = new Panel(new Rows(rows))

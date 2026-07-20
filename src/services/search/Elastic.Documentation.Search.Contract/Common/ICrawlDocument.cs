@@ -10,6 +10,5 @@ namespace Elastic.Documentation.Search.Contract;
 /// </summary>
 public interface ICrawlDocument : ISearchDocument
 {
-	string? HttpEtag { get; set; }
-	DateTimeOffset? HttpLastModified { get; set; }
+	HttpMetadata Http { get; set; }
 }

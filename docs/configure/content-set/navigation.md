@@ -123,7 +123,7 @@ The sequence format allows you to add custom Markdown content:
 - **Generated content** (operations, tags, types) appears in the middle  
 - **Outro pages** (after specs) appear at the bottom
 
-See [API Explorer](api-explorer.md) for full configuration details and examples.
+See [API Explorer](../../schema-support/api-explorer/index.md) for full configuration details and examples.
 
 ### `toc`
 

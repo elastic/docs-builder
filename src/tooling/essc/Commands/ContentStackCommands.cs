@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using Elastic.Documentation.Indexing;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 using Microsoft.Extensions.Logging;
+using Nullean.Argh;
 using Spectre.Console;
 
 namespace Elastic.SiteSearch.Cli.Commands;
@@ -21,6 +23,7 @@ internal sealed class ContentStackCommands(
 	SyncCommand sync,
 	ContentTypesCommand types,
 	DumpSamplesCommand samples,
+	FindUrlCommand findUrl,
 	SourcingConfiguration config,
 	ILoggerFactory loggerFactory
 )
@@ -36,8 +39,8 @@ internal sealed class ContentStackCommands(
 	/// or due for enrichment). Pass <c>--max-ai-docs</c> to change that cap, or <c>--no-ai</c> to skip the post-sync batch entirely.
 	/// </remarks>
 	/// <param name="cacheFolder">Disk folder for sync cursors and bootstrap metadata (default from configuration).</param>
-	/// <param name="esApiKey">Override Elasticsearch API key when not using configured credentials.</param>
-	/// <param name="esUrl">Override Elasticsearch base URL (absolute URI).</param>
+	/// <param name="apiKey">Override Elasticsearch API key when not using configured credentials.</param>
+	/// <param name="endpoint">Override Elasticsearch base URL (absolute URI).</param>
 	/// <param name="force">Remove persisted state and re-run from a clean slate.</param>
 	/// <param name="noAi">When <see langword="true"/>, skip ingest-time AI wiring and the post-sync generative enrichment batch.</param>
 	/// <param name="maxAiDocs">Maximum enrichment candidates processed in the post-sync AI batch per run; omit for <c>100</c>. Must be at least 1 when specified.</param>
@@ -47,8 +50,8 @@ internal sealed class ContentStackCommands(
 	/// <param name="ct">Cancellation token.</param>
 	public Task Sync(
 		[StringLength(4096)] string? cacheFolder = null,
-		string? esApiKey = null,
-		[Url] Uri? esUrl = null,
+		string? apiKey = null,
+		[Url] Uri? endpoint = null,
 		bool force = false,
 		bool noAi = false,
 		[Range(1, int.MaxValue)] int? maxAiDocs = null,
@@ -56,7 +59,7 @@ internal sealed class ContentStackCommands(
 		bool noIndex = false,
 		[Range(0, int.MaxValue)] int pagePer = 0,
 		Cancel ct = default) =>
-		sync.Sync(cacheFolder, esApiKey, esUrl, force, noAi, maxAiDocs, maxAiTime, noIndex, pagePer, ct);
+		sync.Sync(cacheFolder, apiKey, endpoint, force, noAi, maxAiDocs, maxAiTime, noIndex, pagePer, ct);
 
 	/// <summary>
 	/// Discover all content types and whether each exposes a root URL field (sitemap and routing inputs).
@@ -85,55 +88,72 @@ internal sealed class ContentStackCommands(
 		samples.Samples(outputDir, ct);
 
 	/// <summary>
+	/// Diagnostic: scan Contentstack's sync stream (the same paginated, cursor-based API
+	/// <c>sync</c> uses) for every item whose resolved path contains a fragment, flagging any path
+	/// delivered more than once within a single pass. Read-only — no Elasticsearch writes.
+	/// </summary>
+	/// <remarks>
+	/// Useful for tracking down <c>version_conflict_engine_exception</c> errors during sync — a
+	/// path delivered twice in one pass races itself across concurrent bulk batches.
+	/// </remarks>
+	/// <param name="pathPrefix">Path fragment to search for, e.g. <c>/elasticon/archive/2020</c>.</param>
+	/// <param name="contentType">Restrict the scan to one content type uid; omit to scan all types.</param>
+	/// <param name="ct">Cancellation token.</param>
+	public Task FindUrl(
+		[Argument] string pathPrefix,
+		string? contentType = null,
+		Cancel ct = default) =>
+		findUrl.FindUrl(pathPrefix, contentType, ct);
+
+	/// <summary>
 	/// Run generative AI enrichment on existing <c>site-*</c> semantic indices (no Contentstack fetch).
 	/// </summary>
 	/// <remarks>
-	/// <paramref name="maxRunDocs"/> is an optional cap; <c>0</c> means no document limit.
-	/// Omit <paramref name="maxRunTime"/> for no wall-clock limit, or set a duration of at least one minute (for example <c>1h</c>, <c>90m</c>).
+	/// <paramref name="maxAiDocs"/> is an optional cap; <c>0</c> means no document limit.
+	/// Omit <paramref name="maxAiTime"/> for no wall-clock limit, or set a duration of at least one minute (for example <c>1h</c>, <c>90m</c>).
+	/// Use <paramref name="bootstrapOnly"/> to create the enrich policy, pipeline, and lookup index without enriching any documents.
 	/// </remarks>
-	public async Task Ai(
-		string? esApiKey = null,
-		[Url] Uri? esUrl = null,
-		[Range(0, int.MaxValue)] int maxRunDocs = 0,
-		TimeSpan? maxRunTime = null,
+	[CommandName("ai-enrich")]
+	public async Task AiEnrich(
+		string? apiKey = null,
+		[Url] Uri? endpoint = null,
+		[Range(0, int.MaxValue)] int maxAiDocs = 0,
+		TimeSpan? maxAiTime = null,
+		bool bootstrapOnly = false,
 		Cancel ct = default
 	)
 	{
-		if (maxRunTime is { } wall && wall < TimeSpan.FromMinutes(1))
+		if (!AiEnrichmentBudget.TryValidateMaxTime(maxAiTime, out var maxAiTimeError))
 		{
-			await Console.Error.WriteLineAsync(
-				"Error: --max-run-time must be at least 1m (for example 1m, 90m, 2h) when specified.");
-			await Console.Error.WriteLineAsync("Run 'essc contentstack ai --help' for usage.");
+			await Console.Error.WriteLineAsync($"Error: --max-ai-time {maxAiTimeError}");
+			await Console.Error.WriteLineAsync("Run 'essc contentstack ai-enrich --help' for usage.");
 			Environment.Exit(2);
 		}
 
 		AnsiConsole.MarkupLine("[aqua bold]Contentstack site AI enrichment[/] [dim](site-* indices)[/]");
 		AnsiConsole.WriteLine();
 
-		var endpoint = config.Elasticsearch;
-		if (esUrl is not null)
-			endpoint.Uri = esUrl;
-		if (esApiKey is not null)
+		var cfg = config.Elasticsearch;
+		if (endpoint is not null)
+			cfg.Uri = endpoint;
+		if (apiKey is not null)
 		{
-			endpoint.ApiKey = esApiKey;
-			endpoint.Username = null;
-			endpoint.Password = null;
+			cfg.ApiKey = apiKey;
+			cfg.Username = null;
+			cfg.Password = null;
 		}
 
-		AnsiConsole.MarkupLine($"[dim]Elasticsearch: {Markup.Escape(endpoint.Uri.ToString())}[/]");
+		AnsiConsole.MarkupLine($"[dim]Elasticsearch: {Markup.Escape(cfg.Uri.ToString())}[/]");
 
-		var transport = ElasticsearchTransportFactory.Create(endpoint);
+		var transport = ElasticsearchTransportFactory.Create(cfg);
 
-		using var timeoutCts = maxRunTime is { } d ? new CancellationTokenSource(d) : null;
-		using var linkedCts = timeoutCts is not null
-			? CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token)
-			: null;
-		var effectiveToken = linkedCts?.Token ?? ct;
+		using var deadline = AiEnrichmentDeadline.Create(maxAiTime, ct);
+		var effectiveToken = deadline.Token;
 
-		if (maxRunTime is { } limit)
+		if (maxAiTime is { } limit)
 			AnsiConsole.MarkupLine($"[dim]Time limit: [yellow]{Markup.Escape(limit.ToString())}[/][/]");
-		if (maxRunDocs > 0)
-			AnsiConsole.MarkupLine($"[dim]Document limit: [yellow]{maxRunDocs:N0}[/] documents[/]");
+		if (maxAiDocs > 0)
+			AnsiConsole.MarkupLine($"[dim]Document limit: [yellow]{maxAiDocs:N0}[/] documents[/]");
 
 		AnsiConsole.WriteLine();
 
@@ -141,7 +161,7 @@ internal sealed class ContentStackCommands(
 		{
 			using var exporter = new SiteDocumentExporter(
 				loggerFactory,
-				endpoint,
+				cfg,
 				transport,
 				config.BuildType,
 				config.ElasticsearchEnvironment,
@@ -159,14 +179,20 @@ internal sealed class ContentStackCommands(
 			AnsiConsole.MarkupLine($"[green]✓[/] Elasticsearch indices ready [dim]({exporter.Strategy})[/]");
 			AnsiConsole.WriteLine();
 
+			if (bootstrapOnly)
+			{
+				AnsiConsole.MarkupLine("[dim]--bootstrap-only set — skipping AI enrichment[/]");
+				return;
+			}
+
 			var aiResult = await AiEnrichmentConsole.RunInteractiveAsync(
 				exporter.AiEnrichmentEnabled,
 				(max, token) => exporter.RunAiEnrichmentAsync(max, token),
-				maxRunDocs,
+				maxAiDocs,
 				effectiveToken);
-			AiEnrichmentConsole.DisplaySummary(aiResult, maxRunTime, maxRunDocs);
+			AiEnrichmentConsole.DisplaySummary(aiResult, maxAiTime, maxAiDocs);
 		}
-		catch (OperationCanceledException) when (timeoutCts?.IsCancellationRequested == true)
+		catch (OperationCanceledException) when (deadline.TimedOut)
 		{
 			AnsiConsole.MarkupLine("[yellow]AI enrichment stopped — time limit reached[/]");
 		}

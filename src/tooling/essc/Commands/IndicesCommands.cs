@@ -45,14 +45,18 @@ internal sealed class IndicesRemoteSyncOptions
 
 	/// <summary>
 	/// Destination cluster base URL, including scheme and port.
-	/// Defaults to <c>DESTINATION_ELASTIC_URL</c>.
+	/// Defaults to <c>DESTINATION_ELASTIC_URL</c> if set, otherwise seeds from the same configured
+	/// Elasticsearch URL as <c>--from-url</c> (<c>Parameters:ElasticsearchUrl</c> user secret /
+	/// <c>DOCUMENTATION_ELASTIC_URL</c> / <c>ELASTICSEARCH_URL</c>) — so only one cluster needs to be
+	/// configured and you pass <c>--to-url</c> (or <c>--from-url</c>) for the other.
 	/// </summary>
 	[Url]
 	public Uri? ToUrl { get; set; }
 
 	/// <summary>
 	/// Destination cluster encoded API key.
-	/// Defaults to <c>DESTINATION_ELASTIC_APIKEY</c>.
+	/// Defaults to <c>DESTINATION_ELASTIC_APIKEY</c> if set, otherwise seeds from the same configured
+	/// API key as <c>--from-api-key</c> (see <c>ToUrl</c>).
 	/// </summary>
 	public string? ToApiKey { get; set; }
 
@@ -89,11 +93,11 @@ internal sealed class IndicesCleanupOptions
 	public bool DryRun { get; set; }
 
 	/// <summary>Override Elasticsearch API key (otherwise from configuration).</summary>
-	public string? EsApiKey { get; set; }
+	public string? ApiKey { get; set; }
 
 	/// <summary>Override Elasticsearch base URL (absolute URI).</summary>
 	[Url]
-	public Uri? EsUrl { get; set; }
+	public Uri? Endpoint { get; set; }
 }
 
 /// <summary>
@@ -124,8 +128,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// marked with the current batch timestamp; docs in semantic that were not marked are removed.
 	/// The <c>unify_source</c> field on each doc records which source alias it came from.
 	/// </remarks>
-	/// <param name="esApiKey">Override Elasticsearch API key.</param>
-	/// <param name="esUrl">Override Elasticsearch base URL.</param>
+	/// <param name="apiKey">Override Elasticsearch API key.</param>
+	/// <param name="endpoint">Override Elasticsearch base URL.</param>
 	/// <param name="environment">Override target environment (e.g. <c>prod</c>, <c>staging</c>, <c>dev</c>). Defaults to the configured environment.</param>
 	/// <param name="slices">Reindex parallelism: <c>auto</c> or a numeric string. Defaults to <c>auto</c>.</param>
 	/// <param name="rps">Requests-per-second throttle for reindex operations. <c>-1</c> means unlimited (default).</param>
@@ -148,8 +152,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// </param>
 	/// <param name="ct">Cancellation token.</param>
 	public async Task Unify(
-		string? esApiKey = null,
-		[Url] Uri? esUrl = null,
+		string? apiKey = null,
+		[Url] Uri? endpoint = null,
 		string? environment = null,
 		string slices = "auto",
 		[Range(-1, int.MaxValue)] float rps = -1,
@@ -160,7 +164,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		Cancel ct = default
 	)
 	{
-		var endpoint = ResolveEndpoint(esUrl, esApiKey);
+		var cfg = ResolveEndpoint(endpoint, apiKey);
 		var env = environment ?? config.ElasticsearchEnvironment;
 		var buildType = config.BuildType;
 		var batchTs = DateTimeOffset.UtcNow;
@@ -177,7 +181,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var pageAlias = IndicesCleanupPlanner.PageAliasName(env);
 
 		AnsiConsole.MarkupLine("[aqua bold]Indices unify[/] — [dim]docs-assembler + site + labs → website-search[/]");
-		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(endpoint.Uri.ToString())}");
+		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(cfg.Uri.ToString())}");
 		AnsiConsole.MarkupLine($"[dim]Environment:[/]   [white]{Markup.Escape(env)}[/]");
 		AnsiConsole.MarkupLine($"[dim]Sources:[/]       [white]{Markup.Escape(string.Join(", ", sourceAliases))}[/]");
 		AnsiConsole.MarkupLine($"[dim]Alias:[/]         [white]{Markup.Escape(pageAlias)}[/]");
@@ -186,7 +190,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			AnsiConsole.MarkupLine($"[dim]Aliases:[/]       [white]{Markup.Escape(string.Join(", ", extraLabels))}[/]");
 		AnsiConsole.WriteLine();
 
-		var transport = ElasticsearchTransportFactory.Create(endpoint);
+		var transport = ElasticsearchTransportFactory.Create(cfg);
 		var logger = loggerFactory.CreateLogger<IndicesCommands>();
 
 		var synonymSetName = $"docs-assembler-{env}";
@@ -207,8 +211,8 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine("[dim]Bootstrapping index templates...[/]");
 		using var orchestrator = new IncrementalSyncOrchestrator<WebsiteSearchDocument>(transport, lexicalContext, semanticContext)
 		{
-			ConfigurePrimary = o => ConfigureChannelOptions("primary", o, endpoint),
-			ConfigureSecondary = o => ConfigureChannelOptions("secondary", o, endpoint, semantic: true),
+			ConfigurePrimary = o => ConfigureChannelOptions("primary", o, cfg),
+			ConfigureSecondary = o => ConfigureChannelOptions("secondary", o, cfg, semantic: true),
 			OnRolloverDecision = info =>
 			{
 				var roll = info.RolledOver ? "new backing index" : "reuse";
@@ -297,13 +301,63 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		// overwhelming the Jina endpoint with concurrent bulk requests.
 		const string semanticSlices = "1";
 
+		var state = new UnifyRunState(
+			sourceAliases, lexicalIndex, semanticIndex, originalSemanticIndex, semanticWasRenamed,
+			lexicalAlias, semanticAlias, pageAlias, extraLabels, env, isFullReindex, batchTsStr,
+			currentSourceHash, semanticSlices, slices, rpsOpt);
+
+		try
+		{
+			await RunUnifySteps(transport, state, logger, ct);
+		}
+		catch (OperationCanceledException) when (ct.IsCancellationRequested)
+		{
+			AnsiConsole.WriteLine();
+			AnsiConsole.MarkupLine("[yellow]Cancelled.[/]");
+			if (isFullReindex)
+			{
+				// A full reindex creates a brand-new semantic backing index that no alias points at
+				// yet — cancelling mid-run leaves it partially populated. Safe to delete; the next
+				// run's Multiplex/source-hash-changed path will recreate it from scratch.
+				AnsiConsole.MarkupLine("[dim]Cleaning up partial index...[/]");
+				// ct is already cancelled — use a fresh token so the cleanup call itself can run.
+				_ = await transport.DeleteAsync<StringResponse>(semanticIndex, cancellationToken: CancellationToken.None);
+				AnsiConsole.MarkupLine($"[dim]Deleted partial index {Markup.Escape(semanticIndex)}[/]");
+			}
+			Environment.Exit(130);
+			return;
+		}
+	}
+
+	/// <summary>Bundles the values <see cref="RunUnifySteps"/> needs — resolved once in <see cref="Unify"/>
+	/// before the cancellable work begins, so the cleanup handler there can also read them.</summary>
+	private sealed record UnifyRunState(
+		string[] SourceAliases,
+		string LexicalIndex,
+		string SemanticIndex,
+		string OriginalSemanticIndex,
+		bool SemanticWasRenamed,
+		string LexicalAlias,
+		string SemanticAlias,
+		string PageAlias,
+		string[] ExtraLabels,
+		string Env,
+		bool IsFullReindex,
+		string BatchTsStr,
+		string CurrentSourceHash,
+		string SemanticSlices,
+		string Slices,
+		float? RpsOpt);
+
+	private async Task RunUnifySteps(DistributedTransport transport, UnifyRunState state, ILogger logger, Cancel ct)
+	{
 		// ── Step 1: Populate lexical from all 3 sources ──────────────────────────
 		// Fast bulk copy, no inference. Stamps batch_index_date and unify_source on each doc.
-		foreach (var source in sourceAliases)
+		foreach (var source in state.SourceAliases)
 		{
-			var fillBody = BuildLexicalFillBody(source, lexicalIndex, batchTsStr);
+			var fillBody = BuildLexicalFillBody(source, state.LexicalIndex, state.BatchTsStr);
 			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = fillBody, Slices = slices, RequestsPerSecond = rpsOpt },
+				new ServerReindexOptions { Body = fillBody, Slices = state.Slices, RequestsPerSecond = state.RpsOpt },
 				$"fill-lexical ({Markup.Escape(source)})", ct))
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — lexical fill failed.[/]");
@@ -314,50 +368,50 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 		// Refresh lexical so all 3 fill reindexes are visible before the semantic reindex opens its PIT.
 		// _reindex does not refresh the destination — docs written to un-refreshed segments are invisible.
-		_ = await transport.PostAsync<StringResponse>($"{lexicalIndex}/_refresh", PostData.Empty, ct);
+		_ = await transport.PostAsync<StringResponse>($"{state.LexicalIndex}/_refresh", PostData.Empty, ct);
 		AnsiConsole.MarkupLine("[dim]Lexical refreshed[/]");
 
 		// Point -latest alias at the (now populated) lexical backing index.
-		await PointAliasAsync(transport, lexicalAlias, lexicalIndex, logger, ct);
-		AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(lexicalAlias)} → {Markup.Escape(lexicalIndex)}");
+		await PointAliasAsync(transport, state.LexicalAlias, state.LexicalIndex, logger, ct);
+		AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(state.LexicalAlias)} → {Markup.Escape(state.LexicalIndex)}");
 
-		if (semanticWasRenamed)
+		if (state.SemanticWasRenamed)
 		{
 			// The orchestrator created and template-mapped the original semantic index.
 			// Copy its settings+mapping to the renamed index so semantic_text fields and
 			// custom analyzers are present before the inference reindex runs.
-			await BootstrapSemanticIndexAsync(transport, transport, originalSemanticIndex, semanticIndex, logger, ct);
+			await BootstrapSemanticIndexAsync(transport, transport, state.OriginalSemanticIndex, state.SemanticIndex, logger, ct);
 		}
 
-		if (isFullReindex)
+		if (state.IsFullReindex)
 		{
 			// ── Full reindex to semantic (all docs trigger inference) ────────────
 			// slices=1: prevents es_rejected_execution_exception from concurrent inference bulk.
 			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Source = lexicalIndex, Destination = semanticIndex, Slices = semanticSlices, RequestsPerSecond = rpsOpt },
+				new ServerReindexOptions { Source = state.LexicalIndex, Destination = state.SemanticIndex, Slices = state.SemanticSlices, RequestsPerSecond = state.RpsOpt },
 				"full-semantic", ct))
 			{
 				// Reindex failed mid-way. The semantic backing index is partial — delete it so
 				// the next run starts clean (Multiplex will recreate it).
 				AnsiConsole.MarkupLine("[red]Reindex to semantic failed — cleaning up partial index...[/]");
-				_ = await transport.DeleteAsync<StringResponse>(semanticIndex, cancellationToken: ct);
-				AnsiConsole.MarkupLine($"[dim]Deleted partial index {Markup.Escape(semanticIndex)}[/]");
+				_ = await transport.DeleteAsync<StringResponse>(state.SemanticIndex, cancellationToken: ct);
+				AnsiConsole.MarkupLine($"[dim]Deleted partial index {Markup.Escape(state.SemanticIndex)}[/]");
 				Environment.Exit(1);
 				return;
 			}
 
 			// Point -latest and ws-content-{env} aliases only after a successful reindex.
-			await PointAliasAsync(transport, semanticAlias, semanticIndex, logger, ct);
-			await PointAliasAsync(transport, pageAlias, semanticIndex, logger, ct);
-			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(semanticAlias)} → {Markup.Escape(semanticIndex)}");
-			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(pageAlias)} → {Markup.Escape(semanticIndex)}");
-			_ = await PruneOldIndicesAsync(transport, $"website-search.semantic-{env}-*", keepCount: 3, logger, ct);
+			await PointAliasAsync(transport, state.SemanticAlias, state.SemanticIndex, logger, ct);
+			await PointAliasAsync(transport, state.PageAlias, state.SemanticIndex, logger, ct);
+			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(state.SemanticAlias)} → {Markup.Escape(state.SemanticIndex)}");
+			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(state.PageAlias)} → {Markup.Escape(state.SemanticIndex)}");
+			_ = await PruneOldIndicesAsync(transport, $"ws-catalog.semantic-{state.Env}-*", keepCount: 3, logger, ct);
 		}
 		else // Reindex mode — incremental
 		{
 			// Global cutoff: max(last_updated) across all docs currently in semantic.
 			// Changed/new source docs have newer last_updated from their sync → caught by inference step.
-			var cutoff = await QueryMaxLastUpdatedAsync(transport, semanticIndex, ct);
+			var cutoff = await QueryMaxLastUpdatedAsync(transport, state.SemanticIndex, ct);
 			AnsiConsole.MarkupLine($"[dim]Cutoff (max last_updated in semantic):[/] [white]{cutoff:o}[/]");
 			AnsiConsole.WriteLine();
 
@@ -365,11 +419,11 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			// Reindex only docs whose last_updated > cutoff from lexical → semantic (slices=1, inference).
 			// These are docs that changed in any source since the last unify run.
 			var inferenceBody =
-				"{\"source\":{\"index\":\"" + lexicalIndex +
+				"{\"source\":{\"index\":\"" + state.LexicalIndex +
 				"\",\"query\":{\"range\":{\"last_updated\":{\"gt\":\"" + cutoff.ToString("o") + "\"}}}}," +
-				"\"dest\":{\"index\":\"" + semanticIndex + "\"}}";
+				"\"dest\":{\"index\":\"" + state.SemanticIndex + "\"}}";
 			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = inferenceBody, Slices = semanticSlices, RequestsPerSecond = rpsOpt },
+				new ServerReindexOptions { Body = inferenceBody, Slices = state.SemanticSlices, RequestsPerSecond = state.RpsOpt },
 				"inference-reindex", ct))
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — inference reindex failed.[/]");
@@ -380,9 +434,9 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			// ── Delete step ──────────────────────────────────────────────────────
 			// Reindex stale lexical docs (batch_index_date < batchTimestamp = not in current fill)
 			// to semantic using a delete script. This removes docs deleted from all sources.
-			var deleteBody = BuildDeleteScriptBody(lexicalIndex, semanticIndex, batchTsStr);
+			var deleteBody = BuildDeleteScriptBody(state.LexicalIndex, state.SemanticIndex, state.BatchTsStr);
 			if (!await RunServerReindexAsync(transport,
-				new ServerReindexOptions { Body = deleteBody, Slices = slices },
+				new ServerReindexOptions { Body = deleteBody, Slices = state.Slices },
 				"reindex-deletes", ct))
 			{
 				AnsiConsole.MarkupLine("[red]Aborting — delete step failed.[/]");
@@ -392,20 +446,20 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 
 			// ── Lexical cleanup ──────────────────────────────────────────────────
 			// Remove the stale docs from lexical too now that they've been deleted from semantic.
-			var staleQuery = "{\"range\":{\"batch_index_date\":{\"lt\":\"" + batchTsStr + "\"}}}";
-			await RunDeleteByQueryAsync(transport, lexicalIndex, staleQuery, slices, "cleanup-lexical", ct);
+			var staleQuery = "{\"range\":{\"batch_index_date\":{\"lt\":\"" + state.BatchTsStr + "\"}}}";
+			await RunDeleteByQueryAsync(transport, state.LexicalIndex, staleQuery, state.Slices, "cleanup-lexical", ct);
 
 			// Reindex mode does not create new backing indices — aliases are already correct.
 		}
 
 		// Persist combined source hash into component template for next-run rollover detection.
-		await WriteStoredSourceHashAsync(transport, env, currentSourceHash, ct);
-		AnsiConsole.MarkupLine($"[dim]Stored source hash {Markup.Escape(currentSourceHash)} → {Markup.Escape(UnifyStateTemplateName(env))}[/]");
+		await WriteStoredSourceHashAsync(transport, state.Env, state.CurrentSourceHash, ct);
+		AnsiConsole.MarkupLine($"[dim]Stored source hash {Markup.Escape(state.CurrentSourceHash)} → {Markup.Escape(UnifyStateTemplateName(state.Env))}[/]");
 
-		foreach (var label in extraLabels)
+		foreach (var label in state.ExtraLabels)
 		{
-			await PointAliasAsync(transport, label, semanticIndex, logger, ct);
-			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(label)} → {Markup.Escape(semanticIndex)}");
+			await PointAliasAsync(transport, label, state.SemanticIndex, logger, ct);
+			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(label)} → {Markup.Escape(state.SemanticIndex)}");
 		}
 
 		AnsiConsole.MarkupLine("[green]✓[/] Done");
@@ -501,22 +555,32 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			}
 		}
 
+		// Per-document bulk failures (checked before Error — when Failures is non-empty and no
+		// task-level error occurred, the library also populates Error with a one-line summary for
+		// backward compat, but the grouped breakdown below is far more actionable).
+		if (last?.Failures.Count > 0)
+		{
+			AnsiConsole.MarkupLine($"[yellow]⚠ {label} — {last.Failures.Count:N0} document(s) failed[/]");
+			foreach (var group in last.Failures
+				.GroupBy(f => (f.CauseType, f.CauseReason))
+				.OrderByDescending(g => g.Count())
+				.Take(10))
+			{
+				var sample = group.First();
+				AnsiConsole.MarkupLine(
+					$"[dim]  ×{group.Count():N0}[/] [red]{Markup.Escape(sample.CauseType ?? "unknown")}[/]: " +
+					$"{Markup.Escape(sample.CauseReason ?? "no reason given")} " +
+					$"[dim](e.g. {Markup.Escape(sample.Index ?? "?")}/{Markup.Escape(sample.Id ?? "?")})[/]");
+			}
+			if (last.Failures.Count > 10)
+				AnsiConsole.MarkupLine($"[dim]  ... {last.Failures.Count - 10:N0} more failure(s) not shown[/]");
+			return false;
+		}
+
 		if (last?.Error is { } err)
 		{
 			AnsiConsole.MarkupLine($"[red]✗ {label} failed:[/] {Markup.Escape(err)}");
 			AnsiConsole.MarkupLine($"[dim]  created={last.Created:N0} out of total={last.Total:N0} before failure[/]");
-			return false;
-		}
-
-		// ReindexProgress.failures is a JSON array that the library reads as string (returns null).
-		// Compute silent per-document failures from the arithmetic gap in the status counts.
-		var silentFailures = last is null ? 0
-			: last.Total - last.Created - last.Updated - last.Deleted - last.Noops - last.VersionConflicts;
-
-		if (silentFailures > 0)
-		{
-			AnsiConsole.MarkupLine($"[yellow]⚠ {label} — {silentFailures:N0} document(s) failed (check response.failures for details)[/]");
-			AnsiConsole.MarkupLine($"[dim]  created={last!.Created:N0} failures={silentFailures:N0} total={last.Total:N0}[/]");
 			return false;
 		}
 
@@ -642,6 +706,70 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			logger.LogError("Failed to create {Index} with source mapping: {Info}", destIndex, createResp.ApiCallDetails.DebugInformation);
 		else
 			AnsiConsole.MarkupLine($"[green]✓[/] Created [white]{Markup.Escape(destIndex)}[/] with source mapping");
+	}
+
+	// Internal/read-only top-level settings keys stripped when copying an index's settings to a
+	// fresh destination index — these are cluster/identity-specific and must not be replayed.
+	private static readonly string[] ReadOnlySettingsKeys =
+	[
+		"creation_date", "creation_date_string", "uuid", "version", "provided_name", "resize", "routing", "history",
+	];
+
+	/// <summary>
+	/// Creates <paramref name="destIndex"/> on the destination cluster with the mapping and
+	/// settings copied from <paramref name="sourceIndex"/> on the source cluster. Used by
+	/// <see cref="Copy"/> to faithfully recreate a destination index before reindexing into it.
+	/// </summary>
+	private static async Task CopyIndexDefinitionAsync(
+		DistributedTransport fromTransport, DistributedTransport toTransport,
+		string sourceIndex, string destIndex, ILogger logger, CancellationToken ct)
+	{
+		AnsiConsole.MarkupLine($"[dim]  Creating [white]{Markup.Escape(destIndex)}[/] from source mapping+settings of [white]{Markup.Escape(sourceIndex)}[/]...[/]");
+
+		var mappingResp = await fromTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.GET, $"{Uri.EscapeDataString(sourceIndex)}/_mapping", cancellationToken: ct);
+		if (!mappingResp.ApiCallDetails.HasSuccessfulStatusCode || mappingResp.Body is null)
+		{
+			logger.LogError("Failed to fetch source mapping from {Index}: {Info}", sourceIndex, mappingResp.ApiCallDetails.DebugInformation);
+			return;
+		}
+
+		var settingsResp = await fromTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.GET, $"{Uri.EscapeDataString(sourceIndex)}/_settings", cancellationToken: ct);
+
+		// Response shapes:
+		//   _mapping:  { "<backing>": { "mappings": { ... } } }
+		//   _settings: { "<backing>": { "settings": { "index": { ... } } } }
+		var mappingRoot = JsonNode.Parse(mappingResp.Body);
+		var mappings = mappingRoot?.AsObject().FirstOrDefault().Value?["mappings"];
+		if (mappings is null)
+		{
+			logger.LogError("No mappings found in source {Index} — skipping create", sourceIndex);
+			return;
+		}
+
+		JsonNode? settings = null;
+		if (settingsResp.ApiCallDetails.HasSuccessfulStatusCode && settingsResp.Body is not null)
+		{
+			var settingsRoot = JsonNode.Parse(settingsResp.Body);
+			settings = settingsRoot?.AsObject().FirstOrDefault().Value?["settings"]?["index"];
+			if (settings is JsonObject settingsObj)
+			{
+				foreach (var key in ReadOnlySettingsKeys)
+					_ = settingsObj.Remove(key);
+			}
+		}
+
+		var body = settings is not null
+			? $"{{\"settings\":{{\"index\":{settings.ToJsonString()}}},\"mappings\":{mappings.ToJsonString()}}}"
+			: $"{{\"mappings\":{mappings.ToJsonString()}}}";
+
+		var createResp = await toTransport.RequestAsync<StringResponse>(
+			Transport.HttpMethod.PUT, Uri.EscapeDataString(destIndex), PostData.String(body), cancellationToken: ct);
+		if (!createResp.ApiCallDetails.HasSuccessfulStatusCode)
+			logger.LogError("Failed to create {Index} with source mapping+settings: {Info}", destIndex, createResp.ApiCallDetails.DebugInformation);
+		else
+			AnsiConsole.MarkupLine($"[green]✓[/] Created [white]{Markup.Escape(destIndex)}[/] with source mapping+settings");
 	}
 
 	/// <summary>
@@ -834,6 +962,147 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		}
 
 		await ApplyAliasesAsync(transport, options.Aliases, destIndex, logger, ct);
+		AnsiConsole.MarkupLine("[green]✓[/] Done");
+	}
+
+	/// <summary>
+	/// Copies one or more indices verbatim from a source cluster to a destination cluster using
+	/// the Elasticsearch server-side remote reindex API. Unlike <see cref="SyncRemote"/> and
+	/// <see cref="UnifyIncrementalSync"/> this command is not docs-search specific — no search
+	/// resources (synonyms/query rulesets) are copied and no lexical/semantic inference phases run.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The destination cluster must whitelist the source host:port in
+	/// <c>reindex.remote.whitelist</c> (Elastic Cloud: advanced user settings).
+	/// </para>
+	/// <para>
+	/// When the destination index already exists, documents are reindexed into it as-is (its
+	/// existing mapping/settings are left untouched) unless <c>--force</c> is passed, in which case
+	/// the destination index is deleted and recreated from the source index's mapping and settings
+	/// before reindexing — guaranteeing a faithful fresh copy.
+	/// </para>
+	/// <para>
+	/// <c>--slices</c> (from the shared connection options) has no effect here — Elasticsearch
+	/// rejects <c>slices &gt; 1</c> for reindex from a remote source, so it is never sent.
+	/// </para>
+	/// </remarks>
+	/// <param name="indices">
+	/// One or more source index (or alias) names to copy. Each is used verbatim as the source name
+	/// on the source cluster.
+	/// </param>
+	/// <param name="renameFrom">
+	/// Regular expression applied to each source index name to derive its destination name
+	/// (e.g. <c>-prod-</c>). Must be paired with <c>--rename-to</c>. When omitted, destination
+	/// names equal source names.
+	/// </param>
+	/// <param name="renameTo">
+	/// Replacement string for <c>--rename-from</c> — supports regex back-references
+	/// (e.g. <c>-local-</c>). Must be paired with <c>--rename-from</c>.
+	/// </param>
+	/// <param name="force">
+	/// Delete and recreate the destination index (from the source's mapping and settings) before
+	/// reindexing, even if it already exists. Without this flag an existing destination index is
+	/// reindexed into as-is.
+	/// </param>
+	/// <param name="stripSemanticFields">
+	/// Strip <c>_inference_fields</c> metadata before writing to the destination. See
+	/// <see cref="SyncRemote"/> for details on why this matters for <c>semantic_text</c> indices.
+	/// </param>
+	/// <param name="options">Connection and throttle options.</param>
+	/// <param name="ct">Cancellation token.</param>
+	public async Task Copy(
+		[Argument] string[] indices,
+		string? renameFrom = null,
+		string? renameTo = null,
+		bool force = false,
+		bool stripSemanticFields = false,
+		[AsParameters] IndicesRemoteSyncOptions options = default!,
+		Cancel ct = default)
+	{
+		if (indices.Length == 0)
+		{
+			AnsiConsole.MarkupLine("[red]✗ At least one index must be given.[/]");
+			Environment.Exit(1);
+			return;
+		}
+
+		var (fromEndpoint, transport, toUri) = ResolveSyncTransport(options);
+		var fromTransport = ElasticsearchTransportFactory.Create(fromEndpoint);
+		var remoteSource = BuildRemoteSource(fromEndpoint);
+		var logger = loggerFactory.CreateLogger<IndicesCommands>();
+
+		AnsiConsole.MarkupLine("[aqua bold]Indices copy[/]");
+		AnsiConsole.MarkupLine($"[dim]From (source):[/] {Markup.Escape(fromEndpoint.Uri.ToString())}");
+		AnsiConsole.MarkupLine($"[dim]To (dest):[/]      {Markup.Escape(toUri)}");
+		AnsiConsole.MarkupLine($"[dim]rps:[/]             [white]{(options.Rps.HasValue ? options.Rps.Value.ToString("F0") : "unlimited")}[/]");
+		AnsiConsole.MarkupLine($"[dim]Force:[/]          [white]{force}[/]  [dim]Strip sem. fields:[/] [white]{stripSemanticFields}[/]");
+		AnsiConsole.WriteLine();
+
+		if (!string.IsNullOrWhiteSpace(options.Aliases) && indices.Length > 1)
+			AnsiConsole.MarkupLine("[yellow]⚠ --aliases is ignored when copying more than one index.[/]");
+
+		var failed = 0;
+		foreach (var source in indices)
+		{
+			var destIndex = ApplyRename(source, renameFrom, renameTo);
+			var renamed = destIndex != source;
+			AnsiConsole.MarkupLine(renamed
+				? $"[aqua]{Markup.Escape(source)}[/] [dim](renamed →)[/] [aqua]{Markup.Escape(destIndex)}[/]"
+				: $"[aqua]{Markup.Escape(source)}[/]");
+
+			var sourceHead = await fromTransport.HeadAsync(source, ct);
+			if (sourceHead.ApiCallDetails.HttpStatusCode != 200)
+			{
+				AnsiConsole.MarkupLine($"[red]✗ Source index [white]{Markup.Escape(source)}[/] not found on {Markup.Escape(fromEndpoint.Uri.ToString())}[/]");
+				failed++;
+				continue;
+			}
+
+			var destHead = await transport.HeadAsync(destIndex, ct);
+			var destExists = destHead.ApiCallDetails.HttpStatusCode == 200;
+
+			if (destExists && force)
+			{
+				_ = await transport.DeleteAsync<StringResponse>(destIndex, cancellationToken: ct);
+				AnsiConsole.MarkupLine($"[dim]  Deleted existing [white]{Markup.Escape(destIndex)}[/] (--force)[/]");
+				destExists = false;
+			}
+
+			if (!destExists)
+				await CopyIndexDefinitionAsync(fromTransport, transport, source, destIndex, logger, ct);
+
+			// Slices is intentionally omitted — Elasticsearch rejects slices > 1 for reindex
+			// from a remote source ("reindex from remote sources doesn't support slices > 1").
+			if (!await RunServerReindexAsync(transport,
+				new ServerReindexOptions
+				{
+					Remote = remoteSource,
+					Source = source,
+					Destination = destIndex,
+					RequestsPerSecond = options.Rps,
+					ExcludeInferenceFields = stripSemanticFields,
+				},
+				$"copy ({Markup.Escape(source)})", ct))
+			{
+				AnsiConsole.MarkupLine($"[red]✗ Copy failed for {Markup.Escape(source)}.[/]");
+				failed++;
+				continue;
+			}
+
+			if (indices.Length == 1)
+				await ApplyAliasesAsync(transport, options.Aliases, destIndex, logger, ct);
+
+			AnsiConsole.MarkupLine($"[green]✓[/] {Markup.Escape(source)} → {Markup.Escape(destIndex)}");
+		}
+
+		if (failed > 0)
+		{
+			AnsiConsole.MarkupLine($"[red]✗ {failed} of {indices.Length} index copy(ies) failed.[/]");
+			Environment.Exit(1);
+			return;
+		}
+
 		AnsiConsole.MarkupLine("[green]✓[/] Done");
 	}
 
@@ -1084,7 +1353,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	/// <param name="ct">Cancellation token.</param>
 	public async Task Cleanup([AsParameters] IndicesCleanupOptions options, Cancel ct = default)
 	{
-		var endpoint = ResolveEndpoint(options.EsUrl, options.EsApiKey);
+		var cfg = ResolveEndpoint(options.Endpoint, options.ApiKey);
 		var environment = options.Environment ?? config.ElasticsearchEnvironment;
 		var buildType = config.BuildType;
 		var keep = options.Keep;
@@ -1092,7 +1361,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		var pageAlias = IndicesCleanupPlanner.PageAliasName(environment);
 
 		AnsiConsole.MarkupLine("[aqua bold]Indices cleanup[/]");
-		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(endpoint.Uri.ToString())}");
+		AnsiConsole.MarkupLine($"[dim]Elasticsearch:[/] {Markup.Escape(cfg.Uri.ToString())}");
 		AnsiConsole.MarkupLine($"[dim]Environment:[/]   [white]{Markup.Escape(environment)}[/]");
 		AnsiConsole.MarkupLine($"[dim]Keep:[/]          [white]{keep}[/] per alias family");
 		if (dryRun)
@@ -1107,7 +1376,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		AnsiConsole.MarkupLine($"[dim]Protected alias:[/]  [white]{Markup.Escape(pageAlias)}[/]");
 		AnsiConsole.WriteLine();
 
-		var transport = ElasticsearchTransportFactory.Create(endpoint);
+		var transport = ElasticsearchTransportFactory.Create(cfg);
 
 		// Single round-trip: GET all matching index patterns and their aliases
 		var patterns = string.Join(",", knownAliases.Select(a => a.IndexPattern));
@@ -1253,7 +1522,10 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	{
 		var from = ResolveEndpoint(o.FromUrl, o.FromApiKey);
 
-		var to = config.Destination ?? new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") };
+		// Destination seeds from the same configured Elasticsearch endpoint as the source
+		// (see SourcingConfiguration.Destination) — override with --to-url/--to-api-key to
+		// point only the destination elsewhere.
+		var to = config.Destination;
 		if (o.ToUrl is not null)
 			to.Uri = o.ToUrl;
 		if (o.ToApiKey is not null)
@@ -1261,15 +1533,6 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			to.ApiKey = o.ToApiKey;
 			to.Username = null;
 			to.Password = null;
-		}
-
-		if (to.Uri.Host == "localhost" && o.ToUrl is null && config.Destination is null)
-		{
-			AnsiConsole.MarkupLine("[red]✗ Destination cluster URL is not configured.[/]");
-			AnsiConsole.MarkupLine("[dim]Set [white]DESTINATION_ELASTIC_URL[/] or pass [white]--to-url[/].[/]");
-			Environment.Exit(1);
-			// Environment.Exit throws; return is unreachable but required for the compiler.
-			return (from, null, string.Empty);
 		}
 
 		return (from, ElasticsearchTransportFactory.Create(to), to.Uri.ToString().TrimEnd('/'));
@@ -1370,17 +1633,17 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		return resp.Get<long?>("count") ?? 0;
 	}
 
-	private ElasticsearchEndpoint ResolveEndpoint(Uri? esUrl, string? esApiKey)
+	private ElasticsearchEndpoint ResolveEndpoint(Uri? endpoint, string? apiKey)
 	{
-		var endpoint = config.Elasticsearch;
-		if (esUrl is not null)
-			endpoint.Uri = esUrl;
-		if (esApiKey is not null)
+		var cfg = config.Elasticsearch;
+		if (endpoint is not null)
+			cfg.Uri = endpoint;
+		if (apiKey is not null)
 		{
-			endpoint.ApiKey = esApiKey;
-			endpoint.Username = null;
-			endpoint.Password = null;
+			cfg.ApiKey = apiKey;
+			cfg.Username = null;
+			cfg.Password = null;
 		}
-		return endpoint;
+		return cfg;
 	}
 }

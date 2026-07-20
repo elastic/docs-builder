@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-40 md:z-auto transition-[top,max-height] duration-300 md:order-1">
+<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
 	<nav
 		id="pages-nav"
 		class="sidebar-nav h-full simple-scrollbar">
@@ -13,6 +13,6 @@
 	</label>
 </aside>
 @* ReSharper disable once Html.IdNotResolved *@
-<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-30 ">
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
 	
 </label>

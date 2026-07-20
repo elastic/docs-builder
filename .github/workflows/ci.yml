@@ -81,7 +81,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.4.0
         with:
           cache: npm
           cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
@@ -89,25 +89,12 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Check shai-hulud attack
-        run: |
-          # shai hulud v1
-          # https://semgrep.dev/blog/2025/security-advisory-npm-packages-using-secret-scanning-tools-to-steal-credentials/
-          if find . -type f -name "*.js" -exec sha256sum {} \; | grep -q "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09"; then
-            echo "Vulnerable version of serialize-javascript found in:"
-            find . -type f -name "*.js" -exec sha256sum {} \; | grep "46faab8ab153fae6e80e7cca38eab363075bb524edd79e42269217a083628f09" | awk '{print $2}'
-            exit 1
-          fi
-          # shai hulud v2
-          # https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack#malware-hashes-65
-          if find . -type f -name "*.js" -exec sha1sum {} \; | grep -q "d1829b4708126dcc7bea7437c04d1f10eacd4a16"; then
-            echo "Vulnerable version of serialize-javascript found in:"
-            find . -type f -name "*.js" -exec sha1sum {} \; | grep "d1829b4708126dcc7bea7437c04d1f10eacd4a16" | awk '{print $2}'
-            exit 1
-          fi
-          
-          
+        uses: ./.github/actions/check-shai-hulud
+        with:
+          path: src/Elastic.Documentation.Site
+
       - name: Lint
         run: npm run lint
       
@@ -215,7 +202,7 @@ jobs:
         run: dotnet workload install aspire
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-integration-tests
           aws-region: us-east-1

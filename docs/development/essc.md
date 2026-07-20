@@ -39,7 +39,7 @@ dotnet run --project src/tooling/essc -- --help
 
 `essc` resolves credentials in this order of precedence:
 
-1. CLI flags (`--es-url`, `--es-api-key`)
+1. CLI flags (`--endpoint`, `--api-key`)
 2. Environment variables (see table below)
 3. Dotnet user-secrets store `docs-builder` (local development) — the same store the
    rest of this repository uses, so aspire and essc share `Parameters:ElasticsearchUrl`
@@ -47,12 +47,14 @@ dotnet run --project src/tooling/essc -- --help
 
 ### Environment variables
 
-| Environment variable          | Description                           |
-| ----------------------------- | ------------------------------------- |
-| `ELASTICSEARCH_URL`           | Full Elasticsearch URL including port |
-| `ELASTICSEARCH_API_KEY`       | Elasticsearch API key                 |
-| `CONTENTSTACK_API_KEY`        | Contentstack Content Delivery API key |
-| `CONTENTSTACK_DELIVERY_TOKEN` | Contentstack delivery token           |
+| Environment variable          | Description                                                          |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `ELASTICSEARCH_URL`           | Full Elasticsearch URL including port                                |
+| `ELASTICSEARCH_API_KEY`       | Elasticsearch API key                                                |
+| `DESTINATION_ELASTIC_URL`     | Destination cluster URL for cross-cluster commands (`indices copy`, `indices sync-remote`, `indices unify-incremental-sync`). Only needed when the destination differs from the source — it otherwise seeds from `Parameters:ElasticsearchUrl` / `ELASTICSEARCH_URL` |
+| `DESTINATION_ELASTIC_APIKEY`  | Destination cluster API key — same seeding rule as above             |
+| `CONTENTSTACK_API_KEY`        | Contentstack Content Delivery API key                                |
+| `CONTENTSTACK_DELIVERY_TOKEN` | Contentstack delivery token                                          |
 
 The dotnet configuration section keys (`Parameters:ElasticsearchUrl`, `ContentStack:ApiKey`,
 etc.) are also accepted. For CI, use the flat environment variable names above.
@@ -65,6 +67,13 @@ dotnet user-secrets set --id docs-builder Parameters:ElasticsearchApiKey <key>
 dotnet user-secrets set --id docs-builder ContentStack:ApiKey <key>
 dotnet user-secrets set --id docs-builder ContentStack:DeliveryToken <token>
 ```
+
+For cross-cluster commands (`indices copy`, `indices sync-remote`, `indices unify-incremental-sync`),
+the destination cluster seeds from the same `Parameters:ElasticsearchUrl` / `Parameters:ElasticsearchApiKey`
+secret as the source — so configuring just one cluster in the secrets store is enough; pass
+`--to-url`/`--to-api-key` (or `--from-url`/`--from-api-key`) on the command to point only one side
+at a different cluster, or set `DESTINATION_ELASTIC_URL`/`DESTINATION_ELASTIC_APIKEY` to override
+the destination for every run.
 
 If you previously used essc from the website-search-data repository, copy the
 `Parameters:Elasticsearch*` and `ContentStack:*` values from your old
@@ -90,12 +99,12 @@ essc contentstack sync
 | `--no-ai`        | false              | Skip generative AI (no post-sync enrich batch)                          |
 | `--max-ai-docs`  | 100 (when omitted) | Positive cap on documents enriched after finalize; omit for default 100 |
 | `--max-ai-time`  | none               | Wall-clock cap for post-sync AI (minimum `1m` when set)                 |
-| `--es-url`       | from secrets       | Override Elasticsearch endpoint                                         |
-| `--es-api-key`   | from secrets       | Override Elasticsearch API key                                          |
+| `--endpoint`     | from secrets       | Override Elasticsearch endpoint                                         |
+| `--api-key`      | from secrets       | Override Elasticsearch API key                                          |
 | `--page-per`     | 0 (unlimited)      | Max pages per content type (useful for testing)                         |
 | `--cache-folder` | OS app data        | Override cursor state directory                                         |
 
-`--max-ai-docs` uses DataAnnotations: it must be at least **1** when passed; **`0` is invalid**. For a large or unbounded batch without re-syncing, use **`contentstack ai`** instead.
+`--max-ai-docs` uses DataAnnotations: it must be at least **1** when passed; **`0` is invalid**. For a large or unbounded batch without re-syncing, use **`contentstack ai-enrich`** instead.
 
 The sync runs in two phases:
 
@@ -105,20 +114,20 @@ The sync runs in two phases:
    the semantic index, publishes synonyms and query rules, then runs a **bounded**
    generative AI enrichment pass on the semantic write index (unless `--no-ai`).
 
-### `contentstack ai`
+### `contentstack ai-enrich`
 
 Runs generative AI enrichment on existing **`site-*`** semantic indices without calling Contentstack. Same Elasticsearch overrides as `contentstack sync`.
 
 ```bash
-essc contentstack ai
+essc contentstack ai-enrich
 ```
 
-| Flag             | Default       | Description                               |
-| ---------------- | ------------- | ----------------------------------------- |
-| `--max-run-time` | unlimited     | Stop enrichment after N minutes           |
-| `--max-run-docs` | 0 (unlimited) | Enrich at most N documents (`0` = no cap) |
-| `--es-url`       | from secrets  | Override Elasticsearch endpoint           |
-| `--es-api-key`   | from secrets  | Override Elasticsearch API key            |
+| Flag            | Default       | Description                               |
+| --------------- | ------------- | ----------------------------------------- |
+| `--max-ai-time` | unlimited     | Stop enrichment after N minutes           |
+| `--max-ai-docs` | 0 (unlimited) | Enrich at most N documents (`0` = no cap) |
+| `--endpoint`    | from secrets  | Override Elasticsearch endpoint           |
+| `--api-key`     | from secrets  | Override Elasticsearch API key            |
 
 ### `contentstack types`
 
@@ -143,13 +152,42 @@ essc contentstack samples <content-type>
 
 Discovers labs URLs from sitemaps, crawls HTML, and bulk-ingests into **`labs-*`** indices. See `essc labs sync --help` for crawl flags (`--dry-run`, `--force`, `--no-ai`, `--max-ai-docs`, `--max-ai-time`, etc.).
 
-### `labs ai`
+### `labs ai-enrich`
 
-Runs generative AI enrichment on existing **`labs-*`** semantic indices without re-crawling. Flags match **`contentstack ai`** (`--max-run-time`, `--max-run-docs`, `--es-url`, `--es-api-key`).
+Runs generative AI enrichment on existing **`labs-*`** semantic indices without re-crawling. Flags match **`contentstack ai-enrich`** (`--max-ai-time`, `--max-ai-docs`, `--endpoint`, `--api-key`).
 
 ```bash
-essc labs ai
+essc labs ai-enrich
 ```
+
+## Indices commands
+
+### `indices copy`
+
+Copies one or more indices verbatim between clusters using the Elasticsearch server-side remote
+reindex API. Unlike `indices sync-remote` / `indices unify-incremental-sync`, this command is not
+docs-search specific — it copies no synonym/query-rule resources and runs no lexical/semantic
+inference phases. Useful for pulling standalone indices (e.g. AI-enrichment `-ai-cache` lookup
+indices) from production down to a local cluster.
+
+```bash
+essc indices copy docs-assembler.semantic-prod-ai-cache labs-public.semantic-prod-ai-cache \
+  --from-url https://<prod-es> --from-api-key <key> \
+  --to-url http://localhost:9200
+```
+
+- Takes one or more source index/alias names as positional arguments.
+- `--rename-from` / `--rename-to` — regex rename applied to each source name to derive its
+  destination name (back-references supported), e.g. `--rename-from 'semantic-prod-' --rename-to
+  'semantic-local-'`.
+- `--force` — delete and recreate an existing destination index from the source's mapping and
+  settings before reindexing. Without it, an existing destination index is reindexed into as-is.
+- `--strip-semantic-fields` — strip `_inference_fields` metadata when the source has
+  `semantic_text` mappings (see `indices sync-remote`).
+- Shares `--from-url` / `--from-api-key` / `--to-url` / `--to-api-key` / `--slices` / `--rps` /
+  `--aliases` with `indices sync-remote` and `indices unify-incremental-sync`. `--slices` has no
+  effect on `indices copy` — every reindex it does is a remote reindex, and Elasticsearch rejects
+  `slices > 1` for reindex from a remote source.
 
 ## CI behaviour
 

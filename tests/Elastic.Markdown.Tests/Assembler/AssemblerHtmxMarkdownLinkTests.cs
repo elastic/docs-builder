@@ -14,7 +14,10 @@ using Xunit;
 
 namespace Elastic.Markdown.Tests.Assembler;
 
-/// <summary>Tests that assembler builds produce correct HTMX attributes on markdown cross-links (same-site, not target=_blank).</summary>
+/// <summary>
+/// Navigation relies on body-level hx-boost with hx-preserve islands, so markdown links must
+/// not carry per-link htmx attributes. Cross-links stay same-site (no target=_blank).
+/// </summary>
 public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTestBase(output, "Go to [test](kibana://index.md)")
 {
 	protected override BuildContext CreateBuildContext(
@@ -28,12 +31,11 @@ public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTest
 		};
 
 	[Fact]
-	public void CrossLink_UsesGranularSwap_ForAssembler() =>
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#nav-tree,#nav-dropdown\"");
-
-	[Fact]
-	public void CrossLink_HasPreload() =>
+	public void CrossLink_HasNoSelectOobButKeepsPreload()
+	{
+		Html.Should().NotContain("hx-select-oob");
 		Html.Should().Contain("preload=\"mousedown\"");
+	}
 
 	[Fact]
 	public void CrossLink_NoTargetBlank() =>
@@ -50,7 +52,7 @@ public class AssemblerHtmxMarkdownLinkTests(ITestOutputHelper output) : LinkTest
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-/// <summary>Internal links in assembler use #content-container,#toc-nav (same as isolated).</summary>
+/// <summary>Internal links in assembler carry no per-link htmx attributes.</summary>
 public class AssemblerHtmxInternalLinkTests(ITestOutputHelper output) : LinkTestBase(output, "[Requirements](testing/req.md)")
 {
 	protected override BuildContext CreateBuildContext(
@@ -64,11 +66,8 @@ public class AssemblerHtmxInternalLinkTests(ITestOutputHelper output) : LinkTest
 		};
 
 	[Fact]
-	public void InternalLink_UsesContentContainerAndTocNav_ForAssembler()
-	{
-		// Assembler: same-docset links use #content-container,#toc-nav (same as isolated)
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav\"");
-	}
+	public void InternalLink_HasNoPerLinkHtmxAttributes() =>
+		Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -77,7 +76,7 @@ public class AssemblerHtmxInternalLinkTests(ITestOutputHelper output) : LinkTest
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-/// <summary>Absolute path links in assembler get HTMX attributes (granular swap when nav roots not same).</summary>
+/// <summary>Absolute path links in assembler carry no per-link htmx attributes.</summary>
 public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 """
 [Elasticsearch](/_static/img/observability.png)
@@ -95,10 +94,9 @@ public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : Link
 		};
 
 	[Fact]
-	public void AbsolutePathLink_GetsHtmxAttributes_ForAssembler()
+	public void AbsolutePathLink_HasNoSelectOobButKeepsPreload()
 	{
-		// Assembler: absolute path links get HTMX (granular swap when hasSameTopLevelGroup is false)
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#nav-tree,#nav-dropdown\"");
+		Html.Should().NotContain("hx-select-oob");
 		Html.Should().Contain("preload=\"mousedown\"");
 	}
 
@@ -106,7 +104,7 @@ public class AssemblerHtmxAbsolutePathLinkTests(ITestOutputHelper output) : Link
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-/// <summary>Reference-style internal links in assembler use #content-container,#toc-nav.</summary>
+/// <summary>Reference-style internal links in assembler carry no per-link htmx attributes.</summary>
 public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 """
 [test][test]
@@ -126,10 +124,8 @@ public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTes
 		};
 
 	[Fact]
-	public void ReferenceLink_UsesContentContainerAndTocNav_ForAssembler()
-	{
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav\"");
-	}
+	public void ReferenceLink_HasNoPerLinkHtmxAttributes() =>
+		Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -138,7 +134,7 @@ public class AssemblerHtmxReferenceLinkTests(ITestOutputHelper output) : LinkTes
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-/// <summary>Empty-text cross-links in assembler still get granular swap (and emit error).</summary>
+/// <summary>Empty-text cross-links in assembler carry no per-link htmx attributes (and emit error).</summary>
 public class AssemblerHtmxEmptyTextCrossLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 """
 
@@ -157,8 +153,8 @@ Go to [](kibana://index.md)
 		};
 
 	[Fact]
-	public void EmptyTextCrossLink_UsesGranularSwap_ForAssembler() =>
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav,#nav-tree,#nav-dropdown\"");
+	public void EmptyTextCrossLink_HasNoPerLinkHtmxAttributes() =>
+		Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
 	public void EmptyTextCrossLink_NoTargetBlank() =>
@@ -178,7 +174,7 @@ Go to [](kibana://index.md)
 	}
 }
 
-/// <summary>Insert-page-title links (empty text, internal target) use #content-container,#toc-nav.</summary>
+/// <summary>Insert-page-title links (empty text, internal target) carry no per-link htmx attributes.</summary>
 public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkTestBase(output,
 """
 [](testing/req.md)
@@ -196,10 +192,8 @@ public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkT
 		};
 
 	[Fact]
-	public void InsertPageTitle_UsesContentContainerAndTocNav_ForAssembler()
-	{
-		Html.Should().Contain("hx-select-oob=\"#content-container,#toc-nav\"");
-	}
+	public void InsertPageTitle_HasNoPerLinkHtmxAttributes() =>
+		Html.Should().NotContain("hx-select-oob");
 
 	[Fact]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
@@ -208,7 +202,7 @@ public class AssemblerHtmxInsertPageTitleTests(ITestOutputHelper output) : LinkT
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-/// <summary>HTTP links in assembler do NOT get HTMX attributes (target="_blank" instead).</summary>
+/// <summary>HTTP links in assembler get target="_blank" and no htmx attributes.</summary>
 public class AssemblerHtmxExternalLinkTests(ITestOutputHelper output) : LinkTestBase(output,
 """
 [link to app]({{some-url-with-a-version}})

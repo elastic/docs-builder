@@ -79,6 +79,9 @@ public static class OpenTelemetryRegistrationExtensions
 						.AddSource(builder.Environment.ApplicationName)
 						.AddAspNetCoreInstrumentation(aspNetCoreOptions =>
 						{
+							// Exclude requests from our own synthetics monitors from tracing
+							aspNetCoreOptions.Filter = httpContext =>
+								!httpContext.Request.Headers.ContainsKey(TelemetryConstants.SyntheticMonitorHeaderName);
 							// Enrich spans with custom attributes from HTTP context
 							aspNetCoreOptions.EnrichWithHttpRequest = (activity, httpRequest) =>
 							{

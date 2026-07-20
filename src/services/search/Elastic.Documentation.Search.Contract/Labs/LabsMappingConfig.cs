@@ -35,7 +35,7 @@ public class LabsLexicalConfig : IConfigureElasticsearch<LabsDocument>
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<LabsDocument> ConfigureMappings(MappingsBuilder<LabsDocument> mappings) =>
-		mappings.AddSearchDocumentMappings();
+		mappings.AddSearchDocumentMappings().AddSiteMappings();
 }
 
 public class LabsSemanticConfig : IConfigureElasticsearch<LabsDocument>
@@ -45,5 +45,5 @@ public class LabsSemanticConfig : IConfigureElasticsearch<LabsDocument>
 	public IReadOnlyDictionary<string, string>? IndexSettings => null;
 
 	public MappingsBuilder<LabsDocument> ConfigureMappings(MappingsBuilder<LabsDocument> mappings) =>
-		mappings.AddSearchDocumentMappings(semantic: true);
+		mappings.AddSearchDocumentMappings(semantic: true).AddSiteMappings();
 }

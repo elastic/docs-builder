@@ -2,7 +2,6 @@
 @using Elastic.Markdown.Myst.Directives.PageCard
 @inherits RazorSlice<PageCardViewModel>
 <a href="@Model.Url" style="text-decoration:none;"
-   hx-select-oob="@Htmx.GetHxSelectOob(true)"
    preload="@Htmx.Preload"
    class="page-card flex items-center justify-between w-full border border-grey-20 rounded-lg px-6 py-4 mt-2 hover:border-grey-80 hover:bg-grey-5 group"
 >

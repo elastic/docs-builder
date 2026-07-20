@@ -5,7 +5,10 @@
 using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -282,7 +285,7 @@ public class TagMetadataTests
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(collector, FileSystemFactory.RealRead, configurationContext);
+		var context = new BuildContext(collector, FileSystemFactory.RealGitRootForPath(null), configurationContext);
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
@@ -839,7 +842,7 @@ public class TagMetadataTests
 	[Fact]
 	public void GenerateTagMoniker_DataStream_Uses_Hyphen()
 	{
-		OpenApiGenerator.GenerateTagMoniker("data stream").Should().Be("data-stream");
+		ApiUrlBuilder.TagMoniker("data stream").Should().Be("data-stream");
 	}
 
 	[Fact]

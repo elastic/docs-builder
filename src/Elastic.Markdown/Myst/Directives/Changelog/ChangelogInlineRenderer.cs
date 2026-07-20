@@ -32,7 +32,8 @@ public static class ChangelogInlineRenderer
 			DescriptionVisibility = block.DescriptionVisibility,
 			PrivateRepositories = block.PrivateRepositories,
 			HideFeatures = block.HideFeatures,
-			PublishBlocker = block.PublishBlocker
+			PublishBlocker = block.PublishBlocker,
+			FromCdn = block.CdnProduct is not null
 		};
 
 		// Render each bundle as a version section (already sorted by semver descending)
@@ -122,6 +123,7 @@ public static class ChangelogInlineRenderer
 		{
 			ChangelogLinkVisibility.KeepLinks => false,
 			ChangelogLinkVisibility.HideLinks => true,
+			_ when options.FromCdn => false,
 			_ => ShouldHideLinksForRepo(bundle.Repo, options.PrivateRepositories)
 		};
 
@@ -613,7 +615,7 @@ public static class ChangelogInlineRenderer
 			}
 		}
 
-		return linksParts.Count > 0 ? $"[{string.Join(", ", linksParts)}]" : string.Empty;
+		return linksParts.Count > 0 ? string.Join(" ", linksParts) : string.Empty;
 	}
 
 	private static void RenderDetailedEntry(StringBuilder sb, ChangelogEntry entry, string repo, string owner, bool hideLinks, bool hideEntryDescriptions)

@@ -1,0 +1,21 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.ExamplesSection>
+@(await RenderPartialAsync<_SectionHeader, SectionHeader>(Model.Header))
+@foreach (var example in Model.Examples)
+{
+	<div class="example-block">
+		<h4>@example.Title</h4>
+		@if (example.DescriptionHtml is not null)
+		{
+			<div class="example-description">@example.DescriptionHtml</div>
+		}
+		@if (example.JsonValue is not null)
+		{
+			@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-json", example.JsonValue)))
+		}
+		@if (!string.IsNullOrEmpty(example.ExternalValue))
+		{
+			<p class="external-example">External example: <a href="@example.ExternalValue">@example.ExternalValue</a></p>
+		}
+	</div>
+}

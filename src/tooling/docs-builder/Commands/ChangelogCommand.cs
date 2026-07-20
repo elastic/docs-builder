@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Buffers;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 using System.Linq;
@@ -1391,7 +1392,7 @@ internal sealed partial class ChangelogCommands(
 		IGitHubPrService prService = new GitHubPrService(logFactory);
 		var service = new ChangelogPrEvaluationService(logFactory, configurationContext, prService, githubActionsService);
 
-		var prBody = environmentVariables.GetEnvironmentVariable("PR_BODY");
+		var prBody = await ReadPrBodyFromEnvironmentAsync(ctx);
 
 		var args = new EvaluatePrArguments
 		{
@@ -1558,6 +1559,45 @@ internal sealed partial class ChangelogCommands(
 		return result;
 	}
 
+	// PR_BODY can hit GitHub's 65,536-char limit and exceed runner env-var
+	// budgets when passed inline. PR_BODY_FILE lets callers stage the body
+	// in a file under RUNNER_TEMP and pass the path instead, which keeps
+	// the body off the env block entirely. Cap reads at 256 KiB to bound
+	// memory if a caller hands us a hostile path.
+	private const int MaxPrBodyFileBytes = 256 * 1024;
+
+	private async Task<string?> ReadPrBodyFromEnvironmentAsync(CancellationToken ct)
+	{
+		var prBodyFile = environmentVariables.GetEnvironmentVariable("PR_BODY_FILE");
+		if (string.IsNullOrWhiteSpace(prBodyFile))
+			return environmentVariables.GetEnvironmentVariable("PR_BODY");
+
+		var info = _fileSystem.FileInfo.New(prBodyFile);
+		if (!info.Exists)
+		{
+			collector.EmitWarning(string.Empty, $"PR_BODY_FILE points to a missing file: {prBodyFile}");
+			return null;
+		}
+
+		if (info.Length <= MaxPrBodyFileBytes)
+			return await _fileSystem.File.ReadAllTextAsync(prBodyFile, ct);
+
+		collector.EmitHint(string.Empty, $"PR_BODY_FILE exceeds {MaxPrBodyFileBytes} bytes ({info.Length}); truncating.");
+
+		var buffer = ArrayPool<byte>.Shared.Rent(MaxPrBodyFileBytes);
+		try
+		{
+			await using var stream = info.OpenRead();
+			var slice = buffer.AsMemory(0, MaxPrBodyFileBytes);
+			await stream.ReadExactlyAsync(slice, ct);
+			return Encoding.UTF8.GetString(slice.Span);
+		}
+		finally
+		{
+			ArrayPool<byte>.Shared.Return(buffer);
+		}
+	}
+
 	private static string GetPathForConfig(string repoPath, string targetPath)
 	{
 		var relativePath = Path.GetRelativePath(repoPath, targetPath);
@@ -1607,6 +1647,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
+	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -1617,6 +1658,7 @@ internal sealed partial class ChangelogCommands(
 		string? repo = null,
 		string? owner = null,
 		string? branch = null,
+		bool skipEtagCheck = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1658,7 +1700,8 @@ internal sealed partial class ChangelogCommands(
 			Directory = resolvedDirectory,
 			Repo = resolvedRepo,
 			Owner = resolvedOwner,
-			Branch = resolvedBranch
+			Branch = resolvedBranch,
+			SkipEtagCheck = skipEtagCheck
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)
@@ -1666,7 +1709,7 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>Resolves the authoring repo/owner/branch for uploads (CLI flags &gt; <c>bundle.{repo,owner}</c> &gt; git), reducing the repo to a single path segment.</summary>
+	/// <summary>Resolves the authoring repo/owner/branch for uploads (CLI flags &gt; <c>bundle.{repo,owner}</c> &gt; git); owner falls back to the <c>owner/</c> prefix of repo (<see cref="ChangelogRepoOwnerResolver"/>) before git, reducing the repo to a single path segment.</summary>
 	private async Task<(string? Repo, string? Owner, string? Branch)> ResolveUploadRepoOwnerBranch(string? repoCli, string? ownerCli, string? branchCli, string? configPath, string? uploadDirectory, CancellationToken ctx)
 	{
 		var bundleConfig = await new ChangelogConfigurationLoader(logFactory, configurationContext, _fileSystem)
@@ -1692,8 +1735,9 @@ internal sealed partial class ChangelogCommands(
 		if (GitRemoteConfigurationReader.TryReadOriginUrl(_fileSystem, repoRoot, out var originUrl))
 			_ = GitHubRemoteParser.TryParseGitHubComOwnerRepo(originUrl, out gitOwner, out gitRepo);
 
-		var resolvedRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : (bundleConfig?.Bundle?.Repo ?? gitRepo);
-		var resolvedOwner = ownerCli ?? bundleConfig?.Bundle?.Owner ?? gitOwner;
+		var explicitRepo = !string.IsNullOrWhiteSpace(repoCli) ? repoCli : bundleConfig?.Bundle?.Repo;
+		var resolvedRepo = explicitRepo ?? gitRepo;
+		var resolvedOwner = ChangelogRepoOwnerResolver.ResolveOwner(ownerCli ?? bundleConfig?.Bundle?.Owner, explicitRepo, gitOwner);
 
 		// The producer branch is the branch being published: --branch, else the current checkout's branch.
 		// bundle.branch is intentionally not consulted here — it selects which pool to read when bundling.
@@ -1704,12 +1748,7 @@ internal sealed partial class ChangelogCommands(
 			resolvedBranch = checkout.Branch;
 		}
 
-		if (!string.IsNullOrWhiteSpace(resolvedRepo))
-		{
-			var slash = resolvedRepo.LastIndexOf('/');
-			if (slash >= 0 && slash < resolvedRepo.Length - 1)
-				resolvedRepo = resolvedRepo[(slash + 1)..];
-		}
+		resolvedRepo = ChangelogRepoOwnerResolver.NormalizeRepo(resolvedRepo);
 
 		return (resolvedRepo, resolvedOwner, resolvedBranch);
 	}

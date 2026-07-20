@@ -4,6 +4,7 @@
 
 using System.Threading;
 using Elastic.Channels;
+using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Ingest.Elasticsearch;
@@ -18,7 +19,10 @@ internal sealed class SiteDocumentExporter : IDisposable
 	private readonly ILogger _logger;
 	private readonly IncrementalSyncOrchestrator<SiteDocument> _orchestrator;
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
+	private readonly DistributedTransport _transport;
 	private string? _secondaryWriteAlias;
+	private bool _primaryRolledOver;
+	private bool _secondaryRolledOver;
 	private int _primaryIndexed;
 	private int _secondaryIndexed;
 	private int _rejectedCount;
@@ -27,19 +31,15 @@ internal sealed class SiteDocumentExporter : IDisposable
 	private long _reindexTotal;
 	private long _reindexProcessed;
 	private long _reindexVersionConflicts;
-	private int _postSyncAiMaxDocs = 100;
-	private TimeSpan? _postSyncAiWallClock;
+	private AiEnrichmentBudget _postSyncAiBudget = AiEnrichmentBudget.Default;
 
 	public bool AiEnrichmentEnabled => _aiEnrichment is not null;
 
 	/// <summary>
 	/// Caps generative AI enrichment executed in <see cref="IncrementalSyncOrchestrator{T}.OnPostComplete"/> after each sync <see cref="FinalizeAsync"/>.
 	/// </summary>
-	public void ConfigurePostSyncAiBatch(int maxDocsPerRun, TimeSpan? maxWallClock)
-	{
-		_postSyncAiMaxDocs = maxDocsPerRun;
-		_postSyncAiWallClock = maxWallClock;
-	}
+	public void ConfigurePostSyncAiBatch(int? maxDocsPerRun, TimeSpan? maxWallClock) =>
+		_postSyncAiBudget = new AiEnrichmentBudget(maxDocsPerRun, maxWallClock);
 
 	public IngestSyncStrategy Strategy => _orchestrator.Strategy;
 
@@ -49,6 +49,8 @@ internal sealed class SiteDocumentExporter : IDisposable
 	public long ReindexProcessed => _reindexProcessed;
 	public long ReindexVersionConflicts => _reindexVersionConflicts;
 	public string? ReindexError { get; private set; }
+	public IndexBootstrapInfo? PrimaryBootstrap { get; private set; }
+	public IndexBootstrapInfo? SecondaryBootstrap { get; private set; }
 
 	public Action<SyncProgressInfo>? OnSyncProgress { get; set; }
 
@@ -62,6 +64,7 @@ internal sealed class SiteDocumentExporter : IDisposable
 	)
 	{
 		_logger = loggerFactory.CreateLogger<SiteDocumentExporter>();
+		_transport = transport;
 
 		var synonymSetName = $"docs-assembler-{environment}";
 		var indexTimeSynonyms = IndexTimeSynonyms.Docs;
@@ -100,9 +103,14 @@ internal sealed class SiteDocumentExporter : IDisposable
 			ConfigureSecondary = o => ConfigureChannelOptions("secondary", o, endpoint, semantic: true),
 			OnRolloverDecision = info =>
 			{
+				var decision = info.RolledOver ? "NEW" : "EXISTING";
 				_logger.LogInformation(
-					"[{Label}] rollover={RolledOver}, localHash={LocalHash}, remoteHash={RemoteHash}",
-					info.Label, info.RolledOver, info.LocalHash, info.RemoteHash);
+					"[{Label}] bootstrap decision: targeting {Decision} index (localHash={LocalHash}, remoteHash={RemoteHash})",
+					info.Label, decision, info.LocalHash, info.RemoteHash);
+				if (info.Label == "primary")
+					_primaryRolledOver = info.RolledOver;
+				else
+					_secondaryRolledOver = info.RolledOver;
 				var roll = info.RolledOver ? "new write index" : "unchanged";
 				OnSyncProgress?.Invoke(new SyncProgressInfo($"Index rollover — {info.Label} ({roll})", 0, 0, false));
 			},
@@ -145,11 +153,10 @@ internal sealed class SiteDocumentExporter : IDisposable
 	}
 
 	private Task OnPostCompleteAiAsync(OrchestratorContext<SiteDocument> context, ITransport _, CancellationToken ct) =>
-		AiPostSyncBatch.RunAsync(
+		AiEnrichmentRunner.RunPostSyncAsync(
 			_aiEnrichment!,
 			context,
-			_postSyncAiMaxDocs,
-			_postSyncAiWallClock,
+			_postSyncAiBudget,
 			_logger,
 			ct,
 			p => OnSyncProgress?.Invoke(SyncProgressConsole.FromAiProgress(p)));
@@ -205,8 +212,8 @@ internal sealed class SiteDocumentExporter : IDisposable
 			_ = Interlocked.Add(ref _rejectedCount, items.Count);
 			foreach (var (doc, responseItem) in items)
 			{
-				_logger.LogError("[{Label}] Server rejection: {Status} {Type} {Reason} for {Url}",
-					label, responseItem.Status, responseItem.Error?.Type, responseItem.Error?.Reason, doc.Url);
+				_logger.LogError("[{Label}] Server rejection: {Status} {Type} {Reason} for {Path}",
+					label, responseItem.Status, responseItem.Error?.Type, responseItem.Error?.Reason, doc.Path);
 			}
 		};
 	}
@@ -216,6 +223,16 @@ internal sealed class SiteDocumentExporter : IDisposable
 		var context = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
 		_secondaryWriteAlias = context.SecondaryWriteAlias;
 		_logger.LogInformation("Exporter started with {Strategy} strategy", _orchestrator.Strategy);
+
+		var primaryIndex = await IndexResolution.ResolveConcreteIndexAsync(_transport, context.PrimaryWriteAlias, ctx);
+		PrimaryBootstrap = new IndexBootstrapInfo(context.PrimaryWriteAlias, primaryIndex, _primaryRolledOver);
+		_logger.LogInformation("[primary] target index: {Index} (alias: {Alias})",
+			primaryIndex ?? "<unresolved>", context.PrimaryWriteAlias);
+
+		var secondaryIndex = await IndexResolution.ResolveConcreteIndexAsync(_transport, context.SecondaryWriteAlias, ctx);
+		SecondaryBootstrap = new IndexBootstrapInfo(context.SecondaryWriteAlias, secondaryIndex, _secondaryRolledOver);
+		_logger.LogInformation("[secondary] target index: {Index} (alias: {Alias})",
+			secondaryIndex ?? "<unresolved>", context.SecondaryWriteAlias);
 	}
 
 	public async Task ExportAsync(SiteDocument document, Cancel ct = default)
@@ -244,15 +261,7 @@ internal sealed class SiteDocumentExporter : IDisposable
 		if (_aiEnrichment is null || _secondaryWriteAlias is null)
 			yield break;
 
-		var options = new AiEnrichmentOptions
-		{
-			CompletionTimeout = TimeSpan.FromMinutes(5),
-			CompletionMaxRetries = 2,
-		};
-		if (maxDocs > 0)
-			options.MaxEnrichmentsPerRun = maxDocs;
-
-		await foreach (var p in _aiEnrichment.EnrichAsync(_secondaryWriteAlias, options, ctx))
+		await foreach (var p in AiEnrichmentRunner.EnrichAsync(_aiEnrichment, _secondaryWriteAlias, maxDocs, ctx))
 			yield return p;
 	}
 

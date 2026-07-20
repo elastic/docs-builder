@@ -503,6 +503,34 @@
         },
         {
           "role": "flag",
+          "name": "max-ai-docs",
+          "type": "integer",
+          "required": false,
+          "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+          "validations": [
+            {
+              "kind": "range",
+              "min": "1",
+              "max": "2147483647"
+            }
+          ]
+        },
+        {
+          "role": "flag",
+          "name": "max-ai-time",
+          "type": "string",
+          "required": false,
+          "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+          "validations": [
+            {
+              "kind": "timeSpanRange",
+              "min": "\u00221m\u0022",
+              "max": "\u002224h\u0022"
+            }
+          ]
+        },
+        {
+          "role": "flag",
           "name": "search-num-threads",
           "type": "integer",
           "required": false,
@@ -885,6 +913,308 @@
           "path": [
             "assembler"
           ],
+          "name": "ai-enrich",
+          "summary": "Run generative AI enrichment against an already-indexed semantic index, without a full assembler build.",
+          "notes": "Bootstraps and resolves the existing Elasticsearch aliases for environment, then runs a\nbounded generative AI enrichment pass on the semantic index, budgeted by --max-ai-docs/--max-ai-time\n(the same flags used by index and assembler index). Does not crawl, build, or index documents \u2014\nrun assemble or assembler index first.",
+          "usage": "docs-builder assembler ai-enrich [options]",
+          "examples": [],
+          "parameters": [
+            {
+              "role": "flag",
+              "name": "endpoint",
+              "type": "string",
+              "required": false,
+              "summary": "-es,--endpoint, Elasticsearch endpoint URL. Falls back to env DOCUMENTATION_ELASTIC_URL.",
+              "validations": [
+                {
+                  "kind": "uriScheme",
+                  "values": [
+                    "http",
+                    "https"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "api-key",
+              "type": "string",
+              "required": false,
+              "summary": "API key for authentication. Falls back to env DOCUMENTATION_ELASTIC_APIKEY."
+            },
+            {
+              "role": "flag",
+              "name": "username",
+              "type": "string",
+              "required": false,
+              "summary": "Username for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_USERNAME."
+            },
+            {
+              "role": "flag",
+              "name": "password",
+              "type": "string",
+              "required": false,
+              "summary": "Password for basic authentication. Falls back to env DOCUMENTATION_ELASTIC_PASSWORD."
+            },
+            {
+              "role": "flag",
+              "name": "ai-enrichment",
+              "type": "boolean",
+              "required": false,
+              "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "search-num-threads",
+              "type": "integer",
+              "required": false,
+              "summary": "Number of search threads for the inference endpoint.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "128"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "index-num-threads",
+              "type": "integer",
+              "required": false,
+              "summary": "Number of index threads for the inference endpoint.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "128"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "eis",
+              "type": "boolean",
+              "required": false,
+              "summary": "Use the Elastic Inference Service to bootstrap the inference endpoint (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "bootstrap-timeout",
+              "type": "string",
+              "required": false,
+              "summary": "How long to wait for the inference endpoint to become ready (e.g. 4m, 90s).",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221s\u0022",
+                  "max": "\u002260m\u0022"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "force-reindex",
+              "type": "boolean",
+              "required": false,
+              "summary": "Force a full reindex, discarding any incremental state."
+            },
+            {
+              "role": "flag",
+              "name": "buffer-size",
+              "type": "integer",
+              "required": false,
+              "summary": "Number of documents per bulk request.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "10000"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-retries",
+              "type": "integer",
+              "required": false,
+              "summary": "Number of retry attempts for failed bulk items.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "0",
+                  "max": "20"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "debug-mode",
+              "type": "boolean",
+              "required": false,
+              "summary": "Log every Elasticsearch request and response body; append ?pretty to all requests."
+            },
+            {
+              "role": "flag",
+              "name": "proxy-address",
+              "type": "string",
+              "required": false,
+              "summary": "Route requests through this proxy URL.",
+              "validations": [
+                {
+                  "kind": "uriScheme",
+                  "values": [
+                    "http",
+                    "https"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "proxy-username",
+              "type": "string",
+              "required": false,
+              "summary": "Proxy server username."
+            },
+            {
+              "role": "flag",
+              "name": "proxy-password",
+              "type": "string",
+              "required": false,
+              "summary": "Proxy server password."
+            },
+            {
+              "role": "flag",
+              "name": "disable-ssl-verification",
+              "type": "boolean",
+              "required": false,
+              "summary": "Disable SSL certificate validation. Use only in controlled environments."
+            },
+            {
+              "role": "flag",
+              "name": "certificate-fingerprint",
+              "type": "string",
+              "required": false,
+              "summary": "SHA-256 fingerprint of a self-signed server certificate."
+            },
+            {
+              "role": "flag",
+              "name": "certificate-path",
+              "type": "string",
+              "required": false,
+              "summary": "Path to a PEM or DER certificate file for SSL validation.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                },
+                {
+                  "kind": "existing"
+                },
+                {
+                  "kind": "fileExtensions",
+                  "values": [
+                    "pem",
+                    "der",
+                    "crt",
+                    "cer"
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "certificate-not-root",
+              "type": "boolean",
+              "required": false,
+              "summary": "Set when the certificate is an intermediate CA rather than the root."
+            },
+            {
+              "role": "flag",
+              "name": "environment",
+              "type": "string",
+              "required": false,
+              "summary": "Named deployment target whose existing indices should be enriched."
+            },
+            {
+              "role": "flag",
+              "name": "bootstrap-only",
+              "type": "boolean",
+              "required": false,
+              "summary": "Bootstrap the enrich policy, pipeline, and lookup index, then exit without enriching any documents.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "log-level",
+              "shortName": "l",
+              "type": "enum",
+              "required": false,
+              "summary": "Minimum log level. Default: information",
+              "enumValues": [
+                "trace",
+                "debug",
+                "information",
+                "warning",
+                "error",
+                "critical",
+                "none"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "config-source",
+              "shortName": "c",
+              "type": "enum",
+              "required": false,
+              "summary": "Override the configuration source: local, remote",
+              "enumValues": [
+                "local",
+                "remote",
+                "embedded"
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "skip-private-repositories",
+              "type": "boolean",
+              "required": false,
+              "summary": "Skip cloning private repositories"
+            }
+          ]
+        },
+        {
+          "path": [
+            "assembler"
+          ],
           "name": "build",
           "summary": "Build the unified site from all previously cloned repositories.",
           "notes": "Run after assembler clone. Reads every cloned repository, applies the shared navigation.yml,\nand writes the unified site to .artifacts/docs/.",
@@ -1111,6 +1441,34 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
             },
             {
               "role": "flag",
@@ -1449,6 +1807,34 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
             },
             {
               "role": "flag",
@@ -4012,6 +4398,14 @@
             },
             {
               "role": "flag",
+              "name": "skip-etag-check",
+              "type": "boolean",
+              "required": false,
+              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
@@ -4434,6 +4828,34 @@
               "type": "boolean",
               "required": false,
               "summary": "Enable AI enrichment of documents using LLM-generated metadata (enabled by default)."
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-docs",
+              "type": "integer",
+              "required": false,
+              "summary": "Maximum documents to enrich in the post-index AI batch per run; omit for the default (100). Must be at least 1 when specified.",
+              "validations": [
+                {
+                  "kind": "range",
+                  "min": "1",
+                  "max": "2147483647"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "max-ai-time",
+              "type": "string",
+              "required": false,
+              "summary": "Optional wall-clock limit for the post-index AI phase (e.g. 5m, 1h); minimum 1 minute when set.",
+              "validations": [
+                {
+                  "kind": "timeSpanRange",
+                  "min": "\u00221m\u0022",
+                  "max": "\u002224h\u0022"
+                }
+              ]
             },
             {
               "role": "flag",

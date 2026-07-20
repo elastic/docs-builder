@@ -54,7 +54,11 @@ dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
 
 Commit the updated `docs/cli-schema.json` with your code changes. CI compares the schema (ignoring the `version` field) and fails if it has drifted.
 
-The schema drives auto-generated parameter tables and usage synopses on CLI reference pages. For behavior, workflows, and examples that the schema cannot express, also update supplemental files under `docs/cli/` (see [Writing supplemental content](docs/cli/cli-supplemental-docs.md)).
+The schema drives auto-generated parameter tables and usage synopses on CLI reference pages. For behavior, workflows, and examples that the schema cannot express, also update supplemental files under `docs/cli/` (see [Writing supplemental content](docs/schema-support/cli-schema/supplemental.md)).
+
+## Working on non-trivial changes
+
+Before starting implementation on anything non-trivial — a new directive, a CLI command, a change that touches more than one project — write a short plan first: a few paragraphs (in the PR description, a linked issue, or handed to an agent as a prompt) stating what's changing and an explicit definition of done. This isn't bureaucracy for its own sake: it's what lets a change be scoped to a single sitting/session instead of sprawling as the "actual" requirements get discovered mid-implementation. Trivial fixes (typos, one-line bug fixes, dependency bumps) don't need this.
 
 # Release Process
 
