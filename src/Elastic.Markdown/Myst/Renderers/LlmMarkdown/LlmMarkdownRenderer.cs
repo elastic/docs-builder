@@ -17,9 +17,20 @@ public class LlmMarkdownRenderer : TextRendererBase
 	private bool _isAtLineStart = true;
 
 	/// <summary>
+	/// Optional hook to override how link URLs are rewritten (e.g. to bundle-relative paths for the
+	/// OKF exporter). When <c>null</c>, <see cref="LlmLinkInlineRenderer"/> falls back to
+	/// <see cref="LlmRenderingHelpers.MakeAbsoluteUrl(LlmMarkdownRenderer, string?)"/>.
+	/// </summary>
+	public Func<string?, string?>? LinkUrlRewriter { get; set; }
+
+	/// <summary>
 	/// Resets internal state for pooled reuse
 	/// </summary>
-	public void Reset() => _isAtLineStart = true;
+	public void Reset()
+	{
+		_isAtLineStart = true;
+		LinkUrlRewriter = null;
+	}
 
 	/// <summary>
 	/// Ensures that the output ends with a line break (only adds one if needed)

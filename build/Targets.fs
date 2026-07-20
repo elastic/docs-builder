@@ -106,6 +106,8 @@ let private runLocalContainer _ =
         | _ -> "edge"
     let image = $"elastic/docs-builder:%s{tag}"
     exec { run "docker" ["docker"; "run"; image; "--help"] }
+    let esscImage = $"elastic/website-search-essc:%s{tag}"
+    exec { run "docker" ["docker"; "run"; esscImage; "--help"] }
 
 let private publishContainers _ =
 
@@ -136,6 +138,7 @@ let private publishContainers _ =
     createImage "src/tooling/docs-builder/docs-builder.csproj" "docs-builder"
     createImage "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" "docs-builder-mcp"
     createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
+    createImage "src/tooling/essc/essc.csproj" "website-search-essc"
 
 let private runTests (testSuite: TestSuite) _ =
     let testFilter =

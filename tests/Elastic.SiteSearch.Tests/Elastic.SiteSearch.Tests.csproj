@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Elastic.SiteSearch.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="AutoBogus" />
+    <PackageReference Include="Elastic.Mapping" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\services\search\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
+    <ProjectReference Include="..\..\src\tooling\essc\essc.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Fixtures\ContentStack\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- essc pulls Nullean.Argh; the CLI generator would also run here and emit ArghGenerated, which
+       conflicts (CS0436) with essc's internal ArghGenerated via InternalsVisibleTo. -->
+  <Target Name="RemoveArghCliGeneratorAnalyzer" BeforeTargets="CoreCompile;GenerateMSBuildEditorConfigFileShouldRun">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="$([System.String]::Copy('%(Filename)').Equals('Nullean.Argh.Generator', System.StringComparison.OrdinalIgnoreCase))" />
+    </ItemGroup>
+  </Target>
+</Project>

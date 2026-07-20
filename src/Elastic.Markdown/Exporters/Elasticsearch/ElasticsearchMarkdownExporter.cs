@@ -9,12 +9,14 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
+using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Documentation.Serialization;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Elastic.Ingest.Elasticsearch.Indices;
-using Elastic.Internal.Search.Mapping;
 using Elastic.Mapping;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
@@ -52,6 +54,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	// Read alias resolved during StartAsync, used for post-indexing operations
 	private string _lexicalReadAlias = string.Empty;
 
+	// Secondary (semantic) write alias resolved during StartAsync, used for standalone enrichment runs
+	private string? _secondaryWriteAlias;
+
 	// Per-channel running totals for progress logging
 	private int _primaryIndexed;
 	private int _secondaryIndexed;
@@ -81,11 +86,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_operations = new ElasticsearchOperations(_transport, _logger, collector);
 		_contentDateEnrichment = new ContentDateEnrichment(_transport, _operations, _logger, endpoints.BuildType, endpoints.Environment);
 
-		string[] fixedSynonyms = ["esql", "data-stream", "data-streams", "machine-learning"];
-		var indexTimeSynonyms = _synonyms
-			.Where(s => s.Any(t => fixedSynonyms.Contains(t)))
-			.Select(s => string.Join(", ", s))
-			.ToArray();
+		// Baked into the index-time analyzer (synonyms_fixed_filter) rather than the updateable search-time set.
+		var indexTimeSynonyms = IndexTimeSynonyms.Docs;
 		_fixedSynonymsHash = HashedBulkUpdate.CreateHash(string.Join(",", indexTimeSynonyms));
 
 		var synonymSetName = $"docs-{_buildType}-{_environment}";
@@ -175,7 +177,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			ExportMaxConcurrency = _endpoint.IndexNumThreads,
 			ExportMaxRetries = _endpoint.MaxRetries
 		};
-		options.SerializerContext = SourceGenerationContext.Default;
+		options.SerializerContext = Documentation.Search.Contract.SourceGenerationContext.Default;
 		options.ExportResponseCallback = (response, buffer) =>
 		{
 			var sent = response.Items?.Count ?? 0;
@@ -203,7 +205,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 			foreach (var (doc, responseItem) in items)
 			{
 				_collector.EmitGlobalError(
-					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Url}");
+					$"[{label}] Server rejection: {responseItem.Status} {responseItem.Error?.Type} {responseItem.Error?.Reason} for document {doc.Path}");
 			}
 		};
 	}
@@ -213,6 +215,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		var orchestratorContext = await _orchestrator.StartAsync(BootstrapMethod.Failure, ctx);
 		_lexicalReadAlias = orchestratorContext.PrimaryReadAlias;
+		_secondaryWriteAlias = orchestratorContext.SecondaryWriteAlias;
 
 		_logger.LogInformation(
 			"Orchestrator started — strategy: {Strategy}, primary: {PrimaryAlias}, secondary: {SecondaryAlias}",
@@ -239,27 +242,38 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		if (_aiEnrichment is null)
 			return;
 
-		_logger.LogInformation("Starting post-indexing AI enrichment for {Alias}...", context.SecondaryWriteAlias);
 		var sw = System.Diagnostics.Stopwatch.StartNew();
-
 		AiEnrichmentProgress? last = null;
-		var options = new AiEnrichmentOptions
-		{
-			CompletionTimeout = TimeSpan.FromMinutes(2),
-			CompletionMaxRetries = 2,
-		};
-		await foreach (var p in _aiEnrichment.EnrichAsync(context.SecondaryWriteAlias, options, ctx))
-		{
-			_logger.LogInformation(
-				"[AI enrichment] {Phase}: enriched={Enriched} failed={Failed} candidates={Candidates}{Message}",
-				p.Phase, p.Enriched, p.Failed, p.TotalCandidates, p.Message is not null ? $" — {p.Message}" : "");
-			last = p;
-		}
+		var budget = new AiEnrichmentBudget(_endpoint.MaxAiDocs, _endpoint.MaxAiTime);
+
+		await AiEnrichmentRunner.RunPostSyncAsync(_aiEnrichment, context, budget, _logger, ctx, p => last = p);
 
 		if (last is not null)
 			_logger.LogInformation(
 				"AI enrichment complete in {Elapsed}: {Enriched} enriched, {Failed} failed, {Candidates} candidates",
 				sw.Elapsed.ToString(@"hh\:mm\:ss"), last.Enriched, last.Failed, last.TotalCandidates);
+	}
+
+	/// <summary>Whether AI enrichment infrastructure is wired up for this endpoint.</summary>
+	public bool AiEnrichmentEnabled => _aiEnrichment is not null;
+
+	/// <summary>
+	/// Runs AI enrichment against the secondary (semantic) alias resolved by <see cref="StartAsync"/>, without
+	/// indexing any documents. Used by standalone ai-enrich commands — call <see cref="StartAsync"/> first, and
+	/// do not call <see cref="StopAsync"/> afterwards, since completing a zero-write sync would delete existing documents.
+	/// </summary>
+	/// <param name="maxDocs">Maximum documents to enrich; <c>0</c> or less means no cap.</param>
+	/// <param name="ctx">Cancellation token — pass an <see cref="AiEnrichmentDeadline"/>'s token to bound by wall clock.</param>
+	public async IAsyncEnumerable<AiEnrichmentProgress> RunAiEnrichmentAsync(
+		int maxDocs = 0,
+		[System.Runtime.CompilerServices.EnumeratorCancellation] Cancel ctx = default
+	)
+	{
+		if (_aiEnrichment is null || _secondaryWriteAlias is null)
+			yield break;
+
+		await foreach (var p in AiEnrichmentRunner.EnrichAsync(_aiEnrichment, _secondaryWriteAlias, maxDocs, ctx))
+			yield return p;
 	}
 
 	private async Task PublishSynonymsAsync(Cancel ctx)

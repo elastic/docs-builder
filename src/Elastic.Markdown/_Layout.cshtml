@@ -57,7 +57,7 @@
 						</div>
 						@await RenderPartialAsync(_TableOfContents.Create(Model))
 					</main>
-					@await RenderPartialAsync(_PagesNav.Create<GlobalLayoutViewModel>(Model))
+					@await RenderPartialAsync(_PagesNav.Create(Model))
 				</div>
 			</div>
 		</div>
@@ -68,12 +68,12 @@
 {
 	if (Model.BuildType == BuildType.Assembler)
 	{
-		@(await RenderPartialAsync(_AssemblerHeader.Create<GlobalLayoutViewModel>(Model)))
+		@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))
 
 	}
 	else
 	{
-		@(await RenderPartialAsync(_IsolatedHeader.Create<GlobalLayoutViewModel>(Model)))
+		@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 	}
 }
 <div id="main-container">
@@ -109,10 +109,10 @@
 {
 	if (Model.BuildType == BuildType.Assembler)
 	{
-		@(await RenderPartialAsync(_AssemblerFooter.Create<GlobalLayoutViewModel>(Model)))
+		@(await RenderPartialAsync(_AssemblerFooter.Create(Model)))
 	}
 	else
 	{
-		@(await RenderPartialAsync(_IsolatedFooter.Create<GlobalLayoutViewModel>(Model)))
+		@(await RenderPartialAsync(_IsolatedFooter.Create(Model)))
 	}
 }

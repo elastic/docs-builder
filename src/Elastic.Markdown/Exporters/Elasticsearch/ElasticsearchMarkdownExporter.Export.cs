@@ -3,14 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using Elastic.ApiExplorer.Elasticsearch;
+using Elastic.ApiExplorer.Export;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Ingest.Elasticsearch.Indices;
-using Elastic.Internal.Search;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using static System.StringSplitOptions;
@@ -30,49 +30,100 @@ public partial class ElasticsearchMarkdownExporter
 		var semanticHash = _semanticTypeContext?.Hash ?? string.Empty;
 		var lexicalHash = _lexicalTypeContext.Hash;
 		var hash = HashedBulkUpdate.CreateHash(semanticHash, lexicalHash,
-			doc.Url, doc.Type, doc.StrippedBody ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)),
+			doc.Path, doc.Type, doc.Body ?? string.Empty, string.Join(",", doc.Headings.OrderBy(h => h)),
 			doc.SearchTitle ?? string.Empty,
-			doc.NavigationSection ?? string.Empty, doc.NavigationDepth.ToString("N0"),
-			doc.NavigationTableOfContents.ToString("N0"),
+			doc.Section ?? string.Empty, doc.Navigation.Depth.ToString("N0"),
+			doc.Navigation.TableOfContents.ToString("N0"),
+			doc.ContentTier,
 			_fixedSynonymsHash,
-			string.Join(",", doc.Parents?.Select(p => $"{p.Url}:{p.Title}") ?? [])
+			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? [])
 		);
 		doc.Hash = hash;
 	}
 
 	/// <summary>Computes and assigns the whitespace-normalized content hash for change detection.</summary>
 	private static void AssignContentHash(DocumentationDocument doc) =>
-		doc.ContentBodyHash = ContentHash.CreateNormalized(doc.StrippedBody ?? string.Empty);
+		doc.ContentBodyHash = ContentHash.CreateNormalized(doc.Body ?? string.Empty);
 
-	private static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
+	/// <summary>
+	/// Classifies a docs page into the shared <see cref="ContentTiers"/> taxonomy. docs-builder owns
+	/// this classification for its own docs/api content — it only agrees with other producers
+	/// (e.g. essc) on the <see cref="ContentTiers"/> string constants themselves.
+	/// </summary>
+	internal static string ClassifyContentTier(INavigationItem? navigationItem, string url)
 	{
-		doc.SearchTitle = CreateSearchTitle();
+		var section = navigationItem?.NavigationSection;
+		if (IsReleaseNotes(section, url))
+			return ContentTiers.Peripheral;
+		if (IsSupplementary(section, url))
+			return ContentTiers.Supplementary;
+		if (IsPrimary(navigationItem, section))
+			return ContentTiers.Primary;
+		return ContentTiers.Reference;
+
+		static bool IsReleaseNotes(string? section, string url) =>
+			section == "release notes" || url.Contains("/release-notes/", StringComparison.OrdinalIgnoreCase);
+
+		// Aligns with the existing `diminish_terms` in search.yml (plugin, glossary, curator, hadoop, integration, client).
+		static bool IsSupplementary(string? section, string url) =>
+			ContainsAny(section, "deprecat", "plugin", "glossary")
+			|| url.Contains("/docs/extend/", StringComparison.OrdinalIgnoreCase);
+
+		// A section's root/index page is effectively that section's overview — treat it as primary
+		// alongside pages explicitly living under a "get started"/"getting started"/"overview" section.
+		static bool IsPrimary(INavigationItem? navigationItem, string? section) =>
+			navigationItem is IRootNavigationItem<INavigationModel, INavigationItem>
+			|| ContainsAny(section, "get started", "getting started", "overview");
+
+		static bool ContainsAny(string? value, params string[] fragments) =>
+			value is not null && fragments.Any(f => value.Contains(f, StringComparison.OrdinalIgnoreCase));
+	}
+
+	/// <summary>
+	/// Internal (rather than private) so tests can assert navigation_* rank features never fall back
+	/// to the contract's penalty default, and that search_title construction is correct.
+	/// </summary>
+	internal static void CommonEnrichments(DocumentationDocument doc, INavigationItem? navigationItem)
+	{
+		// OpenApiDocumentExporter builds its own search title, including the raw operation id
+		// (e.g. "_bulk") — CreateSearchTitle below is tuned for markdown pages and derives extra
+		// tokens from the URL by splitting on '_' among other chars, which would strip that
+		// leading underscore. Leave API docs' search_title alone.
+		if (doc.ContentType != "api")
+			doc.SearchTitle = CreateSearchTitle();
 		// if we have no navigation, initialize to 20 since rank_feature would score 0 too high
-		doc.NavigationDepth = navigationItem?.NavigationDepth ?? 20;
-		doc.NavigationTableOfContents = navigationItem switch
+		doc.Navigation.Depth = navigationItem?.NavigationDepth ?? 20;
+		doc.Navigation.TableOfContents = navigationItem switch
 		{
 			// release-notes get effectively flattened by product, so we to dampen its effect slightly
 			IRootNavigationItem<INavigationModel, INavigationItem> when navigationItem.NavigationSection == "release notes" =>
-				Math.Min(4 * doc.NavigationDepth, 48),
-			IRootNavigationItem<INavigationModel, INavigationItem> => Math.Min(2 * doc.NavigationDepth, 48),
+				Math.Min(4 * doc.Navigation.Depth, 48),
+			IRootNavigationItem<INavigationModel, INavigationItem> => Math.Min(2 * doc.Navigation.Depth, 48),
 			INodeNavigationItem<INavigationModel, INavigationItem> => 50,
 			_ => 100
 		};
-		doc.NavigationSection = navigationItem?.NavigationSection;
-		if (doc.Type == "api")
-			doc.NavigationSection = "api";
+		doc.Section = navigationItem?.NavigationSection;
+		// doc.Type is the fixed CLR/$type discriminator ("docs" for every DocumentationDocument) —
+		// ContentType is the field OpenApiDocumentExporter actually sets to "api" per-document.
+		if (doc.ContentType == "api")
+			doc.Section = "api";
 
 		// this section gets promoted in the navigation we don't want it to be promoted in the search results
 		// e.g. `Use high-contrast mode in Kibana - ( docs cloud-account high contrast`
-		if (doc.NavigationSection == "manage your cloud account and preferences")
-			doc.NavigationDepth *= 2;
+		if (doc.Section == "manage your cloud account and preferences")
+			doc.Navigation.Depth *= 2;
+
+		// API reference pages have no navigation item to classify from — treat them as plain reference content.
+		// (doc.Type is a fixed CLR/$type discriminator, always "docs" — ContentType is the field
+		// OpenApiDocumentExporter actually sets to "api".)
+		doc.ContentTier = doc.ContentType == "api" ? ContentTiers.Reference : ClassifyContentTier(navigationItem, doc.Path);
 
 		string CreateSearchTitle()
 		{
 			// skip doc and the section
 			var split = new[] { '/', ' ', '-', '.', '_' };
 			var urlComponents = new HashSet<string>(
-				doc.Url.Split('/', RemoveEmptyEntries).Skip(2)
+				doc.Path.Split('/', RemoveEmptyEntries).Skip(2)
 					.SelectMany(c => c.Split(split, RemoveEmptyEntries)).ToArray()
 			);
 			var title = doc.Title;
@@ -103,15 +154,16 @@ public partial class ElasticsearchMarkdownExporter
 		if (h1 is not null)
 			_ = fileContext.Document.Remove(h1);
 
-		var body = LlmMarkdownExporter.ConvertToLlmMarkdown(fileContext.Document, fileContext.BuildContext);
-		var strippedBody = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
+		// Plain-text, markup-stripped content — the single source of truth for search, AI enrichment
+		// input, and content hashing. docs-builder no longer feeds raw LLM-flavored Markdown into `body`.
+		var body = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
 
 		var headings = fileContext.Document.Descendants<HeadingBlock>()
 			.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
-		var @abstract = !string.IsNullOrEmpty(strippedBody)
-			? strippedBody[..Math.Min(strippedBody.Length, 400)] + " " + string.Join(" \n- ", headings)
+		var summary = !string.IsNullOrEmpty(body)
+			? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
 			: string.Empty;
 
 		// this is temporary until https://github.com/elastic/docs-builder/pull/2070 lands
@@ -120,18 +172,17 @@ public partial class ElasticsearchMarkdownExporter
 
 		var doc = new DocumentationDocument
 		{
-			Url = url,
+			Path = url,
 			Title = file.Title,
 			SearchTitle = file.Title, //updated in CommonEnrichments
 			Body = body,
-			StrippedBody = strippedBody,
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
-			Abstract = @abstract,
+			Summary = summary,
 			Applies = appliesTo.ToAppliesTo(),
 			Parents = navigation.GetParentsOfMarkdownFile(file).Select(i => new ParentDocument
 			{
 				Title = i.NavigationTitle,
-				Url = i.Url
+				Path = i.Url
 			}).Reverse().ToArray(),
 			Headings = headings,
 			Hidden = fileContext.NavigationItem.Hidden
@@ -146,9 +197,7 @@ public partial class ElasticsearchMarkdownExporter
 			fileContext.SourceFile.YamlFrontMatter?.Products,
 			appliesTo
 		);
-		doc.Product = inference.Product is not null
-			? new IndexedProduct { Id = inference.Product.Id, Repository = inference.Repository }
-			: null;
+		doc.Product = inference.Product?.Id;
 		doc.RelatedProducts = inference.RelatedProducts.Count > 0
 			? inference.RelatedProducts.Select(p => new IndexedProduct
 			{
@@ -183,17 +232,18 @@ public partial class ElasticsearchMarkdownExporter
 		{
 			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
 
-			doc.Body = LlmMarkdownExporter.ConvertToLlmMarkdown(document, _context);
-			doc.StrippedBody = PlainTextExporter.ConvertToPlainText(document, _context);
+			// Plain-text, markup-stripped content — the single source of truth for search, AI
+			// enrichment input, and content hashing.
+			doc.Body = PlainTextExporter.ConvertToPlainText(document, _context);
 
 			var headings = document.Descendants<HeadingBlock>()
 				.Select(h => h.GetData("header") as string ?? string.Empty) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 				.Where(text => !string.IsNullOrEmpty(text))
 				.ToArray();
-			var @abstract = !string.IsNullOrEmpty(doc.StrippedBody)
-				? doc.Body[..Math.Min(doc.StrippedBody.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
+			var summary = !string.IsNullOrEmpty(doc.Body)
+				? doc.Body[..Math.Min(doc.Body.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
 				: string.Empty;
-			doc.Abstract = @abstract;
+			doc.Summary = summary;
 			doc.Headings = headings;
 			CommonEnrichments(doc, null);
 			AssignContentHash(doc);
@@ -201,7 +251,7 @@ public partial class ElasticsearchMarkdownExporter
 
 			if (!await WriteDocumentAsync(doc, ctx))
 			{
-				_logger.LogError("Failed to write OpenAPI document {Url}", doc.Url);
+				_logger.LogError("Failed to write OpenAPI document {Path}", doc.Path);
 				return false;
 			}
 		}

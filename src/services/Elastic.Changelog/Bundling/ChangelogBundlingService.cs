@@ -2,8 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
-using System.IO.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -15,7 +13,6 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
-using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.ReleaseNotes;
@@ -47,6 +44,12 @@ public record BundleChangelogsArguments
 	public string[]? Issues { get; init; }
 	public string? Owner { get; init; }
 	public string? Repo { get; init; }
+
+	/// <summary>
+	/// Branch whose CDN changelog pool (<c>changelog/{org}/{repo}/{branch}/…</c>) entries are sourced from.
+	/// null = use config <c>bundle.branch</c>, then the default branch (<c>main</c>).
+	/// </summary>
+	public string? Branch { get; init; }
 
 	/// <summary>
 	/// Profile name to use (from bundle.profiles in config)
@@ -122,7 +125,7 @@ public record BundlePlanResult
 	public string? OutputPath { get; init; }
 
 	/// <summary>
-	/// Public CDN URL of the (scrubbed) bundle once uploaded: <c>{base}/{product}/bundle/{file}</c>.
+	/// Public CDN URL of the (scrubbed) bundle once uploaded: <c>{base}/bundle/{product}/{file}</c>.
 	/// Null when no concrete product can be resolved to scope the URL (e.g. option-mode PR/issue-only
 	/// filters). Consumed by the bundle-PR action to poll for and download the scrubbed copy.
 	/// </summary>
@@ -148,12 +151,14 @@ public partial class ChangelogBundlingService(
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
 		: null;
 
+	// Defaults applied when sourcing CDN entries and the org/branch are not otherwise resolvable.
+	private const string DefaultOwner = "elastic";
+	private const string DefaultBranch = "main";
+
 	/// <summary>
 	/// UTF-8 encoding without BOM for writing YAML files.
 	/// </summary>
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
-
-	private static readonly string[] DocsetFileNames = ["docset.yml", "_docset.yml"];
 
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	internal static partial Regex VersionToTargetRegex();
@@ -214,15 +219,17 @@ public partial class ChangelogBundlingService(
 			// Apply config defaults if available
 			input = ApplyConfigDefaults(input, config);
 
-			// Decide where the individual changelog entries come from. CDN sourcing is opt-in via the
-			// repo's docset.yml release_notes (declared-gate): a product's entries are pulled from the
-			// public CDN only when it is declared there. Otherwise — or when the user forces local
-			// sourcing (bundle.use_local_changelogs / --directory) or no concrete product is in scope —
-			// fall back to the local folder. This keeps the run in lockstep with PlanBundleAsync's
-			// needs_network decision.
+			// Decide where the individual changelog entries come from. Under Option AD entries are scoped to
+			// an org/repo/branch pool (changelog/{org}/{repo}/{branch}/...), so CDN sourcing keys off the
+			// resolvable authoring repo (bundle.repo / --repo), with org and branch defaulting when unset —
+			// not the bundle's target products. Fall back to the local folder when the user forces it
+			// (bundle.use_local_changelogs / --directory), the repo is unresolvable, or no CDN base is
+			// configured. This stays in lockstep with PlanBundleAsync's needs_network decision.
 			var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
-			var cdnProducts = ResolveCdnProducts(input);
-			var useCdn = ShouldSourceFromCdn(cdnProducts, useLocalChangelogs, explicitDirectory);
+			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
+			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
+			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
+			var useCdn = ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory);
 
 			// Validate input. In CDN mode the local input directory is not read, so its existence
 			// is not required.
@@ -270,7 +277,7 @@ public partial class ChangelogBundlingService(
 			ChangelogMatchResult matchResult;
 			if (useCdn)
 			{
-				var contents = await FetchCdnEntriesAsync(collector, cdnProducts, ctx);
+				var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
 				if (contents == null)
 					return false;
 				matchResult = entryMatcher.MatchChangelogContents(collector, contents, filterCriteria, ctx);
@@ -471,6 +478,7 @@ public partial class ChangelogBundlingService(
 		IReadOnlyList<ProductArgument>? outputProducts = null;
 		string? repo = null;
 		string? owner = null;
+		string? branch = null;
 		string[]? mergedHideFeatures = null;
 		string? profileDescription = null;
 		var profileSuppressReleaseDate = false;
@@ -511,9 +519,10 @@ public partial class ChangelogBundlingService(
 				outputProducts = parsedOutputProducts;
 			}
 
-			// Profile-level repo/owner takes precedence; fall back to bundle-level defaults
+			// Profile-level repo/owner/branch takes precedence; fall back to bundle-level defaults
 			repo = profile.Repo ?? config.Bundle.Repo;
 			owner = profile.Owner ?? config.Bundle.Owner;
+			branch = profile.Branch ?? config.Bundle.Branch;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
@@ -559,6 +568,7 @@ public partial class ChangelogBundlingService(
 			OutputProducts = outputProducts,
 			Repo = repo,
 			Owner = owner,
+			Branch = branch,
 			HideFeatures = mergedHideFeatures,
 			Description = profileDescription,
 			SuppressReleaseDate = profileSuppressReleaseDate
@@ -581,9 +591,10 @@ public partial class ChangelogBundlingService(
 		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
 		var resolve = input.Resolve ?? config.Bundle.Resolve;
 
-		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+		// Apply repo/owner/branch: CLI takes precedence; fall back to bundle-level config defaults.
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
+		var branch = input.Branch ?? config.Bundle.Branch;
 
 		// Apply description: CLI takes precedence; fall back to bundle-level config default
 		var description = input.Description ?? config.Bundle.Description;
@@ -601,6 +612,7 @@ public partial class ChangelogBundlingService(
 			Resolve = resolve,
 			Repo = repo,
 			Owner = owner,
+			Branch = branch,
 			Description = description,
 			SuppressReleaseDate = suppressReleaseDate,
 			LinkAllowRepos = config.Bundle.LinkAllowRepos
@@ -649,14 +661,13 @@ public partial class ChangelogBundlingService(
 			}
 		}
 
-		// CDN entry sourcing needs network access for the Docker bundle run. Mirror the run-mode
-		// declared-gate: active only when every in-scope product is declared in docset.yml release_notes
-		// and the user has not forced local sourcing. Products are resolved from the profile patterns
-		// (not yet materialized in plan mode) unioned with any explicit --input/--output-products.
+		// CDN entry sourcing needs network access for the Docker bundle run. Mirror the run-mode gate:
+		// active when the authoring repo resolves (profile/config bundle.repo), the user has not forced
+		// local sourcing, and a CDN base is configured.
 		var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
-		var cdnProducts = ResolveCdnProducts(input, profileDef);
-		if (ShouldSourceFromCdn(cdnProducts, useLocalChangelogs, explicitDirectory))
+		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
+		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
 			needsNetwork = true;
 
 		// Resolve output path — mirrors the logic in ProcessProfile + ApplyConfigDefaults.
@@ -685,10 +696,7 @@ public partial class ChangelogBundlingService(
 		};
 	}
 
-	/// <summary>
-	/// Public CDN URL of the scrubbed bundle (<c>{base}/{product}/bundle/{file}</c>), polled by the
-	/// bundle-PR action. Null when the product, output file name, or CDN base cannot be resolved.
-	/// </summary>
+	/// <summary>Public CDN URL of the scrubbed bundle (<c>{base}/bundle/{product}/{file}</c>); null when product, output file name, or CDN base cannot be resolved.</summary>
 	private string? ResolveCdnBundleUrl(BundleProfile? profileDef, BundleChangelogsArguments input, string? outputPath)
 	{
 		if (string.IsNullOrWhiteSpace(outputPath))
@@ -706,7 +714,7 @@ public partial class ChangelogBundlingService(
 			return null;
 
 		var basePath = baseUri.AbsoluteUri.TrimEnd('/');
-		return $"{basePath}/{Uri.EscapeDataString(product)}/bundle/{Uri.EscapeDataString(fileName)}";
+		return $"{basePath}/bundle/{Uri.EscapeDataString(product)}/{Uri.EscapeDataString(fileName)}";
 	}
 
 	/// <summary>
@@ -738,24 +746,27 @@ public partial class ChangelogBundlingService(
 		return null;
 	}
 
-	/// <summary>
-	/// Downloads the in-scope changelog entries from the public CDN, scoped to the bundle's products.
-	/// Returns null (after emitting an error) on any fatal fetch failure; an entry not yet public is
-	/// skipped with a warning.
-	/// </summary>
+	/// <summary>Downloads the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/> pool's changelog entries from the CDN (<c>changelog/{org}/{repo}/{branch}/...</c>); returns null after emitting an error on any fatal fetch failure.</summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesAsync(
 		IDiagnosticsCollector collector,
-		IReadOnlyList<string> products,
+		string? org,
+		string? repo,
+		string? branch,
 		Cancel ctx)
 	{
-		if (products.Count == 0)
+		if (string.IsNullOrWhiteSpace(repo))
 		{
 			collector.EmitError(string.Empty,
-				"Sourcing changelog entries from the CDN requires a resolvable product declared under " +
-				"release_notes in docset.yml. Declare the product there, or set bundle.use_local_changelogs: " +
-				"true in changelog.yml / pass --directory to bundle local changelog files.");
+				"Sourcing changelog entries from the CDN requires a resolvable authoring repository. " +
+				"Set bundle.repo in changelog.yml (or pass --repo), or set bundle.use_local_changelogs: true " +
+				"in changelog.yml / pass --directory to bundle local changelog files.");
 			return null;
 		}
+
+		// org/branch always resolve to a default at the call site, but guard anyway so the fetcher never
+		// receives a blank pool segment.
+		var resolvedOrg = string.IsNullOrWhiteSpace(org) ? DefaultOwner : org;
+		var resolvedBranch = string.IsNullOrWhiteSpace(branch) ? DefaultBranch : branch;
 
 		var baseUri = ChangelogCdn.ResolveBaseUri();
 		if (baseUri is null)
@@ -765,20 +776,15 @@ public partial class ChangelogBundlingService(
 			return null;
 		}
 
-		var byName = new Dictionary<string, string>(StringComparer.Ordinal);
 		var fatalFailure = false;
-		foreach (var product in products)
-		{
-			var entries = await _entryFetcher.FetchAsync(
-				baseUri,
-				product,
-				msg => { fatalFailure = true; collector.EmitError(string.Empty, msg); },
-				msg => collector.EmitWarning(string.Empty, msg),
-				ctx);
-
-			foreach (var entry in entries)
-				byName[entry.FileName] = entry.Content;
-		}
+		var entries = await _entryFetcher.FetchAsync(
+			baseUri,
+			resolvedOrg,
+			repo,
+			resolvedBranch,
+			msg => { fatalFailure = true; collector.EmitError(string.Empty, msg); },
+			msg => collector.EmitWarning(string.Empty, msg),
+			ctx);
 
 		// The fetcher emits an error (via the callback above) for any fatal condition — a registry that
 		// cannot be read, or a registry-listed entry still missing after its retry budget. Either would
@@ -786,108 +792,22 @@ public partial class ChangelogBundlingService(
 		if (fatalFailure)
 			return null;
 
-		_logger.LogInformation("Sourced {Count} changelog entr(ies) from the CDN for product(s) {Products}",
-			byName.Count, string.Join(", ", products));
+		var byName = new Dictionary<string, string>(StringComparer.Ordinal);
+		foreach (var entry in entries)
+			byName[entry.FileName] = entry.Content;
+
+		_logger.LogInformation("Sourced {Count} changelog entr(ies) from the CDN for {Pool}",
+			byName.Count, $"{resolvedOrg}/{repo}/{resolvedBranch}");
 
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}
 
-	/// <summary>
-	/// The distinct, concrete product IDs that scope a CDN-sourced bundle. In run mode the input is already
-	/// materialized, so the ids come from <c>input.InputProducts</c>/<c>OutputProducts</c>. In plan mode pass
-	/// <paramref name="profileDef"/> so the ids can also be read from the profile's (not yet materialized)
-	/// <c>products</c>/<c>output_products</c> patterns. Wildcards are excluded.
-	/// </summary>
-	private static IReadOnlyList<string> ResolveCdnProducts(BundleChangelogsArguments input, BundleProfile? profileDef = null)
+	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--directory</c>), and a CDN base is configured.</summary>
+	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
 	{
-		var ids = new List<string>();
-		AppendConcreteProductsFromPattern(ids, profileDef?.OutputProducts);
-		AppendConcreteProductsFromPattern(ids, profileDef?.Products);
-		AppendConcreteProducts(ids, input.InputProducts);
-		AppendConcreteProducts(ids, input.OutputProducts);
-		return ids.Distinct(StringComparer.Ordinal).ToList();
-	}
-
-	private static void AppendConcreteProducts(List<string> ids, IReadOnlyList<ProductArgument>? products)
-	{
-		if (products == null)
-			return;
-		foreach (var product in products)
-		{
-			if (!string.IsNullOrWhiteSpace(product.Product) && product.Product != "*")
-				ids.Add(product.Product);
-		}
-	}
-
-	// Profile product patterns are comma-separated groups; each group is whitespace-delimited
-	// "product target lifecycle", so the product id is the first token of each group.
-	private static void AppendConcreteProductsFromPattern(List<string> ids, string? pattern)
-	{
-		if (string.IsNullOrWhiteSpace(pattern))
-			return;
-		foreach (var group in pattern.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-		{
-			var id = group.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-			if (!string.IsNullOrWhiteSpace(id) && id != "*")
-				ids.Add(id);
-		}
-	}
-
-	/// <summary>
-	/// Declared-gate for CDN entry sourcing: the public CDN is used only when every in-scope product is
-	/// declared under <c>release_notes</c> in the repo's docset.yml. Returns false (local sourcing) when
-	/// the user forced local sourcing (<c>bundle.use_local_changelogs</c> or an explicit <c>--directory</c>),
-	/// no concrete product is in scope, or any in-scope product is undeclared.
-	/// </summary>
-	private bool ShouldSourceFromCdn(IReadOnlyList<string> cdnProducts, bool useLocalChangelogs, bool explicitDirectory)
-	{
-		if (useLocalChangelogs || explicitDirectory || cdnProducts.Count == 0)
+		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))
 			return false;
-		var declared = LoadDeclaredReleaseNotesProducts();
-		return cdnProducts.All(declared.Contains);
-	}
-
-	/// <summary>
-	/// Product ids declared under <c>release_notes</c> in the repo's docset.yml, normalized (underscores →
-	/// hyphens). Returns an empty set when no docset.yml is found in the known locations or it declares none.
-	/// </summary>
-	private IReadOnlySet<string> LoadDeclaredReleaseNotesProducts()
-	{
-		var configFile = FindDocsetFile();
-		if (configFile is null)
-			return FrozenSet<string>.Empty;
-		try
-		{
-			var docSet = DocumentationSetFile.LoadMetadata(configFile);
-			return docSet.ReleaseNotes
-				.Select(r => r.Product?.Trim().Replace('_', '-'))
-				.Where(p => !string.IsNullOrEmpty(p))
-				.Select(p => p!)
-				.ToFrozenSet(StringComparer.Ordinal);
-		}
-		catch (Exception ex)
-		{
-			_logger.LogDebug("Could not read release_notes from docset.yml for CDN gating: {Error}", ex.Message);
-			return FrozenSet<string>.Empty;
-		}
-	}
-
-	// Mirrors Paths.GetDocsetPathFromKnownLocations (repo root or docs/, docset.yml or _docset.yml) without
-	// taking a dependency on the tooling layer from this service.
-	private IFileInfo? FindDocsetFile()
-	{
-		var cwd = _fileSystem.Directory.GetCurrentDirectory();
-		string[] folders = [cwd, _fileSystem.Path.Join(cwd, "docs")];
-		foreach (var folder in folders)
-		{
-			foreach (var name in DocsetFileNames)
-			{
-				var candidate = _fileSystem.Path.Join(folder, name);
-				if (_fileSystem.File.Exists(candidate))
-					return _fileSystem.FileInfo.New(candidate);
-			}
-		}
-		return null;
+		return ChangelogCdn.ResolveBaseUri() is not null;
 	}
 
 	private bool ValidateInput(IDiagnosticsCollector collector, BundleChangelogsArguments input, bool requireDirectoryExists)

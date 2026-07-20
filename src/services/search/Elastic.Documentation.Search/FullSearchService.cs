@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Search.Common;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -90,26 +90,26 @@ public partial class FullSearchService(
 	private FullSearchResultItem MapHit(SearchResultItem<DocumentationDocument> item) => new()
 	{
 		Type = item.Document.ContentType,
-		Url = item.Document.Url,
+		Url = item.Document.Path,
 		Title = item.Title,
 		Description = item.Description,
 		Parents = (item.Document.Parents ?? [])
-			.Select(p => new FullSearchResultParent { Title = p.Title, Url = p.Url })
+			.Select(p => new FullSearchResultParent { Title = p.Title, Url = p.Path })
 			.ToArray(),
 		Score = item.Score,
 		AiShortSummary = item.Document.AiShortSummary,
 		AiRagOptimizedSummary = item.Document.AiRagOptimizedSummary,
-		NavigationSection = item.Document.NavigationSection,
+		NavigationSection = item.Document.Section,
 		LastUpdated = item.Document.LastUpdated,
 		Product = MapProduct(item.Document.Product),
 		RelatedProducts = (item.Document.RelatedProducts?
 			.Where(p => p.Id is not null)
-			.Select(p => MapProduct(p)!)
+			.Select(p => MapProduct(p.Id)!)
 			.ToArray()) ?? []
 	};
 
-	private FullSearchProduct? MapProduct(IndexedProduct? p) =>
-		p?.Id is { } id
+	private FullSearchProduct? MapProduct(string? id) =>
+		id is not null
 			? new FullSearchProduct
 			{
 				Id = id,

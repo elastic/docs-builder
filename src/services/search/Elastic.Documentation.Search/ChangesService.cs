@@ -7,9 +7,9 @@ using System.Text;
 using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search.Common;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.Logging;
-using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.DocumentationDocument>;
+using EsSearchResponse = Elastic.Clients.Elasticsearch.SearchResponse<Elastic.Documentation.Search.Contract.DocumentationDocument>;
 
 namespace Elastic.Documentation.Search;
 
@@ -107,12 +107,12 @@ public partial class ChangesService(
 				))
 				.Sort(
 					so => so.Field(f => f.ContentLastUpdated, sf => sf.Order(SortOrder.Asc)),
-					so => so.Field(f => f.Url, sf => sf.Order(SortOrder.Asc))
+					so => so.Field(f => f.Path, sf => sf.Order(SortOrder.Asc))
 				)
 				.Source(sf => sf
 					.Filter(f => f
 						.Includes(
-							e => e.Url,
+							e => e.Path,
 							e => e.Title,
 							e => e.SearchTitle,
 							e => e.ContentType,
@@ -148,7 +148,7 @@ public partial class ChangesService(
 				var doc = h.Source!;
 				return new ChangedPageDto
 				{
-					Url = doc.Url,
+					Url = doc.Path,
 					Title = doc.Title,
 					LastUpdated = doc.ContentLastUpdated
 				};

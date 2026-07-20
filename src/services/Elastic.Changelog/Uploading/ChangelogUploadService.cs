@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using Amazon.S3;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -11,7 +10,6 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Integrations.S3;
-using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
@@ -29,9 +27,39 @@ public record ChangelogUploadArguments
 	public required string S3BucketName { get; init; }
 	public string? Config { get; init; }
 	public string? Directory { get; init; }
+
+	/// <summary>
+	/// Authoring repository identifier used to scope changelog-entry keys
+	/// (<c>changelog/{org}/{repo}/{branch}/{file}</c>). Required for <see cref="ArtifactType.Changelog"/>
+	/// uploads; unused for bundle uploads (which are product-scoped from the bundle YAML). Resolved by the
+	/// CLI via the precedence <c>--repo</c> &gt; <c>bundle.repo</c> &gt; git remote origin.
+	/// </summary>
+	public string? Repo { get; init; }
+
+	/// <summary>
+	/// GitHub owner (org), the first segment of changelog-entry keys
+	/// (<c>changelog/{org}/{repo}/{branch}/{file}</c>). Required for <see cref="ArtifactType.Changelog"/>
+	/// uploads; unused for bundle uploads. Resolved by the CLI via the precedence
+	/// <c>--owner</c> &gt; <c>bundle.owner</c> &gt; git remote origin.
+	/// </summary>
+	public string? Owner { get; init; }
+
+	/// <summary>
+	/// Branch segment of changelog-entry keys (<c>changelog/{org}/{repo}/{branch}/{file}</c>), stored
+	/// verbatim so any <c>/</c> in the branch become real key separators (e.g. <c>feature/foo</c>).
+	/// Required for <see cref="ArtifactType.Changelog"/> uploads; unused for bundle uploads. Resolved by the
+	/// CLI via the precedence <c>--branch</c> &gt; the current git branch.
+	/// </summary>
+	public string? Branch { get; init; }
+
+	/// <summary>
+	/// When true, upload every discovered file even when its content hash matches the remote object.
+	/// Useful to re-trigger downstream scrubbers without changing file content.
+	/// </summary>
+	public bool SkipEtagCheck { get; init; }
 }
 
-public partial class ChangelogUploadService(
+public class ChangelogUploadService(
 	ILoggerFactory logFactory,
 	IConfigurationContext? configurationContext = null,
 	ScopedFileSystem? fileSystem = null,
@@ -43,12 +71,6 @@ public partial class ChangelogUploadService(
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
 		: null;
-
-	[GeneratedRegex(@"^[a-zA-Z0-9_-]+$")]
-	private static partial Regex ProductNameRegex();
-
-	private static readonly YamlDotNet.Serialization.IDeserializer EntryDeserializer =
-		ReleaseNotesSerialization.GetEntryDeserializer();
 
 	public async Task<bool> Upload(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
@@ -73,7 +95,12 @@ public partial class ChangelogUploadService(
 
 		var targets = args.ArtifactType == ArtifactType.Bundle
 			? DiscoverBundleUploadTargets(collector, directory)
-			: DiscoverUploadTargets(collector, directory);
+			: DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch);
+
+		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
+		// unscoped and a silent skip would look like "nothing to upload".
+		if (collector.Errors > 0)
+			return false;
 
 		if (targets.Count == 0)
 		{
@@ -87,7 +114,7 @@ public partial class ChangelogUploadService(
 		var client = s3Client ?? defaultClient!;
 		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
-		var result = await uploader.Upload(targets, ctx);
+		var result = await uploader.Upload(targets, args.SkipEtagCheck, ctx);
 
 		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed", result.Uploaded, result.Skipped, result.Failed);
 
@@ -132,8 +159,35 @@ public partial class ChangelogUploadService(
 		}
 	}
 
-	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir)
+	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir, string? org, string? repo, string? branch)
 	{
+		// Option AD: entries live once, under the authoring org/repo/branch pool — independent of which
+		// products later consume them. Org, repo, and branch must all resolve (CLI flags > bundle config >
+		// git); a missing/invalid value is fatal because every entry key derives from them.
+		if (!ChangelogKeys.IsValidOrg(org))
+		{
+			collector.EmitError(string.Empty,
+				$"A valid GitHub owner is required to upload changelog entries (resolved: \"{org ?? "<none>"}\"). " +
+				"Set --owner, bundle.owner in changelog.yml, or run inside a checkout with a github.com origin remote.");
+			return [];
+		}
+
+		if (!ChangelogKeys.IsValidRepo(repo))
+		{
+			collector.EmitError(string.Empty,
+				$"A valid repository identifier is required to upload changelog entries (resolved: \"{repo ?? "<none>"}\"). " +
+				"Set --repo, bundle.repo in changelog.yml, or run inside a checkout with a github.com origin remote.");
+			return [];
+		}
+
+		if (!ChangelogKeys.IsValidBranch(branch))
+		{
+			collector.EmitError(string.Empty,
+				$"A valid branch is required to upload changelog entries (resolved: \"{branch ?? "<none>"}\"). " +
+				"Set --branch or run inside a checkout with a current branch.");
+			return [];
+		}
+
 		var rootDir = _fileSystem.DirectoryInfo.New(changelogDir);
 
 		var yamlFiles = _fileSystem.Directory.GetFiles(changelogDir, "*.yaml", SearchOption.TopDirectoryOnly)
@@ -151,52 +205,12 @@ public partial class ChangelogUploadService(
 				continue;
 			}
 
-			var products = ReadProductsFromFragment(filePath);
-			if (products.Count == 0)
-			{
-				_logger.LogDebug("No products found in {File}, skipping", filePath);
-				continue;
-			}
-
 			var fileName = _fileSystem.Path.GetFileName(filePath);
-
-			foreach (var product in products)
-			{
-				if (!ProductNameRegex().IsMatch(product))
-				{
-					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
-					continue;
-				}
-
-				var s3Key = $"{product}/changelog/{fileName}";
-				targets.Add(new UploadTarget(filePath, s3Key));
-			}
+			var s3Key = ChangelogKeys.ChangelogFileKey(org, repo, branch, fileName);
+			targets.Add(new UploadTarget(filePath, s3Key));
 		}
 
 		return targets;
-	}
-
-	private List<string> ReadProductsFromFragment(string filePath)
-	{
-		try
-		{
-			var content = _fileSystem.File.ReadAllText(filePath);
-			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var entry = EntryDeserializer.Deserialize<ChangelogEntryDto>(normalized);
-			if (entry?.Products == null)
-				return [];
-
-			return entry.Products
-				.Select(p => p?.Product)
-				.Where(p => !string.IsNullOrWhiteSpace(p))
-				.Select(p => p!)
-				.ToList();
-		}
-		catch (Exception ex)
-		{
-			_logger.LogWarning(ex, "Could not read products from {File}", filePath);
-			return [];
-		}
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
@@ -229,13 +243,13 @@ public partial class ChangelogUploadService(
 
 			foreach (var product in products)
 			{
-				if (!ProductNameRegex().IsMatch(product))
+				if (!ChangelogKeys.IsValidProduct(product))
 				{
 					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
 					continue;
 				}
 
-				var s3Key = $"{product}/bundle/{fileName}";
+				var s3Key = ChangelogKeys.BundleFileKey(product, fileName);
 				targets.Add(new UploadTarget(filePath, s3Key));
 			}
 		}

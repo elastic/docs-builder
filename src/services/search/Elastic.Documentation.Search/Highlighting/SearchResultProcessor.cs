@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Clients.Elasticsearch.Core.Search;
-using Elastic.Internal.Search;
+using Elastic.Documentation.Search.Contract;
 
 namespace Elastic.Documentation.Search.Highlighting;
 
@@ -35,7 +35,7 @@ public static class SearchResultProcessor
 
 		if (highlights != null)
 		{
-			if (highlights.TryGetValue(QueryFieldNames.StrippedBody, out var bodyHighlights) && bodyHighlights.Count > 0)
+			if (highlights.TryGetValue(QueryFieldNames.Body, out var bodyHighlights) && bodyHighlights.Count > 0)
 				highlightedBody = string.Join(". ", bodyHighlights.Select(h => h.Trim(['|', ' ', '.', '-'])));
 
 			if (highlights.TryGetValue(QueryFieldNames.Title, out var titleHighlights) && titleHighlights.Count > 0)

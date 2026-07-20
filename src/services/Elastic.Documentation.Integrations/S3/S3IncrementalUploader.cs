@@ -29,7 +29,7 @@ public class S3IncrementalUploader(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<S3IncrementalUploader>();
 
-	public async Task<UploadResult> Upload(IReadOnlyList<UploadTarget> targets, Cancel ctx = default)
+	public async Task<UploadResult> Upload(IReadOnlyList<UploadTarget> targets, bool skipEtagCheck = false, Cancel ctx = default)
 	{
 		var uploaded = 0;
 		var skipped = 0;
@@ -41,14 +41,21 @@ public class S3IncrementalUploader(
 
 			try
 			{
-				var remoteEtag = await GetRemoteEtag(target.S3Key, ctx);
-				var localEtag = await etagCalculator.CalculateS3ETag(target.LocalPath, ctx);
-
-				if (remoteEtag != null && localEtag == remoteEtag)
+				if (!skipEtagCheck)
 				{
-					_logger.LogDebug("Skipping {S3Key} (ETag match)", target.S3Key);
-					skipped++;
-					continue;
+					var remoteEtag = await GetRemoteEtag(target.S3Key, ctx);
+					var localEtag = await etagCalculator.CalculateS3ETag(target.LocalPath, ctx);
+
+					if (remoteEtag != null && localEtag == remoteEtag)
+					{
+						_logger.LogDebug("Skipping {S3Key} (ETag match)", target.S3Key);
+						skipped++;
+						continue;
+					}
+				}
+				else
+				{
+					_logger.LogDebug("Uploading {S3Key} (--skip-etag-check)", target.S3Key);
 				}
 
 				_logger.LogInformation("Uploading {LocalPath} → s3://{Bucket}/{S3Key}", target.LocalPath, bucketName, target.S3Key);
