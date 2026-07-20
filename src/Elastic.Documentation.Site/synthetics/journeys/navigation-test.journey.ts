@@ -35,6 +35,24 @@ journey('navigation test', ({ page, params }) => {
         })
     })
 
+    step('Global nav space is reserved before it renders', async () => {
+        const breakpoints = [
+            { width: 375, expectedHeight: 102 },
+            { width: 768, expectedHeight: 110 },
+            { width: 1280, expectedHeight: 118 },
+        ]
+
+        for (const { width, expectedHeight } of breakpoints) {
+            await page.setViewportSize({ width, height: 800 })
+            const minHeight = await page
+                .locator('#elastic-nav-wrapper')
+                .evaluate((element) =>
+                    Number.parseFloat(getComputedStyle(element).minHeight)
+                )
+            expect(minHeight).toBe(expectedHeight)
+        }
+    })
+
     step('Click on "Elastic Fundamentals"', async () => {
         await page
             .getByRole('link', { name: 'Elastic Fundamentals' })
@@ -51,6 +69,42 @@ journey('navigation test', ({ page, params }) => {
             if (navTree) navTree['__synthOriginal'] = true
         })
     })
+
+    step(
+        'Main content keeps its column while pages nav is absent',
+        async () => {
+            const placement = await page.evaluate(() => {
+                const content =
+                    document.querySelector<HTMLElement>('#content-container')
+                const grid = content?.parentElement
+                const sidebar =
+                    grid?.querySelector<HTMLElement>(':scope > .sidebar')
+                if (!content || !grid || !sidebar)
+                    throw new Error(
+                        'Expected documentation layout was not found'
+                    )
+
+                const marker = document.createComment('pages-nav-placeholder')
+                sidebar.replaceWith(marker)
+
+                const contentRect = content.getBoundingClientRect()
+                const gridRect = grid.getBoundingClientRect()
+                const firstColumnWidth = Number.parseFloat(
+                    getComputedStyle(grid).gridTemplateColumns
+                )
+
+                marker.replaceWith(sidebar)
+                return {
+                    contentLeft: contentRect.left,
+                    expectedMinimumLeft: gridRect.left + firstColumnWidth,
+                }
+            })
+
+            expect(placement.contentLeft).toBeGreaterThanOrEqual(
+                placement.expectedMinimumLeft
+            )
+        }
+    )
 
     step('Click on "deployment options" in nav', async () => {
         // Expand a collapsed nav section so we can assert its state survives
