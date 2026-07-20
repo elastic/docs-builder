@@ -162,7 +162,7 @@ public class FileFilterLoader(IFileSystem fileSystem)
 
 	internal static bool IsYamlExtension(string path)
 	{
-		var ext = System.IO.Path.GetExtension(path);
+		var ext = Path.GetExtension(path);
 		return ext.Equals(".yaml", StringComparison.OrdinalIgnoreCase)
 			|| ext.Equals(".yml", StringComparison.OrdinalIgnoreCase);
 	}
