@@ -363,8 +363,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		try
 		{
 			svg = MermaidRenderer.RenderSvg(mermaidText, MermaidRenderOptions);
-			// Strip any residual disallowed SVG content (sanitization is always on regardless of strict mode).
-			svg = SvgSanitizer.Sanitize(svg).Svg;
 		}
 		catch (MermaidResourceLimitException e)
 		{
@@ -377,14 +375,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		catch (MermaidParseException e)
 		{
 			block.EmitWarning($"Mermaid diagram has a syntax error: {e.Message}");
-			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
-			_ = renderer.WriteEscape(mermaidText);
-			_ = renderer.Write("</code></pre>");
-			return;
-		}
-		catch (MermaidSvgException e)
-		{
-			block.EmitError($"Mermaid diagram produced invalid SVG: {e.Message}");
 			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
 			_ = renderer.WriteEscape(mermaidText);
 			_ = renderer.Write("</code></pre>");
