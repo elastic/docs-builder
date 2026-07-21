@@ -97,34 +97,34 @@ products:
     display: 'Elastic Cloud Forwarder'
     versioning: 'stack'
   edot-sdk:
-    display: 'Elastic OTel SDK'
+    display: 'Elastic Distribution of OpenTelemetry SDK'
     versioning: 'all'
   edot-collector:
     display: 'Elastic Agent'
     versioning: 'stack'
   edot-ios:
-    display: 'Elastic OTel iOS SDK'
+    display: 'Elastic Distribution of OpenTelemetry iOS'
     repository: 'apm-agent-ios'
   edot-android:
-    display: 'Elastic OTel Android SDK'
+    display: 'Elastic Distribution of OpenTelemetry Android'
     repository: 'apm-agent-android'
   edot-dotnet:
-    display: 'Elastic OTel .NET SDK'
+    display: 'Elastic Distribution of OpenTelemetry .NET'
     repository: 'elastic-otel-dotnet'
   edot-java:
-    display: 'Elastic OTel Java SDK'
+    display: 'Elastic Distribution of OpenTelemetry Java'
     repository: 'elastic-otel-java'
   edot-node:
-    display: 'Elastic OTel Node.js SDK'
+    display: 'Elastic Distribution of OpenTelemetry Node'
     repository: 'elastic-otel-node'
   edot-browser:
-    display: 'Elastic OTel Browser SDK (RUM)'
+    display: 'Elastic Distribution of OpenTelemetry Browser (RUM)'
     repository: 'elastic-otel-rum-js'
   edot-php:
-    display: 'Elastic OTel PHP SDK'
+    display: 'Elastic Distribution of OpenTelemetry PHP'
     repository: 'elastic-otel-php'
   edot-python:
-    display: 'Elastic OTel Python SDK'
+    display: 'Elastic Distribution of OpenTelemetry Python'
     repository: 'elastic-otel-python'
   edot-cf-aws:
     display: 'Elastic Cloud Forwarder for AWS'

@@ -57,7 +57,6 @@ synonyms:
   - [ "ecs", "elastic common schema" ]
   - [ "edot", "elastic distribution of opentelemetry", "elastic opentelemetry", "elastic otel" ]
   - [ "edot collector", "edot-collector", "elastic distribution of opentelemetry collector" ]
-  - [ "edot sdk", "edot sdks", "elastic otel sdk", "elastic otel sdks" ]
   - [ "edr", "endpoint detection response" ]
   - [ "eis", "elastic inference service" ]
   - [ "eks", "elastic kubernetes service" ]

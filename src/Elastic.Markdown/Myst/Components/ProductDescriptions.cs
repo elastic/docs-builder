@@ -148,42 +148,42 @@ public static class ProductDescriptions
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotIos] = new ProductInfo(
-			Description: "The <strong>Elastic OTel iOS SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) iOS SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotAndroid] = new ProductInfo(
-			Description: "The <strong>Elastic OTel Android SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Android SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotDotnet] = new ProductInfo(
-			Description: "The <strong>Elastic OTel .NET SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) .NET SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotJava] = new ProductInfo(
-			Description: "The <strong>Elastic OTel Java SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Java SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotNode] = new ProductInfo(
-			Description: "The <strong>Elastic OTel Node.js SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Node.js SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotBrowser] = new ProductInfo(
-			Description: "The <strong>Elastic OTel Browser SDK</strong> (RUM) collects performance metrics, traces, and logs from web applications in OpenTelemetry format, and sends them to Elastic Observability.",
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Browser SDK</strong> (RUM) collects performance metrics, traces, and logs from web applications in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotPhp] = new ProductInfo(
-			Description: "The <strong>Elastic OTel PHP SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) PHP SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotPython] = new ProductInfo(
-			Description: "The <strong>Elastic OTel Python SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
+			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Python SDK</strong> collects performance metrics, traces, and logs in OpenTelemetry format, and sends them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
