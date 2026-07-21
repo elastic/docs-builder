@@ -52,6 +52,7 @@ The available classes are:
 | `error` | Failure states, invalid paths |
 | `success` | Completion, healthy states |
 | `plain` | De-emphasised or secondary nodes |
+| `highlight` | Active, selected, or focal nodes |
 
 All eight classes in one diagram:
 
