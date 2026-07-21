@@ -1,91 +1,110 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
-import esql from '@elastic/highlightjs-esql'
 import { LanguageFn } from 'highlight.js'
 import hljs from 'highlight.js/lib/core'
-import asciidoc from 'highlight.js/lib/languages/asciidoc'
-import bash from 'highlight.js/lib/languages/bash'
-import c from 'highlight.js/lib/languages/c'
-import csharp from 'highlight.js/lib/languages/csharp'
-import css from 'highlight.js/lib/languages/css'
-import dockerfile from 'highlight.js/lib/languages/dockerfile'
-import dos from 'highlight.js/lib/languages/dos'
-import ebnf from 'highlight.js/lib/languages/ebnf'
-import go from 'highlight.js/lib/languages/go'
-import gradle from 'highlight.js/lib/languages/gradle'
-import groovy from 'highlight.js/lib/languages/groovy'
-import handlebars from 'highlight.js/lib/languages/handlebars'
-import http from 'highlight.js/lib/languages/http'
-import ini from 'highlight.js/lib/languages/ini'
-import java from 'highlight.js/lib/languages/java'
-import javascript from 'highlight.js/lib/languages/javascript'
-import json from 'highlight.js/lib/languages/json'
-import kotlin from 'highlight.js/lib/languages/kotlin'
-import markdown from 'highlight.js/lib/languages/markdown'
-import nginx from 'highlight.js/lib/languages/nginx'
-import php from 'highlight.js/lib/languages/php'
-import plaintext from 'highlight.js/lib/languages/plaintext'
-import powershell from 'highlight.js/lib/languages/powershell'
-import properties from 'highlight.js/lib/languages/properties'
-import python from 'highlight.js/lib/languages/python'
-import ruby from 'highlight.js/lib/languages/ruby'
-import rust from 'highlight.js/lib/languages/rust'
-import scala from 'highlight.js/lib/languages/scala'
-import shell from 'highlight.js/lib/languages/shell'
-import sql from 'highlight.js/lib/languages/sql'
-import swift from 'highlight.js/lib/languages/swift'
-import typescript from 'highlight.js/lib/languages/typescript'
-import xml from 'highlight.js/lib/languages/xml'
-import yaml from 'highlight.js/lib/languages/yaml'
 import { $$optional } from 'select-dom'
 
-const languages: Array<{
-    name: string
-    module: LanguageFn
-    aliases?: string[]
-}> = [
-    { name: 'asciidoc', module: asciidoc },
-    { name: 'bash', module: bash },
-    { name: 'c', module: c },
-    { name: 'csharp', module: csharp },
-    { name: 'css', module: css },
-    { name: 'dockerfile', module: dockerfile },
-    { name: 'dos', module: dos },
-    { name: 'ebnf', module: ebnf },
-    { name: 'esql', module: esql },
-    { name: 'go', module: go },
-    { name: 'gradle', module: gradle },
-    { name: 'groovy', module: groovy },
-    { name: 'handlebars', module: handlebars },
-    { name: 'http', module: http },
-    { name: 'ini', module: ini },
-    { name: 'java', module: java },
-    { name: 'javascript', module: javascript },
-    { name: 'json', module: json },
-    { name: 'kotlin', module: kotlin },
-    { name: 'markdown', module: markdown },
-    { name: 'nginx', module: nginx },
-    { name: 'php', module: php },
-    { name: 'plaintext', module: plaintext },
-    { name: 'powershell', module: powershell },
-    { name: 'properties', module: properties },
-    { name: 'python', module: python },
-    { name: 'ruby', module: ruby },
-    { name: 'rust', module: rust },
-    { name: 'scala', module: scala },
-    { name: 'shell', module: shell, aliases: ['sh'] },
-    { name: 'sql', module: sql },
-    { name: 'swift', module: swift },
-    { name: 'typescript', module: typescript },
-    { name: 'xml', module: xml },
-    { name: 'yaml', module: yaml },
-]
+// Each entry lazily imports one highlight.js language module (or the esql plugin) so
+// only the languages actually present on a page are downloaded, instead of eagerly
+// bundling all of them into the entry chunk. Modules default-export the LanguageFn.
+const languageLoaders: Record<string, () => Promise<LanguageFn>> = {
+    asciidoc: () =>
+        import('highlight.js/lib/languages/asciidoc').then((m) => m.default),
+    bash: () =>
+        import('highlight.js/lib/languages/bash').then((m) => m.default),
+    c: () => import('highlight.js/lib/languages/c').then((m) => m.default),
+    csharp: () =>
+        import('highlight.js/lib/languages/csharp').then((m) => m.default),
+    css: () => import('highlight.js/lib/languages/css').then((m) => m.default),
+    dockerfile: () =>
+        import('highlight.js/lib/languages/dockerfile').then((m) => m.default),
+    dos: () => import('highlight.js/lib/languages/dos').then((m) => m.default),
+    ebnf: () =>
+        import('highlight.js/lib/languages/ebnf').then((m) => m.default),
+    esql: () => import('@elastic/highlightjs-esql').then((m) => m.default),
+    go: () => import('highlight.js/lib/languages/go').then((m) => m.default),
+    gradle: () =>
+        import('highlight.js/lib/languages/gradle').then((m) => m.default),
+    groovy: () =>
+        import('highlight.js/lib/languages/groovy').then((m) => m.default),
+    handlebars: () =>
+        import('highlight.js/lib/languages/handlebars').then((m) => m.default),
+    http: () =>
+        import('highlight.js/lib/languages/http').then((m) => m.default),
+    ini: () => import('highlight.js/lib/languages/ini').then((m) => m.default),
+    java: () =>
+        import('highlight.js/lib/languages/java').then((m) => m.default),
+    javascript: () =>
+        import('highlight.js/lib/languages/javascript').then((m) => m.default),
+    json: () =>
+        import('highlight.js/lib/languages/json').then((m) => m.default),
+    kotlin: () =>
+        import('highlight.js/lib/languages/kotlin').then((m) => m.default),
+    markdown: () =>
+        import('highlight.js/lib/languages/markdown').then((m) => m.default),
+    nginx: () =>
+        import('highlight.js/lib/languages/nginx').then((m) => m.default),
+    php: () => import('highlight.js/lib/languages/php').then((m) => m.default),
+    plaintext: () =>
+        import('highlight.js/lib/languages/plaintext').then((m) => m.default),
+    powershell: () =>
+        import('highlight.js/lib/languages/powershell').then((m) => m.default),
+    properties: () =>
+        import('highlight.js/lib/languages/properties').then((m) => m.default),
+    python: () =>
+        import('highlight.js/lib/languages/python').then((m) => m.default),
+    ruby: () =>
+        import('highlight.js/lib/languages/ruby').then((m) => m.default),
+    rust: () =>
+        import('highlight.js/lib/languages/rust').then((m) => m.default),
+    scala: () =>
+        import('highlight.js/lib/languages/scala').then((m) => m.default),
+    shell: () =>
+        import('highlight.js/lib/languages/shell').then((m) => m.default),
+    sql: () => import('highlight.js/lib/languages/sql').then((m) => m.default),
+    swift: () =>
+        import('highlight.js/lib/languages/swift').then((m) => m.default),
+    typescript: () =>
+        import('highlight.js/lib/languages/typescript').then((m) => m.default),
+    xml: () => import('highlight.js/lib/languages/xml').then((m) => m.default),
+    yaml: () =>
+        import('highlight.js/lib/languages/yaml').then((m) => m.default),
+}
 
-languages.forEach((lang) => {
-    hljs.registerLanguage(lang.name, lang.module)
-    if (lang.aliases) {
-        hljs.registerAliases(lang.aliases, { languageName: lang.name })
-    }
-})
+// Alias -> canonical language name. Aliases are registered with hljs once their
+// canonical module has loaded so `language-sh` etc. resolve correctly.
+const languageAliases: Record<string, string> = {
+    sh: 'shell',
+}
+
+// Caches the registration promise per canonical language so concurrent code blocks
+// (and later htmx swaps) share a single import instead of re-fetching the module.
+const registrations = new Map<string, Promise<void>>()
+
+function resolveLanguageName(name: string): string {
+    return languageAliases[name] ?? name
+}
+
+// Imports and registers a single language (plus any aliases pointing at it) exactly
+// once. Unknown names resolve to undefined and are skipped by the caller.
+function ensureLanguage(name: string): Promise<void> | undefined {
+    const canonical = resolveLanguageName(name)
+    const loader = languageLoaders[canonical]
+    if (!loader) return undefined
+
+    const cached = registrations.get(canonical)
+    if (cached) return cached
+
+    const registration = loader().then((languageFn) => {
+        hljs.registerLanguage(canonical, languageFn)
+        for (const [alias, target] of Object.entries(languageAliases)) {
+            if (target === canonical) {
+                hljs.registerAliases([alias], { languageName: canonical })
+            }
+        }
+    })
+    registrations.set(canonical, registration)
+    return registration
+}
 
 hljs.registerLanguage('apiheader', function () {
     return {
@@ -217,10 +236,39 @@ hljs.addPlugin(mergeHTMLPlugin)
 // for code callouts
 hljs.configure({ ignoreUnescapedHTML: true })
 
-export function initHighlight() {
-    $$optional('#markdown-content pre code:not([data-highlighted])').forEach(
-        hljs.highlightElement
+function getLanguageFromClassList(element: Element): string | undefined {
+    for (const className of element.classList) {
+        if (className.startsWith('language-')) {
+            return className.slice('language-'.length)
+        }
+    }
+    return undefined
+}
+
+export async function initHighlight() {
+    const blocks = $$optional(
+        '#markdown-content pre code:not([data-highlighted])'
     )
+    if (blocks.length === 0) return
+
+    // Import only the language modules referenced by the unprocessed blocks before
+    // highlighting. Unknown/plain-text languages resolve to undefined and are skipped;
+    // hljs.highlightElement then degrades gracefully without breaking other blocks.
+    const requiredLanguages = new Set<string>()
+    for (const block of blocks) {
+        const language = getLanguageFromClassList(block)
+        if (language) requiredLanguages.add(language)
+    }
+
+    await Promise.all(
+        [...requiredLanguages]
+            .map((language) => ensureLanguage(language))
+            .filter(
+                (promise): promise is Promise<void> => promise !== undefined
+            )
+    )
+
+    blocks.forEach(hljs.highlightElement)
 }
 
 // Export the configured hljs instance for reuse
