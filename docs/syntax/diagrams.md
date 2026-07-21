@@ -687,8 +687,10 @@ kanban
 radar-beta
     title Cluster health dimensions
     axis Throughput, Latency, Durability, Scalability, Observability
-    curve A["Primary"]  : [80, 70, 90, 85, 75]
-    curve B["Replica"] : [60, 85, 95, 70, 80]
+    curve c1["Primary"]{80, 70, 90, 85, 75}
+    curve c2["Replica"]{60, 85, 95, 70, 80}
+    max 100
+    graticule polygon
 ```
 ````
 ::::
@@ -699,8 +701,10 @@ radar-beta
 radar-beta
     title Cluster health dimensions
     axis Throughput, Latency, Durability, Scalability, Observability
-    curve A["Primary"]  : [80, 70, 90, 85, 75]
-    curve B["Replica"] : [60, 85, 95, 70, 80]
+    curve c1["Primary"]{80, 70, 90, 85, 75}
+    curve c2["Replica"]{60, 85, 95, 70, 80}
+    max 100
+    graticule polygon
 ```
 ::::
 
@@ -749,10 +753,11 @@ treemap-beta
 ````markdown
 ```mermaid
 venn-beta
-    title Query types
-    A["Term queries"]
-    B["Full-text queries"]
-    AB["Both"]
+    set A["Search"]
+    set B["Analytics"]
+    set C["Observability"]
+    union A, B["Full Elastic"]
+    union B, C["Monitoring"]
 ```
 ````
 ::::
@@ -761,10 +766,11 @@ venn-beta
 :sync: rendered
 ```mermaid
 venn-beta
-    title Query types
-    A["Term queries"]
-    B["Full-text queries"]
-    AB["Both"]
+    set A["Search"]
+    set B["Analytics"]
+    set C["Observability"]
+    union A, B["Full Elastic"]
+    union B, C["Monitoring"]
 ```
 ::::
 
@@ -885,17 +891,16 @@ packet-beta
 ````markdown
 ```mermaid
 architecture-beta
-    group cloud(cloud)[Cloud]
+    group ech(cloud)[Elastic Cloud]
 
-    service lb(server)[Load Balancer] in cloud
-    service api1(server)[API Node 1] in cloud
-    service api2(server)[API Node 2] in cloud
-    service es(database)[Elasticsearch] in cloud
+    service es(elastic:elasticsearch)[Elasticsearch] in ech
+    service kbn(elastic:kibana)[Kibana] in ech
+    service apm(elastic:apm)[APM] in ech
+    service edot(server)[EDOT Collector]
 
-    lb:R --> L:api1
-    lb:R --> L:api2
-    api1:R --> L:es
-    api2:R --> L:es
+    edot:R --> L:apm
+    apm:R --> L:es
+    kbn:T -- B:es
 ```
 ````
 ::::
@@ -904,17 +909,16 @@ architecture-beta
 :sync: rendered
 ```mermaid
 architecture-beta
-    group cloud(cloud)[Cloud]
+    group ech(cloud)[Elastic Cloud]
 
-    service lb(server)[Load Balancer] in cloud
-    service api1(server)[API Node 1] in cloud
-    service api2(server)[API Node 2] in cloud
-    service es(database)[Elasticsearch] in cloud
+    service es(elastic:elasticsearch)[Elasticsearch] in ech
+    service kbn(elastic:kibana)[Kibana] in ech
+    service apm(elastic:apm)[APM] in ech
+    service edot(server)[EDOT Collector]
 
-    lb:R --> L:api1
-    lb:R --> L:api2
-    api1:R --> L:es
-    api2:R --> L:es
+    edot:R --> L:apm
+    apm:R --> L:es
+    kbn:T -- B:es
 ```
 ::::
 
@@ -963,14 +967,17 @@ block-beta
 ````markdown
 ```mermaid
 treeView-beta
-    root["Elastic Stack"]
-        Elasticsearch
-            Indexing
-            Search
-        Kibana
-            Discover
-            Dashboards
-        Integrations
+    elastic-stack/
+        elasticsearch/
+            index.ts :::highlight ## entry point
+            search.ts
+            aggregations.ts
+        kibana/
+            discover.ts
+            dashboards.ts
+        integrations/
+            beats.ts
+            logstash.ts
 ```
 ````
 ::::
@@ -979,14 +986,17 @@ treeView-beta
 :sync: rendered
 ```mermaid
 treeView-beta
-    root["Elastic Stack"]
-        Elasticsearch
-            Indexing
-            Search
-        Kibana
-            Discover
-            Dashboards
-        Integrations
+    elastic-stack/
+        elasticsearch/
+            index.ts :::highlight ## entry point
+            search.ts
+            aggregations.ts
+        kibana/
+            discover.ts
+            dashboards.ts
+        integrations/
+            beats.ts
+            logstash.ts
 ```
 ::::
 
