@@ -655,6 +655,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			var anchorSlug = titleSlug.Slugify();
 			var repo = bundle.Repo;
 			var displayVersion = VersionOrDate.FormatDisplayVersion(bundle.Version);
+			string SectionSlug(string suffix) => $"{repo}-{anchorSlug}-{suffix}".Slugify();
 
 			yield return new PageTocItem
 			{
@@ -673,7 +674,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Breaking changes",
-					Slug = $"{repo}-{anchorSlug}-breaking-changes",
+					Slug = SectionSlug("breaking-changes"),
 					Level = 3
 				};
 
@@ -683,7 +684,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Highlights",
-					Slug = $"{repo}-{anchorSlug}-highlights",
+					Slug = SectionSlug("highlights"),
 					Level = 3
 				};
 
@@ -691,7 +692,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Security",
-					Slug = $"{repo}-{anchorSlug}-security",
+					Slug = SectionSlug("security"),
 					Level = 3
 				};
 
@@ -699,7 +700,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Known issues",
-					Slug = $"{repo}-{anchorSlug}-known-issues",
+					Slug = SectionSlug("known-issues"),
 					Level = 3
 				};
 
@@ -707,7 +708,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Deprecations",
-					Slug = $"{repo}-{anchorSlug}-deprecations",
+					Slug = SectionSlug("deprecations"),
 					Level = 3
 				};
 
@@ -717,7 +718,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Features and enhancements",
-					Slug = $"{repo}-{anchorSlug}-features-enhancements",
+					Slug = SectionSlug("features-enhancements"),
 					Level = 3
 				};
 
@@ -725,7 +726,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Fixes",
-					Slug = $"{repo}-{anchorSlug}-fixes",
+					Slug = SectionSlug("fixes"),
 					Level = 3
 				};
 
@@ -733,7 +734,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Documentation",
-					Slug = $"{repo}-{anchorSlug}-docs",
+					Slug = SectionSlug("docs"),
 					Level = 3
 				};
 
@@ -741,7 +742,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Regressions",
-					Slug = $"{repo}-{anchorSlug}-regressions",
+					Slug = SectionSlug("regressions"),
 					Level = 3
 				};
 
@@ -749,7 +750,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 				yield return new PageTocItem
 				{
 					Heading = "Other changes",
-					Slug = $"{repo}-{anchorSlug}-other",
+					Slug = SectionSlug("other"),
 					Level = 3
 				};
 		}
