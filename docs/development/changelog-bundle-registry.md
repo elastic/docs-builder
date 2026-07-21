@@ -298,11 +298,9 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
   to `registry.json` manifests **and** to individual entry YAML under
   `changelog/{org}/{repo}/{branch}/` that `changelog bundle` fetches when sourcing from the CDN.
   After upload and scrub, the private bucket can hold newer entry content than the CDN serves for
-  up to an hour. Operators who bundle immediately after last-minute entry edits can see stale
-  metadata (for example, missing product IDs) until the cache expires. If faster propagation is
+  up to an hour. Operators who bundle immediately after last-minute entry edits can see stale data until the cache expires. If faster propagation is
   needed the producer (or a docs-actions step) would issue a CloudFront invalidation on write.
-  User-facing guidance: [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing)
-  and [Bundle changelogs](/contribute/bundle-changelogs.md).
+  User-facing guidance: [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing).
 - **Caching key.** When the disk cache lands, use the CDN response ETag (not the registry
   `etag` field) for revalidation.
 

@@ -11,7 +11,9 @@ Create a changelog configuration file to define all the default behavior and PR 
 Refer to [](/contribute/configure-changelogs.md).
 
 Choose whether you want to store the changelogs in your repo and/or store them in the public CDN.
-<!-- TBD: What are the pros/cons? How is this configured in GitHub actions? -->
+
+- If you have a large volume of notable changes every release, you will likely choose to store them *only* in the public CDN.
+- If you have a small volume of changes or the content churns a lot before and after releases, you will likely choose to store them in *both* the repo and the public CDN.
 
 ## Create changelog files from command line [command-line]
 
@@ -94,6 +96,25 @@ Some of the fields in the schema accept only a specific set of values:
 - Type, subtype, and lifecycle values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs), [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs), and [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) respectively.
 
 You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
+:::
+
+## Upload changelog files [upload]
+
+After you're satisfied with the content of your changelog files, the last step is to upload them to the public CDN.
+
+:::{important}
+All changelog files should be uploaded to the public CDN, irrespective of whether you also want to maintain a copy in your GitHub repo.
+:::
+
+- If you create changelog files from the command line, use the [changelog upload](//cli/changelog/cmd-upload.md) command to upload them.
+- If you create your changelogs from GitHub actions, add an upload workflow. Refer to [Uploading to S3](https://github.com/elastic/docs-actions/blob/main/changelog/README.md#uploading-to-s3) and [changelog-upload.yml](https://github.com/elastic/docs-actions/blob/main/.github/workflows/changelog-upload.yml).
+
+Files land in a private bucket, which is the internal source of truth.
+A scrubber Lambda automatically mirrors sanitized copies (with private repository references removed) to the public bucket.
+Changelog entries are uploaded into `changelog/{org}/{repo}/{branch}/{filename}`.
+
+:::{note}
+It can take between 60 seconds to an hour before updates appear in the public CDN.
 :::
 
 ## Examples
