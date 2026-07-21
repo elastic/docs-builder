@@ -72,8 +72,10 @@ flowchart LR
 ### Flowchart
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 flowchart LR
@@ -87,6 +89,7 @@ flowchart LR
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 flowchart LR
     A[Start] --> B{Decision}
@@ -98,6 +101,7 @@ flowchart LR
 ::::
 
 ::::{tab-item} Styled
+:sync: styled
 ```mermaid
 flowchart LR
     A[Start]:::note --> B{Decision}:::warning
@@ -111,8 +115,10 @@ flowchart LR
 ### Sequence diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 sequenceDiagram
@@ -128,6 +134,7 @@ sequenceDiagram
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -145,8 +152,10 @@ sequenceDiagram
 ### State diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 stateDiagram-v2
@@ -161,6 +170,7 @@ stateDiagram-v2
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
@@ -173,6 +183,7 @@ stateDiagram-v2
 ::::
 
 ::::{tab-item} Styled
+:sync: styled
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
@@ -193,8 +204,10 @@ stateDiagram-v2
 ### Class diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 classDiagram
@@ -211,6 +224,7 @@ classDiagram
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 classDiagram
     Animal <|-- Duck
@@ -229,8 +243,10 @@ classDiagram
 ### ER diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 erDiagram
@@ -250,6 +266,7 @@ erDiagram
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 erDiagram
     CUSTOMER ||--o{ ORDER : places
@@ -271,8 +288,10 @@ erDiagram
 ### Pie chart
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 pie title Index distribution
@@ -284,6 +303,7 @@ pie title Index distribution
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 pie title Index distribution
     "Primary" : 60
@@ -297,8 +317,10 @@ pie title Index distribution
 ### Quadrant chart
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 quadrantChart
@@ -318,6 +340,7 @@ quadrantChart
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 quadrantChart
     title Feature prioritisation
@@ -339,8 +362,10 @@ quadrantChart
 ### Timeline
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 timeline
@@ -356,6 +381,7 @@ timeline
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 timeline
     title Elasticsearch major releases
@@ -373,8 +399,10 @@ timeline
 ### Git graph
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 gitGraph
@@ -391,6 +419,7 @@ gitGraph
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 gitGraph
     commit id: "init"
@@ -409,8 +438,10 @@ gitGraph
 ### Mindmap
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 mindmap
@@ -429,6 +460,7 @@ mindmap
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 mindmap
     root((Elastic Stack))
@@ -449,8 +481,10 @@ mindmap
 ### Gantt chart
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 gantt
@@ -469,6 +503,7 @@ gantt
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 gantt
     title Release schedule
@@ -489,8 +524,10 @@ gantt
 ### User journey
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 journey
@@ -508,6 +545,7 @@ journey
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 journey
     title Onboarding a new cluster
@@ -527,8 +565,10 @@ journey
 ### C4 diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 C4Context
@@ -542,6 +582,7 @@ C4Context
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 C4Context
     Person(user, "User", "Searches docs")
@@ -557,8 +598,10 @@ C4Context
 ### Requirement diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 requirementDiagram
@@ -577,6 +620,7 @@ requirementDiagram
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 requirementDiagram
     requirement search_req {
@@ -597,8 +641,10 @@ requirementDiagram
 ### Kanban
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 kanban
@@ -614,6 +660,7 @@ kanban
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 kanban
     column1[Backlog]
@@ -631,8 +678,10 @@ kanban
 ### Radar chart (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 radar-beta
@@ -645,6 +694,7 @@ radar-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 radar-beta
     title Cluster health dimensions
@@ -659,8 +709,10 @@ radar-beta
 ### Treemap (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 treemap-beta
@@ -674,6 +726,7 @@ treemap-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 treemap-beta
     title Index storage allocation
@@ -689,8 +742,10 @@ treemap-beta
 ### Venn diagram (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 venn-beta
@@ -703,6 +758,7 @@ venn-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 venn-beta
     title Query types
@@ -717,8 +773,10 @@ venn-beta
 ### Sankey diagram (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 sankey-beta
@@ -731,6 +789,7 @@ sankey-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 sankey-beta
     Logs,Logstash,40
@@ -745,8 +804,10 @@ sankey-beta
 ### XY chart (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 xychart-beta
@@ -760,6 +821,7 @@ xychart-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 xychart-beta
     title Indexing throughput (docs/sec)
@@ -775,8 +837,10 @@ xychart-beta
 ### Packet diagram (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 packet-beta
@@ -794,6 +858,7 @@ packet-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 packet-beta
     0-7: "Version"
@@ -813,8 +878,10 @@ packet-beta
 ### Architecture diagram (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 architecture-beta
@@ -834,6 +901,7 @@ architecture-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 architecture-beta
     group cloud(cloud)[Cloud]
@@ -855,8 +923,10 @@ architecture-beta
 ### Block diagram (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 block-beta
@@ -870,6 +940,7 @@ block-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 block-beta
     columns 3
@@ -885,8 +956,10 @@ block-beta
 ### Tree view (beta)
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 treeView-beta
@@ -903,6 +976,7 @@ treeView-beta
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 treeView-beta
     root["Elastic Stack"]
