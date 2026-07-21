@@ -402,24 +402,16 @@ Bundle descriptions are rendered when present in the bundle YAML file. The descr
 
 Sections with no entries of that type are omitted from the output. Releases with no entries after the `:type:` filter are omitted entirely, except on general release-notes pages (`:type: all` or default) when the bundle has a `description`.
 
-## Error behavior for missing files [changelog-missing-files]
+## Error behavior for invalid entries [changelog-missing-files]
 
-Bundles created without the `--resolve` option store `file:` references (filenames and checksums) instead of embedding entry content inline.
-When the directive loads such a bundle, it looks up each referenced file to read its content.
-If a referenced file cannot be found on disk, the directive emits an error and the build fails.
+Bundles are self-contained: every entry must embed its content (`title`, `type`, and so on) inline.
+The directive never reads individual changelog files from disk to satisfy a bundle entry.
+If a bundle contains an entry without inline content (for example, only a `file:` name/checksum block), the directive emits an error naming the bundle and the entry, and the build fails.
 This prevents silent data loss where changelog entries would be quietly omitted from rendered release notes without any indication that something was missing.
 
-To fix this, either:
-
-- Restore the missing changelog files, or
-- Re-create the bundle with `--resolve` to embed entry content directly (making the bundle self-contained).
+To fix this, re-create the bundle with `docs-builder changelog bundle` so every entry is embedded.
 
 `bundle-amend --remove` only applies when the source changelog file is still available (for example, to drop an entry from the effective bundle before you delete the file with `changelog remove`).
-
-:::{tip}
-In general, if you want to be able to remove changelog files after your releases, create your bundles with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file.
-For more command syntax details, go to [Remove changelog files](../contribute/bundle-changelogs.md#changelog-remove).
-:::
 
 ## Example
 

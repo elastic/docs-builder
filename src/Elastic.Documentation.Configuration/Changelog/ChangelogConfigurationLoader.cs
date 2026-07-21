@@ -531,7 +531,6 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Directory = yaml.Directory,
 			OutputDirectory = yaml.OutputDirectory,
 			UseLocalChangelogs = yaml.UseLocalChangelogs ?? false,
-			Resolve = yaml.Resolve ?? true,
 			Description = yaml.Description,
 			Repo = yaml.Repo,
 			Owner = yaml.Owner,

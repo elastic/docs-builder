@@ -5,12 +5,19 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
 public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
 {
+	// language=yaml
+	private const string BundleHeader =
+		"""
+		products:
+		  - product: elasticsearch
+		    target: 9.2.0
+		""";
+
 	// language=yaml
 	private const string ChangelogWithComments =
 		"""
@@ -37,117 +44,38 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		- "100"
 		""";
 
-	// language=yaml
-	private const string ChangelogWithDifferentData =
-		"""
-		title: Completely different feature
-		type: enhancement
-		products:
-		  - product: kibana
-		    target: 9.2.0
-		prs:
-		- "999"
-		""";
-
 	[Fact]
-	public async Task ValidateBundle_FileUnchanged_NoWarning()
+	public async Task RenderChangelogs_ResolvedBundle_RendersWithoutReadingFiles()
 	{
-		// Arrange — bundle stores checksum, file on disk is unchanged
-		var (bundleFile, changelogDir) = await SetupBundleWithFileAsync(
-			ChangelogWithoutComments,
-			storedChecksum: ComputeSha1(ChangelogWithoutComments)
-		);
-
-		var input = CreateRenderInput(bundleFile, changelogDir);
-
-		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeTrue();
-		Collector.Warnings.Should().Be(0, "no checksum mismatch expected when file is unchanged");
-	}
-
-	[Fact]
-	public async Task ValidateBundle_CommentsChangedButDataUnchanged_NoWarning()
-	{
-		// Arrange — bundle stores checksum from commented file,
-		// but file on disk now has comments removed.
-		// ComputeSha1 normalizes (strips comments), so the checksum still matches.
-		var (bundleFile, changelogDir) = await SetupBundleWithFileAsync(
-			fileOnDisk: ChangelogWithoutComments,
-			storedChecksum: ComputeSha1(ChangelogWithComments)
-		);
-
-		var input = CreateRenderInput(bundleFile, changelogDir);
-
-		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeTrue();
-		Collector.Warnings.Should().Be(0,
-			"checksum should match regardless of comment changes");
-	}
-
-	[Fact]
-	public async Task ValidateBundle_FileDataChanged_EmitsWarning()
-	{
-		// Arrange — bundle stores checksum of one file, but file on disk has different data
-		var (bundleFile, changelogDir) = await SetupBundleWithFileAsync(
-			fileOnDisk: ChangelogWithDifferentData,
-			storedChecksum: ComputeSha1(ChangelogWithoutComments)
-		);
-
-		var input = CreateRenderInput(bundleFile, changelogDir);
-
-		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeTrue("warnings don't prevent rendering");
-		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("Checksum mismatch") &&
-			d.Message.Contains("the file content has changed since it was bundled") &&
-			d.Message.Contains("re-run 'bundle' or 'bundle-amend'") &&
-			d.Message.Contains("--resolve"));
-	}
-
-	[Fact]
-	public async Task ValidateBundle_ResolvedEntry_SkipsChecksumValidation()
-	{
-		// Arrange — resolved entry has inline data, no file reference needed
+		// Arrange — bundles are self-contained: entries carry inline content and the
+		// file block is provenance only, so no changelog file exists on disk
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			"""
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			entries:
-			  - type: feature
-			    title: Resolved feature
-			    products:
-			      - product: elasticsearch
-			        target: 9.2.0
-			    prs:
-			    - "100"
-			""";
+		var bundleContent = CreateResolvedBundleContent(BundleHeader, ("1755268130-feature.yaml", ChangelogWithoutComments));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
-		var input = CreateRenderInput(bundleFile, bundleDir);
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var input = new RenderChangelogsArguments
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
+			Output = outputDir,
+			Title = "9.2.0"
+		};
 
 		// Act
 		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
-		Collector.Warnings.Should().Be(0, "resolved entries bypass file checksum validation");
+		Collector.Errors.Should().Be(0);
+		Collector.Warnings.Should().Be(0, "rendering never reads changelog files, so provenance checksums are not verified");
+
+		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
+		FileSystem.File.Exists(indexFile).Should().BeTrue();
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		indexContent.Should().Contain("My new feature");
 	}
 
 	[Fact]
@@ -160,43 +88,4 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		withComments.Should().Be(withoutComments,
 			"checksum should be identical regardless of comment lines");
 	}
-
-	private async Task<(string BundleFile, string ChangelogDir)> SetupBundleWithFileAsync(
-		string fileOnDisk,
-		string storedChecksum)
-	{
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		var changelogFileName = "1755268130-feature.yaml";
-		var changelogFile = FileSystem.Path.Join(changelogDir, changelogFileName);
-		await FileSystem.File.WriteAllTextAsync(changelogFile, fileOnDisk, TestContext.Current.CancellationToken);
-
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(bundleDir);
-
-		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			$"""
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			entries:
-			  - file:
-			      name: {changelogFileName}
-			      checksum: {storedChecksum}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
-
-		return (bundleFile, changelogDir);
-	}
-
-	private RenderChangelogsArguments CreateRenderInput(string bundleFile, string changelogDir) =>
-		new()
-		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString()),
-			Title = "9.2.0"
-		};
 }

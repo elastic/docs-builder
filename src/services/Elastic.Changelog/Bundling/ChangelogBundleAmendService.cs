@@ -41,12 +41,6 @@ public record AmendBundleArguments
 	public IReadOnlyList<string> RemoveFiles { get; init; } = [];
 
 	/// <summary>
-	/// Whether to resolve (copy contents) the added entries.
-	/// When null, inferred from the original bundle.
-	/// </summary>
-	public bool? Resolve { get; init; }
-
-	/// <summary>
 	/// Remove by file name when the bundle checksum does not match the file on disk.
 	/// </summary>
 	public bool Force { get; init; }
@@ -113,7 +107,6 @@ public partial class ChangelogBundleAmendService(
 			var (parentOk, parentBundle) = await TryDeserializeParentBundleAsync(
 				input.BundlePath,
 				collector,
-				emitParseErrorToCollector: true,
 				ctx);
 			if (!parentOk || parentBundle == null)
 				return false;
@@ -148,15 +141,6 @@ public partial class ChangelogBundleAmendService(
 				_ = appliedExclusionKeys.Add(BundleAmendMerger.BuildExclusionKey(entry));
 			}
 
-			bool shouldResolve;
-			if (input.Resolve.HasValue)
-				shouldResolve = input.Resolve.Value;
-			else
-			{
-				shouldResolve = parentBundle.IsResolved;
-				_logger.LogInformation("Inferred resolve={Resolve} from original bundle", shouldResolve);
-			}
-
 			ChangelogConfiguration? changelogConfig = null;
 			IReadOnlyList<string>? linkAllowRepos = null;
 			var linkAllowlistActive = false;
@@ -170,15 +154,6 @@ public partial class ChangelogBundleAmendService(
 			var entries = new List<BundledEntry>();
 			if (addFilePaths!.Count > 0)
 			{
-				if (linkAllowlistActive && !parentBundle.IsResolved)
-				{
-					collector.EmitError(
-						string.Empty,
-						"bundle.link_allow_repos requires the parent bundle to be resolved (inline entry content). " +
-						"Re-create the bundle with resolve enabled, or remove bundle.link_allow_repos.");
-					return false;
-				}
-
 				if (linkAllowlistActive)
 				{
 					var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
@@ -198,23 +173,15 @@ public partial class ChangelogBundleAmendService(
 						collector.EmitError(
 							string.Empty,
 							"bundle.link_allow_repos requires the parent bundle to already reflect filtered PR/issue references. " +
-							"Re-create the parent bundle with the same bundle.link_allow_repos and resolve enabled, " +
+							"Re-create the parent bundle with the same bundle.link_allow_repos, " +
 							"or remove bundle.link_allow_repos for amend.");
 						return false;
 					}
 				}
 
-				if (linkAllowlistActive && !shouldResolve)
-				{
-					collector.EmitError(
-						string.Empty,
-						"bundle.link_allow_repos requires resolved amend content. Use --resolve or ensure the original bundle is resolved, or remove bundle.link_allow_repos.");
-					return false;
-				}
-
 				foreach (var filePath in addFilePaths)
 				{
-					var entry = await LoadChangelogFileAsync(collector, filePath, shouldResolve, ctx);
+					var entry = await LoadChangelogFileAsync(collector, filePath, ctx);
 					if (entry == null)
 						return false;
 					entries.Add(entry);
@@ -240,11 +207,10 @@ public partial class ChangelogBundleAmendService(
 			var amendFilePath = GenerateAmendFilePath(input.BundlePath, nextAmendNumber);
 
 			_logger.LogInformation(
-				"Creating amend file: {AmendFilePath} (exclude={ExcludeCount}, add={AddCount}, resolve={Resolve})",
+				"Creating amend file: {AmendFilePath} (exclude={ExcludeCount}, add={AddCount})",
 				amendFilePath,
 				excludeEntries.Count,
-				entries.Count,
-				shouldResolve);
+				entries.Count);
 
 			// Copy the parent's complete products (target, repo, owner) so the amend is self-contained:
 			// upload destination discovery, the registry's per-product target, and :version:-filtered
@@ -257,7 +223,7 @@ public partial class ChangelogBundleAmendService(
 			};
 
 			var bundleForWrite = amendBundle;
-			if (entries.Count > 0 && shouldResolve && linkAllowRepos != null)
+			if (entries.Count > 0 && linkAllowRepos != null)
 			{
 				var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
 				var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
@@ -467,7 +433,6 @@ public partial class ChangelogBundleAmendService(
 	private async Task<(bool Ok, Bundle? Bundle)> TryDeserializeParentBundleAsync(
 		string bundlePath,
 		IDiagnosticsCollector collector,
-		bool emitParseErrorToCollector,
 		Cancel ctx)
 	{
 		try
@@ -478,16 +443,10 @@ public partial class ChangelogBundleAmendService(
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
 		{
-			if (emitParseErrorToCollector)
-			{
-				collector.EmitError(
-					bundlePath,
-					$"Failed to parse parent bundle YAML: {ex.Message}",
-					ex);
-			}
-			else
-				_logger.LogWarning(ex, "Could not read original bundle to infer resolve; defaulting to false");
-
+			collector.EmitError(
+				bundlePath,
+				$"Failed to parse parent bundle YAML: {ex.Message}",
+				ex);
 			return (false, null);
 		}
 	}
@@ -521,7 +480,6 @@ public partial class ChangelogBundleAmendService(
 	private async Task<BundledEntry?> LoadChangelogFileAsync(
 		IDiagnosticsCollector collector,
 		string filePath,
-		bool resolve,
 		Cancel ctx)
 	{
 		try
@@ -530,18 +488,6 @@ public partial class ChangelogBundleAmendService(
 			var content = await _fileSystem.File.ReadAllTextAsync(filePath, ctx);
 
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
-
-			if (!resolve)
-			{
-				return new BundledEntry
-				{
-					File = new BundledFile
-					{
-						Name = fileName,
-						Checksum = checksum
-					}
-				};
-			}
 
 			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(content);
 			var entry = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);

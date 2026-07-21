@@ -282,11 +282,6 @@ internal sealed record BundleConfigurationYaml
 	public bool? UseLocalChangelogs { get; set; }
 
 	/// <summary>
-	/// Whether to resolve (copy contents) by default.
-	/// </summary>
-	public bool? Resolve { get; set; }
-
-	/// <summary>
 	/// Default bundle description used when no profile-specific description is provided.
 	/// </summary>
 	public string? Description { get; set; }
@@ -312,7 +307,7 @@ internal sealed record BundleConfigurationYaml
 	public bool? ReleaseDates { get; set; }
 
 	/// <summary>
-	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels (requires resolve).
+	/// When set, only PR/issue links targeting these <c>owner/repo</c> values are kept; others become <c># PRIVATE:</c> sentinels.
 	/// </summary>
 	public YamlLenientList? LinkAllowRepos { get; set; }
 

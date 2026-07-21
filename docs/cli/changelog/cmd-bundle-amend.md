@@ -8,26 +8,13 @@ Specify at least one of `--add` or `--remove`.
 To create a bundle, use [](/cli/changelog/bundle.md).
 For details and examples, go to [](/contribute/bundle-changelogs.md).
 
-## Resolve behaviour
-
-By default, the `bundle-amend` command **infers** whether to resolve entries from the original bundle when you use `--add`.
-If the original bundle contains resolved entries (with inline `title`, `type`, and so on), the amend file will also be resolved.
-If the original bundle contains only file references, the amend file will also contain only file references.
-
-This inference ensures that amend files are portable — they contain everything needed to be understood alongside the original bundle, even when copied to another repository.
-
-You can override this behaviour:
-
-- `--resolve`: Force entries to be resolved (inline content), regardless of the original bundle.
-- `--no-resolve`: Force entries to contain only file references, regardless of the original bundle.
-
-`--resolve` and `--no-resolve` apply only to `--add`. Removals always record `exclude-entries` with file name and checksum.
-
 ## Output
 
 Amend bundles contain the parent bundle's `products` plus only the changes for that amend file, not a full repetition of the original bundle's entries.
 
 The parent's complete `products` (including `target`, `repo`, and `owner`) are copied into every amend file so the amend is self-contained: upload destination discovery, the registry's per-product `target`, and `:version:`-filtered CDN consumption all derive from a bundle file's own products.
+
+Like bundles, amend files embed the full changelog content of each entry: entries added with `--add` carry inline `title`, `type`, `products`, and so on, alongside a `file` block recording the source file name and checksum for provenance.
 
 Additions:
 
@@ -42,6 +29,11 @@ entries:
 - file:
     name: late-addition.yaml
     checksum: abc123def456
+  type: bug-fix
+  title: A late addition
+  products:
+  - product: elasticsearch
+    target: 9.3.0
 ```
 
 Removals:
@@ -79,8 +71,6 @@ docs-builder changelog bundle-amend \
   ./docs/changelog/bundles/9.3.0.yaml \
   --add ./docs/changelog/138723.yaml
 ```
-
-The new bundle automatically matches the resolve style of the original bundle.
 
 ### Remove a changelog from a bundle
 
@@ -127,21 +117,6 @@ docs-builder changelog bundle-amend \
   ./docs/changelog/bundles/9.3.0.yaml \
   --remove ./docs/changelog/old-entry.yaml \
   --add ./docs/changelog/new-entry.yaml
-```
-
-### Force resolve or file-reference style
-
-```sh
-# Force resolved (inline) entries
-docs-builder changelog bundle-amend \
-  ./docs/changelog/bundles/9.3.0.yaml \
-  --add "./docs/changelog/138723.yaml" \
-  --resolve
-
-# Force file-only references
-docs-builder changelog bundle-amend 9.3.0.yaml \
-  --add ./docs/changelog/late-addition.yaml \
-  --no-resolve
 ```
 
 ### Preview without writing an amend file

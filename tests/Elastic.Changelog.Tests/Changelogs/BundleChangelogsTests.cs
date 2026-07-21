@@ -1010,19 +1010,22 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
-		// Output products should override changelog products
-		bundleContent.Should().Contain("product: cloud-serverless");
-		bundleContent.Should().Contain("target: 2025-12-02");
-		bundleContent.Should().Contain("target: 2025-12-06");
+		// Output products should override changelog products at the bundle level
+		var topLevel = bundleContent[..bundleContent.IndexOf("entries:", StringComparison.Ordinal)];
+		topLevel.Should().Contain("product: cloud-serverless");
+		topLevel.Should().Contain("target: 2025-12-02");
+		topLevel.Should().Contain("target: 2025-12-06");
 		// Lifecycle values should be included in products array
-		bundleContent.Should().Contain("lifecycle: ga");
-		bundleContent.Should().Contain("lifecycle: beta");
-		// Should not contain products from changelogs
-		bundleContent.Should().NotContain("product: elasticsearch");
-		bundleContent.Should().NotContain("product: kibana");
-		// But should still contain the entries
+		topLevel.Should().Contain("lifecycle: ga");
+		topLevel.Should().Contain("lifecycle: beta");
+		// Bundle-level products come only from --output-products
+		topLevel.Should().NotContain("product: elasticsearch");
+		topLevel.Should().NotContain("product: kibana");
+		// Entries are always inlined (with file provenance) and keep their own products
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
+		bundleContent.Should().Contain("title: Elasticsearch feature");
+		bundleContent.Should().Contain("title: Kibana feature");
 	}
 
 	[Fact]
@@ -1386,7 +1389,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithResolve_CopiesChangelogContents()
+	public async Task BundleChangelogs_CopiesChangelogContents()
 	{
 		// Arrange
 
@@ -1412,7 +1415,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1439,63 +1441,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_WithExplicitResolveFalse_OverridesConfigResolveTrue()
-	{
-		// Arrange - config has resolve: true, but CLI passes Resolve = false (--no-resolve).
-		// The explicit CLI value must win.
-
-		// language=yaml
-		var configContent =
-			"""
-			bundle:
-			  resolve: true
-			""";
-
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
-		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
-
-		// language=yaml
-		var changelog1 =
-			"""
-			title: Test feature
-			type: feature
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			prs:
-			  - https://github.com/elastic/elasticsearch/pull/100
-			""";
-
-		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			Resolve = false,
-			Config = configPath,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
-		};
-
-		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeTrue();
-		Collector.Errors.Should().Be(0);
-
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
-
-		// An unresolved bundle has only a file reference — no inline title/type fields
-		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
-		bundleContent.Should().NotContain("title: Test feature");
-		bundleContent.Should().NotContain("type: feature");
-	}
-
-	[Fact]
-	public async Task BundleChangelogs_WithResolve_PreservesSpecialCharactersInUtf8()
+	public async Task BundleChangelogs_PreservesSpecialCharactersInUtf8()
 	{
 		// Arrange - Create changelog with special characters that could be corrupted
 		// These characters were reported as being corrupted to "&o0" and "*o0" in the original issue
@@ -1527,7 +1473,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = outputPath
 		};
 
@@ -1649,7 +1594,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1683,7 +1627,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1715,7 +1658,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1757,7 +1699,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -1791,7 +1732,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -2776,74 +2716,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// language=yaml
 		var changelogWithComments =
 			"""
-			# This is a comment header
-			# Generated by changelog add
-			title: Amend feature
-			type: feature
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			prs:
-			  - https://github.com/elastic/elasticsearch/pull/100
-			""";
-
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-amend-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelogWithComments, TestContext.Current.CancellationToken);
-
-		var amendService = new ChangelogBundleAmendService(LoggerFactory, FileSystem);
-
-		var amendInput = new AmendBundleArguments
-		{
-			BundlePath = bundleFile,
-			AddFiles = [changelogFile],
-			Resolve = false
-		};
-
-		// Act
-		var result = await amendService.AmendBundle(Collector, amendInput, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeTrue();
-		Collector.Errors.Should().Be(0);
-
-		// Read the amend file
-		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundleFile);
-		amendFiles.Should().HaveCount(1);
-
-		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], TestContext.Current.CancellationToken);
-
-		// The checksum should be the normalized hash (comments stripped before hashing)
-		var expectedChecksum = ComputeSha1(changelogWithComments);
-		amendContent.Should().Contain($"checksum: {expectedChecksum}");
-	}
-
-	[Fact]
-	public async Task AmendBundle_WithResolve_ProducesNormalizedChecksum()
-	{
-		// Arrange - Amend with --resolve should also use normalized checksums
-
-		// Create a base bundle file
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(bundleDir);
-
-		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			"""
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			entries: []
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
-
-		// Create a changelog file with comments
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// language=yaml
-		var changelogWithComments =
-			"""
 			# Auto-generated comment
 			title: Resolved amend feature
 			type: feature
@@ -2862,8 +2734,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var amendInput = new AmendBundleArguments
 		{
 			BundlePath = bundleFile,
-			AddFiles = [changelogFile],
-			Resolve = true
+			AddFiles = [changelogFile]
 		};
 
 		// Act
@@ -5469,9 +5340,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
-	public async Task BundleChangelogs_GlobalMode_EmptyProducts_IncludesFeatureEntryWithWarning()
+	public async Task BundleChangelogs_GlobalMode_EmptyProducts_WarnsThenFailsResolvedValidation()
 	{
-		// Mode 2 — missing/empty changelog products: include with warning; product include/exclude lists are skipped for that entry.
+		// Mode 2 — missing/empty changelog products: the global product include/exclude lists are skipped
+		// for that entry (with a warning), but since bundles always inline entry content the entry then
+		// fails resolved-entry validation, which requires products.
 		// language=yaml
 		var configContent =
 			"""
@@ -5508,11 +5381,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("1755268207-no-products-feature.yaml");
+		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
 	}
 
 	[Fact]

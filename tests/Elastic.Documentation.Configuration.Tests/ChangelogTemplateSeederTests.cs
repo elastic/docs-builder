@@ -9,10 +9,10 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class ChangelogTemplateSeederTests
 {
 	private const string Template =
-		"bundle:\n  resolve: true\n  # changelog-init-bundle-seed\n  # some other comment\n";
+		"bundle:\n  release_dates: true\n  # changelog-init-bundle-seed\n  # some other comment\n";
 
 	private const string TemplateWindows =
-		"bundle:\r\n  resolve: true\r\n  # changelog-init-bundle-seed\r\n  # some other comment\r\n";
+		"bundle:\r\n  release_dates: true\r\n  # changelog-init-bundle-seed\r\n  # some other comment\r\n";
 
 	[Fact]
 	public void ApplyBundleRepoSeed_GitOwnerAndRepo_SeedsTemplate()
@@ -106,7 +106,7 @@ public class ChangelogTemplateSeederTests
 	[Fact]
 	public void ApplyBundleRepoSeed_MissingPlaceholder_ReturnsContentUnchanged()
 	{
-		var content = "bundle:\n  resolve: true\n";
+		var content = "bundle:\n  release_dates: true\n";
 
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
 			content, ownerCli: "elastic", repoCli: "kibana", gitOwner: null, gitRepo: null);
@@ -139,7 +139,7 @@ public class ChangelogTemplateSeederTests
 	[Fact]
 	public void ApplyBundleRepoSeed_PlaceholderAtEofWithoutNewline_Seeds()
 	{
-		var content = "bundle:\n  resolve: true\n  # changelog-init-bundle-seed";
+		var content = "bundle:\n  release_dates: true\n  # changelog-init-bundle-seed";
 
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
 			content, ownerCli: null, repoCli: null, gitOwner: "elastic", gitRepo: "kibana");
@@ -152,12 +152,12 @@ public class ChangelogTemplateSeederTests
 	[Fact]
 	public void ApplyBundleRepoSeed_PlaceholderAtEofWithoutNewline_RemovesWhenNoSeed()
 	{
-		var content = "bundle:\n  resolve: true\n  # changelog-init-bundle-seed";
+		var content = "bundle:\n  release_dates: true\n  # changelog-init-bundle-seed";
 
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
 			content, ownerCli: null, repoCli: null, gitOwner: null, gitRepo: null);
 
-		result.Should().Be("bundle:\n  resolve: true\n");
+		result.Should().Be("bundle:\n  release_dates: true\n");
 		result.Should().NotContain("changelog-init-bundle-seed");
 	}
 
