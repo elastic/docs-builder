@@ -7,7 +7,6 @@ cross_links:
   - docs-content
 exclude:
   - '_*.md'
-  - '!_search.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
   serverless-short: Serverless
@@ -71,7 +70,6 @@ api:
 toc:
   - file: index.md
   - hidden: 404.md
-  - hidden: _search.md
   - hidden: developer-notes.md
   - hidden: contribute/cumulative-docs/index.md
   - hidden: contribute/cumulative-docs/guidelines.md

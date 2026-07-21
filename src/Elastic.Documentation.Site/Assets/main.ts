@@ -49,11 +49,8 @@ if (config.telemetryEnabled) {
 
 // Dynamically import web components after telemetry is initialized.
 // Parcel code-splits these into separate chunks loaded on demand.
-import('./web-components/NavigationSearch/NavigationSearchComponent')
-import('./web-components/AskAi/AskAi')
 import('./web-components/VersionDropdown')
 import('./web-components/AppliesToPopover')
-import('./web-components/FullPageSearch/FullPageSearchComponent')
 import('./web-components/Diagnostics/DiagnosticsComponent')
 import('./web-components/StorybookStory/StorybookStoryComponent')
 
