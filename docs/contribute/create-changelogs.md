@@ -5,12 +5,12 @@ These files are ultimately used to generate release documentation.
 
 This page describes how to create these files both from the [command line](#command-line) and from [GitHub actions](#github-actions).
 
-## Before you begin
+## Before you begin [prerequisites]
 
 Create a changelog configuration file to define all the default behavior and PR label mappings.
 Refer to [](/contribute/configure-changelogs.md).
 
-Choose whether you want to store the changelogs in your repo and/or store them in the public CDN.
+Choose whether you want to store the changelogs only in the public CDN or in both your GitHub repository and the CDN:
 
 - If you have a large volume of notable changes every release, you will likely choose to store them *only* in the public CDN.
 - If you have a small volume of changes or the content churns a lot before and after releases, you will likely choose to store them in *both* the repo and the public CDN.

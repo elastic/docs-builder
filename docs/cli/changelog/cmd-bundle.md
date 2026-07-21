@@ -15,6 +15,7 @@ docs-builder changelog bundle elasticsearch-release 9.2.0 ./promotion-report.htm
 ```
 
 The second positional argument accepts:
+
 - A version string (e.g. `9.2.0`, `9.2.0-beta.1`) — lifecycle is inferred automatically (`ga`, `beta`, `rc`)
 - A promotion report URL or file path
 - A plain-text URL list file (one fully-qualified GitHub PR or issue URL per line)
@@ -145,6 +146,26 @@ Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/r
 
 :::{important}
 `bundle.link_allow_repos` requires a **resolved** bundle. Set `bundle.resolve: true` or pass `--resolve`.
+:::
+
+## Entry sourcing [changelog-bundle-entry-sourcing]
+
+You can choose to pull changelog files from the local folder or from the public CDN.
+
+Files in the local folder are used when:
+
+- `bundle.use_local_changelogs` is set to `true` in the changelog configuration file,
+- the `--force-local`, `--files`, or `--directory` command options are used,
+- a path-list file is used with profile-based `changelog bundle` commands, or
+- the repo cannot be determined (`bundle.repo` is not set and `--repo` is not specified)
+
+Files in the public CDN are used when the repo is known (`bundle.repo` is set in the changelog configuration file or the `--repo` command option is used) and local sourcing is not forced.
+
+:::{note}
+The public CDN (CloudFront) caches changelog entry YAML and the entry `registry.json` with a default "time to live" (TTL) of about one hour (minimum 60 seconds).
+After you upload or edit entries, the copy in the private S3 bucket can be newer than what `changelog bundle` downloads from the CDN.
+If you rely on CDN sourcing, wait at least an hour after last-minute changelog updates before bundling.
+Alternatively, if changelogs are also stored in the repo, you can force local entry sourcing so the command reads files locally instead.
 :::
 
 ## Examples
@@ -351,31 +372,6 @@ docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelo
 ```
 
 `--files` / path-list selection always reads the named files from disk (local entry sourcing). It does not fetch entries from the CDN. `rules.bundle` still applies after selection.
-
-### Entry sourcing [changelog-bundle-entry-sourcing]
-
-When the authoring repository resolves (`bundle.repo`, `--repo`, or the git remote), `changelog bundle` fetches individual changelog YAML files from the public CDN pool `changelog/{org}/{repo}/{branch}/…` rather than from your local `bundle.directory` folder.
-Local sourcing is used when you pass `--force-local`, `--directory`, set `bundle.use_local_changelogs: true`, or the repo cannot be resolved.
-<!-- For the full decision rules, refer to [Entry sourcing](/contribute/configure-changelogs-ref.md#bundle-entry-sourcing). -->
-
-:::{important}
-The public CDN (CloudFront) caches changelog entry YAML and the entry `registry.json` with a default "time to live" (TTL) of about one hour (minimum 60 seconds).
-After you upload or edit entries, the copy in the private S3 bucket can be newer than what `changelog bundle` downloads from the CDN.
-If you rely on CDN sourcing, wait at least an hour after last-minute changelog updates before bundling.
-Alternatively, if changelogs are also stored in the repo, you can use [Force local entry sourcing](#changelog-bundle-force-local) so the command reads files locally instead.
-:::
-
-#### Force local entry sourcing [changelog-bundle-force-local]
-
-When a repository defaults to CDN entry sourcing, you can pass `--force-local` to read changelog YAML files from the local folder instead.
-This option overrides the `bundle.use_local_changelogs` setting in your `changelog.yml` and is useful for ad hoc bundles that include freshly authored local files that are not on the CDN yet or cases where the CDN has not yet reflected a just-uploaded edit.
-
-```sh
-docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/prs.txt --force-local
-```
-
-`--force-local` is allowed in both option-based and profile-based commands.
-The `--files` command option and file list-based filters already force local sourcing, so `--force-local` is optional in that case.
 
 ### Hide features [changelog-bundle-hide-features]
 
