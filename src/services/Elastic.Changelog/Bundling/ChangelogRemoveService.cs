@@ -26,6 +26,13 @@ public record ChangelogRemoveArguments
 	public IReadOnlyList<ProductArgument>? Products { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
+
+	/// <summary>
+	/// Explicit changelog YAML paths (or a path-list file) for the <c>--files</c> filter.
+	/// Mutually exclusive with other filter sources.
+	/// </summary>
+	public string[]? Files { get; init; }
+
 	public string? Owner { get; init; }
 	public string? Repo { get; init; }
 	public bool DryRun { get; init; }
@@ -122,6 +129,7 @@ public class ChangelogRemoveService(
 					Products = filterResult.Products,
 					Prs = filterResult.Prs,
 					Issues = filterResult.Issues,
+					Files = filterResult.Files,
 					All = false
 				};
 			}
@@ -142,8 +150,17 @@ public class ChangelogRemoveService(
 
 			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			var issuesToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			IReadOnlyList<string>? explicitFilePaths = null;
 
-			if (input.Prs is { Length: > 0 })
+			if (input.Files is { Length: > 0 })
+			{
+				var loader = new FileFilterLoader(_fileSystem);
+				var result = await loader.LoadFilesAsync(collector, input.Files, input.Directory, ctx);
+				if (!result.IsValid)
+					return false;
+				explicitFilePaths = result.FilePaths;
+			}
+			else if (input.Prs is { Length: > 0 })
 			{
 				var loader = new PrFilterLoader(_fileSystem);
 				var result = await loader.LoadPrsAsync(collector, input.Prs, input.Owner, input.Repo, ctx);
@@ -160,21 +177,30 @@ public class ChangelogRemoveService(
 				issuesToMatch = result.IssuesToMatch;
 			}
 
-			// A placeholder output path is passed to discovery so the bundle file itself is excluded.
-			// Directory is non-null here: ApplyConfigDefaults ensures a value and ValidateInput enforces non-empty.
-			var placeholderOutput = _fileSystem.Path.Join(input.Directory!, "changelog-bundle.yaml");
-			var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
-			var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory!, placeholderOutput, ctx);
-
-			if (yamlFiles.Count == 0)
-			{
-				collector.EmitError(input.Directory!, "No changelog YAML files found in directory");
-				return false;
-			}
-
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
 			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
-			var matchResult = await entryMatcher.MatchChangelogsAsync(collector, yamlFiles, filterCriteria, ctx);
+			ChangelogMatchResult matchResult;
+			if (explicitFilePaths != null)
+			{
+				var filesCriteria = filterCriteria with { IncludeAll = true };
+				matchResult = await entryMatcher.MatchChangelogsAsync(collector, explicitFilePaths, filesCriteria, ctx);
+			}
+			else
+			{
+				// A placeholder output path is passed to discovery so the bundle file itself is excluded.
+				// Directory is non-null here: ApplyConfigDefaults ensures a value and ValidateInput enforces non-empty.
+				var placeholderOutput = _fileSystem.Path.Join(input.Directory!, "changelog-bundle.yaml");
+				var fileDiscovery = new ChangelogFileDiscovery(_fileSystem, _logger);
+				var yamlFiles = await fileDiscovery.DiscoverChangelogFilesAsync(input.Directory!, placeholderOutput, ctx);
+
+				if (yamlFiles.Count == 0)
+				{
+					collector.EmitError(input.Directory!, "No changelog YAML files found in directory");
+					return false;
+				}
+
+				matchResult = await entryMatcher.MatchChangelogsAsync(collector, yamlFiles, filterCriteria, ctx);
+			}
 
 			if (matchResult.Entries.Count == 0)
 			{
@@ -274,17 +300,19 @@ public class ChangelogRemoveService(
 			specified.Add("--prs");
 		if (input.Issues is { Length: > 0 })
 			specified.Add("--issues");
+		if (input.Files is { Length: > 0 })
+			specified.Add("--files");
 
 		if (specified.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --products, --prs, or --issues");
+			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --products, --prs, --issues, or --files");
 			return false;
 		}
 
 		if (specified.Count > 1)
 		{
 			collector.EmitError(string.Empty,
-				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specified)}. Please use only one filter option: --all, --products, --prs, or --issues");
+				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specified)}. Please use only one filter option: --all, --products, --prs, --issues, or --files");
 			return false;
 		}
 

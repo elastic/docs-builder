@@ -5,7 +5,7 @@ Remove changelog YAML files from a directory.
 Two mutually exclusive modes are available:
 
 - **Profile-based**: `docs-builder changelog remove <profile> <version|promotion-report>` — uses the same `bundle.profiles` configuration as [`changelog bundle`](/cli/changelog/bundle.md) to determine which changelogs to remove.
-- **Option-based**: `docs-builder changelog remove --products "..."` (or `--prs`, `--issues`, `--all`, `--release-version`, `--report`) — specify the filter directly.
+- **Option-based**: `docs-builder changelog remove --products "..."` (or `--prs`, `--issues`, `--all`, `--release-version`, `--report`, `--files`) — specify the filter directly.
 
 Before deleting anything, the command checks whether any matching files are referenced by unresolved bundles, to prevent silently breaking the `{changelog}` directive.
 
@@ -46,7 +46,7 @@ Setting `bundle.directory` and `bundle.output_directory` in `changelog.yml` is r
 
 ## Option-based examples
 
-Exactly one filter must be specified: `--all`, `--products`, `--prs`, `--issues`, `--release-version`, or `--report`.
+Exactly one filter must be specified: `--all`, `--products`, `--prs`, `--issues`, `--release-version`, `--report`, or `--files`.
 
 ```sh
 # Preview what would be removed (dry run)
@@ -59,6 +59,9 @@ docs-builder changelog remove \
 
 # Preview using the latest release
 docs-builder changelog remove --release-version latest --dry-run
+
+# Remove an explicit list of changelog files
+docs-builder changelog remove --files "./docs/changelog/a.yaml,./docs/changelog/b.yaml" --dry-run
 ```
 
 :::{note}

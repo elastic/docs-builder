@@ -42,6 +42,19 @@ public record BundleChangelogsArguments
 	public bool? Resolve { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
+
+	/// <summary>
+	/// Explicit changelog YAML paths (or a path-list file) for the <c>--files</c> filter.
+	/// Mutually exclusive with other filter sources. Forces local entry sourcing.
+	/// </summary>
+	public string[]? Files { get; init; }
+
+	/// <summary>
+	/// When true, force local entry sourcing for this run (CLI <c>--force-local</c>),
+	/// equivalent to <c>bundle.use_local_changelogs: true</c> without editing config.
+	/// </summary>
+	public bool ForceLocal { get; init; }
+
 	public string? Owner { get; init; }
 	public string? Repo { get; init; }
 
@@ -223,9 +236,11 @@ public partial class ChangelogBundlingService(
 			// an org/repo/branch pool (changelog/{org}/{repo}/{branch}/...), so CDN sourcing keys off the
 			// resolvable authoring repo (bundle.repo / --repo), with org and branch defaulting when unset —
 			// not the bundle's target products. Fall back to the local folder when the user forces it
-			// (bundle.use_local_changelogs / --directory), the repo is unresolvable, or no CDN base is
-			// configured. This stays in lockstep with PlanBundleAsync's needs_network decision.
-			var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
+			// (bundle.use_local_changelogs / --force-local / --files / --directory), the repo is unresolvable,
+			// or no CDN base is configured. This stays in lockstep with PlanBundleAsync's needs_network decision.
+			var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false)
+				|| input.ForceLocal
+				|| input.Files is { Length: > 0 };
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo);
 			var authoringOwner = ChangelogRepoOwnerResolver.ResolveOwner(input.Owner, input.Repo, DefaultOwner);
 			var authoringBranch = string.IsNullOrWhiteSpace(input.Branch) ? DefaultBranch : input.Branch;
@@ -242,11 +257,20 @@ public partial class ChangelogBundlingService(
 			if (!ValidateLinkAllowlist(collector, input))
 				return false;
 
-			// Load PR or issue filter values
+			// Load PR, issue, or file filter values
 			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			var issuesToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			IReadOnlyList<string>? explicitFilePaths = null;
 
-			if (input.Prs is { Length: > 0 })
+			if (input.Files is { Length: > 0 })
+			{
+				var fileFilterLoader = new FileFilterLoader(_fileSystem);
+				var fileFilterResult = await fileFilterLoader.LoadFilesAsync(collector, input.Files, input.Directory, ctx);
+				if (!fileFilterResult.IsValid)
+					return false;
+				explicitFilePaths = fileFilterResult.FilePaths;
+			}
+			else if (input.Prs is { Length: > 0 })
 			{
 				var prFilterLoader = new PrFilterLoader(_fileSystem);
 				var prFilterResult = await prFilterLoader.LoadPrsAsync(collector, input.Prs, input.Owner, input.Repo, ctx);
@@ -273,9 +297,16 @@ public partial class ChangelogBundlingService(
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
 
 			// Source and match changelog entries — from the CDN (default) or the local folder.
+			// Explicit --files / path-list selection always loads the named local paths (IncludeAll).
 			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
 			ChangelogMatchResult matchResult;
-			if (useCdn)
+			if (explicitFilePaths != null)
+			{
+				_logger.LogInformation("Matching {Count} explicitly selected changelog files", explicitFilePaths.Count);
+				var filesCriteria = filterCriteria with { IncludeAll = true };
+				matchResult = await entryMatcher.MatchChangelogsAsync(collector, explicitFilePaths, filesCriteria, ctx);
+			}
+			else if (useCdn)
 			{
 				var contents = await FetchCdnEntriesAsync(collector, authoringOwner, authoringRepo, authoringBranch, ctx);
 				if (contents == null)
@@ -563,6 +594,7 @@ public partial class ChangelogBundlingService(
 			InputProducts = filterResult.Products,
 			Prs = filterResult.Prs,
 			Issues = filterResult.Issues,
+			Files = filterResult.Files,
 			All = false,
 			Output = outputPath,
 			OutputProducts = outputProducts,
@@ -664,7 +696,10 @@ public partial class ChangelogBundlingService(
 		// CDN entry sourcing needs network access for the Docker bundle run. Mirror the run-mode gate:
 		// active when the authoring repo resolves (profile/config bundle.repo), the user has not forced
 		// local sourcing, and a CDN base is configured.
-		var useLocalChangelogs = config?.Bundle?.UseLocalChangelogs ?? false;
+		var useLocalChangelogs = (config?.Bundle?.UseLocalChangelogs ?? false)
+			|| input.ForceLocal
+			|| input.Files is { Length: > 0 }
+			|| await ProfileFilterForcesLocalAsync(input, ctx);
 		var explicitDirectory = !string.IsNullOrWhiteSpace(input.Directory);
 		var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(input.Repo ?? profileDef?.Repo ?? config?.Bundle?.Repo);
 		if (ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs, explicitDirectory: explicitDirectory))
@@ -802,12 +837,39 @@ public partial class ChangelogBundlingService(
 		return byName.Select(kv => (kv.Key, kv.Value)).ToList();
 	}
 
-	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--directory</c>), and a CDN base is configured.</summary>
+	/// <summary>Gate for repo-scoped CDN entry sourcing: true when the authoring repo resolves, local sourcing is not forced (<c>bundle.use_local_changelogs</c>/<c>--force-local</c>/<c>--files</c>/<c>--directory</c>), and a CDN base is configured.</summary>
 	private static bool ShouldSourceFromCdn(string? authoringRepo, bool useLocalChangelogs, bool explicitDirectory)
 	{
 		if (useLocalChangelogs || explicitDirectory || string.IsNullOrWhiteSpace(authoringRepo))
 			return false;
 		return ChangelogCdn.ResolveBaseUri() is not null;
+	}
+
+	/// <summary>
+	/// Detects whether a profile positional list file is a changelog path list (which forces local sourcing).
+	/// Used by <see cref="PlanBundleAsync"/> so <c>needs_network</c> matches run-mode without emitting filter diagnostics.
+	/// </summary>
+	private async Task<bool> ProfileFilterForcesLocalAsync(BundleChangelogsArguments input, Cancel ctx)
+	{
+		if (string.IsNullOrWhiteSpace(input.Profile))
+			return false;
+
+		var listPath = !string.IsNullOrWhiteSpace(input.ProfileReport)
+			? input.ProfileReport
+			: input.ProfileArgument;
+		if (string.IsNullOrWhiteSpace(listPath) || !_fileSystem.File.Exists(listPath))
+			return false;
+
+		if (_fileSystem.Path.GetExtension(listPath).ToLowerInvariant() is ".html" or ".htm")
+			return false;
+
+		var content = await _fileSystem.File.ReadAllTextAsync(listPath, ctx);
+		var lines = content
+			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+			.Where(l => !string.IsNullOrWhiteSpace(l))
+			.ToArray();
+
+		return lines.Length > 0 && lines.All(FileFilterLoader.IsYamlExtension);
 	}
 
 	private bool ValidateInput(IDiagnosticsCollector collector, BundleChangelogsArguments input, bool requireDirectoryExists)
@@ -824,7 +886,7 @@ public partial class ChangelogBundlingService(
 			return false;
 		}
 
-		// Validate filter options - exactly one of: --all, --input-products, --prs, --issues
+		// Validate filter options - exactly one of: --all, --input-products, --prs, --issues, --files
 		var specifiedFilters = new List<string>();
 		if (input.All)
 			specifiedFilters.Add("--all");
@@ -834,17 +896,19 @@ public partial class ChangelogBundlingService(
 			specifiedFilters.Add("--prs");
 		if (input.Issues is { Length: > 0 })
 			specifiedFilters.Add("--issues");
+		if (input.Files is { Length: > 0 })
+			specifiedFilters.Add("--files");
 
 		if (specifiedFilters.Count == 0)
 		{
-			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, or --issues");
+			collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, or --files");
 			return false;
 		}
 
 		if (specifiedFilters.Count > 1)
 		{
 			collector.EmitError(string.Empty,
-				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, or --issues");
+				$"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, --issues, or --files");
 			return false;
 		}
 

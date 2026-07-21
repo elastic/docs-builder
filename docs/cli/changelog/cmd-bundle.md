@@ -17,9 +17,10 @@ docs-builder changelog bundle elasticsearch-release 9.2.0 ./promotion-report.htm
 The second positional argument accepts:
 - A version string (e.g. `9.2.0`, `9.2.0-beta.1`) — lifecycle is inferred automatically (`ga`, `beta`, `rc`)
 - A promotion report URL or file path
-- A plain-text URL list file (one fully-qualified GitHub URL per line)
+- A plain-text URL list file (one fully-qualified GitHub PR or issue URL per line)
+- A plain-text path list file (one changelog YAML path per line, ending in `.yaml` or `.yml`)
 
-When your profile uses `{version}` in its output pattern and you also want to filter by a report, pass both arguments.
+When your profile uses `{version}` in its output pattern and you also want to filter by a report or list file, pass both arguments (version first, then the filter file).
 
 Example profile in `changelog.yml`:
 
@@ -48,6 +49,9 @@ Exactly one of the following filter flags is required:
 - `--issues` — filter by issue URLs or a newline-delimited file of issue URLs
 - `--release-version` — fetch PR references from a GitHub release tag (e.g. `v9.2.0` or `latest`)
 - `--report` — filter by PRs referenced in a promotion report (URL or local file)
+- `--files` — include specific changelog YAML paths, or a newline-delimited path list file
+
+`--force-local` is not a filter. It forces local entry sourcing for the run (equivalent to `bundle.use_local_changelogs: true` without editing config) and is allowed in both option-based and profile-based modes.
 
 ```sh
 # Bundle all changelogs in docs/changelog/
@@ -63,6 +67,12 @@ docs-builder changelog bundle \
   --release-version v9.2.0 \
   --repo elasticsearch \
   --owner elastic
+
+# Bundle an explicit list of changelog files
+docs-builder changelog bundle \
+  --files "./docs/changelog/a.yaml,./docs/changelog/b.yaml" \
+  --output docs/releases/serverless/2026-07-07.yaml \
+  --output-products "cloud-serverless 2026-07-07"
 ```
 
 ## Resolved vs. reference bundles
@@ -316,6 +326,43 @@ docs-builder changelog bundle \
 
 By default all changelogs that match PRs in the promotion report are included in the bundle.
 To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+### Bundle by file paths [changelog-bundle-files]
+
+Use `--files` when you know the exact changelog files to include and they may not have `prs` or `issues` metadata.
+
+```sh
+docs-builder changelog bundle \
+  --files "./docs/changelog/a.yaml,./docs/changelog/b.yaml" \
+  --output docs/releases/serverless/2026-07-07.yaml \
+  --output-products "cloud-serverless 2026-07-07"
+```
+
+You can also pass a newline-delimited path list file:
+
+```sh
+docs-builder changelog bundle --files ./docs/temp/changelog_files.txt --output ...
+```
+
+In profile mode, pass the same path list as a positional argument:
+
+```sh
+docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelog_files.txt
+```
+
+`--files` / path-list selection always reads the named files from disk (local entry sourcing). It does not fetch entries from the CDN. `rules.bundle` still applies after selection.
+
+### Force local entry sourcing [changelog-bundle-force-local]
+
+When a repository defaults to CDN entry sourcing, you can use `--force-local` to read changelog YAML files from the local folder.
+This option overrides the `bundle.use_local_changelogs` setting in your `changelog.yml` and is useful for ad hoc bundles that include freshly authored local files that are not on the CDN yet.
+
+```sh
+docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/prs.txt --force-local
+```
+
+`--force-local` is allowed in both option-based and profile-based commands.
+Path-list / `--files` filters already force local sourcing, so `--force-local` is optional in that case.
 
 ### Hide features [changelog-bundle-hide-features]
 
