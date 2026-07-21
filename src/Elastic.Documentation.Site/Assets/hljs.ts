@@ -77,16 +77,13 @@ const languageAliases: Record<string, string> = {
 // (and later htmx swaps) share a single import instead of re-fetching the module.
 const registrations = new Map<string, Promise<void>>()
 
-function resolveLanguageName(name: string): string {
-    return languageAliases[name] ?? name
-}
-
-// Imports and registers a single language (plus any aliases pointing at it) exactly
-// once. Unknown names resolve to undefined and are skipped by the caller.
-function ensureLanguage(name: string): Promise<void> | undefined {
-    const canonical = resolveLanguageName(name)
+// Imports and registers a language (plus any aliases pointing at it) exactly once.
+// Unknown languages have no loader and resolve immediately so callers can await
+// unconditionally.
+function ensureLanguage(name: string): Promise<void> {
+    const canonical = languageAliases[name] ?? name
     const loader = languageLoaders[canonical]
-    if (!loader) return undefined
+    if (!loader) return Promise.resolve()
 
     const cached = registrations.get(canonical)
     if (cached) return cached
@@ -249,7 +246,7 @@ export async function initHighlight() {
     if (blocks.length === 0) return
 
     // Import only the language modules referenced by the unprocessed blocks before
-    // highlighting. Unknown/plain-text languages resolve to undefined and are skipped;
+    // highlighting. Unknown/plain-text languages have no loader and resolve immediately;
     // hljs.highlightElement then degrades gracefully without breaking other blocks.
     const requiredLanguages = new Set<string>()
     for (const block of blocks) {
@@ -257,13 +254,7 @@ export async function initHighlight() {
         if (language) requiredLanguages.add(language)
     }
 
-    await Promise.all(
-        [...requiredLanguages]
-            .map((language) => ensureLanguage(language))
-            .filter(
-                (promise): promise is Promise<void> => promise !== undefined
-            )
-    )
+    await Promise.all([...requiredLanguages].map(ensureLanguage))
 
     // Re-check data-highlighted after awaiting: a concurrent initHighlight (e.g. a
     // second htmx:load fired while the language import was pending) may already have

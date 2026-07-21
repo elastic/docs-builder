@@ -35,10 +35,9 @@ import { UAParser } from 'ua-parser-js'
 const DOCS_BUILDER_VERSION =
     process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
 
-// Initialize OpenTelemetry FIRST, before any other code runs (when enabled).
-// The implementation (the OTel SDK) is dynamically imported so pages built with
-// telemetry disabled never fetch it. When enabled we await it before importing the
-// web components below, so all subsequent instrumented work runs after init.
+// Initialize OpenTelemetry before the web components when telemetry is enabled, so
+// their instrumented work runs after init. The OTel SDK is dynamically imported, so
+// pages built with telemetry disabled never fetch it.
 async function bootstrap() {
     if (config.telemetryEnabled) {
         const { initializeOtel } = await import('./telemetry/instrumentation')
