@@ -73,10 +73,12 @@ The authoring repo is resolved with the same precedence as `changelog upload`: `
 
 Sourcing is decided per run:
 
-- **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--files` / a path-list filter is used, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
-- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue filters to the downloaded set.
+- **Local folder** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--files` or a path-list filter is used, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
+- **CDN (default when a repo resolves)**: Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue filters to the downloaded set.
 
-Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml`. Path-list / `--files` filters always force local sourcing because they select files by path on disk.
+:::{important}
+The public CDN caches entry YAML and `registry.json` with a default TTL of about one hour (minimum 60 seconds). Content in the private upload bucket can be newer than what `changelog bundle` fetches until the cache expires. For release workflows with last-minute entry edits, use `--force-local` or local sourcing instead. Refer to [Bundle changelogs](/contribute/bundle-changelogs.md) and [CDN staleness](/development/changelog-bundle-registry.md#implementation-notes).
+:::
 
 Because entries are org/repo/branch-scoped, one repository can produce a bundle for a shared product (for example, `cloud-serverless`) while sourcing its own entries from `changelog/{org}/{repo}/{branch}/`, without that product appearing in the repository's `docset.yml`. The `{changelog}` directive's `:cdn:` mode still consumes product-scoped *bundles*, so a repository that also renders its own release notes declares each product under `release_notes` as before.
 

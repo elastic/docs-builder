@@ -164,6 +164,14 @@ The `products` field determines which changelog files are gathered for considera
 
 ## Create bundles
 
+### Where changelog entries are read from
+
+When your changelog configuration resolves an authoring repository (`bundle.repo` or the git remote), `changelog bundle` reads individual entry YAML files from the public CDN (`changelog/{org}/{repo}/{branch}/…`) by default — not from the private upload bucket and not necessarily from your local `docs/changelog` folder. The command applies your profile filter (promotion report, PR list, and so on) to whatever entries it fetched.
+
+:::{important}
+CloudFront caches CDN entry YAML and the entry registry with a default TTL of about **one hour** (minimum 60 seconds). If you upload or edit changelog entries shortly before a release bundle, the CDN can still serve stale content (for example, missing a `cloud-serverless` product you added in a last-minute fix). When you rely on CDN sourcing, wait at least an hour after your final entry updates before running `changelog bundle`, or bypass the CDN: pass `--force-local`, set `bundle.use_local_changelogs: true`, pass `--directory`, or use a path-list filter so entries are read from disk. Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing) and [Entry sourcing](/contribute/configure-changelogs-ref.md#bundle-entry-sourcing).
+:::
+
 If you created profiles, you can use them with the `changelog bundle` command like this:
 
 ```sh
