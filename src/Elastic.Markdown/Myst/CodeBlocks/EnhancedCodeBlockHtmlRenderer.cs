@@ -330,7 +330,31 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			// Keep Mermaid style directives compatible with existing docs while stripping unsafe SVG output.
 			svg = SvgSanitizer.Sanitize(svg).Svg;
 		}
-		catch (Exception e) when (e is MermaidParseException or MermaidSvgException or MermaidResourceLimitException or SystemException)
+		catch (MermaidResourceLimitException e)
+		{
+			block.EmitWarning($"Mermaid diagram exceeded resource limits: {e.Message}");
+			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
+			_ = renderer.WriteEscape(mermaidText);
+			_ = renderer.Write("</code></pre>");
+			return;
+		}
+		catch (MermaidParseException e)
+		{
+			block.EmitWarning($"Mermaid diagram has a syntax error: {e.Message}");
+			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
+			_ = renderer.WriteEscape(mermaidText);
+			_ = renderer.Write("</code></pre>");
+			return;
+		}
+		catch (MermaidSvgException e)
+		{
+			block.EmitWarning($"Mermaid diagram produced invalid SVG: {e.Message}");
+			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
+			_ = renderer.WriteEscape(mermaidText);
+			_ = renderer.Write("</code></pre>");
+			return;
+		}
+		catch (SystemException e)
 		{
 			block.EmitWarning($"Failed to render Mermaid diagram: {e.Message}");
 			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
