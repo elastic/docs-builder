@@ -30,11 +30,12 @@ public class FileFilterLoader(IFileSystem fileSystem)
 		if (files is not { Length: > 0 })
 			return new FileFilterResult { IsValid = true, FilePaths = resolved };
 
-		foreach (var value in files)
+		foreach (var rawValue in files)
 		{
-			if (string.IsNullOrWhiteSpace(value))
+			if (string.IsNullOrWhiteSpace(rawValue))
 				continue;
 
+			var value = FilterLoaderUtilities.ExpandTilde(rawValue);
 			if (IsPathListFile(value))
 			{
 				if (!await ReadPathListFileAsync(collector, value, baseDirectory, resolved, ctx))
@@ -136,12 +137,13 @@ public class FileFilterLoader(IFileSystem fileSystem)
 
 	private string? ResolveChangelogPath(string value, string? baseDirectory)
 	{
-		if (fileSystem.File.Exists(value))
-			return value;
+		var expanded = FilterLoaderUtilities.ExpandTilde(value);
+		if (fileSystem.File.Exists(expanded))
+			return expanded;
 
 		if (!string.IsNullOrWhiteSpace(baseDirectory))
 		{
-			var joined = fileSystem.Path.Join(baseDirectory, value);
+			var joined = fileSystem.Path.Join(baseDirectory, expanded);
 			if (fileSystem.File.Exists(joined))
 				return joined;
 		}

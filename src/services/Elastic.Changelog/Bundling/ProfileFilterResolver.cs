@@ -356,17 +356,6 @@ public static partial class ProfileFilterResolver
 			: new ListFileResult(null, lines, null);
 	}
 
-	/// <summary>
-	/// Reads a newline-delimited URL list file and validates/classifies its contents as PR or issue URLs.
-	/// Returns <c>null</c> and emits errors on failure.
-	/// </summary>
-	internal static async Task<ListFileResult?> ResolveUrlListFileAsync(
-		IDiagnosticsCollector collector,
-		string filePath,
-		ScopedFileSystem fileSystem,
-		Cancel ctx) =>
-		await ResolveListFileAsync(collector, filePath, fileSystem, ctx);
-
 	private static ProfileArgumentType DetectLocalFileType(ScopedFileSystem fileSystem, string path) =>
 		fileSystem.Path.GetExtension(path).ToLowerInvariant() is ".html" or ".htm"
 			? ProfileArgumentType.PromotionReportFile
