@@ -246,9 +246,12 @@ public partial class ChangelogBundleAmendService(
 				entries.Count,
 				shouldResolve);
 
+			// Copy the parent's complete products (target, repo, owner) so the amend is self-contained:
+			// upload destination discovery, the registry's per-product target, and :version:-filtered
+			// CDN fetches all derive from a bundle file's own products.
 			var amendBundle = new Bundle
 			{
-				Products = [],
+				Products = parentBundle.Products,
 				ExcludeEntries = excludeEntries,
 				Entries = entries
 			};

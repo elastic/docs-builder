@@ -82,7 +82,8 @@ public sealed class CdnChangelogFetcher : IDisposable
 	/// <summary>
 	/// Returns the loaded bundles for <paramref name="product"/> from the CDN at <paramref name="baseUri"/>.
 	/// Bundles are merged-by-amend but not yet merged-by-target or sorted (the caller owns presentation).
-	/// When <paramref name="version"/> is set, only the matching registry entry is downloaded.
+	/// When <paramref name="version"/> is set, only matching registry entries (and their amend sidecars)
+	/// are downloaded.
 	/// Returns an empty list on a registry-level failure.
 	/// </summary>
 	public async Task<IReadOnlyList<LoadedBundle>> FetchAsync(
@@ -156,15 +157,11 @@ public sealed class CdnChangelogFetcher : IDisposable
 		Action<string> emitWarning,
 		Cancel ctx)
 	{
-		var contents = new List<(string FileName, string Content)>(registry.Bundles.Count);
-		foreach (var bundle in registry.Bundles)
+		var selected = SelectBundles(version, registry.Bundles);
+		var contents = new List<(string FileName, string Content)>(selected.Count);
+		foreach (var bundle in selected)
 		{
 			ctx.ThrowIfCancellationRequested();
-
-			// When a single version is requested, only download the matching entry; the directive
-			// re-applies the same match after load, so this is purely a fetch optimization.
-			if (!string.IsNullOrWhiteSpace(version) && !ChangelogVersionMatch.Matches(version, bundle.Target, bundle.File))
-				continue;
 
 			var fileName = bundle.File;
 			if (!ChangelogKeys.IsSafeFileName(fileName))
@@ -186,6 +183,40 @@ public sealed class CdnChangelogFetcher : IDisposable
 		}
 
 		return contents;
+	}
+
+	/// <summary>
+	/// Registry entries to download. When a single version is requested, only matching entries are
+	/// selected; the directive re-applies the same match after load, so this is purely a fetch
+	/// optimization. An amend sidecar is additionally selected when its parent bundle matches:
+	/// amends published before products were copied from the parent carry a null registry
+	/// <c>target</c> and a file name (<c>{name}.amend-{N}.yaml</c>) the version can never equal, and the
+	/// post-load re-match cannot rescue an amend that was never fetched.
+	/// </summary>
+	private static List<ChangelogRegistryBundle> SelectBundles(string? version, IReadOnlyList<ChangelogRegistryBundle> bundles)
+	{
+		if (string.IsNullOrWhiteSpace(version))
+			return [.. bundles];
+
+		var selected = bundles
+			.Where(b => ChangelogVersionMatch.Matches(version, b.Target, b.File))
+			.ToList();
+
+		var selectedFiles = new HashSet<string>(
+			selected.Select(b => b.File).OfType<string>(),
+			StringComparer.OrdinalIgnoreCase);
+
+		foreach (var bundle in bundles)
+		{
+			if (bundle.File is null || selectedFiles.Contains(bundle.File) || !BundleAmendMerger.IsAmendFile(bundle.File))
+				continue;
+
+			var parentFile = BundleAmendMerger.GetParentBundlePath(bundle.File);
+			if (parentFile is not null && selectedFiles.Contains(parentFile))
+				selected.Add(bundle);
+		}
+
+		return selected;
 	}
 
 	private async Task<string> FetchTextAsync(Uri uri, Cancel ctx)

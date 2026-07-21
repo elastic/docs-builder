@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// </summary>
 public static partial class BundleAmendMerger
 {
-	[GeneratedRegex(@"\.amend-(\d+)\.ya?ml$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\.amend-(\d+)(\.ya?ml)$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();
 
 	/// <summary>Whether a path is an amend sidecar (<c>{name}.amend-{N}.yaml</c>).</summary>
@@ -26,6 +26,19 @@ public static partial class BundleAmendMerger
 		return match.Success && int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number)
 			? number
 			: 0;
+	}
+
+	/// <summary>
+	/// Parent bundle path for an amend sidecar, keeping the amend's extension
+	/// (<c>repo-9.3.0.amend-1.yaml</c> → <c>repo-9.3.0.yaml</c>); null when
+	/// <paramref name="filePath"/> is not an amend file. Works on bare file names and full paths alike.
+	/// </summary>
+	public static string? GetParentBundlePath(string filePath)
+	{
+		var match = AmendFileRegex().Match(filePath);
+		return match.Success
+			? string.Concat(filePath.AsSpan(0, match.Index), match.Groups[2].Value)
+			: null;
 	}
 
 	/// <summary>

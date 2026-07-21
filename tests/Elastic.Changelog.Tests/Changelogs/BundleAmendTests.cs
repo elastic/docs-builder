@@ -7,6 +7,7 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -294,7 +295,8 @@ public class BundleAmendTests : ChangelogTestBase
 		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct);
 		amendContent.Should().Contain("exclude-entries:");
 		amendContent.Should().Contain("name: 1755268130-existing.yaml");
-		amendContent.TrimStart().Should().StartWith("exclude-entries:");
+		// The parent's products are copied first; the exclusions follow.
+		amendContent.TrimStart().Should().StartWith("products:");
 	}
 
 	[Fact]
@@ -395,6 +397,119 @@ public class BundleAmendTests : ChangelogTestBase
 		amendContent.Should().Contain("name: 1755268130-existing.yaml");
 		amendContent.Should().Contain("entries:");
 		amendContent.Should().Contain("name: 1755268200-new-feature.yaml");
+	}
+
+	/// <summary>
+	/// Writes a resolved parent bundle with a complete products block (target, lifecycle, repo, owner)
+	/// plus its referenced changelog entry, and returns the bundle path.
+	/// </summary>
+	private async Task<string> CreateBundleWithFullProducts(CancellationToken ct)
+	{
+		// language=yaml
+		var changelog =
+			"""
+			title: Existing feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			prs:
+			- "100"
+			""";
+
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, ct);
+		var checksum = ComputeSha1(changelog);
+
+		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
+		var bundlePath = FileSystem.Path.Join(bundleDir, "elasticsearch-9.3.0.yaml");
+		// language=yaml
+		await FileSystem.File.WriteAllTextAsync(bundlePath, $"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			  lifecycle: ga
+			  repo: elasticsearch
+			  owner: elastic
+			entries:
+			- file:
+			    name: 1755268130-existing.yaml
+			    checksum: {checksum}
+			  type: feature
+			  title: Existing feature
+			  prs:
+			  - "100"
+			""", ct);
+
+		return bundlePath;
+	}
+
+	[Fact]
+	public async Task AmendBundle_Add_CopiesParentProductsIntoAmend()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateBundleWithFullProducts(ct);
+		var newFile = await CreateNewChangelogFile(ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			AddFiles = [newFile]
+		};
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1);
+
+		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct);
+		var amend = ReleaseNotesSerialization.DeserializeBundle(amendContent);
+
+		// The amend must be self-contained: complete parent products, including target, repo, and owner.
+		amend.Products.Should().ContainSingle();
+		amend.Products[0].Should().BeEquivalentTo(new BundledProduct
+		{
+			ProductId = "elasticsearch",
+			Target = "9.3.0",
+			Lifecycle = Lifecycle.Ga,
+			Repo = "elasticsearch",
+			Owner = "elastic"
+		});
+	}
+
+	[Fact]
+	public async Task AmendBundle_Remove_CopiesParentProductsIntoAmend()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateBundleWithFullProducts(ct);
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [changelogFile]
+		};
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1);
+
+		var amend = ReleaseNotesSerialization.DeserializeBundle(await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct));
+		amend.ExcludeEntries.Should().ContainSingle();
+		amend.Products.Should().ContainSingle();
+		amend.Products[0].Target.Should().Be("9.3.0");
+		amend.Products[0].Repo.Should().Be("elasticsearch");
+		amend.Products[0].Owner.Should().Be("elastic");
 	}
 
 	[Fact]

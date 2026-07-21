@@ -53,6 +53,21 @@ public class BundleAmendMergerTests
 		merged[0].File!.Name.Should().Be("two.yaml");
 	}
 
+	[Theory]
+	[InlineData("9.3.0.amend-1.yaml", "9.3.0.yaml")]
+	[InlineData("repo-9.3.0.amend-12.yml", "repo-9.3.0.yml")]
+	[InlineData("cloud-2025-11.AMEND-2.YAML", "cloud-2025-11.YAML")]
+	[InlineData("/releases/9.3.0.amend-1.yaml", "/releases/9.3.0.yaml")]
+	public void GetParentBundlePath_AmendFile_StripsAmendSuffix(string amendPath, string expectedParent) =>
+		BundleAmendMerger.GetParentBundlePath(amendPath).Should().Be(expectedParent);
+
+	[Theory]
+	[InlineData("9.3.0.yaml")]
+	[InlineData("9.3.0.amend-.yaml")]
+	[InlineData("9.3.0.amend-1.json")]
+	public void GetParentBundlePath_NonAmendFile_ReturnsNull(string path) =>
+		BundleAmendMerger.GetParentBundlePath(path).Should().BeNull();
+
 	private static BundledEntry CreateFileEntry(string name, string checksum) => new()
 	{
 		File = new BundledFile
