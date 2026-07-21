@@ -312,10 +312,46 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		RenderRazorSlice(slice, renderer);
 	}
 
+	// Semantic styling classes sourced from Assets/markdown/admonition.css ramps (bg=ramp-10, border=ramp-40, text=ramp-110/120).
+	// Authors reference these via :::classname or `class Node classname` syntax.
+	private static readonly IReadOnlyList<DiagramClass> MermaidAllowedClasses =
+	[
+		new DiagramClass { Name = "note",      Fill = "#e8f1ff", Stroke = "#a3cbff", Color = "#154399" }, // blue-elastic
+		new DiagramClass { Name = "tip",       Fill = "#e2f9f7", Stroke = "#77e5e0", Color = "#065b58" }, // teal
+		new DiagramClass { Name = "warning",   Fill = "#fdf3d8", Stroke = "#facb3d", Color = "#6a4906" }, // yellow
+		new DiagramClass { Name = "important", Fill = "#f3ecfe", Stroke = "#d1bafc", Color = "#52357e" }, // purple
+		new DiagramClass { Name = "caution",   Fill = "#ffefe9", Stroke = "#ffc1aa", Color = "#8a3825" }, // poppy
+		new DiagramClass { Name = "error",     Fill = "#ffe8e5", Stroke = "#ffb5ad", Color = "#7f1f27" }, // red
+		new DiagramClass { Name = "success",   Fill = "#e2f8f0", Stroke = "#88e3c3", Color = "#0c5a3f" }, // green
+		new DiagramClass { Name = "plain",     Fill = "#f6f9fc", Stroke = "#bdc2ca", Color = "#464c56" }, // grey
+	];
+
+	// Categorical data palette for pie/sankey/timeline etc. One vivid, distinct step per theme.css hue.
+	private static readonly string[] MermaidDataPalette =
+	[
+		"#3788ff", // blue-elastic-70
+		"#ee4c48", // red-70
+		"#04ae7e", // green-70
+		"#a36def", // purple-70
+		"#eaae01", // yellow-60
+		"#16c5c0", // teal-60
+		"#e54a91", // pink-70
+		"#ff8659", // poppy-70
+		"#36b9ff", // blue-sky
+	];
+
 	private static readonly RenderOptions MermaidRenderOptions = new()
 	{
 		Bg = "#FFFFFF",
-		Fg = "#000000"
+		Fg = "#000000",
+		// Tailwind font-mono default stack (theme.css has no --font-mono custom property)
+		MonoFont = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+		DataPalette = MermaidDataPalette,
+		Strict = new StrictStylingOptions
+		{
+			AllowedClasses = MermaidAllowedClasses,
+			// RejectUnknownClasses defaults true — unknown class refs → MermaidParseException → warning + fallback
+		},
 	};
 
 	/// <summary>Renders a Mermaid code block as an inline SVG using Mermaider.</summary>
@@ -327,7 +363,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		try
 		{
 			svg = MermaidRenderer.RenderSvg(mermaidText, MermaidRenderOptions);
-			// Keep Mermaid style directives compatible with existing docs while stripping unsafe SVG output.
+			// Strip any residual disallowed SVG content (sanitization is always on regardless of strict mode).
 			svg = SvgSanitizer.Sanitize(svg).Svg;
 		}
 		catch (MermaidResourceLimitException e)

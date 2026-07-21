@@ -165,6 +165,7 @@ erDiagram
 	}
 }
 
+// classDef/style directives are banned by strict styling — diagram should warn and fall back to raw source.
 public class MermaidStyledFlowchartTests(ITestOutputHelper output) : DirectiveTest(output,
 """
 ```mermaid
@@ -178,8 +179,59 @@ style B fill:#0A52B3,color:#fff
 )
 {
 	[Fact]
+	public void EmitsWarning() => Collector.Diagnostics.Should().NotBeEmpty();
+
+	[Fact]
+	public void FallsBackToRawSource() => Html.Should().Contain("<pre class=\"mermaid-error\">");
+
+	[Fact]
+	public void DoesNotRenderSvg() => Html.Should().NotContain("<svg");
+}
+
+// Allowlisted semantic classes render correctly with site palette colors baked into SVG.
+public class MermaidStrictClassTests(ITestOutputHelper output) : DirectiveTest(output,
+"""
+```mermaid
+flowchart LR
+A[Start]:::warning --> B[End]
+```
+"""
+)
+{
+	[Fact]
+	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
+
+	[Fact]
 	public void RendersInlineSvg() => Html.Should().Contain("<svg");
 
 	[Fact]
 	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Fact]
+	public void SvgContainsWarningFillColor() => Html.Should().Contain("#fdf3d8");
+}
+
+// DataPalette: pie chart SVG should use our theme palette, not the Tableau CB10 default.
+public class MermaidPieDataPaletteTests(ITestOutputHelper output) : DirectiveTest(output,
+"""
+```mermaid
+pie
+"Blue" : 40
+"Red" : 30
+"Green" : 30
+```
+"""
+)
+{
+	[Fact]
+	public void RendersInlineSvg() => Html.Should().Contain("<svg");
+
+	[Fact]
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Fact]
+	public void UsesThemePalette() => Html.Should().Contain("#3788ff"); // blue-elastic-70
+
+	[Fact]
+	public void DoesNotUseTableauDefault() => Html.Should().NotContain("#4e79a7"); // Tableau Blue
 }
