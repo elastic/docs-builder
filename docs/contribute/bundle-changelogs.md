@@ -44,11 +44,11 @@ As noted in the [changelog creation step](/docs/contribute/create-changelogs.md#
 
 By default, when you create a bundle the commands and GitHub actions pull the changelogs from the public CDN.
 
-If you're making last-minute changes and ad hoc releases with changelog files that aren't uploaded to the public CDN yet, this is possible when you use the `changelog bundle` command with the `--force-local` command option.
+If you're making last-minute changes and ad hoc releases with changelog files that aren't uploaded to the public CDN yet, pass the `--force-local` command option to `changelog bundle`.
 
 If you rely on CDN sourcing, wait at least an hour after your final changelog updates before you create the bundle.
 
-For more details, refer to [Entry sourcing](/docs/cli/changelog/cmd-bundle.md#changelog-bundle-entry-sourcing).
+For more details, refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing).
 
 ## Create profiles
 
@@ -103,7 +103,7 @@ bundle:
 4. If `output` is omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename.
 5. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle.
 
-### Bundle by GitHub releases [profile-gh-release]km
+### Bundle by GitHub releases [profile-gh-release]
 
 If you have automated GitHub release notes, the `changelog bundle` command can fetch the release from GitHub, parse PR references from the release notes, and uses them as the bundle filter.
 Only automated GitHub release notes (the default format or [Release Drafter](https://github.com/release-drafter/release-drafter) format) are supported at this time.

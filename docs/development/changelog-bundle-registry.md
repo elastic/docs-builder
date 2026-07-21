@@ -182,9 +182,11 @@ entries from the local folder or fetch the **authoring pool's** published entrie
 `CdnChangelogEntryFetcher`).
 
 Under the artifact-root layout, entries are org/repo/branch-scoped — not product-scoped — so CDN
-entry sourcing keys off the resolvable authoring pool (repo with the same precedence as upload:
-`--repo` > `bundle.repo` > git remote; owner from `--owner` > `bundle.owner`, default `elastic`;
-branch from `--branch` > `bundle.branch`, default `main`), **not** off the bundle's target products.
+entry sourcing keys off the resolvable authoring pool (`--repo` > profile `repo` >
+`bundle.repo`; owner from `--owner` > profile `owner` > `bundle.owner`, default `elastic`;
+branch from `--branch` > profile `branch` > `bundle.branch`, default `main`). Git remote and
+checkout branch are **not** used for bundle entry sourcing (unlike `changelog upload`). The pool
+is keyed by authoring org/repo/branch, **not** by the bundle's target products.
 This is what lets one repo (for example `kibana`) produce a bundle for a shared product (for example
 `cloud-serverless`) while sourcing its own entries from `changelog/elastic/kibana/main/`, without that
 product appearing in the repo's own `docset.yml`. The decision is made per run by

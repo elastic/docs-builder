@@ -106,7 +106,7 @@ After you're satisfied with the content of your changelog files, the last step i
 All changelog files should be uploaded to the public CDN, irrespective of whether you also want to maintain a copy in your GitHub repo.
 :::
 
-- If you create changelog files from the command line, use the [changelog upload](//cli/changelog/cmd-upload.md) command to upload them.
+- If you create changelog files from the command line, use the [changelog upload](/cli/changelog/upload.md) command to upload them.
 - If you create your changelogs from GitHub actions, add an upload workflow. Refer to [Uploading to S3](https://github.com/elastic/docs-actions/blob/main/changelog/README.md#uploading-to-s3) and [changelog-upload.yml](https://github.com/elastic/docs-actions/blob/main/.github/workflows/changelog-upload.yml).
 
 Files land in a private bucket, which is the internal source of truth.

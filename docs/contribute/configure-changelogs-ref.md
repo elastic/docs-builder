@@ -46,15 +46,15 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 
 | Setting                   | Description |
 | ------------------------- | ----------- |
-| `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). |
+| `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. Requires `bundle.resolve: true` |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, and to scope uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
+| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, to scope uploaded changelog file locations (`changelog/{org}/{repo}/{branch}/...`), and for CDN entry sourcing when bundling. Only needed when the product ID doesn't match the GitHub repository name. Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing). |
 | `bundle.resolve`          | When `true`, changelog contents are copied into bundle (default: `true`). |
-| `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). |
+| `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing). |
 
 :::
 
@@ -101,6 +101,9 @@ Named profiles enable you to run commands repeatedly with consistent options.
 They work with both `changelog bundle` and `changelog remove` commands.
 
 These settings are located in the `bundle.profiles.<name>` section of the configuration file:
+
+`branch`:
+:   Overrides the global [bundle.branch](#bundle-basic).
 
 `description`
 :   Overrides the global [bundle.description](#bundle-descriptions).
