@@ -28,6 +28,7 @@ public record FullSearchRequest
 	public string? VersionFilter { get; init; }         // "9.0+" | "8.19" | "7.17"
 	public string SortBy { get; init; } = "relevance";  // relevance | recent | alpha
 	public bool IncludeHighlighting { get; init; } = true;
+	public bool ForceSemantic { get; init; }
 }
 
 /// <summary>

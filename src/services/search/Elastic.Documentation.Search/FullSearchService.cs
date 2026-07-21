@@ -43,7 +43,8 @@ public partial class FullSearchService(
 					"alpha" => SortMode.Alpha,
 					_ => SortMode.Relevance
 				},
-				IncludeHighlighting = request.IncludeHighlighting
+				IncludeHighlighting = request.IncludeHighlighting,
+				ForceSemantic = request.ForceSemantic
 			}, ctx);
 		}
 		catch (TransportException ex) when (IsTransient(ex))

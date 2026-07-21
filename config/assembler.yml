@@ -34,6 +34,7 @@ environments:
       enabled: false
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      RELATED_PAGES: true
   dev:
     uri: http://localhost:4000
     content_source: current
@@ -50,6 +51,7 @@ environments:
       enabled: false
     feature_flags:
       SEARCH_OR_ASK_AI: true
+      RELATED_PAGES: true
   air-gapped:
     uri: http://localhost:8080
     path_prefix: docs

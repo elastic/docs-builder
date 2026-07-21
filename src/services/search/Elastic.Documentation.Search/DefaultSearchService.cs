@@ -156,7 +156,7 @@ public partial class DefaultSearchService<TDocument>(
 
 	public async Task<Contract.SearchResponse<TDocument>> SearchAsync(SearchRequest request, CancellationToken ct = default)
 	{
-		var isSemantic = searchConfig.SemanticEnabled && IsSemanticQuery(request.Query);
+		var isSemantic = searchConfig.SemanticEnabled && (request.ForceSemantic || IsSemanticQuery(request.Query));
 
 		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
 			request.Query,
@@ -168,7 +168,8 @@ public partial class DefaultSearchService<TDocument>(
 			? new BoolQuery
 			{
 				Should = [lexicalQuery, SearchQueryBuilder.BuildSemanticQuery(request.Query)],
-				MinimumShouldMatch = 1
+				MinimumShouldMatch = 1,
+				Filter = [SearchQueryBuilder.DocumentFilter]
 			}
 			: lexicalQuery;
 

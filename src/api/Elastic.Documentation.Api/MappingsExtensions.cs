@@ -23,6 +23,7 @@ public static class MappingsExtension
 		MapAskAiEndpoint(group);
 		MapNavigationSearch(group);
 		MapFullSearch(group);
+		MapRelatedPages(group);
 		MapChanges(group);
 	}
 
@@ -155,6 +156,23 @@ public static class MappingsExtension
 				return Results.Ok(response);
 			});
 	}
+
+	private static void MapRelatedPages(IEndpointRouteBuilder group) =>
+		group.MapGet("/related-pages",
+			async (
+				[FromQuery(Name = "path")] string path,
+				IRelatedPagesService relatedPagesService,
+				Cancel ctx
+			) =>
+			{
+				if (string.IsNullOrWhiteSpace(path))
+					return Results.BadRequest("The path query parameter is required.");
+				if (path.Length > RelatedPagesQuery.MaximumPathLength)
+					return Results.BadRequest($"The path query parameter must not exceed {RelatedPagesQuery.MaximumPathLength} characters.");
+
+				var response = await relatedPagesService.GetRelatedPagesAsync(path, ctx);
+				return Results.Ok(response);
+			});
 
 	private static void MapChanges(IEndpointRouteBuilder group) =>
 		group.MapGet("/changes",
