@@ -23,6 +23,7 @@ import {
     ATTR_URL_FULL,
 } from './telemetry/semconv'
 import { initTocNav } from './toc-nav'
+import { loadWebComponents } from './web-components/loadWebComponents'
 import {
     getPathFromUrl,
     isExternalDocsUrl,
@@ -46,13 +47,6 @@ if (config.telemetryEnabled) {
         debug: false,
     })
 }
-
-// Dynamically import web components after telemetry is initialized.
-// Parcel code-splits these into separate chunks loaded on demand.
-import('./web-components/VersionDropdown')
-import('./web-components/AppliesToPopover')
-import('./web-components/Diagnostics/DiagnosticsComponent')
-import('./web-components/StorybookStory/StorybookStoryComponent')
 
 if (config.buildType === 'isolated' || config.airGapped) {
     import('./isolated')
@@ -189,6 +183,7 @@ function initCtaImpressions() {
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
+        ['loadWebComponents', loadWebComponents],
         ['initMath', initMath],
         ['initMermaid', initMermaid],
         ['initCtaImpressions', initCtaImpressions],
@@ -197,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 document.addEventListener('htmx:load', function () {
     runInitSteps([
+        ['loadWebComponents', loadWebComponents],
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
         ['initCopyButton', initCopyButton],
