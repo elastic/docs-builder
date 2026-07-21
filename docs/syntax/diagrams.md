@@ -80,7 +80,7 @@ flowchart LR
     A[Start] --> B{Decision}
     B -->|Yes| C[Action 1]
     B -->|No| D[Action 2]
-    C --> E[End]:::success
+    C --> E[End]
     D --> E
 ```
 ````
@@ -92,8 +92,17 @@ flowchart LR
     A[Start] --> B{Decision}
     B -->|Yes| C[Action 1]
     B -->|No| D[Action 2]
-    C --> E[End]:::success
+    C --> E[End]
     D --> E
+```
+::::
+
+::::{tab-item} Styled
+```mermaid
+flowchart LR
+    A[Start]:::note --> B{Decision}:::warning
+    B -->|Yes| C[Action 1]:::tip --> E[End]:::success
+    B -->|No| D[Action 2]:::error --> E
 ```
 ::::
 
@@ -160,6 +169,22 @@ stateDiagram-v2
     Paused --> Running: resume
     Running --> Stopped: stop
     Stopped --> [*]
+```
+::::
+
+::::{tab-item} Styled
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Running: start
+    Running --> Paused: pause
+    Paused --> Running: resume
+    Running --> Stopped: stop
+    Stopped --> [*]
+    class Idle plain
+    class Running success
+    class Paused warning
+    class Stopped error
 ```
 ::::
 
