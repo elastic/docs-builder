@@ -40,8 +40,6 @@ export const loadWebComponents = createWebComponentLoader({
     'ask-ai': () => import('./AskAi/AskAi'),
     'version-dropdown': () => import('./VersionDropdown'),
     'applies-to-popover': () => import('./AppliesToPopover'),
-    'full-page-search': () =>
-        import('./FullPageSearch/FullPageSearchComponent'),
     'diagnostics-panel': () => import('./Diagnostics/DiagnosticsComponent'),
     'storybook-story': () => import('./StorybookStory/StorybookStoryComponent'),
 })
