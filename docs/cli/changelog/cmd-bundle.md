@@ -355,7 +355,8 @@ docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelo
 ### Entry sourcing [changelog-bundle-entry-sourcing]
 
 When the authoring repository resolves (`bundle.repo`, `--repo`, or the git remote), `changelog bundle` fetches individual changelog YAML files from the public CDN pool `changelog/{org}/{repo}/{branch}/…` rather than from your local `bundle.directory` folder.
-Local sourcing is used when you pass `--directory`, set `bundle.use_local_changelogs: true`, or the repo cannot be resolved. For the full decision rules, refer to [Entry sourcing](/contribute/configure-changelogs-ref.md#bundle-entry-sourcing).
+Local sourcing is used when you pass `--directory`, set `bundle.use_local_changelogs: true`, or the repo cannot be resolved.
+<!-- For the full decision rules, refer to [Entry sourcing](/contribute/configure-changelogs-ref.md#bundle-entry-sourcing). -->
 
 :::{important}
 The public CDN (CloudFront) caches changelog entry YAML and the entry `registry.json` with a default TTL of about **one hour** (minimum 60 seconds).

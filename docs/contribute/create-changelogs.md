@@ -10,6 +10,9 @@ This page describes how to create these files both from the [command line](#comm
 Create a changelog configuration file to define all the default behavior and PR label mappings.
 Refer to [](/contribute/configure-changelogs.md).
 
+Choose whether you want to store the changelogs in your repo and/or store them in the public CDN.
+<!-- TBD: What are the pros/cons? How is this configured in GitHub actions? -->
+
 ## Create changelog files from command line [command-line]
 
 These steps describe how to use the [changelog add](/cli/changelog/add.md) command.

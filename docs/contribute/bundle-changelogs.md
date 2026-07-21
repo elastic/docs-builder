@@ -162,15 +162,33 @@ bundle:
 The `products` field determines which changelog files are gathered for consideration. You can still apply [rules](#rules) afterward to further filter changelogs from the bundle. The input stage and bundle filtering stage are conceptually separate.
 :::
 
-## Create bundles
+## Identify where to find your changelogs
 
-### Where changelog entries are read from
+<!-- By default, if `bundle.repo` is set, changelog files will be sourced from the `changelog/{owner}/{repo}/{branch}/` folder on the public CDN.
 
-When your changelog configuration resolves an authoring repository (`bundle.repo` or the git remote), `changelog bundle` reads individual entry YAML files from the public CDN (`changelog/{org}/{repo}/{branch}/…`) by default — not from the private upload bucket and not necessarily from your local `docs/changelog` folder. The command applies your profile filter (promotion report, PR list, and so on) to whatever entries it fetched.
+{branch} defaults to `main` unless you override it by setting `bundle.branch`.
+
+If `bundle.repo` is missing and you don’t pass `--repo`, the command falls back to using files in the local folder instead.
 
 :::{important}
-CloudFront caches CDN entry YAML and the entry registry with a default TTL of about **one hour** (minimum 60 seconds). If you upload or edit changelog entries shortly before a release bundle, the CDN can still serve stale content (for example, missing a `cloud-serverless` product you added in a last-minute fix). When you rely on CDN sourcing, wait at least an hour after your final entry updates before running `changelog bundle`, or bypass the CDN: pass `--force-local`, set `bundle.use_local_changelogs: true`, pass `--directory`, or use a path-list filter so entries are read from disk. Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing) and [Entry sourcing](/contribute/configure-changelogs-ref.md#bundle-entry-sourcing).
+CloudFront caches CDN entry YAML and the entry registry with a default TTL of about **one hour** (minimum 60 seconds). If you upload or edit changelog entries shortly before a release bundle, the CDN can still serve stale content (for example, missing a `cloud-serverless` product you added in a last-minute fix).
+When you rely on CDN sourcing, wait at least an hour after your final entry updates before running `changelog bundle`, or bypass the CDN: pass `--force-local`, set `bundle.use_local_changelogs: true`, pass `--directory`, or use a path-list filter so entries are read from disk. Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing).
+::: -->
+
+You can choose to bundle changelog files from the local folder or from the public CDN:
+
+- **Local folder** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--files` or a path-list filter is used, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
+- **CDN (default when a repo resolves)**: Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The `changelog bundle` command will fetch from `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then apply the bundle's own product/PR/issue filters to the downloaded set.
+
+:::{important}
+The public CDN caches entry YAML and `registry.json` with a default TTL of about one hour (minimum 60 seconds). Content in the private upload bucket can be newer than what `changelog bundle` fetches until the cache expires. For release workflows with last-minute entry edits, use `--force-local` or local sourcing instead. Refer to [Bundle changelogs](/contribute/bundle-changelogs.md) and [CDN staleness](/development/changelog-bundle-registry.md#implementation-notes).
 :::
+
+<!-- The authoring repo is resolved with the same precedence as `changelog upload`: `--repo` > `bundle.repo` in `changelog.yml` > the git remote origin. The owner is resolved from `--owner` > `bundle.owner` (default `elastic`), and the branch from `--branch` > `bundle.branch` (default `main`). -->
+
+Because entries are org/repo/branch-scoped, one repository can produce a bundle for a shared product (for example, `cloud-serverless`) while sourcing its own entries from `changelog/{org}/{repo}/{branch}/`, without that product appearing in the repository's `docset.yml`. The `{changelog}` directive's `:cdn:` mode still consumes product-scoped *bundles*, so a repository that also renders its own release notes declares each product under `release_notes` as before.
+
+## Create bundles
 
 If you created profiles, you can use them with the `changelog bundle` command like this:
 
