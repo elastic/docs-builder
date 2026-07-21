@@ -3,71 +3,68 @@ import { LanguageFn } from 'highlight.js'
 import hljs from 'highlight.js/lib/core'
 import { $$optional } from 'select-dom'
 
+// highlight.js language modules and the esql plugin default-export the LanguageFn.
+// Parcel's dynamic import() resolves to the module's exports directly (the function),
+// whereas other bundlers/test runners (Babel/Jest) wrap it as a namespace with a
+// `default`. Normalize both so registerLanguage always receives the function.
+export function toLanguageFn(mod: unknown): LanguageFn {
+    const m = mod as { default?: LanguageFn }
+    return (typeof mod === 'function' ? mod : m.default) as LanguageFn
+}
+
 // Each entry lazily imports one highlight.js language module (or the esql plugin) so
 // only the languages actually present on a page are downloaded, instead of eagerly
-// bundling all of them into the entry chunk. Modules default-export the LanguageFn.
+// bundling all of them into the entry chunk.
 const languageLoaders: Record<string, () => Promise<LanguageFn>> = {
     asciidoc: () =>
-        import('highlight.js/lib/languages/asciidoc').then((m) => m.default),
-    bash: () =>
-        import('highlight.js/lib/languages/bash').then((m) => m.default),
-    c: () => import('highlight.js/lib/languages/c').then((m) => m.default),
+        import('highlight.js/lib/languages/asciidoc').then(toLanguageFn),
+    bash: () => import('highlight.js/lib/languages/bash').then(toLanguageFn),
+    c: () => import('highlight.js/lib/languages/c').then(toLanguageFn),
     csharp: () =>
-        import('highlight.js/lib/languages/csharp').then((m) => m.default),
-    css: () => import('highlight.js/lib/languages/css').then((m) => m.default),
+        import('highlight.js/lib/languages/csharp').then(toLanguageFn),
+    css: () => import('highlight.js/lib/languages/css').then(toLanguageFn),
     dockerfile: () =>
-        import('highlight.js/lib/languages/dockerfile').then((m) => m.default),
-    dos: () => import('highlight.js/lib/languages/dos').then((m) => m.default),
-    ebnf: () =>
-        import('highlight.js/lib/languages/ebnf').then((m) => m.default),
-    esql: () => import('@elastic/highlightjs-esql').then((m) => m.default),
-    go: () => import('highlight.js/lib/languages/go').then((m) => m.default),
+        import('highlight.js/lib/languages/dockerfile').then(toLanguageFn),
+    dos: () => import('highlight.js/lib/languages/dos').then(toLanguageFn),
+    ebnf: () => import('highlight.js/lib/languages/ebnf').then(toLanguageFn),
+    esql: () => import('@elastic/highlightjs-esql').then(toLanguageFn),
+    go: () => import('highlight.js/lib/languages/go').then(toLanguageFn),
     gradle: () =>
-        import('highlight.js/lib/languages/gradle').then((m) => m.default),
+        import('highlight.js/lib/languages/gradle').then(toLanguageFn),
     groovy: () =>
-        import('highlight.js/lib/languages/groovy').then((m) => m.default),
+        import('highlight.js/lib/languages/groovy').then(toLanguageFn),
     handlebars: () =>
-        import('highlight.js/lib/languages/handlebars').then((m) => m.default),
-    http: () =>
-        import('highlight.js/lib/languages/http').then((m) => m.default),
-    ini: () => import('highlight.js/lib/languages/ini').then((m) => m.default),
-    java: () =>
-        import('highlight.js/lib/languages/java').then((m) => m.default),
+        import('highlight.js/lib/languages/handlebars').then(toLanguageFn),
+    http: () => import('highlight.js/lib/languages/http').then(toLanguageFn),
+    ini: () => import('highlight.js/lib/languages/ini').then(toLanguageFn),
+    java: () => import('highlight.js/lib/languages/java').then(toLanguageFn),
     javascript: () =>
-        import('highlight.js/lib/languages/javascript').then((m) => m.default),
-    json: () =>
-        import('highlight.js/lib/languages/json').then((m) => m.default),
+        import('highlight.js/lib/languages/javascript').then(toLanguageFn),
+    json: () => import('highlight.js/lib/languages/json').then(toLanguageFn),
     kotlin: () =>
-        import('highlight.js/lib/languages/kotlin').then((m) => m.default),
+        import('highlight.js/lib/languages/kotlin').then(toLanguageFn),
     markdown: () =>
-        import('highlight.js/lib/languages/markdown').then((m) => m.default),
-    nginx: () =>
-        import('highlight.js/lib/languages/nginx').then((m) => m.default),
-    php: () => import('highlight.js/lib/languages/php').then((m) => m.default),
+        import('highlight.js/lib/languages/markdown').then(toLanguageFn),
+    nginx: () => import('highlight.js/lib/languages/nginx').then(toLanguageFn),
+    php: () => import('highlight.js/lib/languages/php').then(toLanguageFn),
     plaintext: () =>
-        import('highlight.js/lib/languages/plaintext').then((m) => m.default),
+        import('highlight.js/lib/languages/plaintext').then(toLanguageFn),
     powershell: () =>
-        import('highlight.js/lib/languages/powershell').then((m) => m.default),
+        import('highlight.js/lib/languages/powershell').then(toLanguageFn),
     properties: () =>
-        import('highlight.js/lib/languages/properties').then((m) => m.default),
+        import('highlight.js/lib/languages/properties').then(toLanguageFn),
     python: () =>
-        import('highlight.js/lib/languages/python').then((m) => m.default),
-    ruby: () =>
-        import('highlight.js/lib/languages/ruby').then((m) => m.default),
-    rust: () =>
-        import('highlight.js/lib/languages/rust').then((m) => m.default),
-    scala: () =>
-        import('highlight.js/lib/languages/scala').then((m) => m.default),
-    shell: () =>
-        import('highlight.js/lib/languages/shell').then((m) => m.default),
-    sql: () => import('highlight.js/lib/languages/sql').then((m) => m.default),
-    swift: () =>
-        import('highlight.js/lib/languages/swift').then((m) => m.default),
+        import('highlight.js/lib/languages/python').then(toLanguageFn),
+    ruby: () => import('highlight.js/lib/languages/ruby').then(toLanguageFn),
+    rust: () => import('highlight.js/lib/languages/rust').then(toLanguageFn),
+    scala: () => import('highlight.js/lib/languages/scala').then(toLanguageFn),
+    shell: () => import('highlight.js/lib/languages/shell').then(toLanguageFn),
+    sql: () => import('highlight.js/lib/languages/sql').then(toLanguageFn),
+    swift: () => import('highlight.js/lib/languages/swift').then(toLanguageFn),
     typescript: () =>
-        import('highlight.js/lib/languages/typescript').then((m) => m.default),
-    xml: () => import('highlight.js/lib/languages/xml').then((m) => m.default),
-    yaml: () =>
-        import('highlight.js/lib/languages/yaml').then((m) => m.default),
+        import('highlight.js/lib/languages/typescript').then(toLanguageFn),
+    xml: () => import('highlight.js/lib/languages/xml').then(toLanguageFn),
+    yaml: () => import('highlight.js/lib/languages/yaml').then(toLanguageFn),
 }
 
 // Alias -> canonical language name. Aliases are registered with hljs once their

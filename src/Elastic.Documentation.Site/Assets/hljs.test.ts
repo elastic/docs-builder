@@ -85,3 +85,22 @@ describe('initHighlight', () => {
         expect(bashBlock.getAttribute('data-highlighted')).toBe('yes')
     })
 })
+
+describe('toLanguageFn', () => {
+    // Parcel's dynamic import() resolves a language module to the LanguageFn directly,
+    // while Babel/Jest wrap it as { default: fn }. Both must yield the function; a
+    // regression here silently breaks highlighting only in the Parcel production build.
+    it('returns the function when the module is the function itself (Parcel)', async () => {
+        const { toLanguageFn } = await loadModule()
+        const fn = () => ({ contains: [] })
+
+        expect(toLanguageFn(fn)).toBe(fn)
+    })
+
+    it('returns the default export when wrapped in a namespace (Babel/Jest)', async () => {
+        const { toLanguageFn } = await loadModule()
+        const fn = () => ({ contains: [] })
+
+        expect(toLanguageFn({ default: fn })).toBe(fn)
+    })
+})
