@@ -332,7 +332,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		}
 		catch (MermaidResourceLimitException e)
 		{
-			block.EmitWarning($"Mermaid diagram exceeded resource limits: {e.Message}");
+			block.EmitError($"Mermaid diagram exceeded resource limits: {e.Message}");
 			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
 			_ = renderer.WriteEscape(mermaidText);
 			_ = renderer.Write("</code></pre>");
@@ -348,7 +348,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		}
 		catch (MermaidSvgException e)
 		{
-			block.EmitWarning($"Mermaid diagram produced invalid SVG: {e.Message}");
+			block.EmitError($"Mermaid diagram produced invalid SVG: {e.Message}");
 			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
 			_ = renderer.WriteEscape(mermaidText);
 			_ = renderer.Write("</code></pre>");
@@ -356,7 +356,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		}
 		catch (SystemException e)
 		{
-			block.EmitWarning($"Failed to render Mermaid diagram: {e.Message}");
+			block.EmitError($"Failed to render Mermaid diagram: {e.Message}");
 			_ = renderer.Write("<pre class=\"mermaid-error\"><code>");
 			_ = renderer.WriteEscape(mermaidText);
 			_ = renderer.Write("</code></pre>");
