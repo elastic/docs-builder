@@ -40,7 +40,7 @@ Your release workflow should not assume there will be a one-to-one mapping betwe
 
 ## Identify where to find changelogs
 
-As noted in the [changelog creation step](/docs/contribute/create-changelogs.md#prerequisites), you can store your changelog files in both the public CDN and your GitHub repository.
+As noted in the [changelog creation step](/contribute/create-changelogs.md#prerequisites), you can store your changelog files in both the public CDN and your GitHub repository.
 
 By default, when you create a bundle the commands and GitHub actions pull the changelogs from the public CDN.
 
