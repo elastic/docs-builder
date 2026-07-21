@@ -74,6 +74,20 @@ describe('initHighlight', () => {
         expect(hljs.listLanguages()).toContain('shell')
     })
 
+    it('does not re-highlight a block when invoked concurrently', async () => {
+        const { initHighlight, hljs } = await loadModule()
+        setCodeBlocks('bash')
+        const spy = jest.spyOn(hljs, 'highlightElement')
+
+        await Promise.all([initHighlight(), initHighlight()])
+
+        const block = document.querySelector('#markdown-content pre code')
+        const callsForBlock = spy.mock.calls.filter(
+            (call) => call[0] === block
+        ).length
+        expect(callsForBlock).toBe(1)
+    })
+
     it('ignores unknown languages without breaking other blocks', async () => {
         const { initHighlight } = await loadModule()
         setCodeBlocks('this-language-does-not-exist', 'bash')

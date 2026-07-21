@@ -265,7 +265,12 @@ export async function initHighlight() {
             )
     )
 
-    blocks.forEach(hljs.highlightElement)
+    // Re-check data-highlighted after awaiting: a concurrent initHighlight (e.g. a
+    // second htmx:load fired while the language import was pending) may already have
+    // highlighted these captured blocks, and hljs warns if asked to redo one.
+    blocks.forEach((block) => {
+        if (!block.dataset.highlighted) hljs.highlightElement(block)
+    })
 }
 
 // Export the configured hljs instance for reuse
