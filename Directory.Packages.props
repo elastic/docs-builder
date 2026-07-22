@@ -82,7 +82,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.8" />
     <PackageVersion Include="Markdig" Version="1.2.0" />
-    <PackageVersion Include="Mermaider" Version="0.12.0" />
+    <PackageVersion Include="Mermaider" Version="0.12.1" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.19.1" />
     <PackageVersion Include="ModelContextProtocol" Version="1.4.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="1.4.0" />
