@@ -157,12 +157,12 @@ public record DetectionRuleFile : MarkdownFile
 		BuildContext build
 	) : base(sourceFile, rootPath, parser, build)
 	{
-		RuleSourceMarkdownPath = SourcePath(sourceFile, build);
+		RuleSourceMarkdownPath = GetRuleSourcePath(sourceFile, build);
 		LinkReferenceRelativePath = Path.GetRelativePath(build.DocumentationSourceDirectory.FullName, RuleSourceMarkdownPath.FullName);
 		Rule = DetectionRule.From(sourceFile);
 	}
 
-	private static IFileInfo SourcePath(IFileInfo rulePath, BuildContext build)
+	private static IFileInfo GetRuleSourcePath(IFileInfo rulePath, BuildContext build)
 	{
 		var checkoutDir = build.DocumentationCheckoutDirectory ?? build.DocumentationSourceDirectory.Parent!;
 		var relative = Path.GetRelativePath(checkoutDir.FullName, rulePath.FullName);
