@@ -550,11 +550,11 @@ internal sealed partial class ChangelogCommands(
 	/// <c>bundle.release_dates</c> or <c>bundle.profiles.&lt;name&gt;.release_dates</c> to control auto-population;
 	/// <c>--release-date</c> and <c>--no-release-date</c> require option-based mode.</para>
 	/// <para><b>Option-based mode</b> (no profile argument): exactly one filter must be specified —
-	/// <c>--all</c>, <c>--input-products</c>, <c>--prs</c>, <c>--issues</c>, <c>--release-version</c>, or <c>--report</c>.</para>
+	/// <c>--all</c>, <c>--input-products</c>, <c>--prs</c>, <c>--issues</c>, <c>--release-version</c>, <c>--report</c>, or <c>--files</c>.</para>
 	/// </remarks>
 	/// <param name="profile">Profile name from <c>bundle.profiles</c> in config (for example, "elasticsearch-release"). Used as the first positional argument in profile-based commands. The equivalent configuration entry is <c>bundle.profiles.&lt;name&gt;</c>.</param>
 	/// <param name="profileArg">Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html"). Required second positional argument in profile-based commands.</param>
-	/// <param name="profileReport">Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source (for example, "bundle serverless-release 2026-02 ./report.html"). Optional third positional argument in profile-based commands.</param>
+	/// <param name="profileReport">Promotion report, URL list file, or changelog path list file when also providing a version. When provided, the second argument must be a version string and this is the filter source (for example, "bundle serverless-release 2026-02 ./report.html"). Optional third positional argument in profile-based commands.</param>
 	/// <param name="all">Include all changelogs in the directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products: "* * *"</c>.</param>
 	/// <param name="config">Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' in option-based mode. This option is not supported in profile-based commands; configuration is auto-discovered.</param>
 	/// <param name="directory">Directory containing changelog YAML files. Uses config <c>bundle.directory</c> or defaults to current directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.directory</c>.</param>
@@ -569,6 +569,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="owner">GitHub repository owner for PR/issue numbers or --release-version. Falls back to <c>bundle.owner</c> or "elastic". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.owner</c> or <c>bundle.profiles.&lt;name&gt;.owner</c>.</param>
 	/// <param name="branch">Branch whose CDN changelog entry pool (<c>changelog/{org}/{repo}/{branch}/...</c>) is sourced from. Falls back to <c>bundle.branch</c> or "main". This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.branch</c> or <c>bundle.profiles.&lt;name&gt;.branch</c>.</param>
 	/// <param name="prs">Filter by pull request URLs (comma-separated), or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times. This option is not supported in profile-based commands. Pass a promotion report as the second or third positional argument instead, or set <c>source: github_release</c> on the profile.</param>
+	/// <param name="files">Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. Forces local entry sourcing. This option is not supported in profile-based commands; pass a path list file as the second or third positional argument instead.</param>
+	/// <param name="forceLocal">Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config). Allowed in profile-based commands.</param>
 	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
 	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.source: github_release</c>.</param>
@@ -591,6 +593,8 @@ internal sealed partial class ChangelogCommands(
 		string? output = null,
 		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? outputProducts = null,
 		string[]? issues = null,
+		string[]? files = null,
+		bool forceLocal = false,
 		string? owner = null,
 		string? branch = null,
 		bool plan = false,
@@ -612,10 +616,10 @@ internal sealed partial class ChangelogCommands(
 		// --release-version mode: resolve the release into a PR list and proceed as if --prs was specified
 		if (releaseVersion != null)
 		{
-			if (all || (inputProducts is { Count: > 0 }) || (prs is { Length: > 0 }) || (issues is { Length: > 0 }))
+			if (all || (inputProducts is { Count: > 0 }) || (prs is { Length: > 0 }) || (issues is { Length: > 0 }) || (files is { Length: > 0 }))
 			{
 				collector.EmitError(string.Empty,
-					"--release-version is mutually exclusive with --all, --input-products, --prs, and --issues.");
+					"--release-version is mutually exclusive with --all, --input-products, --prs, --issues, and --files.");
 				return 1;
 			}
 
@@ -659,6 +663,7 @@ internal sealed partial class ChangelogCommands(
 
 		var allPrs = ExpandCommaSeparated(prs);
 		var allIssues = ExpandCommaSeparated(issues);
+		var allFiles = ExpandCommaSeparated(files);
 
 		// Validate filter/output options against profile mode
 		if (isProfileMode)
@@ -674,6 +679,8 @@ internal sealed partial class ChangelogCommands(
 				forbidden.Add("--prs");
 			if (allIssues.Count > 0)
 				forbidden.Add("--issues");
+			if (allFiles.Count > 0)
+				forbidden.Add("--files");
 			if (!string.IsNullOrWhiteSpace(report))
 				forbidden.Add("--report");
 			if (!string.IsNullOrWhiteSpace(output))
@@ -731,12 +738,14 @@ internal sealed partial class ChangelogCommands(
 				specifiedFilters.Add("--prs");
 			if (allIssues.Count > 0)
 				specifiedFilters.Add("--issues");
+			if (allFiles.Count > 0)
+				specifiedFilters.Add("--files");
 			if (!string.IsNullOrWhiteSpace(report))
 				specifiedFilters.Add("--report");
 
 			if (specifiedFilters.Count == 0)
 			{
-				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, --report, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
+				collector.EmitError(string.Empty, "At least one filter option must be specified: --all, --input-products, --prs, --issues, --report, --files, or use a profile (e.g., 'bundle elasticsearch-release 9.2.0')");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -745,7 +754,7 @@ internal sealed partial class ChangelogCommands(
 
 			if (specifiedFilters.Count > 1)
 			{
-				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, --issues, or --report");
+				collector.EmitError(string.Empty, $"Multiple filter options cannot be specified together. You specified: {string.Join(", ", specifiedFilters)}. Please use only one filter option: --all, --input-products, --prs, --issues, --report, or --files");
 				_ = collector.StartAsync(ctx);
 				await collector.WaitForDrain();
 				await collector.StopAsync(ctx);
@@ -842,6 +851,11 @@ internal sealed partial class ChangelogCommands(
 				Output = processedOutput,
 				Profile = profile,
 				ProfileArgument = profileArg,
+				ProfileReport = isProfileMode ? profileReport : null,
+				Files = allFiles.Count > 0 ? allFiles.ToArray() : null,
+				ForceLocal = forceLocal,
+				Directory = directory?.FullName,
+				Repo = repo,
 				Config = config?.FullName,
 				Description = description
 			};
@@ -902,6 +916,8 @@ internal sealed partial class ChangelogCommands(
 			Resolve = shouldResolve,
 			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
 			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
+			Files = allFiles.Count > 0 ? allFiles.ToArray() : null,
+			ForceLocal = forceLocal,
 			Owner = owner,
 			Repo = repo,
 			Branch = branch,
@@ -930,20 +946,21 @@ internal sealed partial class ChangelogCommands(
 	/// </remarks>
 	/// <param name="profile">Optional: Profile name from bundle.profiles in config (for example, "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
 	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html")</param>
-	/// <param name="profileReport">Optional: Promotion report or URL list file when also providing a version. When provided, the second argument must be a version string and this is the PR/issue filter source.</param>
-	/// <param name="all">Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, or --report.</param>
+	/// <param name="profileReport">Optional: Promotion report, URL list file, or changelog path list file when also providing a version. When provided, the second argument must be a version string and this is the filter source.</param>
+	/// <param name="all">Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, --report, or --files.</param>
 	/// <param name="bundlesDir">Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
 	/// <param name="dryRun">Print the files that would be removed without deleting them. Valid in both profile and raw mode.</param>
 	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
+	/// <param name="files">Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. Not supported in profile-based commands; pass a path list file as a positional argument instead.</param>
 	/// <param name="owner">Optional: GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
 	/// <param name="products">Filter by products in format "product target lifecycle, ..." (for example, "elasticsearch 9.3.0 ga"). All three parts are required but can be wildcards (*).</param>
 	/// <param name="prs">Filter by pull request URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub PR URLs. Can be specified multiple times.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches the release, parses PR references from the release notes, and removes changelogs whose PR URLs match — equivalent to passing the PR list using --prs.</param>
 	/// <param name="repo">GitHub repository name, which is used when PRs or issues are specified as numbers or when --release-version is used. Falls back to bundle.repo in changelog.yml when not specified. If that value is also absent, the product ID is used.</param>
-	/// <param name="report">Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, and --issues.</param>
+	/// <param name="report">Optional (option-based mode only): URL or file path to a promotion report. Extracts PR URLs and uses them as the filter. Mutually exclusive with --all, --products, --prs, --release-version, --issues, and --files.</param>
 	/// <param name="ctx"></param>
 	[CommandIntent(Intent.Destructive | Intent.RequiresConfirmation)]
 	[MutationScope(MutationScope.Directory)]
@@ -959,6 +976,7 @@ internal sealed partial class ChangelogCommands(
 		[DryRun] bool dryRun = false,
 		[ConfirmationSkip] bool force = false,
 		string[]? issues = null,
+		string[]? files = null,
 		string? owner = null,
 		[ArgumentParser(typeof(ProductInfoParser))] ProductArgumentList? products = null,
 		string[]? prs = null,
@@ -978,10 +996,10 @@ internal sealed partial class ChangelogCommands(
 		// --release-version mode: resolve the release into a PR list and proceed as if --prs was specified
 		if (releaseVersion != null)
 		{
-			if (all || (products is { Count: > 0 }) || (prs is { Length: > 0 }) || (issues is { Length: > 0 }))
+			if (all || (products is { Count: > 0 }) || (prs is { Length: > 0 }) || (issues is { Length: > 0 }) || (files is { Length: > 0 }))
 			{
 				collector.EmitError(string.Empty,
-					"--release-version is mutually exclusive with --all, --products, --prs, and --issues.");
+					"--release-version is mutually exclusive with --all, --products, --prs, --issues, and --files.");
 				return 1;
 			}
 
@@ -1022,6 +1040,7 @@ internal sealed partial class ChangelogCommands(
 
 		var allPrs = ExpandCommaSeparated(prs);
 		var allIssues = ExpandCommaSeparated(issues);
+		var allFiles = ExpandCommaSeparated(files);
 
 		if (isProfileMode)
 		{
@@ -1035,6 +1054,8 @@ internal sealed partial class ChangelogCommands(
 				forbidden.Add("--prs");
 			if (allIssues.Count > 0)
 				forbidden.Add("--issues");
+			if (allFiles.Count > 0)
+				forbidden.Add("--files");
 			if (releaseVersion != null)
 				forbidden.Add("--release-version");
 			if (!string.IsNullOrWhiteSpace(repo))
@@ -1138,6 +1159,7 @@ internal sealed partial class ChangelogCommands(
 			Products = products,
 			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
 			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
+			Files = allFiles.Count > 0 ? allFiles.ToArray() : null,
 			Owner = owner,
 			Repo = repo,
 			DryRun = dryRun,
@@ -1647,6 +1669,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
+	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -1657,6 +1680,7 @@ internal sealed partial class ChangelogCommands(
 		string? repo = null,
 		string? owner = null,
 		string? branch = null,
+		bool skipEtagCheck = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1698,7 +1722,8 @@ internal sealed partial class ChangelogCommands(
 			Directory = resolvedDirectory,
 			Repo = resolvedRepo,
 			Owner = resolvedOwner,
-			Branch = resolvedBranch
+			Branch = resolvedBranch,
+			SkipEtagCheck = skipEtagCheck
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)

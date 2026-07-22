@@ -24,8 +24,10 @@ The source of truth can be:
 - automated release notes for GitHub releases
 - all changelog files that exist in a specific folder
 - all changelog files that match specific products, versions, and lifecycles
+- an explicit list of changelog file paths
 
 Deriving the source of truth from the contents of a folder or from the metadata in changelogs are the least accurate options (unless you have additional processes to confirm the validity of that information).
+An explicit path list is appropriate for ad hoc releases where a small set of known changelog files must be bundled and those entries may not have `prs` or `issues` fields.
 It is recommended to use lists that are generated as part of your release coordination activities.
 Consider your options carefully and discuss with your docs team if necessary.
 
@@ -54,13 +56,14 @@ It is strongly recommended to set `output_products` in your profile so your bund
 
 For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and [](/contribute/configure-changelogs-ref.md).
 
-### Bundle by report or URL list [profile-url]
+### Bundle by report, URL list, or path list [profile-url]
 
 If the source of truth for what was shipped in each release is:
 
 - a list of GitHub pull requests
 - a list of GitHub issues
 - a buildkite promotion report (which contains a list of PRs)
+- an explicit list of changelog YAML paths (one `.yaml`/`.yml` path per line)
 
 ... your profile does not have any mandatory settings.
 However it's a good idea to define the [basic bundle settings](/contribute/configure-changelogs-ref.md#bundle-basic) and the [profile settings](/contribute/configure-changelogs-ref.md#bundle-profiles) for the output filename and output products.
@@ -164,11 +167,12 @@ The `products` field determines which changelog files are gathered for considera
 If you created profiles, you can use them with the `changelog bundle` command like this:
 
 ```sh
-docs-builder changelog bundle <profile> <version|report|url-list>
+docs-builder changelog bundle <profile> <version|report|url-list|path-list>
 ```
 
-The second argument accepts a version string, a promotion report URL or path, or a URL list file (a plain-text file with one fully-qualified GitHub URL per line).
-If you are using a `{version}` placeholder in the `output_products` or `output` fields, you must provide that value as well as your report or URL argument.
+The second argument accepts a version string, a promotion report URL or path, a URL list file (a plain-text file with one fully-qualified GitHub URL per line), or path list file (one changelog file path per line).
+
+If you are using a `{version}` placeholder in the `output_products` or `output` fields, you must provide that value as well as your report or list argument.
 
 For example, if the source of truth for what was shipped in each release is:
 
@@ -191,6 +195,20 @@ For example, if the source of truth for what was shipped in each release is:
   ```sh
   # Bundle changelogs from a buildkite report ({version} → "2026-02-13")
   docs-builder changelog bundle serverless-report 2026-02-13 ./promotion-report.html
+  ```
+
+- a list of changelog files:
+
+  ```sh
+  # Bundle changelogs from a file list ({version} → "2026-07-17")
+  docs-builder changelog bundle serverless-release 2026-07-17 ./changelogs.txt
+  ```
+
+  ... where `changelogs.txt` is a newline delimited file with paths like this this:
+
+  ```txt
+  docs/changelog/1770424335-adhoc-security-fix.yaml
+  docs/changelog/1770424401-adhoc-feature.yaml
   ```
 
 - automated release notes for GitHub releases:
@@ -231,7 +249,7 @@ For example, if the source of truth for what was shipped in each release is:
 By default all changelogs that match the chosen source of truth are included in the bundle.
 
 :::{tip}
-It is strongly recommended to pull all of the content from each changelog into the bundle; otherwise you can't move or remove your changelogs. If your bundle contains only references to the files, add set [bundle.resolve](/contribute/configure-changelogs-ref.md#bundle-basic) to true and re-generate your bundle.
+It is strongly recommended to pull all of the content from each changelog into the bundle; otherwise you can't move or remove your changelogs. If your bundle contains only references to the files, set [bundle.resolve](/contribute/configure-changelogs-ref.md#bundle-basic) to true and re-generate your bundle.
 :::
 
 To apply additional filtering by the changelog type, areas, or products, add [bundle rules](#rules).
@@ -285,7 +303,7 @@ You can use the `docs-builder changelog remove` command to remove changelogs.
 If you created profiles, you can use them like this:
 
 ```sh
-docs-builder changelog remove <profile> <version|report|url-list>
+docs-builder changelog remove <profile> <version|report|url-list|path-list>
 ```
 
 For example, if the source of truth for what was shipped in each release is:
@@ -300,6 +318,12 @@ For example, if the source of truth for what was shipped in each release is:
 
   ```sh
   docs-builder changelog remove serverless-report ./promotion-report.html
+  ```
+
+- a list of changelog files:
+
+  ```sh
+  docs-builder changelog remove serverless-release ./changelogs.txt
   ```
 
 - automated release notes for GitHub releases:

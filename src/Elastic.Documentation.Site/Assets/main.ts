@@ -11,7 +11,6 @@ import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
 import { initTabs } from './tabs'
-import { initializeOtel } from './telemetry/instrumentation'
 import { logError, logInfo } from './telemetry/logging'
 import {
     ATTR_CTA_NAME,
@@ -29,7 +28,6 @@ import {
 } from './web-components/shared/htmx/utils'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import * as katex from 'katex'
 import { $, $optional, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
@@ -37,32 +35,35 @@ import { UAParser } from 'ua-parser-js'
 const DOCS_BUILDER_VERSION =
     process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
 
-// Initialize OpenTelemetry FIRST, before any other code runs (when enabled)
-// This must happen early so all subsequent code is instrumented
-if (config.telemetryEnabled) {
-    initializeOtel({
-        serviceName: config.serviceName,
-        serviceVersion: DOCS_BUILDER_VERSION,
-        baseUrl: config.rootPath,
-        debug: false,
-    })
+// Initialize OpenTelemetry before the web components when telemetry is enabled, so
+// their instrumented work runs after init. The OTel SDK is dynamically imported, so
+// pages built with telemetry disabled never fetch it.
+async function bootstrap() {
+    if (config.telemetryEnabled) {
+        const { initializeOtel } = await import('./telemetry/instrumentation')
+        initializeOtel({
+            serviceName: config.serviceName,
+            serviceVersion: DOCS_BUILDER_VERSION,
+            baseUrl: config.rootPath,
+            debug: false,
+        })
+    }
+
+    // Dynamically import web components after telemetry is initialized.
+    // Parcel code-splits these into separate chunks loaded on demand.
+    import('./web-components/VersionDropdown')
+    import('./web-components/AppliesToPopover')
+    import('./web-components/Diagnostics/DiagnosticsComponent')
+    import('./web-components/StorybookStory/StorybookStoryComponent')
+
+    if (config.buildType === 'isolated' || config.airGapped) {
+        import('./isolated')
+    } else if (config.buildType === 'codex') {
+        import('./codex')
+    }
 }
 
-// Dynamically import web components after telemetry is initialized.
-// Parcel code-splits these into separate chunks loaded on demand.
-import('./web-components/NavigationSearch/NavigationSearchComponent')
-import('./web-components/AskAi/AskAi')
-import('./web-components/VersionDropdown')
-import('./web-components/AppliesToPopover')
-import('./web-components/FullPageSearch/FullPageSearchComponent')
-import('./web-components/Diagnostics/DiagnosticsComponent')
-import('./web-components/StorybookStory/StorybookStoryComponent')
-
-if (config.buildType === 'isolated' || config.airGapped) {
-    import('./isolated')
-} else if (config.buildType === 'codex') {
-    import('./codex')
-}
+void bootstrap()
 
 const { getOS } = new UAParser()
 
@@ -95,10 +96,15 @@ function applyEditParam() {
 }
 
 /**
- * Initialize KaTeX math rendering for elements with class 'math'
+ * Initialize KaTeX math rendering for elements with class 'math'.
+ * KaTeX's JS and fonts/CSS are lazy-loaded here so pages without math pay nothing for them.
  */
-function initMath() {
+async function initMath() {
     const mathElements = $$optional('.math:not([data-katex-processed])')
+    if (mathElements.length === 0) return
+
+    const [katex] = await Promise.all([import('katex'), import('./katex.css')])
+
     mathElements.forEach((element) => {
         try {
             const content = element.textContent?.trim()

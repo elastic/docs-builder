@@ -67,7 +67,7 @@
     "@eslint/js": "10.0.1",
     "@parcel/reporter-bundle-analyzer": "2.16.4",
     "@parcel/transformer-svg-react": "2.16.1",
-    "@tailwindcss/postcss": "4.3.0",
+    "@tailwindcss/postcss": "4.3.2",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
@@ -95,7 +95,7 @@
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "8.60.1",
-    "wait-on": "9.0.5"
+    "wait-on": "9.0.10"
   },
   "browserslist": [
     "defaults"
@@ -132,7 +132,7 @@
     "lodash": "^4.17.23",
     "marked": "17.0.6",
     "select-dom": "10.1.0",
-    "tailwindcss": "4.3.0",
+    "tailwindcss": "4.3.2",
     "tippy.js": "6.3.7",
     "ua-parser-js": "2.0.10",
     "uuid": "14.0.1",

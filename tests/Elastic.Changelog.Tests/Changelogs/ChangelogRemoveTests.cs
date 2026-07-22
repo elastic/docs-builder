@@ -1018,4 +1018,61 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 		FileExists("pr-100.yaml").Should().BeFalse("changelog should be removed when CLI owner matches");
 	}
+
+	// ─── --files / path-list filter ─────────────────────────────────────────────────
+
+	[Fact]
+	public async Task Remove_WithFiles_DeletesOnlyNamedFiles()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
+
+		var keepPath = FileSystem.Path.Join(_changelogDir, "1001-es-feature.yaml");
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Files = [keepPath]
+		};
+
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		FileExists("1001-es-feature.yaml").Should().BeFalse();
+		FileExists("2001-kibana-feature.yaml").Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task Remove_WithProfile_PathListFile_RemovesListedFiles()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
+
+		var configContent = $"""
+			bundle:
+			  directory: {_changelogDir}
+			  profiles:
+			    release:
+			""";
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var listFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "files.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
+		await FileSystem.File.WriteAllTextAsync(listFile, "1001-es-feature.yaml\n", TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Config = configPath,
+			Profile = "release",
+			ProfileArgument = "9.3.0",
+			ProfileReport = listFile
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		FileExists("1001-es-feature.yaml").Should().BeFalse();
+		FileExists("2001-kibana-feature.yaml").Should().BeTrue();
+	}
 }

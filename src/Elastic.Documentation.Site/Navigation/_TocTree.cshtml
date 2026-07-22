@@ -1,4 +1,3 @@
-@using Elastic.Documentation
 @using Elastic.Documentation.Site.Navigation
 @inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationViewModel>
 
@@ -7,10 +6,6 @@
 		var currentTopLevelItem = Model.TopLevelItems.FirstOrDefault(i => i.Id == Model.Tree.Id) ?? Model.Tree;
 	} 
 	<div class="sticky top-0 z-10 bg-white">
-		@if (Model.BuildType != BuildType.Codex && Model.Branding is null)
-		{
-			<navigation-search id="navigation-search" hx-preserve></navigation-search>
-		}
 		<div id="nav-dropdown">
 		@if (Model.IsUsingNavigationDropdown)
 			{

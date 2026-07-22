@@ -7,7 +7,6 @@ cross_links:
   - docs-content
 exclude:
   - '_*.md'
-  - '!_search.md'
 subs:
   a-global-variable: "This was defined in docset.yml"
   serverless-short: Serverless
@@ -71,7 +70,6 @@ api:
 toc:
   - file: index.md
   - hidden: 404.md
-  - hidden: _search.md
   - hidden: developer-notes.md
   - hidden: contribute/cumulative-docs/index.md
   - hidden: contribute/cumulative-docs/guidelines.md
@@ -128,7 +126,6 @@ toc:
           - file: attributes.md
           - file: navigation.md
           - file: extensions.md
-          - file: api-explorer.md
           - file: cta.md
       - file: page.md
       - file: content-sources.md
@@ -184,9 +181,16 @@ toc:
     children:
       - file: installation.md
       - file: shell-autocompletion.md
-      - file: cli-reference-how-to.md
+  - folder: schema-support
+    children:
+      - file: index.md
+      - folder: cli-schema
         children:
-          - file: cli-supplemental-docs.md
+          - file: index.md
+          - file: supplemental.md
+      - folder: api-explorer
+        children:
+          - file: index.md
   - folder: mcp
     children:
       - file: index.md

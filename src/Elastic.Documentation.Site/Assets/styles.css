@@ -18,7 +18,6 @@
 @import './markdown/definition-list.css';
 @import './markdown/footnotes.css';
 @import './markdown/images.css';
-@import './markdown/math.css';
 @import './markdown/mermaid.css';
 @import './markdown/image-carousel.css';
 @import './markdown/hr.css';
@@ -84,7 +83,7 @@ body {
 	}
 }
 
-#toc-nav a.current {
+#toc-nav a.toc-current {
 	color: var(--color-blue-elastic);
 	&:hover {
 		color: var(--color-blue-elastic);
@@ -465,25 +464,6 @@ body {
 
 math {
 	margin-top: 1.5rem;
-}
-
-/* Adjust look and feel of the navigation-search in the landing page hero */
-#hero navigation-search {
-	& > div > .euiHorizontalRule {
-		display: none;
-	}
-
-	& > div {
-		padding-right: 0;
-	}
-
-	& .euiPopover {
-		max-inline-size: 100%;
-
-		@media screen and (min-width: 1180px) {
-			max-inline-size: 500px;
-		}
-	}
 }
 
 * {

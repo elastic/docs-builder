@@ -22,4 +22,6 @@ internal sealed record ChangelogRenderOptions
 	public required HashSet<string> PrivateRepositories { get; init; }
 	public required HashSet<string> HideFeatures { get; init; }
 	public PublishBlocker? PublishBlocker { get; init; }
+	/// <summary>True when bundles are loaded from the CDN via <c>:cdn:</c> (scrubbed public copies).</summary>
+	public required bool FromCdn { get; init; }
 }
