@@ -22,6 +22,12 @@
         <NuGetAudit>false</NuGetAudit>
         <EnableSourceLink>false</EnableSourceLink>
         <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+        <!-- AOT/trim/single-file analyzers are only meaningful at publish time.
+             Disabling them locally saves ~2.1s Csc per recompiled project.
+             EnforceCodeStyleInBuild stays ON everywhere for the inner loop. -->
+        <EnableAotAnalyzer>false</EnableAotAnalyzer>
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+        <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
       </PropertyGroup>
     </Otherwise>
   </Choose>
