@@ -44,12 +44,12 @@ internal sealed class CodexIndexCommand(
 	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealRead;
-		var configFile = fs.FileInfo.New(config.FullName);
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
+		var configFile = readFs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
 
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, FileSystemFactory.RealWrite, null, null);
 
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
@@ -61,9 +61,9 @@ internal sealed class CodexIndexCommand(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var service = new CodexIndexService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(service, (codexContext, cloneResult, fs, es),
+		serviceInvoker.AddCommand(service, (codexContext, cloneResult, readFs, es),
 			static async (s, col, state, c) =>
-				await s.Index(state.codexContext, state.cloneResult, state.fs, state.es, c)
+				await s.Index(state.codexContext, state.cloneResult, state.readFs, state.es, c)
 		);
 
 		return await serviceInvoker.InvokeAsync(ct);

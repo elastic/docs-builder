@@ -35,8 +35,8 @@ internal sealed class CodexUpdateRedirectsCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
-		var configFile = fs.FileInfo.New(config.FullName);
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
+		var configFile = readFs.FileInfo.New(config.FullName);
 		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig))
 			return 1;
 
@@ -45,7 +45,7 @@ internal sealed class CodexUpdateRedirectsCommand(
 			?? Environment.GetEnvironmentVariable("ENVIRONMENT")
 			?? "internal";
 
-		var service = new DeployUpdateRedirectsService(logFactory, fs);
+		var service = new DeployUpdateRedirectsService(logFactory, readFs);
 		serviceInvoker.AddCommand(service, (environment: resolvedEnvironment, redirectsFile, kvsNamePrefix: "codex", defaultRedirectsFile: ".artifacts/codex/docs/redirects.json"),
 			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile?.FullName, state.kvsNamePrefix, state.defaultRedirectsFile, c)
 		);
