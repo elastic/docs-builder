@@ -49,7 +49,12 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly ILoggerFactory _loggerFactory = loggerFactory;
 	private readonly IConfigurationContext _configurationContext = configurationContext;
 	private readonly ILogger<InMemoryBuildState> _logger = loggerFactory.CreateLogger<InMemoryBuildState>();
-	private readonly SemaphoreSlim _buildSemaphore = new(1, 1);
+	// Capacity-1 bounded channel: a new trigger while a build is running queues one more run;
+	// additional triggers drop the queued one (DropOldest) so only the latest matters.
+	// The build loop (RunAsync) is the sole reader and never cancels a running build on file events.
+	private readonly Channel<string> _buildChannel = Channel.CreateBounded<string>(
+		new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true });
+
 	private readonly Lock _diagnosticsLock = new();
 	private readonly List<DiagnosticDto> _diagnostics = [];
 
@@ -61,10 +66,6 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	// Broadcast: maintain list of connected client channels
 	private readonly Lock _clientsLock = new();
 	private readonly List<Channel<BuildEvent>> _clientChannels = [];
-
-	private readonly Lock _buildStateLock = new();
-	private CancellationTokenSource? _currentBuildCts;
-	private Task? _currentBuildTask;
 
 	private int _errorCount;
 	private int _warningCount;
@@ -113,60 +114,37 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		_logger.LogDebug("Client unsubscribed from diagnostics stream. Total clients: {Count}", _clientChannels.Count);
 	}
 
-	public async Task StartBuildAsync(string sourcePath, Cancel externalCt)
+	/// <summary>
+	/// Enqueues a validation build request. If a build is already queued but not yet started,
+	/// it is replaced by this one (DropOldest). A running build is never cancelled; instead the
+	/// new request waits in the single-slot queue and runs as soon as the current build finishes.
+	/// </summary>
+	public void ScheduleBuild(string sourcePath) =>
+		_ = _buildChannel.Writer.TryWrite(sourcePath);
+
+	/// <summary>
+	/// Runs the build loop until <paramref name="shutdownCt"/> is cancelled. Only <paramref name="shutdownCt"/>
+	/// can cancel a running build — file-edit triggers enqueue via <see cref="ScheduleBuild"/> and never
+	/// interrupt the current build.
+	/// </summary>
+	public async Task RunAsync(Cancel shutdownCt)
 	{
-		CancellationTokenSource? previousCts;
-		Task? previousTask;
-		CancellationTokenSource newCts;
-
-		lock (_buildStateLock)
+		try
 		{
-			previousCts = _currentBuildCts;
-			previousTask = _currentBuildTask;
-			newCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
-			_currentBuildCts = newCts;
-			_currentBuildTask = null; // set after ExecuteBuildAsync is created below
+			await foreach (var sourcePath in _buildChannel.Reader.ReadAllAsync(shutdownCt))
+				await ExecuteBuildAsync(sourcePath, shutdownCt);
 		}
-
-		// Cancel the prior build outside the lock (CancelAsync is safe to call without holding the lock)
-		if (previousCts != null)
+		catch (OperationCanceledException)
 		{
-			_logger.LogDebug("Cancelling previous in-memory build");
-			await previousCts.CancelAsync();
-			previousCts.Dispose();
+			_logger.LogDebug("Background build loop stopped");
 		}
-
-		// Wait for the previous build body to finish — use externalCt so Ctrl+C interrupts the wait
-		if (previousTask != null)
-		{
-			try
-			{
-				await previousTask.WaitAsync(TimeSpan.FromSeconds(5), externalCt);
-			}
-			catch (TimeoutException)
-			{
-				_logger.LogWarning("Previous build did not complete within timeout");
-			}
-			catch (OperationCanceledException)
-			{
-				// Expected on both build-cancel and Ctrl+C
-			}
-		}
-
-		// Start the new build and record the task
-		var buildTask = ExecuteBuildAsync(sourcePath, newCts.Token);
-		lock (_buildStateLock)
-			_currentBuildTask = buildTask;
-
-		await buildTask;
 	}
 
 	private async Task ExecuteBuildAsync(string sourcePath, Cancel ct)
 	{
-		await _buildSemaphore.WaitAsync(ct);
+		Status = BuildStatus.Building;
 		try
 		{
-			Status = BuildStatus.Building;
 			_ = Interlocked.Exchange(ref _errorCount, 0);
 			_ = Interlocked.Exchange(ref _warningCount, 0);
 			_ = Interlocked.Exchange(ref _hintCount, 0);
@@ -253,10 +231,6 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 				Warnings: WarningCount,
 				Hints: HintCount
 			));
-		}
-		finally
-		{
-			_ = _buildSemaphore.Release();
 		}
 	}
 
@@ -349,17 +323,13 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 
 	public void Dispose()
 	{
-		_currentBuildCts?.Cancel();
-		_currentBuildCts?.Dispose();
-		_buildSemaphore.Dispose();
+		_ = _buildChannel.Writer.TryComplete();
 
 		// Close all client channels
 		lock (_clientsLock)
 		{
 			foreach (var channel in _clientChannels)
-			{
 				_ = channel.Writer.TryComplete();
-			}
 			_clientChannels.Clear();
 		}
 
