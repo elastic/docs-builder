@@ -138,6 +138,10 @@ public class DocumentationWebHost
 				{
 					await next(context);
 				}
+				catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+				{
+					// Client disconnected or navigated away — normal, no need to log or rethrow.
+				}
 				catch (Exception ex)
 				{
 					Console.WriteLine($"[UNHANDLED EXCEPTION] {ex.GetType().Name}: {ex.Message}");
