@@ -8,4 +8,5 @@ _static/*.woff2
 _static/*.js
 _static/*.js.map
 _static/.build-stamp
+_static/.build-hash
 _static/mermaid.min.js
