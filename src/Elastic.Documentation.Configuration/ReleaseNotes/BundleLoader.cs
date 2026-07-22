@@ -41,28 +41,21 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(bundleFile);
 			var repo = GetRepoFromBundle(bundleData);
 			var owner = GetOwnerFromBundle(bundleData);
-
-			// Bundle directory is the directory containing the bundle file
-			var bundleDirectory = fileSystem.Path.GetDirectoryName(bundleFile) ?? bundlesFolderPath;
-			// Default changelog directory is parent of bundles folder
-			var changelogDirectory = fileSystem.Path.GetDirectoryName(bundleDirectory) ?? bundlesFolderPath;
-
-			var entries = ResolveEntries(bundleData, changelogDirectory, emitWarning);
+			var entries = ResolveEntries(bundleData, fileSystem.Path.GetFileName(bundleFile), emitWarning);
 
 			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, bundleFile, entries));
 		}
 
 		// Merge amend files with their parent bundles
-		loadedBundles = MergeAmendFiles(loadedBundles, bundlesFolderPath, emitWarning);
+		loadedBundles = MergeAmendFiles(loadedBundles, emitWarning);
 
 		return loadedBundles;
 	}
 
 	/// <summary>
 	/// Loads bundles from in-memory YAML content rather than a folder. Used by the <c>changelog</c>
-	/// directive in <c>cdn:</c> mode, where bundle files are fetched over HTTP. CDN bundles are
-	/// self-contained (entries are inline), so no entry-file resolution against the filesystem occurs;
-	/// any file-only entry reference is skipped with a warning. Amend files are still merged by name.
+	/// directive in <c>cdn:</c> mode, where bundle files are fetched over HTTP.
+	/// Amend files are still merged by name.
 	/// </summary>
 	/// <param name="bundles">Bundle file name and raw YAML content pairs.</param>
 	/// <param name="emitWarning">Callback to emit warnings during loading.</param>
@@ -89,19 +82,31 @@ public partial class BundleLoader(IFileSystem fileSystem)
 			var version = GetVersionFromBundle(bundleData) ?? fileSystem.Path.GetFileNameWithoutExtension(fileName);
 			var repo = GetRepoFromBundle(bundleData);
 			var owner = GetOwnerFromBundle(bundleData);
-			var entries = ResolveInlineEntries(bundleData, fileName, emitWarning);
+			var entries = ResolveEntries(bundleData, fileName, emitWarning);
 
 			loadedBundles.Add(new LoadedBundle(version, repo, owner, bundleData, fileName, entries));
 		}
 
-		return MergeAmendFiles(loadedBundles, string.Empty, emitWarning);
+		return MergeAmendFiles(loadedBundles, emitWarning);
 	}
 
-	/// <summary>Resolves only inline entries; file-only references (unresolvable without the changelog dir) are skipped with a warning.</summary>
-	private static List<ChangelogEntry> ResolveInlineEntries(Bundle bundleData, string fileName, Action<string> emitWarning)
+	/// <summary>
+	/// Resolves entries from a bundle. Bundles are always self-contained: an entry without inline
+	/// content (<c>title</c> + <c>type</c>) is invalid and is skipped with a warning — entry files
+	/// are never read from disk.
+	/// </summary>
+	/// <param name="bundledData">The parsed bundle data.</param>
+	/// <param name="bundleName">The bundle file name, used in diagnostics.</param>
+	/// <param name="emitWarning">Callback to emit warnings during resolution.</param>
+	/// <returns>A list of resolved changelog entries.</returns>
+	public static List<ChangelogEntry> ResolveEntries(
+		Bundle bundledData,
+		string bundleName,
+		Action<string> emitWarning)
 	{
-		var entries = new List<ChangelogEntry>(bundleData.Entries.Count);
-		foreach (var entry in bundleData.Entries)
+		var entries = new List<ChangelogEntry>(bundledData.Entries.Count);
+
+		foreach (var entry in bundledData.Entries)
 		{
 			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
 			{
@@ -109,60 +114,9 @@ public partial class BundleLoader(IFileSystem fileSystem)
 				continue;
 			}
 
+			var entryName = !string.IsNullOrWhiteSpace(entry.File?.Name) ? entry.File.Name : entry.Title ?? "<unnamed>";
 			emitWarning(
-				$"Bundle '{fileName}' has a non-self-contained entry (file '{entry.File?.Name}'); CDN bundles must inline their entries. Skipping.");
-		}
-
-		return entries;
-	}
-
-	/// <summary>
-	/// Resolves entries from a bundle, loading from file references if needed.
-	/// </summary>
-	/// <param name="bundledData">The parsed bundle data.</param>
-	/// <param name="changelogDirectory">The changelog directory (parent of bundles folder).</param>
-	/// <param name="emitWarning">Callback to emit warnings during resolution.</param>
-	/// <returns>A list of resolved changelog entries.</returns>
-	public List<ChangelogEntry> ResolveEntries(
-		Bundle bundledData,
-		string changelogDirectory,
-		Action<string> emitWarning)
-	{
-		var entries = new List<ChangelogEntry>();
-
-		foreach (var entry in bundledData.Entries)
-		{
-			ChangelogEntry? entryData = null;
-
-			// If entry has resolved/inline data, use it directly
-			if (!string.IsNullOrWhiteSpace(entry.Title) && entry.Type != null)
-				entryData = ReleaseNotesSerialization.ConvertBundledEntry(entry);
-			else if (!string.IsNullOrWhiteSpace(entry.File?.Name))
-			{
-				// Load from file reference - look in changelog directory (parent of bundles)
-				var filePath = fileSystem.Path.Join(changelogDirectory, entry.File.Name);
-
-				if (!fileSystem.File.Exists(filePath))
-				{
-					emitWarning($"Referenced changelog file '{entry.File.Name}' not found at '{filePath}'.");
-					continue;
-				}
-
-				try
-				{
-					var fileContent = fileSystem.File.ReadAllText(filePath);
-					var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
-					entryData = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
-				}
-				catch (YamlException e)
-				{
-					emitWarning($"Failed to parse changelog file '{entry.File.Name}': {e.Message}");
-					continue;
-				}
-			}
-
-			if (entryData != null)
-				entries.Add(entryData);
+				$"Bundle '{bundleName}' entry '{entryName}' has no inline content (title and type are required); bundles must inline their entries. Skipping.");
 		}
 
 		return entries;
@@ -320,12 +274,10 @@ public partial class BundleLoader(IFileSystem fileSystem)
 	/// Amend files follow the naming pattern: {baseName}.amend-{N}.yaml
 	/// </summary>
 	/// <param name="bundles">The list of loaded bundles including amend files.</param>
-	/// <param name="bundlesFolderPath">The absolute path to the bundles folder.</param>
 	/// <param name="emitWarning">Callback to emit warnings during entry resolution.</param>
 	/// <returns>A list of bundles with amend file entries merged into their parent bundles.</returns>
 	private List<LoadedBundle> MergeAmendFiles(
 		List<LoadedBundle> bundles,
-		string bundlesFolderPath,
 		Action<string> emitWarning)
 	{
 		if (bundles.Count <= 1)
@@ -357,10 +309,7 @@ public partial class BundleLoader(IFileSystem fileSystem)
 
 			var mergedEntryList = BundleAmendMerger.MergeEntries(parentBundle.Data.Entries, orderedAmendData);
 			var mergedBundleData = parentBundle.Data with { Entries = mergedEntryList };
-
-			var bundleDirectory = fileSystem.Path.GetDirectoryName(parentPath) ?? bundlesFolderPath;
-			var changelogDirectory = fileSystem.Path.GetDirectoryName(bundleDirectory) ?? bundlesFolderPath;
-			var resolvedEntries = ResolveEntries(mergedBundleData, changelogDirectory, emitWarning);
+			var resolvedEntries = ResolveEntries(mergedBundleData, fileSystem.Path.GetFileName(parentPath), emitWarning);
 
 			mergedParents[parentPath] = new LoadedBundle(
 				parentBundle.Version,
@@ -382,14 +331,6 @@ public partial class BundleLoader(IFileSystem fileSystem)
 					: bundle)
 			.ToList();
 	}
-
-	/// <summary>
-	/// Determines if a file path represents an amend file.
-	/// </summary>
-	/// <param name="filePath">The file path to check.</param>
-	/// <returns>True if the file is an amend file.</returns>
-	private static bool IsAmendFile(string filePath) =>
-		BundleAmendMerger.IsAmendFile(filePath);
 
 	/// <summary>
 	/// Gets the parent bundle path from an amend file path.

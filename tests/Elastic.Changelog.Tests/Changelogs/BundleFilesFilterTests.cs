@@ -284,8 +284,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 		{
 			Config = configPath,
 			Files = [keep],
-			Output = output,
-			Resolve = true
+			Output = output
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
@@ -321,8 +320,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			Config = configPath,
 			All = true,
 			ForceLocal = true,
-			Output = output,
-			Resolve = true
+			Output = output
 		};
 
 		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);

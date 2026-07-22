@@ -75,17 +75,9 @@ docs-builder changelog bundle \
   --output-products "cloud-serverless 2026-07-07"
 ```
 
-## Resolved vs. reference bundles
+## Bundles are self-contained
 
-By default the bundle contains only file names and checksums — the original changelog files must remain on disk for rendering. Add `--resolve` (or set `bundle.resolve: true` in `changelog.yml`) to embed the full entry content inside the bundle. A resolved bundle is:
-
-- Required when using the `{changelog}` directive after deleting the source changelog files
-- Required when `link_allow_repos` is configured (private-link scrubbing only runs during resolve)
-- Necessary to regenerate rendered Markdown or AsciiDoc after the source files are removed
-
-:::{tip}
-For most release workflows, use `--resolve`. It makes the bundle self-contained and allows you to clean up the changelog files with `docs-builder changelog remove` immediately after bundling.
-:::
+Every bundle embeds the full content of each changelog entry (`title`, `type`, `products`, and so on), plus a `file` block recording the source file name and checksum for provenance. Rendering — via the `{changelog}` directive, `changelog render`, or the CDN pipeline — never reads the original changelog files, so you can clean them up with `docs-builder changelog remove` immediately after bundling.
 
 ## CI usage
 
@@ -142,10 +134,6 @@ For more information about acceptable product and lifecycle values, go to [Produ
 A changelog in a public repository might contain links to pull requests or issues in repositories that should not appear in published documentation.
 
 Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/repo` strings. When this key is present (including as an empty list), PR and issue references are filtered at bundle time: only links whose resolved repository is in the list are kept; others are rewritten to `# PRIVATE:` sentinel strings in the bundle YAML.
-
-:::{important}
-`bundle.link_allow_repos` requires a **resolved** bundle. Set `bundle.resolve: true` or pass `--resolve`.
-:::
 
 ## Examples
 
@@ -244,12 +232,23 @@ entries:
 - file:
     name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
     checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
+  type: bug-fix
+  title: Fix ML calendar event update scalability issues
+  products:
+  - product: elasticsearch
+    target: 9.2.2
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/108875
 - file:
     name: 1765507798-convert-bytestransportresponse-when-proxying-respo.yaml
     checksum: c6dbd4730bf34dbbc877c16c042e6578dd108b62
-- file:
-    name: 1765507839-use-ivf_pq-for-gpu-index-build-for-large-datasets.yaml
-    checksum: 451d60283fe5df426f023e824339f82c2900311e
+  type: bug-fix
+  title: Convert BytesTransportResponse when proxying responses
+  products:
+  - product: elasticsearch
+    target: 9.2.2
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/135873
 ```
 
 ### Bundle by product [changelog-bundle-product]
@@ -300,9 +299,23 @@ entries:
 - file:
     name: 1765495972-fixes-enrich-and-lookup-join-resolution-based-on-m.yaml
     checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+  type: bug-fix
+  title: Fixes enrich and lookup join resolution based on mappings
+  products:
+  - product: cloud-serverless
+    target: 2025-12-02
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/136001
 - file:
     name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
     checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
+  type: bug-fix
+  title: Break on fielddata when building global ordinals
+  products:
+  - product: cloud-serverless
+    target: 2025-12-06
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/136002
 ```
 
 1. By default these values match your `--input-products` (even if the changelogs have more products).
@@ -390,6 +403,12 @@ entries:
 - file:
     name: 1765495972-new-feature.yaml
     checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+  type: feature
+  title: New feature behind a flag
+  feature-id: feature:hidden-api
+  products:
+  - product: elasticsearch
+    target: 9.3.0
 ```
 
 When this bundle is rendered (either via the `changelog render` command or the `{changelog}` directive), changelogs with `feature-id` values matching any of the listed features will be commented out in the output.

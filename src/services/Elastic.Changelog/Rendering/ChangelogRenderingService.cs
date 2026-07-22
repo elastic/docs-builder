@@ -37,12 +37,11 @@ public record RenderChangelogsArguments
 }
 
 /// <summary>
-/// Input for a single bundle file with optional directory, repo, and link visibility
+/// Input for a single bundle file with optional repo and link visibility
 /// </summary>
 public record BundleInput
 {
 	public required string BundleFile { get; init; }
-	public string? Directory { get; init; }
 	public string? Repo { get; init; }
 	/// <summary>
 	/// Whether to hide PR/issue links for entries from this bundle.
@@ -101,8 +100,8 @@ public class ChangelogRenderingService(
 				return false;
 
 			// Merge phase: Resolve all entries from validated bundles
-			var resolver = new BundleDataResolver(_fileSystem);
-			var resolvedResult = await resolver.ResolveEntriesAsync(validationResult.Bundles, ctx);
+			var resolver = new BundleDataResolver();
+			var resolvedResult = resolver.ResolveEntries(validationResult.Bundles);
 
 			if (resolvedResult.Entries.Count == 0)
 			{

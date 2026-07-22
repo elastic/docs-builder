@@ -5,3 +5,15 @@ products:
 entries:
   - file:
       name: sample-feature-099.yaml
+    title: Introduce changelog automation tooling
+    type: feature
+    description: |
+      Added CLI commands for managing release notes: `changelog add`, `changelog bundle`, and `changelog render`.
+      This enables automated generation and formatting of release notes from structured YAML files.
+    prs:
+      - "1234"
+    products:
+      - product: docs-builder
+        target: 0.99.0
+    areas:
+      - Changelog

@@ -4,7 +4,6 @@
 
 using System.IO;
 using AwesomeAssertions;
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
 
@@ -16,9 +15,6 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithDropdownsTrue_RendersDropdownFormat()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create breaking change changelog
 		// language=yaml
 		var breakingChange =
@@ -35,31 +31,25 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			action: Update your code to use the new API endpoints
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "breaking-change.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, breakingChange, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: breaking-change.yaml
-			      checksum: {ComputeSha1(breakingChange)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("breaking-change.yaml", breakingChange));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			Dropdowns = true
@@ -89,9 +79,6 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_WithDropdownsFalse_RendersFlattendFormat()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create deprecation changelog
 		// language=yaml
 		var deprecation =
@@ -110,31 +97,25 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			action: Migrate to the new API
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "deprecation.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, deprecation, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: deprecation.yaml
-			      checksum: {ComputeSha1(deprecation)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("deprecation.yaml", deprecation));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			Dropdowns = false // Explicitly set to false for clarity
@@ -170,9 +151,6 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_DefaultDropdownsFalse_RendersFlattedFormat()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create known issue changelog
 		// language=yaml
 		var knownIssue =
@@ -189,31 +167,25 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			action: Use the workaround provided in the documentation
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "known-issue.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, knownIssue, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: known-issue.yaml
-			      checksum: {ComputeSha1(knownIssue)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("known-issue.yaml", knownIssue));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0"
 			// Note: Dropdowns not set, should default to false
@@ -248,9 +220,6 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_HighlightsWithDropdowns_RendersCorrectFormat()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create highlight feature
 		// language=yaml
 		var highlight =
@@ -266,24 +235,18 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			description: This feature revolutionizes how you work with data
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "highlight.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, highlight, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: highlight.yaml
-			      checksum: {ComputeSha1(highlight)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("highlight.yaml", highlight));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -301,7 +264,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 
 			var input = new RenderChangelogsArguments
 			{
-				Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+				Bundles = [new BundleInput { BundleFile = bundleFile }],
 				Output = subOutputDir,
 				Title = "9.2.0",
 				Dropdowns = testCase.Dropdowns
@@ -345,9 +308,6 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 	public async Task RenderChangelogs_AsciidocFormat_IgnoresDropdownsFlag()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create breaking change
 		// language=yaml
 		var breakingChange =
@@ -364,24 +324,18 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			action: Update your code
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "breaking-change.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, breakingChange, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: breaking-change.yaml
-			      checksum: {ComputeSha1(breakingChange)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("breaking-change.yaml", breakingChange));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -395,7 +349,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 
 			var input = new RenderChangelogsArguments
 			{
-				Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+				Bundles = [new BundleInput { BundleFile = bundleFile }],
 				Output = subOutputDir,
 				Title = "9.2.0",
 				Dropdowns = dropdowns,

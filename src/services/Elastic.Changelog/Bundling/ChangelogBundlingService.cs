@@ -35,11 +35,6 @@ public record BundleChangelogsArguments
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
-	/// <summary>
-	/// Whether to resolve (copy contents of each changelog file into the entries array).
-	/// null = use config default; true = --resolve; false = --no-resolve.
-	/// </summary>
-	public bool? Resolve { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
 
@@ -254,9 +249,6 @@ public partial class ChangelogBundlingService(
 			if (!ValidatePlaceholderUsage(collector, input))
 				return false;
 
-			if (!ValidateLinkAllowlist(collector, input))
-				return false;
-
 			// Load PR, issue, or file filter values
 			var prsToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			var issuesToMatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -384,7 +376,6 @@ public partial class ChangelogBundlingService(
 				collector,
 				filteredEntries,
 				input.OutputProducts,
-				input.Resolve ?? false,
 				input.Repo,
 				input.Owner,
 				featureHidingResult.FeatureIdsToHide
@@ -620,9 +611,6 @@ public partial class ChangelogBundlingService(
 		if (string.IsNullOrWhiteSpace(output) && !string.IsNullOrWhiteSpace(config.Bundle.OutputDirectory))
 			output = _fileSystem.Path.Join(config.Bundle.OutputDirectory, "changelog-bundle.yaml").OptionalWindowsReplace();
 
-		// Apply resolve: CLI takes precedence over config. Only use config when CLI did not specify.
-		var resolve = input.Resolve ?? config.Bundle.Resolve;
-
 		// Apply repo/owner/branch: CLI takes precedence; fall back to bundle-level config defaults.
 		var repo = input.Repo ?? config.Bundle.Repo;
 		var owner = input.Owner ?? config.Bundle.Owner;
@@ -641,7 +629,6 @@ public partial class ChangelogBundlingService(
 		{
 			Directory = directory,
 			Output = output,
-			Resolve = resolve,
 			Repo = repo,
 			Owner = owner,
 			Branch = branch,
@@ -933,23 +920,6 @@ public partial class ChangelogBundlingService(
 			collector.EmitError(string.Empty,
 				"When using placeholders in bundle description in option-based mode, " +
 				"--output-products must be explicitly specified to ensure predictable substitution values.");
-			return false;
-		}
-
-		return true;
-	}
-
-	private static bool ValidateLinkAllowlist(IDiagnosticsCollector collector, BundleChangelogsArguments input)
-	{
-		if (input.LinkAllowRepos == null)
-			return true;
-
-		if (!(input.Resolve ?? false))
-		{
-			collector.EmitError(
-				string.Empty,
-				"bundle.link_allow_repos requires resolved bundle content. " +
-				"Use --resolve or set bundle.resolve: true in changelog.yml, or remove bundle.link_allow_repos.");
 			return false;
 		}
 

@@ -28,19 +28,19 @@ docs-builder changelog render \
   --input "./docs/changelog/bundles/9.3.0.yaml" \
   --output ./release-notes
 
-# Render with explicit changelog dir and repo
+# Render with an explicit repo (for PR/issue link generation)
 docs-builder changelog render \
-  --input "~/docs/changelog/bundles/9.3.0.yaml|~/docs/changelog|elasticsearch" \
+  --input "~/docs/changelog/bundles/9.3.0.yaml|elasticsearch" \
   --output ~/release-notes
 
 # Merge multiple bundles
 docs-builder changelog render \
-  --input "./bundles/elasticsearch-9.3.0.yaml|./changelog|elasticsearch,./bundles/kibana-9.3.0.yaml|./changelog|kibana" \
+  --input "./bundles/elasticsearch-9.3.0.yaml|elasticsearch,./bundles/kibana-9.3.0.yaml|kibana" \
   --output ./merged-release-notes
 
 # Hide links from a private repository bundle
 docs-builder changelog render \
-  --input "./public-bundle.yaml|./changelog|elasticsearch|keep-links,./private-bundle.yaml|./private-changelog|internal-repo|hide-links" \
+  --input "./public-bundle.yaml|elasticsearch|keep-links,./private-bundle.yaml|internal-repo|hide-links" \
   --output ./release-notes
 
 # Render with subsections and flattened format (default)

@@ -160,7 +160,6 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	public void ResolveEntries_WithInlineEntries_ReturnsEntries()
 	{
 		// Arrange
-		var service = CreateService();
 		var bundle = new Bundle
 		{
 			Products =
@@ -175,7 +174,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var entries = service.ResolveEntries(bundle, "/changelog", EmitWarning);
+		var entries = BundleLoader.ResolveEntries(bundle, "9.3.0.yaml", EmitWarning);
 
 		// Assert
 		entries.Should().HaveCount(2);
@@ -185,24 +184,9 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	}
 
 	[Fact]
-	public void ResolveEntries_WithFileReferences_LoadsFromFiles()
+	public void ResolveEntries_WithEntryLackingInlineContent_EmitsWarningNamingBundleAndEntry()
 	{
-		// Arrange
-		var changelogDir = "/docs/changelog";
-		_fileSystem.Directory.CreateDirectory($"{changelogDir}/entries");
-
-		// language=yaml
-		var entryContent =
-			"""
-			title: Feature from file
-			type: feature
-			prs:
-			  - "100"
-			description: A feature loaded from a file
-			""";
-		_fileSystem.File.WriteAllText($"{changelogDir}/entries/feature.yaml", entryContent);
-
-		var service = CreateService();
+		// Arrange - a reference-style entry (file block only, no inline content) is invalid
 		var bundle = new Bundle
 		{
 			Products =
@@ -211,82 +195,21 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			],
 			Entries =
 			[
-				new BundledEntry { File = new BundledFile { Name = "entries/feature.yaml", Checksum = "sha1" } }
+				new BundledEntry { Title = "Inline feature", Type = ChangelogEntryType.Feature },
+				new BundledEntry { File = new BundledFile { Name = "reference-only.yaml", Checksum = "sha1" } }
 			]
 		};
 
 		// Act
-		var entries = service.ResolveEntries(bundle, changelogDir, EmitWarning);
+		var entries = BundleLoader.ResolveEntries(bundle, "9.3.0.yaml", EmitWarning);
 
-		// Assert
-		entries.Should().HaveCount(1);
-		entries[0].Title.Should().Be("Feature from file");
-		entries[0].Description.Should().Be("A feature loaded from a file");
-		_warnings.Should().BeEmpty();
-	}
-
-	[Fact]
-	public void ResolveEntries_WithMissingFileReference_EmitsWarning()
-	{
-		// Arrange
-		var changelogDir = "/docs/changelog";
-		_fileSystem.Directory.CreateDirectory(changelogDir);
-
-		var service = CreateService();
-		var bundle = new Bundle
-		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
-			Entries =
-			[
-				new BundledEntry { File = new BundledFile { Name = "nonexistent.yaml", Checksum = "sha1" } }
-			]
-		};
-
-		// Act
-		var entries = service.ResolveEntries(bundle, changelogDir, EmitWarning);
-
-		// Assert
-		entries.Should().BeEmpty();
+		// Assert - the invalid entry is skipped, never loaded from disk
+		entries.Should().ContainSingle();
+		entries[0].Title.Should().Be("Inline feature");
 		_warnings.Should().ContainSingle();
-		_warnings[0].Should().Contain("not found");
-	}
-
-	[Fact]
-	public void ResolveEntries_WithVersionField_NormalizesToTarget()
-	{
-		// Arrange
-		var changelogDir = "/docs/changelog";
-		_fileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Using legacy 'version:' field instead of 'target:'
-		// language=yaml
-		var entryContent =
-			"""
-			title: Legacy entry
-			type: feature
-			products:
-			  - product: elasticsearch
-			    version: 9.3.0
-			""";
-		_fileSystem.File.WriteAllText($"{changelogDir}/legacy.yaml", entryContent);
-
-		var service = CreateService();
-		var bundle = new Bundle
-		{
-			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
-			Entries = [new BundledEntry { File = new BundledFile { Name = "legacy.yaml", Checksum = "sha1" } }]
-		};
-
-		// Act
-		var entries = service.ResolveEntries(bundle, changelogDir, EmitWarning);
-
-		// Assert
-		entries.Should().HaveCount(1);
-		entries[0].Title.Should().Be("Legacy entry");
-		_warnings.Should().BeEmpty();
+		_warnings[0].Should().Contain("9.3.0.yaml");
+		_warnings[0].Should().Contain("reference-only.yaml");
+		_warnings[0].Should().Contain("no inline content");
 	}
 
 	#endregion

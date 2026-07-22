@@ -3030,7 +3030,7 @@
           ],
           "name": "bundle",
           "summary": "Aggregate changelog entries matching a filter into a single bundle YAML.",
-          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\nresolve, description, hide-features, and release-date behaviour come from changelog.yml. Only --plan is supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
+          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. Only --plan is supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
           "usage": "docs-builder changelog bundle [\u003Cprofile\u003E] [\u003Cprofile-arg\u003E] [\u003Cprofile-report\u003E] [options]",
           "examples": [],
           "parameters": [
@@ -3229,14 +3229,6 @@
             },
             {
               "role": "flag",
-              "name": "resolve",
-              "type": "boolean",
-              "required": false,
-              "summary": "Copy the contents of each changelog file into the entries array. Uses config bundle.resolve or defaults to false. This option is not supported in profile-based commands. The equivalent configuration option is bundle.resolve.",
-              "defaultValue": "default"
-            },
-            {
-              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
@@ -3323,14 +3315,6 @@
               "summary": "Optional: Changelog YAML paths to exclude from the effective bundle. Repeat --remove or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.",
               "repeatable": true,
               "elementType": "string"
-            },
-            {
-              "role": "flag",
-              "name": "resolve",
-              "type": "boolean",
-              "required": false,
-              "summary": "Optional: When using --add, inline each added changelog\u0027s content in the amend file. Use --no-resolve to record file references only. When omitted, inferred from the parent bundle. Does not apply to --remove.",
-              "defaultValue": "default"
             },
             {
               "role": "flag",
@@ -4001,7 +3985,6 @@
           ],
           "name": "remove",
           "summary": "Delete changelog entry files matching a filter.",
-          "notes": "Blocks when a file is referenced by an unresolved bundle to avoid breaking the {changelog}\ndirective in published documentation. Pass --force to override.",
           "usage": "docs-builder changelog remove [\u003Cprofile\u003E] [\u003Cprofile-arg\u003E] [\u003Cprofile-report\u003E] [options]",
           "examples": [],
           "parameters": [
@@ -4033,18 +4016,6 @@
               "required": false,
               "summary": "Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, --report, or --files.",
               "defaultValue": "false"
-            },
-            {
-              "role": "flag",
-              "name": "bundles-dir",
-              "type": "string",
-              "required": false,
-              "summary": "Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.",
-              "validations": [
-                {
-                  "kind": "rejectSymbolicLinks"
-                }
-              ]
             },
             {
               "role": "flag",
@@ -4086,14 +4057,6 @@
               "type": "boolean",
               "required": false,
               "summary": "Print the files that would be removed without deleting them. Valid in both profile and raw mode.",
-              "defaultValue": "false"
-            },
-            {
-              "role": "confirmationSkip",
-              "name": "force",
-              "type": "boolean",
-              "required": false,
-              "summary": "Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.",
               "defaultValue": "false"
             },
             {
@@ -4216,7 +4179,7 @@
               "name": "input",
               "type": "array",
               "required": false,
-              "summary": "Required: Bundle input(s) in format \u0022bundle-file-path|changelog-file-path|repo|link-visibility\u0022 (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be \u0022hide-links\u0022 or \u0022keep-links\u0022 (default). Use \u0022hide-links\u0022 for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.",
+              "summary": "Required: Bundle input(s) in format \u0022bundle-file-path|repo|link-visibility\u0022 (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be \u0022hide-links\u0022 or \u0022keep-links\u0022 (default). Use \u0022hide-links\u0022 for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.",
               "repeatable": true,
               "elementType": "string"
             },

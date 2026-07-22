@@ -48,12 +48,11 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | ------------------------- | ----------- |
 | `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
-| `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. Requires `bundle.resolve: true` |
+| `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
 | `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, and to scope uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
-| `bundle.resolve`          | When `true`, changelog contents are copied into bundle (default: `true`). |
 | `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
 :::
@@ -406,7 +405,7 @@ The way bundle rules are applied can be broken down into three "modes":
 :   This mode applies when there's at least one global bundle rule set and the `rules.bundle.products` section is absent or empty (`products: {}`).
 :   Global rules are evaluated against each changelog's own `products`, `type`, and `areas`.
 :   There is no single product used for the rule context and no disjoint exclusion.
-:   Changelogs with missing or empty `products` are included with a warning; global product "include" or "exclude" lists are skipped for those entries, global type and area rules still apply.
+:   For changelogs with missing or empty `products`, global product "include" or "exclude" lists are skipped with a warning (global type and area rules still apply). Note that such changelogs still fail bundle validation, which requires `products` on every entry.
 
 3 — Product-specific rules
 :   This mode applies when the `rules.bundle.products` section is not absent or empty.
