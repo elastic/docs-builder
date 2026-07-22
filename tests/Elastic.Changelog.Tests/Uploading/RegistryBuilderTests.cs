@@ -290,6 +290,88 @@ public class RegistryBuilderTests
 	}
 
 	[Fact]
+	public async Task Refresh_AmendWithProducts_RecordsTargetFromOwnProducts()
+	{
+		var path = _mockFileSystem.Path.Join(_bundleDir, "9.3.0.amend-1.yaml");
+		// Amend materialized by a current docs-builder: it carries the parent's complete products.
+		// language=yaml
+		_mockFileSystem.AddFile(path, new MockFileData("""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: 2-late.yaml
+			      checksum: c0ffee
+			    type: enhancement
+			    title: Late addition
+			"""));
+		var targets = new List<UploadTarget> { new(path, "bundle/elasticsearch/9.3.0.amend-1.yaml") };
+		StubExistingManifestNotFound();
+
+		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
+
+		result.Updated.Should().Be(1);
+		var manifest = Deserialize(_puts[0].ContentBody);
+		manifest.Bundles.Should().ContainSingle();
+		manifest.Bundles[0].File.Should().Be("9.3.0.amend-1.yaml");
+		manifest.Bundles[0].Target.Should().Be("9.3.0");
+	}
+
+	[Fact]
+	public async Task Refresh_LegacyAmendWithoutProducts_RecordsParentTarget()
+	{
+		var parent = AddBundle("9.3.0.yaml", "elasticsearch", "9.3.0");
+		var amend = _mockFileSystem.Path.Join(_bundleDir, "9.3.0.amend-1.yaml");
+		// Amend published before products were copied from the parent: exclusion only, no products.
+		// language=yaml
+		_mockFileSystem.AddFile(amend, new MockFileData("""
+			exclude-entries:
+			  - file:
+			      name: 1-feature.yaml
+			      checksum: deadbeef
+			"""));
+		var targets = new List<UploadTarget>
+		{
+			new(parent, "bundle/elasticsearch/9.3.0.yaml"),
+			new(amend, "bundle/elasticsearch/9.3.0.amend-1.yaml")
+		};
+		StubExistingManifestNotFound();
+
+		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
+
+		result.Updated.Should().Be(1);
+		var manifest = Deserialize(_puts[0].ContentBody);
+		manifest.Bundles.Should().HaveCount(2);
+		var amendEntry = manifest.Bundles.Single(b => b.File == "9.3.0.amend-1.yaml");
+		amendEntry.Target.Should().Be("9.3.0", "the amend inherits the parent bundle's target");
+	}
+
+	[Fact]
+	public async Task Refresh_OrphanLegacyAmendWithoutParent_RecordsEntryWithoutTarget()
+	{
+		var amend = _mockFileSystem.Path.Join(_bundleDir, "9.3.0.amend-1.yaml");
+		// language=yaml
+		_mockFileSystem.AddFile(amend, new MockFileData("""
+			exclude-entries:
+			  - file:
+			      name: 1-feature.yaml
+			      checksum: deadbeef
+			"""));
+		var targets = new List<UploadTarget> { new(amend, "bundle/elasticsearch/9.3.0.amend-1.yaml") };
+		StubExistingManifestNotFound();
+
+		var result = await _builder.RefreshAsync(_collector, targets, TestContext.Current.CancellationToken);
+
+		result.Updated.Should().Be(1);
+		var manifest = Deserialize(_puts[0].ContentBody);
+		manifest.Bundles.Should().ContainSingle();
+		manifest.Bundles[0].Target.Should().BeNull();
+	}
+
+	[Fact]
 	public async Task Refresh_UnchangedManifest_SkipsWrite()
 	{
 		var path = AddBundle("9.3.0.yaml", "elasticsearch", "9.3.0");

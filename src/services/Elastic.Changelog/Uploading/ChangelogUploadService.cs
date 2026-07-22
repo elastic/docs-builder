@@ -233,6 +233,21 @@ public class ChangelogUploadService(
 			}
 
 			var products = ReadProductsFromBundle(filePath);
+
+			// Amends published before products were copied from the parent omit them; derive the
+			// destination from the parent bundle next to the amend so they are not silently skipped.
+			if (products.Count == 0 && BundleAmendMerger.IsAmendFile(filePath))
+			{
+				products = ReadProductsFromParentBundle(filePath);
+				if (products.Count == 0)
+				{
+					collector.EmitWarning(filePath,
+						"Amend bundle declares no products and its parent bundle is missing or has none; " +
+						"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products.");
+					continue;
+				}
+			}
+
 			if (products.Count == 0)
 			{
 				_logger.LogDebug("No products found in bundle {File}, skipping", filePath);
@@ -255,6 +270,14 @@ public class ChangelogUploadService(
 		}
 
 		return targets;
+	}
+
+	private List<string> ReadProductsFromParentBundle(string amendFilePath)
+	{
+		var parentPath = BundleAmendMerger.GetParentBundlePath(amendFilePath);
+		return parentPath != null && _fileSystem.File.Exists(parentPath)
+			? ReadProductsFromBundle(parentPath)
+			: [];
 	}
 
 	private List<string> ReadProductsFromBundle(string filePath)

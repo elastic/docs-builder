@@ -25,12 +25,19 @@ You can override this behaviour:
 
 ## Output
 
-Amend bundles contain only the changes for that amend file, not a full repetition of the original bundle.
+Amend bundles contain the parent bundle's `products` plus only the changes for that amend file, not a full repetition of the original bundle's entries.
+
+The parent's complete `products` (including `target`, `repo`, and `owner`) are copied into every amend file so the amend is self-contained: upload destination discovery, the registry's per-product `target`, and `:version:`-filtered CDN consumption all derive from a bundle file's own products.
 
 Additions:
 
 ```yaml
 # 9.3.0.amend-1.yaml
+products:
+- product: elasticsearch
+  target: 9.3.0
+  repo: elasticsearch
+  owner: elastic
 entries:
 - file:
     name: late-addition.yaml
@@ -41,6 +48,11 @@ Removals:
 
 ```yaml
 # 9.3.0.amend-2.yaml
+products:
+- product: elasticsearch
+  target: 9.3.0
+  repo: elasticsearch
+  owner: elastic
 exclude-entries:
 - file:
     name: 138723.yaml
@@ -53,7 +65,7 @@ When bundles are loaded (either via the `changelog render` command or the `{chan
 The result is rendered as a single release.
 
 :::{note}
-Amend bundles do not need to include `products` or `hide-features` fields — they inherit these from their parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
+Amend bundles created by older docs-builder versions may omit `products`; they are still accepted when loading and merge into their parent as before. `hide-features` is always inherited from the parent bundle. If an amend bundle is found without a matching parent bundle, it remains standalone.
 
 `rules.bundle` filtering does not apply to `changelog bundle-amend`. The command is a direct-injection escape hatch: the files you specify with `--add` are always included regardless of any product, type, or area filter configuration.
 :::

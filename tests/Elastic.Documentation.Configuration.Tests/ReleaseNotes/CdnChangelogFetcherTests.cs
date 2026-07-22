@@ -80,6 +80,145 @@ public class CdnChangelogFetcherTests
 	}
 
 	[Fact]
+	public async Task FetchAsync_WithVersion_DownloadsAmendCarryingParentProducts()
+	{
+		// Amend materialized by a current docs-builder: it carries the parent's complete products,
+		// so its registry entry has a target and matches the version on its own.
+		// language=yaml
+		const string amendBundle = """
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - type: bug-fix
+			    title: Amended fix
+			""";
+		var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch
+		{
+			var p when p.EndsWith("/registry.json", StringComparison.Ordinal) =>
+				Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "9.3.0.yaml", "target": "9.3.0" }, { "file": "9.3.0.amend-1.yaml", "target": "9.3.0" } ] }"""),
+			var p when p.EndsWith("/9.3.0.amend-1.yaml", StringComparison.Ordinal) => Yaml(amendBundle),
+			_ => Yaml(SampleBundle)
+		});
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: "9.3.0", emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.amend-1.yaml");
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/9.4.0.yaml", StringComparison.Ordinal));
+
+		bundles.Should().ContainSingle("the amend merges into its parent");
+		bundles[0].Version.Should().Be("9.3.0");
+		bundles[0].Entries.Select(e => e.Title)
+			.Should().BeEquivalentTo("Sample enhancement", "Amended fix");
+	}
+
+	[Fact]
+	public async Task FetchAsync_WithVersion_DownloadsLegacyAmendWhoseParentMatches()
+	{
+		// Amend published before products were copied from the parent: null registry target and a
+		// file name the version can never equal. It must still be fetched when its parent matches.
+		// language=yaml
+		const string amendBundle = """
+			entries:
+			  - type: bug-fix
+			    title: Amended fix
+			""";
+		var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch
+		{
+			var p when p.EndsWith("/registry.json", StringComparison.Ordinal) =>
+				Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0" }, { "file": "9.3.0.amend-1.yaml", "target": null } ] }"""),
+			var p when p.EndsWith("/9.3.0.amend-1.yaml", StringComparison.Ordinal) => Yaml(amendBundle),
+			_ => Yaml(SampleBundle)
+		});
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: "9.3.0", emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		handler.RequestedPaths.Should().Contain("/bundle/elasticsearch/9.3.0.amend-1.yaml");
+
+		bundles.Should().ContainSingle();
+		bundles[0].Entries.Select(e => e.Title)
+			.Should().BeEquivalentTo("Sample enhancement", "Amended fix");
+	}
+
+	[Fact]
+	public async Task FetchAsync_WithOtherVersion_DoesNotDownloadUnrelatedAmend()
+	{
+		var handler = new StubHandler(req =>
+			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "9.3.0.yaml", "target": "9.3.0" }, { "file": "9.3.0.amend-1.yaml", "target": null } ] }""")
+				: Yaml(SampleBundle));
+		var (errors, _, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		_ = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: "9.4.0", emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/9.4.0.yaml", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/9.3.0.yaml", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/9.3.0.amend-1.yaml", StringComparison.Ordinal));
+	}
+
+	[Fact]
+	public async Task FetchAsync_WithVersion_FileIdentityRetractionApplies()
+	{
+		// A resolved parent whose entries carry file identities, and a legacy amend that retracts one
+		// of them by file identity: the version-filtered fetch must return the amended result.
+		// language=yaml
+		const string parentBundle = """
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: 1-old.yaml
+			      checksum: deadbeef
+			    type: bug-fix
+			    title: Retracted fix
+			  - file:
+			      name: 2-keep.yaml
+			      checksum: c0ffee
+			    type: enhancement
+			    title: Kept enhancement
+			""";
+		// language=yaml
+		const string amendBundle = """
+			exclude-entries:
+			  - file:
+			      name: 1-old.yaml
+			      checksum: deadbeef
+			""";
+		var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch
+		{
+			var p when p.EndsWith("/registry.json", StringComparison.Ordinal) =>
+				Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.3.0.yaml", "target": "9.3.0" }, { "file": "9.3.0.amend-1.yaml", "target": null } ] }"""),
+			var p when p.EndsWith("/9.3.0.amend-1.yaml", StringComparison.Ordinal) => Yaml(amendBundle),
+			_ => Yaml(parentBundle)
+		});
+		var (errors, warnings, emitError, emitWarning) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var bundles = await fetcher.FetchAsync(BaseUri, "elasticsearch", version: "9.3.0", emitError, emitWarning, TestContext.Current.CancellationToken);
+
+		errors.Should().BeEmpty();
+		warnings.Should().BeEmpty();
+		bundles.Should().ContainSingle();
+		bundles[0].Entries.Select(e => e.Title)
+			.Should().BeEquivalentTo(["Kept enhancement"], "the amend retracts the entry by file identity");
+	}
+
+	[Fact]
 	public async Task FetchAsync_RegistryNotFound_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));

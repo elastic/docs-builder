@@ -171,8 +171,11 @@ internal sealed class RegistryBuilder(
 		{
 			var content = fileSystem.File.ReadAllText(localPath);
 			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+
+			// Amends published before products were copied from the parent omit them; record the
+			// parent bundle's target so :version:-filtered consumers still discover the amend.
 			if (bundle.Products.Count == 0)
-				return null;
+				return ReadTargetFromParentBundle(localPath, product);
 
 			var match = bundle.Products.FirstOrDefault(p => string.Equals(p.ProductId, product, StringComparison.Ordinal));
 			return (match ?? bundle.Products[0]).Target;
@@ -182,6 +185,20 @@ internal sealed class RegistryBuilder(
 			collector.EmitWarning(localPath, $"Could not read bundle target for manifest: {ex.Message}");
 			return null;
 		}
+	}
+
+	private string? ReadTargetFromParentBundle(string amendFilePath, string product)
+	{
+		var parentPath = BundleAmendMerger.GetParentBundlePath(amendFilePath);
+		if (parentPath == null || !fileSystem.File.Exists(parentPath))
+			return null;
+
+		var parent = ReleaseNotesSerialization.DeserializeBundle(fileSystem.File.ReadAllText(parentPath));
+		if (parent.Products.Count == 0)
+			return null;
+
+		var match = parent.Products.FirstOrDefault(p => string.Equals(p.ProductId, product, StringComparison.Ordinal));
+		return (match ?? parent.Products[0]).Target;
 	}
 
 	private enum WriteOutcome { Updated, Unchanged, Failed }
