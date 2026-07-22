@@ -12,11 +12,27 @@ public class Log(ILogger logger) : IDiagnosticsOutput
 {
 	public void Write(Diagnostic diagnostic)
 	{
+		var hasFile = !string.IsNullOrEmpty(diagnostic.File);
 		if (diagnostic.Severity == Severity.Error)
-			logger.LogError("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+		{
+			if (hasFile)
+				logger.LogError("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+			else
+				logger.LogError("{Message}", diagnostic.Message);
+		}
 		else if (diagnostic.Severity == Severity.Warning)
-			logger.LogWarning("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+		{
+			if (hasFile)
+				logger.LogWarning("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+			else
+				logger.LogWarning("{Message}", diagnostic.Message);
+		}
 		else
-			logger.LogInformation("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+		{
+			if (hasFile)
+				logger.LogInformation("{Message} ({File}:{Line})", diagnostic.Message, diagnostic.File, diagnostic.Line ?? 0);
+			else
+				logger.LogInformation("{Message}", diagnostic.Message);
+		}
 	}
 }
