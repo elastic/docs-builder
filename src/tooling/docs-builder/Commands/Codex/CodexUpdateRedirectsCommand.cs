@@ -4,10 +4,10 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
+using Elastic.Codex;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Deploying;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -35,22 +35,17 @@ internal sealed class CodexUpdateRedirectsCommand(
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var fs = FileSystemFactory.RealRead;
-		var configFile = fs.FileInfo.New(config.FullName);
-
-		if (!configFile.Exists)
-		{
-			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
+		var configFile = readFs.FileInfo.New(config.FullName);
+		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig))
 			return 1;
-		}
 
-		var codexConfig = CodexConfiguration.Load(configFile);
 		var resolvedEnvironment = environment
 			?? codexConfig.Environment
 			?? Environment.GetEnvironmentVariable("ENVIRONMENT")
 			?? "internal";
 
-		var service = new DeployUpdateRedirectsService(logFactory, fs);
+		var service = new DeployUpdateRedirectsService(logFactory, readFs);
 		serviceInvoker.AddCommand(service, (environment: resolvedEnvironment, redirectsFile, kvsNamePrefix: "codex", defaultRedirectsFile: ".artifacts/codex/docs/redirects.json"),
 			static async (s, col, state, c) => await s.UpdateRedirects(col, state.environment, state.redirectsFile?.FullName, state.kvsNamePrefix, state.defaultRedirectsFile, c)
 		);

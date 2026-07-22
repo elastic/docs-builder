@@ -16,7 +16,19 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 		public required bool Strict { get; init; }
 		public required Func<Cancel, Task<bool>> Command { get; init; }
 	}
-	private readonly List<InvokeState> _tasks = [];
+
+	// Start the reader eagerly so diagnostics emitted before InvokeAsync (config load,
+	// guard clauses, context construction) are drained live instead of dropped.
+	// EnsureStarted is idempotent, so InvokeAsync's StartAsync call becomes a no-op.
+	// The side-effectful StartAsync call is folded into the _tasks field initializer
+	// (via EnsureReaderStarted) so that TreatWarningsAsErrors does not flag an unread field.
+	private readonly List<InvokeState> _tasks = EnsureReaderStarted(collector);
+
+	private static List<InvokeState> EnsureReaderStarted(IDiagnosticsCollector c)
+	{
+		_ = c.StartAsync(CancellationToken.None);
+		return [];
+	}
 
 	public void AddCommand<TService, TState>(TService service, TState state, Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke)
 		where TService : IService =>
