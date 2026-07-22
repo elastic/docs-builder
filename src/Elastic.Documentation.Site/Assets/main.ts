@@ -11,7 +11,6 @@ import { initNav } from './pages-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
 import { initTabs } from './tabs'
-import { initializeOtel } from './telemetry/instrumentation'
 import { logError, logInfo } from './telemetry/logging'
 import {
     ATTR_CTA_NAME,
@@ -37,21 +36,32 @@ import { UAParser } from 'ua-parser-js'
 const DOCS_BUILDER_VERSION =
     process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
 
-// Initialize OpenTelemetry FIRST, before any other code runs (when enabled)
-// This must happen early so all subsequent code is instrumented
-if (config.telemetryEnabled) {
-    initializeOtel({
-        serviceName: config.serviceName,
-        serviceVersion: DOCS_BUILDER_VERSION,
-        baseUrl: config.rootPath,
-        debug: false,
-    })
+// Initialize OpenTelemetry before the web components when telemetry is enabled, so
+// their instrumented work runs after init. The OTel SDK is dynamically imported, so
+// pages built with telemetry disabled never fetch it.
+async function bootstrap() {
+    if (config.telemetryEnabled) {
+        const { initializeOtel } = await import('./telemetry/instrumentation')
+        initializeOtel({
+            serviceName: config.serviceName,
+            serviceVersion: DOCS_BUILDER_VERSION,
+            baseUrl: config.rootPath,
+            debug: false,
+        })
+    }
+
+    if (config.buildType === 'isolated' || config.airGapped) {
+        import('./isolated')
+    } else if (config.buildType === 'codex') {
+        import('./codex')
+    }
 }
 
-if (config.buildType === 'isolated' || config.airGapped) {
-    import('./isolated')
-} else if (config.buildType === 'codex') {
-    import('./codex')
+const bootstrapPromise = bootstrap()
+
+async function initWebComponents() {
+    await bootstrapPromise
+    await loadWebComponents()
 }
 
 const { getOS } = new UAParser()
@@ -183,7 +193,7 @@ function initCtaImpressions() {
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
-        ['loadWebComponents', loadWebComponents],
+        ['loadWebComponents', initWebComponents],
         ['initMath', initMath],
         ['initMermaid', initMermaid],
         ['initCtaImpressions', initCtaImpressions],
@@ -192,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 document.addEventListener('htmx:load', function () {
     runInitSteps([
-        ['loadWebComponents', loadWebComponents],
+        ['loadWebComponents', initWebComponents],
         ['initTocNav', initTocNav],
         ['initHighlight', initHighlight],
         ['initCopyButton', initCopyButton],
