@@ -38,6 +38,18 @@ For example, you can configure [rules](/contribute/create-changelogs.md#rules) t
 Your release workflow should not assume there will be a one-to-one mapping between what was shipped and what will be documented.
 :::
 
+## Identify where to find changelogs
+
+As noted in the [changelog creation step](/contribute/create-changelogs.md#prerequisites), you can store your changelog files in both the public CDN and your GitHub repository.
+
+By default, when you create a bundle the commands and GitHub actions pull the changelogs from the public CDN.
+
+If you're making last-minute changes and ad hoc releases with changelog files that aren't uploaded to the public CDN yet, pass the `--force-local` command option to `changelog bundle`.
+
+If you rely on CDN sourcing, wait at least an hour after your final changelog updates before you create the bundle.
+
+For more details, refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing).
+
 ## Create profiles
 
 The [changelog bundle](/cli/changelog/bundle.md) command has two modes of operation.

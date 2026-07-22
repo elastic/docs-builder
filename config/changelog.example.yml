@@ -234,11 +234,15 @@ bundle:
   # Used by the {changelog} directive to generate correct PR/issue links when the product ID
   # differs from the GitHub repository name. Can be overridden per profile.
   # repo: elasticsearch
-  # Optional: default GitHub owner applied to all profiles that do not specify their own.
+  # Optional: default GitHub owner applied to all profiles that do not specify their own. Can be overridden per profile.
   # owner: elastic
   # Optional: branch whose CDN changelog pool (changelog/{org}/{repo}/{branch}/...) is sourced from when
   # bundling entries from the CDN. Defaults to "main" when unset. Can be overridden per profile.
   # branch: main
+  # Optional: source changelog entries from the local directory instead of the public CDN.
+  # Default (false)
+  # Set to true only when you need local-only bundling (or use --force-local)
+  # use_local_changelogs: true
   # Optional: control auto-population of release-date for all profiles by default.
   # When true (default), auto-populate release dates. Profiles can override this setting.
   # release_dates: true

@@ -182,9 +182,11 @@ entries from the local folder or fetch the **authoring pool's** published entrie
 `CdnChangelogEntryFetcher`).
 
 Under the artifact-root layout, entries are org/repo/branch-scoped — not product-scoped — so CDN
-entry sourcing keys off the resolvable authoring pool (repo with the same precedence as upload:
-`--repo` > `bundle.repo` > git remote; owner from `--owner` > `bundle.owner`, default `elastic`;
-branch from `--branch` > `bundle.branch`, default `main`), **not** off the bundle's target products.
+entry sourcing keys off the resolvable authoring pool (`--repo` > profile `repo` >
+`bundle.repo`; owner from `--owner` > profile `owner` > `bundle.owner`, default `elastic`;
+branch from `--branch` > profile `branch` > `bundle.branch`, default `main`). Git remote and
+checkout branch are **not** used for bundle entry sourcing (unlike `changelog upload`). The pool
+is keyed by authoring org/repo/branch, **not** by the bundle's target products.
 This is what lets one repo (for example `kibana`) produce a bundle for a shared product (for example
 `cloud-serverless`) while sourcing its own entries from `changelog/elastic/kibana/main/`, without that
 product appearing in the repo's own `docset.yml`. The decision is made per run by
@@ -294,10 +296,13 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
 - **`serve` mode staleness.** The prefetch runs per reload, but within a single `serve` process a
   product's CDN content is pinned until the next reload. Acceptable for now (serve targets local
   markdown authoring, not changelog bundles); revisit alongside the disk cache.
-- **CDN staleness.** The distribution caches the manifest with a 1h default TTL (60s min), so a
-  freshly uploaded bundle may not appear in the CDN-served `registry.json` for up to an
-  hour. If faster propagation is needed the producer (or a docs-actions step) would issue a
-  CloudFront invalidation on registry write.
+- **CDN staleness.** The distribution caches objects with a 1h default TTL (60s min). That applies
+  to `registry.json` manifests **and** to individual entry YAML under
+  `changelog/{org}/{repo}/{branch}/` that `changelog bundle` fetches when sourcing from the CDN.
+  After upload and scrub, the private bucket can hold newer entry content than the CDN serves for
+  up to an hour. Operators who bundle immediately after last-minute entry edits can see stale data until the cache expires. If faster propagation is
+  needed the producer (or a docs-actions step) would issue a CloudFront invalidation on write.
+  User-facing guidance: [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing).
 - **Caching key.** When the disk cache lands, use the CDN response ETag (not the registry
   `etag` field) for revalidation.
 

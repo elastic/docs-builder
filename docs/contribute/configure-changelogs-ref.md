@@ -46,15 +46,15 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 
 | Setting                   | Description |
 | ------------------------- | ----------- |
-| `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
+| `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. Requires `bundle.resolve: true` |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, and to scope uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
+| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, to scope uploaded changelog file locations (`changelog/{org}/{repo}/{branch}/...`), and for CDN entry sourcing when bundling. Only needed when the product ID doesn't match the GitHub repository name. Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing). |
 | `bundle.resolve`          | When `true`, changelog contents are copied into bundle (default: `true`). |
-| `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
+| `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](/cli/changelog/bundle.md#changelog-bundle-entry-sourcing). |
 
 :::
 
@@ -64,21 +64,6 @@ When `bundle.link_allow_repos` is omitted, no link filtering occurs.
 - For private repos, set it to `[]` or add related public repos to the list.
 - For public repos, add your `owner/repo` to the list at a minimum.
 :::
-
-### Entry sourcing [bundle-entry-sourcing]
-
-`changelog bundle` reads the individual changelog entries it aggregates either from the local folder or from the public CDN. Entries are stored on the CDN per **authoring org/repo/branch** (`changelog/{org}/{repo}/{branch}/...`), not per product, so CDN sourcing keys off the resolvable authoring org/repo/branch rather than the bundle's target products.
-
-The authoring repo is resolved with the same precedence as `changelog upload`: `--repo` > `bundle.repo` in `changelog.yml` > the git remote origin. The owner is resolved from `--owner` > `bundle.owner` (default `elastic`), and the branch from `--branch` > `bundle.branch` (default `main`).
-
-Sourcing is decided per run:
-
-- **Local folder.** Used when `bundle.use_local_changelogs: true`, when `--force-local` is passed, when `--files` / a path-list filter is used, when `--directory` is passed, or when the authoring repo cannot be resolved. The folder must contain the changelog files.
-- **CDN (default when a repo resolves).** Used when the authoring repo resolves, local sourcing is not forced, and a CDN base URL is configured (`DOCS_BUILDER_CHANGELOG_CDN`, defaulting to the public distribution). The command fetches `changelog/{org}/{repo}/{branch}/registry.json` and the entries it lists, then applies the bundle's own product/PR/issue filters to the downloaded set.
-
-Use `--force-local` for uncommon ad hoc runs that need the local folder without editing `changelog.yml`. Path-list / `--files` filters always force local sourcing because they select files by path on disk.
-
-Because entries are org/repo/branch-scoped, one repository can produce a bundle for a shared product (for example, `cloud-serverless`) while sourcing its own entries from `changelog/{org}/{repo}/{branch}/`, without that product appearing in the repository's `docset.yml`. The `{changelog}` directive's `:cdn:` mode still consumes product-scoped *bundles*, so a repository that also renders its own release notes declares each product under `release_notes` as before.
 
 ### Bundle descriptions [bundle-descriptions]
 
@@ -116,6 +101,9 @@ Named profiles enable you to run commands repeatedly with consistent options.
 They work with both `changelog bundle` and `changelog remove` commands.
 
 These settings are located in the `bundle.profiles.<name>` section of the configuration file:
+
+`branch`:
+:   Overrides the global [bundle.branch](#bundle-basic).
 
 `description`
 :   Overrides the global [bundle.description](#bundle-descriptions).
