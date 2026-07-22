@@ -11,7 +11,6 @@ using Elastic.Codex.Indexing;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.Services;
@@ -47,20 +46,8 @@ internal sealed class CodexIndexCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = FileSystemFactory.RealRead;
 		var configFile = fs.FileInfo.New(config.FullName);
-
-		if (!configFile.Exists)
-		{
-			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
+		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
-		}
-
-		var codexConfig = CodexConfiguration.Load(configFile);
-
-		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
-		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
-			return 1;
-		}
 
 		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
 
