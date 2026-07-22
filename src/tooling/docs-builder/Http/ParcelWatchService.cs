@@ -16,7 +16,7 @@ public class ParcelWatchService : IHostedService
 	{
 		_process = Process.Start(new ProcessStartInfo
 		{
-			FileName = "npm",
+			FileName = "pnpm",
 			Arguments = "run watch",
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
@@ -26,8 +26,8 @@ public class ParcelWatchService : IHostedService
 		})!;
 
 		_process.EnableRaisingEvents = true;
-		_process.OutputDataReceived += (_, e) => Console.WriteLine($"[npm run watch]: {e.Data}");
-		_process.ErrorDataReceived += (_, e) => Console.WriteLine($"[npm run watch]: {e.Data}");
+		_process.OutputDataReceived += (_, e) => Console.WriteLine($"[pnpm run watch]: {e.Data}");
+		_process.ErrorDataReceived += (_, e) => Console.WriteLine($"[pnpm run watch]: {e.Data}");
 
 		_process.BeginOutputReadLine();
 		_process.BeginErrorReadLine();

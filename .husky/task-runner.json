@@ -23,8 +23,8 @@
       "group": "pre-commit",
       "pathMode": "absolute",
       "cwd": "src/Elastic.Documentation.Site",
-      "command": "npx",
-      "args": ["prettier", "--write", "${staged}"],
+      "command": "pnpm",
+      "args": ["exec", "prettier", "--write", "${staged}"],
       "include": [
         "src/Elastic.Documentation.Site/**/*.ts",
         "src/Elastic.Documentation.Site/**/*.tsx",
@@ -38,8 +38,8 @@
       "name": "typescript-check",
       "group": "pre-commit",
       "cwd": "src/Elastic.Documentation.Site",
-      "command": "npx",
-      "args": ["tsc", "--noEmit"],
+      "command": "pnpm",
+      "args": ["exec", "tsc", "--noEmit"],
       "include": [
         "src/Elastic.Documentation.Site/**/*.ts",
         "src/Elastic.Documentation.Site/**/*.tsx"
@@ -51,8 +51,8 @@
       "group": "pre-commit",
       "pathMode": "absolute",
       "cwd": "src/Elastic.Documentation.Site",
-      "command": "npx",
-      "args": ["eslint", "--fix", "${staged}"],
+      "command": "pnpm",
+      "args": ["exec", "eslint", "--fix", "${staged}"],
       "include": [
         "src/Elastic.Documentation.Site/**/*.ts",
         "src/Elastic.Documentation.Site/**/*.tsx",

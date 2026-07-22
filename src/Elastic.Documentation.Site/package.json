@@ -6,7 +6,7 @@
   "source": "Assets/index.js",
   "scripts": {
     "watch": "parcel watch",
-    "build": "parcel build && npm run copy:mermaid",
+    "build": "parcel build && pnpm copy:mermaid",
     "copy:mermaid": "cp node_modules/@theletterf/beautiful-mermaid/dist/beautiful-mermaid.browser.global.js _static/mermaid.min.js",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -15,19 +15,19 @@
     "compile:check": "tsc --noEmit",
     "fmt:check": "prettier --check .",
     "fmt:write": "prettier --write .",
-    "synthetics:test": "npx @elastic/synthetics ./synthetics/journeys --config=./synthetics/synthetics.config.ts",
-    "synthetics:test:prod": "DOCS_ENV=prod npm run synthetics:test",
-    "synthetics:test:staging": "DOCS_ENV=staging npm run synthetics:test",
-    "synthetics:test:edge": "DOCS_ENV=edge npm run synthetics:test",
-    "synthetics:test:local": "DOCS_ENV=local npm run synthetics:test",
-    "synthetics:test:mcp": "npx @elastic/synthetics ./synthetics/journeys/mcp-server.journey.ts --config=./synthetics/synthetics.config.ts",
-    "synthetics:test:mcp:prod": "DOCS_ENV=prod npm run synthetics:test:mcp",
-    "synthetics:test:mcp:staging": "DOCS_ENV=staging npm run synthetics:test:mcp",
-    "synthetics:test:mcp:edge": "DOCS_ENV=edge npm run synthetics:test:mcp",
-    "synthetics:push": "npx @elastic/synthetics push --config=./synthetics/synthetics.config.ts",
-    "synthetics:push:prod": "DOCS_ENV=prod npm run synthetics:push -- --tags=\"env:prod\"",
-    "synthetics:push:staging": "DOCS_ENV=staging npm run synthetics:push -- --tags=\"env:staging\"",
-    "synthetics:push:edge": "DOCS_ENV=edge npm run synthetics:push -- --tags=\"env:edge\""
+    "synthetics:test": "pnpm exec @elastic/synthetics ./synthetics/journeys --config=./synthetics/synthetics.config.ts",
+    "synthetics:test:prod": "DOCS_ENV=prod pnpm synthetics:test",
+    "synthetics:test:staging": "DOCS_ENV=staging pnpm synthetics:test",
+    "synthetics:test:edge": "DOCS_ENV=edge pnpm synthetics:test",
+    "synthetics:test:local": "DOCS_ENV=local pnpm synthetics:test",
+    "synthetics:test:mcp": "pnpm exec @elastic/synthetics ./synthetics/journeys/mcp-server.journey.ts --config=./synthetics/synthetics.config.ts",
+    "synthetics:test:mcp:prod": "DOCS_ENV=prod pnpm synthetics:test:mcp",
+    "synthetics:test:mcp:staging": "DOCS_ENV=staging pnpm synthetics:test:mcp",
+    "synthetics:test:mcp:edge": "DOCS_ENV=edge pnpm synthetics:test:mcp",
+    "synthetics:push": "pnpm exec @elastic/synthetics push --config=./synthetics/synthetics.config.ts",
+    "synthetics:push:prod": "DOCS_ENV=prod pnpm synthetics:push -- --tags=\"env:prod\"",
+    "synthetics:push:staging": "DOCS_ENV=staging pnpm synthetics:push -- --tags=\"env:staging\"",
+    "synthetics:push:edge": "DOCS_ENV=edge pnpm synthetics:push -- --tags=\"env:edge\""
   },
   "targets": {
     "js": {
@@ -59,6 +59,7 @@
     "url": "https://github.com/elastic/docs-builder.git"
   },
   "private": true,
+  "packageManager": "pnpm@11.15.1",
   "devDependencies": {
     "@babel/core": "7.29.6",
     "@babel/preset-env": "7.29.0",

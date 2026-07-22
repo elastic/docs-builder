@@ -26,7 +26,7 @@ Use this decision table based on which directories have changed files:
 
 | Changed path | Test command |
 |---|---|
-| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |
+| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && pnpm run test` |
 | `src/Elastic.Markdown/` | `dotnet test tests/Elastic.Markdown.Tests/` |
 | `src/Elastic.Documentation.Configuration/` | `dotnet test tests/Elastic.Documentation.Configuration.Tests/` |
 | `src/Elastic.Documentation.Navigation/` or `Navigation.Tests/` | `dotnet test tests/Navigation.Tests/` |
@@ -47,4 +47,4 @@ If files span more than two source areas, prefer `./build.sh unit-test` to run a
 
 - Integration tests (`./build.sh integrate`) require cloned repos and take significantly longer — only run when integration test files changed or the user explicitly asks
 - When in doubt, `./build.sh unit-test` is the safe default (completes in under a minute)
-- TypeScript type checking (not tests) is `npm run compile:check` from `src/Elastic.Documentation.Site/`
+- TypeScript type checking (not tests) is `pnpm run compile:check` from `src/Elastic.Documentation.Site/`

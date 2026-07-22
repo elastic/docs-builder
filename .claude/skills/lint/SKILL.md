@@ -1,6 +1,6 @@
 ---
 name: lint
-description: Auto-fix all formatting issues in the docs-builder repo — runs dotnet format for C# and npm fmt:write for TypeScript/JS. Use when the user asks to fix formatting, lint the code, or when a pre-commit hook fails due to formatting.
+description: Auto-fix all formatting issues in the docs-builder repo — runs dotnet format for C# and pnpm fmt:write for TypeScript/JS. Use when the user asks to fix formatting, lint the code, or when a pre-commit hook fails due to formatting.
 ---
 
 # Lint Skill
@@ -20,7 +20,7 @@ This applies the project's editorconfig and code style rules to all C# files.
 ### 2. Fix TypeScript/JS formatting
 
 ```bash
-cd src/Elastic.Documentation.Site && npm run fmt:write
+cd src/Elastic.Documentation.Site && pnpm run fmt:write
 ```
 
 This runs Prettier on all frontend source files.

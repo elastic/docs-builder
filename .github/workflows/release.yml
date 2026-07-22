@@ -64,9 +64,9 @@ jobs:
         id: bootstrap
         uses: ./.github/actions/bootstrap
 
-      - name: Restore npm dependencies
+      - name: Restore pnpm dependencies
         working-directory: src/Elastic.Documentation.Site
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Check shai-hulud supply-chain hashes
         uses: ./.github/actions/check-shai-hulud

@@ -44,13 +44,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplementa
 
 ```bash
 cd src/Elastic.Documentation.Site
-npm ci
-npm run build           # production build
-npm run watch           # dev with live reload
-npm run test            # Jest
-npm run lint            # ESLint
-npm run fmt:write       # Prettier auto-fix
-npm run compile:check   # TypeScript type check only
+pnpm install --frozen-lockfile
+pnpm run build           # production build
+pnpm run watch           # dev with live reload
+pnpm run test            # Jest
+pnpm run lint            # ESLint
+pnpm run fmt:write       # Prettier auto-fix
+pnpm run compile:check   # TypeScript type check only
 ```
 
 ## Testing
@@ -72,7 +72,7 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `src/Elastic.Documentation.Indexing/` | `dotnet test tests/Elastic.Documentation.Indexing.Tests/` |
 | `src/tooling/essc/` | `dotnet test tests/Elastic.SiteSearch.Tests/` (essc's root namespace is `Elastic.SiteSearch.Cli`) |
 | `src/Elastic.ApiExplorer/` | `dotnet test tests/Elastic.ApiExplorer.Tests/` |
-| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |
+| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && pnpm run test` |
 | `tests-integration/` | `./build.sh integrate` |
 | Multiple / uncertain | `./build.sh unit-test` |
 
