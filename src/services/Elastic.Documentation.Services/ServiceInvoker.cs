@@ -93,9 +93,13 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 	}
 
 	/// <inheritdoc />
-	public async ValueTask DisposeAsync()
+	public ValueTask DisposeAsync()
 	{
-		await collector.DisposeAsync();
+		// The collector is a shared singleton owned by the host; a per-command invoker must not
+		// finalize it. Finalization happens once, at the CatchExceptionMiddleware boundary (via a
+		// finally block), so an escaping exception's diagnostic is emitted BEFORE the summary is
+		// drained and printed — not after.
 		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
 	}
 }

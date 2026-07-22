@@ -8,6 +8,7 @@ using Cysharp.IO;
 using Elastic.Documentation.Diagnostics;
 using Errata;
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using Diagnostic = Elastic.Documentation.Diagnostics.Diagnostic;
 
 namespace Documentation.Builder.Diagnostics.Console;
@@ -98,9 +99,20 @@ public class ErrataFileSourceRepository : ISourceRepository
 
 	public void WriteDiagnosticsToConsole(IReadOnlyCollection<Diagnostic> errors, IReadOnlyCollection<Diagnostic> warnings, List<Diagnostic> hints)
 	{
+		// Fileless/global diagnostics (File == "") have no source location and no Errata label.
+		// Errata's Report.Render collapses embedded newlines in the message headline, making
+		// multi-line exception messages and stack traces unreadable. Route them to a dedicated
+		// Panel renderer that preserves line breaks; only file-anchored diagnostics go to Errata.
+		var globalDiagnostics = errors.Where(d => string.IsNullOrEmpty(d.File))
+			.Concat(warnings.Where(d => string.IsNullOrEmpty(d.File)))
+			.ToArray();
+
+		var fileErrors = errors.Where(d => !string.IsNullOrEmpty(d.File)).ToArray();
+		var fileWarnings = warnings.Where(d => !string.IsNullOrEmpty(d.File)).ToArray();
+
 		var report = new Report(this);
-		var limited = errors
-			.Concat(warnings)
+		var limited = fileErrors
+			.Concat(fileWarnings)
 			.OrderBy(d => d.Severity switch { Severity.Error => 0, Severity.Warning => 1, Severity.Hint => 2, _ => 3 })
 			.Take(100)
 			.ToArray();
@@ -145,17 +157,55 @@ public class ErrataFileSourceRepository : ISourceRepository
 			_ = report.AddDiagnostic(d);
 		}
 
-		var totalErrorCount = errors.Count + warnings.Count;
+		var totalFileCount = fileErrors.Length + fileWarnings.Length;
 
 		AnsiConsole.WriteLine();
-		if (totalErrorCount <= 0)
+
+		if (globalDiagnostics.Length > 0)
+			DisplayGlobalDiagnostics(globalDiagnostics);
+
+		if (totalFileCount <= 0)
 		{
 			if (hints.Count > 0)
 				DisplayHintsOnly(report, hints);
 			return;
 		}
 
-		DisplayErrorAndWarningSummary(report, totalErrorCount, limited);
+		DisplayErrorAndWarningSummary(report, totalFileCount, limited);
+	}
+
+	private static void DisplayGlobalDiagnostics(Diagnostic[] diagnostics)
+	{
+		var rows = new List<IRenderable>();
+		var first = true;
+		foreach (var d in diagnostics)
+		{
+			if (!first)
+				rows.Add(new Rule { Style = Style.Parse("grey") });
+			first = false;
+
+			// Normalize line endings so \r\n (Windows) and \n both split cleanly.
+			var lines = d.Message.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+			var headline = lines.Length > 0 ? lines[0] : d.Message;
+			rows.Add(new Markup($"[bold red]{headline.EscapeMarkup()}[/]"));
+
+			if (lines.Length > 1)
+			{
+				// Join remaining lines preserving structure; Markup renders \n as a real newline.
+				var trace = string.Join("\n", lines[1..]);
+				rows.Add(new Markup(trace.EscapeMarkup()));
+			}
+		}
+
+		var panel = new Panel(new Rows(rows))
+		{
+			Header = new PanelHeader("Unhandled exception"),
+			Border = BoxBorder.Rounded,
+			BorderStyle = Style.Parse("red"),
+			Padding = new Padding(2, 1)
+		};
+		AnsiConsole.Write(panel);
+		AnsiConsole.WriteLine();
 	}
 
 	private static void DisplayHintsOnly(Report report, List<Diagnostic> hints)

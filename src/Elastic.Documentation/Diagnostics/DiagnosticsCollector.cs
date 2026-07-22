@@ -123,6 +123,9 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 
 	public virtual void Write(Diagnostic diagnostic)
 	{
+		// IncrementSeverityCount MUST run unconditionally and before Channel.Write.
+		// The severity count is authoritative (drives exit-code decisions and programmatic
+		// inspection) even when the body is dropped by TryWrite on a completed channel.
 		IncrementSeverityCount(diagnostic);
 		Channel.Write(diagnostic);
 	}
