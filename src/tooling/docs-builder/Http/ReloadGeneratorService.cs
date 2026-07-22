@@ -37,6 +37,7 @@ public sealed class ReloadGeneratorService(
 
 	private FileSystemWatcher? _watcher;
 	private CancellationTokenSource? _serviceCts;
+	private Task? _initialBuildTask;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
 	private InMemoryBuildState InMemoryBuildState { get; } = inMemoryBuildState;
 	private ILogger Logger { get; } = logger;
@@ -47,13 +48,12 @@ public sealed class ReloadGeneratorService(
 	{
 		_serviceCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-		// Run live reload and in-memory validation build in parallel
+		// Await the live-reload generator so the server can serve pages immediately.
+		// The full validation build runs in the background — the HUD populates when it finishes.
 		var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName
 			?? ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
-		await Task.WhenAll(
-			ReloadableGenerator.ReloadAsync(cancellationToken),
-			InMemoryBuildState.StartBuildAsync(sourcePath, cancellationToken)
-		);
+		await ReloadableGenerator.ReloadAsync(cancellationToken);
+		_initialBuildTask = InMemoryBuildState.StartBuildAsync(sourcePath, _serviceCts.Token);
 
 		// ReSharper disable once RedundantAssignment
 		var directory = ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
@@ -122,6 +122,24 @@ public sealed class ReloadGeneratorService(
 			_serviceCts.Dispose();
 			_serviceCts = null;
 		}
+
+		// Wait briefly for the initial/background build to acknowledge cancellation.
+		if (_initialBuildTask is not null)
+		{
+			try
+			{
+				await _initialBuildTask.WaitAsync(TimeSpan.FromSeconds(2), CancellationToken.None);
+			}
+			catch (TimeoutException)
+			{
+				Logger.LogDebug("Background validation build did not stop within timeout during shutdown");
+			}
+			catch (OperationCanceledException)
+			{
+				// Expected
+			}
+		}
+
 		_watcher?.Dispose();
 	}
 

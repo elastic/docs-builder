@@ -62,6 +62,7 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 	private readonly Lock _clientsLock = new();
 	private readonly List<Channel<BuildEvent>> _clientChannels = [];
 
+	private readonly Lock _buildStateLock = new();
 	private CancellationTokenSource? _currentBuildCts;
 	private Task? _currentBuildTask;
 
@@ -114,37 +115,50 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 
 	public async Task StartBuildAsync(string sourcePath, Cancel externalCt)
 	{
-		// Cancel any existing build
-		if (_currentBuildCts != null)
+		CancellationTokenSource? previousCts;
+		Task? previousTask;
+		CancellationTokenSource newCts;
+
+		lock (_buildStateLock)
+		{
+			previousCts = _currentBuildCts;
+			previousTask = _currentBuildTask;
+			newCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
+			_currentBuildCts = newCts;
+			_currentBuildTask = null; // set after ExecuteBuildAsync is created below
+		}
+
+		// Cancel the prior build outside the lock (CancelAsync is safe to call without holding the lock)
+		if (previousCts != null)
 		{
 			_logger.LogDebug("Cancelling previous in-memory build");
-			await _currentBuildCts.CancelAsync();
+			await previousCts.CancelAsync();
+			previousCts.Dispose();
+		}
 
-			// Wait for the previous build to complete (with timeout)
-			if (_currentBuildTask != null)
+		// Wait for the previous build body to finish — use externalCt so Ctrl+C interrupts the wait
+		if (previousTask != null)
+		{
+			try
 			{
-				try
-				{
-					await _currentBuildTask.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None);
-				}
-				catch (TimeoutException)
-				{
-					_logger.LogWarning("Previous build did not complete within timeout");
-				}
-				catch (OperationCanceledException)
-				{
-					// Expected
-				}
+				await previousTask.WaitAsync(TimeSpan.FromSeconds(5), externalCt);
+			}
+			catch (TimeoutException)
+			{
+				_logger.LogWarning("Previous build did not complete within timeout");
+			}
+			catch (OperationCanceledException)
+			{
+				// Expected on both build-cancel and Ctrl+C
 			}
 		}
 
-		// Create a new CTS linked to the external token
-		_currentBuildCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
-		var buildCt = _currentBuildCts.Token;
+		// Start the new build and record the task
+		var buildTask = ExecuteBuildAsync(sourcePath, newCts.Token);
+		lock (_buildStateLock)
+			_currentBuildTask = buildTask;
 
-		// Start the new build
-		_currentBuildTask = ExecuteBuildAsync(sourcePath, buildCt);
-		await _currentBuildTask;
+		await buildTask;
 	}
 
 	private async Task ExecuteBuildAsync(string sourcePath, Cancel ct)
@@ -191,7 +205,9 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 					Strict = false,
 					AllowIndexing = false,
 					MetadataOnly = false,
-					Exporters = ExportOptions.Default,
+					// Validation-only: parse + emit diagnostics without LLM export, config copy,
+					// link-index, or redirect generation — none make sense for an in-memory build.
+					Exporters = ExportOptions.Validation,
 					SkipApi = true,
 					SkipCrossLinks = false
 				},
@@ -302,6 +318,21 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 		lock (_diagnosticsLock)
 		{
 			return [.. _diagnostics];
+		}
+	}
+
+	/// <summary>
+	/// Completes all subscribed SSE client channels so their <c>ReadAllAsync</c> loops exit
+	/// promptly. Call from <c>IHostApplicationLifetime.ApplicationStopping</c> to unblock
+	/// in-flight SSE requests before the graceful-shutdown timeout fires.
+	/// </summary>
+	public void CompleteAllClients()
+	{
+		lock (_clientsLock)
+		{
+			foreach (var channel in _clientChannels)
+				_ = channel.Writer.TryComplete();
+			_clientChannels.Clear();
 		}
 	}
 

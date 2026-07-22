@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Westwind.AspNetCore.LiveReload;
 
 namespace Documentation.Builder.Http;
@@ -87,6 +88,9 @@ public class DocumentationWebHost
 				s.FolderToMonitor = Context.DocumentationSourceDirectory.FullName;
 				s.ClientFileExtensions = ".md,.yml";
 			})
+			// Keep graceful-shutdown window short: SSE clients are signalled via ApplicationStopping
+			// (see RunAsync below) so there's no need to wait the default 30 s for them to drain.
+			.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(3))
 			.AddSingleton<ReloadableGeneratorState>(_ => GeneratorState)
 			.AddSingleton(_ => InMemoryBuildState)
 			.AddHostedService<ReloadGeneratorService>(sp => new ReloadGeneratorService(GeneratorState, InMemoryBuildState, logFactory.CreateLogger<ReloadGeneratorService>()));
@@ -108,6 +112,11 @@ public class DocumentationWebHost
 
 	public async Task RunAsync(Cancel ctx)
 	{
+		// Complete all SSE client channels as soon as the host starts shutting down so that
+		// the long-lived /_api/diagnostics/stream requests exit before the graceful-shutdown
+		// timeout fires (which would otherwise stall Ctrl+C for up to 30 s).
+		_ = _webApplication.Lifetime.ApplicationStopping.Register(() => InMemoryBuildState.CompleteAllClients());
+
 		_ = _hostedService.StartAsync(ctx);
 		await _webApplication.RunAsync(ctx);
 	}
