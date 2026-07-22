@@ -13,6 +13,7 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// with the profile's DocsDescription at composition time.
 /// </summary>
 /// <param name="Name">Profile identifier (e.g. "public", "internal").</param>
+/// <param name="ServiceName">OTEL service.name reported by this profile's deployment (e.g. "docs-mcp", "codex-mcp").</param>
 /// <param name="ResourceNoun">Resource noun for tool names (e.g. "docs", "internal_docs"). Replaces {resource} in tool name templates.</param>
 /// <param name="ScopePrefix">Scope prefix for tool names (e.g. "" for public, "internal_" for internal). Replaces {scope} in tool name templates.</param>
 /// <param name="DocsDescription">Short noun phrase describing this profile's docs (e.g. "Elastic product documentation"). Used to replace {docs} in trigger templates.</param>
@@ -21,6 +22,7 @@ namespace Elastic.Documentation.Mcp.Remote;
 /// <param name="Modules">Enabled feature modules.</param>
 public sealed record McpServerProfile(
 	string Name,
+	string ServiceName,
 	string ResourceNoun,
 	string ScopePrefix,
 	string DocsDescription,
@@ -30,6 +32,7 @@ public sealed record McpServerProfile(
 {
 	public static McpServerProfile Public { get; } = new(
 		"public",
+		"docs-mcp",
 		"docs",
 		"",
 		"Elastic documentation",
@@ -40,6 +43,7 @@ public sealed record McpServerProfile(
 
 	public static McpServerProfile Internal { get; } = new(
 		"internal",
+		"codex-mcp",
 		"internal_docs",
 		"internal_",
 		"Elastic internal documentation",

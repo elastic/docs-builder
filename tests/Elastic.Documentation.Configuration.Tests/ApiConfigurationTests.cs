@@ -375,7 +375,7 @@ public class ConfigurationFileApiTests
 	[Fact]
 	public void ConfigurationFile_ProcessesNewApiSequenceConfiguration()
 	{
-		// Arrange  
+		// Arrange
 		var docSetFile = new DocumentationSetFile
 		{
 			Api = new Dictionary<string, ApiProductSequence>
@@ -458,6 +458,7 @@ public class ConfigurationFileApiTests
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;
 		public IDirectoryInfo DocumentationSourceDirectory => documentationSourceDirectory;
-		public GitCheckoutInformation Git => GitCheckoutInformation.Create(documentationSourceDirectory, fileSystem);
+		public GitCheckoutInformation Git => GitCheckoutInformationFactory.Create(documentationSourceDirectory, fileSystem);
+		public IEnvironmentVariables Environment => SystemEnvironmentVariables.Instance;
 	}
 }

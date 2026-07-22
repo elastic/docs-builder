@@ -52,6 +52,8 @@ If you already have automated release notes for GitHub releases, you can use the
 
 ## Create changelogs from GitHub actions [github-actions]
 
+For details about this method, refer to the [README](https://github.com/elastic/docs-actions/blob/main/changelog/README.md).
+
 When automated via the [changelog GitHub Actions](https://github.com/elastic/docs-actions/tree/main/changelog), changelog creation is a two-step process:
 
 1. `changelog evaluate-pr` inspects the PR (title, labels, body) and produces outputs such as `title`, `type`, `description`, and `products`.
@@ -60,7 +62,7 @@ When automated via the [changelog GitHub Actions](https://github.com/elastic/doc
 The `description` output from step 1 contains the release note extracted from the PR body (when `extract.release_notes` is enabled).
 If extraction is disabled (either by setting `extract.release_notes: false` in `changelog.yml` or by passing `--no-extract-release-notes` to `changelog add`), the `CHANGELOG_DESCRIPTION` environment variable is ignored and the extracted description is not written to the changelog.
 
-Refer to [CI auto-detection](/cli/changelog/add.md#ci-auto-detection) for the full list of environment variables and precedence rules.
+Refer to [CI auto-detection](/cli/changelog/add.md) for the full list of environment variables and precedence rules.
 
 ## Review the content [review]
 
@@ -68,7 +70,7 @@ Refer to [CI auto-detection](/cli/changelog/add.md#ci-auto-detection) for the fu
 
    You can specify the file location with command options (`--output`) or configuration options (`bundle.directory`).
    Likewise you can control the file names with command options (`--use-issue-number` or `--use-pr-number`) or the `filename` configuration option.
-   Refer to the [Filenames](/cli/changelog/add.md#filenames).
+   Refer to the [Filenames](/cli/changelog/add.md).
 
 1. Verify that the files contain content that is accurate and user-friendly.
    This review is especially important when you're pulling content from GitHub, since there might be some missing or extraneous information.
@@ -93,10 +95,10 @@ You can further limit the possible values with the [products](/contribute/config
 
 ## Examples
 
-### Control changelog creation [example-block-label]
+### Control changelog creation [rules]
 
-You can prevent changelog creation for PRs based on their labels.
-For example, your configuration file can contain a `rules.create` section like this:
+If you want to automatically block the creation of changelogs for pull requests or issues based on their labels, you can accomplish this with rules in your changelog configuration file.
+For example, your `changelog.yml` file can contain a `rules.create` section like this:
 
 ```yaml
 rules:
@@ -110,7 +112,11 @@ rules:
         exclude: ">non-issue, >test"
 ```
 
-Those settings affect commands with the `--prs` or `--issues` options, for example:
+You can define rules at the global level (applies to all products) or for specific products (`cloud-serverless` in this example).
+Product-specific rules override the global rules entirely—they do not merge.
+
+When you run the `docs-builder changelog add` command with the `--prs` or `--issues` options and the pull request or issue has one of the identified labels, the command does not create a changelog.
+For example:
 
 ```sh
 docs-builder changelog add --prs "1234, 5678" \
@@ -120,8 +126,7 @@ docs-builder changelog add --prs "1234, 5678" \
 If PR 1234 has the `>non-issue` or `>test` labels, it will be skipped and no changelog will be created.
 If PR 5678 does not have any blocking labels, a changelog is created.
 
-Alternatively, you can define `rules.create.include` labels.
-For example, to only create changelogs for PRs with specific labels:
+Alternatively, you can define `rules.create.include` to only create changelogs for PRs with specific labels:
 
 ```yaml
 rules:
@@ -169,4 +174,31 @@ The option precedence is: CLI option > `changelog.yml` bundle section > built-in
 :::
 
 You can use the `docs-builder changelog gh-release` command as a one-shot alternative to `changelog add` and `changelog bundle` commands.
-The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md)
+The command parses the release notes, creates one changelog file per pull request found, and creates a `changelog-bundle.yaml` file — all in a single step. Refer to [](/cli/changelog/gh-release.md).
+
+### Release highlights
+
+Some teams have historically had a dedicated page for release highlights.
+To accommodate this behavior, changelogs have an optional `highlight` boolean field.
+Highlights are most commonly used for major or minor version releases to draw attention to the most important changes.
+Any type of changelog (such as features, enhancements, or bug fixes) can be a highlight, though they're typically associated with `type: feature`.
+
+Example changelog for a release highlight:
+
+```yaml
+type: feature
+products:
+- product: elasticsearch
+  target: 9.4.0
+  lifecycle: ga
+title: ES|QL Views support
+description: 'ES|QL now supports Views: virtual indices whose fields are produced by an ES|QL query. A view is referenced inside a FROM clause exactly like a regular index....'
+highlight: true
+```
+
+When you set `highlight: true` in a changelog, it appears in both the highlights page (for example, `highlights.md` in markdown output) and its normal type section (for example, `index.md`).
+
+## Next steps
+
+After you've created a changelog files, you can gather them into [release bundles](/contribute/bundle-changelogs.md).
+The release bundles are ultimately used to generate [release docs](/contribute/publish-changelogs.md).

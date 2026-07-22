@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.Json;
 using Actions.Core.Services;
-using Elastic.Changelog.Configuration;
+using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -21,6 +23,11 @@ public class ChangelogPrepareArtifactService(
 	IFileSystem? fileSystem = null
 ) : IService
 {
+	/// <summary>
+	/// UTF-8 encoding without BOM for writing YAML files.
+	/// </summary>
+	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrepareArtifactService>();
 	private readonly IFileSystem _fileSystem = fileSystem ?? new FileSystem();
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem ?? new FileSystem());
@@ -40,16 +47,25 @@ public class ChangelogPrepareArtifactService(
 
 			if (sourceYaml != null)
 			{
-				changelogFilename = input.ExistingChangelogFilename != null
-					? _fileSystem.Path.GetFileName(input.ExistingChangelogFilename)
+				// Treat empty as unset: CLI parsers (e.g. Argh) forward `--flag ""`
+				// as the empty string instead of null. An empty filename here would
+				// make Path.Combine(OutputDir, "") collapse to OutputDir itself and
+				// turn the artifact write into a write against the directory path,
+				// which fails with EACCES on Linux.
+				var hasExistingFilename = !string.IsNullOrEmpty(input.ExistingChangelogFilename);
+				changelogFilename = hasExistingFilename
+					? _fileSystem.Path.GetFileName(input.ExistingChangelogFilename!)
 					: _fileSystem.Path.GetFileName(sourceYaml);
 
-				if (input.ExistingChangelogFilename != null)
+				if (hasExistingFilename)
 					_logger.LogInformation("Reusing existing filename {Filename} for stable path on branch", changelogFilename);
 
 				var destYaml = _fileSystem.Path.Combine(input.OutputDir, changelogFilename);
-				_fileSystem.File.Copy(sourceYaml, destYaml, overwrite: true);
-				_logger.LogInformation("Copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
+				// Read YAML, normalize to remove any BOM, then write UTF-8 bytes without BOM (avoids provider-specific WriteAllText preamble behavior).
+				var yamlContent = await _fileSystem.File.ReadAllTextAsync(sourceYaml, ctx);
+				var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
+				await _fileSystem.File.WriteAllTextAsync(destYaml, normalizedContent, Utf8NoBom, ctx);
+				_logger.LogInformation("Normalized and copied changelog YAML: {Source} → {Dest}", sourceYaml, destYaml);
 			}
 			else
 			{
@@ -63,16 +79,20 @@ public class ChangelogPrepareArtifactService(
 		var changelogDir = config?.Bundle?.Directory ?? "docs/changelog";
 
 		var statusString = status.ToStringFast(true);
+		// Null-coalesce the nullable bool inputs into the metadata's concrete
+		// `bool` fields. Treating "unspecified" as `false` keeps downstream
+		// consumers (apply step) failing closed: an unrecognised or omitted
+		// CLI flag never grants commit permission.
 		var metadata = new ChangelogArtifactMetadata
 		{
 			PrNumber = input.PrNumber,
 			HeadRef = input.HeadRef,
 			HeadSha = input.HeadSha,
 			Status = statusString,
-			IsFork = input.IsFork,
+			IsFork = input.IsFork ?? false,
 			HeadRepo = input.HeadRepo,
-			CanCommit = input.CanCommit,
-			MaintainerCanModify = input.MaintainerCanModify,
+			CanCommit = input.CanCommit ?? false,
+			MaintainerCanModify = input.MaintainerCanModify ?? false,
 			LabelTable = input.LabelTable,
 			ProductLabelTable = input.ProductLabelTable,
 			SkipLabels = input.SkipLabels,

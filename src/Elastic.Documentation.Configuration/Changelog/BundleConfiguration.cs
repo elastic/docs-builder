@@ -22,6 +22,14 @@ public record BundleConfiguration
 	public string? OutputDirectory { get; init; }
 
 	/// <summary>
+	/// When true, the individual changelog entries that make up a bundle are sourced from the local
+	/// <see cref="Directory"/>. When false (the default), they are fetched from the public changelog
+	/// CDN, scoped to the bundle's products. An explicit <c>--directory</c> on the CLI always forces
+	/// local sourcing regardless of this setting.
+	/// </summary>
+	public bool UseLocalChangelogs { get; init; }
+
+	/// <summary>
 	/// Whether to resolve (copy contents of each changelog file into the entries array).
 	/// Defaults to true
 	/// </summary>
@@ -43,6 +51,13 @@ public record BundleConfiguration
 	/// Default GitHub repository owner applied to all profiles that do not specify their own.
 	/// </summary>
 	public string? Owner { get; init; }
+
+	/// <summary>
+	/// Branch whose CDN changelog pool (<c>changelog/{org}/{repo}/{branch}/…</c>) entries are sourced from
+	/// when bundling from the CDN. Applied to all profiles that do not specify their own. Defaults to
+	/// <c>main</c> when unset.
+	/// </summary>
+	public string? Branch { get; init; }
 
 	/// <summary>
 	/// When set (including an empty list), PR/issue references whose resolved <c>owner/repo</c> is not listed
@@ -109,6 +124,12 @@ public record BundleProfile
 	/// Used for generating correct PR/issue links. Defaults to "elastic" when not specified.
 	/// </summary>
 	public string? Owner { get; init; }
+
+	/// <summary>
+	/// Branch whose CDN changelog pool entries this profile sources from. Overrides
+	/// <see cref="BundleConfiguration.Branch"/> when set.
+	/// </summary>
+	public string? Branch { get; init; }
 
 	/// <summary>
 	/// Feature IDs to mark as hidden in the bundle output.

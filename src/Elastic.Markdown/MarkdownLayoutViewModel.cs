@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
@@ -30,6 +31,11 @@ public record MarkdownLayoutViewModel : GlobalLayoutViewModel
 	public required string? CurrentVersion { get; init; }
 
 	public required string? AllVersionsUrl { get; init; }
+
+	public string? RedirectUrl { get; init; }
+
+	/// <summary>The resolved right-gutter CTA for this page (docset.yml template, or the built-in default).</summary>
+	public required Cta Cta { get; init; }
 }
 
 public record PageTocItem

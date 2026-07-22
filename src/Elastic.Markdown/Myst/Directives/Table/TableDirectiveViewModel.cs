@@ -16,12 +16,17 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 {
 	public required IReadOnlyList<double> ColumnWidths { get; init; }
 
+	public required bool Matrix { get; init; }
+
 	/// <summary>
 	/// Renders the table content. When <see cref="ColumnWidths"/> is specified, injects a colgroup and table-layout:fixed.
+	/// When <see cref="Matrix"/> is set, adds the table-matrix class to the wrapper.
 	/// </summary>
 	public HtmlString RenderTableWithColumns()
 	{
 		var html = RenderBlock().Value ?? string.Empty;
+		if (Matrix)
+			html = InjectMatrixClass(html);
 		if (ColumnWidths.Count == 0)
 			return new HtmlString(html.EnsureTrimmed());
 
@@ -45,6 +50,19 @@ public partial class TableDirectiveViewModel : DirectiveViewModel
 		var result = html[..tableIndex] + newOpening + colgroup + html[(bracketEnd + 1)..];
 
 		return new HtmlString(result.EnsureTrimmed());
+	}
+
+	/// <summary>
+	/// Adds the table-matrix class to the wrapper div's opening tag emitted by WrappedTableRenderer,
+	/// locating that specific tag rather than replacing the class attribute wherever it appears.
+	/// </summary>
+	private static string InjectMatrixClass(string html)
+	{
+		const string wrapperOpenTag = "<div class=\"table-wrapper\">";
+		var wrapperIndex = html.IndexOf(wrapperOpenTag, StringComparison.Ordinal);
+		return wrapperIndex < 0
+			? html
+			: html[..wrapperIndex] + "<div class=\"table-wrapper table-matrix\">" + html[(wrapperIndex + wrapperOpenTag.Length)..];
 	}
 
 	[GeneratedRegex(@"\sstyle\s*=\s*""([^""]*)""", RegexOptions.IgnoreCase)]

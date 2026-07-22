@@ -11,6 +11,23 @@ The `{settings}` directive is generic. Although the largest current examples com
 ::::
 ```
 
+#### Options
+
+`:deployment: <value>`
+:   Filters the rendered settings to only those available for the specified deployment type. When omitted, all settings are shown regardless of deployment.
+
+    Valid values: `ech` (Elastic Cloud Hosted), `ece` (Elastic Cloud Enterprise), `eck` (Elastic Cloud on Kubernetes), `self` (self-managed).
+
+    A setting is considered available for a deployment type if its `applies_to.deployment` block explicitly lists that deployment with a non-removed lifecycle. If a setting has `applies_to` metadata but no entry for the requested deployment, it is treated as unavailable and hidden.
+
+    Settings with no `applies_to` metadata at all are always shown, regardless of the filter.
+
+    ```markdown
+    ::::{settings} /syntax/settings-with-applies-example.yml
+    :deployment: ech
+    ::::
+    ```
+
 ### Schema
 
 The schema below reflects the structure currently supported by docs-builder. For the original settings-gen schema that inspired this format, see [the Kibana schema reference](https://github.com/elastic/kibana/tree/main/docs/settings-gen#schema).

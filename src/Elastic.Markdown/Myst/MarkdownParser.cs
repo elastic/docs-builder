@@ -20,6 +20,7 @@ using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
 using Elastic.Markdown.Myst.Roles.Icons;
 using Elastic.Markdown.Myst.Roles.Kbd;
+using Elastic.Markdown.Myst.Roles.Math;
 using Markdig;
 using Markdig.Extensions.EmphasisExtras;
 using Markdig.Parsers;
@@ -48,6 +49,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocument = Resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = Resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = Resolvers.CrossLinkResolver,
+			ReleaseNotesResolver = Resolvers.ReleaseNotesResolver,
 			NavigationTraversable = Resolvers.NavigationTraversable,
 			SkipValidation = skip
 		};
@@ -88,7 +90,8 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocument = resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			NavigationTraversable = resolvers.NavigationTraversable,
-			CrossLinkResolver = resolvers.CrossLinkResolver
+			CrossLinkResolver = resolvers.CrossLinkResolver,
+			ReleaseNotesResolver = resolvers.ReleaseNotesResolver
 		};
 		var context = new ParserContext(state);
 
@@ -108,6 +111,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			TryFindDocument = resolvers.TryFindDocument,
 			TryFindDocumentByRelativePath = resolvers.TryFindDocumentByRelativePath,
 			CrossLinkResolver = resolvers.CrossLinkResolver,
+			ReleaseNotesResolver = resolvers.ReleaseNotesResolver,
 			NavigationTraversable = resolvers.NavigationTraversable,
 			ParentMarkdownPath = parentPath,
 			IncludeLine = includeLine
@@ -179,12 +183,15 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseInlineAppliesTo()
 				.UseInlineIcons()
 				.UseInlineKbd()
+				.UseInlineMath()
 				.UseSubstitution()
 				.UseComments()
 				.UseYamlFrontMatter()
 				.UsePipeTables()
+				.UseTaskLists()
 				.UseDirectives()
 				.UseDefinitionLists()
+				.UseDefinitionTermAnchors()
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()

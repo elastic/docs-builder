@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -17,7 +20,8 @@ public class ApiLanding : IApiGroupingModel
 		var viewModel = new LandingViewModel(context)
 		{
 			Landing = this,
-			ApiInfo = context.Model.Info
+			ApiInfo = context.Model.Info,
+			OverviewRows = ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot)
 		};
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -68,7 +72,7 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 
 {
 	/// <inheritdoc />
-	public string Url => NavigationItems.First().Url;
+	public virtual string Url => NavigationItems.First().Url;
 
 	/// <inheritdoc />
 	public abstract string NavigationTitle { get; }
@@ -100,6 +104,9 @@ public abstract class ApiGroupingNavigationItem<TGroupingModel, TNavigationItem>
 public class ClassificationNavigationItem(ApiClassification classification, LandingNavigationItem rootNavigation, LandingNavigationItem parent)
 	: ApiGroupingNavigationItem<ApiClassification, INavigationItem>(classification, rootNavigation, parent), IRootNavigationItem<ApiClassification, INavigationItem>
 {
+	/// <summary>Section titles from <c>x-tagGroups</c> are not their own page; the sidebar link targets the main API overview for the product, not a tag (or the first child) page.</summary>
+	public override string Url => rootNavigation.Index.Url;
+
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = classification.Name;
 
@@ -113,9 +120,20 @@ public class ClassificationNavigationItem(ApiClassification classification, Land
 		throw new NotSupportedException($"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on ${nameof(ClassificationNavigationItem)}");
 }
 
-public class TagNavigationItem(ApiTag tag, IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation, INodeNavigationItem<INavigationModel, INavigationItem> parent)
+public class TagNavigationItem(
+	ApiTag tag,
+	string? urlPathPrefix,
+	string apiUrlSuffix,
+	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+	INodeNavigationItem<INavigationModel, INavigationItem> parent
+)
 	: ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
 {
+	private readonly string _url = $"{urlPathPrefix?.TrimEnd('/')}/api/{apiUrlSuffix}/tags/{tag.TagUrlSegment}/";
+
+	/// <inheritdoc />
+	public override string Url => _url;
+
 	/// <inheritdoc />
 	public override string NavigationTitle { get; } = tag.DisplayName;
 

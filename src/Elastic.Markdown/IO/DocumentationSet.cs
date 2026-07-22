@@ -10,12 +10,16 @@ using System.Runtime.InteropServices;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Isolated.Node;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions;
+using Elastic.Markdown.Extensions.CliReference;
 using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.Myst;
 using Microsoft.Extensions.Logging;
@@ -47,6 +51,8 @@ public class DocumentationSet : INavigationTraversable
 
 	public ICrossLinkResolver CrossLinkResolver { get; }
 
+	public IReleaseNotesResolver ReleaseNotesResolver { get; }
+
 	public FrozenDictionary<FilePath, DocumentationFile> Files { get; }
 
 	public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; }
@@ -56,7 +62,8 @@ public class DocumentationSet : INavigationTraversable
 	public DocumentationSet(
 		BuildContext context,
 		ILoggerFactory logFactory,
-		ICrossLinkResolver linkResolver
+		ICrossLinkResolver linkResolver,
+		IReleaseNotesResolver? releaseNotesResolver = null
 	)
 	{
 		_logger = logFactory.CreateLogger<DocumentationSet>();
@@ -64,12 +71,14 @@ public class DocumentationSet : INavigationTraversable
 		SourceDirectory = context.DocumentationSourceDirectory;
 		OutputDirectory = context.OutputDirectory;
 		CrossLinkResolver = linkResolver;
+		ReleaseNotesResolver = releaseNotesResolver ?? NoopReleaseNotesResolver.Instance;
 		Configuration = context.Configuration;
 		EnabledExtensions = InstantiateExtensions();
 
 		var resolver = new ParserResolvers
 		{
 			CrossLinkResolver = CrossLinkResolver,
+			ReleaseNotesResolver = ReleaseNotesResolver,
 			TryFindDocument = TryFindDocument,
 			TryFindDocumentByRelativePath = TryFindDocumentByRelativePath,
 			NavigationTraversable = this
@@ -126,8 +135,13 @@ public class DocumentationSet : INavigationTraversable
 					extension.VisitNavigation(item, markdownLeaf.Model);
 				break;
 			case INodeNavigationItem<IDocumentationFile, INavigationItem> node:
-				foreach (var extension in EnabledExtensions)
-					extension.VisitNavigation(node, node.Index.Model);
+				// Index is a null sentinel when this node's table of contents produced no items
+				// (a validation error is emitted upstream); skip visiting a missing index.
+				if (node.Index is { } nodeIndex)
+				{
+					foreach (var extension in EnabledExtensions)
+						extension.VisitNavigation(node, nodeIndex.Model);
+				}
 				foreach (var child in node.NavigationItems)
 					VisitNavigation(child);
 				break;
@@ -296,6 +310,30 @@ public class DocumentationSet : INavigationTraversable
 			}
 		}
 
+		// Auto-enable CLI reference extension when the TOC contains a cli: entry
+		if (HasCliReferenceRef(Context.ConfigurationYaml.TableOfContents))
+			list.Add(new CliReferenceDocsBuilderExtension(Context));
+
 		return list.AsReadOnly();
+	}
+
+	private static bool HasCliReferenceRef(IReadOnlyCollection<ITableOfContentsItem> items)
+	{
+		foreach (var item in items)
+		{
+			if (item is CliReferenceRef)
+				return true;
+
+			var children = item switch
+			{
+				FileRef f => f.Children,
+				FolderRef f => f.Children,
+				IsolatedTableOfContentsRef t => t.Children,
+				_ => null
+			};
+			if (children is { Count: > 0 } && HasCliReferenceRef(children))
+				return true;
+		}
+		return false;
 	}
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using System.Runtime.CompilerServices;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
@@ -257,6 +258,38 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		context.Collector.Hints.Should().Be(0, "simple virtual files without deep-linking should not trigger hints");
 		context.Diagnostics.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task BuildNavigationLookupsDoesNotThrowWhenTocReferencesMissingFile()
+	{
+		// language=yaml
+		var yaml = """
+		           project: 'test-project'
+		           toc:
+		             - file: missing.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		// Note: /docs/missing.md is intentionally not created on disk
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, MissingFileDocumentationFileFactory.Instance);
+
+		var lookup = new ConditionalWeakTable<IDocumentationFile, INavigationItem>();
+		var buildLookups = () => navigation.BuildNavigationLookups(lookup);
+		buildLookups.Should().NotThrow("a missing toc file must surface a validation error, not crash the build");
+
+		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+
+		context.Collector.Errors.Should().BeGreaterThan(0);
+		var diagnostics = context.Diagnostics;
+		diagnostics.Should().Contain(d =>
+			d.Message.Contains("missing.md") &&
+			d.Message.Contains("does not exist"));
 	}
 
 	[Fact]

@@ -20,7 +20,7 @@ namespace Elastic.Markdown.Exporters;
 /// <summary>
 /// Exports markdown files as LLM-optimized CommonMark using custom renderers
 /// </summary>
-public class LlmMarkdownExporter : IMarkdownExporter
+public class LlmMarkdownExporter(bool branded = false) : IMarkdownExporter
 {
 
 	private const string LlmsTxtTemplate = """
@@ -54,25 +54,35 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
 	{
+		var fs = outputFolder.FileSystem;
+		if (!outputFolder.Exists)
+			outputFolder.Create();
+
 		var outputDirectory = outputFolder.FullName;
-		var zipPath = Path.Join(outputDirectory, "llm.zip");
+		var zipPath = fs.Path.Join(outputDirectory, "llm.zip");
 
-		// Create the llms.txt file with boilerplate content
-		var llmsTxt = Path.Join(outputDirectory, "llms.txt");
-		await outputFolder.FileSystem.File.WriteAllTextAsync(llmsTxt, LlmsTxtTemplate, ctx);
+		// Create the llms.txt file; omit Elastic boilerplate for branded builds
+		var llmsTxt = fs.FileInfo.New(fs.Path.Join(outputDirectory, "llms.txt"));
+		await fs.File.WriteAllTextAsync(llmsTxt.FullName, branded ? string.Empty : LlmsTxtTemplate, ctx);
 
-		using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
-		var llmsTxtRelativePath = Path.GetRelativePath(outputDirectory, llmsTxt);
-		_ = zip.CreateEntryFromFile(llmsTxt, llmsTxtRelativePath);
+		await using var zipStream = fs.File.Create(zipPath);
+		using var zip = new ZipArchive(zipStream, ZipArchiveMode.Create);
+		await AddFileAsync(zip, llmsTxt, llmsTxt.Name, ctx);
 
-		var markdownFiles = Directory.GetFiles(outputDirectory, "*.md", SearchOption.AllDirectories);
-
-		foreach (var file in markdownFiles)
+		foreach (var file in outputFolder.EnumerateFiles("*.md", SearchOption.AllDirectories))
 		{
-			var relativePath = Path.GetRelativePath(outputDirectory, file);
-			_ = zip.CreateEntryFromFile(file, relativePath);
+			var relativePath = fs.Path.GetRelativePath(outputDirectory, file.FullName).Replace('\\', '/');
+			await AddFileAsync(zip, file, relativePath, ctx);
 		}
 		return true;
+	}
+
+	private static async Task AddFileAsync(ZipArchive archive, IFileInfo file, string entryName, Cancel ctx)
+	{
+		var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+		await using var entryStream = entry.Open();
+		await using var sourceStream = file.FileSystem.File.OpenRead(file.FullName);
+		await sourceStream.CopyToAsync(entryStream, ctx);
 	}
 
 	public async ValueTask<bool> ExportAsync(MarkdownExportFileContext fileContext, Cancel ctx)
@@ -83,7 +93,7 @@ public class LlmMarkdownExporter : IMarkdownExporter
 		if (outputFile.Directory is { Exists: false })
 			outputFile.Directory.Create();
 
-		var content = IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
+		var content = !branded && IsRootIndexFile(fileContext) ? LlmsTxtTemplate : CreateLlmContentWithMetadata(fileContext, llmMarkdown);
 
 		await fs.File.WriteAllTextAsync(
 			outputFile.FullName,
@@ -224,6 +234,6 @@ public class LlmMarkdownExporter : IMarkdownExporter
 
 public static class LlmMarkdownExporterExtensions
 {
-	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters) =>
-		exporters.Add(new LlmMarkdownExporter());
+	public static void AddLlmMarkdownExport(this List<IMarkdownExporter> exporters, bool branded = false) =>
+		exporters.Add(new LlmMarkdownExporter(branded));
 }

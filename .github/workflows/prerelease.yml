@@ -5,14 +5,13 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-  packages: write
+permissions: {}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     outputs:
@@ -28,7 +27,9 @@ jobs:
     steps:
       - id: repo-basename
         run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
+        with:
+          persist-credentials: false
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v6.0.0
@@ -43,28 +44,103 @@ jobs:
           
       - name: Deploy artifact
         id: deployment
-        uses: actions/deploy-pages@v5.0.0 
-        
+        uses: actions/deploy-pages@v5.0.0
+
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # Required for `actions/attest-build-provenance`
+      id-token: write
+      attestations: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: ./.github/actions/bootstrap
-        
+
+      # Restore npm dependencies explicitly for supply-chain checks
+      - name: Restore npm dependencies
+        working-directory: src/Elastic.Documentation.Site
+        run: npm ci
+
+      - name: Check shai-hulud supply-chain hashes
+        uses: ./.github/actions/check-shai-hulud
+        with:
+          path: src/Elastic.Documentation.Site
+
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-
       - name: Publish Containers
         run: ./build.sh publishcontainers
+
+      # Resolve the manifest digest of each pushed image so we can
+      # mint a signed attestation against the immutable digest, not
+      # the mutable :edge tag. Consumers verify with:
+      #   gh attestation verify oci://ghcr.io/elastic/docs-builder@<digest> \
+      #     -R elastic/docs-builder
+      - name: Resolve pushed image digests
+        id: digests
+        # language=bash
+        run: |
+          set -euo pipefail
+          for image in docs-builder docs-builder-mcp docs-builder-api; do
+            ref="ghcr.io/elastic/${image}:edge"
+            digest=$(docker buildx imagetools inspect "$ref" 2>/dev/null \
+              | awk '/^Digest:/ {print $2; exit}')
+            if [ -z "$digest" ]; then
+              echo "::error::Could not resolve manifest digest for ${ref}"
+              exit 1
+            fi
+            echo "${image}=${digest}" >> "$GITHUB_OUTPUT"
+            echo "Resolved ${ref} -> ${digest}"
+          done
+
+      - name: Attest docs-builder image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder
+          subject-digest: ${{ steps.digests.outputs.docs-builder }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-mcp image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-mcp
+          subject-digest: ${{ steps.digests.outputs.docs-builder-mcp }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-api image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-api
+          subject-digest: ${{ steps.digests.outputs.docs-builder-api }}
+          push-to-registry: true
+
+      - name: Fetch ephemeral GitHub token
+        id: fetch-ephemeral-token
+        uses: elastic/ci-gh-actions/fetch-github-token@v1
+        with:
+          vault-instance: "ci-prod"
+
+      - name: Notify docs-internal-workflows
+        env:
+          GH_TOKEN: ${{ steps.fetch-ephemeral-token.outputs.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          gh api repos/elastic/docs-internal-workflows/dispatches \
+            -f event_type=docs-builder-prereleased \
+            -F client_payload[sha]="$SHA"

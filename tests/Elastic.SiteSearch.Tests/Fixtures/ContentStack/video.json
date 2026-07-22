@@ -1,0 +1,44 @@
+{
+  "locale": "en-us",
+  "ACL": {},
+  "uid": "blt000000000000003c",
+  "_version": 2,
+  "created_at": "2023-05-01T12:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2023-07-10T09:15:00.000Z",
+  "updated_by": "bltuser00000000002b",
+  "tags": [],
+  "title": "Ingesting Data into Elasticsearch",
+  "url": "/webinars/ingesting-data-into-elasticsearch",
+  "main_header": {
+    "title_l10n": "Ingesting Data into Elasticsearch"
+  },
+  "paragraph_l10n": "<p>Join us for a deep dive into data ingestion patterns with Elasticsearch. We cover Logstash, Beats, and the Elasticsearch ingest pipeline.</p>",
+  "presentation_date": "2023-06-15T17:00:00.000Z",
+  "presenter": ["bltpresenter0000001"],
+  "video_url": "https://videos.example.com/watch/sample-video",
+  "video_type": ["bltvideotype000001"],
+  "vidyard": {
+    "video_id": "sample-video-id-123",
+    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  "recorded_content": "",
+  "speaker_deck": "",
+  "token": "",
+  "image": "https://images.contentstack.io/v3/assets/sample/video-thumb.png",
+  "marketo": {},
+  "cloud_sign_up_form": {},
+  "do_not_display_on_overview_page": false,
+  "seo": {
+    "seo_title_l10n": "Ingesting Data into Elasticsearch | Elastic Webinar",
+    "seo_description_l10n": "Learn about data ingestion patterns with Elasticsearch.",
+    "seo_keywords_l10n": "elasticsearch, data ingestion, logstash",
+    "seo_image": "https://images.contentstack.io/v3/assets/sample/seo-image.png"
+  },
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2023-05-02T08:00:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}

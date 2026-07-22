@@ -33,8 +33,10 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 			renderer.WriteChildren(obj);
 			renderer.Writer.Write("](");
 			var url = obj.GetDynamicUrl?.Invoke() ?? obj.Url;
-			var absoluteUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
-			renderer.Writer.Write(absoluteUrl ?? string.Empty);
+			var rewrittenUrl = renderer.LinkUrlRewriter is { } rewriter
+				? rewriter(url)
+				: LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
+			renderer.Writer.Write(rewrittenUrl ?? string.Empty);
 		}
 		if (!string.IsNullOrEmpty(obj.Title))
 		{

@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -216,6 +217,8 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 		"""
 		:::{changelog}
 		:type: all
+		:dropdowns:
+		:description-visibility: keep-descriptions
 		:::
 		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
 		// language=yaml
@@ -675,4 +678,76 @@ public class ChangelogLinkVisibilityInvalidTests : DirectiveTest<ChangelogBlock>
 	[Fact]
 	public void EmitsWarning() =>
 		Collector.Warnings.Should().BeGreaterThan(0);
+}
+
+/// <summary>
+/// CDN-sourced bundles are scrubbed for public delivery; :link-visibility: auto keeps links even when
+/// assembler.yml marks source repos private (including merged bundles with a private constituent).
+/// </summary>
+public class ChangelogCdnLinkVisibilityAutoTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+	// language=markdown
+	"""
+		:::{changelog}
+		:cdn: cloud-serverless
+		:link-visibility: auto
+		:::
+		""")
+{
+	private const string Product = "cloud-serverless";
+
+	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
+		ChangelogCdnTestResolver.For(Product,
+			("cloud-2026-07-07.yaml",
+				// language=yaml
+				"""
+				products:
+				- product: cloud-serverless
+				  target: 2026-07-07
+				  repo: cloud
+				  owner: elastic
+				entries:
+				- title: Cloud Feature
+				  type: feature
+				  products:
+				  - product: cloud-serverless
+				    target: 2026-07-07
+				  prs:
+				  - https://github.com/elastic/roadmap/issues/39
+				"""),
+			("kibana-2026-07-07.yaml",
+				// language=yaml
+				"""
+				products:
+				- product: cloud-serverless
+				  target: 2026-07-07
+				  repo: kibana
+				  owner: elastic
+				entries:
+				- title: Kibana Feature
+				  type: feature
+				  products:
+				  - product: cloud-serverless
+				    target: 2026-07-07
+				  prs:
+				  - https://github.com/elastic/kibana/pull/275693
+				"""));
+
+	public override async ValueTask InitializeAsync()
+	{
+		await base.InitializeAsync();
+		Block!.PrivateRepositories.Add("cloud");
+		Block!.PrivateRepositories.Add("kibana");
+	}
+
+	[Fact]
+	public void ShowsLinksForMergedCdnBundleWhenAuto()
+	{
+		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
+
+		markdown.Should().Contain("Cloud Feature");
+		markdown.Should().Contain("Kibana Feature");
+		markdown.Should().Contain("github.com/elastic/kibana/pull/275693");
+		markdown.Should().Contain("github.com/elastic/roadmap/issues/39");
+		markdown.Should().NotContain("%");
+	}
 }

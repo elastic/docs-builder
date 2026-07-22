@@ -6,6 +6,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,7 @@ public record AssemblerDocumentationSet
 		AssembleContext context,
 		Checkout checkout,
 		ICrossLinkResolver crossLinkResolver,
+		IReleaseNotesResolver releaseNotesResolver,
 		IConfigurationContext configurationContext,
 		IReadOnlySet<Exporter> availableExporters
 	)
@@ -45,7 +47,7 @@ public record AssemblerDocumentationSet
 		{
 			RepositoryName = checkout.Repository.Name,
 			Ref = checkout.HeadReference,
-			Remote = $"elastic/${checkout.Repository.Name}",
+			Remote = $"elastic/{checkout.Repository.Name}",
 			Branch = checkout.Repository.GetBranch(env.ContentSource)
 		};
 
@@ -81,6 +83,6 @@ public record AssemblerDocumentationSet
 		};
 		BuildContext = buildContext;
 
-		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver);
+		DocumentationSet = new DocumentationSet(buildContext, logFactory, crossLinkResolver, releaseNotesResolver);
 	}
 }

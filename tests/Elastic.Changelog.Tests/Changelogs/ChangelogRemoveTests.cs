@@ -291,6 +291,93 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task Remove_WhenExcludedByAmendBundle_Proceeds()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+
+		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
+		FileSystem.Directory.CreateDirectory(bundlesDir);
+		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
+		var bundlePath = FileSystem.Path.Join(bundlesDir, "9.3.0.yaml");
+		await FileSystem.File.WriteAllTextAsync(
+			bundlePath,
+			// language=yaml
+			$"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- file:
+			    name: 1001-es-feature.yaml
+			    checksum: {checksum}
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(bundlesDir, "9.3.0.amend-1.yaml"),
+			// language=yaml
+			$"""
+			exclude-entries:
+			- file:
+			    name: 1001-es-feature.yaml
+			    checksum: {checksum}
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
+
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue("Amend exclusion should remove bundle dependency");
+		Collector.Errors.Should().Be(0);
+		FileExists("1001-es-feature.yaml").Should().BeFalse();
+	}
+
+	[Fact]
+	public async Task Remove_WhenCorruptAmendBundle_StillBlocksFromParentReference()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+
+		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
+		FileSystem.Directory.CreateDirectory(bundlesDir);
+		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
+		var bundlePath = FileSystem.Path.Join(bundlesDir, "9.3.0.yaml");
+		await FileSystem.File.WriteAllTextAsync(
+			bundlePath,
+			// language=yaml
+			$"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- file:
+			    name: 1001-es-feature.yaml
+			    checksum: {checksum}
+			""",
+			TestContext.Current.CancellationToken
+		);
+
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(bundlesDir, "9.3.0.amend-1.yaml"),
+			"exclude-entries:\n  - file: [invalid yaml",
+			TestContext.Current.CancellationToken
+		);
+
+		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
+
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeFalse("Parent bundle reference should block deletion when amend file is corrupt");
+		Collector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("1001-es-feature.yaml") &&
+			d.Message.Contains("unresolved bundle"));
+		FileExists("1001-es-feature.yaml").Should().BeTrue("File must not be deleted when parent still references it");
+	}
+
+	[Fact]
 	public async Task Remove_WhenReferencedByUnresolvedBundle_WithForce_Proceeds()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
@@ -930,5 +1017,62 @@ public class ChangelogRemoveTests : ChangelogTestBase
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		FileExists("pr-100.yaml").Should().BeFalse("changelog should be removed when CLI owner matches");
+	}
+
+	// ─── --files / path-list filter ─────────────────────────────────────────────────
+
+	[Fact]
+	public async Task Remove_WithFiles_DeletesOnlyNamedFiles()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
+
+		var keepPath = FileSystem.Path.Join(_changelogDir, "1001-es-feature.yaml");
+		var input = new ChangelogRemoveArguments
+		{
+			Directory = _changelogDir,
+			Files = [keepPath]
+		};
+
+		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		FileExists("1001-es-feature.yaml").Should().BeFalse();
+		FileExists("2001-kibana-feature.yaml").Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task Remove_WithProfile_PathListFile_RemovesListedFiles()
+	{
+		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
+		await WriteFile("2001-kibana-feature.yaml", KibanaFeatureYaml);
+
+		var configContent = $"""
+			bundle:
+			  directory: {_changelogDir}
+			  profiles:
+			    release:
+			""";
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		var listFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "files.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(listFile)!);
+		await FileSystem.File.WriteAllTextAsync(listFile, "1001-es-feature.yaml\n", TestContext.Current.CancellationToken);
+
+		var input = new ChangelogRemoveArguments
+		{
+			Config = configPath,
+			Profile = "release",
+			ProfileArgument = "9.3.0",
+			ProfileReport = listFile
+		};
+
+		var result = await ServiceWithConfig.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		FileExists("1001-es-feature.yaml").Should().BeFalse();
+		FileExists("2001-kibana-feature.yaml").Should().BeTrue();
 	}
 }

@@ -6,7 +6,7 @@ namespace Elastic.Documentation.Configuration.Builder;
 
 public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 {
-	private readonly Dictionary<string, bool> _featureFlags = new(initFeatureFlags);
+	private readonly Dictionary<string, bool> _featureFlags = [with(initFeatureFlags)];
 
 	public void Set(string key, bool value)
 	{
@@ -26,17 +26,19 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["disable-github-edit-link"] = value;
 	}
 
-	public bool SearchOrAskAiEnabled
-	{
-		get => IsEnabled("search-or-ask-ai");
-		set => _featureFlags["search-or-ask-ai"] = value;
-	}
-
 	public bool StagingElasticNavEnabled
 	{
 		get => IsEnabled("staging-elastic-nav");
 		set => _featureFlags["staging-elastic-nav"] = value;
 	}
+
+	public bool WebsiteSearchEnabled
+	{
+		get => IsEnabled("website-search");
+		set => _featureFlags["website-search"] = value;
+	}
+
+	public string? WebsiteSearchScriptUrl { get; set; }
 
 	public bool AirGappedEnabled
 	{

@@ -5,8 +5,8 @@
 using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Links;
-using Elastic.Documentation.Search;
 using Elastic.Documentation.State;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Serialization;
 
@@ -18,7 +18,6 @@ namespace Elastic.Documentation.Serialization;
 [JsonSerializable(typeof(GitCheckoutInformation))]
 [JsonSerializable(typeof(LinkRegistry))]
 [JsonSerializable(typeof(LinkRegistryEntry))]
-[JsonSerializable(typeof(DocumentationDocument))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(ApplicableTo))]
 [JsonSerializable(typeof(AppliesCollection))]

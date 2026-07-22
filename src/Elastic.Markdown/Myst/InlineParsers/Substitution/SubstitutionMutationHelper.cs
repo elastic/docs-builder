@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Elastic.Documentation;
+using Elastic.Documentation.Versions;
 
 namespace Elastic.Markdown.Myst.InlineParsers.Substitution;
 

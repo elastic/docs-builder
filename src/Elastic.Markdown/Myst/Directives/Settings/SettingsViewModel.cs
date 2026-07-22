@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Versions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
@@ -22,6 +23,20 @@ public class SettingsViewModel
 	/// <summary>Markdown heading level for each group section (1–6).</summary>
 	public required int GroupHeadingLevel { get; init; }
 
+	/// <summary>
+	/// When set, only settings visible for this deployment type are rendered.
+	/// Accepted values: <c>ech</c>, <c>ece</c>, <c>eck</c>, <c>self</c>.
+	/// </summary>
+	public string? ActiveDeploymentFilter { get; init; }
+
+	public bool IsGroupVisible(SettingsGrouping group) =>
+		ActiveDeploymentFilter is null ||
+		DeploymentFilter.AnyVisible(group.Settings, ActiveDeploymentFilter, null);
+
+	public bool IsSettingVisible(Setting setting, ApplicableTo? inheritedAppliesTo) =>
+		ActiveDeploymentFilter is null ||
+		setting.IsVisibleForDeployment(ActiveDeploymentFilter, inheritedAppliesTo);
+
 	public string RenderAppliesToInline(ApplicableTo? appliesTo) =>
 		RenderAppliesToPlacement(appliesTo, ApplicabilityBadgePlacement.Combined);
 
@@ -30,6 +45,35 @@ public class SettingsViewModel
 
 	public string RenderSupportedOnBadges(ApplicableTo? appliesTo) =>
 		RenderAppliesToPlacement(appliesTo, ApplicabilityBadgePlacement.SupportedOnRow);
+
+	/// <summary>
+	/// Returns <c>true</c> when every entry in <c>applies_to.stack</c> targets a version greater
+	/// than the currently released stack version — i.e. the stack badge would render as
+	/// "Planned" because the setting does not exist in any released stack version yet.
+	/// In that case the "Supported on" line is suppressed: any deployment badge (ECH,
+	/// Self-managed, ECE, ECK) that claims general availability today is misleading,
+	/// since those surfaces run the stack and the setting has not shipped.
+	/// </summary>
+	public bool IsStackFullyPlanned(ApplicableTo? appliesTo)
+	{
+		if (appliesTo?.Stack is not { Count: > 0 } stack)
+			return false;
+
+		var stackVersion = VersionsConfig.GetVersioningSystem(VersioningSystemId.Stack);
+		if (!stackVersion.IsVersioned())
+			return false;
+
+		foreach (var applicability in stack)
+		{
+			var versionSpec = applicability.Version;
+			if (versionSpec is null || versionSpec == AllVersionsSpec.Instance)
+				return false;
+			if (versionSpec.Min <= stackVersion.Current)
+				return false;
+		}
+
+		return true;
+	}
 
 	private string RenderAppliesToPlacement(ApplicableTo? appliesTo, ApplicabilityBadgePlacement placement)
 	{

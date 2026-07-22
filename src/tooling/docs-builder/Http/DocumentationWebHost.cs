@@ -10,8 +10,9 @@ using System.Text;
 using System.Text.Json;
 using Documentation.Builder.Diagnostics.LiveMode;
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 #if DEBUG
-using Elastic.Documentation.Api.Infrastructure;
+using Elastic.Documentation.Api;
 #endif
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.ServiceDefaults;
@@ -34,7 +35,7 @@ public class DocumentationWebHost
 {
 	private readonly WebApplication _webApplication;
 
-	private readonly IHostedService _hostedService;
+	private readonly IDiagnosticsCollector _hostedService;
 	private readonly ScopedFileSystem _writeFileSystem;
 
 	public InMemoryBuildState InMemoryBuildState { get; }
@@ -53,7 +54,7 @@ public class DocumentationWebHost
 		_ = builder.AddDocumentationServiceDefaults();
 
 #if DEBUG
-		builder.Services.AddElasticDocsApiUsecases("dev");
+		builder.Services.AddElasticDocsApiServices("dev");
 #endif
 
 		_ = builder.Logging
@@ -157,8 +158,7 @@ public class DocumentationWebHost
 
 #if DEBUG
 		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
-		var mapOtlpEndpoints = !string.IsNullOrWhiteSpace(_webApplication.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-		apiV1.MapElasticDocsApiEndpoints(mapOtlpEndpoints);
+		apiV1.MapElasticDocsApiEndpoints();
 #endif
 
 		// SSE endpoint for diagnostics streaming

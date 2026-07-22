@@ -42,14 +42,14 @@ public class S3IncrementalUploaderTests
 
 		var uploader = CreateUploader();
 		var ct = TestContext.Current.CancellationToken;
-		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelogs/entry.yaml")], ct);
+		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(1);
 		result.Skipped.Should().Be(0);
 		result.Failed.Should().Be(0);
 
 		A.CallTo(() => _s3Client.PutObjectAsync(
-			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/changelogs/entry.yaml" && r.BucketName == BucketName),
+			A<PutObjectRequest>.That.Matches(r => r.Key == "elasticsearch/changelog/entry.yaml" && r.BucketName == BucketName),
 			A<Cancel>._
 		)).MustHaveHappenedOnceExactly();
 	}
@@ -67,7 +67,7 @@ public class S3IncrementalUploaderTests
 
 		var uploader = CreateUploader();
 		var ct = TestContext.Current.CancellationToken;
-		var result = await uploader.Upload([new UploadTarget(path, "kibana/changelogs/entry.yaml")], ct);
+		var result = await uploader.Upload([new UploadTarget(path, "kibana/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(0);
 		result.Skipped.Should().Be(1);
@@ -75,6 +75,37 @@ public class S3IncrementalUploaderTests
 
 		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
 			.MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_UnchangedFile_WithSkipEtagCheck_Uploads()
+	{
+		var content = "unchanged changelog"u8.ToArray();
+		var path = UniquePath("entry.yaml");
+		_fileSystem.AddFile(path, new MockFileData(content));
+		var localEtag = Convert.ToHexStringLower(MD5.HashData(content));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._))
+			.Returns(new GetObjectMetadataResponse { ETag = $"\"{localEtag}\"" });
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
+			.Returns(new PutObjectResponse());
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload([new UploadTarget(path, "kibana/changelog/entry.yaml")], skipEtagCheck: true, ctx: ct);
+
+		result.Uploaded.Should().Be(1);
+		result.Skipped.Should().Be(0);
+		result.Failed.Should().Be(0);
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._))
+			.MustNotHaveHappened();
+
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key == "kibana/changelog/entry.yaml" && r.BucketName == BucketName),
+			A<Cancel>._
+		)).MustHaveHappenedOnceExactly();
 	}
 
 	[Fact]
@@ -91,7 +122,7 @@ public class S3IncrementalUploaderTests
 
 		var uploader = CreateUploader();
 		var ct = TestContext.Current.CancellationToken;
-		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelogs/entry.yaml")], ct);
+		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(1);
 		result.Skipped.Should().Be(0);
@@ -112,7 +143,7 @@ public class S3IncrementalUploaderTests
 
 		var uploader = CreateUploader();
 		var ct = TestContext.Current.CancellationToken;
-		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelogs/entry.yaml")], ct);
+		var result = await uploader.Upload([new UploadTarget(path, "elasticsearch/changelog/entry.yaml")], ctx: ct);
 
 		result.Uploaded.Should().Be(0);
 		result.Skipped.Should().Be(0);
@@ -129,12 +160,12 @@ public class S3IncrementalUploaderTests
 		var unchangedEtag = Convert.ToHexStringLower(MD5.HashData("unchanged"u8.ToArray()));
 
 		A.CallTo(() => _s3Client.GetObjectMetadataAsync(
-			A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "es/changelogs/new.yaml"),
+			A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "es/changelog/new.yaml"),
 			A<Cancel>._
 		)).Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
 
 		A.CallTo(() => _s3Client.GetObjectMetadataAsync(
-			A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "es/changelogs/unchanged.yaml"),
+			A<GetObjectMetadataRequest>.That.Matches(r => r.Key == "es/changelog/unchanged.yaml"),
 			A<Cancel>._
 		)).Returns(new GetObjectMetadataResponse { ETag = $"\"{unchangedEtag}\"" });
 
@@ -144,9 +175,9 @@ public class S3IncrementalUploaderTests
 		var uploader = CreateUploader();
 		var ct = TestContext.Current.CancellationToken;
 		var result = await uploader.Upload([
-			new UploadTarget(newPath, "es/changelogs/new.yaml"),
-			new UploadTarget(unchangedPath, "es/changelogs/unchanged.yaml")
-		], ct);
+			new UploadTarget(newPath, "es/changelog/new.yaml"),
+			new UploadTarget(unchangedPath, "es/changelog/unchanged.yaml")
+		], ctx: ct);
 
 		result.Uploaded.Should().Be(1);
 		result.Skipped.Should().Be(1);
@@ -158,7 +189,7 @@ public class S3IncrementalUploaderTests
 	{
 		var uploader = CreateUploader();
 		var ct = TestContext.Current.CancellationToken;
-		var result = await uploader.Upload([], ct);
+		var result = await uploader.Upload([], ctx: ct);
 
 		result.Uploaded.Should().Be(0);
 		result.Skipped.Should().Be(0);

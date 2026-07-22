@@ -46,7 +46,7 @@ export const headerButtonCss = (euiTheme: EuiThemeComputed) => css`
 interface DeploymentInfoProps {
     gitBranch: string
     gitCommit: string
-    githubRepository: string
+    githubRepository?: string
     githubRef?: string
 }
 
@@ -141,12 +141,14 @@ export const DeploymentInfo = ({
                     icon={commitSvg}
                     href={links.commit}
                 />
-                <DeploymentInfoRow
-                    label="Repository"
-                    value={githubRepository}
-                    icon={githubSvg}
-                    href={links.repository}
-                />
+                {githubRepository != null && (
+                    <DeploymentInfoRow
+                        label="Repository"
+                        value={githubRepository}
+                        icon={githubSvg}
+                        href={links.repository}
+                    />
+                )}
             </div>
         </EuiPopover>
     )
@@ -270,12 +272,21 @@ function getDeploymentSubtitle(githubRef?: string): string {
 const GITHUB_BASE = 'https://github.com'
 
 function getDeploymentLinks(
-    githubRepository: string,
+    githubRepository: string | undefined,
     gitBranch: string,
     gitCommit: string,
     githubRef?: string
-): { ref?: string; branch: string; commit: string; repository: string } {
-    const repo = githubRepository.startsWith('elastic/')
+): { ref?: string; branch?: string; commit?: string; repository?: string } {
+    if (!githubRepository) {
+        return {
+            ref: undefined,
+            branch: undefined,
+            commit: undefined,
+            repository: undefined,
+        }
+    }
+    // Backend passes full org/repo; fallback only fires for bare names (shouldn't occur)
+    const repo = githubRepository.includes('/')
         ? githubRepository
         : `elastic/${githubRepository}`
     const base = `${GITHUB_BASE}/${repo}`

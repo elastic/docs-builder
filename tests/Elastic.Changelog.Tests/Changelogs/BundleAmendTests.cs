@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -265,5 +266,164 @@ public class BundleAmendTests : ChangelogTestBase
 		amendContent.Should().Contain("name: 1755268200-new-feature.yaml");
 		amendContent.Should().NotContain("title: New amended feature");
 		amendContent.Should().NotContain("type: enhancement");
+	}
+
+	[Fact]
+	public async Task AmendBundle_RemoveFromParent_CreatesExcludeEntries()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateUnresolvedBundle(ct);
+
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+		var amendCollector = new TestDiagnosticsCollector(Output);
+
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [changelogFile]
+		};
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1);
+
+		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct);
+		amendContent.Should().Contain("exclude-entries:");
+		amendContent.Should().Contain("name: 1755268130-existing.yaml");
+		amendContent.TrimStart().Should().StartWith("exclude-entries:");
+	}
+
+	[Fact]
+	public async Task AmendBundle_RemoveAfterAdd_ExcludesAmendedEntry()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateUnresolvedBundle(ct);
+		var newFile = await CreateNewChangelogFile(ct);
+
+		var addCollector = new TestDiagnosticsCollector(Output);
+		var addInput = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			AddFiles = [newFile]
+		};
+		(await Service.AmendBundle(addCollector, addInput, ct)).Should().BeTrue();
+
+		var removeCollector = new TestDiagnosticsCollector(Output);
+		var removeInput = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [newFile]
+		};
+
+		var result = await Service.AmendBundle(removeCollector, removeInput, ct);
+
+		result.Should().BeTrue();
+		removeCollector.Errors.Should().Be(0);
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(2);
+
+		var removeAmendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[1], ct);
+		removeAmendContent.Should().Contain("exclude-entries:");
+		removeAmendContent.Should().Contain("name: 1755268200-new-feature.yaml");
+	}
+
+	[Fact]
+	public async Task AmendBundle_RemoveWithChecksumMismatch_WithoutForce_Fails()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateUnresolvedBundle(ct);
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+
+		await FileSystem.File.WriteAllTextAsync(
+			changelogFile,
+			"""
+			title: Changed title
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			- "100"
+			""",
+			ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [changelogFile]
+		};
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeFalse();
+		amendCollector.Diagnostics.Should().ContainSingle(d =>
+			d.Message.Contains("different checksum"));
+	}
+
+	[Fact]
+	public async Task AmendBundle_RemoveAndAdd_InSingleAmendFile()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateUnresolvedBundle(ct);
+		var removeFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+		var addFile = await CreateNewChangelogFile(ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [removeFile],
+			AddFiles = [addFile]
+		};
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1);
+
+		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct);
+		amendContent.Should().Contain("exclude-entries:");
+		amendContent.Should().Contain("name: 1755268130-existing.yaml");
+		amendContent.Should().Contain("entries:");
+		amendContent.Should().Contain("name: 1755268200-new-feature.yaml");
+	}
+
+	[Fact]
+	public async Task AmendBundle_CorruptExistingAmend_FailsWithoutWritingNewAmend()
+	{
+		var ct = TestContext.Current.CancellationToken;
+		var bundlePath = await CreateUnresolvedBundle(ct);
+		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
+
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.ChangeExtension(bundlePath, ".amend-1.yaml"),
+			"exclude-entries:\n  - file: [invalid yaml",
+			ct);
+
+		var amendCollector = new TestDiagnosticsCollector(Output);
+		var input = new AmendBundleArguments
+		{
+			BundlePath = bundlePath,
+			RemoveFiles = [changelogFile]
+		};
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeFalse();
+		amendCollector.Diagnostics.Should().ContainSingle(d =>
+			d.Severity == Severity.Error &&
+			d.Message.Contains("Failed to deserialize amend file"));
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1, "corrupt amend should not produce a second amend file");
 	}
 }

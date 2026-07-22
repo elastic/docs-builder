@@ -5,9 +5,11 @@
 using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Inference;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
@@ -45,21 +47,23 @@ public class IsolatedBuildService(
 	public async Task<bool> Build(
 		IDiagnosticsCollector collector,
 		ScopedFileSystem fileSystem,
-		string? path = null,
-		string? output = null,
-		string? pathPrefix = null,
-		bool? force = null,
-		bool? strict = null,
-		bool? allowIndexing = null,
-		bool? metadataOnly = null,
-		IReadOnlySet<Exporter>? exporters = null,
-		string? canonicalBaseUrl = null,
+		IsolatedBuildOptions options,
 		ScopedFileSystem? writeFileSystem = null,
-		bool skipOpenApi = false,
-		bool skipCrossLinks = false,
 		Cancel ctx = default
 	)
 	{
+		var path = options.Path?.FullName;
+		var output = options.Output?.FullName;
+		var pathPrefix = options.PathPrefix;
+		var force = options.Force;
+		var strict = options.Strict;
+		var allowIndexing = options.AllowIndexing;
+		var metadataOnly = options.MetadataOnly;
+		var exporters = options.Exporters;
+		var canonicalBaseUri = options.CanonicalBaseUrl;
+		var skipOpenApi = options.SkipApi;
+		var skipCrossLinks = options.SkipCrossLinks;
+
 		strict = IsStrict(strict);
 
 		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
@@ -72,18 +76,13 @@ public class IsolatedBuildService(
 		var runningOnCi = _env.IsRunningOnCI;
 		BuildContext context;
 
-		Uri? canonicalBaseUri;
+		canonicalBaseUri ??= new Uri("https://docs-v3-preview.elastic.dev");
 
 		if (runningOnCi)
 		{
 			_logger.LogInformation("Build running on CI, forcing a full rebuild of the destination folder");
 			force = true;
 		}
-
-		if (canonicalBaseUrl is null)
-			canonicalBaseUri = new Uri("https://docs-v3-preview.elastic.dev");
-		else if (!Uri.TryCreate(canonicalBaseUrl, UriKind.Absolute, out canonicalBaseUri))
-			throw new ArgumentException($"The canonical base url '{canonicalBaseUrl}' is not a valid absolute uri");
 
 		try
 		{
@@ -143,8 +142,11 @@ public class IsolatedBuildService(
 			crossLinkResolver = new CrossLinkResolver(crossLinks, uriResolver);
 		}
 
+		// Prefetch CDN-hosted release notes for products declared under `release_notes` in docset.yml.
+		var releaseNotesResolver = await ReleaseNotesFetcher.PrefetchAsync(context, logFactory, ctx);
+
 		// always delete output folder on CI
-		var set = new DocumentationSet(context, logFactory, crossLinkResolver);
+		var set = new DocumentationSet(context, logFactory, crossLinkResolver, releaseNotesResolver);
 		if (runningOnCi)
 			set.ClearOutputDirectory();
 
@@ -154,7 +156,8 @@ public class IsolatedBuildService(
 			context.LegacyUrlMappings,
 			set.Configuration,
 			context.Git);
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context,
+			branded: context.Configuration.Branding is not null);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -171,6 +174,9 @@ public class IsolatedBuildService(
 
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
+
+		var finishTasks = markdownExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
+		_ = await Task.WhenAll(finishTasks);
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
@@ -231,6 +237,9 @@ public class IsolatedBuildService(
 
 		if (manageLifecycle)
 		{
+			var finishTasks = allExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
+			_ = await Task.WhenAll(finishTasks);
+
 			var stopTasks = allExporters.Select(async e => await e.StopAsync(ctx));
 			await Task.WhenAll(stopTasks);
 		}

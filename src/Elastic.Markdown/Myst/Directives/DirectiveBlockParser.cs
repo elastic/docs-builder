@@ -8,12 +8,15 @@ using Elastic.Markdown.Myst.Directives.AgentSkill;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
+using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
@@ -136,6 +139,12 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
 
+		if (info.IndexOf("{cli-modifiers}") > 0)
+			return new CliModifiersBlock(this, context);
+
+		if (info.IndexOf("{storybook}") > 0)
+			return new StorybookBlock(this, context);
+
 		foreach (var admonition in Admonitions)
 		{
 			if (info.IndexOf(admonition) > 0)
@@ -147,6 +156,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			if (info.IndexOf(version) > 0)
 				return new VersionBlock(this, version[1..^1], context);
 		}
+
+		if (info.IndexOf("{page-card}") > 0)
+			return new PageCardBlock(this, context);
 
 		if (info.IndexOf("{stepper}") > 0)
 			return new StepperBlock(this, context);
