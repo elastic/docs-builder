@@ -341,29 +341,32 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		"#36b9ff", // blue-sky
 	];
 
-	private static readonly RenderOptions MermaidRenderOptions = new()
-	{
-		Bg = "#FFFFFF",
-		Fg = "#000000",
-		// Tailwind font-mono default stack (theme.css has no --font-mono custom property)
-		MonoFont = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-		DataPalette = MermaidDataPalette,
-		Strict = new StrictStylingOptions
-		{
-			AllowedClasses = MermaidAllowedClasses,
-			// RejectUnknownClasses defaults true — unknown class refs → MermaidParseException → warning + fallback
-		},
-	};
-
 	/// <summary>Renders a Mermaid code block as an inline SVG using Mermaider.</summary>
 	private static void RenderMermaidBlock(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var mermaidText = ExtractMermaidText(block);
+		var options = new RenderOptions
+		{
+			Bg = "#FFFFFF",
+			Fg = "#000000",
+			// Tailwind font-mono default stack (theme.css has no --font-mono custom property)
+			MonoFont = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+			DataPalette = MermaidDataPalette,
+			Strict = new StrictStylingOptions
+			{
+				AllowedClasses = MermaidAllowedClasses,
+				// Strip mode: stray styling is dropped and the diagram still renders; each dropped item fires OnStripped.
+				OnStripped = v => block.EmitHint($"Mermaid strict mode stripped {v.Kind}: {v.Message}"),
+			},
+			// Logged as errors for now so SVG sanitizer removals cause build failures — downgrade to warnings
+			// once we're confident the sanitizer isn't stripping legitimate content.
+			OnSanitized = v => block.EmitError($"Mermaid SVG sanitizer removed {v.Kind} '{v.Name}'"),
+		};
 
 		string svg;
 		try
 		{
-			svg = MermaidRenderer.RenderSvg(mermaidText, MermaidRenderOptions);
+			svg = MermaidRenderer.RenderSvg(mermaidText, options);
 		}
 		catch (MermaidResourceLimitException e)
 		{

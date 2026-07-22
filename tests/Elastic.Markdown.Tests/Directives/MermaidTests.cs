@@ -165,7 +165,8 @@ erDiagram
 	}
 }
 
-// classDef/style directives are banned by strict styling — diagram should warn and fall back to raw source.
+// classDef/style directives are stripped by strict styling (Strip mode) — diagram still renders as SVG,
+// each stripped item fires OnStripped as a hint.
 public class MermaidStyledFlowchartTests(ITestOutputHelper output) : DirectiveTest(output,
 """
 ```mermaid
@@ -179,13 +180,13 @@ style B fill:#0A52B3,color:#fff
 )
 {
 	[Fact]
-	public void EmitsWarning() => Collector.Diagnostics.Should().NotBeEmpty();
+	public void EmitsHints() => Collector.Diagnostics.Should().NotBeEmpty();
 
 	[Fact]
-	public void FallsBackToRawSource() => Html.Should().Contain("<pre class=\"mermaid-error\">");
+	public void RendersAsSvg() => Html.Should().Contain("<svg");
 
 	[Fact]
-	public void DoesNotRenderSvg() => Html.Should().NotContain("<svg");
+	public void DoesNotFallBackToRawSource() => Html.Should().NotContain("<pre class=\"mermaid-error\">");
 }
 
 // Allowlisted semantic classes render correctly with site palette colors baked into SVG.
