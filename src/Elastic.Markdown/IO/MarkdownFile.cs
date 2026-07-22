@@ -94,6 +94,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	public string FilePath { get; }
 	public string FileName { get; }
+	public string? SourcePath => RelativePath;
 
 	private bool _instructionsParsed;
 
