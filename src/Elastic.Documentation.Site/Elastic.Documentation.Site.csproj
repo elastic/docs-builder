@@ -58,24 +58,18 @@
     <NpmBuildInputFiles Include="Assets/**/*" />
     <NpmBuildInputFiles Include="package.json;pnpm-lock.yaml" />
     <NpmBuildInputFiles Include="tsconfig.json;tailwind.config.js;.parcelrc;.postcssrc" />
+    <NpmBuildInputFiles Include="**/*.cshtml" />
+    <NpmBuildInputFiles Include="../Elastic.Markdown/**/*.cshtml" />
+    <NpmBuildInputFiles Include="../Elastic.Codex/**/*.cshtml" />
+    <NpmBuildInputFiles Include="../Elastic.ApiExplorer/**/*.cshtml" />
   </ItemGroup>
-  <!-- Tailwind scans these directories for utility class usage (see tailwind.config.js content paths).
-       Resolved inside a target so external cshtml files don't appear in the IDE's project tree. -->
-  <Target Name="CollectExternalCshtmlInputs">
-    <ItemGroup>
-      <NpmBuildInputFiles Include="**/*.cshtml" />
-      <NpmBuildInputFiles Include="../Elastic.Markdown/**/*.cshtml" />
-      <NpmBuildInputFiles Include="../Elastic.Codex/**/*.cshtml" />
-      <NpmBuildInputFiles Include="../Elastic.ApiExplorer/**/*.cshtml" />
-    </ItemGroup>
-  </Target>
 
   <!--
       Compute a single hash over all frontend inputs. Must be a separate target because
       MSBuild evaluates a target's Condition before its DependsOnTargets run — so the
       gate logic must live on the <Exec> task inside NpmRunBuild, not on the target itself.
   -->
-  <Target Name="_ComputeFrontendHash" DependsOnTargets="CollectExternalCshtmlInputs">
+  <Target Name="_ComputeFrontendHash">
     <GetFileHash Files="@(NpmBuildInputFiles)" Algorithm="SHA256">
       <Output TaskParameter="Items" ItemName="_HashedFrontendInputs" />
     </GetFileHash>
