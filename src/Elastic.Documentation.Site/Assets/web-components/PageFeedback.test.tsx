@@ -150,23 +150,17 @@ describe('PageFeedback', () => {
             name: 'This page was helpful',
         })
         await user.click(helpfulButton)
-        await user.type(
-            screen.getByRole('textbox', {
-                name: 'Tell us more (optional)',
-            }),
-            'The example needs more detail.'
-        )
+        const commentField = screen.getByRole('textbox', {
+            name: 'Tell us more (optional)',
+        })
+        await user.type(commentField, 'The example needs more detail.')
         await user.click(screen.getByRole('button', { name: 'Send feedback' }))
 
         expect(
             await screen.findByText("We couldn't save your feedback.")
         ).toBeInTheDocument()
         expect(helpfulButton).toHaveAttribute('aria-pressed', 'true')
-        expect(
-            screen.getByRole('textbox', {
-                name: 'Tell us more (optional)',
-            })
-        ).toHaveValue('The example needs more detail.')
+        expect(commentField).toHaveValue('The example needs more detail.')
 
         await user.click(screen.getByRole('button', { name: 'Try again' }))
 

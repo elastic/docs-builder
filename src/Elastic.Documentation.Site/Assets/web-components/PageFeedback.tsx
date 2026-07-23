@@ -153,7 +153,18 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
         }, REACTION_DEBOUNCE_DURATION)
     }
 
-    const submitCommentFeedback = async (payload: PageFeedbackPayload) => {
+    const submitComment = async (event: FormEvent) => {
+        event.preventDefault()
+        const trimmedComment = comment.trim()
+        if (!reaction || !trimmedComment || isSaving) return
+
+        const payload: PageFeedbackPayload = {
+            pageUrl,
+            pageTitle,
+            reaction,
+            comment: trimmedComment,
+        }
+
         window.clearTimeout(reactionTimeoutRef.current)
         feedbackMayExistRef.current = true
         setIsSaving(true)
@@ -188,19 +199,6 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
 
         setIsClosing(false)
         setShowComment(true)
-    }
-
-    const submitComment = (event: FormEvent) => {
-        event.preventDefault()
-        const trimmedComment = comment.trim()
-        if (!reaction || !trimmedComment || isSaving) return
-
-        void submitCommentFeedback({
-            pageUrl,
-            pageTitle,
-            reaction,
-            comment: trimmedComment,
-        })
     }
 
     const reopenComment = (event: React.MouseEvent<HTMLElement>) => {
