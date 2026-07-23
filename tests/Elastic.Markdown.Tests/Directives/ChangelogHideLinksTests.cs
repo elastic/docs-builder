@@ -403,6 +403,15 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 	}
 
 	[Fact]
+	public void MergedBundle_TocSlug_MatchesHeadingId()
+	{
+		var section = Block!.GeneratedTableOfContent.Single(t => t.Level == 3);
+
+		section.Slug.Should().Be("elasticsearchkibana-2025-08-05-features-enhancements");
+		Html.Should().Contain($"id=\"{section.Slug}\"");
+	}
+
+	[Fact]
 	public void HidesLinksWhenAnyMergedRepoIsPrivate()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
