@@ -11,12 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Isolated;
 
-public interface IStaticSearchIndexer
-{
-	Task BuildAsync(IDirectoryInfo outputDirectory, Cancel ctx = default);
-}
-
-public sealed class PagefindSearchIndexer(ILoggerFactory loggerFactory) : IStaticSearchIndexer
+public sealed class PagefindSearchIndexer(ILoggerFactory loggerFactory)
 {
 	private const string ResourceName = "Elastic.Documentation.Site.pagefind-indexer.gz";
 	private readonly ILogger _logger = loggerFactory.CreateLogger<PagefindSearchIndexer>();

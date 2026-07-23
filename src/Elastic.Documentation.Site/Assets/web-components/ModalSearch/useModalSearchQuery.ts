@@ -115,7 +115,7 @@ export const useModalSearchQuery = () => {
                     throw new DOMException('Aborted', 'AbortError')
 
                 return SearchResponse.parse({
-                    results: results.slice(0, 20),
+                    results,
                     totalResults: results.length,
                     pageCount: results.length > 0 ? 1 : 0,
                     pageNumber: 1,

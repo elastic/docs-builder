@@ -31,13 +31,12 @@ public class IsolatedBuildService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	IEnvironmentVariables environmentVariables,
-	IStaticSearchIndexer? staticSearchIndexer = null
+	IEnvironmentVariables environmentVariables
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IsolatedBuildService>();
 	private readonly IEnvironmentVariables _env = environmentVariables;
-	private readonly IStaticSearchIndexer _staticSearchIndexer = staticSearchIndexer ?? new PagefindSearchIndexer(logFactory);
+	private readonly PagefindSearchIndexer _pagefindSearchIndexer = new(logFactory);
 
 	public bool IsStrict(bool? strict)
 	{
@@ -183,7 +182,7 @@ public class IsolatedBuildService(
 		if (exporters.Contains(Exporter.Html))
 		{
 			if (context.Configuration.Features.StaticSearchEnabled)
-				await _staticSearchIndexer.BuildAsync(context.OutputDirectory, ctx);
+				await _pagefindSearchIndexer.BuildAsync(context.OutputDirectory, ctx);
 			else
 			{
 				var staticSearchOutput = context.WriteFileSystem.DirectoryInfo.New(
