@@ -18,11 +18,10 @@ public class PageFeedbackGatewayTests
 	public async Task UpsertFeedbackAsync_AllItemsPersisted_ReturnsTrue()
 	{
 		var transport = CreateTransport(201);
-		using var pageFeedbackTransport = new PageFeedbackTransport(transport);
 		var index = CreateIndex();
 		using var channel = CreateChannel(transport, index);
 		var gateway = new ElasticsearchPageFeedbackGateway(
-			pageFeedbackTransport,
+			transport,
 			index,
 			channel,
 			NullLogger<ElasticsearchPageFeedbackGateway>.Instance
@@ -37,11 +36,10 @@ public class PageFeedbackGatewayTests
 	public async Task UpsertFeedbackAsync_ItemRejected_ReturnsFalse()
 	{
 		var transport = CreateTransport(400);
-		using var pageFeedbackTransport = new PageFeedbackTransport(transport);
 		var index = CreateIndex();
 		using var channel = CreateChannel(transport, index);
 		var gateway = new ElasticsearchPageFeedbackGateway(
-			pageFeedbackTransport,
+			transport,
 			index,
 			channel,
 			NullLogger<ElasticsearchPageFeedbackGateway>.Instance

@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
     <ProjectReference Include="..\..\services\search\Elastic.Documentation.Search.Contract\Elastic.Documentation.Search.Contract.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
   </ItemGroup>
