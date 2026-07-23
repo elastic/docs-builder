@@ -5,6 +5,7 @@ interface PagefindResultData {
     excerpt: string
     meta: {
         title?: string
+        breadcrumbs?: string
     }
     sub_results?: Array<{
         title: string
@@ -40,6 +41,13 @@ interface StaticSearchResult {
 interface PagefindLoadedResult {
     score: number
     data: PagefindResultData
+}
+
+interface StructuredBreadcrumbs {
+    itemListElement?: Array<{
+        name?: string
+        item?: string
+    }>
 }
 
 let pagefindPromise: Promise<PagefindApi> | undefined
@@ -101,6 +109,22 @@ export const mapPagefindResults = (
             title: section.title || data.meta.title || data.url,
             description: section.excerpt,
             score,
-            parents: [],
+            parents: parseBreadcrumbs(data.meta.breadcrumbs),
         }
     })
+
+const parseBreadcrumbs = (value?: string) => {
+    if (!value) return []
+
+    try {
+        const breadcrumbs = JSON.parse(value) as StructuredBreadcrumbs
+        return (breadcrumbs.itemListElement ?? [])
+            .filter(
+                (item): item is { name: string; item: string } =>
+                    !!item.name && !!item.item
+            )
+            .map(({ name, item }) => ({ title: name, url: item }))
+    } catch {
+        return []
+    }
+}
