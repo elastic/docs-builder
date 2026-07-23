@@ -4,10 +4,74 @@ import * as React from 'react'
 import { FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 const COMMENT_MAX_LENGTH = 2000
-const COLLAPSE_ANIMATION_DURATION = 200
-const REACTION_DEBOUNCE_DURATION = 500
+const REASON_SET_VERSION = 1
+const REACTION_SAVE_DELAY = 400
 
 type Reaction = 'thumbsUp' | 'thumbsDown'
+type Reason =
+    | 'accurate'
+    | 'solvedProblem'
+    | 'easyToUnderstand'
+    | 'helpfulExamples'
+    | 'inaccurate'
+    | 'missingInformation'
+    | 'hardToUnderstand'
+    | 'codeSampleErrors'
+    | 'anotherReason'
+
+interface ReasonOption {
+    value: Reason
+    label: string
+    description?: string
+}
+
+const POSITIVE_REASONS: ReasonOption[] = [
+    {
+        value: 'accurate',
+        label: 'Accurate',
+        description: 'Accurately describes the product or feature.',
+    },
+    {
+        value: 'solvedProblem',
+        label: 'Solved my problem',
+        description: 'Helped me resolve an issue.',
+    },
+    {
+        value: 'easyToUnderstand',
+        label: 'Easy to understand',
+        description: 'Clear and easy to follow.',
+    },
+    {
+        value: 'helpfulExamples',
+        label: 'Helpful examples',
+        description: 'The examples helped me complete my task.',
+    },
+    { value: 'anotherReason', label: 'Another reason' },
+]
+
+const NEGATIVE_REASONS: ReasonOption[] = [
+    {
+        value: 'inaccurate',
+        label: 'Inaccurate',
+        description: "Doesn't accurately describe the product or feature.",
+    },
+    {
+        value: 'missingInformation',
+        label: "Couldn't find what I needed",
+        description: 'Missing important information.',
+    },
+    {
+        value: 'hardToUnderstand',
+        label: 'Hard to understand',
+        description: 'Too complicated or unclear.',
+    },
+    {
+        value: 'codeSampleErrors',
+        label: 'Code sample errors',
+        description: 'One or more code samples are incorrect.',
+    },
+    { value: 'anotherReason', label: 'Another reason' },
+]
 
 interface PageFeedbackProps {
     pageUrl: string
@@ -18,7 +82,13 @@ interface PageFeedbackPayload {
     pageUrl: string
     pageTitle: string
     reaction: Reaction
+    reason?: Reason
+    reasonSetVersion?: number
     comment?: string
+}
+
+interface PendingReactionSave {
+    finish: (shouldSave: boolean) => void
 }
 
 const ThumbIcon = ({ down = false }: { down?: boolean }) => (
@@ -61,120 +131,93 @@ const submitFeedback = async (
     }
 }
 
-const revokeFeedback = async (feedbackId: string) => {
-    const response = await fetch(
-        `${config.apiBasePath}/v1/page-feedback/${feedbackId}`,
-        {
-            method: 'DELETE',
-            credentials: 'same-origin',
-        }
-    )
-
-    if (!response.ok) {
-        throw new Error(
-            `Feedback deletion failed with status ${response.status}`
-        )
-    }
-}
-
 export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
-    const feedbackRef = useRef<HTMLElement>(null)
-    const commentRef = useRef<HTMLTextAreaElement>(null)
-    const reactionTimeoutRef = useRef<number | undefined>(undefined)
-    const feedbackMayExistRef = useRef(false)
     const questionId = useId()
     const guidanceId = useId()
+    const firstReasonRef = useRef<HTMLInputElement>(null)
+    const initialSaveRef = useRef<Promise<void>>(Promise.resolve())
+    const pendingReactionSaveRef = useRef<PendingReactionSave | null>(null)
     const [feedbackId] = useState(() => crypto.randomUUID())
     const [reaction, setReaction] = useState<Reaction | null>(null)
+    const [reason, setReason] = useState<Reason | null>(null)
     const [comment, setComment] = useState('')
-    const [savedComment, setSavedComment] = useState<string | undefined>()
-    const [showComment, setShowComment] = useState(false)
-    const [isClosing, setIsClosing] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [showThanks, setShowThanks] = useState(false)
     const [error, setError] = useState(false)
 
     useEffect(() => {
-        if (!showComment || isClosing) return
+        if (reaction) firstReasonRef.current?.focus()
+    }, [reaction])
 
-        const closeOnOutsideClick = (event: PointerEvent) => {
-            if (
-                event.target instanceof Node &&
-                !feedbackRef.current?.contains(event.target)
-            ) {
-                setIsClosing(true)
+    useEffect(() => () => pendingReactionSaveRef.current?.finish(false), [])
+
+    const saveInitialReaction = async (nextReaction: Reaction) => {
+        const payload = { pageUrl, pageTitle, reaction: nextReaction }
+
+        try {
+            await submitFeedback(feedbackId, payload)
+        } catch {
+            try {
+                await submitFeedback(feedbackId, payload)
+            } catch {
+                // The questionnaire remains available and its submission retries
+                // the complete feedback payload.
             }
         }
-
-        document.addEventListener('pointerdown', closeOnOutsideClick)
-        return () =>
-            document.removeEventListener('pointerdown', closeOnOutsideClick)
-    }, [isClosing, showComment])
-
-    useEffect(() => {
-        if (!isClosing) return
-
-        const timeout = window.setTimeout(() => {
-            setShowComment(false)
-            setIsClosing(false)
-        }, COLLAPSE_ANIMATION_DURATION)
-
-        return () => window.clearTimeout(timeout)
-    }, [isClosing])
-
-    useEffect(() => {
-        if (showComment && !isClosing) commentRef.current?.focus()
-    }, [isClosing, showComment])
-
-    useEffect(() => () => window.clearTimeout(reactionTimeoutRef.current), [])
-
-    const queueReaction = (nextReaction: Reaction | null) => {
-        window.clearTimeout(reactionTimeoutRef.current)
-
-        if (!nextReaction && !feedbackMayExistRef.current) return
-
-        reactionTimeoutRef.current = window.setTimeout(() => {
-            if (!nextReaction) {
-                void revokeFeedback(feedbackId)
-                    .then(() => {
-                        feedbackMayExistRef.current = false
-                    })
-                    .catch(() => undefined)
-                return
-            }
-
-            feedbackMayExistRef.current = true
-            void submitFeedback(feedbackId, {
-                pageUrl,
-                pageTitle,
-                reaction: nextReaction,
-                comment: savedComment,
-            }).catch(() => undefined)
-        }, REACTION_DEBOUNCE_DURATION)
     }
 
-    const submitComment = async (event: FormEvent) => {
+    const selectReaction = (nextReaction: Reaction) => {
+        if (nextReaction === reaction) return
+
+        setReaction(nextReaction)
+        setReason(null)
+        setError(false)
+        pendingReactionSaveRef.current?.finish(false)
+
+        const debounce = new Promise<boolean>((resolve) => {
+            let settled = false
+            const timeout = window.setTimeout(
+                () => finish(true),
+                REACTION_SAVE_DELAY
+            )
+            const finish = (shouldSave: boolean) => {
+                if (settled) return
+
+                settled = true
+                window.clearTimeout(timeout)
+                pendingReactionSaveRef.current = null
+                resolve(shouldSave)
+            }
+
+            pendingReactionSaveRef.current = { finish }
+        })
+
+        initialSaveRef.current = initialSaveRef.current.then(async () => {
+            if (await debounce) await saveInitialReaction(nextReaction)
+        })
+    }
+
+    const submitDetails = async (event: FormEvent) => {
         event.preventDefault()
         const trimmedComment = comment.trim()
-        if (!reaction || !trimmedComment || isSaving) return
+        if (!reaction || !reason || isSaving) return
 
         const payload: PageFeedbackPayload = {
             pageUrl,
             pageTitle,
             reaction,
-            comment: trimmedComment,
+            reason,
+            reasonSetVersion: REASON_SET_VERSION,
+            ...(trimmedComment ? { comment: trimmedComment } : {}),
         }
 
-        window.clearTimeout(reactionTimeoutRef.current)
-        feedbackMayExistRef.current = true
         setIsSaving(true)
         setError(false)
 
         try {
+            pendingReactionSaveRef.current?.finish(true)
+            await initialSaveRef.current
             await submitFeedback(feedbackId, payload)
-            setSavedComment(payload.comment)
-            setComment(payload.comment ?? '')
-            setIsClosing(true)
             setShowThanks(true)
         } catch {
             setError(true)
@@ -183,95 +226,106 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
         }
     }
 
-    const selectReaction = (nextReaction: Reaction) => {
-        if (isSaving) return
-
-        const selectedReaction = reaction === nextReaction ? null : nextReaction
-        setReaction(selectedReaction)
-        setShowThanks(false)
-        setError(false)
-        queueReaction(selectedReaction)
-
-        if (!selectedReaction) {
-            if (showComment) setIsClosing(true)
-            return
-        }
-
-        setIsClosing(false)
-        setShowComment(true)
-    }
-
-    const reopenComment = (event: React.MouseEvent<HTMLElement>) => {
-        if (
-            !reaction ||
-            (showComment && !isClosing) ||
-            (event.target instanceof Element &&
-                event.target.closest('button, input, textarea, form, a'))
-        ) {
-            return
-        }
-
-        setIsClosing(false)
-        setShowComment(true)
-        setShowThanks(false)
+    if (showThanks) {
+        return (
+            <section className="page-feedback page-feedback--success">
+                <p className="page-feedback__thanks" role="status">
+                    <span
+                        className="page-feedback__thanks-icon"
+                        aria-hidden="true"
+                    >
+                        ✓
+                    </span>
+                    Thank you for your feedback.
+                </p>
+            </section>
+        )
     }
 
     return (
-        <section
-            ref={feedbackRef}
-            className={`page-feedback${reaction ? ` page-feedback--${reaction === 'thumbsUp' ? 'positive' : 'negative'}` : ''}${showComment ? ' page-feedback--expanded' : ''}${isClosing ? ' page-feedback--closing' : ''}${reaction && !showComment ? ' page-feedback--collapsed' : ''}`}
-            aria-labelledby={questionId}
-            onClick={reopenComment}
-            onBlur={(event) => {
-                if (
-                    event.relatedTarget &&
-                    !event.currentTarget.contains(event.relatedTarget)
-                ) {
-                    setIsClosing(true)
-                }
-            }}
-        >
+        <section className="page-feedback">
             <div className="page-feedback__prompt">
                 <p id={questionId} className="page-feedback__question">
                     Was this page helpful?
                 </p>
                 <div
-                    className="page-feedback__reactions"
+                    className="page-feedback__choices"
                     role="group"
                     aria-labelledby={questionId}
                 >
                     <button
                         type="button"
-                        className="page-feedback__reaction page-feedback__reaction--positive"
-                        aria-label="This page was helpful"
+                        className="page-feedback__choice page-feedback__choice--yes"
+                        aria-label="Yes, this page was helpful"
                         aria-pressed={reaction === 'thumbsUp'}
                         disabled={isSaving}
                         onClick={() => selectReaction('thumbsUp')}
                     >
                         <ThumbIcon />
+                        Yes
                     </button>
                     <button
                         type="button"
-                        className="page-feedback__reaction page-feedback__reaction--negative"
-                        aria-label="This page was not helpful"
+                        className="page-feedback__choice page-feedback__choice--no"
+                        aria-label="No, this page was not helpful"
                         aria-pressed={reaction === 'thumbsDown'}
                         disabled={isSaving}
                         onClick={() => selectReaction('thumbsDown')}
                     >
                         <ThumbIcon down />
+                        No
                     </button>
                 </div>
             </div>
 
-            {showComment && (
-                <div
-                    className={`page-feedback__details${isClosing ? ' page-feedback__details--closing' : ''}`}
-                >
-                    <div className="page-feedback__details-inner">
-                        <form
-                            className={`page-feedback__form${isClosing ? ' page-feedback__form--closing' : ''}`}
-                            onSubmit={submitComment}
-                        >
+            {reaction && (
+                <form className="page-feedback__form" onSubmit={submitDetails}>
+                    <fieldset
+                        className="page-feedback__reasons"
+                        disabled={isSaving}
+                    >
+                        <legend className="page-feedback__legend">
+                            {reaction === 'thumbsUp'
+                                ? 'What did you like?'
+                                : 'What went wrong?'}
+                        </legend>
+                        {(reaction === 'thumbsUp'
+                            ? POSITIVE_REASONS
+                            : NEGATIVE_REASONS
+                        ).map((option, index) => (
+                            <label
+                                key={option.value}
+                                className="page-feedback__reason"
+                            >
+                                <input
+                                    ref={
+                                        index === 0 ? firstReasonRef : undefined
+                                    }
+                                    type="radio"
+                                    name={`${questionId}-reason`}
+                                    value={option.value}
+                                    checked={reason === option.value}
+                                    onChange={() => {
+                                        setReason(option.value)
+                                        setError(false)
+                                    }}
+                                />
+                                <span>
+                                    <span className="page-feedback__reason-label">
+                                        {option.label}
+                                    </span>
+                                    {option.description && (
+                                        <span className="page-feedback__reason-description">
+                                            {option.description}
+                                        </span>
+                                    )}
+                                </span>
+                            </label>
+                        ))}
+                    </fieldset>
+
+                    {reason && (
+                        <div className="page-feedback__details">
                             <label
                                 className="sr-only"
                                 htmlFor={`${questionId}-comment`}
@@ -279,13 +333,13 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
                                 Tell us more (optional)
                             </label>
                             <textarea
-                                ref={commentRef}
                                 id={`${questionId}-comment`}
                                 className="page-feedback__textarea"
                                 value={comment}
                                 maxLength={COMMENT_MAX_LENGTH}
                                 placeholder="Tell us more (optional)"
                                 aria-describedby={guidanceId}
+                                disabled={isSaving}
                                 onChange={(event) =>
                                     setComment(event.target.value)
                                 }
@@ -302,42 +356,28 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
                                     {comment.length}/{COMMENT_MAX_LENGTH}
                                 </span>
                             </div>
-                            <div className="page-feedback__actions">
-                                {error && (
-                                    <p
-                                        className="page-feedback__error"
-                                        role="alert"
-                                    >
-                                        We couldn&apos;t save your feedback.
-                                    </p>
-                                )}
-                                <button
-                                    type="submit"
-                                    className="page-feedback__submit"
-                                    disabled={isSaving || !comment.trim()}
-                                >
-                                    {isSaving
-                                        ? 'Sending…'
-                                        : error
-                                          ? 'Try again'
-                                          : 'Send feedback'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                        </div>
+                    )}
 
-            {showThanks && (
-                <p className="page-feedback__thanks" role="status">
-                    <span
-                        className="page-feedback__thanks-icon"
-                        aria-hidden="true"
-                    >
-                        ✓
-                    </span>
-                    Thanks for your feedback.
-                </p>
+                    <div className="page-feedback__actions">
+                        <button
+                            type="submit"
+                            className="page-feedback__submit"
+                            disabled={isSaving || !reason}
+                        >
+                            {isSaving
+                                ? 'Sending…'
+                                : error
+                                  ? 'Try again'
+                                  : 'Submit'}
+                        </button>
+                        {error && (
+                            <p className="page-feedback__error" role="alert">
+                                We couldn&apos;t save your feedback.
+                            </p>
+                        )}
+                    </div>
+                </form>
             )}
         </section>
     )

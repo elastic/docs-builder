@@ -9,6 +9,24 @@ The documentation site records page-level reactions and optional comments in the
 identifier as the document `_id`, so later comment submissions and reaction
 changes replace the same document.
 
+The thumbs-up or thumbs-down selection writes a document with the reaction after
+a short debounce, so quickly changing the selection records only the final
+choice. The follow-up questionnaire writes the same document again with a
+structured reason, the reason-set version, and optional details. Submitting the
+questionnaire flushes any pending reaction write first. This keeps abandoned
+questionnaires useful while ensuring the richer submission wins.
+
+Reasons are stored as keyword enum values for filtering and aggregation.
+`reason_set_version` identifies the questionnaire revision that presented the
+option. Display labels may change without changing their stored value. Add a new
+enum value when an option's meaning changes, and retain retired values so older
+clients and historical documents remain valid.
+
+The current positive reasons are `accurate`, `solvedProblem`,
+`easyToUnderstand`, `helpfulExamples`, and `anotherReason`. The current negative
+reasons are `inaccurate`, `missingInformation`, `hardToUnderstand`,
+`codeSampleErrors`, and `anotherReason`.
+
 ## Provision the index
 
 `PageFeedbackMapping` defines the mapping with `Elastic.Mapping` attributes.

@@ -34,8 +34,39 @@ public class PageFeedbackEndpointTests
 		recorded.FeedbackId.Should().Be(feedbackId);
 		recorded.PageUrl.Should().Be("/docs/test-page");
 		recorded.Reaction.Should().Be(PageFeedbackReaction.ThumbsUp);
+		recorded.Reason.Should().Be(PageFeedbackReason.Accurate);
+		recorded.ReasonSetVersion.Should().Be(1);
 		recorded.Comment.Should().Be("Useful page");
 		recorded.Euid.Should().Be("test-euid");
+	}
+
+	[Fact]
+	public async Task Put_ReactionOnly_RecordsFeedbackWithoutDetails()
+	{
+		var feedbackService = A.Fake<IPageFeedbackService>();
+		PageFeedbackRecord? recorded = null;
+		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
+			.Invokes((PageFeedbackRecord record, CancellationToken _) => recorded = record)
+			.Returns(Task.FromResult(true));
+		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
+		using var client = factory.CreateClient();
+		const string payload = /*lang=json,strict*/
+			"""
+			{
+				"pageUrl": "/docs/test-page",
+				"pageTitle": "Test page",
+				"reaction": "thumbsDown"
+			}
+			""";
+		using var request = CreateRequest(Guid.NewGuid(), payload);
+
+		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+		recorded.Should().NotBeNull();
+		recorded.Reason.Should().BeNull();
+		recorded.ReasonSetVersion.Should().BeNull();
+		recorded.Comment.Should().BeNull();
 	}
 
 	[Fact]
@@ -49,9 +80,61 @@ public class PageFeedbackEndpointTests
 				"pageUrl": "/docs/test-page",
 				"pageTitle": "Test page",
 				"reaction": "thumbsDown",
+				"reason": "inaccurate",
+				"reasonSetVersion": 1,
 				"comment": "{{new string('x', 2001)}}"
 			}
 			""";
+		using var request = CreateRequest(Guid.NewGuid(), payload);
+
+		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
+			.MustNotHaveHappened();
+	}
+
+	[Theory]
+	[InlineData(
+		/*lang=json,strict*/ """
+		{
+			"pageUrl": "/docs/test-page",
+			"pageTitle": "Test page",
+			"reaction": "thumbsUp",
+			"reason": "inaccurate",
+			"reasonSetVersion": 1
+		}
+		""")]
+	[InlineData(
+		/*lang=json,strict*/ """
+		{
+			"pageUrl": "/docs/test-page",
+			"pageTitle": "Test page"
+		}
+		""")]
+	[InlineData(
+		/*lang=json,strict*/ """
+		{
+			"pageUrl": "/docs/test-page",
+			"pageTitle": "Test page",
+			"reaction": "thumbsDown",
+			"comment": "Missing a required reason"
+		}
+		""")]
+	[InlineData(
+		/*lang=json,strict*/ """
+		{
+			"pageUrl": "/docs/test-page",
+			"pageTitle": "Test page",
+			"reaction": "thumbsDown",
+			"reason": "inaccurate"
+		}
+		""")]
+	public async Task Put_InvalidFeedback_ReturnsBadRequest(string payload)
+	{
+		var feedbackService = A.Fake<IPageFeedbackService>();
+		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
+		using var client = factory.CreateClient();
 		using var request = CreateRequest(Guid.NewGuid(), payload);
 
 		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
@@ -101,6 +184,8 @@ public class PageFeedbackEndpointTests
 			"pageUrl": "/docs/test-page",
 			"pageTitle": "Test page",
 			"reaction": "thumbsUp",
+			"reason": "accurate",
+			"reasonSetVersion": 1,
 			"comment": " Useful page "
 		}
 		""";

@@ -26,6 +26,15 @@ public sealed record PageFeedbackDocument
 	[JsonPropertyName("reaction")]
 	public required string Reaction { get; init; }
 
+	[Keyword]
+	[JsonPropertyName("reason")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? Reason { get; init; }
+
+	[JsonPropertyName("reason_set_version")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public int? ReasonSetVersion { get; init; }
+
 	[Text]
 	[JsonPropertyName("comment")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
