@@ -4,14 +4,11 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
-const platformNames = {
-	darwin: 'darwin',
-	linux: 'linux',
-	win32: 'windows',
-}
-
-const platform = platformNames[process.platform]
-if (!platform || !['arm64', 'x64'].includes(process.arch)) {
+const platform = process.platform === 'win32' ? 'windows' : process.platform
+if (
+	!['darwin', 'linux', 'windows'].includes(platform) ||
+	!['arm64', 'x64'].includes(process.arch)
+) {
 	throw new Error(
 		`Pagefind is not packaged for ${process.platform}-${process.arch}`
 	)

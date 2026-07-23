@@ -28,7 +28,7 @@ interface PagefindApi {
     search: (query: string) => Promise<PagefindSearch | null>
 }
 
-export interface StaticSearchResult {
+interface StaticSearchResult {
     type: 'docs'
     url: string
     title: string
@@ -37,7 +37,7 @@ export interface StaticSearchResult {
     parents: Array<{ url: string; title: string }>
 }
 
-export interface PagefindLoadedResult {
+interface PagefindLoadedResult {
     score: number
     data: PagefindResultData
 }

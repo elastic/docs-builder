@@ -135,22 +135,24 @@ export const Header = ({
               `
 
     return (
-        <QueryClientProvider client={sharedQueryClient}>
-            <EuiProvider
-                colorMode="light"
-                globalStyles={false}
-                utilityClasses={false}
-            >
-                <EuiHeader
-                    css={headerCss}
-                    sections={[
-                        {
-                            items: [logoSection],
-                        },
-                        ...(config.staticSearch
-                            ? [
-                                  {
-                                      items: [
+        <EuiProvider
+            colorMode="light"
+            globalStyles={false}
+            utilityClasses={false}
+        >
+            <EuiHeader
+                css={headerCss}
+                sections={[
+                    {
+                        items: [logoSection],
+                    },
+                    ...(config.staticSearch
+                        ? [
+                              {
+                                  items: [
+                                      <QueryClientProvider
+                                          client={sharedQueryClient}
+                                      >
                                           <div
                                               css={css`
                                                   width: min(22rem, 35vw);
@@ -160,53 +162,51 @@ export const Header = ({
                                                   size="s"
                                                   placeholder="Search"
                                               />
-                                          </div>,
-                                      ],
-                                  },
-                              ]
-                            : []),
-                        ...(!airGapped
-                            ? [
-                                  {
-                                      items: [
-                                          ...(githubLink
-                                              ? [
-                                                    <a
-                                                        href={githubLink}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        css={css`
-                                                            ${headerButtonCss(
-                                                                euiTheme
-                                                            )};
-                                                            margin-inline: ${euiTheme
-                                                                .size.s};
-                                                        `}
-                                                    >
-                                                        <EuiIcon
-                                                            type="logoGithub"
-                                                            color="inherit"
-                                                        />
-                                                        GitHub
-                                                    </a>,
-                                                ]
-                                              : []),
-                                          <DeploymentInfo
-                                              gitBranch={gitBranch}
-                                              gitCommit={gitCommit}
-                                              githubRepository={
-                                                  githubRepository
-                                              }
-                                              githubRef={githubRef}
-                                          />,
-                                      ],
-                                  },
-                              ]
-                            : []),
-                    ]}
-                />
-            </EuiProvider>
-        </QueryClientProvider>
+                                          </div>
+                                      </QueryClientProvider>,
+                                  ],
+                              },
+                          ]
+                        : []),
+                    ...(!airGapped
+                        ? [
+                              {
+                                  items: [
+                                      ...(githubLink
+                                          ? [
+                                                <a
+                                                    href={githubLink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    css={css`
+                                                        ${headerButtonCss(
+                                                            euiTheme
+                                                        )};
+                                                        margin-inline: ${euiTheme
+                                                            .size.s};
+                                                    `}
+                                                >
+                                                    <EuiIcon
+                                                        type="logoGithub"
+                                                        color="inherit"
+                                                    />
+                                                    GitHub
+                                                </a>,
+                                            ]
+                                          : []),
+                                      <DeploymentInfo
+                                          gitBranch={gitBranch}
+                                          gitCommit={gitCommit}
+                                          githubRepository={githubRepository}
+                                          githubRef={githubRef}
+                                      />,
+                                  ],
+                              },
+                          ]
+                        : []),
+                ]}
+            />
+        </EuiProvider>
     )
 }
 
