@@ -20,6 +20,8 @@ public class PageFeedbackMappingTests
 
 		context.IndexStrategy.Should().NotBeNull();
 		context.IndexStrategy.WriteTarget.Should().Be("page-feedback-v1-staging");
+		context.MappingVersion.Should().NotBeNullOrWhiteSpace();
+		context.MappingVersion.Should().Be(typeof(PageFeedbackMappingContext).Assembly.GetName().Version?.ToString());
 		root.GetProperty("dynamic").GetBoolean().Should().BeFalse();
 		properties.GetProperty("feedback_id").GetProperty("type").GetString().Should().Be("keyword");
 		properties.GetProperty("page_url").GetProperty("ignore_above").GetInt32().Should().Be(2048);

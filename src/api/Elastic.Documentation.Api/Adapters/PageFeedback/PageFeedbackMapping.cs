@@ -56,7 +56,8 @@ internal sealed partial class PageFeedbackJsonContext : JsonSerializerContext;
 [ElasticsearchMappingContext(JsonContext = typeof(PageFeedbackJsonContext))]
 [Index<PageFeedbackDocument>(
 	NameTemplate = "page-feedback-v1-{env}",
-	Dynamic = false
+	Dynamic = false,
+	MappingVersionFromAssembly = true
 )]
 internal static partial class PageFeedbackMappingContext;
 

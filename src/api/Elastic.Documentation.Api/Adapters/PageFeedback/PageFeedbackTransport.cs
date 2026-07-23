@@ -7,9 +7,16 @@ using Elastic.Transport;
 
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
 
-internal sealed class PageFeedbackTransport(DocumentationEndpoints endpoints) : IDisposable
+internal sealed class PageFeedbackTransport : IDisposable
 {
-	public ITransport Transport { get; } = ElasticsearchTransportFactory.Create(endpoints.Elasticsearch);
+	public PageFeedbackTransport(DocumentationEndpoints endpoints)
+		: this(ElasticsearchTransportFactory.Create(endpoints.Elasticsearch))
+	{
+	}
+
+	internal PageFeedbackTransport(ITransport transport) => Transport = transport;
+
+	public ITransport Transport { get; }
 
 	public void Dispose() => (Transport as IDisposable)?.Dispose();
 }

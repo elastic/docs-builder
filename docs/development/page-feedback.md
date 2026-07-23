@@ -32,9 +32,16 @@ reasons are `inaccurate`, `missingInformation`, `hardToUnderstand`,
 `PageFeedbackMapping` defines the mapping with `Elastic.Mapping` attributes.
 During API startup, `PageFeedbackBootstrapService` uses
 `Elastic.Ingest.Elasticsearch` to create or update environment-specific
-component and index templates. Template updates are skipped when the generated
-mapping hash has not changed. The first feedback write creates the concrete
-index from those templates.
+component and index templates. The generated context uses the API assembly
+version as its mapping version. Bootstrap skips unchanged mapping hashes and
+prevents an older API task from replacing templates installed by a newer task
+during a rolling deployment.
+
+The bootstrap service and runtime gateway share one ingest channel. Feedback
+upserts use `DirectWriteAsync` and await the bulk item result before the API
+responds. They do not use the channel's retry overload because the browser owns
+the bounded retry UX. The first successful feedback write creates the concrete
+index from the templates.
 
 The generated mapping disables dynamic field mapping. Fields that are not part
 of `PageFeedbackDocument` remain unindexed instead of changing the schema.
@@ -49,4 +56,6 @@ create the environment's index, and write and delete its documents.
 Template updates do not modify existing indices. For a mapping change, increment
 the schema version in the index name, deploy the new template, and migrate any
 documents that must be retained. Mixed task versions then write to separate
-versioned indices during a rolling deployment.
+versioned indices during a rolling deployment. The assembly mapping version is
+an additional downgrade guard for templates that retain the same schema-versioned
+name; it does not replace index versioning.

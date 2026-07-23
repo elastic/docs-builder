@@ -12,6 +12,7 @@ using Elastic.Documentation.Api.Caching;
 using Elastic.Documentation.Api.Gcp;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Search;
+using Elastic.Ingest.Elasticsearch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
@@ -188,6 +189,13 @@ public static class ServicesExtension
 	{
 		_ = services.AddSingleton<PageFeedbackTransport>();
 		_ = services.AddSingleton<PageFeedbackIndex>();
+		_ = services.AddSingleton(serviceProvider =>
+		{
+			var transport = serviceProvider.GetRequiredService<PageFeedbackTransport>();
+			var index = serviceProvider.GetRequiredService<PageFeedbackIndex>();
+			var options = new IngestChannelOptions<PageFeedbackDocument>(transport.Transport, index.MappingContext);
+			return new IngestChannel<PageFeedbackDocument>(options);
+		});
 		_ = services.AddSingleton<IPageFeedbackService, ElasticsearchPageFeedbackGateway>();
 		_ = services.AddHostedService<PageFeedbackBootstrapService>();
 	}
