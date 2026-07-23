@@ -1,9 +1,16 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
 @using Elastic.Documentation
 
+@{
+	var supportedBuildType = Model.BuildType is BuildType.Assembler or BuildType.Codex;
+#if DEBUG
+	supportedBuildType |= Model.BuildType is BuildType.Isolated;
+#endif
+}
+
 @if (Model.Features.PageFeedbackEnabled
 	&& !Model.Features.AirGappedEnabled
-	&& Model.BuildType is BuildType.Assembler or BuildType.Codex)
+	&& supportedBuildType)
 {
 	<page-feedback
 		page-url="@Model.CurrentNavigationItem.Url"

@@ -15,6 +15,8 @@ public record PageFeedbackRecord(
 	string PageUrl,
 	string PageTitle,
 	PageFeedbackReaction Reaction,
+	PageFeedbackReason? Reason,
+	int? ReasonSetVersion,
 	string? Comment,
 	string? Euid
 );

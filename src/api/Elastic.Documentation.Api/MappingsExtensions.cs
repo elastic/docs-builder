@@ -198,6 +198,8 @@ public static class MappingsExtension
 				request.PageUrl,
 				request.PageTitle,
 				request.Reaction,
+				request.Reason,
+				request.ReasonSetVersion,
 				comment,
 				euid
 			);
@@ -237,7 +239,36 @@ public static class MappingsExtension
 		&& Uri.TryCreate(request.PageUrl, UriKind.Relative, out _)
 		&& !string.IsNullOrWhiteSpace(request.PageTitle)
 		&& request.PageTitle.Length <= 500
-		&& Enum.IsDefined(request.Reaction)
-		&& (request.Comment is null || request.Comment.Length <= 2000);
+		&& request.Reaction is PageFeedbackReaction.ThumbsUp or PageFeedbackReaction.ThumbsDown
+		&& (request.Comment is null || request.Comment.Length <= 2000)
+		&& IsValidFeedbackDetails(request);
+
+	private static bool IsValidFeedbackDetails(PageFeedbackRequest request)
+	{
+		if (request.Reason is null)
+			return request.ReasonSetVersion is null && string.IsNullOrWhiteSpace(request.Comment);
+
+		return request.ReasonSetVersion is > 0
+			&& Enum.IsDefined(request.Reason.Value)
+			&& IsReasonValidForReaction(request.Reaction, request.Reason.Value);
+	}
+
+	private static bool IsReasonValidForReaction(PageFeedbackReaction reaction, PageFeedbackReason reason) =>
+		reaction switch
+		{
+			PageFeedbackReaction.ThumbsUp => reason is
+				PageFeedbackReason.Accurate
+				or PageFeedbackReason.SolvedProblem
+				or PageFeedbackReason.EasyToUnderstand
+				or PageFeedbackReason.HelpfulExamples
+				or PageFeedbackReason.AnotherReason,
+			PageFeedbackReaction.ThumbsDown => reason is
+				PageFeedbackReason.Inaccurate
+				or PageFeedbackReason.MissingInformation
+				or PageFeedbackReason.HardToUnderstand
+				or PageFeedbackReason.CodeSampleErrors
+				or PageFeedbackReason.AnotherReason,
+			_ => false
+		};
 
 }
