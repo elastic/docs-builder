@@ -153,8 +153,8 @@ type ``nested admonition in list`` () =
 		</ul>
 	</div>
 </div>
-<div class="heading-wrapper" id="what">
-	<h2>
+<div class="heading-wrapper">
+	<h2 id="what">
 		<a class="headerlink" href="#what">What</a>
 	</h2>
 </div>"""
@@ -182,8 +182,8 @@ type ``nested admonition in list 2`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-<div class="heading-wrapper" id="heading">
-	<h1>
+<div class="heading-wrapper">
+	<h1 id="heading">
 		<a class="headerlink" href="#heading">heading</a>
 	</h1>
 </div>
@@ -206,8 +206,8 @@ type ``nested admonition in list 2`` () =
 		</ul>
 	</div>
 </div>
-<div class="heading-wrapper" id="what">
-	<h2>
+<div class="heading-wrapper">
+	<h2 id="what">
 		<a class="headerlink" href="#what">What</a>
 	</h2>
 </div>
@@ -234,8 +234,8 @@ type ``nested admonition in list 3`` () =
     [<Fact>]
     let ``validate HTML`` () =
         markdown |> convertsToHtml """
-<div class="heading-wrapper" id="heading">
-	<h1>
+<div class="heading-wrapper">
+	<h1 id="heading">
 		<a class="headerlink" href="#heading">heading</a>
 	</h1>
 </div>
@@ -256,8 +256,8 @@ type ``nested admonition in list 3`` () =
 				</div>
 			</li>
 		</ul>
-		<div class="heading-wrapper" id="what">
-			<h2>
+		<div class="heading-wrapper">
+			<h2 id="what">
 				<a class="headerlink" href="#what">What</a>
 			</h2>
 		</div>

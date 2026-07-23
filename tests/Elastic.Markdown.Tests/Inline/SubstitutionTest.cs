@@ -159,7 +159,7 @@ sub:
 
 	[Fact]
 	public void OnlySeesGlobalVariable() =>
-		Html.ShouldContainHtml("""<h2><a class="headerlink" href="#custom-anchor">Hello World!</a></h2>""");
+		Html.ShouldContainHtml("""<h2 id="custom-anchor"><a class="headerlink" href="#custom-anchor">Hello World!</a></h2>""");
 
 	[Fact]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
