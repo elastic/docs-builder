@@ -312,6 +312,10 @@ const ModalSearchTrigger = ({
                 color: ${euiTheme.colors.textDisabled};
                 cursor: pointer;
 
+                @media (max-width: 768px) {
+                    padding-right: ${euiTheme.size.s};
+                }
+
                 &:hover {
                     border-color: ${euiTheme.colors.borderBasePlain};
                 }
@@ -345,6 +349,9 @@ const ModalSearchTrigger = ({
                     right: ${euiTheme.size.m};
                     color: ${euiTheme.colors.textDisabled};
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                    @media (max-width: 768px) {
+                        display: none;
+                    }
                 `}
             >
                 {isMac ? '⌘K' : 'Ctrl+K'}
