@@ -106,7 +106,7 @@ export const mapPagefindResults = (
         return {
             type: 'docs' as const,
             url: section.url,
-            title: section.title || data.meta.title || data.url,
+            title: data.meta.title || section.title || data.url,
             description: section.excerpt,
             score,
             parents: parseBreadcrumbs(data.meta.breadcrumbs),

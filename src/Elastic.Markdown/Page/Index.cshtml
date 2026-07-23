@@ -68,6 +68,7 @@
 				<meta name="DC.identifier" content="@(new HtmlString(Model.CurrentVersion))"/>
 			}
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
+			<meta data-pagefind-meta="title[content]" content="@Model.Title"/>
 			<meta data-pagefind-meta="breadcrumbs[content]" content="@Model.StructuredBreadcrumbsJson"/>
 			<script type="application/ld+json">
 	    	@(new HtmlString(Model.StructuredBreadcrumbsJson))

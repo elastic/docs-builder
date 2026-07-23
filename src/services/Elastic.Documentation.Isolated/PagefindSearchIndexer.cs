@@ -73,7 +73,7 @@ public sealed class PagefindSearchIndexer(ILoggerFactory loggerFactory)
 			?? assembly.GetName().Version?.ToString()
 			?? "dev";
 		var directory = Path.Join(Path.GetTempPath(), "docs-builder", version);
-		var executable = Path.Join(directory, OperatingSystem.IsWindows() ? "pagefind.exe" : "pagefind");
+		var executable = Path.Join(directory, OperatingSystem.IsWindows() ? "pagefind-standard.exe" : "pagefind-standard");
 		if (File.Exists(executable))
 			return executable;
 

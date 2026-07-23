@@ -34,8 +34,8 @@ type ``include hoists anchors and table of contents`` () =
     let ``validate index.md HTML includes snippet`` () =
         generator |> converts "index.md" |> toHtml """
             <h1>A Document that lives at the root</h1>
-            <div class="heading-wrapper" id="aa">
-                <h2><a class="headerlink" href="#aa">header from snippet</a></h2>
+            <div class="heading-wrapper">
+                <h2 id="aa"><a class="headerlink" href="#aa">header from snippet</a></h2>
             </div>
         """
 
@@ -43,8 +43,8 @@ type ``include hoists anchors and table of contents`` () =
     let ``validate test-links.md HTML includes snippet`` () =
         generator |> converts "test-links.md" |> toHtml """
             <h1>parent.md</h1>
-            <div class="heading-wrapper" id="some-header">
-                <h2><a class="headerlink" href="#some-header">some header</a></h2>
+            <div class="heading-wrapper">
+                <h2 id="some-header"><a class="headerlink" href="#some-header">some header</a></h2>
             </div>
             <p><a href="/#aa">link to root with included anchor</a></p>
        """
