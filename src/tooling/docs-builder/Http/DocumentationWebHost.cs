@@ -79,6 +79,9 @@ public class DocumentationWebHost
 		Context = new BuildContext(collector, docFs, configurationContext) { CanonicalBaseUrl = new Uri(hostUrl), };
 
 		Context.Configuration.Features.DiagnosticsPanelEnabled = !noHud;
+#if DEBUG
+		Context.Configuration.Features.PageFeedbackEnabled = true;
+#endif
 
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);
 
