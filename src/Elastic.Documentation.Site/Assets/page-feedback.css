@@ -3,7 +3,11 @@ page-feedback {
 	width: 100%;
 	margin-top: 3rem;
 	border-top: 1px solid var(--color-grey-20);
-	padding-top: 2rem;
+	padding-top: 4rem;
+}
+
+page-feedback + #prev-next-nav {
+	margin-top: 4rem;
 }
 
 .page-feedback {
