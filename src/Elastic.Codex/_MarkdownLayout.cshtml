@@ -32,8 +32,8 @@
 						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 						@await RenderBodyAsync()
 					</article>
-					@await RenderPartialAsync(_PrevNextNav.Create(Model))
 					@await RenderPartialAsync(_PageFeedback.Create(Model))
+					@await RenderPartialAsync(_PrevNextNav.Create(Model))
 				</div>
 				@await RenderPartialAsync(_TableOfContents.Create(Model))
 			</main>
