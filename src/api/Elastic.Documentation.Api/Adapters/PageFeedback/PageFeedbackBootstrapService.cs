@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
 
 internal sealed class PageFeedbackBootstrapService(
-	PageFeedbackTransport transport,
+	IngestChannel<PageFeedbackDocument> channel,
 	PageFeedbackIndex index,
 	AppEnvironment appEnvironment,
 	ILogger<PageFeedbackBootstrapService> logger
@@ -17,8 +17,6 @@ internal sealed class PageFeedbackBootstrapService(
 {
 	public async Task StartAsync(CancellationToken cancellationToken)
 	{
-		var options = new IngestChannelOptions<PageFeedbackDocument>(transport.Transport, index.MappingContext);
-		using var channel = new IngestChannel<PageFeedbackDocument>(options);
 		var method = appEnvironment.Current is AppEnv.Dev
 			? BootstrapMethod.Silent
 			: BootstrapMethod.Failure;

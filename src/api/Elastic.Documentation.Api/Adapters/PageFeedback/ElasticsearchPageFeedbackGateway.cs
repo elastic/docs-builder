@@ -2,8 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.Json;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.Serialization;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -12,6 +13,7 @@ namespace Elastic.Documentation.Api.Adapters.PageFeedback;
 internal sealed class ElasticsearchPageFeedbackGateway(
 	PageFeedbackTransport transport,
 	PageFeedbackIndex index,
+	IngestChannel<PageFeedbackDocument> channel,
 	ILogger<ElasticsearchPageFeedbackGateway> logger
 ) : IPageFeedbackService
 {
@@ -32,19 +34,16 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 
 		try
 		{
-			var json = JsonSerializer.Serialize(document, PageFeedbackJsonContext.Default.PageFeedbackDocument);
-			var response = await transport.Transport.PutAsync<StringResponse>(
-				$"{index.Name}/_doc/{record.FeedbackId}",
-				PostData.String(json),
-				ctx);
+			var response = await channel.DirectWriteAsync([document], ctx);
 
-			if (response.ApiCallDetails.HasSuccessfulStatusCode)
+			if (response.AllItemsPersisted())
 				return true;
 
 			logger.LogWarning(
-				"Failed to index page feedback {FeedbackId}: HTTP {StatusCode}",
+				"Failed to index page feedback {FeedbackId}: HTTP {StatusCode}, item statuses {ItemStatuses}",
 				record.FeedbackId,
-				response.ApiCallDetails.HttpStatusCode);
+				response.ApiCallDetails.HttpStatusCode,
+				response.Items?.Select(item => item.Status).ToArray() ?? []);
 			return false;
 		}
 		catch (Exception exception)
