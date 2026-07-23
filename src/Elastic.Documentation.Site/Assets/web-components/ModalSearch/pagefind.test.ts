@@ -1,7 +1,7 @@
 import { mapPagefindResults } from './pagefind'
 
 describe('mapPagefindResults', () => {
-    it('uses the page title while linking to matching sections', () => {
+    it('maps matching pages into modal results', () => {
         const results = mapPagefindResults([
             {
                 score: 0.9,
@@ -26,13 +26,6 @@ describe('mapPagefindResults', () => {
                             ],
                         }),
                     },
-                    sub_results: [
-                        {
-                            title: 'Install',
-                            url: '/guide/#install',
-                            excerpt: 'Run the <mark>installer</mark>',
-                        },
-                    ],
                 },
             },
         ])
@@ -40,9 +33,9 @@ describe('mapPagefindResults', () => {
         expect(results).toEqual([
             {
                 type: 'docs',
-                url: '/guide/#install',
+                url: '/guide/',
                 title: 'Guide',
-                description: 'Run the <mark>installer</mark>',
+                description: 'Guide excerpt',
                 score: 0.9,
                 parents: [
                     {
@@ -74,7 +67,7 @@ describe('mapPagefindResults', () => {
         expect(result.description).toBe('Guide excerpt')
     })
 
-    it('falls back to the section title when page metadata is missing', () => {
+    it('falls back to the page URL when title metadata is missing', () => {
         const [result] = mapPagefindResults([
             {
                 score: 0.5,
@@ -82,18 +75,11 @@ describe('mapPagefindResults', () => {
                     url: '/guide/',
                     excerpt: 'Guide excerpt',
                     meta: {},
-                    sub_results: [
-                        {
-                            title: 'Install',
-                            url: '/guide/#install',
-                            excerpt: 'Install excerpt',
-                        },
-                    ],
                 },
             },
         ])
 
-        expect(result.title).toBe('Install')
-        expect(result.url).toBe('/guide/#install')
+        expect(result.title).toBe('/guide/')
+        expect(result.url).toBe('/guide/')
     })
 })
