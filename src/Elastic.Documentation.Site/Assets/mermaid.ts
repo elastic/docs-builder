@@ -61,7 +61,7 @@ function setupControls(
     container: HTMLElement,
     viewport: HTMLElement,
     rendered: HTMLElement,
-    svgContent: string
+    imgSrc: string
 ): void {
     const state: DiagramState = {
         zoom: 1,
@@ -131,7 +131,7 @@ function setupControls(
 
     // Fullscreen handler
     fullscreenBtn.addEventListener('click', () => {
-        openFullscreenModal(svgContent)
+        openFullscreenModal(imgSrc)
     })
 
     // Pan with mouse drag
@@ -200,7 +200,7 @@ function calculateFitScale(
 /**
  * Open fullscreen modal with the diagram
  */
-function openFullscreenModal(svgContent: string): void {
+function openFullscreenModal(imgSrc: string): void {
     // Create modal elements
     const modal = document.createElement('div')
     modal.className = 'mermaid-modal'
@@ -219,7 +219,10 @@ function openFullscreenModal(svgContent: string): void {
 
     const rendered = document.createElement('div')
     rendered.className = 'mermaid-rendered'
-    rendered.innerHTML = svgContent
+    const modalImg = document.createElement('img')
+    modalImg.src = imgSrc
+    modalImg.alt = 'Mermaid diagram'
+    rendered.appendChild(modalImg)
 
     viewport.appendChild(rendered)
     modalContent.appendChild(closeBtn)
@@ -365,14 +368,14 @@ function openFullscreenModal(svgContent: string): void {
 
     // Calculate and apply initial zoom to fit diagram in viewport
     requestAnimationFrame(() => {
-        const svg = rendered.querySelector('svg')
-        if (svg) {
-            const svgRect = svg.getBoundingClientRect()
+        const img = rendered.querySelector('img')
+        if (img) {
+            const imgRect = img.getBoundingClientRect()
             const viewportRect = viewport.getBoundingClientRect()
 
             initialZoom = calculateFitScale(
-                svgRect.width,
-                svgRect.height,
+                imgRect.width,
+                imgRect.height,
                 viewportRect.width,
                 viewportRect.height
             )
@@ -405,7 +408,8 @@ export function initMermaid() {
 
         if (!viewport || !rendered) continue
 
-        const svgContent = rendered.innerHTML
-        setupControls(el, viewport, rendered, svgContent)
+        const img = rendered.querySelector('img')
+        const imgSrc = img?.src ?? ''
+        setupControls(el, viewport, rendered, imgSrc)
     }
 }

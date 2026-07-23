@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
@@ -341,7 +342,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		"#36b9ff", // blue-sky
 	];
 
-	/// <summary>Renders a Mermaid code block as an inline SVG using Mermaider.</summary>
+	/// <summary>Renders a Mermaid code block as an external SVG file referenced via an img element.</summary>
 	private static void RenderMermaidBlock(HtmlRenderer renderer, EnhancedCodeBlock block)
 	{
 		var mermaidText = ExtractMermaidText(block);
@@ -397,11 +398,42 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			return;
 		}
 
+		var svgFileName = WriteSvgFile(block, svg);
+
 		_ = renderer.Write("<div class=\"mermaid-container\">");
 		_ = renderer.Write("<div class=\"mermaid-viewport\">");
-		_ = renderer.Write("<div class=\"mermaid-rendered\">");
-		_ = renderer.Write(svg);
+		_ = renderer.Write($"<div class=\"mermaid-rendered\" data-src=\"{svgFileName}\">");
+		_ = renderer.Write($"<img src=\"{svgFileName}\" alt=\"Mermaid diagram\">");
 		_ = renderer.Write("</div></div></div>");
+	}
+
+	/// <summary>
+	/// Writes the SVG to a file next to the page's output HTML and returns the filename.
+	/// The filename is a content hash so identical diagrams on multiple pages share one file.
+	/// </summary>
+	private static string WriteSvgFile(EnhancedCodeBlock block, string svg)
+	{
+		var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(svg)))[..8].ToLowerInvariant();
+		var stem = Path.GetFileNameWithoutExtension(block.CurrentFile.Name);
+		var svgFileName = $"{stem}-{hash}.svg";
+
+		// Mirror HtmlWriter.WriteAsync path logic to find the output directory for this page.
+		var sourceRoot = block.Build.DocumentationSourceDirectory.FullName;
+		var relPath = Path.GetRelativePath(sourceRoot, block.CurrentFile.FullName);
+		var outputSubdir = Path.GetFileName(relPath) == "index.md"
+			? Path.GetDirectoryName(relPath) ?? "."
+			: Path.Combine(Path.GetDirectoryName(relPath) ?? ".", Path.GetFileNameWithoutExtension(relPath));
+
+		var svgPath = Path.Combine(block.Build.OutputDirectory.FullName, outputSubdir, svgFileName);
+		var svgFile = block.Build.WriteFileSystem.FileInfo.New(svgPath);
+
+		if (!svgFile.Exists)
+		{
+			svgFile.Directory?.Create();
+			block.Build.WriteFileSystem.File.WriteAllText(svgPath, svg);
+		}
+
+		return svgFileName;
 	}
 
 	private static string ExtractMermaidText(EnhancedCodeBlock block)
