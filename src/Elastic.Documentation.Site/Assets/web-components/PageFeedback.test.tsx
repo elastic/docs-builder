@@ -135,11 +135,11 @@ describe('PageFeedback', () => {
             screen.queryByText("We couldn't save your feedback.")
         ).not.toBeInTheDocument()
         expect(
-            screen.queryByRole('button', { name: 'Retry' })
+            screen.queryByRole('button', { name: 'Try again' })
         ).not.toBeInTheDocument()
     })
 
-    it('preserves the reaction and retries a failed comment', async () => {
+    it('keeps a failed comment in the form and retries it', async () => {
         const user = userEvent.setup()
         jest.mocked(global.fetch)
             .mockResolvedValueOnce({ ok: false, status: 503 } as Response)
@@ -162,10 +162,18 @@ describe('PageFeedback', () => {
             await screen.findByText("We couldn't save your feedback.")
         ).toBeInTheDocument()
         expect(helpfulButton).toHaveAttribute('aria-pressed', 'true')
+        expect(
+            screen.getByRole('textbox', {
+                name: 'Tell us more (optional)',
+            })
+        ).toHaveValue('The example needs more detail.')
 
-        await user.click(screen.getByRole('button', { name: 'Retry' }))
+        await user.click(screen.getByRole('button', { name: 'Try again' }))
 
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2))
+        expect(
+            await screen.findByText('Thanks for your feedback.')
+        ).toBeInTheDocument()
     })
 
     it('does not record a reaction deselected during the debounce', async () => {

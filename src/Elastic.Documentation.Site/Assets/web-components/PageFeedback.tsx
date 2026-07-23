@@ -93,9 +93,6 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
     const [isSaving, setIsSaving] = useState(false)
     const [showThanks, setShowThanks] = useState(false)
     const [error, setError] = useState(false)
-    const [lastAttempt, setLastAttempt] = useState<PageFeedbackPayload | null>(
-        null
-    )
 
     useEffect(() => {
         if (!showComment || isClosing) return
@@ -161,11 +158,9 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
         feedbackMayExistRef.current = true
         setIsSaving(true)
         setError(false)
-        setLastAttempt(payload)
 
         try {
             await submitFeedback(feedbackId, payload)
-            setLastAttempt(null)
             setSavedComment(payload.comment)
             setComment(payload.comment ?? '')
             setIsClosing(true)
@@ -183,6 +178,7 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
         const selectedReaction = reaction === nextReaction ? null : nextReaction
         setReaction(selectedReaction)
         setShowThanks(false)
+        setError(false)
         queueReaction(selectedReaction)
 
         if (!selectedReaction) {
@@ -309,32 +305,28 @@ export const PageFeedback = ({ pageUrl, pageTitle }: PageFeedbackProps) => {
                                 </span>
                             </div>
                             <div className="page-feedback__actions">
+                                {error && (
+                                    <p
+                                        className="page-feedback__error"
+                                        role="alert"
+                                    >
+                                        We couldn&apos;t save your feedback.
+                                    </p>
+                                )}
                                 <button
                                     type="submit"
                                     className="page-feedback__submit"
                                     disabled={isSaving || !comment.trim()}
                                 >
-                                    {isSaving ? 'Sending…' : 'Send feedback'}
+                                    {isSaving
+                                        ? 'Sending…'
+                                        : error
+                                          ? 'Try again'
+                                          : 'Send feedback'}
                                 </button>
                             </div>
                         </form>
                     </div>
-                </div>
-            )}
-
-            {error && lastAttempt && (
-                <div className="page-feedback__actions">
-                    <p className="page-feedback__error" role="alert">
-                        We couldn&apos;t save your feedback.
-                    </p>
-                    <button
-                        type="button"
-                        className="page-feedback__retry"
-                        disabled={isSaving}
-                        onClick={() => void submitCommentFeedback(lastAttempt)}
-                    >
-                        Retry
-                    </button>
                 </div>
             )}
 
