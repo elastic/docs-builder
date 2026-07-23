@@ -8,7 +8,24 @@ describe('mapPagefindResults', () => {
                 data: {
                     url: '/guide/',
                     excerpt: 'Guide excerpt',
-                    meta: { title: 'Guide' },
+                    meta: {
+                        title: 'Guide',
+                        breadcrumbs: JSON.stringify({
+                            itemListElement: [
+                                {
+                                    name: 'Docs',
+                                    item: 'https://example.com/',
+                                },
+                                {
+                                    name: 'Syntax guide',
+                                    item: 'https://example.com/syntax',
+                                },
+                                {
+                                    name: 'Mermaid diagrams',
+                                },
+                            ],
+                        }),
+                    },
                     sub_results: [
                         {
                             title: 'Install',
@@ -27,7 +44,16 @@ describe('mapPagefindResults', () => {
                 title: 'Install',
                 description: 'Run the <mark>installer</mark>',
                 score: 0.9,
-                parents: [],
+                parents: [
+                    {
+                        title: 'Docs',
+                        url: 'https://example.com/',
+                    },
+                    {
+                        title: 'Syntax guide',
+                        url: 'https://example.com/syntax',
+                    },
+                ],
             },
         ])
     })
