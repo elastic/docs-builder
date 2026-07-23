@@ -40,6 +40,7 @@ subs:
 
 features:
   primary-nav: false
+  static-search: true
 
 # Temporarily disabled: the pr-272388 preview registry artifact is gone and there is no
 # working `main` registry to fall back to yet. Re-enable once a registry URL resolves.

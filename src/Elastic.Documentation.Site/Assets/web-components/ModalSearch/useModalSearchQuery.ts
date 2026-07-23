@@ -21,6 +21,7 @@ import {
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
 import { usePageNumber, useSearchTerm } from './modalSearch.store'
+import { searchPagefind } from './pagefind'
 import {
     keepPreviousData,
     useQuery,
@@ -85,12 +86,14 @@ export const useModalSearchQuery = () => {
         !!trimmedSearchTerm &&
         trimmedSearchTerm.length >= 1 &&
         !isCooldownActive &&
-        !awaitingNewInput
+        !awaitingNewInput &&
+        (config.buildType !== 'isolated' || config.staticSearch)
 
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
             'modal-search',
             {
+                buildType: config.buildType,
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
             },
@@ -102,6 +105,20 @@ export const useModalSearchQuery = () => {
                     totalResults: 0,
                     pageCount: 0,
                     pageNumber: pageNumber,
+                    pageSize: 20,
+                })
+            }
+
+            if (config.buildType === 'isolated') {
+                const results = await searchPagefind(debouncedSearchTerm)
+                if (signal.aborted)
+                    throw new DOMException('Aborted', 'AbortError')
+
+                return SearchResponse.parse({
+                    results: results.slice(0, 20),
+                    totalResults: results.length,
+                    pageCount: results.length > 0 ? 1 : 0,
+                    pageNumber: 1,
                     pageSize: 20,
                 })
             }
@@ -167,6 +184,7 @@ export const useModalSearchQuery = () => {
             queryKey: [
                 'modal-search',
                 {
+                    buildType: config.buildType,
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,
                 },

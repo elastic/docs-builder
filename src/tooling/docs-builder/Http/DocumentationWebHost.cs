@@ -77,6 +77,8 @@ public class DocumentationWebHost
 
 		// Enable diagnostics panel in serve mode
 		Context.Configuration.Features.DiagnosticsPanelEnabled = true;
+		// Pagefind indexes completed static output; the on-demand development server has no complete output to index.
+		Context.Configuration.Features.StaticSearchEnabled = false;
 
 		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);

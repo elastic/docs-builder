@@ -1,5 +1,8 @@
+import { config } from '../../config'
 import '../../eui-icons-cache'
+import { ModalSearch } from '../ModalSearch/ModalSearch'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
+import { sharedQueryClient } from '../shared/queryClient'
 import { DeploymentInfo, headerButtonCss } from './DeploymentInfo'
 import {
     EuiHeader,
@@ -10,6 +13,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { useRef } from 'react'
 
 interface Props {
@@ -131,56 +135,78 @@ export const Header = ({
               `
 
     return (
-        <EuiProvider
-            colorMode="light"
-            globalStyles={false}
-            utilityClasses={false}
-        >
-            <EuiHeader
-                css={headerCss}
-                sections={[
-                    {
-                        items: [logoSection],
-                    },
-                    ...(!airGapped
-                        ? [
-                              {
-                                  items: [
-                                      ...(githubLink
-                                          ? [
-                                                <a
-                                                    href={githubLink}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    css={css`
-                                                        ${headerButtonCss(
-                                                            euiTheme
-                                                        )};
-                                                        margin-inline: ${euiTheme
-                                                            .size.s};
-                                                    `}
-                                                >
-                                                    <EuiIcon
-                                                        type="logoGithub"
-                                                        color="inherit"
-                                                    />
-                                                    GitHub
-                                                </a>,
-                                            ]
-                                          : []),
-                                      <DeploymentInfo
-                                          gitBranch={gitBranch}
-                                          gitCommit={gitCommit}
-                                          githubRepository={githubRepository}
-                                          githubRef={githubRef}
-                                      />,
-                                  ],
-                              },
-                          ]
-                        : []),
-                ]}
-            />
-        </EuiProvider>
+        <QueryClientProvider client={sharedQueryClient}>
+            <EuiProvider
+                colorMode="light"
+                globalStyles={false}
+                utilityClasses={false}
+            >
+                <EuiHeader
+                    css={headerCss}
+                    sections={[
+                        {
+                            items: [logoSection],
+                        },
+                        ...(config.staticSearch
+                            ? [
+                                  {
+                                      items: [
+                                          <div
+                                              css={css`
+                                                  width: min(22rem, 35vw);
+                                              `}
+                                          >
+                                              <ModalSearch
+                                                  size="s"
+                                                  placeholder="Search"
+                                              />
+                                          </div>,
+                                      ],
+                                  },
+                              ]
+                            : []),
+                        ...(!airGapped
+                            ? [
+                                  {
+                                      items: [
+                                          ...(githubLink
+                                              ? [
+                                                    <a
+                                                        href={githubLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        css={css`
+                                                            ${headerButtonCss(
+                                                                euiTheme
+                                                            )};
+                                                            margin-inline: ${euiTheme
+                                                                .size.s};
+                                                        `}
+                                                    >
+                                                        <EuiIcon
+                                                            type="logoGithub"
+                                                            color="inherit"
+                                                        />
+                                                        GitHub
+                                                    </a>,
+                                                ]
+                                              : []),
+                                          <DeploymentInfo
+                                              gitBranch={gitBranch}
+                                              gitCommit={gitCommit}
+                                              githubRepository={
+                                                  githubRepository
+                                              }
+                                              githubRef={githubRef}
+                                          />,
+                                      ],
+                                  },
+                              ]
+                            : []),
+                    ]}
+                />
+            </EuiProvider>
+        </QueryClientProvider>
     )
 }
 
