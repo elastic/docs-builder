@@ -24,8 +24,8 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 			FeedbackId = record.FeedbackId.ToString(),
 			PageUrl = record.PageUrl,
 			PageTitle = record.PageTitle,
-			Reaction = record.Reaction == PageFeedbackReaction.ThumbsUp ? "thumbsUp" : "thumbsDown",
-			Reason = GetReasonValue(record.Reason),
+			Reaction = record.Reaction,
+			Reason = record.Reason,
 			ReasonSetVersion = record.ReasonSetVersion,
 			Comment = record.Comment,
 			Euid = record.Euid,
@@ -76,20 +76,4 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 			return false;
 		}
 	}
-
-	private static string? GetReasonValue(PageFeedbackReason? reason) =>
-		reason switch
-		{
-			null => null,
-			PageFeedbackReason.Accurate => "accurate",
-			PageFeedbackReason.SolvedProblem => "solvedProblem",
-			PageFeedbackReason.EasyToUnderstand => "easyToUnderstand",
-			PageFeedbackReason.HelpfulExamples => "helpfulExamples",
-			PageFeedbackReason.Inaccurate => "inaccurate",
-			PageFeedbackReason.MissingInformation => "missingInformation",
-			PageFeedbackReason.HardToUnderstand => "hardToUnderstand",
-			PageFeedbackReason.CodeSampleErrors => "codeSampleErrors",
-			PageFeedbackReason.AnotherReason => "anotherReason",
-			_ => throw new ArgumentOutOfRangeException(nameof(reason), reason, "Unknown page feedback reason.")
-		};
 }
