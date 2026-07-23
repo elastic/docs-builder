@@ -167,7 +167,7 @@ public class DocumentationWebHost
 			.UseRouting();
 
 		_ = _webApplication.MapGet("/", (ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeDocumentationFile(holder, "index", ctx));
+			ServeDocumentationFile(holder, "index", _writeFileSystem, ctx));
 
 		_ = _webApplication.MapGet("/api/", (ReloadableGeneratorState holder, Cancel ctx) =>
 			ServeApiFile(holder, "", ctx));
@@ -218,7 +218,7 @@ public class DocumentationWebHost
 			Results.Json(buildState.GetCurrentState(), DiagnosticsJsonContext.Default.BuildEvent));
 
 		_ = _webApplication.MapGet("{**slug}", (string slug, ReloadableGeneratorState holder, Cancel ctx) =>
-			ServeDocumentationFile(holder, slug, ctx));
+			ServeDocumentationFile(holder, slug, _writeFileSystem, ctx));
 	}
 
 	private static async Task WriteSSEEvent(HttpResponse response, string eventType, BuildEvent data, Cancel ct)
@@ -261,7 +261,7 @@ public class DocumentationWebHost
 		return Results.NotFound();
 	}
 
-	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, Cancel ctx)
+	private static async Task<IResult> ServeDocumentationFile(ReloadableGeneratorState holder, string slug, ScopedFileSystem writeFs, Cancel ctx)
 	{
 		if (slug == ".well-known/appspecific/com.chrome.devtools.json")
 			return Results.NotFound();
@@ -315,6 +315,29 @@ public class DocumentationWebHost
 			default:
 				if (s == "index.md")
 					return Results.Redirect(generator.DocumentationSet.Navigation.Url);
+
+				// Serve static output assets (e.g. Mermaid SVG files written alongside HTML).
+				var ext = Path.GetExtension(slug);
+				if (ext is ".svg" or ".png" or ".jpg" or ".jpeg" or ".gif" or ".ico" or ".webp")
+				{
+					var outputPath = Path.Combine(generator.DocumentationSet.Context.OutputDirectory.FullName, slug);
+					var outputFile = writeFs.FileInfo.New(outputPath);
+					if (outputFile.Exists)
+					{
+						var mimeType = ext switch
+						{
+							".svg" => "image/svg+xml",
+							".png" => "image/png",
+							".jpg" or ".jpeg" => "image/jpeg",
+							".gif" => "image/gif",
+							".ico" => "image/x-icon",
+							".webp" => "image/webp",
+							_ => "application/octet-stream"
+						};
+						var bytes = await writeFs.File.ReadAllBytesAsync(outputPath, ctx);
+						return Results.Bytes(bytes, mimeType);
+					}
+				}
 
 				var fp404 = new FilePath("404.md", generator.DocumentationSet.SourceDirectory);
 				if (!generator.DocumentationSet.Files.TryGetValue(fp404, out var notFoundDocumentationFile))
