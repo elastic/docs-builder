@@ -286,6 +286,7 @@ internal sealed record BundleConfigurationYaml
 	/// changelog.yml files carrying <c>bundle.resolve</c> deserialize without a hard error; a
 	/// deprecation warning is emitted when it is present. Remove it from changelog.yml.
 	/// </summary>
+	[Obsolete("bundle.resolve is deprecated and ignored; resolved bundles are the only format. This field will be removed in a future version.")]
 	public bool? Resolve { get; set; }
 
 	/// <summary>
