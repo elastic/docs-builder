@@ -433,7 +433,11 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			block.Build.WriteFileSystem.File.WriteAllText(svgPath, svg);
 		}
 
-		return svgFileName;
+		// Use an absolute URL so the src resolves correctly regardless of whether the
+		// browser's current URL has a trailing slash (no-slash: relative would resolve
+		// one level too high and miss the page subdirectory).
+		var urlSubdir = outputSubdir.Replace(Path.DirectorySeparatorChar, '/').Trim('.');
+		return $"{block.Build.UrlPathPrefix}/{urlSubdir}/{svgFileName}".Replace("//", "/");
 	}
 
 	private static string ExtractMermaidText(EnhancedCodeBlock block)
