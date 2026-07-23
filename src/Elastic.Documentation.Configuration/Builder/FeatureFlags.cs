@@ -38,6 +38,12 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 		set => _featureFlags["website-search"] = value;
 	}
 
+	public bool StaticSearchEnabled
+	{
+		get => IsEnabled("static-search");
+		set => _featureFlags["static-search"] = value;
+	}
+
 	public string? WebsiteSearchScriptUrl { get; set; }
 
 	public bool AirGappedEnabled

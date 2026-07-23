@@ -1,5 +1,8 @@
+import { config } from '../../config'
 import '../../eui-icons-cache'
+import { ModalSearch } from '../ModalSearch/ModalSearch'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
+import { sharedQueryClient } from '../shared/queryClient'
 import { DeploymentInfo, headerButtonCss } from './DeploymentInfo'
 import {
     EuiHeader,
@@ -10,6 +13,7 @@ import {
 } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { useRef } from 'react'
 
 interface Props {
@@ -74,7 +78,15 @@ export const Header = ({
                         width: auto;
                     `}
                 />
-                {title}
+                <span
+                    css={css`
+                        @media (max-width: 768px) {
+                            display: none;
+                        }
+                    `}
+                >
+                    {title}
+                </span>
             </a>
         ) : (
             // Branded without icon — title text only, no HTMX
@@ -87,6 +99,12 @@ export const Header = ({
                     text-decoration: none;
                     padding: ${euiTheme.size.s};
                     font-weight: ${euiTheme.font.weight.bold};
+                    @media (max-width: 768px) {
+                        max-width: 8rem;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
                 `}
             >
                 {title}
@@ -107,6 +125,12 @@ export const Header = ({
                     }
                     & > span {
                         color: ${euiTheme.colors.textInk};
+                    }
+                    @media (max-width: 768px) {
+                        padding-inline: ${euiTheme.size.s};
+                        .euiHeaderLogo__text {
+                            display: none;
+                        }
                     }
                 `}
             >
@@ -142,6 +166,28 @@ export const Header = ({
                     {
                         items: [logoSection],
                     },
+                    ...(config.staticSearch
+                        ? [
+                              {
+                                  items: [
+                                      <QueryClientProvider
+                                          client={sharedQueryClient}
+                                      >
+                                          <div
+                                              css={css`
+                                                  width: min(22rem, 30vw);
+                                              `}
+                                          >
+                                              <ModalSearch
+                                                  size="s"
+                                                  placeholder="Search"
+                                              />
+                                          </div>
+                                      </QueryClientProvider>,
+                                  ],
+                              },
+                          ]
+                        : []),
                     ...(!airGapped
                         ? [
                               {
@@ -158,13 +204,27 @@ export const Header = ({
                                                         )};
                                                         margin-inline: ${euiTheme
                                                             .size.s};
+                                                        @media (max-width: 768px) {
+                                                            margin-inline: ${euiTheme
+                                                                .size.xs};
+                                                            padding-inline: ${euiTheme
+                                                                .size.s};
+                                                        }
                                                     `}
                                                 >
                                                     <EuiIcon
                                                         type="logoGithub"
                                                         color="inherit"
                                                     />
-                                                    GitHub
+                                                    <span
+                                                        css={css`
+                                                            @media (max-width: 768px) {
+                                                                display: none;
+                                                            }
+                                                        `}
+                                                    >
+                                                        GitHub
+                                                    </span>
                                                 </a>,
                                             ]
                                           : []),

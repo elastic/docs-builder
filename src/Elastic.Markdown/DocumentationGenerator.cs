@@ -276,10 +276,8 @@ public partial class DocumentationGenerator
 
 		_logger.LogInformation($"Copying static files to output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
-		var embeddedStaticFiles = assembly
-			.GetManifestResourceNames()
-			.ToList();
-		foreach (var a in embeddedStaticFiles)
+		foreach (var a in assembly.GetManifestResourceNames()
+			.Where(r => r.StartsWith("Elastic.Documentation.Site._static.", StringComparison.Ordinal)))
 		{
 			await using var resourceStream = assembly.GetManifestResourceStream(a);
 			if (resourceStream == null)

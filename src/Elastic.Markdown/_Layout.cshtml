@@ -42,7 +42,7 @@
 						}
 						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1 @(breadcrumbVisible ? "" : "pt-6")">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
-							<article id="markdown-content" class="markdown-content min-w-0">
+							<article id="markdown-content" class="markdown-content min-w-0" data-pagefind-body>
 								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 								@await RenderBodyAsync()
 							</article>

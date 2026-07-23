@@ -36,6 +36,7 @@ public class IsolatedBuildService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<IsolatedBuildService>();
 	private readonly IEnvironmentVariables _env = environmentVariables;
+	private readonly PagefindSearchIndexer _pagefindSearchIndexer = new(logFactory);
 
 	public bool IsStrict(bool? strict)
 	{
@@ -177,6 +178,20 @@ public class IsolatedBuildService(
 
 		var finishTasks = markdownExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
 		_ = await Task.WhenAll(finishTasks);
+
+		if (exporters.Contains(Exporter.Html))
+		{
+			if (context.Configuration.Features.StaticSearchEnabled)
+				await _pagefindSearchIndexer.BuildAsync(context.OutputDirectory, ctx);
+			else
+			{
+				var staticSearchOutput = context.WriteFileSystem.DirectoryInfo.New(
+					Path.Join(context.OutputDirectory.FullName, "pagefind"));
+				staticSearchOutput.Refresh();
+				if (staticSearchOutput.Exists)
+					staticSearchOutput.Delete(recursive: true);
+			}
+		}
 
 		tasks = markdownExporters.Select(async e => await e.StopAsync(ctx));
 		await Task.WhenAll(tasks);
