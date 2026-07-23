@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json.Serialization;
+using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Mapping;
 
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
@@ -24,12 +25,12 @@ public sealed record PageFeedbackDocument
 
 	[Keyword]
 	[JsonPropertyName("reaction")]
-	public required string Reaction { get; init; }
+	public required PageFeedbackReaction Reaction { get; init; }
 
 	[Keyword]
 	[JsonPropertyName("reason")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string? Reason { get; init; }
+	public PageFeedbackReason? Reason { get; init; }
 
 	[JsonPropertyName("reason_set_version")]
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -51,6 +52,8 @@ public sealed record PageFeedbackDocument
 }
 
 [JsonSerializable(typeof(PageFeedbackDocument))]
+[JsonSerializable(typeof(PageFeedbackReaction))]
+[JsonSerializable(typeof(PageFeedbackReason))]
 internal sealed partial class PageFeedbackJsonContext : JsonSerializerContext;
 
 [ElasticsearchMappingContext(JsonContext = typeof(PageFeedbackJsonContext))]

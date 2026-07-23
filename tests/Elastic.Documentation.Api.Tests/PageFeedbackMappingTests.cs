@@ -5,6 +5,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Api.Adapters.PageFeedback;
+using Elastic.Documentation.Api.PageFeedback;
 
 namespace Elastic.Documentation.Api.Tests;
 
@@ -42,8 +43,8 @@ public class PageFeedbackMappingTests
 			FeedbackId = Guid.NewGuid().ToString(),
 			PageUrl = "/docs/test-page",
 			PageTitle = "Test page",
-			Reaction = "thumbsUp",
-			Reason = "helpfulExamples",
+			Reaction = PageFeedbackReaction.ThumbsUp,
+			Reason = PageFeedbackReason.HelpfulExamples,
 			ReasonSetVersion = 2,
 			Timestamp = DateTimeOffset.UtcNow
 		};
