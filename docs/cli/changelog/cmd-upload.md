@@ -2,6 +2,8 @@
 
 Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory and uploads only files whose content hash changed since the last run. Changelog entries are uploaded once under `changelog/{org}/{repo}/{branch}/{file}`, keyed by the authoring owner, repository, and branch; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
 
+For historical backfill runs, pass `--backfill` to switch to [backfill mode](#backfill-mode): explicit file selection instead of directory discovery, create-only writes instead of overwrites, and strict registry failure semantics.
+
 To create bundles first, use [](/cli/changelog/bundle.md).
 For the end-to-end workflow, see [](/contribute/bundle-changelogs.md).
 
@@ -111,18 +113,35 @@ s3://{bucket}/bundle/{product}/registry.json                  # bundle uploads
 
 When several repositories publish bundles for the same shared product (for example `cloud-serverless`), use a `{repo}-{dateOrVersion}.yaml` bundle filename convention so they don't overwrite each other under `bundle/{product}/`.
 
-The registry refresh is best-effort: upload failures block the run, but a stale manifest does not fail an otherwise successful upload.
+In live mode the registry refresh is best-effort: upload failures block the run, but a stale manifest does not fail an otherwise successful upload. In [backfill mode](#backfill-mode) a registry refresh failure fails the operation.
 
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files are skipped. Re-running the same command is safe and idempotent.
 If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
 :::
 
+## Backfill mode
+
+`--backfill` switches the command to backfill publishing semantics for historical bundles. Three things change relative to a live upload:
+
+1. **Explicit selection, no directory discovery.** Only the files named via `--files` are uploaded. `--files` accepts comma-separated bundle YAML paths or a path to a newline-delimited path list file, and can be repeated; relative paths resolve against the bundle directory. A selected file that cannot be mapped to a destination (missing file, no `products`, invalid product name) is an error that aborts the run before any write — never a silent skip.
+2. **Create-only writes.** An object is only ever created, never replaced. The write is a conditional PUT (`If-None-Match: *`), so even a concurrent writer that creates the key between inspection and write surfaces as a conflict instead of an overwrite. Per key:
+   - Key absent → created.
+   - Key exists with identical content → skipped (reported as such; re-runs stay idempotent).
+   - Key exists with different content → conflict; the run fails and the object is untouched. Correcting a published bundle requires the explicit corrections workflow — there is intentionally no force flag.
+3. **Strict registry semantics.** A registry manifest that cannot be reconciled (after the bounded optimistic-concurrency retries, or due to an S3 error) fails the operation with a non-zero exit code, because uploaded objects that are not enumerable by consumers leave the backfill incomplete. Conflicted objects are excluded from the registry refresh so the manifest never misrepresents what is actually published.
+
+Backfill mode only supports `--artifact-type bundle` (the backfill publishes bundles only) and cannot be combined with `--skip-etag-check`, whose forced re-upload semantics are the opposite of create-only.
+
+Live (non-backfill) uploads are unaffected: without `--backfill`, discovery, overwrite, and best-effort registry behavior are unchanged.
+
 ## Options
 
 | Option | Purpose |
 | ------ | ------- |
-| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. |
+| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Mutually exclusive with `--backfill`. |
+| `--files` | Exact bundle YAML paths to upload (comma-separated), or a path to a newline-delimited path list file. Can be specified multiple times. Requires `--backfill`; nothing outside this selection is uploaded. |
+| `--backfill` | Backfill publishing mode: explicit `--files` selection, create-only conditional writes, and registry refresh failures fail the operation. See [Backfill mode](#backfill-mode). |
 
 ## Configuration
 
@@ -183,4 +202,28 @@ docs-builder changelog upload \
   --target s3 \
   --s3-bucket-name my-changelog-bundles \
   --config ./config/changelog.yml
+```
+
+### Backfill exactly two historical bundles
+
+Upload only the two named bundles, refusing to touch any existing object and failing if the registry cannot be reconciled:
+
+```sh
+docs-builder changelog upload \
+  --artifact-type bundle \
+  --target s3 \
+  --s3-bucket-name my-changelog-bundles \
+  --backfill \
+  --files "elasticsearch-8.9.0.yaml,elasticsearch-8.9.1.yaml"
+```
+
+A path list file works too — one bundle path per line:
+
+```sh
+docs-builder changelog upload \
+  --artifact-type bundle \
+  --target s3 \
+  --s3-bucket-name my-changelog-bundles \
+  --backfill \
+  --files ./backfill-plan.txt
 ```

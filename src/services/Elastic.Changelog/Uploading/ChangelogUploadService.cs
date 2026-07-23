@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Amazon.S3;
+using Elastic.Changelog.Bundling;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -55,8 +56,24 @@ public record ChangelogUploadArguments
 	/// <summary>
 	/// When true, upload every discovered file even when its content hash matches the remote object.
 	/// Useful to re-trigger downstream scrubbers without changing file content.
+	/// Incompatible with <see cref="Backfill"/>, whose create-only semantics rely on the content comparison.
 	/// </summary>
 	public bool SkipEtagCheck { get; init; }
+
+	/// <summary>
+	/// Backfill publishing mode for historical bundles. Only the files in <see cref="Files"/> are
+	/// uploaded (no directory discovery), objects are written create-only (an existing key with
+	/// different content is a conflict, never an overwrite), and a registry that cannot be reconciled
+	/// fails the operation. Only valid for <see cref="ArtifactType.Bundle"/> uploads.
+	/// </summary>
+	public bool Backfill { get; init; }
+
+	/// <summary>
+	/// Exact bundle YAML files to upload in <see cref="Backfill"/> mode. Values are file paths or a
+	/// newline-delimited path-list file; relative paths resolve against the bundle directory. Required
+	/// when <see cref="Backfill"/> is set; not valid otherwise.
+	/// </summary>
+	public IReadOnlyList<string> Files { get; init; } = [];
 }
 
 public class ChangelogUploadService(
@@ -80,6 +97,9 @@ public class ChangelogUploadService(
 			return true;
 		}
 
+		if (!ValidateBackfillArguments(collector, args))
+			return false;
+
 		var directory = args.ArtifactType == ArtifactType.Bundle
 			? await ResolveBundleDirectory(collector, args, ctx)
 			: await ResolveChangelogDirectory(collector, args, ctx);
@@ -87,18 +107,13 @@ public class ChangelogUploadService(
 		if (directory == null)
 			return false;
 
-		if (!_fileSystem.Directory.Exists(directory))
-		{
-			_logger.LogInformation("{ArtifactType} directory {Directory} does not exist; nothing to upload", args.ArtifactType, directory);
+		var targets = await ResolveUploadTargets(collector, args, directory, ctx);
+		if (targets == null)
 			return true;
-		}
 
-		var targets = args.ArtifactType == ArtifactType.Bundle
-			? DiscoverBundleUploadTargets(collector, directory)
-			: DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch);
-
-		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
-		// unscoped and a silent skip would look like "nothing to upload".
+		// Aborts (rather than no-ops) when a key cannot be derived: entry uploads with an unresolved
+		// repo would produce unscoped keys, and a backfill selection that cannot be mapped in full must
+		// fail before any write. A silent skip would look like "nothing to upload".
 		if (collector.Errors > 0)
 			return false;
 
@@ -114,28 +129,106 @@ public class ChangelogUploadService(
 		var client = s3Client ?? defaultClient!;
 		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
-		var result = await uploader.Upload(targets, args.SkipEtagCheck, ctx);
+		var writePolicy = args.Backfill ? S3WritePolicy.CreateOnly : S3WritePolicy.Overwrite;
+		var result = await uploader.Upload(targets, args.SkipEtagCheck, writePolicy, ctx);
 
-		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed", result.Uploaded, result.Skipped, result.Failed);
+		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Conflicted} conflicted, {Failed} failed",
+			result.Uploaded, result.Skipped, result.Conflicts.Count, result.Failed);
 
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
+
+		foreach (var conflict in result.Conflicts)
+		{
+			collector.EmitError(conflict.LocalPath,
+				$"Refusing to overwrite s3://{args.S3BucketName}/{conflict.S3Key}: the key already exists with different content. " +
+				"Backfill uploads are create-only; correcting a published bundle requires the explicit corrections workflow.");
+		}
 
 		// On a successful upload, refresh the per-product registry.json so consumers can enumerate
 		// content without an S3 listing: the bundle index (consumed by the changelog directive in
 		// cdn: mode) for bundle uploads, and the changelog-entry index (consumed by `changelog
 		// bundle` when sourcing entries from the CDN) for changelog uploads.
-		// Failures here are logged but don't fail the upload — the objects themselves are already in S3.
+		var registryReconciled = true;
 		if (result.Failed == 0 && targets.Count > 0)
 		{
 			var scope = args.ArtifactType == ArtifactType.Bundle ? RegistryScope.Bundle : RegistryScope.Changelog;
-			await RefreshRegistries(collector, client, etagCalculator, args, targets, scope, ctx);
+
+			// Conflicted targets are excluded: their remote content differs from the local file, so
+			// registering the local ETag would misrepresent what is actually published.
+			var registryTargets = result.Conflicts.Count == 0
+				? targets
+				: targets.Where(t => !result.Conflicts.Contains(t)).ToList();
+
+			if (registryTargets.Count > 0)
+				registryReconciled = await RefreshRegistries(collector, client, etagCalculator, args, registryTargets, scope, ctx);
 		}
 
-		return result.Failed == 0;
+		// In backfill mode an unreconciled registry is an incomplete operation.
+		if (args.Backfill && !registryReconciled)
+			return false;
+
+		return result.Failed == 0 && result.Conflicts.Count == 0;
 	}
 
-	private async Task RefreshRegistries(
+	private bool ValidateBackfillArguments(IDiagnosticsCollector collector, ChangelogUploadArguments args)
+	{
+		if (!args.Backfill)
+		{
+			if (args.Files.Count > 0)
+			{
+				collector.EmitError(string.Empty, "--files requires --backfill: explicit file selection is only supported in backfill mode.");
+				return false;
+			}
+			return true;
+		}
+
+		if (args.ArtifactType != ArtifactType.Bundle)
+		{
+			collector.EmitError(string.Empty, "--backfill only supports --artifact-type bundle; the backfill publishes bundles only.");
+			return false;
+		}
+
+		if (args.Files.Count == 0)
+		{
+			collector.EmitError(string.Empty, "--backfill requires an explicit file selection via --files; directory discovery is not allowed in backfill mode.");
+			return false;
+		}
+
+		if (args.SkipEtagCheck)
+		{
+			collector.EmitError(string.Empty, "--skip-etag-check cannot be combined with --backfill: create-only uploads rely on the content comparison to distinguish an idempotent re-run from a conflict.");
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Builds the upload target list: explicit selection in backfill mode, directory discovery otherwise.
+	/// Returns null when the source directory does not exist (a discovery no-op, reported as success).
+	/// </summary>
+	private async Task<IReadOnlyList<UploadTarget>?> ResolveUploadTargets(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		string directory,
+		Cancel ctx)
+	{
+		if (args.Backfill)
+			return await SelectBundleUploadTargets(collector, args.Files, directory, ctx);
+
+		if (!_fileSystem.Directory.Exists(directory))
+		{
+			_logger.LogInformation("{ArtifactType} directory {Directory} does not exist; nothing to upload", args.ArtifactType, directory);
+			return null;
+		}
+
+		return args.ArtifactType == ArtifactType.Bundle
+			? DiscoverBundleUploadTargets(collector, directory)
+			: DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch);
+	}
+
+	private async Task<bool> RefreshRegistries(
 		IDiagnosticsCollector collector,
 		IAmazonS3 client,
 		IS3EtagCalculator etagCalculator,
@@ -150,12 +243,30 @@ public class ChangelogUploadService(
 			var result = await builder.RefreshAsync(collector, uploadTargets, ctx, scope);
 			_logger.LogInformation("Registry refresh ({Scope}): {Updated} updated, {Unchanged} unchanged, {Failed} failed",
 				scope, result.Updated, result.Unchanged, result.Failed);
+
+			if (result.Failed > 0 && args.Backfill)
+			{
+				collector.EmitError(string.Empty,
+					$"Registry refresh failed for {result.Failed} manifest(s); the uploaded objects are not enumerable by consumers and the backfill operation is incomplete. Re-run once the concurrent writes settle.");
+			}
+
+			return result.Failed == 0;
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
-			// Leaving the manifest stale is non-fatal — bundle objects are unaffected.
+			if (args.Backfill)
+			{
+				// An unreconciled registry leaves the uploaded objects invisible to consumers; backfill
+				// must treat that as an incomplete operation, not a stale-manifest inconvenience.
+				collector.EmitError(string.Empty,
+					$"Failed to refresh registry manifest(s): {ex.Message}. The backfill operation is incomplete; re-run to reconcile the registry.", ex);
+				return false;
+			}
+
+			// Leaving the manifest stale is non-fatal in live mode — bundle objects are unaffected.
 			_logger.LogWarning(ex, "Registry refresh failed; bundles uploaded successfully but manifests may be stale");
 			collector.EmitWarning(string.Empty, $"Failed to refresh registry manifest(s): {ex.Message}");
+			return false;
 		}
 	}
 
@@ -232,44 +343,103 @@ public class ChangelogUploadService(
 				continue;
 			}
 
-			var products = ReadProductsFromBundle(filePath);
-
-			// Amends published before products were copied from the parent omit them; derive the
-			// destination from the parent bundle next to the amend so they are not silently skipped.
-			if (products.Count == 0 && BundleAmendMerger.IsAmendFile(filePath))
-			{
-				products = ReadProductsFromParentBundle(filePath);
-				if (products.Count == 0)
-				{
-					collector.EmitWarning(filePath,
-						"Amend bundle declares no products and its parent bundle is missing or has none; " +
-						"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products.");
-					continue;
-				}
-			}
-
-			if (products.Count == 0)
-			{
-				_logger.LogDebug("No products found in bundle {File}, skipping", filePath);
-				continue;
-			}
-
-			var fileName = _fileSystem.Path.GetFileName(filePath);
-
-			foreach (var product in products)
-			{
-				if (!ChangelogKeys.IsValidProduct(product))
-				{
-					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
-					continue;
-				}
-
-				var s3Key = ChangelogKeys.BundleFileKey(product, fileName);
-				targets.Add(new UploadTarget(filePath, s3Key));
-			}
+			targets.AddRange(CreateBundleTargetsForFile(collector, filePath, explicitSelection: false));
 		}
 
 		return targets;
+	}
+
+	/// <summary>
+	/// Resolves an explicit backfill selection (file paths or a newline-delimited path-list file) into
+	/// bundle upload targets. Unlike <see cref="DiscoverBundleUploadTargets"/>, every problem is an
+	/// error: an operator-selected file that cannot be mapped to a destination must abort the run
+	/// before any write instead of being skipped silently.
+	/// </summary>
+	internal async Task<IReadOnlyList<UploadTarget>> SelectBundleUploadTargets(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<string> files,
+		string? baseDirectory,
+		Cancel ctx)
+	{
+		var loader = new FileFilterLoader(_fileSystem);
+		var filterResult = await loader.LoadFilesAsync(collector, [.. files], baseDirectory, ctx);
+		if (!filterResult.IsValid)
+			return [];
+
+		var targets = new List<UploadTarget>();
+
+		foreach (var filePath in filterResult.FilePaths.Distinct(StringComparer.Ordinal))
+		{
+			var fileInfo = _fileSystem.FileInfo.New(filePath);
+			if (fileInfo.Directory is { } parentDir && SymlinkValidator.ValidateFileAccess(fileInfo, parentDir) is { } accessError)
+			{
+				collector.EmitError(filePath, $"Cannot upload: {accessError}");
+				continue;
+			}
+
+			targets.AddRange(CreateBundleTargetsForFile(collector, filePath, explicitSelection: true));
+		}
+
+		return targets;
+	}
+
+	/// <summary>
+	/// Maps one bundle YAML to its per-product upload targets. With <paramref name="explicitSelection"/>
+	/// a file that yields no destination is an error (the operator named it); during directory
+	/// discovery it is skipped with the historical warning/debug diagnostics.
+	/// </summary>
+	private List<UploadTarget> CreateBundleTargetsForFile(IDiagnosticsCollector collector, string filePath, bool explicitSelection)
+	{
+		var products = ReadProductsFromBundle(filePath);
+
+		// Amends published before products were copied from the parent omit them; derive the
+		// destination from the parent bundle next to the amend so they are not silently skipped.
+		if (products.Count == 0 && BundleAmendMerger.IsAmendFile(filePath))
+		{
+			products = ReadProductsFromParentBundle(filePath);
+			if (products.Count == 0)
+			{
+				EmitSelectionDiagnostic(collector, filePath, explicitSelection,
+					"Amend bundle declares no products and its parent bundle is missing or has none; " +
+					"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products.");
+				return [];
+			}
+		}
+
+		if (products.Count == 0)
+		{
+			if (explicitSelection)
+				collector.EmitError(filePath, "Bundle declares no products; an upload destination cannot be derived.");
+			else
+				_logger.LogDebug("No products found in bundle {File}, skipping", filePath);
+			return [];
+		}
+
+		var fileName = _fileSystem.Path.GetFileName(filePath);
+		var targets = new List<UploadTarget>();
+
+		foreach (var product in products)
+		{
+			if (!ChangelogKeys.IsValidProduct(product))
+			{
+				EmitSelectionDiagnostic(collector, filePath, explicitSelection,
+					$"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
+				continue;
+			}
+
+			var s3Key = ChangelogKeys.BundleFileKey(product, fileName);
+			targets.Add(new UploadTarget(filePath, s3Key));
+		}
+
+		return targets;
+	}
+
+	private static void EmitSelectionDiagnostic(IDiagnosticsCollector collector, string filePath, bool explicitSelection, string message)
+	{
+		if (explicitSelection)
+			collector.EmitError(filePath, message);
+		else
+			collector.EmitWarning(filePath, message);
 	}
 
 	private List<string> ReadProductsFromParentBundle(string amendFilePath)
