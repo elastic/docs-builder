@@ -282,6 +282,14 @@ internal sealed record BundleConfigurationYaml
 	public bool? UseLocalChangelogs { get; set; }
 
 	/// <summary>
+	/// Deprecated and ignored. Resolved bundles are now the only format. Retained solely so existing
+	/// changelog.yml files carrying <c>bundle.resolve</c> deserialize without a hard error; a
+	/// deprecation warning is emitted when it is present. Remove it from changelog.yml.
+	/// </summary>
+	[Obsolete("bundle.resolve is deprecated and ignored; resolved bundles are the only format. This field will be removed in a future version.")]
+	public bool? Resolve { get; set; }
+
+	/// <summary>
 	/// Default bundle description used when no profile-specific description is provided.
 	/// </summary>
 	public string? Description { get; set; }
