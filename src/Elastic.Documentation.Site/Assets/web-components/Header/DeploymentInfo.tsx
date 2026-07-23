@@ -72,9 +72,14 @@ export const DeploymentInfo = ({
             <button
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
+                aria-label={`Deployment info for branch ${gitBranch}, commit ${gitCommit}`}
                 css={css`
                     ${headerButtonCss(euiTheme)};
                     margin-inline: ${euiTheme.size.s};
+                    @media (max-width: 768px) {
+                        margin-inline: ${euiTheme.size.xs};
+                        padding-inline: ${euiTheme.size.s};
+                    }
                 `}
             >
                 <span
@@ -85,13 +90,24 @@ export const DeploymentInfo = ({
                     `}
                 >
                     <EuiIcon type="branch" color="inherit" />
-                    {gitBranch}
+                    <span
+                        css={css`
+                            @media (max-width: 768px) {
+                                display: none;
+                            }
+                        `}
+                    >
+                        {gitBranch}
+                    </span>
                 </span>
                 <span
                     css={css`
                         display: inline-flex;
                         align-items: center;
                         gap: ${euiTheme.size.xs};
+                        @media (max-width: 768px) {
+                            display: none;
+                        }
                     `}
                 >
                     <EuiIcon type={commitSvg} color="inherit" />

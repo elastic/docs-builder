@@ -78,7 +78,15 @@ export const Header = ({
                         width: auto;
                     `}
                 />
-                {title}
+                <span
+                    css={css`
+                        @media (max-width: 768px) {
+                            display: none;
+                        }
+                    `}
+                >
+                    {title}
+                </span>
             </a>
         ) : (
             // Branded without icon — title text only, no HTMX
@@ -91,6 +99,12 @@ export const Header = ({
                     text-decoration: none;
                     padding: ${euiTheme.size.s};
                     font-weight: ${euiTheme.font.weight.bold};
+                    @media (max-width: 768px) {
+                        max-width: 8rem;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
                 `}
             >
                 {title}
@@ -111,6 +125,12 @@ export const Header = ({
                     }
                     & > span {
                         color: ${euiTheme.colors.textInk};
+                    }
+                    @media (max-width: 768px) {
+                        padding-inline: ${euiTheme.size.s};
+                        .euiHeaderLogo__text {
+                            display: none;
+                        }
                     }
                 `}
             >
@@ -155,7 +175,7 @@ export const Header = ({
                                       >
                                           <div
                                               css={css`
-                                                  width: min(22rem, 35vw);
+                                                  width: min(22rem, 30vw);
                                               `}
                                           >
                                               <ModalSearch
@@ -184,13 +204,27 @@ export const Header = ({
                                                         )};
                                                         margin-inline: ${euiTheme
                                                             .size.s};
+                                                        @media (max-width: 768px) {
+                                                            margin-inline: ${euiTheme
+                                                                .size.xs};
+                                                            padding-inline: ${euiTheme
+                                                                .size.s};
+                                                        }
                                                     `}
                                                 >
                                                     <EuiIcon
                                                         type="logoGithub"
                                                         color="inherit"
                                                     />
-                                                    GitHub
+                                                    <span
+                                                        css={css`
+                                                            @media (max-width: 768px) {
+                                                                display: none;
+                                                            }
+                                                        `}
+                                                    >
+                                                        GitHub
+                                                    </span>
                                                 </a>,
                                             ]
                                           : []),
