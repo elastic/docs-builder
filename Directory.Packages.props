@@ -33,6 +33,7 @@
     <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="3.0.0" />
     <PackageVersion Include="AngleSharp" Version="1.5.1" />
     <PackageVersion Include="Aspire.Hosting" Version="13.4.3" />
+    <PackageVersion Include="Elastic.Transport" Version="0.17.3" />
     <PackageVersion Include="MessagePack" Version="2.5.302" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.4.3" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.9.7" />

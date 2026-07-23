@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Indexing;
 using Elastic.SiteSearch.Cli.ContentStack;
 using Elastic.SiteSearch.Cli.Elasticsearch;

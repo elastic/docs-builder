@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Indexing;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 using Microsoft.Extensions.Logging;

@@ -11,8 +11,10 @@ using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.Caching;
 using Elastic.Documentation.Api.Gcp;
 using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Search;
 using Elastic.Ingest.Elasticsearch;
+using Elastic.Transport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
@@ -71,6 +73,9 @@ public static class ServicesExtension
 		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
+		_ = services.AddSingleton<ITransport>(serviceProvider =>
+			ElasticsearchTransportFactory.Create(
+				serviceProvider.GetRequiredService<DocumentationEndpoints>().Elasticsearch));
 		AddDistributedCache(services, appEnv);
 		AddAskAiServices(services, appEnv);
 		AddPageFeedbackServices(services);
@@ -187,13 +192,12 @@ public static class ServicesExtension
 
 	private static void AddPageFeedbackServices(IServiceCollection services)
 	{
-		_ = services.AddSingleton<PageFeedbackTransport>();
 		_ = services.AddSingleton<PageFeedbackIndex>();
 		_ = services.AddSingleton(serviceProvider =>
 		{
-			var transport = serviceProvider.GetRequiredService<PageFeedbackTransport>();
+			var transport = serviceProvider.GetRequiredService<ITransport>();
 			var index = serviceProvider.GetRequiredService<PageFeedbackIndex>();
-			var options = new IngestChannelOptions<PageFeedbackDocument>(transport.Transport, index.MappingContext);
+			var options = new IngestChannelOptions<PageFeedbackDocument>(transport, index.MappingContext);
 			return new IngestChannel<PageFeedbackDocument>(options);
 		});
 		_ = services.AddSingleton<IPageFeedbackService, ElasticsearchPageFeedbackGateway>();

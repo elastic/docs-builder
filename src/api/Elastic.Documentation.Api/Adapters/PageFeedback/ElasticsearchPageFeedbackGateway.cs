@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Api.Adapters.PageFeedback;
 
 internal sealed class ElasticsearchPageFeedbackGateway(
-	PageFeedbackTransport transport,
+	ITransport transport,
 	PageFeedbackIndex index,
 	IngestChannel<PageFeedbackDocument> channel,
 	ILogger<ElasticsearchPageFeedbackGateway> logger
@@ -57,7 +57,7 @@ internal sealed class ElasticsearchPageFeedbackGateway(
 	{
 		try
 		{
-			var response = await transport.Transport.DeleteAsync<StringResponse>(
+			var response = await transport.DeleteAsync<StringResponse>(
 				$"{index.Name}/_doc/{feedbackId}",
 				cancellationToken: ctx);
 
