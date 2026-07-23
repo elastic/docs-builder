@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Elastic.Documentation.Api.AskAi;
+using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Search;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +25,7 @@ public static class MappingsExtension
 		MapNavigationSearch(group);
 		MapFullSearch(group);
 		MapChanges(group);
+		MapPageFeedback(group);
 	}
 
 	private static void MapAskAiEndpoint(IEndpointRouteBuilder group)
@@ -175,5 +177,67 @@ public static class MappingsExtension
 				var response = await changesService.GetChangesAsync(request, ctx);
 				return Results.Ok(response);
 			});
+
+	private static void MapPageFeedback(IEndpointRouteBuilder group)
+	{
+		_ = group.MapPut("/page-feedback/{feedbackId:guid}", async (
+			Guid feedbackId,
+			PageFeedbackRequest request,
+			HttpContext context,
+			IPageFeedbackService feedbackService,
+			ILogger<Program> logger,
+			Cancel ctx) =>
+		{
+			if (!IsValidPageFeedback(request))
+				return Results.BadRequest();
+
+			_ = context.Request.Cookies.TryGetValue("euid", out var euid);
+			var comment = string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim();
+			var record = new PageFeedbackRecord(
+				feedbackId,
+				request.PageUrl,
+				request.PageTitle,
+				request.Reaction,
+				comment,
+				euid
+			);
+
+			if (!await feedbackService.UpsertFeedbackAsync(record, ctx))
+			{
+				logger.LogWarning("Failed to record page feedback {FeedbackId} for {PageUrl}", feedbackId, request.PageUrl);
+				return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+			}
+
+			logger.LogInformation("Recorded page feedback {FeedbackId} for {PageUrl}", feedbackId, request.PageUrl);
+			return Results.NoContent();
+		}).DisableAntiforgery();
+
+		_ = group.MapDelete("/page-feedback/{feedbackId:guid}", async (
+			Guid feedbackId,
+			IPageFeedbackService feedbackService,
+			ILogger<Program> logger,
+			Cancel ctx) =>
+		{
+			if (!await feedbackService.DeleteFeedbackAsync(feedbackId, ctx))
+			{
+				logger.LogWarning("Failed to delete page feedback {FeedbackId}", feedbackId);
+				return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+			}
+
+			logger.LogInformation("Deleted page feedback {FeedbackId}", feedbackId);
+			return Results.NoContent();
+		}).DisableAntiforgery();
+	}
+
+	private static bool IsValidPageFeedback(PageFeedbackRequest request) =>
+		!string.IsNullOrWhiteSpace(request.PageUrl)
+		&& request.PageUrl.Length <= 2048
+		&& request.PageUrl.StartsWith('/')
+		&& !request.PageUrl.StartsWith("//", StringComparison.Ordinal)
+		&& Uri.TryCreate(request.PageUrl, UriKind.Relative, out _)
+		&& !string.IsNullOrWhiteSpace(request.PageTitle)
+		&& request.PageTitle.Length <= 500
+		&& Enum.IsDefined(request.Reaction)
+		&& (request.Comment is null || request.Comment.Length <= 2000);
 
 }

@@ -6,9 +6,11 @@ using System.ComponentModel.DataAnnotations;
 using Amazon.DynamoDBv2;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.Adapters.AskAi;
+using Elastic.Documentation.Api.Adapters.PageFeedback;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.Caching;
 using Elastic.Documentation.Api.Gcp;
+using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Search;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -70,6 +72,7 @@ public static class ServicesExtension
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
 		AddDistributedCache(services, appEnv);
 		AddAskAiServices(services, appEnv);
+		AddPageFeedbackServices(services);
 		AddSearchServices(services, appEnv);
 	}
 
@@ -179,6 +182,14 @@ public static class ServicesExtension
 			logger?.LogError(ex, "Failed to configure AskAi services for environment {AppEnvironment}", appEnv);
 			throw;
 		}
+	}
+
+	private static void AddPageFeedbackServices(IServiceCollection services)
+	{
+		_ = services.AddSingleton<PageFeedbackTransport>();
+		_ = services.AddSingleton<PageFeedbackIndex>();
+		_ = services.AddSingleton<IPageFeedbackService, ElasticsearchPageFeedbackGateway>();
+		_ = services.AddHostedService<PageFeedbackBootstrapService>();
 	}
 
 	private static void AddSearchServices(IServiceCollection services, AppEnv appEnv)

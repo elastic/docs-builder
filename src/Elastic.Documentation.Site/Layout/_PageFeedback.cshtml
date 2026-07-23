@@ -1,0 +1,12 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation
+
+@if (Model.Features.PageFeedbackEnabled
+	&& !Model.Features.AirGappedEnabled
+	&& Model.BuildType is BuildType.Assembler or BuildType.Codex)
+{
+	<page-feedback
+		page-url="@Model.CurrentNavigationItem.Url"
+		page-title="@Model.Title">
+	</page-feedback>
+}

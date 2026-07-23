@@ -33,6 +33,7 @@
 						@await RenderBodyAsync()
 					</article>
 					@await RenderPartialAsync(_PrevNextNav.Create(Model))
+					@await RenderPartialAsync(_PageFeedback.Create(Model))
 				</div>
 				@await RenderPartialAsync(_TableOfContents.Create(Model))
 			</main>

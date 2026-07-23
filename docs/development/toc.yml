@@ -1,6 +1,7 @@
 toc:
   - file: index.md
   - file: changelog-bundle-registry.md
+  - file: page-feedback.md
   - file: essc.md
   - folder: ingest
     children:

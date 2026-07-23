@@ -23,6 +23,7 @@ else
 						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 						@await RenderBodyAsync()
 					</article>
+					@await RenderPartialAsync(_PageFeedback.Create(Model))
 				</main>
 			</div>
 			@await RenderPartialAsync(_ApiToc.Create(Model.TocItems.ToArray()))

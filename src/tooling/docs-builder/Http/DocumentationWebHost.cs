@@ -77,6 +77,9 @@ public class DocumentationWebHost
 
 		// Enable diagnostics panel in serve mode
 		Context.Configuration.Features.DiagnosticsPanelEnabled = true;
+#if DEBUG
+		Context.Configuration.Features.PageFeedbackEnabled = true;
+#endif
 
 		// Create InMemoryBuildState for background validation builds
 		InMemoryBuildState = new InMemoryBuildState(logFactory, configurationContext);

@@ -47,6 +47,7 @@
 								@await RenderBodyAsync()
 							</article>
 							@await RenderPartialAsync(_PrevNextNav.Create(Model))
+							@await RenderPartialAsync(_PageFeedback.Create(Model))
 							@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
 							{
 								<div id="elastic-website-search-input-container"
