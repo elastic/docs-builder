@@ -830,6 +830,14 @@ public class CtaDefinition
 
 	[YamlMember(Alias = "benefits")]
 	public List<string> Benefits { get; set; } = [];
+
+	/// <summary>
+	/// Optional docset-root-relative path prefixes this template applies to. Every page under a listed
+	/// prefix uses this template unless it selects one explicitly via its <c>cta</c> frontmatter.
+	/// When scopes overlap, the most specific (longest) prefix wins.
+	/// </summary>
+	[YamlMember(Alias = "paths")]
+	public List<string> Paths { get; set; } = [];
 }
 
 /// <summary>
