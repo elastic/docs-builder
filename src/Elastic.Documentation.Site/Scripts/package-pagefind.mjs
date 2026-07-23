@@ -25,10 +25,7 @@ const target = {
 	'windows-x64': 'x86_64-pc-windows-msvc',
 }[`${platform}-${process.arch}`]
 
-if (
-	!['darwin', 'linux', 'windows'].includes(platform) ||
-	!target
-) {
+if (!target) {
 	throw new Error(
 		`Pagefind is not packaged for ${process.platform}-${process.arch}`
 	)
@@ -76,7 +73,7 @@ if (actualChecksum !== expectedChecksum) {
 const extracted = mkdtempSync(join(tmpdir(), 'pagefind-'))
 try {
 	execFileSync('tar', ['-xzf', archive, '-C', extracted])
-	const executable = process.platform === 'win32' ? 'pagefind.exe' : 'pagefind'
+	const executable = platform === 'windows' ? 'pagefind.exe' : 'pagefind'
 	writeFileSync(
 		destination,
 		gzipSync(readFileSync(join(extracted, executable)), { level: 9 })
