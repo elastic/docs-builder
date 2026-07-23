@@ -46,6 +46,19 @@ public class BundleBuilder
 			};
 		}
 
+		// Guard against a bundle-level target that disagrees with the targets its own entries declare
+		// for the same product (for example a release version typed as 2027-07-20 while every entry says
+		// 2026-07-20). The bundle-level target drives the rendered release date, so a mismatch silently
+		// publishes entries under the wrong version/date. Refuse to build the bundle in that case.
+		if (!ValidateProductTargetConsistency(collector, bundledProducts, entries))
+		{
+			return new BundleBuildResult
+			{
+				IsValid = false,
+				Data = null
+			};
+		}
+
 		var bundledData = new Bundle
 		{
 			Products = bundledProducts,
@@ -133,6 +146,90 @@ public class BundleBuilder
 
 		return bundledProducts;
 	}
+
+	/// <summary>
+	/// Verifies that, for every bundle-level product that declares a target, each entry declaring the
+	/// same product declares a compatible target. A coarser bundle target may be a component-prefix of a
+	/// finer entry target (for example a monthly rollup <c>2026-05</c> covering an entry dated
+	/// <c>2026-05-15</c>), but genuinely divergent targets (for example <c>2027-07-20</c> vs
+	/// <c>2026-07-20</c>, or <c>9.5.0</c> vs <c>9.6.0</c>) are rejected. Entries whose product carries no
+	/// target, or a product the bundle does not declare, are not compared.
+	/// </summary>
+	/// <returns><c>true</c> when all entry targets are consistent with the bundle-level targets.</returns>
+	private static bool ValidateProductTargetConsistency(
+		IDiagnosticsCollector collector,
+		IReadOnlyList<BundledProduct> bundledProducts,
+		IReadOnlyList<MatchedChangelogFile> entries)
+	{
+		// Index the bundle-level targets by product id, keeping only products that declare a target.
+		var bundleTargetsByProduct = bundledProducts
+			.Where(p => !string.IsNullOrWhiteSpace(p.ProductId) && !string.IsNullOrWhiteSpace(p.Target))
+			.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
+			.ToDictionary(g => g.Key, g => g.Select(p => p.Target!).ToList(), StringComparer.OrdinalIgnoreCase);
+
+		if (bundleTargetsByProduct.Count == 0)
+			return true;
+
+		var isValid = true;
+
+		foreach (var entry in entries)
+		{
+			if (entry.Data.Products == null)
+				continue;
+
+			foreach (var entryProduct in entry.Data.Products)
+			{
+				if (string.IsNullOrWhiteSpace(entryProduct.ProductId) || string.IsNullOrWhiteSpace(entryProduct.Target))
+					continue;
+
+				if (!bundleTargetsByProduct.TryGetValue(entryProduct.ProductId, out var bundleTargets))
+					continue;
+
+				if (bundleTargets.Any(bundleTarget => AreTargetsCompatible(bundleTarget, entryProduct.Target!)))
+					continue;
+
+				collector.EmitError(entry.FilePath,
+					$"Changelog entry '{entry.FileName}' declares target '{entryProduct.Target}' for product '{entryProduct.ProductId}', " +
+					$"but the bundle target for that product is '{string.Join("', '", bundleTargets)}'. " +
+					"A bundle target and its entries' targets for the same product must match (a coarser bundle target may be a prefix of a finer entry target). " +
+					"Check the release version passed to 'changelog bundle' / 'changelog gh-release'.");
+				isValid = false;
+			}
+		}
+
+		return isValid;
+	}
+
+	/// <summary>
+	/// Two targets are compatible when they are equal or when one is a component-wise prefix of the other.
+	/// Components are the dot- and dash-delimited parts of a version or date (for example <c>9.5.0</c> or
+	/// <c>2026-07-20</c>), so <c>2026-05</c> is compatible with <c>2026-05-15</c> but <c>2027-07-20</c> is
+	/// not compatible with <c>2026-07-20</c>.
+	/// </summary>
+	private static bool AreTargetsCompatible(string a, string b)
+	{
+		if (string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		var componentsA = SplitTargetComponents(a);
+		var componentsB = SplitTargetComponents(b);
+		var shared = Math.Min(componentsA.Length, componentsB.Length);
+
+		if (shared == 0)
+			return false;
+
+		for (var i = 0; i < shared; i++)
+		{
+			if (!string.Equals(componentsA[i], componentsB[i], StringComparison.OrdinalIgnoreCase))
+				return false;
+		}
+
+		// Every shared leading component matched; one target is a prefix of the other.
+		return true;
+	}
+
+	private static string[] SplitTargetComponents(string target) =>
+		target.Split(['.', '-'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
 	private static Lifecycle? ParseLifecycle(string? value)
 	{
