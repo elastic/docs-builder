@@ -7,11 +7,6 @@ interface PagefindResultData {
         title?: string
         breadcrumbs?: string
     }
-    sub_results?: Array<{
-        title: string
-        url: string
-        excerpt: string
-    }>
 }
 
 interface PagefindRawResult {
@@ -93,25 +88,14 @@ export const searchPagefind = async (
 export const mapPagefindResults = (
     pages: PagefindLoadedResult[]
 ): StaticSearchResult[] =>
-    pages.map(({ score, data }) => {
-        const section = data.sub_results?.find(({ url }) =>
-            url.includes('#')
-        ) ??
-            data.sub_results?.[0] ?? {
-                title: data.meta.title ?? data.url,
-                url: data.url,
-                excerpt: data.excerpt,
-            }
-
-        return {
-            type: 'docs' as const,
-            url: section.url,
-            title: data.meta.title || section.title || data.url,
-            description: section.excerpt,
-            score,
-            parents: parseBreadcrumbs(data.meta.breadcrumbs),
-        }
-    })
+    pages.map(({ score, data }) => ({
+        type: 'docs' as const,
+        url: data.url,
+        title: data.meta.title || data.url,
+        description: data.excerpt,
+        score,
+        parents: parseBreadcrumbs(data.meta.breadcrumbs),
+    }))
 
 const parseBreadcrumbs = (value?: string) => {
     if (!value) return []

@@ -39,12 +39,11 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 
 		var slug = slugTarget.Slugify();
 
-		_ = renderer.Write(@"<div class=""heading-wrapper"">")
+		_ = renderer.Write(@"<div class=""heading-wrapper"" id=""")
+			.Write(slug)
+			.Write(@""">")
 			.Write('<')
 			.Write(headingText)
-			.Write(@" id=""")
-			.Write(slug)
-			.Write('"')
 			.WriteAttributes(obj)
 			.Write('>')
 			.Write($"""<a class="headerlink" href="#{slug}">""")
