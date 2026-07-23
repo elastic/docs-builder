@@ -756,6 +756,8 @@ public class DocumentationSetFeatures
 	public bool? PrimaryNav { get; set; }
 	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
 	public bool? DisableGithubEditLink { get; set; }
+	[YamlMember(Alias = "static-search", ApplyNamingConventions = false)]
+	public bool? StaticSearch { get; set; }
 }
 
 [YamlSerializable]

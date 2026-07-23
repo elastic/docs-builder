@@ -313,6 +313,8 @@ public record ConfigurationFile
 				_features["primary-nav"] = docSetFile.Features.PrimaryNav.Value;
 			if (docSetFile.Features.DisableGithubEditLink.HasValue)
 				_features["disable-github-edit-link"] = docSetFile.Features.DisableGithubEditLink.Value;
+			if (docSetFile.Features.StaticSearch.HasValue)
+				_features["static-search"] = docSetFile.Features.StaticSearch.Value;
 
 			// primary-nav requires the Elastic global navigation which is not available for white-label builds
 			if (Branding is not null && docSetFile.Features.PrimaryNav is true)

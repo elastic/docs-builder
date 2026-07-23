@@ -78,6 +78,7 @@ public class ReloadableGeneratorState : IDisposable
 		if (reloadConfiguration)
 		{
 			_context.ReloadConfiguration();
+			_context.Configuration.Features.StaticSearchEnabled = false;
 			(_codexReader as IDisposable)?.Dispose();
 			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
 				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), FileSystemFactory.AppData)
