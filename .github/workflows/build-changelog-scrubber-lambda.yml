@@ -22,7 +22,7 @@ jobs:
     env:
       BINARY_PATH: .artifacts/docs-lambda-changelog-scrubber/release_linux-x64/bootstrap
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           ref: ${{ inputs.ref }}
           persist-credentials: false
