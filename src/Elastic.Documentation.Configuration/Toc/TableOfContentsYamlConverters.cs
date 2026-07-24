@@ -2,8 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
+using Elastic.Documentation.Diagnostics;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -94,8 +96,10 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			}
 			else if (parser.Accept<MappingStart>(out _))
 			{
-				// This is a nested mapping - skip it
-				parser.SkipThisAndNestedEvents();
+				if (key.Value == "applies_to")
+					value = ParseAppliesTo(parser);
+				else
+					parser.SkipThisAndNestedEvents();
 			}
 
 			dictionary[key.Value] = value;
@@ -119,7 +123,8 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			var supplementalFolder = dictionary.TryGetValue("folder", out var f) && f is string fStr ? fStr : null;
 			var title = dictionary.TryGetValue("title", out var t) && t is string titleStr ? titleStr : null;
 			var navigationTitle = dictionary.TryGetValue("navigation_title", out var nt) && nt is string navigationTitleStr ? navigationTitleStr : null;
-			return new CliReferenceRef(cliSchema, supplementalFolder, title, navigationTitle, cliSchema, cliSchema, placeholderContext, children);
+			var appliesTo = dictionary.TryGetValue("applies_to", out var at) && at is ApplicableTo a ? a : null;
+			return new CliReferenceRef(cliSchema, supplementalFolder, title, navigationTitle, cliSchema, cliSchema, placeholderContext, children, appliesTo);
 		}
 
 		// Check for folder+file combination (e.g., folder: getting-started, file: getting-started.md)
@@ -181,6 +186,39 @@ public class TocItemYamlConverter : IYamlTypeConverter
 			return new IsolatedTableOfContentsRef(source, source, children, placeholderContext);
 
 		return null;
+	}
+
+	private static ApplicableTo ParseAppliesTo(IParser parser)
+	{
+		_ = parser.Consume<MappingStart>();
+		var diagnostics = new List<(Severity, string)>();
+		var appliesTo = new ApplicableTo();
+		while (!parser.TryConsume<MappingEnd>(out _))
+		{
+			var applyKey = parser.Consume<Scalar>();
+			if (!parser.Accept<Scalar>(out var applyValue))
+			{
+				parser.SkipThisAndNestedEvents();
+				continue;
+			}
+			_ = parser.MoveNext();
+			switch (applyKey.Value)
+			{
+				case "stack":
+					if (AppliesCollection.TryParse(applyValue.Value, diagnostics, out var stack) && stack is not null)
+						appliesTo = appliesTo with { Stack = stack };
+					break;
+				case "serverless":
+					if (AppliesCollection.TryParse(applyValue.Value, diagnostics, out var sv) && sv is not null)
+						appliesTo = appliesTo with { Serverless = new ServerlessProjectApplicability { Elasticsearch = sv, Observability = sv, Security = sv } };
+					break;
+				case "deployment":
+					if (AppliesCollection.TryParse(applyValue.Value, diagnostics, out var dep) && dep is not null)
+						appliesTo = appliesTo with { Deployment = new DeploymentApplicability { Self = dep, Ece = dep, Eck = dep, Ess = dep } };
+					break;
+			}
+		}
+		return appliesTo;
 	}
 
 	private static IReadOnlyCollection<ITableOfContentsItem> GetChildren(Dictionary<string, object?> dictionary)
