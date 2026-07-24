@@ -29,6 +29,8 @@ interface Props {
      * component does not have to infer branding state from other optional props.
      */
     branded?: boolean
+    /** When true the git remote belongs to the `elastic` GitHub organization. Controls whether the Elastic logo is shown as default. */
+    elasticOrg?: boolean
     /** Custom header background CSS colour. Only used when branded=true; defaults to #000000. */
     headerBg?: string
     /** Custom icon image URL. When set (and branded=true), renders an <img> instead of the title text. */
@@ -45,6 +47,7 @@ export const Header = ({
     githubRef,
     airGapped = false,
     branded = false,
+    elasticOrg = false,
     headerBg,
     iconSrc,
 }: Props) => {
@@ -92,8 +95,8 @@ export const Header = ({
                 {title}
             </a>
         )
-    ) : (
-        // Default: Elastic-branded logo (light-mode styling)
+    ) : elasticOrg ? (
+        // Default for elastic org: Elastic-branded logo (light-mode styling)
         <span ref={containerRef}>
             <EuiHeaderLogo
                 href={logoHref}
@@ -112,6 +115,27 @@ export const Header = ({
             >
                 {title}
             </EuiHeaderLogo>
+        </span>
+    ) : (
+        // Non-elastic org, no branding: title text only, no logo
+        <span ref={containerRef}>
+            <a
+                href={logoHref}
+                css={css`
+                    display: inline-flex;
+                    align-items: center;
+                    padding: ${euiTheme.size.s};
+                    font-weight: ${euiTheme.font.weight.bold};
+                    color: ${euiTheme.colors.textInk};
+                    text-decoration: none;
+                    border-radius: ${euiTheme.border.radius.small};
+                    &:hover {
+                        background: rgba(0, 0, 0, 0.06);
+                    }
+                `}
+            >
+                {title}
+            </a>
         </span>
     )
 
@@ -197,6 +221,7 @@ customElements.define(
             githubRef: 'string',
             airGapped: 'boolean',
             branded: 'boolean',
+            elasticOrg: 'boolean',
             headerBg: 'string',
             iconSrc: 'string',
         },
