@@ -89,7 +89,9 @@ describe('initHighlight', () => {
             await initHighlight()
 
             expect(hljs.listLanguages()).toContain(canonical)
-            const blocks = document.querySelectorAll('#markdown-content pre code')
+            const blocks = document.querySelectorAll(
+                '#markdown-content pre code'
+            )
             expect(blocks[0].getAttribute('data-highlighted')).toBe('yes')
             expect(blocks[1].getAttribute('data-highlighted')).toBe('yes')
         }
