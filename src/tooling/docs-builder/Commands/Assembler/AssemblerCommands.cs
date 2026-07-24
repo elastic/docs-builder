@@ -6,15 +6,21 @@ using System.IO.Abstractions;
 using Actions.Core.Services;
 using Documentation.Builder.Http;
 using Elastic.Documentation;
+using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
+using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.LegacyDocs;
+using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
 using Nullean.Argh.Documentation;
+using Nullean.ScopedFileSystem;
 
 namespace Documentation.Builder.Commands.Assembler;
 
@@ -155,13 +161,60 @@ internal sealed class AssemblerCommands(
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
+	/// <summary>
+	/// Serve assembled documentation with live reload and on-demand per-request rendering.
+	/// Requires <c>assembler clone</c> to have been run first. No prior build is needed.
+	/// Pages are rendered on demand; file changes invalidate the repo and trigger a live reload.
+	/// </summary>
+	/// <param name="port">Port to listen on. Default: 4000.</param>
+	/// <param name="environment">Named deployment target. Determines which repositories are used.</param>
+	/// <param name="noWatchMd">Disable watching checkout directories for markdown changes. Static asset live reload still works. Useful when doing frontend (CSS/JS) work.</param>
+	[NoOptionsInjection]
+	public async Task Serve(int port = 4000, string? environment = null, bool noWatchMd = false, CancellationToken ct = default)
+	{
+		environment ??= "dev";
+		var readFs = FileSystemFactory.RealRead;
+		var writeFs = FileSystemFactory.RealWrite;
+
+		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, readFs, writeFs, null, null);
+
+		var cloner = new AssemblerRepositorySourcer(logFactory, assembleContext);
+		var checkoutResult = cloner.GetAll();
+		var checkouts = checkoutResult.Checkouts.ToArray();
+
+		if (checkouts.Length == 0)
+			throw new Exception("No checkouts found. Run 'assembler clone' first.");
+
+		var exporters = ExportOptions.Default
+			.Except([Exporter.DocumentationState])
+			.ToHashSet();
+
+		var assembleSources = await AssembleSources.AssembleAsync(logFactory, assembleContext, checkouts, configurationContext, exporters, ct);
+
+		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
+		var siteNavigationFile = SiteNavigationFile.Deserialize(await readFs.File.ReadAllTextAsync(navigationFileInfo.FullName, ct));
+		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
+		var navigation = new SiteNavigation(siteNavigationFile, assembleContext, documentationSets, assembleContext.Environment.PathPrefix);
+
+		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
+		using var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
+		var legacyPageChecker = new LegacyPageService(logFactory);
+		var historyMapper = new PageLegacyUrlMapper(legacyPageChecker, assembleContext.VersionsConfiguration, assembleSources.LegacyUrlMappings);
+		var builder = new AssemblerBuilder(logFactory, assembleContext, navigation, htmlWriter, pathProvider, historyMapper);
+
+		var host = new AssemblerServeWebHost(port, assembleSources, builder, logFactory, watchMarkdown: !noWatchMd);
+		await host.RunAsync(ct);
+		await host.StopAsync(ct);
+		await collector.StopAsync(ct);
+	}
+
 	/// <summary>Serve the output of a completed assembler build at <c>http://localhost:4000</c>.</summary>
 	/// <remarks>Run after <c>assembler build</c>. Does not watch for file changes.</remarks>
 	/// <param name="port">Port to listen on. Default: 4000.</param>
-	/// <param name="path">Path to the built site. Defaults to <c>.artifacts/docs/</c>.</param>
-
+	/// <param name="path">Path to the built site. Defaults to <c>.artifacts/assembly/</c>.</param>
 	[NoOptionsInjection]
-	public async Task Serve(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
+	[CommandName("serve-static")]
+	public async Task ServeStatic(int port = 4000, [Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null, CancellationToken ct = default)
 	{
 		var host = new StaticWebHost(port, path?.FullName);
 		await host.RunAsync(ct);
