@@ -75,8 +75,8 @@ Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{org}/{r
   "product": "elasticsearch",
   "generated_at": "2026-05-06T12:00:00+00:00",
   "bundles": [
-    { "file": "9.4.0.yaml", "target": "9.4.0", "etag": "…" },
-    { "file": "9.3.0.yaml", "target": "9.3.0", "etag": "…" }
+    { "file": "9.4.0.yaml", "target": "9.4.0", "e_tag": "…" },
+    { "file": "9.3.0.yaml", "target": "9.3.0", "e_tag": "…" }
   ]
 }
 ```
@@ -88,14 +88,14 @@ Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{org}/{r
 | `generated_at` | UTC timestamp of the last regeneration. |
 | `bundles[].file` | Bundle file name, resolved at `bundle/{product}/{file}` (or entry file at `changelog/{org}/{repo}/{branch}/{file}` for the entry index). |
 | `bundles[].target` | Target version/date from the bundle's declaration of **this** product (may be null). For an amend sidecar (`{name}.amend-{N}.yaml`) that declares no products itself (created by older docs-builder versions), the parent bundle's target is recorded when the parent file is available in the same upload run. |
-| `bundles[].etag` | See the ETag caveat below. |
+| `bundles[].e_tag` | See the ETag caveat below. |
 
 Bundles are sorted by `target` descending (newest first) with a deterministic tiebreak on
 `file`, so the JSON is stable across reruns.
 
 ### ETag caveat
 
-`bundles[].etag` is the ETag of the bundle object **as uploaded to the private bucket**
+`bundles[].e_tag` is the ETag of the bundle object **as uploaded to the private bucket**
 (pre-scrub). The scrubber rewrites any bundle that contains private references, so for
 scrubbed bundles this value **will not match** the public (CDN) object's ETag.
 
@@ -173,6 +173,68 @@ build that includes this feature.
   written to the public bucket, even though the index may list it.
 
 Consumers must therefore treat a missing bundle as non-fatal (skip + warn), not an error.
+
+## State discovery and reconciliation
+
+The merge-by-filename refresh above is **additive**: a manifest never has entries removed by
+the live path, it is best-effort (a failed refresh leaves it stale), and nothing in the live
+path ever compares it against the objects actually in the bucket. Registries are therefore not
+authoritative for removals or discovery, and they can drift — which matters as soon as
+something (an operator, or backfill planning) needs a trustworthy view of a scope's current
+state.
+
+The `changelog registry` command group (`src/services/Elastic.Changelog/Reconciliation/`)
+closes that gap per scope (`bundle/{product}/` or `changelog/{org}/{repo}/{branch}/`):
+
+### Inspection (read-only)
+
+`changelog registry inspect` lists the actual private objects under the scope prefix, reads the
+private manifest, and classifies every divergence into a four-class taxonomy:
+
+| Class | Meaning |
+|---|---|
+| **missing** | Object exists in the scope, the registry has no entry for it. |
+| **stale** | Registry entry whose object no longer exists. |
+| **corrupt** | The manifest is unparseable, or contains unsafe/duplicate entries. |
+| **object-divergent** | Entry metadata (ETag or target) disagrees with the actual object. |
+
+For bundle scopes the expected `target` is re-derived from the bundle YAML in S3 (including the
+parent-bundle fallback for legacy amends without `products`); changelog scopes enumerate files
+only. `--out` writes a machine-readable `RegistryStateSnapshot` (registry health, actual
+objects, current entries, expected entries, divergences) — the current-state input the backfill
+planner consumes. A manifest with a newer `schema_version` is reported as *unsupported*, not
+corrupt: its entries cannot be judged by an older tool.
+
+### Repair (explicit, private-side only)
+
+`changelog registry repair` converges the **private** manifest to the actual objects: it is a
+separate, explicit operation (nothing repairs implicitly), idempotent (a clean scope writes
+nothing; a second run is a no-op), and audited (every added/removed/corrected entry is logged
+with before/after values; `--dry-run` prints the plan). Writes go through the same conditional
+PUT as the live refresh — `If-Match` on update, `If-None-Match: *` on create — and a `412`
+triggers a full re-inspection (fresh manifest read **and** fresh object listing) before the
+bounded retry. Because the manifest is read *before* the objects are listed, a concurrent
+upload either shows up in the re-listing or invalidates the precondition; it cannot be dropped.
+Two rails guard against operator error: an empty result requires `--allow-empty`, and a
+newer-schema manifest is never rewritten (that would silently downgrade it).
+
+### Public-side verification (strictly read-only) and republish
+
+The public bucket is scrubber-owned: the scrubber Lambda is the **sole** writer there. So
+`changelog registry verify-public` only ever compares — the public registry must equal the
+private one (verbatim pass-through) and every private YAML object must have a public
+counterpart (and vice versa) — under a bounded retry policy
+(`--max-attempts` × `--poll-interval-seconds`), because registry and YAML scrub events
+propagate independently and transient divergence is normal. The boundary is structural, not
+conventional: the comparison code operates on a read-only S3 reader interface
+(`IS3ScopeReader`) that exposes no write operations.
+
+Recovery from a lost or dead-lettered scrub event is the explicit
+`changelog registry republish` operation on the **private** side: a metadata-preserving S3
+self-copy (`CopyObject` onto the same key with `MetadataDirective: REPLACE`, re-supplying the
+original content type and user metadata) that leaves content and ETag untouched while emitting
+the `ObjectCreated` event the scrubber reacts to. The scrubber then re-scrubs and re-publishes
+on its own.
 
 ## `changelog bundle` entry sourcing (org/repo/branch gate)
 

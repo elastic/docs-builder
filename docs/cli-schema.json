@@ -4433,7 +4433,440 @@
           ]
         }
       ],
-      "namespaces": []
+      "namespaces": [
+        {
+          "segment": "registry",
+          "summary": "Inspect, repair, and verify per-scope changelog registry.json manifests against actual bucket state.",
+          "options": [],
+          "commands": [
+            {
+              "path": [
+                "changelog",
+                "registry"
+              ],
+              "name": "inspect",
+              "summary": "Compare a scope\u0027s private registry.json against the actual private-bucket objects and report every divergence.",
+              "notes": "Registries merge additively and are not authoritative for removals or discovery, so they can drift\nfrom the objects actually in the bucket. This command detects and classifies that drift: missing\n(object exists, registry lacks it), stale (registry entry, object gone), corrupt\n(unparseable/invalid manifest), and object-divergent (registry metadata disagrees with the object).\n\nStrictly read-only \u2014 nothing is written to any bucket. Exits non-zero when the scope diverged.\nUse changelog registry repair to reconcile.",
+              "usage": "docs-builder changelog registry inspect --s3-bucket-name \u003Cstring\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Private changelog bundles S3 bucket to inspect."
+                },
+                {
+                  "role": "flag",
+                  "name": "product",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Product of a bundle scope (bundle/{product}/). Mutually exclusive with --owner/--repo/--branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "owner",
+                  "type": "string",
+                  "required": false,
+                  "summary": "GitHub owner of a changelog scope (changelog/{org}/{repo}/{branch}/). Requires --repo and --branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "repo",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Repository of a changelog scope. Requires --owner and --branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "branch",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Branch of a changelog scope, stored verbatim (slashes become key segments). Requires --owner and --repo."
+                },
+                {
+                  "role": "flag",
+                  "name": "out",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Path to write the machine-readable state snapshot JSON to.",
+                  "validations": [
+                    {
+                      "kind": "rejectSymbolicLinks"
+                    }
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "intent": {
+                "requiresAuth": true
+              }
+            },
+            {
+              "path": [
+                "changelog",
+                "registry"
+              ],
+              "name": "repair",
+              "summary": "Reconcile a scope\u0027s private registry.json from the actual private-bucket objects.",
+              "notes": "Rebuilds the manifest from the objects that actually exist in the scope: missing entries are added,\nstale entries removed, and divergent metadata corrected. The write uses the same optimistic-concurrency\nconditional PUT as the live upload path (If-Match on update, If-None-Match: * on create), re-inspecting\nand retrying when a concurrent upload refreshes the manifest, so repair is safe to run alongside live\nuploads. Repair is idempotent: a clean scope writes nothing, and running it twice yields no further change.\n\nOnly the private registry is written. The public copy is scrubber-owned and converges through\nthe scrubber\u0027s pass-through of this write\u0027s own event. Every change is logged (before/after) for audit.",
+              "usage": "docs-builder changelog registry repair --s3-bucket-name \u003Cstring\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Private changelog bundles S3 bucket to repair the registry in."
+                },
+                {
+                  "role": "flag",
+                  "name": "product",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Product of a bundle scope (bundle/{product}/). Mutually exclusive with --owner/--repo/--branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "owner",
+                  "type": "string",
+                  "required": false,
+                  "summary": "GitHub owner of a changelog scope (changelog/{org}/{repo}/{branch}/). Requires --repo and --branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "repo",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Repository of a changelog scope. Requires --owner and --branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "branch",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Branch of a changelog scope, stored verbatim (slashes become key segments). Requires --owner and --repo."
+                },
+                {
+                  "role": "flag",
+                  "name": "allow-empty",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Allow writing a manifest with zero entries when the scope holds no objects. Without this flag an empty result aborts the repair.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "dryRun",
+                  "name": "dry-run",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Report what would change without writing.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "intent": {
+                "idempotent": true,
+                "scope": "global",
+                "requiresAuth": true
+              }
+            },
+            {
+              "path": [
+                "changelog",
+                "registry"
+              ],
+              "name": "republish",
+              "summary": "Re-emit the private-bucket ObjectCreated event for scope objects so the scrubber re-processes them.",
+              "notes": "The recovery path for a lost or dead-lettered scrub event: performs a metadata-preserving S3 self-copy\nof each selected private object (content and ETag unchanged), which produces the ObjectCreated notification\nthe scrubber Lambda reacts to. The scrubber then re-scrubs and re-publishes the object to the public bucket\nitself \u2014 this command never writes to the public bucket.\n\nRepublishing only happens through this explicit command; nothing triggers it implicitly.",
+              "usage": "docs-builder changelog registry republish --s3-bucket-name \u003Cstring\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Private changelog bundles S3 bucket holding the objects to republish."
+                },
+                {
+                  "role": "flag",
+                  "name": "product",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Product of a bundle scope (bundle/{product}/). Mutually exclusive with --owner/--repo/--branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "owner",
+                  "type": "string",
+                  "required": false,
+                  "summary": "GitHub owner of a changelog scope (changelog/{org}/{repo}/{branch}/). Requires --repo and --branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "repo",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Repository of a changelog scope. Requires --owner and --branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "branch",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Branch of a changelog scope, stored verbatim (slashes become key segments). Requires --owner and --repo."
+                },
+                {
+                  "role": "flag",
+                  "name": "files",
+                  "type": "array",
+                  "required": false,
+                  "summary": "File name(s) in the scope to republish (comma-separated or repeated). Mutually exclusive with --all.",
+                  "repeatable": true,
+                  "elementType": "string"
+                },
+                {
+                  "role": "flag",
+                  "name": "all",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Republish every object in the scope, including its registry.json.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "intent": {
+                "idempotent": true,
+                "scope": "global",
+                "requiresAuth": true
+              }
+            },
+            {
+              "path": [
+                "changelog",
+                "registry"
+              ],
+              "name": "verify-public",
+              "summary": "Verify that the scrubber-owned public bucket converged to the state expected from the private bucket.",
+              "notes": "Compares the public registry.json (a verbatim pass-through copy of the private one) and the public\nobjects against the private scope, waiting under a bounded retry policy (--max-attempts x --poll-interval-seconds)\nbecause registry and YAML scrub events propagate independently and transient divergence is normal.\n\nStrictly read-only: the public bucket is never written \u2014 it is checked through a reader that has no\nwrite operations. If divergence persists (a lost or dead-lettered scrub event), recover with the explicit\nchangelog registry republish operation on the private side.",
+              "usage": "docs-builder changelog registry verify-public --s3-bucket-name \u003Cstring\u003E --public-s3-bucket-name \u003Cstring\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "flag",
+                  "name": "s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Private changelog bundles S3 bucket the expected state derives from."
+                },
+                {
+                  "role": "flag",
+                  "name": "public-s3-bucket-name",
+                  "type": "string",
+                  "required": true,
+                  "summary": "Public (scrubbed) changelog bundles S3 bucket to check. Only ever read."
+                },
+                {
+                  "role": "flag",
+                  "name": "product",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Product of a bundle scope (bundle/{product}/). Mutually exclusive with --owner/--repo/--branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "owner",
+                  "type": "string",
+                  "required": false,
+                  "summary": "GitHub owner of a changelog scope (changelog/{org}/{repo}/{branch}/). Requires --repo and --branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "repo",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Repository of a changelog scope. Requires --owner and --branch."
+                },
+                {
+                  "role": "flag",
+                  "name": "branch",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Branch of a changelog scope, stored verbatim (slashes become key segments). Requires --owner and --repo."
+                },
+                {
+                  "role": "flag",
+                  "name": "max-attempts",
+                  "type": "integer",
+                  "required": false,
+                  "summary": "Maximum comparison attempts before reporting divergence. Defaults to 12.",
+                  "defaultValue": "12"
+                },
+                {
+                  "role": "flag",
+                  "name": "poll-interval-seconds",
+                  "type": "integer",
+                  "required": false,
+                  "summary": "Seconds to wait between attempts. Defaults to 10 (a two-minute budget with the default attempts).",
+                  "defaultValue": "10"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "intent": {
+                "requiresAuth": true
+              }
+            }
+          ],
+          "namespaces": []
+        }
+      ]
     },
     {
       "segment": "codex",
