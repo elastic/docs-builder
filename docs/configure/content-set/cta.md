@@ -40,7 +40,28 @@ cta:
 ---
 ```
 
-If a page omits `cta`, or its `id` doesn't match a template defined in `docset.yml`, it falls back to the built-in `trial` CTA. An unknown `id` also emits a build warning.
+If a page omits `cta`, the template scoped to its path (if any) applies; otherwise it falls back to the built-in `trial` CTA. An unknown `id` emits a build warning and is ignored.
+
+## Scope a CTA to a path
+
+To apply a template to every page under a directory without editing each file, list path prefixes under `paths`:
+
+```yaml
+cta:
+  observability:
+    button:
+      label: Get started free
+      url: https://cloud.elastic.co/serverless-registration?onboarding_token=observability
+    benefits:
+      - "14-day free trial"
+    paths:
+      - solutions/observability
+```
+
+- Paths are relative to the docset root (the directory containing `docset.yml`) and match whole path segments: `solutions/observability` covers `solutions/observability/apps/apm.md` but not `solutions/observability-labs/index.md`.
+- When a page falls under more than one scoped path, the most specific (longest) prefix wins.
+- A page's `cta` frontmatter always takes precedence over a path scope.
+- Each path can only be claimed by one template; declaring the same path in two templates is a build error.
 
 ## Click and impression tracking
 

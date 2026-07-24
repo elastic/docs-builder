@@ -93,6 +93,10 @@ public record ConfigurationFile
 
 	private readonly Dictionary<string, Cta> _ctas = new(StringComparer.OrdinalIgnoreCase) { [Cta.DefaultName] = Cta.Default };
 
+	// Path scopes declared via `cta.<name>.paths`, as (normalized prefix, template name) pairs ordered
+	// longest-prefix-first so the most specific scope wins during resolution.
+	private readonly List<KeyValuePair<string, string>> _ctaPathScopes = [];
+
 	/// <summary>
 	/// Named right-gutter CTA templates declared under <c>docset.yml</c>'s <c>cta</c> map, keyed by name.
 	/// Always contains at least the built-in <see cref="Cta.DefaultName"/> entry.
@@ -301,11 +305,15 @@ public record ConfigurationFile
 				Branding = ValidateBranding(docSetFile.Branding, context);
 
 			// Process CTA templates - overlays onto (and may override) the built-in 'trial' default
+			var ctaPathScopes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 			foreach (var (name, definition) in docSetFile.Cta)
 			{
-				if (ValidateCta(name, definition, context) is { } cta)
-					_ctas[name] = cta;
+				if (ValidateCta(name, definition, context) is not { } cta)
+					continue;
+				_ctas[name] = cta;
+				CollectCtaPathScopes(name, definition.Paths, ctaPathScopes, context);
 			}
+			_ctaPathScopes = [.. ctaPathScopes.OrderByDescending(kv => kv.Key.Length)];
 
 			// Process features
 			_features = [with(StringComparer.OrdinalIgnoreCase)];
@@ -347,18 +355,56 @@ public record ConfigurationFile
 	}
 
 	/// <summary>
-	/// Resolves a page's <c>cta</c> frontmatter id to a template, falling back to <see cref="Cta.DefaultName"/>
-	/// when <paramref name="id"/> is omitted or doesn't match a configured template.
+	/// Resolves the right-gutter CTA for a page. An explicit, known <c>cta</c> frontmatter <paramref name="id"/>
+	/// always wins. Otherwise the template whose <c>paths</c> scope matches <paramref name="relativePath"/>
+	/// applies (most specific prefix first), falling back to <see cref="Cta.DefaultName"/>.
 	/// </summary>
+	/// <param name="id">The page's <c>cta.id</c> frontmatter value, if any.</param>
+	/// <param name="relativePath">The page's docset-root-relative source path, used for path-scope matching.</param>
 	/// <param name="warning">Set when <paramref name="id"/> is unknown, so the caller can report it.</param>
-	public Cta ResolveCta(string? id, out string? warning)
+	public Cta ResolveCta(string? id, string? relativePath, out string? warning)
 	{
 		warning = null;
-		if (id is not null && Ctas.TryGetValue(id, out var cta))
-			return cta;
 		if (id is not null)
+		{
+			if (Ctas.TryGetValue(id, out var selected))
+				return selected;
+			// Unknown id: warn, then resolve as if the page had no `cta` frontmatter.
 			warning = UnknownCtaWarning(id, Ctas.Keys);
+		}
+		if (relativePath is { Length: > 0 } && MatchCtaPathScope(relativePath) is { } scoped)
+			return scoped;
 		return Ctas[Cta.DefaultName];
+	}
+
+	private Cta? MatchCtaPathScope(string relativePath)
+	{
+		if (_ctaPathScopes.Count == 0)
+			return null;
+		var normalized = relativePath.Replace('\\', '/').TrimStart('/');
+		foreach (var (prefix, name) in _ctaPathScopes)
+		{
+			// Whole-segment prefix match: "solutions/observability" must not match "solutions/observability-labs/...".
+			if (normalized.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+				&& (normalized.Length == prefix.Length || normalized[prefix.Length] == '/'))
+				return Ctas[name];
+		}
+		return null;
+	}
+
+	private static void CollectCtaPathScopes(string name, List<string> paths, Dictionary<string, string> scopes, IDocumentationSetContext context)
+	{
+		foreach (var path in paths)
+		{
+			var prefix = path.Trim().Replace('\\', '/').Trim('/');
+			if (string.IsNullOrEmpty(prefix))
+			{
+				context.EmitError(context.ConfigurationPath, $"'cta.{name}.paths' contains an empty path.");
+				continue;
+			}
+			if (!scopes.TryAdd(prefix, name))
+				context.EmitError(context.ConfigurationPath, $"'cta.{name}.paths' declares '{prefix}' which is already claimed by 'cta.{scopes[prefix]}'. Each path can only map to one CTA template.");
+		}
 	}
 
 	private static string UnknownCtaWarning(string ctaName, IEnumerable<string> knownCtaNames)
@@ -372,7 +418,7 @@ public record ConfigurationFile
 				: "No 'cta' templates are defined in this docset.yml yet. Add one under a top-level 'cta:' map, e.g.:\n" +
 					"cta:\n  mp:\n    button:\n      label: Get started on MP\n      url: https://example.com\n    benefits:\n      - \"Some benefit\"";
 		}
-		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml. Falling back to '{Cta.DefaultName}'. {hint}";
+		return $"'cta: {ctaName}' does not match any 'cta' template in docset.yml and is ignored. {hint}";
 	}
 
 	private static Cta? ValidateCta(string name, CtaDefinition definition, IDocumentationSetContext context)
