@@ -1,12 +1,12 @@
 import { initCopyButton } from '../../copybutton'
 import { highlightCodeBlocks } from '../../hljs'
-import { createDocsMarkedRenderer } from '../../marked-code-renderer'
+import { createMarkdownRenderer } from './markdownRenderer'
 import { useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { useEffect, useMemo, useRef } from 'react'
 
-const markedInstance = createDocsMarkedRenderer()
+const markedInstance = createMarkdownRenderer()
 
 interface MarkdownContentProps {
     content: string

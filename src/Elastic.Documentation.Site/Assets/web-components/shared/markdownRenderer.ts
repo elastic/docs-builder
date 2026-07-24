@@ -8,7 +8,7 @@ function escapeHtml(text: string): string {
         .replace(/"/g, '&quot;')
 }
 
-export function createDocsMarkedRenderer(): Marked {
+export function createMarkdownRenderer(): Marked {
     const renderer: RendererObject = {
         code({ text, lang }: Tokens.Code): string {
             const cls = lang ? ` class="language-${lang}"` : ''

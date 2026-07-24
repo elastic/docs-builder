@@ -1,8 +1,8 @@
 import { initCopyButton } from '../../copybutton'
 import { highlightCodeBlocks } from '../../hljs'
-import { createDocsMarkedRenderer } from '../../marked-code-renderer'
 import { ApiError } from '../shared/errorHandling'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
+import { createMarkdownRenderer } from '../shared/markdownRenderer'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { aiGradients } from './ElasticAiAssistantButton'
 import { GeneratingStatus } from './GeneratingStatus'
@@ -26,7 +26,7 @@ import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { useEffect, useMemo, useRef } from 'react'
 
-const markedInstance = createDocsMarkedRenderer()
+const markedInstance = createMarkdownRenderer()
 
 interface ChatMessageProps {
     message: ChatMessageType
