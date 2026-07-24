@@ -109,11 +109,14 @@ public static class FileSystemFactory
 		if (extensionRoots is null)
 			return ScopeCurrentWorkingDirectory(inner);
 
-		var roots = new[] { Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName }
-			.Concat(extensionRoots)
-			.Distinct(StringComparer.OrdinalIgnoreCase)
-			.ToArray();
-		if (roots.Length == 2)
+		var roots = NormalizeDisjointRoots([
+			Paths.WorkingDirectoryRoot.FullName,
+			Paths.ApplicationData.FullName,
+			.. extensionRoots,
+		]);
+		if (roots.Length == 2
+			&& roots.Contains(NormalizeRootPath(Paths.WorkingDirectoryRoot.FullName), StringComparer.OrdinalIgnoreCase)
+			&& roots.Contains(NormalizeRootPath(Paths.ApplicationData.FullName), StringComparer.OrdinalIgnoreCase))
 			return ScopeCurrentWorkingDirectory(inner);
 
 		return new ScopedFileSystem(inner, new ScopedFileSystemOptions(roots)
@@ -121,6 +124,46 @@ public static class FileSystemFactory
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
 		});
+	}
+
+	private static string NormalizeRootPath(string path) =>
+		Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+	private static bool IsSameOrSubPathOf(string path, string possibleAncestor)
+	{
+		path = NormalizeRootPath(path);
+		possibleAncestor = NormalizeRootPath(possibleAncestor);
+		if (path.Equals(possibleAncestor, StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		return path.StartsWith(possibleAncestor + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+			|| path.StartsWith(possibleAncestor + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static string[] NormalizeDisjointRoots(IEnumerable<string> roots)
+	{
+		var normalized = roots
+			.Select(NormalizeRootPath)
+			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.OrderBy(static root => root.Length)
+			.ToList();
+
+		var kept = new List<string>();
+		foreach (var root in normalized)
+		{
+			if (kept.Exists(existing => IsSameOrSubPathOf(root, existing)))
+				continue;
+
+			for (var i = kept.Count - 1; i >= 0; i--)
+			{
+				if (IsSameOrSubPathOf(kept[i], root))
+					kept.RemoveAt(i);
+			}
+
+			kept.Add(root);
+		}
+
+		return [.. kept];
 	}
 
 	// Builds write options that include AllowedSpecialFolders.Temp PLUS the inner FS's own
