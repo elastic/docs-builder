@@ -66,11 +66,20 @@ describe('initHighlight', () => {
     })
 
     it.each([
+        ['cmd', 'dos'],
+        ['html', 'xml'],
         ['sh', 'shell'],
         ['js', 'javascript'],
+        ['jsx', 'javascript'],
+        ['jsonc', 'json'],
+        ['md', 'markdown'],
+        ['text', 'plaintext'],
         ['ts', 'typescript'],
+        ['tsx', 'typescript'],
+        ['txt', 'plaintext'],
         ['py', 'python'],
         ['rb', 'ruby'],
+        ['yml', 'yaml'],
     ])(
         'resolves alias %s to canonical language %s',
         async (alias, canonical) => {
