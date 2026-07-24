@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using Elastic.Documentation.Extensions;
 using Nullean.ScopedFileSystem;
+using DirectoryInfoExtensions = Elastic.Documentation.Extensions.IDirectoryInfoExtensions;
 
 // ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
 #pragma warning disable IDE0130
@@ -109,61 +111,26 @@ public static class FileSystemFactory
 		if (extensionRoots is null)
 			return ScopeCurrentWorkingDirectory(inner);
 
-		var roots = NormalizeDisjointRoots([
-			Paths.WorkingDirectoryRoot.FullName,
-			Paths.ApplicationData.FullName,
-			.. extensionRoots,
-		]);
-		if (roots.Length == 2
-			&& roots.Contains(NormalizeRootPath(Paths.WorkingDirectoryRoot.FullName), StringComparer.OrdinalIgnoreCase)
-			&& roots.Contains(NormalizeRootPath(Paths.ApplicationData.FullName), StringComparer.OrdinalIgnoreCase))
+		var workingRoot = inner.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
+		var externalRoots = extensionRoots
+			.Select(r => inner.DirectoryInfo.New(r))
+			.Where(d => !DirectoryInfoExtensions.IsSubPathOf(d, workingRoot))
+			.Select(d => d.FullName)
+			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.ToArray();
+
+		if (externalRoots.Length == 0)
 			return ScopeCurrentWorkingDirectory(inner);
+
+		var roots = new[] { Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName }
+			.Concat(externalRoots)
+			.ToArray();
 
 		return new ScopedFileSystem(inner, new ScopedFileSystemOptions(roots)
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
 			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
 		});
-	}
-
-	private static string NormalizeRootPath(string path) =>
-		Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-	private static bool IsSameOrSubPathOf(string path, string possibleAncestor)
-	{
-		path = NormalizeRootPath(path);
-		possibleAncestor = NormalizeRootPath(possibleAncestor);
-		if (path.Equals(possibleAncestor, StringComparison.OrdinalIgnoreCase))
-			return true;
-
-		return path.StartsWith(possibleAncestor + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-			|| path.StartsWith(possibleAncestor + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
-	}
-
-	private static string[] NormalizeDisjointRoots(IEnumerable<string> roots)
-	{
-		var normalized = roots
-			.Select(NormalizeRootPath)
-			.Distinct(StringComparer.OrdinalIgnoreCase)
-			.OrderBy(static root => root.Length)
-			.ToList();
-
-		var kept = new List<string>();
-		foreach (var root in normalized)
-		{
-			if (kept.Exists(existing => IsSameOrSubPathOf(root, existing)))
-				continue;
-
-			for (var i = kept.Count - 1; i >= 0; i--)
-			{
-				if (IsSameOrSubPathOf(kept[i], root))
-					kept.RemoveAt(i);
-			}
-
-			kept.Add(root);
-		}
-
-		return [.. kept];
 	}
 
 	// Builds write options that include AllowedSpecialFolders.Temp PLUS the inner FS's own
@@ -285,7 +252,7 @@ public static class FileSystemFactory
 		if (output is not null)
 		{
 			var absOutput = Path.IsPathRooted(output) ? output : Path.GetFullPath(output);
-			if (!plain.DirectoryInfo.New(absOutput).IsSubPathOf(plain.DirectoryInfo.New(gitRoot)))
+			if (!DirectoryInfoExtensions.IsSubPathOf(plain.DirectoryInfo.New(absOutput), plain.DirectoryInfo.New(gitRoot)))
 				roots.Add(absOutput);
 		}
 
