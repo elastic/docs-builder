@@ -4,10 +4,12 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Threading;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.Extensions.Logging;
 
@@ -26,6 +28,12 @@ public partial class AwsS3SyncApplyStrategy(
 
 	// Meter for OpenTelemetry metrics
 	private static readonly Meter SyncMeter = new(TelemetryConstants.AssemblerSyncInstrumentationName);
+	private const int DefaultUploadConcurrency = 32;
+	private const int MaxUploadConcurrency = 128;
+	private const int DefaultDeleteConcurrency = 4;
+	private const int MaxDeleteConcurrency = 16;
+	private const string UploadConcurrencyEnvironmentVariable = "DOCS_SYNC_UPLOAD_CONCURRENCY";
+	private const string DeleteConcurrencyEnvironmentVariable = "DOCS_SYNC_DELETE_CONCURRENCY";
 
 	// Deployment-level metrics (histograms for distribution analysis, counters for totals)
 	// Note: Histograms require delta temporality to work with Elasticsearch
@@ -77,13 +85,13 @@ public partial class AwsS3SyncApplyStrategy(
 
 	private readonly ILogger<AwsS3SyncApplyStrategy> _logger = logFactory.CreateLogger<AwsS3SyncApplyStrategy>();
 
-	private void DisplayProgress(object? sender, UploadDirectoryProgressArgs args) => LogProgress(_logger, args);
+	private void DisplayUploadProgress(object? sender, UploadProgressArgs args) => LogUploadProgress(_logger, args);
 
 	[LoggerMessage(
-		EventId = 2,
+		EventId = 4,
 		Level = LogLevel.Debug,
 		Message = "{Args}")]
-	private static partial void LogProgress(ILogger logger, UploadDirectoryProgressArgs args);
+	private static partial void LogUploadProgress(ILogger logger, UploadProgressArgs args);
 
 	[LoggerMessage(
 		EventId = 3,
@@ -91,9 +99,10 @@ public partial class AwsS3SyncApplyStrategy(
 		Message = "File operation: {Operation} | Path: {FilePath} | Size: {FileSize} bytes")]
 	private static partial void LogFileOperation(ILogger logger, string operation, string filePath, long fileSize);
 
-	public async Task Apply(SyncPlan plan, Cancel ctx = default)
+	public async Task<bool> Apply(SyncPlan plan, Cancel ctx = default)
 	{
 		var sw = Stopwatch.StartNew();
+		var errorsBeforeApply = collector.Errors;
 
 		using var applyActivity = ApplyStrategyActivitySource.StartActivity("sync apply", ActivityKind.Client);
 		if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
@@ -144,15 +153,21 @@ public partial class AwsS3SyncApplyStrategy(
 
 		// Record sync duration (both histogram for distribution and counter for total)
 		SyncDurationHistogram.Record(sw.Elapsed.TotalSeconds);
+
+		return collector.Errors == errorsBeforeApply;
 	}
 
 	private async Task Upload(SyncPlan plan, Cancel ctx)
 	{
+		var sw = Stopwatch.StartNew();
+		var uploadedCount = 0;
 		var uploadRequests = plan.AddRequests.Cast<UploadRequest>().Concat(plan.UpdateRequests).ToList();
+		var uploadConcurrency = GetConcurrency(UploadConcurrencyEnvironmentVariable, DefaultUploadConcurrency, MaxUploadConcurrency);
 
 		// Always create activity span (even if 0 files) for consistent tracing
 		using var uploadActivity = ApplyStrategyActivitySource.StartActivity("upload files", ActivityKind.Client);
 		_ = uploadActivity?.SetTag("docs.sync.upload.count", uploadRequests.Count);
+		_ = uploadActivity?.SetTag("docs.sync.upload.concurrency", uploadConcurrency);
 
 		if (uploadRequests.Count > 0)
 		{
@@ -162,63 +177,62 @@ public partial class AwsS3SyncApplyStrategy(
 			_logger.LogInformation("Starting to process {AddCount} new files and {UpdateCount} updated files", addCount, updateCount);
 
 			var addPaths = plan.AddRequests.Select(r => r.LocalPath).ToHashSet();
-			var tempDir = Path.Join(context.WriteFileSystem.Path.GetTempPath(), context.WriteFileSystem.Path.GetRandomFileName());
-			_ = context.WriteFileSystem.Directory.CreateDirectory(tempDir);
-			try
+			_logger.LogInformation("Uploading {Count} files to S3 bucket {BucketName} with concurrency {Concurrency}", uploadRequests.Count, bucketName, uploadConcurrency);
+			await Parallel.ForEachAsync(uploadRequests, new ParallelOptions
 			{
-				_logger.LogInformation("Copying {Count} files to temp directory", uploadRequests.Count);
-				foreach (var upload in uploadRequests)
-				{
-					var operation = addPaths.Contains(upload.LocalPath) ? "add" : "update";
-					var fileSize = context.WriteFileSystem.FileInfo.New(upload.LocalPath).Length;
-					var extension = Path.GetExtension(upload.DestinationPath).ToLowerInvariant();
+				CancellationToken = ctx,
+				MaxDegreeOfParallelism = uploadConcurrency
+			}, async (upload, token) =>
+			{
+				var operation = addPaths.Contains(upload.LocalPath) ? "add" : "update";
+				var fileSize = context.WriteFileSystem.FileInfo.New(upload.LocalPath).Length;
+				var extension = Path.GetExtension(upload.DestinationPath).ToLowerInvariant();
 
-					FileSizeHistogram.Record(fileSize);
-					if (!string.IsNullOrEmpty(extension))
-						FilesByExtensionCounter.Add(1, new("operation", operation), new("extension", extension));
-					LogFileOperation(_logger, operation, upload.DestinationPath, fileSize);
+				FileSizeHistogram.Record(fileSize);
+				if (!string.IsNullOrEmpty(extension))
+					FilesByExtensionCounter.Add(1, new("operation", operation), new("extension", extension));
+				LogFileOperation(_logger, operation, upload.DestinationPath, fileSize);
 
-					var destPath = context.WriteFileSystem.Path.Join(tempDir, upload.DestinationPath);
-					var destDirPath = context.WriteFileSystem.Path.GetDirectoryName(destPath)!;
-					_ = context.WriteFileSystem.Directory.CreateDirectory(destDirPath);
-					context.WriteFileSystem.File.Copy(upload.LocalPath, destPath);
-				}
-				var directoryRequest = new TransferUtilityUploadDirectoryRequest
+				var request = new TransferUtilityUploadRequest
 				{
 					BucketName = bucketName,
-					Directory = tempDir,
-					SearchPattern = "*",
-					SearchOption = SearchOption.AllDirectories,
-					UploadFilesConcurrently = true
+					FilePath = upload.LocalPath,
+					Key = upload.DestinationPath,
+					PartSize = S3EtagCalculator.PartSize
 				};
-				directoryRequest.UploadDirectoryProgressEvent += DisplayProgress;
-				_logger.LogInformation("Uploading {Count} files to S3 bucket {BucketName}", uploadRequests.Count, bucketName);
-				_logger.LogDebug("Starting directory upload from {TempDir}", tempDir);
-				await transferUtility.UploadDirectoryAsync(directoryRequest, ctx);
-				_logger.LogInformation("Successfully uploaded {Count} files ({AddCount} added, {UpdateCount} updated)",
-					uploadRequests.Count, addCount, updateCount);
-			}
-			finally
-			{
-				// Clean up temp directory
-				if (context.WriteFileSystem.Directory.Exists(tempDir))
-					context.WriteFileSystem.Directory.Delete(tempDir, true);
-			}
+				request.UploadProgressEvent += DisplayUploadProgress;
+				try
+				{
+					await transferUtility.UploadAsync(request, token);
+					_ = Interlocked.Increment(ref uploadedCount);
+				}
+				catch (Exception ex) when (ex is not OperationCanceledException)
+				{
+					_logger.LogError(ex, "Failed to upload {LocalPath} to s3://{BucketName}/{DestinationPath}", upload.LocalPath, bucketName, upload.DestinationPath);
+					collector.EmitError(upload.LocalPath, $"Failed to upload to s3://{bucketName}/{upload.DestinationPath}", ex);
+				}
+			});
+			_logger.LogInformation("Finished uploading {UploadedCount}/{Count} files ({AddCount} added, {UpdateCount} updated) in {ElapsedMs}ms",
+				uploadedCount, uploadRequests.Count, addCount, updateCount, sw.ElapsedMilliseconds);
 		}
+		_ = uploadActivity?.SetTag("docs.sync.upload.duration_ms", sw.Elapsed.TotalMilliseconds);
 	}
 
 	private async Task Delete(SyncPlan plan, Cancel ctx)
 	{
+		var sw = Stopwatch.StartNew();
 		var deleteCount = 0;
 		var deleteRequests = plan.DeleteRequests;
+		var deleteConcurrency = GetConcurrency(DeleteConcurrencyEnvironmentVariable, DefaultDeleteConcurrency, MaxDeleteConcurrency);
 
 		// Always create activity span (even if 0 files) for consistent tracing
 		using var deleteActivity = ApplyStrategyActivitySource.StartActivity("delete files", ActivityKind.Client);
 		_ = deleteActivity?.SetTag("docs.sync.delete.count", deleteRequests.Count);
+		_ = deleteActivity?.SetTag("docs.sync.delete.concurrency", deleteConcurrency);
 
 		if (deleteRequests.Count > 0)
 		{
-			_logger.LogInformation("Starting to delete {Count} files from S3 bucket {BucketName}", deleteRequests.Count, bucketName);
+			_logger.LogInformation("Starting to delete {Count} files from S3 bucket {BucketName} with concurrency {Concurrency}", deleteRequests.Count, bucketName, deleteConcurrency);
 
 			// Emit file-level metrics (low cardinality) and logs for each file
 			foreach (var delete in deleteRequests)
@@ -238,7 +252,11 @@ public partial class AwsS3SyncApplyStrategy(
 			}
 
 			// Process deletes in batches of 1000 (AWS S3 limit)
-			foreach (var batch in deleteRequests.Chunk(1000))
+			await Parallel.ForEachAsync(deleteRequests.Chunk(1000), new ParallelOptions
+			{
+				CancellationToken = ctx,
+				MaxDegreeOfParallelism = deleteConcurrency
+			}, async (batch, token) =>
 			{
 				var deleteObjectsRequest = new DeleteObjectsRequest
 				{
@@ -248,25 +266,45 @@ public partial class AwsS3SyncApplyStrategy(
 						Key = d.DestinationPath
 					}).ToList()
 				};
-				var response = await s3Client.DeleteObjectsAsync(deleteObjectsRequest, ctx);
-				if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+				try
 				{
-					_logger.LogError("Delete batch failed with status code {StatusCode}", response.HttpStatusCode);
-					foreach (var error in response.DeleteErrors)
+					var response = await s3Client.DeleteObjectsAsync(deleteObjectsRequest, token);
+					if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
 					{
-						_logger.LogError("Failed to delete {Key}: {Message}", error.Key, error.Message);
-						collector.EmitError(error.Key, $"Failed to delete: {error.Message}");
+						_logger.LogError("Delete batch failed with status code {StatusCode}", response.HttpStatusCode);
+						if (response.DeleteErrors is null or { Count: 0 })
+							collector.EmitGlobalError($"Delete batch failed with status code {response.HttpStatusCode}");
+						foreach (var error in response.DeleteErrors ?? Enumerable.Empty<DeleteError>())
+						{
+							_logger.LogError("Failed to delete {Key}: {Message}", error.Key, error.Message);
+							collector.EmitError(error.Key, $"Failed to delete: {error.Message}");
+						}
+					}
+					else
+					{
+						var currentCount = Interlocked.Add(ref deleteCount, batch.Length);
+						_logger.LogInformation("Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
+							batch.Length, currentCount, deleteRequests.Count);
 					}
 				}
-				else
+				catch (Exception ex) when (ex is not OperationCanceledException)
 				{
-					deleteCount += batch.Length;
-					_logger.LogInformation("Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
-						batch.Length, deleteCount, deleteRequests.Count);
+					_logger.LogError(ex, "Failed to delete batch from S3 bucket {BucketName}", bucketName);
+					foreach (var delete in batch)
+						collector.EmitError(delete.DestinationPath, "Failed to delete from S3", ex);
 				}
-			}
+			});
 
-			_logger.LogInformation("Successfully deleted {Count} files", deleteCount);
+			_logger.LogInformation("Finished deleting {DeletedCount}/{Count} files in {ElapsedMs}ms", deleteCount, deleteRequests.Count, sw.ElapsedMilliseconds);
 		}
+		_ = deleteActivity?.SetTag("docs.sync.delete.duration_ms", sw.Elapsed.TotalMilliseconds);
+	}
+
+	private static int GetConcurrency(string environmentVariable, int defaultValue, int maxValue)
+	{
+		var configured = Environment.GetEnvironmentVariable(environmentVariable);
+		return int.TryParse(configured, out var parsed) && parsed > 0
+			? Math.Min(parsed, maxValue)
+			: defaultValue;
 	}
 }

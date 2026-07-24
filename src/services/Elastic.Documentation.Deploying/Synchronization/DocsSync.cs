@@ -16,7 +16,8 @@ public record PlanValidationResult(bool Valid, float DeleteRatio, float DeleteTh
 
 public interface IDocsSyncApplyStrategy
 {
-	Task Apply(SyncPlan plan, Cancel ctx = default);
+	/// <returns>false if any file failed to upload or delete.</returns>
+	Task<bool> Apply(SyncPlan plan, Cancel ctx = default);
 }
 
 public record SyncRequest;
