@@ -154,9 +154,18 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		// PathRelativeToContainer will be set during resolution
 		if (dictionary.TryGetValue("file", out var filePathOnly) && filePathOnly is string fileOnly)
 		{
-			return fileOnly == "index.md"
-				? new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext)
-				: new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
+			if (fileOnly == "index.md")
+				return new IndexFileRef(fileOnly, fileOnly, false, children, placeholderContext);
+
+			// Sugar: childless "file: subdir/index.md" → single-page folder, so it isn't silently dropped competing for the parent's index slot.
+			if (children.Count == 0 && fileOnly.EndsWith("/index.md", StringComparison.Ordinal))
+			{
+				var indexFolderPath = fileOnly[..^"/index.md".Length];
+				var indexFile = new FolderIndexFileRef("index.md", "index.md", false, [], placeholderContext);
+				return new FolderRef(indexFolderPath, indexFolderPath, [indexFile], placeholderContext);
+			}
+
+			return new FileRef(fileOnly, fileOnly, false, children, placeholderContext);
 		}
 
 		if (dictionary.TryGetValue("hidden", out var hiddenPath) && hiddenPath is string p)
