@@ -195,4 +195,148 @@ public class S3IncrementalUploaderTests
 		result.Skipped.Should().Be(0);
 		result.Failed.Should().Be(0);
 	}
+
+	[Fact]
+	public async Task Upload_DefaultPolicy_DoesNotUseConditionalPut()
+	{
+		// Live overwrite semantics are unchanged: no If-None-Match guard on the PUT.
+		var path = UniquePath("entry.yaml");
+		_fileSystem.AddFile(path, new MockFileData("updated changelog"u8.ToArray()));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._))
+			.Returns(new GetObjectMetadataResponse { ETag = "\"stale-etag\"" });
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
+			.Returns(new PutObjectResponse());
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload([new UploadTarget(path, "bundle/elasticsearch/entry.yaml")], ctx: ct);
+
+		result.Uploaded.Should().Be(1);
+		result.Conflicts.Should().BeEmpty();
+
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/entry.yaml" && r.IfNoneMatch == null),
+			A<Cancel>._
+		)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task Upload_CreateOnly_NewKey_UsesConditionalPut()
+	{
+		var path = UniquePath("bundle.yaml");
+		_fileSystem.AddFile(path, new MockFileData("new bundle"u8.ToArray()));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
+			.Returns(new PutObjectResponse());
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(path, "bundle/elasticsearch/bundle.yaml")],
+			writePolicy: S3WritePolicy.CreateOnly, ctx: ct);
+
+		result.Uploaded.Should().Be(1);
+		result.Skipped.Should().Be(0);
+		result.Failed.Should().Be(0);
+		result.Conflicts.Should().BeEmpty();
+
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.Key == "bundle/elasticsearch/bundle.yaml" && r.IfNoneMatch == "*"),
+			A<Cancel>._
+		)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task Upload_CreateOnly_IdenticalRemoteContent_SkipsWithoutPut()
+	{
+		var content = "identical bundle"u8.ToArray();
+		var path = UniquePath("bundle.yaml");
+		_fileSystem.AddFile(path, new MockFileData(content));
+		var localEtag = Convert.ToHexStringLower(MD5.HashData(content));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._))
+			.Returns(new GetObjectMetadataResponse { ETag = $"\"{localEtag}\"" });
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var result = await uploader.Upload(
+			[new UploadTarget(path, "bundle/elasticsearch/bundle.yaml")],
+			writePolicy: S3WritePolicy.CreateOnly, ctx: ct);
+
+		result.Uploaded.Should().Be(0);
+		result.Skipped.Should().Be(1);
+		result.Failed.Should().Be(0);
+		result.Conflicts.Should().BeEmpty();
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
+			.MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_CreateOnly_DifferentRemoteContent_ConflictsWithoutPut()
+	{
+		var path = UniquePath("bundle.yaml");
+		_fileSystem.AddFile(path, new MockFileData("local content"u8.ToArray()));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._))
+			.Returns(new GetObjectMetadataResponse { ETag = "\"different-remote-etag\"" });
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var target = new UploadTarget(path, "bundle/elasticsearch/bundle.yaml");
+		var result = await uploader.Upload([target], writePolicy: S3WritePolicy.CreateOnly, ctx: ct);
+
+		result.Uploaded.Should().Be(0);
+		result.Skipped.Should().Be(0);
+		result.Failed.Should().Be(0);
+		result.Conflicts.Should().ContainSingle().Which.Should().Be(target);
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
+			.MustNotHaveHappened();
+	}
+
+	[Fact]
+	public async Task Upload_CreateOnly_ConditionalPutLosesRace_ConflictsInsteadOfOverwriting()
+	{
+		// Between the informative pre-check (key absent) and the PUT, another writer creates the key.
+		// The conditional PUT fails with 412 and the target surfaces as a conflict, never an overwrite.
+		var path = UniquePath("bundle.yaml");
+		_fileSystem.AddFile(path, new MockFileData("racing content"u8.ToArray()));
+
+		A.CallTo(() => _s3Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<Cancel>._))
+			.Throws(new AmazonS3Exception("Not Found") { StatusCode = HttpStatusCode.NotFound });
+
+		A.CallTo(() => _s3Client.PutObjectAsync(A<PutObjectRequest>._, A<Cancel>._))
+			.Throws(new AmazonS3Exception("Precondition Failed") { StatusCode = HttpStatusCode.PreconditionFailed });
+
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+		var target = new UploadTarget(path, "bundle/elasticsearch/bundle.yaml");
+		var result = await uploader.Upload([target], writePolicy: S3WritePolicy.CreateOnly, ctx: ct);
+
+		result.Uploaded.Should().Be(0);
+		result.Failed.Should().Be(0);
+		result.Conflicts.Should().ContainSingle().Which.Should().Be(target);
+
+		A.CallTo(() => _s3Client.PutObjectAsync(
+			A<PutObjectRequest>.That.Matches(r => r.IfNoneMatch == "*"),
+			A<Cancel>._
+		)).MustHaveHappenedOnceExactly();
+	}
+
+	[Fact]
+	public async Task Upload_CreateOnly_WithSkipEtagCheck_Throws()
+	{
+		var uploader = CreateUploader();
+		var ct = TestContext.Current.CancellationToken;
+
+		var act = async () => await uploader.Upload([], skipEtagCheck: true, writePolicy: S3WritePolicy.CreateOnly, ctx: ct);
+
+		await act.Should().ThrowAsync<ArgumentException>();
+	}
 }

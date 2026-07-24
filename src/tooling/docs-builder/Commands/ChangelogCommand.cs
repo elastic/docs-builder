@@ -1639,16 +1639,24 @@ internal sealed partial class ChangelogCommands(
 	/// are uploaded under <c>bundle/{product}/{file}</c>, product-scoped from the bundle YAML, and do not
 	/// require an owner/repo/branch.
 	/// </para>
+	/// <para>
+	/// With <c>--backfill</c>, the command switches to backfill publishing mode for historical bundles:
+	/// only the files named via <c>--files</c> are uploaded (no directory discovery), objects are written
+	/// create-only (an existing key with different content is a conflict, never an overwrite), and a
+	/// registry manifest that cannot be reconciled fails the operation.
+	/// </para>
 	/// </remarks>
 	/// <param name="artifactType">Artifact type to upload: 'changelog' (individual entries) or 'bundle' (consolidated bundles).</param>
 	/// <param name="target">Upload destination: 's3' or 'elasticsearch'.</param>
 	/// <param name="s3BucketName">S3 bucket name (required when target is 's3').</param>
 	/// <param name="config">Path to changelog.yml configuration file. Defaults to docs/changelog.yml.</param>
-	/// <param name="directory">Override changelog directory instead of reading it from config.</param>
+	/// <param name="directory">Override changelog directory instead of reading it from config. With --backfill it is not scanned; it only serves as the base directory for resolving relative --files paths.</param>
 	/// <param name="repo">GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
-	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.</param>
+	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Mutually exclusive with --backfill.</param>
+	/// <param name="files">Exact bundle YAML paths to upload (comma-separated), or a path to a newline-delimited path list file. Can be specified multiple times. Relative paths resolve against the bundle directory. Requires --backfill; nothing outside this selection is uploaded.</param>
+	/// <param name="backfill">Backfill publishing mode: upload only the files given via --files, write objects create-only (conditional PUT with If-None-Match; an existing key with different content is a conflict, never an overwrite), and fail the operation when a registry manifest cannot be reconciled. Only valid with --artifact-type bundle; mutually exclusive with --skip-etag-check.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -1660,6 +1668,8 @@ internal sealed partial class ChangelogCommands(
 		string? owner = null,
 		string? branch = null,
 		bool skipEtagCheck = false,
+		string[]? files = null,
+		bool backfill = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1702,7 +1712,9 @@ internal sealed partial class ChangelogCommands(
 			Repo = resolvedRepo,
 			Owner = resolvedOwner,
 			Branch = resolvedBranch,
-			SkipEtagCheck = skipEtagCheck
+			SkipEtagCheck = skipEtagCheck,
+			Backfill = backfill,
+			Files = ExpandCommaSeparated(files)
 		};
 		serviceInvoker.AddCommand(service, args,
 			static async (s, c, state, ct) => await s.Upload(c, state, ct)

@@ -131,8 +131,31 @@ re-merges, and retries (bounded retries). This mirrors the link-index writer
 (`AwsS3LinkIndexReaderWriter.SaveRegistry`). If the merge result already equals what's
 published, the write is skipped so re-uploads stay idempotent.
 
-The refresh is **best-effort**: any failure is logged and surfaced as a warning but never
-fails the upload, because the bundle objects themselves are already in S3.
+In live mode the refresh is **best-effort**: any failure is logged and surfaced as a warning
+but never fails the upload, because the bundle objects themselves are already in S3. In
+**backfill mode** (`changelog upload --backfill`) an unreconciled registry is an incomplete
+operation: a refresh failure — an S3 error or exhausting the optimistic-concurrency retries —
+is surfaced as an error and fails the run.
+
+### Backfill mode: explicit selection and create-only writes
+
+`changelog upload --backfill --files …` exists for historical backfill runs, where directory
+discovery and overwrite semantics are unsafe. It changes the producer path in three ways:
+
+- **Explicit selection.** Only the bundle YAMLs named via `--files` are uploaded — no
+  directory globbing, so unrelated artifacts cannot reach the wrong scope. A selected file
+  that cannot be mapped to a destination is an error that aborts the run before any write.
+- **Create-only object writes.** Bundle objects are written with a conditional PUT
+  (`If-None-Match: *`) — the same guard the registry writer uses on create. An existing key
+  with identical content is skipped; different content is a conflict that fails the run
+  without touching the object. The pre-write ETag inspection is informative only; the
+  conditional PUT is the race guard, so a concurrent create between inspection and write
+  surfaces as a conflict (`412`), never an overwrite. Conflicted objects are excluded from
+  the registry refresh so the manifest never records content that is not actually published.
+- **Strict registry semantics**, as described above.
+
+Live uploads keep their overwrite semantics, and registries keep their concurrent
+conditional-update path in both modes.
 
 ### Buckets and infrastructure
 

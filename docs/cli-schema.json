@@ -4305,7 +4305,7 @@
           ],
           "name": "upload",
           "summary": "Upload changelog entries or bundle artifacts to S3 or Elasticsearch.",
-          "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{org}/{repo}/{branch}/{file}, keyed by the\nauthoring owner (--owner \u003E bundle.owner \u003E git remote), repository (--repo\n\u003E bundle.repo \u003E git remote), and branch (--branch \u003E the current checkout\u0027s\nbranch). The branch is stored verbatim, so a branch\u0027s / become real key separators. Bundles\nare uploaded under bundle/{product}/{file}, product-scoped from the bundle YAML, and do not\nrequire an owner/repo/branch.",
+          "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{org}/{repo}/{branch}/{file}, keyed by the\nauthoring owner (--owner \u003E bundle.owner \u003E git remote), repository (--repo\n\u003E bundle.repo \u003E git remote), and branch (--branch \u003E the current checkout\u0027s\nbranch). The branch is stored verbatim, so a branch\u0027s / become real key separators. Bundles\nare uploaded under bundle/{product}/{file}, product-scoped from the bundle YAML, and do not\nrequire an owner/repo/branch.\n\n\n\nWith --backfill, the command switches to backfill publishing mode for historical bundles:\nonly the files named via --files are uploaded (no directory discovery), objects are written\ncreate-only (an existing key with different content is a conflict, never an overwrite), and a\nregistry manifest that cannot be reconciled fails the operation.",
           "usage": "docs-builder changelog upload --artifact-type \u003Cstring\u003E --target \u003Cstring\u003E [options]",
           "examples": [],
           "parameters": [
@@ -4357,7 +4357,7 @@
               "name": "directory",
               "type": "string",
               "required": false,
-              "summary": "Override changelog directory instead of reading it from config.",
+              "summary": "Override changelog directory instead of reading it from config. With --backfill it is not scanned; it only serves as the base directory for resolving relative --files paths.",
               "validations": [
                 {
                   "kind": "rejectSymbolicLinks"
@@ -4390,7 +4390,24 @@
               "name": "skip-etag-check",
               "type": "boolean",
               "required": false,
-              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.",
+              "summary": "Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Mutually exclusive with --backfill.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "files",
+              "type": "array",
+              "required": false,
+              "summary": "Exact bundle YAML paths to upload (comma-separated), or a path to a newline-delimited path list file. Can be specified multiple times. Relative paths resolve against the bundle directory. Requires --backfill; nothing outside this selection is uploaded.",
+              "repeatable": true,
+              "elementType": "string"
+            },
+            {
+              "role": "flag",
+              "name": "backfill",
+              "type": "boolean",
+              "required": false,
+              "summary": "Backfill publishing mode: upload only the files given via --files, write objects create-only (conditional PUT with If-None-Match; an existing key with different content is a conflict, never an overwrite), and fail the operation when a registry manifest cannot be reconciled. Only valid with --artifact-type bundle; mutually exclusive with --skip-etag-check.",
               "defaultValue": "false"
             },
             {
