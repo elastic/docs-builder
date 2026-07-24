@@ -87,7 +87,7 @@ export const useModalSearchQuery = () => {
         trimmedSearchTerm.length >= 1 &&
         !isCooldownActive &&
         !awaitingNewInput &&
-        (config.buildType !== 'isolated' || config.staticSearch)
+        true
 
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [

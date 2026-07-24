@@ -28,8 +28,7 @@ public record FrontendConfig(
 	bool TelemetryEnabled,
 	string RootPath,
 	string ApiBasePath,
-	bool AirGapped = false,
-	bool StaticSearch = false
+	bool AirGapped = false
 );
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
@@ -121,8 +120,7 @@ public record GlobalLayoutViewModel
 			BuildType.Assembler =>
 				new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
 			BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
-			_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath,
-				StaticSearch: Features.StaticSearchEnabled),
+			_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
 		};
 
 	public string FrontendConfigJson =>

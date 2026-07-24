@@ -52,11 +52,11 @@ const rootPath = config.rootPath.replace(/\/$/, '')
 const loadPagefind = () => {
     pagefindPromise ??= (async () => {
         try {
-            const moduleUrl = `${rootPath}/pagefind/pagefind.js`
+            const moduleUrl = `${rootPath}/_static/pagefind/pagefind.js`
             const pagefind = (await import(moduleUrl)) as PagefindApi
             await pagefind.options({
                 baseUrl: rootPath || '/',
-                basePath: `${rootPath}/pagefind/`,
+                basePath: `${rootPath}/_static/pagefind/`,
             })
             await pagefind.init()
             return pagefind

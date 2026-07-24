@@ -21,7 +21,7 @@ public static class FileSystemFactory
 		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 	};
 
 	// Write options: same scope roots but no .git — nothing in the build output
@@ -31,7 +31,7 @@ public static class FileSystemFactory
 		[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName])
 	{
 		AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
-		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" },
+		AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state", ".pagefind-net-frontend-version" },
 		AllowedSpecialFolders = AllowedSpecialFolder.Temp
 	};
 
@@ -87,7 +87,7 @@ public static class FileSystemFactory
 			[Paths.WorkingDirectoryRoot.FullName, Paths.ApplicationData.FullName, root])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
 	}
 
@@ -129,7 +129,7 @@ public static class FileSystemFactory
 		return new ScopedFileSystem(inner, new ScopedFileSystemOptions(roots)
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
 	}
 
@@ -160,7 +160,7 @@ public static class FileSystemFactory
 		return new ScopedFileSystemOptions([.. allRoots])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state", ".pagefind-net-frontend-version" },
 			AllowedSpecialFolders = AllowedSpecialFolder.Temp
 		};
 	}
@@ -184,7 +184,7 @@ public static class FileSystemFactory
 		new(inner, new ScopedFileSystemOptions([sourceRoot, Paths.ApplicationData.FullName])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
 
 	/// <summary>
@@ -230,7 +230,7 @@ public static class FileSystemFactory
 		return new ScopedFileSystem(new FileSystem(), new ScopedFileSystemOptions([.. roots])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
 		});
 	}
 

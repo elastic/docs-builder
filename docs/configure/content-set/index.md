@@ -13,22 +13,17 @@ A content set in `docs-builder` is equivalent to an AsciiDoc book. At this level
 | **Content source files** --> A whole bunch of markup files as well as any other assets used in the docs (for example, images, videos, and diagrams).   | **Markup**: AsciiDoc files **Assets**: Images, videos, and diagrams                                                                                   | **Markup**: MD files **Assets**: Images, videos, and diagrams |
 | **Information architecture** --> A way to specify the order in which these text-based files should appear in the information architecture of the book. | `index.asciidoc` file (this can be spread across several AsciiDoc files, but generally starts with the index file specified in the `conf.yaml` file)) | `docset.yml` and/or `toc.yml` file(s)                         |
 
-## Enable static search
+## Static search
 
-Isolated builds can include a Pagefind index that runs entirely in the browser. Enable it in `docset.yml`:
+Isolated builds and `docs-builder serve` automatically include a [Pagefind](https://pagefind.app) search index that runs entirely in the browser. No configuration is needed — the `pagefind` exporter is included by default.
 
-```yaml
-features:
-  static-search: true
-```
-
-The generated site needs to be served over HTTP, such as from S3 and CloudFront or a local static server:
+To use it with a static build, serve the output over HTTP:
 
 ```sh
 python3 -m http.server --directory .artifacts/docs/html
 ```
 
-Static search does not require a search API, but it does not work in the on-demand `docs-builder serve` mode or when pages are opened directly with `file://`.
+Static search does not require a search API. It does not work when pages are opened directly with `file://`.
 
 ## Learn more
 

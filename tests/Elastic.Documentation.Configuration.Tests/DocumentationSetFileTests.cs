@@ -75,14 +75,12 @@ public class DocumentationSetFileTests
 		           project: 'test-project'
 		           features:
 		             primary-nav: false
-		             static-search: true
 		           """;
 
 		var result = Deserialize(yaml);
 
 		result.Features.Should().NotBeNull();
 		result.Features.PrimaryNav.Should().BeFalse();
-		result.Features.StaticSearch.Should().BeTrue();
 	}
 
 	[Fact]
