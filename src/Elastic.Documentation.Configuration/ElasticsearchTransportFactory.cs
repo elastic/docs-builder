@@ -5,9 +5,9 @@
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 
-namespace Elastic.SiteSearch.Cli.Elasticsearch;
+namespace Elastic.Documentation.Configuration;
 
-internal static class ElasticsearchTransportFactory
+public static class ElasticsearchTransportFactory
 {
 	public static DistributedTransport Create(ElasticsearchEndpoint endpoint)
 	{
@@ -21,9 +21,16 @@ internal static class ElasticsearchTransportFactory
 			EnableHttpCompression = true,
 			DebugMode = endpoint.DebugMode,
 			CertificateFingerprint = endpoint.CertificateFingerprint,
+			ProxyAddress = endpoint.ProxyAddress,
+			ProxyPassword = endpoint.ProxyPassword,
+			ProxyUsername = endpoint.ProxyUsername,
 			ServerCertificateValidationCallback = endpoint.DisableSslVerification
 				? CertificateValidations.AllowAll
-				: null
+				: endpoint.Certificate is { } certificate
+					? endpoint.CertificateIsNotRoot
+						? CertificateValidations.AuthorityPartOfChain(certificate)
+						: CertificateValidations.AuthorityIsRoot(certificate)
+					: null
 		};
 
 		return new DistributedTransport(configuration);

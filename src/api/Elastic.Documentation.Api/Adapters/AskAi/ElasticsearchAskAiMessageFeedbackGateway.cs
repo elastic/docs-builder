@@ -2,12 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.Serialization;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.AskAi;
-using Elastic.Documentation.Configuration;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -16,48 +14,13 @@ namespace Elastic.Documentation.Api.Adapters.AskAi;
 /// <summary>
 /// Records Ask AI message feedback to Elasticsearch.
 /// </summary>
-public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeedbackService, IDisposable
+public sealed class ElasticsearchAskAiMessageFeedbackGateway(
+	ITransport transport,
+	AppEnvironment appEnvironment,
+	ILogger<ElasticsearchAskAiMessageFeedbackGateway> logger
+) : IAskAiMessageFeedbackService
 {
-	private readonly ElasticsearchClient _client;
-	private readonly string _indexName;
-	private readonly ILogger<ElasticsearchAskAiMessageFeedbackGateway> _logger;
-	private readonly SingleNodePool _nodePool;
-	private bool _disposed;
-
-	public ElasticsearchAskAiMessageFeedbackGateway(
-		DocumentationEndpoints endpoints,
-		AppEnvironment appEnvironment,
-		ILogger<ElasticsearchAskAiMessageFeedbackGateway> logger)
-	{
-		_logger = logger;
-		_indexName = $"ask-ai-message-feedback-{appEnvironment.Current.ToStringFast(true)}";
-
-		var endpoint = endpoints.Elasticsearch;
-		_nodePool = new SingleNodePool(endpoint.Uri);
-		var auth = endpoint.ApiKey is { } apiKey
-			? (AuthorizationHeader)new ApiKey(apiKey)
-			: endpoint is { Username: { } username, Password: { } password }
-				? new BasicAuthentication(username, password)
-				: null!;
-
-		using var clientSettings = new ElasticsearchClientSettings(
-				_nodePool,
-				sourceSerializer: (_, settings) => new DefaultSourceSerializer(settings, MessageFeedbackJsonContext.Default)
-			)
-			.DefaultIndex(_indexName)
-			.Authentication(auth);
-		_client = new ElasticsearchClient(clientSettings);
-	}
-
-	public void Dispose()
-	{
-		if (_disposed)
-			return;
-
-		_nodePool.Dispose();
-		(_client.Transport as IDisposable)?.Dispose();
-		_disposed = true;
-	}
+	private readonly string _indexName = $"ask-ai-message-feedback-{appEnvironment.Current.ToStringFast(true)}";
 
 	public async Task RecordFeedbackAsync(AskAiMessageFeedbackRecord record, CancellationToken ctx)
 	{
@@ -72,29 +35,30 @@ public sealed class ElasticsearchAskAiMessageFeedbackGateway : IAskAiMessageFeed
 			Timestamp = DateTimeOffset.UtcNow
 		};
 
-		_logger.LogDebug("Indexing feedback with ID {FeedbackId} to index {IndexName}", feedbackId, _indexName);
-
-		var response = await _client.IndexAsync<MessageFeedbackDocument>(document, idx => idx
-			.Index(_indexName)
-			.Id(feedbackId.ToString()), ctx);
+		logger.LogDebug("Indexing feedback with ID {FeedbackId} to index {IndexName}", feedbackId, _indexName);
+		var json = JsonSerializer.Serialize(document, MessageFeedbackJsonContext.Default.MessageFeedbackDocument);
+		var response = await transport.PutAsync<StringResponse>(
+			$"{_indexName}/_doc/{feedbackId}",
+			PostData.String(json),
+			ctx);
 
 		// MessageId and ConversationId are Guid types, so no sanitization needed
-		if (!response.IsValidResponse)
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
 		{
-			_logger.LogWarning(
-				"Failed to index message feedback for message {MessageId}: {Error}",
+			logger.LogWarning(
+				"Failed to index message feedback for message {MessageId}: HTTP {StatusCode}",
 				record.MessageId,
-				response.ElasticsearchServerError?.Error?.Reason ?? "Unknown error");
+				response.ApiCallDetails.HttpStatusCode);
 		}
 		else
 		{
-			_logger.LogInformation(
+			logger.LogInformation(
 				"Message feedback recorded: {Reaction} for message {MessageId} in conversation {ConversationId}. ES _id: {EsId}, Index: {Index}",
 				record.Reaction,
 				record.MessageId,
 				record.ConversationId,
-				response.Id,
-				response.Index);
+				feedbackId,
+				_indexName);
 		}
 	}
 }

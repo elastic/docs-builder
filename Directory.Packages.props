@@ -33,6 +33,7 @@
     <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="3.0.0" />
     <PackageVersion Include="AngleSharp" Version="1.5.1" />
     <PackageVersion Include="Aspire.Hosting" Version="13.4.3" />
+    <PackageVersion Include="Elastic.Transport" Version="0.17.3" />
     <PackageVersion Include="MessagePack" Version="2.5.302" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.4.3" />
     <PackageVersion Include="AWSSDK.Core" Version="4.0.9.7" />
@@ -51,8 +52,9 @@
     <PackageVersion Include="Elastic.Aspire.Hosting.Elasticsearch" Version="9.3.0" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
-    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.50.2" />
-    <PackageVersion Include="Elastic.Mapping" Version="0.50.2" />
+    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.51.0" />
+    <PackageVersion Include="Elastic.Mapping" Version="0.51.0" />
+    <PackageVersion Include="Elastic.Transport.VirtualizedCluster" Version="0.17.3" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.7.1" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
