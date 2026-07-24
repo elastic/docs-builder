@@ -83,12 +83,8 @@ function ensureHighlightReady(): Promise<void> {
     return allLanguagesReady
 }
 
-function queryCodeBlocks(root: ParentNode): HTMLElement[] {
-    return [...root.querySelectorAll<HTMLElement>(CODE_BLOCK_SELECTOR)]
-}
-
 export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
-    const blocks = queryCodeBlocks(root)
+    const blocks = root.querySelectorAll<HTMLElement>(CODE_BLOCK_SELECTOR)
     if (blocks.length === 0) return
 
     await ensureHighlightReady()

@@ -2,7 +2,7 @@ import { initCopyButton } from '../../copybutton'
 import { highlightCodeBlocks } from '../../hljs'
 import { ApiError } from '../shared/errorHandling'
 import { useHtmxContainer } from '../shared/htmx/useHtmxContainer'
-import { createMarkdownRenderer } from '../shared/markdownRenderer'
+import { markdownRenderer } from '../shared/markdownRenderer'
 import { AskAiEvent, ChunkEvent, EventTypes } from './AskAiEvent'
 import { aiGradients } from './ElasticAiAssistantButton'
 import { GeneratingStatus } from './GeneratingStatus'
@@ -25,8 +25,6 @@ import {
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { useEffect, useMemo, useRef } from 'react'
-
-const markedInstance = createMarkdownRenderer()
 
 interface ChatMessageProps {
     message: ChatMessageType
@@ -359,7 +357,7 @@ export const ChatMessage = ({
     }, [content, isComplete])
 
     const parsed = useMemo(() => {
-        const html = markedInstance.parse(mainContent) as string
+        const html = markdownRenderer.parse(mainContent, { async: false })
         return DOMPurify.sanitize(html)
     }, [mainContent])
 

@@ -55,38 +55,23 @@ describe('initHighlight', () => {
         expect(block?.getAttribute('data-highlighted')).toBe('yes')
     })
 
-    it('highlights alias language-js via javascript aliases', async () => {
-        const { initHighlight } = await loadModule()
-        setCodeBlocks('js')
+    it.each([
+        ['js', 'javascript'],
+        ['ts', 'typescript'],
+        ['jsx', 'javascript'],
+    ])(
+        'highlights alias language-%s via %s aliases',
+        async (alias, canonical) => {
+            const { initHighlight } = await loadModule()
+            setCodeBlocks(alias)
 
-        await initHighlight()
+            await initHighlight()
 
-        const block = document.querySelector('#markdown-content pre code')
-        expect(block?.getAttribute('data-highlighted')).toBe('yes')
-        expect(block?.className).toContain('language-javascript')
-    })
-
-    it('highlights alias language-ts via typescript aliases', async () => {
-        const { initHighlight } = await loadModule()
-        setCodeBlocks('ts')
-
-        await initHighlight()
-
-        const block = document.querySelector('#markdown-content pre code')
-        expect(block?.getAttribute('data-highlighted')).toBe('yes')
-        expect(block?.className).toContain('language-typescript')
-    })
-
-    it('highlights alias language-jsx via javascript aliases', async () => {
-        const { initHighlight } = await loadModule()
-        setCodeBlocks('jsx')
-
-        await initHighlight()
-
-        const block = document.querySelector('#markdown-content pre code')
-        expect(block?.getAttribute('data-highlighted')).toBe('yes')
-        expect(block?.className).toContain('language-javascript')
-    })
+            const block = document.querySelector('#markdown-content pre code')
+            expect(block?.getAttribute('data-highlighted')).toBe('yes')
+            expect(block?.className).toContain(`language-${canonical}`)
+        }
+    )
 
     it('autodetects an unlabeled code block', async () => {
         const { initHighlight } = await loadModule()

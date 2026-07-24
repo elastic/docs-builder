@@ -1,12 +1,10 @@
 import { initCopyButton } from '../../copybutton'
 import { highlightCodeBlocks } from '../../hljs'
-import { createMarkdownRenderer } from './markdownRenderer'
+import { markdownRenderer } from './markdownRenderer'
 import { useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
 import { useEffect, useMemo, useRef } from 'react'
-
-const markedInstance = createMarkdownRenderer()
 
 interface MarkdownContentProps {
     content: string
@@ -23,12 +21,12 @@ export const MarkdownContent = ({
     const ref = useRef<HTMLDivElement>(null)
 
     const parsed = useMemo(() => {
-        const html = markedInstance.parse(content) as string
+        const html = markdownRenderer.parse(content, { async: false })
         return DOMPurify.sanitize(html)
     }, [content])
 
     useEffect(() => {
-        if (!ref.current || !content) return
+        if (!ref.current) return
 
         let cancelled = false
         void highlightCodeBlocks(ref.current).then(() => {
@@ -43,7 +41,7 @@ export const MarkdownContent = ({
         return () => {
             cancelled = true
         }
-    }, [content, enableCopyButtons, copyButtonPrefix, parsed])
+    }, [enableCopyButtons, copyButtonPrefix, parsed])
 
     return (
         <div
