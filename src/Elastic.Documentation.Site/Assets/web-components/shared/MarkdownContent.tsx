@@ -1,39 +1,12 @@
 import { initCopyButton } from '../../copybutton'
-import { hljs } from '../../hljs'
+import { highlightCodeBlocks } from '../../hljs'
+import { createDocsMarkedRenderer } from '../../marked-code-renderer'
 import { useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import DOMPurify from 'dompurify'
-import { Marked, RendererObject, Tokens } from 'marked'
 import { useEffect, useMemo, useRef } from 'react'
 
-// Create the marked instance once globally
-const createMarkedInstance = () => {
-    const renderer: RendererObject = {
-        code({ text, lang }: Tokens.Code): string {
-            let highlighted: string
-            try {
-                highlighted = lang
-                    ? hljs.highlight(text, { language: lang }).value
-                    : hljs.highlightAuto(text).value
-            } catch {
-                highlighted = hljs.highlightAuto(text).value
-            }
-            return `<div class="highlight">
-                <pre>
-                    <code class="language-${lang}">${highlighted}</code>
-                </pre>
-            </div>`
-        },
-        table(token: Tokens.Table): string {
-            const defaultMarked = new Marked()
-            const defaultTableHtml = defaultMarked.parse(token.raw)
-            return `<div class="table-wrapper">${defaultTableHtml}</div>`
-        },
-    }
-    return new Marked({ renderer })
-}
-
-const markedInstance = createMarkedInstance()
+const markedInstance = createDocsMarkedRenderer()
 
 interface MarkdownContentProps {
     content: string
@@ -55,21 +28,22 @@ export const MarkdownContent = ({
     }, [content])
 
     useEffect(() => {
-        if (enableCopyButtons && ref.current && content) {
-            const timer = setTimeout(() => {
-                try {
-                    initCopyButton(
-                        '.highlight pre',
-                        ref.current!,
-                        copyButtonPrefix
-                    )
-                } catch (error) {
-                    console.error('Failed to initialize copy buttons:', error)
-                }
-            }, 100)
-            return () => clearTimeout(timer)
+        if (!ref.current || !content) return
+
+        let cancelled = false
+        void highlightCodeBlocks(ref.current).then(() => {
+            if (cancelled || !enableCopyButtons || !ref.current) return
+            try {
+                initCopyButton('.highlight pre', ref.current, copyButtonPrefix)
+            } catch (error) {
+                console.error('Failed to initialize copy buttons:', error)
+            }
+        })
+
+        return () => {
+            cancelled = true
         }
-    }, [content, enableCopyButtons, copyButtonPrefix])
+    }, [content, enableCopyButtons, copyButtonPrefix, parsed])
 
     return (
         <div

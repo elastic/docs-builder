@@ -7,12 +7,14 @@ async function loadModule(): Promise<HljsModule> {
     return await import('./hljs')
 }
 
-function setCodeBlocks(...languages: string[]) {
+function setCodeBlocks(...languages: (string | null)[]) {
     const blocks = languages
-        .map(
-            (language) =>
-                `<pre><code class="language-${language}">echo hello</code></pre>`
-        )
+        .map((language) => {
+            if (language === null) {
+                return '<pre><code>const x = 1</code></pre>'
+            }
+            return `<pre><code class="language-${language}">echo hello</code></pre>`
+        })
         .join('')
     document.body.innerHTML = `<div id="markdown-content">${blocks}</div>`
 }
@@ -22,14 +24,15 @@ afterEach(() => {
 })
 
 describe('initHighlight', () => {
-    it('loads only the languages referenced on the page', async () => {
+    it('loads all curated languages when any code block is present', async () => {
         const { initHighlight, hljs } = await loadModule()
         setCodeBlocks('bash')
 
         await initHighlight()
 
         expect(hljs.listLanguages()).toContain('bash')
-        expect(hljs.listLanguages()).not.toContain('python')
+        expect(hljs.listLanguages()).toContain('python')
+        expect(hljs.listLanguages()).toContain('javascript')
     })
 
     it('loads no node_modules language when there are no code blocks', async () => {
@@ -52,26 +55,60 @@ describe('initHighlight', () => {
         expect(block?.getAttribute('data-highlighted')).toBe('yes')
     })
 
-    it('loads a newly encountered language on a later swap', async () => {
-        const { initHighlight, hljs } = await loadModule()
-        setCodeBlocks('bash')
-        await initHighlight()
-        expect(hljs.listLanguages()).not.toContain('python')
+    it('highlights alias language-js via javascript aliases', async () => {
+        const { initHighlight } = await loadModule()
+        setCodeBlocks('js')
 
-        // Simulate an htmx swap introducing a language not present initially.
-        setCodeBlocks('python')
         await initHighlight()
 
-        expect(hljs.listLanguages()).toContain('python')
+        const block = document.querySelector('#markdown-content pre code')
+        expect(block?.getAttribute('data-highlighted')).toBe('yes')
+        expect(block?.className).toContain('language-javascript')
     })
 
-    it('resolves aliases to their canonical language', async () => {
+    it('highlights alias language-ts via typescript aliases', async () => {
+        const { initHighlight } = await loadModule()
+        setCodeBlocks('ts')
+
+        await initHighlight()
+
+        const block = document.querySelector('#markdown-content pre code')
+        expect(block?.getAttribute('data-highlighted')).toBe('yes')
+        expect(block?.className).toContain('language-typescript')
+    })
+
+    it('highlights alias language-jsx via javascript aliases', async () => {
+        const { initHighlight } = await loadModule()
+        setCodeBlocks('jsx')
+
+        await initHighlight()
+
+        const block = document.querySelector('#markdown-content pre code')
+        expect(block?.getAttribute('data-highlighted')).toBe('yes')
+        expect(block?.className).toContain('language-javascript')
+    })
+
+    it('autodetects an unlabeled code block', async () => {
+        const { initHighlight } = await loadModule()
+        setCodeBlocks(null)
+
+        await initHighlight()
+
+        const block = document.querySelector('#markdown-content pre code')
+        expect(block?.getAttribute('data-highlighted')).toBe('yes')
+        expect(block?.querySelector('.hljs-keyword')).not.toBeNull()
+    })
+
+    it('resolves sh alias to shell', async () => {
         const { initHighlight, hljs } = await loadModule()
         setCodeBlocks('sh')
 
         await initHighlight()
 
         expect(hljs.listLanguages()).toContain('shell')
+        const block = document.querySelector('#markdown-content pre code')
+        expect(block?.getAttribute('data-highlighted')).toBe('yes')
+        expect(block?.className).toContain('language-shell')
     })
 
     it('does not re-highlight a block when invoked concurrently', async () => {
@@ -97,6 +134,28 @@ describe('initHighlight', () => {
         const blocks = document.querySelectorAll('#markdown-content pre code')
         const bashBlock = blocks[1]
         expect(bashBlock.getAttribute('data-highlighted')).toBe('yes')
+    })
+})
+
+describe('highlightCodeBlocks', () => {
+    it('scopes highlighting to the supplied root', async () => {
+        const { highlightCodeBlocks } = await loadModule()
+        document.body.innerHTML = `
+            <div id="inside"><pre><code class="language-bash">echo inside</code></pre></div>
+            <div id="outside"><pre><code class="language-bash">echo outside</code></pre></div>
+        `
+
+        const inside = document.querySelector('#inside')!
+        await highlightCodeBlocks(inside)
+
+        expect(
+            inside.querySelector('code')?.getAttribute('data-highlighted')
+        ).toBe('yes')
+        expect(
+            document
+                .querySelector('#outside code')
+                ?.getAttribute('data-highlighted')
+        ).not.toBe('yes')
     })
 })
 

@@ -1,7 +1,6 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
 import { LanguageFn } from 'highlight.js'
 import hljs from 'highlight.js/lib/core'
-import { $$optional } from 'select-dom'
 
 // highlight.js language modules and the esql plugin default-export the LanguageFn.
 // Parcel's dynamic import() resolves to the module's exports directly (the function),
@@ -13,8 +12,7 @@ export function toLanguageFn(mod: unknown): LanguageFn {
 }
 
 // Each entry lazily imports one highlight.js language module (or the esql plugin) so
-// only the languages actually present on a page are downloaded, instead of eagerly
-// bundling all of them into the entry chunk.
+// grammars stay out of the entry chunk until a page or message contains code.
 const languageLoaders: Record<string, () => Promise<LanguageFn>> = {
     asciidoc: () =>
         import('highlight.js/lib/languages/asciidoc').then(toLanguageFn),
@@ -67,37 +65,43 @@ const languageLoaders: Record<string, () => Promise<LanguageFn>> = {
     yaml: () => import('highlight.js/lib/languages/yaml').then(toLanguageFn),
 }
 
-// Alias -> canonical language name. Aliases are registered with hljs once their
-// canonical module has loaded so `language-sh` etc. resolve correctly.
-const languageAliases: Record<string, string> = {
-    sh: 'shell',
+const CODE_BLOCK_SELECTOR = 'pre code:not([data-highlighted])'
+
+let allLanguagesReady: Promise<void> | null = null
+
+function ensureHighlightReady(): Promise<void> {
+    if (allLanguagesReady) return allLanguagesReady
+
+    allLanguagesReady = Promise.all(
+        Object.entries(languageLoaders).map(async ([name, loader]) => {
+            hljs.registerLanguage(name, toLanguageFn(await loader()))
+        })
+    ).then(() => {
+        hljs.registerAliases(['sh'], { languageName: 'shell' })
+    })
+
+    return allLanguagesReady
 }
 
-// Caches the registration promise per canonical language so concurrent code blocks
-// (and later htmx swaps) share a single import instead of re-fetching the module.
-const registrations = new Map<string, Promise<void>>()
+function queryCodeBlocks(root: ParentNode): HTMLElement[] {
+    return [...root.querySelectorAll<HTMLElement>(CODE_BLOCK_SELECTOR)]
+}
 
-// Imports and registers a language (plus any aliases pointing at it) exactly once.
-// Unknown languages have no loader and resolve immediately so callers can await
-// unconditionally.
-function ensureLanguage(name: string): Promise<void> {
-    const canonical = languageAliases[name] ?? name
-    const loader = languageLoaders[canonical]
-    if (!loader) return Promise.resolve()
+export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
+    const blocks = queryCodeBlocks(root)
+    if (blocks.length === 0) return
 
-    const cached = registrations.get(canonical)
-    if (cached) return cached
+    await ensureHighlightReady()
 
-    const registration = loader().then((languageFn) => {
-        hljs.registerLanguage(canonical, languageFn)
-        for (const [alias, target] of Object.entries(languageAliases)) {
-            if (target === canonical) {
-                hljs.registerAliases([alias], { languageName: canonical })
-            }
-        }
-    })
-    registrations.set(canonical, registration)
-    return registration
+    for (const block of blocks) {
+        if (!block.dataset.highlighted) hljs.highlightElement(block)
+    }
+}
+
+export async function initHighlight(): Promise<void> {
+    const root = document.querySelector('#markdown-content')
+    if (!root) return
+    await highlightCodeBlocks(root)
 }
 
 hljs.registerLanguage('apiheader', function () {
@@ -229,40 +233,6 @@ hljs.addPlugin(mergeHTMLPlugin)
 // The unescaped HTML warning is caused by the mergeHTMLPlugin which we are using
 // for code callouts
 hljs.configure({ ignoreUnescapedHTML: true })
-
-function getLanguageFromClassList(element: Element): string | undefined {
-    for (const className of element.classList) {
-        if (className.startsWith('language-')) {
-            return className.slice('language-'.length)
-        }
-    }
-    return undefined
-}
-
-export async function initHighlight() {
-    const blocks = $$optional(
-        '#markdown-content pre code:not([data-highlighted])'
-    )
-    if (blocks.length === 0) return
-
-    // Import only the language modules referenced by the unprocessed blocks before
-    // highlighting. Unknown/plain-text languages have no loader and resolve immediately;
-    // hljs.highlightElement then degrades gracefully without breaking other blocks.
-    const requiredLanguages = new Set<string>()
-    for (const block of blocks) {
-        const language = getLanguageFromClassList(block)
-        if (language) requiredLanguages.add(language)
-    }
-
-    await Promise.all([...requiredLanguages].map(ensureLanguage))
-
-    // Re-check data-highlighted after awaiting: a concurrent initHighlight (e.g. a
-    // second htmx:load fired while the language import was pending) may already have
-    // highlighted these captured blocks, and hljs warns if asked to redo one.
-    blocks.forEach((block) => {
-        if (!block.dataset.highlighted) hljs.highlightElement(block)
-    })
-}
 
 // Export the configured hljs instance for reuse
 export { hljs }
