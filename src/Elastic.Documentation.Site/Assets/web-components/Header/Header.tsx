@@ -179,7 +179,7 @@ export const Header = ({
                     {
                         items: [logoSection],
                     },
-                    ...(config.staticSearch
+                    ...(config.buildType === 'isolated'
                         ? [
                               {
                                   items: [
