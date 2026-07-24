@@ -70,7 +70,11 @@ const languageLoaders: Record<string, () => Promise<LanguageFn>> = {
 // Alias -> canonical language name. Aliases are registered with hljs once their
 // canonical module has loaded so `language-sh` etc. resolve correctly.
 const languageAliases: Record<string, string> = {
+    js: 'javascript',
+    py: 'python',
+    rb: 'ruby',
     sh: 'shell',
+    ts: 'typescript',
 }
 
 // Caches the registration promise per canonical language so concurrent code blocks

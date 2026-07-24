@@ -1,0 +1,11 @@
+type: bug-fix
+title: Restore common code fence language aliases for highlighting
+products:
+  - product: docs-builder
+    target: 0.100.0
+areas:
+  - Rendering
+description: |
+  Restores language alias normalization for highlighted code fences so
+  aliases such as `ts`, `js`, `py`, and `rb` resolve to their canonical
+  highlighter languages (`typescript`, `javascript`, `python`, `ruby`).

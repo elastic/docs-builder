@@ -65,14 +65,26 @@ describe('initHighlight', () => {
         expect(hljs.listLanguages()).toContain('python')
     })
 
-    it('resolves aliases to their canonical language', async () => {
-        const { initHighlight, hljs } = await loadModule()
-        setCodeBlocks('sh')
+    it.each([
+        ['sh', 'shell'],
+        ['js', 'javascript'],
+        ['ts', 'typescript'],
+        ['py', 'python'],
+        ['rb', 'ruby'],
+    ])(
+        'resolves alias %s to canonical language %s',
+        async (alias, canonical) => {
+            const { initHighlight, hljs } = await loadModule()
+            setCodeBlocks(alias, canonical)
 
-        await initHighlight()
+            await initHighlight()
 
-        expect(hljs.listLanguages()).toContain('shell')
-    })
+            expect(hljs.listLanguages()).toContain(canonical)
+            const blocks = document.querySelectorAll('#markdown-content pre code')
+            expect(blocks[0].getAttribute('data-highlighted')).toBe('yes')
+            expect(blocks[1].getAttribute('data-highlighted')).toBe('yes')
+        }
+    )
 
     it('does not re-highlight a block when invoked concurrently', async () => {
         const { initHighlight, hljs } = await loadModule()
