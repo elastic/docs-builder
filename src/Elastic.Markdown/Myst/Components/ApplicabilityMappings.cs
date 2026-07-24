@@ -29,19 +29,19 @@ public static class ApplicabilityMappings
 	public static readonly ApplicabilityDefinition Ecctl = new("ECCTL", "Elastic&nbsp;Cloud&nbsp;Control", VersioningSystemId.Ecctl);
 	public static readonly ApplicabilityDefinition Curator = new("Curator", "Curator", VersioningSystemId.Curator);
 
-	// EDOT Products
-	public static readonly ApplicabilityDefinition EdotAndroid = new("EDOT Android", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Android", VersioningSystemId.EdotAndroid);
-	public static readonly ApplicabilityDefinition EdotCfAws = new("EDOT CF AWS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for AWS", VersioningSystemId.EdotCfAws);
-	public static readonly ApplicabilityDefinition EdotCfAzure = new("EDOT CF Azure", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for Azure", VersioningSystemId.EdotCfAzure);
-	public static readonly ApplicabilityDefinition EdotCfGcp = new("EDOT CF GCP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Cloud&nbsp;Forwarder for GCP", VersioningSystemId.EdotCfGcp);
-	public static readonly ApplicabilityDefinition EdotCollector = new("EDOT Collector", "Elastic Distribution of OpenTelemetry Collector", VersioningSystemId.EdotCollector);
-	public static readonly ApplicabilityDefinition EdotDotnet = new("EDOT .NET", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;.NET", VersioningSystemId.EdotDotnet);
-	public static readonly ApplicabilityDefinition EdotIos = new("EDOT iOS", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;iOS", VersioningSystemId.EdotIos);
-	public static readonly ApplicabilityDefinition EdotJava = new("EDOT Java", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Java", VersioningSystemId.EdotJava);
-	public static readonly ApplicabilityDefinition EdotNode = new("EDOT Node.js", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Node.js", VersioningSystemId.EdotNode);
-	public static readonly ApplicabilityDefinition EdotBrowser = new("EDOT Browser", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Browser (RUM)", VersioningSystemId.EdotBrowser);
-	public static readonly ApplicabilityDefinition EdotPhp = new("EDOT PHP", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;PHP", VersioningSystemId.EdotPhp);
-	public static readonly ApplicabilityDefinition EdotPython = new("EDOT Python", "Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Python", VersioningSystemId.EdotPython);
+	// Elastic OTel Products
+	public static readonly ApplicabilityDefinition EdotAndroid = new("EDOT Android", "Elastic Distribution of OpenTelemetry Android", VersioningSystemId.EdotAndroid);
+	public static readonly ApplicabilityDefinition EdotCfAws = new("Elastic CF AWS", "Elastic Cloud Forwarder for AWS", VersioningSystemId.EdotCfAws);
+	public static readonly ApplicabilityDefinition EdotCfAzure = new("Elastic CF Azure", "Elastic Cloud Forwarder for Azure", VersioningSystemId.EdotCfAzure);
+	public static readonly ApplicabilityDefinition EdotCfGcp = new("Elastic CF GCP", "Elastic Cloud Forwarder for GCP", VersioningSystemId.EdotCfGcp);
+	public static readonly ApplicabilityDefinition EdotCollector = new("Elastic Agent", "Elastic Agent", VersioningSystemId.EdotCollector);
+	public static readonly ApplicabilityDefinition EdotDotnet = new("EDOT .NET", "Elastic Distribution of OpenTelemetry .NET", VersioningSystemId.EdotDotnet);
+	public static readonly ApplicabilityDefinition EdotIos = new("EDOT iOS", "Elastic Distribution of OpenTelemetry iOS", VersioningSystemId.EdotIos);
+	public static readonly ApplicabilityDefinition EdotJava = new("EDOT Java", "Elastic Distribution of OpenTelemetry Java", VersioningSystemId.EdotJava);
+	public static readonly ApplicabilityDefinition EdotNode = new("EDOT Node.js", "Elastic Distribution of OpenTelemetry Node.js", VersioningSystemId.EdotNode);
+	public static readonly ApplicabilityDefinition EdotBrowser = new("EDOT Browser", "Elastic Distribution of OpenTelemetry Browser (RUM)", VersioningSystemId.EdotBrowser);
+	public static readonly ApplicabilityDefinition EdotPhp = new("EDOT PHP", "Elastic Distribution of OpenTelemetry PHP", VersioningSystemId.EdotPhp);
+	public static readonly ApplicabilityDefinition EdotPython = new("EDOT Python", "Elastic Distribution of OpenTelemetry Python", VersioningSystemId.EdotPython);
 
 	// APM Agents
 	public static readonly ApplicabilityDefinition ApmAgentAndroid = new("APM Agent Android", "Application&nbsp;Performance&nbsp;Monitoring Agent for Android", VersioningSystemId.ApmAgentAndroid);

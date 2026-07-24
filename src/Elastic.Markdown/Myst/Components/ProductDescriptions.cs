@@ -141,9 +141,9 @@ public static class ProductDescriptions
 			IncludeVersionNote: true
 		),
 
-		// EDOT Products
+		// Elastic OTel Products
 		[VersioningSystemId.EdotCollector] = new ProductInfo(
-			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Collector</strong> retrieves traces, metrics, and logs from your infrastructure and applications, and forwards them to Elastic Observability.",
+			Description: "<strong>Elastic Agent</strong> can run in OpenTelemetry mode to retrieve traces, metrics, and logs from your infrastructure and applications, and forward them to Elastic Observability.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
@@ -188,7 +188,7 @@ public static class ProductDescriptions
 			IncludeVersionNote: true
 		),
 		[VersioningSystemId.EdotCfAws] = new ProductInfo(
-			Description: "The <strong>Elastic Distribution of OpenTelemetry (EDOT) Cloud Forwarder</strong> allows you to collect and send your telemetry data to Elastic Observability from AWS, GCP, and Azure.",
+			Description: "The <strong>Elastic Cloud Forwarder</strong> allows you to collect and send your telemetry data to Elastic Observability from AWS, GCP, and Azure.",
 			AdditionalAvailabilityInfo: null,
 			IncludeVersionNote: true
 		),
