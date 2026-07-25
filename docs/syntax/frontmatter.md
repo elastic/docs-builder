@@ -68,9 +68,9 @@ Only products with the `public-reference` feature enabled in [`products.yml`](ht
 | `cloud-terraform`                           | Elastic Cloud Terraform                       |
 | `ecs`                                       | Elastic Common Schema (ECS)                   |
 | `ecs-logging`                               | ECS Logging                                   |
-| `edot-cf`                                   | EDOT Cloud Forwarder                          |
+| `edot-cf`                                   | Elastic Cloud Forwarder                       |
 | `edot-sdk`                                  | Elastic Distribution of OpenTelemetry SDK     |
-| `edot-collector`                            | Elastic Distribution of OpenTelemetry Collector |
+| `edot-collector`                            | Elastic Agent                                 |
 | `elastic-agent`                             | Elastic Agent                                 |
 | `elastic-serverless-forwarder`              | Elastic Serverless Forwarder                  |
 | `elastic-stack`                             | Elastic Stack                                 |
