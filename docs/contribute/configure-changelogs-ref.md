@@ -137,7 +137,7 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   When set, the products array in the bundle is exactly the value you specify, replacing anything that would be derived from the matched changelogs. Use this to publish a single, authoritative product entry with a specific version and lifecycle.
 :   The `{lifecycle}` placeholder is substituted at runtime with the inferred lifecycle. For `source: github_release` profiles this comes from the release tag suffix. For standard profiles it comes from the version argument. Refer to [](/cli/changelog/bundle.md#lifecycle-inference).
 :   If you omit lifecycle from the pattern (for example, `"elasticsearch {version}"`), the lifecycle field is omitted from the products array entirely.
-:   Example: `"elasticsearch {version} {lifecycle}"` or `"elasticsearch {version} ga"` to hardcode GA regardless of tag.
+:   Example: `"elasticsearch {version} {lifecycle}"` or `"elasticsearch {version} ga"` to hardcode GA regardless of tag. The same omit, derive, and hardcode patterns apply to date-based targets (for example, `"cloud-serverless {version}"`, `"cloud-serverless {version} {lifecycle}"`, or `"cloud-serverless {version} preview"` for exceptional non-GA date releases).
 :   Refer to [](/cli/changelog/bundle.md#product-format).
 
 `owner`
