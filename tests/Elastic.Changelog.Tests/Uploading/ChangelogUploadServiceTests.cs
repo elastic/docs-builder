@@ -617,6 +617,96 @@ public class ChangelogUploadServiceTests
 	}
 
 	[Fact]
+	public void DiscoverBundleUploadTargets_AmendWithProducts_MapsToProductKey()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// Amend materialized by a current docs-builder: it carries the parent's complete products.
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "elasticsearch-9.3.0.amend-1.yaml"), new MockFileData("""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: 2-late.yaml
+			      checksum: c0ffee
+			    type: enhancement
+			    title: Late addition
+			"""));
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("bundle/elasticsearch/elasticsearch-9.3.0.amend-1.yaml");
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().Be(0);
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_LegacyAmendWithoutProducts_DerivesDestinationFromParent()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "stack-9.3.0.yaml"), new MockFileData("""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			  - product: kibana
+			    target: 9.3.0
+			    repo: kibana
+			entries:
+			  - file:
+			      name: 1-old.yaml
+			      checksum: deadbeef
+			    type: bug-fix
+			    title: To be retracted
+			"""));
+		// Amend published before products were copied from the parent: exclusion only, no products.
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "stack-9.3.0.amend-1.yaml"), new MockFileData("""
+			exclude-entries:
+			  - file:
+			      name: 1-old.yaml
+			      checksum: deadbeef
+			"""));
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().HaveCount(4, "the amend fans out to the parent's products");
+		targets.Should().Contain(t => t.S3Key == "bundle/elasticsearch/stack-9.3.0.amend-1.yaml");
+		targets.Should().Contain(t => t.S3Key == "bundle/kibana/stack-9.3.0.amend-1.yaml");
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().Be(0);
+	}
+
+	[Fact]
+	public void DiscoverBundleUploadTargets_OrphanLegacyAmend_WarnsAndSkips()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		_mockFileSystem.Directory.CreateDirectory(bundleDir);
+		// No parent bundle next to the amend, and the amend declares no products: the destination
+		// cannot be derived, but the skip must be visible instead of silent.
+		// language=yaml
+		_mockFileSystem.AddFile(_mockFileSystem.Path.Join(bundleDir, "stack-9.3.0.amend-1.yaml"), new MockFileData("""
+			exclude-entries:
+			  - file:
+			      name: 1-old.yaml
+			      checksum: deadbeef
+			"""));
+
+		var targets = _service.DiscoverBundleUploadTargets(_collector, bundleDir);
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().Be(0);
+		_collector.Warnings.Should().BeGreaterThan(0);
+	}
+
+	[Fact]
 	public async Task Upload_BundleArtifactType_UploadsRegistryAlongsideBundle()
 	{
 		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");

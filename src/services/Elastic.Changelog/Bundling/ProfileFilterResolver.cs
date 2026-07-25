@@ -16,8 +16,8 @@ using Nullean.ScopedFileSystem;
 namespace Elastic.Changelog.Bundling;
 
 /// <summary>
-/// The resolved filter derived from a bundle profile — either a product list, a set of PR URLs, or a set of issue URLs.
-/// Exactly one of <see cref="Products"/>, <see cref="Prs"/> and <see cref="Issues"/> will be non-null on a successful result.
+/// The resolved filter derived from a bundle profile — a product list, PR URLs, issue URLs, or changelog file paths.
+/// Exactly one of <see cref="Products"/>, <see cref="Prs"/>, <see cref="Issues"/>, and <see cref="Files"/> will be non-null on a successful result.
 /// </summary>
 public record ProfileFilterResult
 {
@@ -30,10 +30,13 @@ public record ProfileFilterResult
 	/// <summary>Issue URLs extracted from a URL list file supplied as the profile argument.</summary>
 	public string[]? Issues { get; init; }
 
+	/// <summary>Changelog YAML paths extracted from a path list file supplied as the profile argument.</summary>
+	public string[]? Files { get; init; }
+
 	/// <summary>
 	/// The resolved version string used for placeholder substitution.
 	/// This is the profile argument itself for version-based invocations, or <c>"unknown"</c> when
-	/// a promotion report or URL list file was parsed (because the actual version is not available from the file).
+	/// a promotion report or URL/path list file was parsed (because the actual version is not available from the file).
 	/// When both a version and a report are provided (Phase 3.4), this is always the explicit version.
 	/// </summary>
 	public string Version { get; init; } = "unknown";
@@ -52,8 +55,8 @@ public record ProfileFilterResult
 /// report URL/path, or URL list file) into a concrete filter that can be used by both
 /// <see cref="ChangelogBundlingService"/> and <see cref="ChangelogRemoveService"/>.
 /// </summary>
-/// <summary>Result of resolving a URL list file into PR or issue URLs.</summary>
-internal record UrlListFileResult(string[]? Prs, string[]? Issues);
+/// <summary>Result of resolving a newline-delimited list file into PR URLs, issue URLs, or changelog paths.</summary>
+internal record ListFileResult(string[]? Prs, string[]? Issues, string[]? Files);
 
 public static partial class ProfileFilterResolver
 {
@@ -118,6 +121,7 @@ public static partial class ProfileFilterResolver
 		string version;
 		string[]? prsFromReport = null;
 		string[]? issuesFromFile = null;
+		string[]? filesFromList = null;
 
 		switch (argType)
 		{
@@ -135,12 +139,13 @@ public static partial class ProfileFilterResolver
 				}
 			case ProfileArgumentType.UrlListFile:
 				{
-					var result = await ResolveUrlListFileAsync(collector, profileArgument, fileSystem, ctx);
+					var result = await ResolveListFileAsync(collector, profileArgument, fileSystem, ctx);
 					if (result == null)
 						return null;
 
 					prsFromReport = result.Prs;
 					issuesFromFile = result.Issues;
+					filesFromList = result.Files;
 					version = "unknown";
 					break;
 				}
@@ -157,14 +162,17 @@ public static partial class ProfileFilterResolver
 			.Replace("{version}", version)
 			.Replace("{lifecycle}", lifecycle);
 
-		// If we have PRs or issues from a file/report, return those directly
+		// If we have PRs, issues, or file paths from a file/report, return those directly
 		if (prsFromReport != null)
 			return new ProfileFilterResult { Prs = prsFromReport, Version = version };
 
 		if (issuesFromFile != null)
 			return new ProfileFilterResult { Issues = issuesFromFile, Version = version };
 
-		// Without a promotion report or URL list we need a products pattern to filter by
+		if (filesFromList != null)
+			return new ProfileFilterResult { Files = filesFromList, Version = version };
+
+		// Without a promotion report or URL/path list we need a products pattern to filter by
 		if (string.IsNullOrWhiteSpace(productsPattern))
 		{
 			collector.EmitError(
@@ -211,13 +219,13 @@ public static partial class ProfileFilterResolver
 			return null;
 		}
 
-		// A products pattern is mutually exclusive with a report/URL-list filter
+		// A products pattern is mutually exclusive with a report/URL/path-list filter
 		if (!string.IsNullOrWhiteSpace(profile.Products))
 		{
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{profileName}' has a 'products' pattern configured. " +
-				"A promotion report or URL list file cannot be combined with a products pattern filter."
+				"A promotion report, URL list file, or path list file cannot be combined with a products pattern filter."
 			);
 			return null;
 		}
@@ -246,29 +254,32 @@ public static partial class ProfileFilterResolver
 				}
 			case ProfileArgumentType.UrlListFile:
 				{
-					var result = await ResolveUrlListFileAsync(collector, profileReport, fileSystem, ctx);
+					var result = await ResolveListFileAsync(collector, profileReport, fileSystem, ctx);
 					if (result == null)
 						return null;
 
-					return result.Prs != null
-						? new ProfileFilterResult { Prs = result.Prs, Version = version }
-						: new ProfileFilterResult { Issues = result.Issues, Version = version };
+					if (result.Prs != null)
+						return new ProfileFilterResult { Prs = result.Prs, Version = version };
+					if (result.Issues != null)
+						return new ProfileFilterResult { Issues = result.Issues, Version = version };
+					return new ProfileFilterResult { Files = result.Files, Version = version };
 				}
 			default:
 				collector.EmitError(
 					string.Empty,
-					$"The third argument '{profileReport}' must be a promotion report URL, a local HTML file, or a URL list file. " +
-					"Use a URL (https://...), a local .html file, or a text file containing fully-qualified GitHub PR/issue URLs."
+					$"The third argument '{profileReport}' must be a promotion report URL, a local HTML file, a URL list file, or a path list file. " +
+					"Use a URL (https://...), a local .html file, a text file containing fully-qualified GitHub PR/issue URLs, " +
+					"or a text file containing changelog YAML paths (.yaml/.yml)."
 				);
 				return null;
 		}
 	}
 
 	/// <summary>
-	/// Reads a newline-delimited URL list file and validates/classifies its contents as PR or issue URLs.
+	/// Reads a newline-delimited list file and classifies its contents as PR URLs, issue URLs, or changelog paths.
 	/// Returns <c>null</c> and emits errors on failure.
 	/// </summary>
-	internal static async Task<UrlListFileResult?> ResolveUrlListFileAsync(
+	internal static async Task<ListFileResult?> ResolveListFileAsync(
 		IDiagnosticsCollector collector,
 		string filePath,
 		ScopedFileSystem fileSystem,
@@ -282,49 +293,67 @@ public static partial class ProfileFilterResolver
 
 		if (lines.Length == 0)
 		{
-			collector.EmitError(filePath, "URL list file is empty");
+			collector.EmitError(filePath, "List file is empty");
 			return null;
 		}
 
 		var hasPrs = false;
 		var hasIssues = false;
+		var hasPaths = false;
 
 		foreach (var line in lines)
 		{
-			if (!line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
-				!line.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-			{
-				collector.EmitError(
-					filePath,
-					$"File must contain fully-qualified GitHub URLs (e.g. https://github.com/owner/repo/pull/123). " +
-					$"Numbers and short forms are not allowed. Found: {line}"
-				);
-				return null;
-			}
+			var isHttp = line.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+				line.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
 
-			if (GitHubPrUrlRegex().IsMatch(line))
-				hasPrs = true;
-			else if (GitHubIssueUrlRegex().IsMatch(line))
-				hasIssues = true;
+			if (isHttp)
+			{
+				if (GitHubPrUrlRegex().IsMatch(line))
+					hasPrs = true;
+				else if (GitHubIssueUrlRegex().IsMatch(line))
+					hasIssues = true;
+				else
+				{
+					collector.EmitError(
+						filePath,
+						$"File must contain GitHub pull request or issue URLs " +
+						$"(e.g. https://github.com/owner/repo/pull/123 or https://github.com/owner/repo/issues/456), " +
+						$"or changelog YAML paths (.yaml/.yml). Not a recognized URL: {line}"
+					);
+					return null;
+				}
+			}
+			else if (FileFilterLoader.IsYamlExtension(line))
+			{
+				hasPaths = true;
+			}
 			else
 			{
 				collector.EmitError(
 					filePath,
-					$"File must contain GitHub pull request or issue URLs " +
-					$"(e.g. https://github.com/owner/repo/pull/123 or https://github.com/owner/repo/issues/456). " +
-					$"Not a recognized URL: {line}"
+					$"File must contain fully-qualified GitHub URLs (e.g. https://github.com/owner/repo/pull/123) " +
+					$"or changelog YAML paths (.yaml/.yml). Numbers and short forms are not allowed. Found: {line}"
 				);
 				return null;
 			}
 		}
 
-		if (hasPrs && hasIssues)
+		var categoryCount = (hasPrs ? 1 : 0) + (hasIssues ? 1 : 0) + (hasPaths ? 1 : 0);
+		if (categoryCount > 1)
 		{
-			collector.EmitError(filePath, "File must contain only pull request URLs or only issue URLs, not a mix.");
+			var message = hasPaths
+				? "File must contain only pull request URLs, only issue URLs, or only changelog YAML paths — not a mix."
+				: "File must contain only pull request URLs or only issue URLs, not a mix.";
+			collector.EmitError(filePath, message);
 			return null;
 		}
 
-		return hasPrs ? new UrlListFileResult(lines, null) : new UrlListFileResult(null, lines);
+		if (hasPaths)
+			return new ListFileResult(null, null, lines);
+
+		return hasPrs
+			? new ListFileResult(lines, null, null)
+			: new ListFileResult(null, lines, null);
 	}
 
 	private static ProfileArgumentType DetectLocalFileType(ScopedFileSystem fileSystem, string path) =>

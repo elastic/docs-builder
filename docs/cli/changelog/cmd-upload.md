@@ -115,7 +115,14 @@ The registry refresh is best-effort: upload failures block the run, but a stale 
 
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files are skipped. Re-running the same command is safe and idempotent.
+If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
 :::
+
+## Options
+
+| Option | Purpose |
+| ------ | ------- |
+| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. |
 
 ## Configuration
 

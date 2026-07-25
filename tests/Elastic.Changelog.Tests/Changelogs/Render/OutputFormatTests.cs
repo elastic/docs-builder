@@ -3,10 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -16,10 +14,6 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithCustomConfigPath_UsesSpecifiedConfigFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create changelog
 		// language=yaml
 		var changelog1 =
 			"""
@@ -32,9 +26,6 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			- "100"
 			description: This is a test feature
 			""";
-
-		var changelogFile1 = FileSystem.Path.Join(changelogDir, "1755268130-test.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
 
 		// Create config file in a custom location (not in docs/ subdirectory)
 		var customConfigDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -59,16 +50,13 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-test.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		// Don't change directory - use custom config path via Config property
@@ -76,7 +64,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			Config = customConfigPath
@@ -101,10 +89,6 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithAsciidocFileType_CreatesSingleAsciidocFile()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog file
 		// language=yaml
 		var changelog1 =
 			"""
@@ -118,31 +102,25 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			description: This is a test feature
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-test-feature.yaml
-			      checksum: {ComputeSha1(changelog1)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			FileType = ChangelogFileType.Asciidoc
@@ -179,10 +157,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 	public async Task RenderChangelogs_WithAsciidocFileType_ValidatesAsciidocFormat()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create test changelog files with different types
+		// Create test changelog entries with different types
 		// language=yaml
 		var featureChangelog =
 			"""
@@ -225,41 +200,28 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			action: Update API client libraries
 			""";
 
-		var featureFile = FileSystem.Path.Join(changelogDir, "1755268130-feature.yaml");
-		var bugFixFile = FileSystem.Path.Join(changelogDir, "1755268140-bugfix.yaml");
-		var breakingFile = FileSystem.Path.Join(changelogDir, "1755268150-breaking.yaml");
-		await FileSystem.File.WriteAllTextAsync(featureFile, featureChangelog, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(bugFixFile, bugFixChangelog, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(breakingFile, breakingChangeChangelog, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-feature.yaml
-			      checksum: {ComputeSha1(featureChangelog)}
-			  - file:
-			      name: 1755268140-bugfix.yaml
-			      checksum: {ComputeSha1(bugFixChangelog)}
-			  - file:
-			      name: 1755268150-breaking.yaml
-			      checksum: {ComputeSha1(breakingChangeChangelog)}
 			""";
+		var bundleContent = CreateResolvedBundleContent(bundleHeader,
+			("1755268130-feature.yaml", featureChangelog),
+			("1755268140-bugfix.yaml", bugFixChangelog),
+			("1755268150-breaking.yaml", breakingChangeChangelog));
 		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			FileType = ChangelogFileType.Asciidoc

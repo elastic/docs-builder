@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Rendering;
@@ -162,27 +163,10 @@ public class FeatureHidingLoader(IFileSystem fileSystem)
 		if (string.IsNullOrWhiteSpace(path))
 			return path;
 
-		var trimmedPath = path.Trim();
-
-		// Expand tilde to user's home directory
-		if (trimmedPath.StartsWith("~/", StringComparison.Ordinal) || trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
-		{
-			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-			var relativePath = trimmedPath[2..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-			// Ensure that an accidentally rooted path segment does not cause the home directory
-			// to be ignored by Path.Combine.
-			var fullPath = Path.IsPathRooted(relativePath)
-				? relativePath
-				: Path.Join(homeDirectory, relativePath);
-			trimmedPath = fullPath;
-		}
-		else if (trimmedPath == "~")
-		{
-			trimmedPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-		}
+		var expanded = FilterLoaderUtilities.ExpandTilde(path);
 
 		// Convert to absolute path (handles relative paths like ./file or ../file)
-		return Path.GetFullPath(trimmedPath);
+		return Path.GetFullPath(expanded);
 	}
 }
 

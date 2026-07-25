@@ -17,9 +17,10 @@ docs-builder changelog bundle elasticsearch-release 9.2.0 ./promotion-report.htm
 The second positional argument accepts:
 - A version string (e.g. `9.2.0`, `9.2.0-beta.1`) — lifecycle is inferred automatically (`ga`, `beta`, `rc`)
 - A promotion report URL or file path
-- A plain-text URL list file (one fully-qualified GitHub URL per line)
+- A plain-text URL list file (one fully-qualified GitHub PR or issue URL per line)
+- A plain-text path list file (one changelog YAML path per line, ending in `.yaml` or `.yml`)
 
-When your profile uses `{version}` in its output pattern and you also want to filter by a report, pass both arguments.
+When your profile uses `{version}` in its output pattern and you also want to filter by a report or list file, pass both arguments (version first, then the filter file).
 
 Example profile in `changelog.yml`:
 
@@ -48,6 +49,9 @@ Exactly one of the following filter flags is required:
 - `--issues` — filter by issue URLs or a newline-delimited file of issue URLs
 - `--release-version` — fetch PR references from a GitHub release tag (e.g. `v9.2.0` or `latest`)
 - `--report` — filter by PRs referenced in a promotion report (URL or local file)
+- `--files` — include specific changelog YAML paths, or a newline-delimited path list file
+
+`--force-local` is not a filter. It forces local entry sourcing for the run (equivalent to `bundle.use_local_changelogs: true` without editing config) and is allowed in both option-based and profile-based modes.
 
 ```sh
 # Bundle all changelogs in docs/changelog/
@@ -63,19 +67,17 @@ docs-builder changelog bundle \
   --release-version v9.2.0 \
   --repo elasticsearch \
   --owner elastic
+
+# Bundle an explicit list of changelog files
+docs-builder changelog bundle \
+  --files "./docs/changelog/a.yaml,./docs/changelog/b.yaml" \
+  --output docs/releases/serverless/2026-07-07.yaml \
+  --output-products "cloud-serverless 2026-07-07"
 ```
 
-## Resolved vs. reference bundles
+## Bundles are self-contained
 
-By default the bundle contains only file names and checksums — the original changelog files must remain on disk for rendering. Add `--resolve` (or set `bundle.resolve: true` in `changelog.yml`) to embed the full entry content inside the bundle. A resolved bundle is:
-
-- Required when using the `{changelog}` directive after deleting the source changelog files
-- Required when `link_allow_repos` is configured (private-link scrubbing only runs during resolve)
-- Necessary to regenerate rendered Markdown or AsciiDoc after the source files are removed
-
-:::{tip}
-For most release workflows, use `--resolve`. It makes the bundle self-contained and allows you to clean up the changelog files with `docs-builder changelog remove` immediately after bundling.
-:::
+Every bundle embeds the full content of each changelog entry (`title`, `type`, `products`, and so on), plus a `file` block recording the source file name and checksum for provenance. Rendering — via the `{changelog}` directive, `changelog render`, or the CDN pipeline — never reads the original changelog files, so you can clean them up with `docs-builder changelog remove` immediately after bundling.
 
 ## CI usage
 
@@ -132,10 +134,6 @@ For more information about acceptable product and lifecycle values, go to [Produ
 A changelog in a public repository might contain links to pull requests or issues in repositories that should not appear in published documentation.
 
 Set `bundle.link_allow_repos` in `changelog.yml` to an explicit list of `owner/repo` strings. When this key is present (including as an empty list), PR and issue references are filtered at bundle time: only links whose resolved repository is in the list are kept; others are rewritten to `# PRIVATE:` sentinel strings in the bundle YAML.
-
-:::{important}
-`bundle.link_allow_repos` requires a **resolved** bundle. Set `bundle.resolve: true` or pass `--resolve`.
-:::
 
 ## Examples
 
@@ -234,12 +232,23 @@ entries:
 - file:
     name: 1765507819-fix-ml-calendar-event-update-scalability-issues.yaml
     checksum: 069b59edb14594e0bc3b70365e81626bde730ab7
+  type: bug-fix
+  title: Fix ML calendar event update scalability issues
+  products:
+  - product: elasticsearch
+    target: 9.2.2
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/108875
 - file:
     name: 1765507798-convert-bytestransportresponse-when-proxying-respo.yaml
     checksum: c6dbd4730bf34dbbc877c16c042e6578dd108b62
-- file:
-    name: 1765507839-use-ivf_pq-for-gpu-index-build-for-large-datasets.yaml
-    checksum: 451d60283fe5df426f023e824339f82c2900311e
+  type: bug-fix
+  title: Convert BytesTransportResponse when proxying responses
+  products:
+  - product: elasticsearch
+    target: 9.2.2
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/135873
 ```
 
 ### Bundle by product [changelog-bundle-product]
@@ -290,9 +299,23 @@ entries:
 - file:
     name: 1765495972-fixes-enrich-and-lookup-join-resolution-based-on-m.yaml
     checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+  type: bug-fix
+  title: Fixes enrich and lookup join resolution based on mappings
+  products:
+  - product: cloud-serverless
+    target: 2025-12-02
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/136001
 - file:
     name: 1765507778-break-on-fielddata-when-building-global-ordinals.yaml
     checksum: 70d197d96752c05b6595edffe6fe3ba3d055c845
+  type: bug-fix
+  title: Break on fielddata when building global ordinals
+  products:
+  - product: cloud-serverless
+    target: 2025-12-06
+  prs:
+  - https://github.com/elastic/elasticsearch/pull/136002
 ```
 
 1. By default these values match your `--input-products` (even if the changelogs have more products).
@@ -316,6 +339,43 @@ docs-builder changelog bundle \
 
 By default all changelogs that match PRs in the promotion report are included in the bundle.
 To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+
+### Bundle by file paths [changelog-bundle-files]
+
+Use `--files` when you know the exact changelog files to include and they may not have `prs` or `issues` metadata.
+
+```sh
+docs-builder changelog bundle \
+  --files "./docs/changelog/a.yaml,./docs/changelog/b.yaml" \
+  --output docs/releases/serverless/2026-07-07.yaml \
+  --output-products "cloud-serverless 2026-07-07"
+```
+
+You can also pass a newline-delimited path list file:
+
+```sh
+docs-builder changelog bundle --files ./docs/temp/changelog_files.txt --output ...
+```
+
+In profile mode, pass the same path list as a positional argument:
+
+```sh
+docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/changelog_files.txt
+```
+
+`--files` / path-list selection always reads the named files from disk (local entry sourcing). It does not fetch entries from the CDN. `rules.bundle` still applies after selection.
+
+### Force local entry sourcing [changelog-bundle-force-local]
+
+When a repository defaults to CDN entry sourcing, you can use `--force-local` to read changelog YAML files from the local folder.
+This option overrides the `bundle.use_local_changelogs` setting in your `changelog.yml` and is useful for ad hoc bundles that include freshly authored local files that are not on the CDN yet.
+
+```sh
+docs-builder changelog bundle serverless-release 2026-07-07 ./docs/temp/prs.txt --force-local
+```
+
+`--force-local` is allowed in both option-based and profile-based commands.
+Path-list / `--files` filters already force local sourcing, so `--force-local` is optional in that case.
 
 ### Hide features [changelog-bundle-hide-features]
 
@@ -343,6 +403,12 @@ entries:
 - file:
     name: 1765495972-new-feature.yaml
     checksum: 6c3243f56279b1797b5dfff6c02ebf90b9658464
+  type: feature
+  title: New feature behind a flag
+  feature-id: feature:hidden-api
+  products:
+  - product: elasticsearch
+    target: 9.3.0
 ```
 
 When this bundle is rendered (either via the `changelog render` command or the `{changelog}` directive), changelogs with `feature-id` values matching any of the listed features will be commented out in the output.

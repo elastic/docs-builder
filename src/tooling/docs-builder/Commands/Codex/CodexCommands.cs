@@ -11,7 +11,6 @@ using Elastic.Codex.Building;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Isolated;
 using Elastic.Documentation.LinkIndex;
@@ -59,29 +58,16 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealRead;
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
+		var writeFs = FileSystemFactory.RealGitRootForPathWrite(null, output?.FullName);
 
-
-
-		var configFile = fs.FileInfo.New(config.FullName);
-
-		if (!configFile.Exists)
-		{
-			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
+		var configFile = readFs.FileInfo.New(config.FullName);
+		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
-		}
 
-		var codexConfig = CodexConfiguration.Load(configFile);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, writeFs, null, output?.FullName);
 
-		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
-		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
-			return 1;
-		}
-
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output?.FullName);
-
-		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
+		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		CodexCloneResult? cloneResult = null;
 
@@ -94,12 +80,12 @@ internal sealed class CodexCommands(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs), strict,
 			async (s, col, state, c) =>
 			{
 				if (state.cloneResult == null)
 					return false;
-				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.readFs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 
@@ -130,29 +116,15 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealRead;
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
 
-
-
-		var configFile = fs.FileInfo.New(config.FullName);
-
-		if (!configFile.Exists)
-		{
-			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
+		var configFile = readFs.FileInfo.New(config.FullName);
+		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out var environment))
 			return 1;
-		}
 
-		var codexConfig = CodexConfiguration.Load(configFile);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, FileSystemFactory.RealWrite, null, null);
 
-		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
-		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
-			return 1;
-		}
-
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, null);
-
-		using var linkIndexReader = new GitLinkIndexReader(codexConfig.Environment);
+		using var linkIndexReader = new GitLinkIndexReader(environment);
 		var cloneService = new CodexCloneService(logFactory, linkIndexReader);
 		serviceInvoker.AddCommand(cloneService, (codexContext, fetchLatest, assumeCloned), strict,
 			async (s, col, state, c) =>
@@ -178,27 +150,14 @@ internal sealed class CodexCommands(
 		CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		var fs = FileSystemFactory.RealRead;
+		var readFs = FileSystemFactory.ScopeCurrentWorkingDirectory(new FileSystem(), [Paths.FindGitRoot(config.FullName)]);
+		var writeFs = FileSystemFactory.RealGitRootForPathWrite(null, output?.FullName);
 
-
-
-		var configFile = fs.FileInfo.New(config.FullName);
-
-		if (!configFile.Exists)
-		{
-			collector.EmitGlobalError($"Codex configuration file not found: {config.FullName}");
+		var configFile = readFs.FileInfo.New(config.FullName);
+		if (!CodexConfigurationLoader.TryLoad(configFile, config.FullName, collector, out var codexConfig, out _))
 			return 1;
-		}
 
-		var codexConfig = CodexConfiguration.Load(configFile);
-
-		if (string.IsNullOrWhiteSpace(codexConfig.Environment))
-		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
-			return 1;
-		}
-
-		var codexContext = new CodexContext(codexConfig, configFile, collector, fs, fs, null, output?.FullName);
+		var codexContext = new CodexContext(codexConfig, configFile, collector, readFs, writeFs, null, output?.FullName);
 		var cloneResult = await CodexCloneService.DiscoverCheckouts(codexContext, logFactory, ct);
 
 		if (cloneResult == null || cloneResult.Checkouts.Count == 0)
@@ -209,10 +168,10 @@ internal sealed class CodexCommands(
 
 		var isolatedBuildService = new IsolatedBuildService(logFactory, configurationContext, githubActionsService, environmentVariables);
 		var buildService = new CodexBuildService(logFactory, configurationContext, isolatedBuildService);
-		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, fs), strict,
+		serviceInvoker.AddCommand(buildService, (codexContext, cloneResult, readFs), strict,
 			async (s, col, state, c) =>
 			{
-				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.fs, c);
+				var result = await s.BuildAll(state.codexContext, state.cloneResult, state.readFs, c);
 				return result.DocumentationSets.Count > 0;
 			});
 

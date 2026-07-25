@@ -446,6 +446,9 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 	private static BundleConfiguration? ParseBundleConfiguration(IDiagnosticsCollector collector, string configPath, BundleConfigurationYaml yaml)
 	{
+		if (yaml.Resolve != null)
+			collector.EmitWarning(configPath, "bundle.resolve is deprecated and ignored. Resolved bundles are now the only format. Remove 'resolve' from bundle in changelog.yml.");
+
 		if (!string.IsNullOrWhiteSpace(yaml.Repo) && yaml.Repo.Contains('+', StringComparison.Ordinal))
 		{
 			collector.EmitError(
@@ -531,7 +534,6 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Directory = yaml.Directory,
 			OutputDirectory = yaml.OutputDirectory,
 			UseLocalChangelogs = yaml.UseLocalChangelogs ?? false,
-			Resolve = yaml.Resolve ?? true,
 			Description = yaml.Description,
 			Repo = yaml.Repo,
 			Owner = yaml.Owner,

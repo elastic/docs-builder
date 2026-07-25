@@ -12,6 +12,30 @@ namespace Elastic.Changelog.Bundling;
 /// </summary>
 internal static class FilterLoaderUtilities
 {
+	/// <summary>
+	/// Expands a leading tilde (<c>~</c>) to the user's home directory. Other paths are returned trimmed.
+	/// </summary>
+	internal static string ExpandTilde(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return path;
+
+		var trimmedPath = path.Trim();
+		if (trimmedPath == "~")
+			return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+		if (!trimmedPath.StartsWith("~/", StringComparison.Ordinal) && !trimmedPath.StartsWith("~\\", StringComparison.Ordinal))
+			return trimmedPath;
+
+		var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+		var relativePath = trimmedPath[2..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+		// Ensure that an accidentally rooted path segment does not cause the home directory
+		// to be ignored by Path.Join.
+		return Path.IsPathRooted(relativePath)
+			? relativePath
+			: Path.Join(homeDirectory, relativePath);
+	}
+
 	private static bool IsUrl(string value) =>
 		value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
 		value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);

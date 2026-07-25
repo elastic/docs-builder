@@ -24,8 +24,10 @@ The source of truth can be:
 - automated release notes for GitHub releases
 - all changelog files that exist in a specific folder
 - all changelog files that match specific products, versions, and lifecycles
+- an explicit list of changelog file paths
 
 Deriving the source of truth from the contents of a folder or from the metadata in changelogs are the least accurate options (unless you have additional processes to confirm the validity of that information).
+An explicit path list is appropriate for ad hoc releases where a small set of known changelog files must be bundled and those entries may not have `prs` or `issues` fields.
 It is recommended to use lists that are generated as part of your release coordination activities.
 Consider your options carefully and discuss with your docs team if necessary.
 
@@ -54,13 +56,14 @@ It is strongly recommended to set `output_products` in your profile so your bund
 
 For the most up-to-date changelog configuration options, refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) and [](/contribute/configure-changelogs-ref.md).
 
-### Bundle by report or URL list [profile-url]
+### Bundle by report, URL list, or path list [profile-url]
 
 If the source of truth for what was shipped in each release is:
 
 - a list of GitHub pull requests
 - a list of GitHub issues
 - a buildkite promotion report (which contains a list of PRs)
+- an explicit list of changelog YAML paths (one `.yaml`/`.yml` path per line)
 
 ... your profile does not have any mandatory settings.
 However it's a good idea to define the [basic bundle settings](/contribute/configure-changelogs-ref.md#bundle-basic) and the [profile settings](/contribute/configure-changelogs-ref.md#bundle-profiles) for the output filename and output products.
@@ -72,11 +75,10 @@ bundle:
   output_directory: docs/releases <2>
   repo: elasticsearch 
   owner: elastic
-  resolve: true <3>
   profiles:
     serverless-report:
-      output: "serverless/{version}.yaml" <4>
-      output_products: "cloud-serverless {version}" <5>
+      output: "serverless/{version}.yaml" <3>
+      output_products: "cloud-serverless {version}" <4>
     elasticsearch-release:
       output: "elasticsearch/{version}.yaml"
       output_products: "elasticsearch {version} {lifecycle}"
@@ -84,9 +86,8 @@ bundle:
 
 1. The directory that contains changelog files.
 2. The directory that contains changelog bundles.
-3. Resolve the changelog files in the bundle rather than just referencing them. Otherwise, when you move or remove changelog files the bundle cannot be rendered.
-4. If `output` is omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename.
-5. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle.
+3. If `output` is omitted, the default path and file names are used. This example shows how you can use a `{version}` variable to customize the bundle's filename.
+4. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle.
 
 ### Bundle by GitHub releases [profile-gh-release]
 
@@ -99,7 +100,6 @@ For example:
 
 ```yaml
 bundle:
-  resolve: true
   profiles:
     agent-gh-release:
       source: github_release <1>
@@ -126,7 +126,6 @@ For example:
 bundle:
   directory: docs/changelog
   output_directory: docs/releases
-  resolve: true
   repo: elasticsearch
   owner: elastic
   profiles:
@@ -164,11 +163,12 @@ The `products` field determines which changelog files are gathered for considera
 If you created profiles, you can use them with the `changelog bundle` command like this:
 
 ```sh
-docs-builder changelog bundle <profile> <version|report|url-list>
+docs-builder changelog bundle <profile> <version|report|url-list|path-list>
 ```
 
-The second argument accepts a version string, a promotion report URL or path, or a URL list file (a plain-text file with one fully-qualified GitHub URL per line).
-If you are using a `{version}` placeholder in the `output_products` or `output` fields, you must provide that value as well as your report or URL argument.
+The second argument accepts a version string, a promotion report URL or path, a URL list file (a plain-text file with one fully-qualified GitHub URL per line), or path list file (one changelog file path per line).
+
+If you are using a `{version}` placeholder in the `output_products` or `output` fields, you must provide that value as well as your report or list argument.
 
 For example, if the source of truth for what was shipped in each release is:
 
@@ -191,6 +191,20 @@ For example, if the source of truth for what was shipped in each release is:
   ```sh
   # Bundle changelogs from a buildkite report ({version} → "2026-02-13")
   docs-builder changelog bundle serverless-report 2026-02-13 ./promotion-report.html
+  ```
+
+- a list of changelog files:
+
+  ```sh
+  # Bundle changelogs from a file list ({version} → "2026-07-17")
+  docs-builder changelog bundle serverless-release 2026-07-17 ./changelogs.txt
+  ```
+
+  ... where `changelogs.txt` is a newline delimited file with paths like this this:
+
+  ```txt
+  docs/changelog/1770424335-adhoc-security-fix.yaml
+  docs/changelog/1770424401-adhoc-feature.yaml
   ```
 
 - automated release notes for GitHub releases:
@@ -229,10 +243,7 @@ For example, if the source of truth for what was shipped in each release is:
   ```
 
 By default all changelogs that match the chosen source of truth are included in the bundle.
-
-:::{tip}
-It is strongly recommended to pull all of the content from each changelog into the bundle; otherwise you can't move or remove your changelogs. If your bundle contains only references to the files, add set [bundle.resolve](/contribute/configure-changelogs-ref.md#bundle-basic) to true and re-generate your bundle.
-:::
+Bundles are self-contained: the full content of each changelog is embedded in the bundle, so you can freely move or remove the changelog files afterward.
 
 To apply additional filtering by the changelog type, areas, or products, add [bundle rules](#rules).
 
@@ -258,7 +269,6 @@ docs-builder changelog bundle-amend \
 ```
 
 This creates an amend file with `exclude-entries` that is merged when the bundle is rendered.
-After excluding an entry from unresolved bundles, you can use `changelog remove` to delete the source changelog file.
 
 When bundles are turned into docs (either via the `changelog render` command or the `{changelog}` directive), amend files are **automatically merged** with their parent bundles.
 The changelogs from all matching amend files are combined with the parent bundle's changelogs and the result is rendered as a single release.
@@ -273,19 +283,13 @@ For more details and examples, go to [](/cli/changelog/bundle-amend.md).
 
 A single changelog file might be applicable to multiple releases (for example, it might be delivered in both Stack and {{serverless-short}} releases or {{ech}} and Enterprise releases on different timelines).
 After it has been included in all of the relevant bundles, it is reasonable to delete the changelog to keep your repository clean.
-
-:::{important}
-If you create docs with changelog directives, run the `docs-builder changelog bundle` command with the `--resolve` option or set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained).
-Otherwise, the build will fail if you remove changelogs that the directive requires.
-
-Likewise, the `docs-builder changelog render` command fails for "unresolved" bundles after you delete the changelogs.
-:::
+Because bundles are self-contained, deleting changelog files never affects existing bundles or the docs built from them.
 
 You can use the `docs-builder changelog remove` command to remove changelogs.
 If you created profiles, you can use them like this:
 
 ```sh
-docs-builder changelog remove <profile> <version|report|url-list>
+docs-builder changelog remove <profile> <version|report|url-list|path-list>
 ```
 
 For example, if the source of truth for what was shipped in each release is:
@@ -300,6 +304,12 @@ For example, if the source of truth for what was shipped in each release is:
 
   ```sh
   docs-builder changelog remove serverless-report ./promotion-report.html
+  ```
+
+- a list of changelog files:
+
+  ```sh
+  docs-builder changelog remove serverless-release ./changelogs.txt
   ```
 
 - automated release notes for GitHub releases:
@@ -323,11 +333,6 @@ For example, if the source of truth for what was shipped in each release is:
   ```sh
   docs-builder changelog remove serverless-monthly 2026-02
   ```
-
-Before deleting, the command automatically scans for bundles that still hold unresolved (`file:`) references to the matching changelog files.
-If any are found, the command reports an error for each dependency.
-This check prevents the `{changelog}` directive from failing at build time with missing file errors.
-To proceed with removal even when unresolved bundle dependencies exist, use `--force`.
 
 To preview what would be removed without deleting anything, use `--dry-run`.
 
@@ -389,7 +394,6 @@ bundle:
   output_directory: docs/releases
   repo: elasticsearch 
   owner: elastic
-  resolve: true
   profiles:
     serverless-report:
       output: "serverless/{version}.yaml"
@@ -416,7 +420,6 @@ bundle:
   output_directory: docs/releases
   repo: elasticsearch 
   owner: elastic
-  resolve: true
   link_allow_repos: <1>
     - elastic/elasticsearch
     - elastic/kibana
@@ -430,7 +433,7 @@ You must list every repo whose links should appear, including the current repo.
 When this setting is omitted entirely, no link filtering is applied.
 
 :::{tip}
-You must set `bundle.resolve` to `true` in the changelog configuration file (so that bundle files are self-contained) in order to hide the private links. The bundle's changelog entries are sanitized but the individual changelog files are unchanged.
+The bundle's changelog entries are sanitized but the individual changelog files are unchanged.
 :::
 
 If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can also configure link visibility in the [changelog directive](/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.
