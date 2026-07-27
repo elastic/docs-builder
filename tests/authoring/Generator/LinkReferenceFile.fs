@@ -829,13 +829,25 @@ Through various means $$$including-this-inline-syntax$$$
     "testing/redirects/second-page.md": {
       "to": "index.md"
     },
-    "testing/redirects/third-page.md": {
-      "anchors": {
-        "removed-anchor": null
-      },
-      "to": "testing/redirects/third-page.md"
-    },
     "testing/redirects/5th-page.md": {
+      "to": "index.md"
+    },
+    "testing/release-notes/index.md": {
+      "to": "index.md"
+    },
+    "testing/release-notes/highlights.md": {
+      "to": "index.md"
+    },
+    "testing/release-notes/breaking-changes.md": {
+      "to": "index.md"
+    },
+    "testing/release-notes/deprecations.md": {
+      "to": "index.md"
+    },
+    "testing/release-notes/known-issues.md": {
+      "to": "index.md"
+    },
+    "testing/release-notes-all/index.md": {
       "to": "index.md"
     },
     "testing/redirects/4th-page.md": {
@@ -883,23 +895,11 @@ Through various means $$$including-this-inline-syntax$$$
         }
       ]
     },
-    "testing/release-notes/index.md": {
-      "to": "index.md"
-    },
-    "testing/release-notes/highlights.md": {
-      "to": "index.md"
-    },
-    "testing/release-notes/breaking-changes.md": {
-      "to": "index.md"
-    },
-    "testing/release-notes/deprecations.md": {
-      "to": "index.md"
-    },
-    "testing/release-notes/known-issues.md": {
-      "to": "index.md"
-    },
-    "testing/release-notes-all/index.md": {
-      "to": "index.md"
+    "testing/redirects/third-page.md": {
+      "anchors": {
+        "removed-anchor": null
+      },
+      "to": "testing/redirects/third-page.md"
     }
   }
 }"""

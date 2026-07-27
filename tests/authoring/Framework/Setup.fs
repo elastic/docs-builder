@@ -165,8 +165,15 @@ navigation_title: Stub
             // Tests supply their own minimal pages; do not replace them with production content.
             if not (fileSystem.File.Exists destPath) then
                 let sourcePath = Path.Combine(repoRoot, "docs", normalized)
+                // For testing/* paths, also check docs-tests/ (strip the testing/ prefix)
+                let altSourcePath =
+                    if rel.StartsWith("testing/") then
+                        Path.Combine(repoRoot, "docs-tests", rel.Substring("testing/".Length).Replace('/', Path.DirectorySeparatorChar))
+                    else ""
 
                 if File.Exists sourcePath then
+                    fileSystem.AddFile(destPath, MockFileData(stubMarkdown))
+                elif altSourcePath <> "" && File.Exists altSourcePath then
                     fileSystem.AddFile(destPath, MockFileData(stubMarkdown)))
 
 [<AutoOpen>]
@@ -204,7 +211,20 @@ type Setup =
     ) =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
         let redirectYaml = File.ReadAllText(Path.Combine(root.FullName, "_redirects.yml"))
-        RedirectMockTargets.copyTargetsFromRealDocsIntoMock fileSystem redirectYaml root.FullName
+        // Read the test-specific complex redirect entries from docs-tests/ and merge them
+        // into the mock's _redirects.yml. The real _redirects.yml only has simple testing/* → index.md
+        // entries that the assembler can validate; the complex entries (with anchors, many:, etc.)
+        // are needed by cross-link redirect tests but can't exist in the real file because
+        // their targets (testing/redirects/*.md) don't exist on disk.
+        let testRedirectYaml = File.ReadAllText(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "redirects.yml"))
+        // Strip the 'redirects:' key from the test file and append entries under the real file's redirects: key
+        let testEntries = testRedirectYaml.Replace("redirects:\n", "").Replace("'redirects/", "'testing/redirects/").Replace("\"redirects/", "\"testing/redirects/").Replace("!redirects/", "!testing/redirects/")
+        let mergedRedirectYaml = redirectYaml.TrimEnd() + "\n" + testEntries
+        // Write both _redirects.yml and redirects.yml so the correct one is found
+        // regardless of whether the random docset name is _docset.yml or docset.yml
+        fileSystem.AddFile(Path.Combine(root.FullName, "_redirects.yml"), MockFileData(mergedRedirectYaml))
+        fileSystem.AddFile(Path.Combine(root.FullName, "redirects.yml"), MockFileData(mergedRedirectYaml))
+        RedirectMockTargets.copyTargetsFromRealDocsIntoMock fileSystem mergedRedirectYaml root.FullName
 
         let yaml = new StringWriter();
         yaml.WriteLine("cross_links:")
@@ -256,7 +276,7 @@ type Setup =
         fileSystem.AddFile(Path.Combine(root.FullName, name), MockFileData(yaml.ToString()))
 
         let redirectsName = if name.StartsWith '_' then "_redirects.yml" else "redirects.yml"
-        fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(redirectYaml))
+        fileSystem.AddFile(Path.Combine(root.FullName, redirectsName), MockFileData(mergedRedirectYaml))
 
     static member Generator (files: TestFile seq) (options: SetupOptions option) : Task<GeneratorResults> =
         let options = options |> Option.defaultValue SetupOptions.Empty

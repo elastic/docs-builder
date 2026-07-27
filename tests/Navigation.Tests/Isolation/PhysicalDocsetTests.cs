@@ -109,11 +109,11 @@ public class PhysicalDocsetTests(ITestOutputHelper output)
 		}
 		fileRefs.Count.Should().Be(fileRefs.Distinct().Count(), "should not have duplicate file references");
 
-		// Find development folder — it's now a regular folder, not a nested toc
-		var developmentFolder = navigation.NavigationItems.OfType<FolderNavigation<TestDocumentationFile>>()
+		// development is a toc: reference
+		var developmentToc = navigation.NavigationItems.OfType<TableOfContentsNavigation<TestDocumentationFile>>()
 			.FirstOrDefault(t => t.Url == "/development");
-		developmentFolder.Should().NotBeNull();
-		developmentFolder.NavigationItems.Should().NotBeEmpty();
+		developmentToc.Should().NotBeNull();
+		developmentToc.NavigationItems.Should().NotBeEmpty();
 	}
 
 	[Fact]

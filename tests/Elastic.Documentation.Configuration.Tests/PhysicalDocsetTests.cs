@@ -83,7 +83,10 @@ public class PhysicalDocsetTests
 		folderNames.Should().Contain("documentation");
 		folderNames.Should().Contain("data");
 		folderNames.Should().Contain("integrations");
-		folderNames.Should().Contain("development");
+
+		// development is a toc: reference, not a folder
+		var tocRefs = docSet.TableOfContents.OfType<IsolatedTableOfContentsRef>().Select(t => t.PathRelativeToDocumentationSet).ToList();
+		tocRefs.Should().Contain("development");
 
 		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().FirstOrDefault();
 		cliRef.Should().NotBeNull();
