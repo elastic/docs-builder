@@ -145,7 +145,8 @@ redirects:
 
   # ── cli/ installation moved to getting-started/ ─────────────────
   'cli/installation.md': 'getting-started/installation.md'
-  'cli/shell-autocompletion.md': 'getting-started/shell-autocompletion.md'
+  'cli/shell-autocompletion.md': 'getting-started/installation.md'
+  'getting-started/shell-autocompletion.md': 'getting-started/installation.md'
 
   # ── Older schema-support redirects (chain through new paths) ────
   'cli/cli-reference-how-to.md': 'data/cli-schema/index.md'
