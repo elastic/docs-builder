@@ -41,7 +41,7 @@ my-repo/
 
 ## Configuration
 
-The `docset.yml` file controls how the documentation set is structured and built. See [Content Set Configuration](../configure/content-set/index.md) for complete configuration details.
+The `docset.yml` file controls how the documentation set is structured and built. See [docset.yml format](../configure/content-set/docset-format.md) for the complete field reference, and [Content Set Configuration](../configure/content-set/index.md) for navigation and other details.
 
 ## Related concepts
 
