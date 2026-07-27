@@ -46,6 +46,6 @@ The isolated build has `/api/overview` and `/guides/quickstart`. After assembly,
 
 ## Relationship to isolated URLs
 
-The [URL structure in isolated builds](../../isolated/urls.md) is the foundation — file position relative to `docset.yml` determines the base path. The assembler prepends `path_prefix` without changing any of the internal structure.
+The [URL structure in isolated builds](../isolated/urls.md) is the foundation — file position relative to `docset.yml` determines the base path. The assembler prepends `path_prefix` without changing any of the internal structure.
 
 This means content authored for isolated preview renders at the same relative paths when assembled — only the prefix changes.

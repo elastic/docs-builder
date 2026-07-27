@@ -8,15 +8,15 @@ Welcome to {{dbuild}}! This guide helps you find the right starting point based 
 
 ## What do you want to do?
 
-:::{page-card} [Build documentation for a public site](../documentation/assembler.md)
+:::{page-card} [Build documentation for a public site](../documentation/assembler/index.md)
 Use assembler builds to compose a unified documentation website with global navigation across multiple repositories.
 :::
 
-:::{page-card} [Set up a knowledge base](../documentation/codex.md)
+:::{page-card} [Set up a knowledge base](../documentation/codex/index.md)
 Use codex builds to create a knowledge base environment where multiple repositories publish independently.
 :::
 
-:::{page-card} [Preview docs locally](../documentation/isolated.md)
+:::{page-card} [Preview docs locally](../documentation/isolated/index.md)
 Run an isolated build to preview a single repository's documentation during development.
 :::
 

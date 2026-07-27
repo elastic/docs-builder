@@ -51,7 +51,7 @@ toc:
   - file: quickstart.md
 ```
 
-See [navigation configuration](../documentation/isolated/configure/content-set/navigation.md) for the complete reference.
+See [navigation configuration](../documentation/isolated/navigation.md) for the complete reference.
 
 ## Linking to pages
 
@@ -97,5 +97,5 @@ Only list repositories you actually link to. Each entry adds a link-index fetch 
 ## What's next
 
 - **[Serve and preview](./serve.md)** — preview your docs locally with hot reload
-- **[Content set configuration](../documentation/isolated/configure/content-set/index.md)** — full docset.yml reference
+- **[Content set configuration](../documentation/isolated/configure/index.md)** — full docset.yml reference
 - **[Links syntax](../syntax/links.md)** — complete link syntax including anchors and titles

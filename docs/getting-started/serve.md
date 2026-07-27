@@ -21,7 +21,7 @@ This starts a local server at [http://localhost:3000](http://localhost:3000). Op
 The development server watches your documentation directory and reflects changes instantly — no manual rebuild needed. This applies to:
 
 - **Content changes** — editing, adding, or deleting Markdown files
-- **Navigation changes** — modifying `docset.yml` or `toc.yml` (see [content set configuration](../documentation/isolated/configure/content-set/index.md) and [navigation](../documentation/isolated/configure/content-set/navigation.md))
+- **Navigation changes** — modifying `docset.yml` or `toc.yml` (see [content set configuration](../documentation/isolated/configure/index.md) and [navigation](../documentation/isolated/navigation.md))
 - **File moves** — renaming or relocating files within your docs tree
 - **Configuration changes** — updating frontmatter, substitutions, or other `docset.yml` settings
 

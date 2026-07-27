@@ -68,7 +68,7 @@ references:
 
 ### Branching strategy
 
-How you add a reference repository depends on its [branching strategy](../content-sources.md#branching-strategies).
+How you add a reference repository depends on its [branching strategy](../environments.md#branching-strategies).
 
 #### Continuous deployment repository
 

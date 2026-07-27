@@ -13,7 +13,7 @@ Follow these instructions to add a new docs repository.
 The new docs repository needs to satisfy these requirements:
 
 - The repository must have a `docs` folder in the root.
-- The `docs` folder must contain a valid [`docset.yml` file](../configure/content-set/navigation.md) and Markdown files.
+- The `docs` folder must contain a valid [`docset.yml` file](../isolated/configure/index.md) and Markdown files.
 - Markdown files within the `docs` folder that follow the V3 format. Refer to [Syntax](../../syntax/index.md).
 - The repository must be within the Elastic organization on `GitHub` and public.
 
@@ -46,7 +46,7 @@ Then, successfully run a docs build on the `main` branch. This is a requirement.
 
 ::::{step} Add the repository to the assembler and navigation configs
 
-Edit the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) file to add the repository. Refer to [assembler.yml](../configure/site/content.md) for more information.
+Edit the [`assembler.yml`](https://github.com/elastic/docs-builder/blob/main/config/assembler.yml) file to add the repository. Refer to [assembler.yml](./configure/index.md) for more information.
 
 For example, to add the `elastic/yadda-docs` repository:
 
@@ -56,10 +56,10 @@ references:
 ```
 
 :::{tip}
-In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](branching-strategy.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
+In this file, you can optionally specify custom branches to deploy docs from, depending on your preferred [branching strategy](./environments.md). You might want to change your branching strategy so you can have more control over when content added for a specific release is published.
 :::
 
-Then, edit the [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml) file to add the repository to the navigation. Refer to [navigation.yml](../configure/site/navigation.md) for more information.
+Then, edit the [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml) file to add the repository to the navigation. Refer to [navigation.yml](./navigation.md) for more information.
 
 For example, to add the `elastic/yadda-docs` repository under **Reference**:
 
@@ -80,7 +80,7 @@ For example, to add the `elastic/yadda-docs` repository under **Reference**:
 
 ::::{step} (Optional) Add a new version scheme
 
-If you're adding a product with a new versioning scheme, edit the [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml) file to add the versioning scheme to the build. Refer to [navigation.yml](../configure/site/versions.md) for more information.
+If you're adding a product with a new versioning scheme, edit the [`versions.yml`](https://github.com/elastic/docs-builder/blob/main/config/versions.yml) file to add the versioning scheme to the build. Refer to [versions.yml](/documentation/catalog/versions.md) for more information.
 
 For example, to add version 13.5 of yadda-docs:
 

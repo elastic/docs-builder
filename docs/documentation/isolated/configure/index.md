@@ -6,7 +6,7 @@ navigation_title: Configuration
 
 The `docset.yml` file is the configuration file for a documentation set. At minimum, a documentation set needs a `docset.yml` and an `index.md` in the same folder.
 
-For an overview of navigation concepts and common patterns, see [Navigation](../../navigation.md).
+For an overview of navigation concepts and common patterns, see [Navigation](../navigation.md).
 
 ## `project`
 
@@ -162,7 +162,7 @@ See [API Explorer](/data/openapi/api-explorer.md) for full details.
 
 ## `cta`
 
-Defines named call-to-action templates for the right-hand sidebar. See [CTA](../../cta.md).
+Defines named call-to-action templates for the right-hand sidebar. See [CTA](../cta.md).
 
 ## `suppress`
 

@@ -6,7 +6,7 @@ navigation_title: Navigation
 
 Navigation in {{dbuild}} is defined through the `toc:` section in your `docset.yml` or in separate `toc.yml` files. The table of contents controls which pages appear in the sidebar and in what order.
 
-For the complete reference of all `toc:` keys, see the [docset.yml reference](./configure/content-set/index.md).
+For the complete reference of all `toc:` keys, see the [docset.yml reference](./configure/index.md).
 
 ## Basic structure
 

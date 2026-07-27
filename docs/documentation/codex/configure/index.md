@@ -4,7 +4,7 @@ navigation_title: Configuration
 
 # Configuration
 
-Codex builds require minimal configuration beyond the standard [docset.yml](../../isolated/configure/content-set/index.md) used by all build modes.
+Codex builds require minimal configuration beyond the standard [docset.yml](../../isolated/configure/index.md) used by all build modes.
 
 ## environment.yml
 

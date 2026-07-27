@@ -12,9 +12,9 @@ docs-builder is Elastic's distributed documentation platform. It processes Markd
 
 docs-builder builds documentation across many repositories independently, then assembles them into unified experiences. There are three build modes:
 
-- **[Assembler builds](./documentation/assembler.md)** — Compose a global navigation over many repositories to produce a unified documentation site. Powers sites like [elastic.co/docs](https://www.elastic.co/docs/).
-- **[Codex builds](./documentation/codex.md)** — Create knowledge base environments where repositories publish independently at `/r/<repo>`, optionally grouped under `/g/<group>`.
-- **[Isolated builds](./documentation/isolated.md)** — Build a single repository's docs locally or as a PR preview.
+- **[Assembler builds](./documentation/assembler/index.md)** — Compose a global navigation over many repositories to produce a unified documentation site. Powers sites like [elastic.co/docs](https://www.elastic.co/docs/).
+- **[Codex builds](./documentation/codex/index.md)** — Create knowledge base environments where repositories publish independently at `/r/<repo>`, optionally grouped under `/g/<group>`.
+- **[Isolated builds](./documentation/isolated/index.md)** — Build a single repository's docs locally or as a PR preview.
 
 Learn more about the [distributed documentation model](./documentation/index.md).
 
@@ -48,8 +48,8 @@ New to docs-builder? Start here:
 ## Authoring & reference
 
 - **[Syntax reference](./syntax/index.md)** — Markdown syntax with MyST directives and roles.
-- **[Configuration](./documentation/configure/index.md)** — Site-level, content-set, and page-level configuration.
-- **[How-to guides](./documentation/how-to/index.md)** — Guides for managing files, repositories, and releases.
+- **[Configuration](./documentation/isolated/configure/index.md)** — Site-level, content-set, and page-level configuration.
+- **[How-to guides](./documentation/isolated/index.md)** — Guides for managing files, repositories, and releases.
 - **[CLI reference](./cli/index.md)** — All docs-builder commands and options.
 
 ## Development

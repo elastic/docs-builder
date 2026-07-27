@@ -91,8 +91,8 @@ When `branding:` is present, all Elastic-specific chrome is suppressed — the s
 
 ## Assembler and codex builds
 
-Getting a repository onboarded to an [assembler build](../documentation/assembler.md) or a [codex build](../documentation/codex.md) involves additional configuration and coordination with the documentation team. These build modes are covered in their respective sections:
+Getting a repository onboarded to an [assembler build](../documentation/assembler/index.md) or a [codex build](../documentation/codex/index.md) involves additional configuration and coordination with the documentation team. These build modes are covered in their respective sections:
 
-- **[Assembler builds](../documentation/assembler.md)** — for public documentation sites with global navigation
-- **[Codex builds](../documentation/codex.md)** — for knowledge base environments
-- **[Add a repository to the docs](../documentation/how-to/add-repo.md)** — step-by-step guide for onboarding to the assembler
+- **[Assembler builds](../documentation/assembler/index.md)** — for public documentation sites with global navigation
+- **[Codex builds](../documentation/codex/index.md)** — for knowledge base environments
+- **[Add a repository to the docs](../documentation/assembler/add-repo.md)** — step-by-step guide for onboarding to the assembler
