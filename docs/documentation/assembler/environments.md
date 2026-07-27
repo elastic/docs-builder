@@ -36,24 +36,21 @@ environments:
 
 ## Content sources
 
-A **content source** defines which git ref (branch or tag) a repository publishes from. There are two phases:
+A **content source** defines which git ref (branch or tag) a repository publishes from. Each repository in `assembler.yml` declares its own phases:
 
-| Phase | Description |
-|-------|-------------|
-| `current` | The actively published documentation. Used by production. |
-| `next` | Upcoming documentation. Used by edge/preview environments. |
+| Phase | Description | Default |
+|-------|-------------|---------|
+| `current` | The actively published documentation. Used by production. | `main` |
+| `next` | Upcoming documentation. Used by edge/preview environments. | `main` |
 
-The `shared_configuration` section in `assembler.yml` can define version anchors that map phases to specific values:
+By default, both phases point to `main` — this is the [continuous deployment](#continuous-deployment-default) workflow. Repositories that need to publish from a version branch can override these individually:
 
 ```yaml
-shared_configuration:
-  stack: &stack
-    current: 9.0
-    next: 9.1
-    edge: main
+references:
+  elasticsearch:
+    current: "9.0"
+    next: main
 ```
-
-Individual repositories then reference these phases in their configuration.
 
 ## Branching strategies
 
