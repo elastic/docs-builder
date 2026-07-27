@@ -251,134 +251,11 @@ public class ChangelogRemoveTests : ChangelogTestBase
 	}
 
 	// ------------------------------------------------------------------
-	// Bundle dependency checks
+	// Bundles never gate removal (bundles are self-contained)
 	// ------------------------------------------------------------------
 
 	[Fact]
-	public async Task Remove_WhenReferencedByUnresolvedBundle_Blocks()
-	{
-		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
-
-		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
-		FileSystem.Directory.CreateDirectory(bundlesDir);
-		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
-		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(bundlesDir, "9.3.0.yaml"),
-			// language=yaml
-			$"""
-			products:
-			- product: elasticsearch
-			  target: 9.3.0
-			entries:
-			- file:
-			    name: 1001-es-feature.yaml
-			    checksum: {checksum}
-			""",
-			TestContext.Current.CancellationToken
-		);
-
-		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
-
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		result.Should().BeFalse("Command should be blocked when a referenced bundle exists");
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("1001-es-feature.yaml") &&
-			d.Message.Contains("unresolved bundle"));
-		FileExists("1001-es-feature.yaml").Should().BeTrue("File must not be deleted when blocked");
-	}
-
-	[Fact]
-	public async Task Remove_WhenExcludedByAmendBundle_Proceeds()
-	{
-		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
-
-		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
-		FileSystem.Directory.CreateDirectory(bundlesDir);
-		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
-		var bundlePath = FileSystem.Path.Join(bundlesDir, "9.3.0.yaml");
-		await FileSystem.File.WriteAllTextAsync(
-			bundlePath,
-			// language=yaml
-			$"""
-			products:
-			- product: elasticsearch
-			  target: 9.3.0
-			entries:
-			- file:
-			    name: 1001-es-feature.yaml
-			    checksum: {checksum}
-			""",
-			TestContext.Current.CancellationToken
-		);
-
-		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(bundlesDir, "9.3.0.amend-1.yaml"),
-			// language=yaml
-			$"""
-			exclude-entries:
-			- file:
-			    name: 1001-es-feature.yaml
-			    checksum: {checksum}
-			""",
-			TestContext.Current.CancellationToken
-		);
-
-		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
-
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		result.Should().BeTrue("Amend exclusion should remove bundle dependency");
-		Collector.Errors.Should().Be(0);
-		FileExists("1001-es-feature.yaml").Should().BeFalse();
-	}
-
-	[Fact]
-	public async Task Remove_WhenCorruptAmendBundle_StillBlocksFromParentReference()
-	{
-		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
-
-		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
-		FileSystem.Directory.CreateDirectory(bundlesDir);
-		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
-		var bundlePath = FileSystem.Path.Join(bundlesDir, "9.3.0.yaml");
-		await FileSystem.File.WriteAllTextAsync(
-			bundlePath,
-			// language=yaml
-			$"""
-			products:
-			- product: elasticsearch
-			  target: 9.3.0
-			entries:
-			- file:
-			    name: 1001-es-feature.yaml
-			    checksum: {checksum}
-			""",
-			TestContext.Current.CancellationToken
-		);
-
-		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(bundlesDir, "9.3.0.amend-1.yaml"),
-			"exclude-entries:\n  - file: [invalid yaml",
-			TestContext.Current.CancellationToken
-		);
-
-		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
-
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		result.Should().BeFalse("Parent bundle reference should block deletion when amend file is corrupt");
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("1001-es-feature.yaml") &&
-			d.Message.Contains("unresolved bundle"));
-		FileExists("1001-es-feature.yaml").Should().BeTrue("File must not be deleted when parent still references it");
-	}
-
-	[Fact]
-	public async Task Remove_WhenReferencedByUnresolvedBundle_WithForce_Proceeds()
+	public async Task Remove_WhenBundleCarriesFileProvenance_DeletesWithoutGate()
 	{
 		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
 
@@ -393,49 +270,14 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			- product: elasticsearch
 			  target: 9.3.0
 			entries:
-			- file:
-			    name: 1001-es-feature.yaml
-			    checksum: {checksum}
-			""",
-			TestContext.Current.CancellationToken
-		);
-
-		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true, Force = true };
-
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		result.Should().BeTrue("--force should allow deletion despite dependency");
-		Collector.Errors.Should().Be(0, "With --force, errors become warnings");
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("1001-es-feature.yaml"));
-		FileExists("1001-es-feature.yaml").Should().BeFalse("File should be deleted with --force");
-	}
-
-	[Fact]
-	public async Task Remove_WhenReferencedByResolvedBundle_Proceeds()
-	{
-		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
-
-		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
-		FileSystem.Directory.CreateDirectory(bundlesDir);
-
-		// Bundle has ONLY inline (resolved) entries — no file references
-		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(bundlesDir, "9.3.0.yaml"),
-			// language=yaml
-			"""
-			products:
-			- product: elasticsearch
-			  target: 9.3.0
-			entries:
-			- title: Already resolved entry
+			- title: Elasticsearch feature
 			  type: feature
 			  products:
 			  - product: elasticsearch
 			    target: 9.3.0
-			  prs:
-			  - https://github.com/elastic/elasticsearch/pull/999
+			  file:
+			    name: 1001-es-feature.yaml
+			    checksum: {checksum}
 			""",
 			TestContext.Current.CancellationToken
 		);
@@ -444,98 +286,9 @@ public class ChangelogRemoveTests : ChangelogTestBase
 
 		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
 
-		result.Should().BeTrue("Resolved bundles do not block removal");
+		result.Should().BeTrue("bundles are self-contained; removal is never blocked by them");
 		Collector.Errors.Should().Be(0);
 		FileExists("1001-es-feature.yaml").Should().BeFalse("File should be deleted");
-	}
-
-	[Fact]
-	public async Task Remove_WithNoBundlesFound_Proceeds()
-	{
-		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
-		// No bundles directory created — dependency check is skipped
-
-		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true };
-
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		result.Should().BeTrue("Removal should proceed when no bundles are found");
-		Collector.Errors.Should().Be(0);
-		FileExists("1001-es-feature.yaml").Should().BeFalse("File should be deleted");
-	}
-
-	[Fact]
-	public async Task Remove_WithBundlesDirOverride_UsesSpecifiedPath()
-	{
-		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
-
-		// Create a bundles dir in a custom location
-		var customBundlesDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(customBundlesDir);
-		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
-		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(customBundlesDir, "9.3.0.yaml"),
-			// language=yaml
-			$"""
-			products:
-			- product: elasticsearch
-			  target: 9.3.0
-			entries:
-			- file:
-			    name: 1001-es-feature.yaml
-			    checksum: {checksum}
-			""",
-			TestContext.Current.CancellationToken
-		);
-
-		var input = new ChangelogRemoveArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			BundlesDir = customBundlesDir
-		};
-
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		result.Should().BeFalse("Custom bundles dir should be scanned and dependency found");
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("1001-es-feature.yaml"));
-	}
-
-	[Fact]
-	public async Task Remove_WithDryRun_ShowsDependencyConflicts()
-	{
-		await WriteFile("1001-es-feature.yaml", ElasticsearchFeatureYaml);
-
-		var bundlesDir = FileSystem.Path.Join(_changelogDir, "bundles");
-		FileSystem.Directory.CreateDirectory(bundlesDir);
-		var checksum = ComputeSha1(ElasticsearchFeatureYaml);
-		await FileSystem.File.WriteAllTextAsync(
-			FileSystem.Path.Join(bundlesDir, "9.3.0.yaml"),
-			// language=yaml
-			$"""
-			products:
-			- product: elasticsearch
-			  target: 9.3.0
-			entries:
-			- file:
-			    name: 1001-es-feature.yaml
-			    checksum: {checksum}
-			""",
-			TestContext.Current.CancellationToken
-		);
-
-		// Dry-run WITH dependency — should report error but not delete
-		var input = new ChangelogRemoveArguments { Directory = _changelogDir, All = true, DryRun = true };
-
-		var result = await Service.RemoveChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		result.Should().BeFalse("Dependency conflict should still block dry-run result");
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("1001-es-feature.yaml"));
-		FileExists("1001-es-feature.yaml").Should().BeTrue("Dry-run must not delete files");
 	}
 
 	// ------------------------------------------------------------------

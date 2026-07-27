@@ -2,14 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using System.Linq;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
@@ -36,8 +34,6 @@ public record ChangelogRemoveArguments
 	public string? Owner { get; init; }
 	public string? Repo { get; init; }
 	public bool DryRun { get; init; }
-	public string? BundlesDir { get; init; }
-	public bool Force { get; init; }
 	public string? Config { get; init; }
 
 	/// <summary>Profile name from <c>bundle.profiles</c> in the changelog configuration.</summary>
@@ -58,11 +54,6 @@ public record ChangelogRemoveArguments
 	/// </summary>
 	public string? Report { get; init; }
 }
-
-/// <summary>
-/// A discovered dependency between a changelog file and the bundle(s) that reference it.
-/// </summary>
-public record BundleDependency(string ChangelogFile, string BundleFile);
 
 /// <summary>
 /// Service for removing changelog files based on the same filter options as <see cref="ChangelogBundlingService"/>.
@@ -212,31 +203,6 @@ public class ChangelogRemoveService(
 				.Select(e => e.FilePath)
 				.ToList();
 
-			// Check bundle dependencies before deleting
-			var dependencies = await FindBundleDependenciesAsync(input, filesToRemove, config, ctx);
-
-			if (dependencies.Count > 0)
-			{
-				foreach (var dep in dependencies)
-				{
-					var proceedHint = input.Force ? "" : " To proceed anyway, use --force.";
-					var message =
-						$"Changelog file '{_fileSystem.Path.GetFileName(dep.ChangelogFile)}' is referenced by " +
-						$"unresolved bundle '{dep.BundleFile}'." +
-						$" Removing it will cause the {{changelog}} directive to fail when loading that bundle." +
-						$" To make the bundle self-contained, re-run: docs-builder changelog bundle --resolve ..." +
-						$"{proceedHint}";
-
-					if (input.Force)
-						collector.EmitWarning(dep.ChangelogFile, message);
-					else
-						collector.EmitError(dep.ChangelogFile, message);
-				}
-
-				if (!input.Force)
-					return false;
-			}
-
 			if (input.DryRun)
 			{
 				_logger.LogInformation("[dry-run] Would remove {Count} changelog file(s):", filesToRemove.Count);
@@ -349,160 +315,4 @@ public class ChangelogRemoveService(
 		};
 	}
 
-	/// <summary>
-	/// Discovers which files to be removed are referenced by unresolved bundles.
-	/// Bundle locations are discovered automatically unless overridden by <see cref="ChangelogRemoveArguments.BundlesDir"/>.
-	/// </summary>
-	private async Task<IReadOnlyList<BundleDependency>> FindBundleDependenciesAsync(
-		ChangelogRemoveArguments input,
-		IReadOnlyList<string> filesToRemove,
-		ChangelogConfiguration? config,
-		Cancel ctx)
-	{
-		var bundlesDir = ResolveBundlesDirectory(input, config);
-		if (bundlesDir is null)
-			return [];
-
-		var bundleFiles = _fileSystem.Directory
-			.GetFiles(bundlesDir, "*.yaml", SearchOption.AllDirectories)
-			.Concat(_fileSystem.Directory.GetFiles(bundlesDir, "*.yml", SearchOption.AllDirectories))
-			.ToList();
-
-		if (bundleFiles.Count == 0)
-			return [];
-
-		// Build a set of file names to remove (just basenames, since bundle entries store basenames)
-		var toRemoveNames = new HashSet<string>(
-			filesToRemove.Select(f => _fileSystem.Path.GetFileName(f)),
-			StringComparer.OrdinalIgnoreCase);
-
-		var dependencies = new List<BundleDependency>();
-
-		foreach (var bundleFile in bundleFiles.Where(file => !BundleAmendMerger.IsAmendFile(file)))
-		{
-			try
-			{
-				var content = await _fileSystem.File.ReadAllTextAsync(bundleFile, ctx);
-				var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
-
-				var amendPaths = ChangelogBundleAmendService.DiscoverAmendFiles(_fileSystem, bundleFile);
-				var amendBundles = new List<Bundle>();
-				foreach (var amendPath in amendPaths)
-				{
-					try
-					{
-						var amendContent = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
-						amendBundles.Add(ReleaseNotesSerialization.DeserializeBundle(amendContent));
-					}
-					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
-					{
-						_logger.LogWarning(ex,
-							"Could not parse amend file {AmendFile} for dependency check; using parent bundle entries only",
-							amendPath);
-					}
-				}
-
-				var effectiveEntries = BundleAmendMerger.MergeEntries(bundle.Entries, amendBundles);
-
-				// Only treat as unresolved when the entry would need to load from file.
-				// Resolved entries have inline data (Title+Type) and don't need the file even if they have a File block.
-				var entryFileNames = effectiveEntries
-					.Where(entry =>
-						!string.IsNullOrWhiteSpace(entry.File?.Name) &&
-						(string.IsNullOrWhiteSpace(entry.Title) || entry.Type == null))
-					.Select(entry => NormalizeEntryFileName(entry.File!.Name));
-
-				foreach (var entryFileName in entryFileNames.Where(entryFileName => toRemoveNames.Contains(entryFileName)))
-				{
-					// bundle entry.File.Name is relative to the changelog directory (parent of bundles dir)
-					// Normalize to just the base filename for comparison
-
-					// Find the full path from filesToRemove that matches this entry
-					var matchingFile = filesToRemove
-						.FirstOrDefault(f => string.Equals(
-							_fileSystem.Path.GetFileName(f),
-							entryFileName,
-							StringComparison.OrdinalIgnoreCase));
-
-					if (matchingFile is not null)
-						dependencies.Add(new BundleDependency(matchingFile, bundleFile));
-				}
-			}
-			catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
-			{
-				_logger.LogWarning(ex, "Could not parse bundle file {BundleFile} for dependency check", bundleFile);
-			}
-		}
-
-		return dependencies;
-	}
-
-	/// <summary>
-	/// Resolves the bundles directory using: explicit override, then config, then fallbacks.
-	/// Returns null if no bundles directory can be found.
-	/// </summary>
-	private string? ResolveBundlesDirectory(ChangelogRemoveArguments input, ChangelogConfiguration? config)
-	{
-		// 1. Explicit override
-		if (!string.IsNullOrWhiteSpace(input.BundlesDir))
-		{
-			if (_fileSystem.Directory.Exists(input.BundlesDir))
-				return input.BundlesDir;
-			_logger.LogWarning("Specified --bundles-dir '{BundlesDir}' does not exist, skipping dependency check", input.BundlesDir);
-			return null;
-		}
-
-		// 2. Config bundle.output_directory (resolve relative paths against config file location)
-		var outputDir = config?.Bundle?.OutputDirectory;
-		if (!string.IsNullOrWhiteSpace(outputDir))
-		{
-			var resolvedOutputDir = ResolveOutputDirectory(outputDir, input.Config);
-			if (_fileSystem.Directory.Exists(resolvedOutputDir))
-				return resolvedOutputDir;
-		}
-
-		// 3. {directory}/bundles
-		// Directory is guaranteed non-null at this point (ApplyConfigDefaults + ValidateInput).
-		var sibling = _fileSystem.Path.Join(input.Directory, "bundles");
-		if (_fileSystem.Directory.Exists(sibling))
-			return sibling;
-
-		// 4. {directory}/../bundles
-		var dirParent = _fileSystem.Path.GetDirectoryName(input.Directory);
-		if (!string.IsNullOrWhiteSpace(dirParent))
-		{
-			var parentBundles = _fileSystem.Path.Join(dirParent, "bundles");
-			if (_fileSystem.Directory.Exists(parentBundles))
-				return parentBundles;
-		}
-
-		return null;
-	}
-
-	private string ResolveOutputDirectory(string outputDirectory, string? configPath)
-	{
-		if (_fileSystem.Path.IsPathRooted(outputDirectory))
-			return outputDirectory;
-
-		if (string.IsNullOrWhiteSpace(configPath))
-			return _fileSystem.Path.GetFullPath(outputDirectory);
-
-		var configDir = _fileSystem.Path.GetDirectoryName(configPath);
-		if (string.IsNullOrWhiteSpace(configDir))
-			return _fileSystem.Path.GetFullPath(outputDirectory);
-
-		var repoRoot = _fileSystem.Path.GetDirectoryName(configDir);
-		if (string.IsNullOrWhiteSpace(repoRoot))
-			return _fileSystem.Path.GetFullPath(outputDirectory);
-
-		return _fileSystem.Path.GetFullPath(_fileSystem.Path.Join(repoRoot, outputDirectory));
-	}
-
-	private static string NormalizeEntryFileName(string entryFileName)
-	{
-		// Entry names can be paths like "subdir/file.yaml" — take just the file name for comparison
-		var normalized = entryFileName.Replace('\\', '/');
-		var slashIdx = normalized.LastIndexOf('/');
-		return slashIdx >= 0 ? normalized[(slashIdx + 1)..] : normalized;
-	}
 }

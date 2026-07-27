@@ -87,7 +87,7 @@ Stored at `bundle/{product}/registry.json` (bundle index) or `changelog/{org}/{r
 | `product` | Grouping identifier — the product for a bundle index (`bundle/{product}/…`) or the `{org}/{repo}/{branch}` prefix for a changelog-entry index (`changelog/{org}/{repo}/{branch}/…`). |
 | `generated_at` | UTC timestamp of the last regeneration. |
 | `bundles[].file` | Bundle file name, resolved at `bundle/{product}/{file}` (or entry file at `changelog/{org}/{repo}/{branch}/{file}` for the entry index). |
-| `bundles[].target` | Target version/date from the bundle's declaration of **this** product (may be null). |
+| `bundles[].target` | Target version/date from the bundle's declaration of **this** product (may be null). For an amend sidecar (`{name}.amend-{N}.yaml`) that declares no products itself (created by older docs-builder versions), the parent bundle's target is recorded when the parent file is available in the same upload run. |
 | `bundles[].etag` | See the ETag caveat below. |
 
 Bundles are sorted by `target` descending (newest first) with a deterministic tiebreak on
@@ -280,7 +280,9 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
   `hide-features` apply identically to CDN-sourced bundles.
 - **Version selection.** `:version:` renders a single target and works in both modes (shared match
   on registry `target` or bundle file name, see `ChangelogVersionMatch`). In CDN mode it filters the
-  prefetched bundles at render time.
+  prefetched bundles at render time. When the fetcher itself is asked for a single version, an amend
+  sidecar is additionally downloaded when its parent bundle matches, so amends published without
+  `products` (null registry `target`) still reach version-filtered consumers.
 - **Security.** The base URL is trusted configuration; the product and registry-supplied bundle
   file names are validated to single path segments so neither can traverse outside
   `bundle/{product}/`.

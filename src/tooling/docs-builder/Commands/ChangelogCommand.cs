@@ -544,7 +544,7 @@ internal sealed partial class ChangelogCommands(
 	/// <summary>Aggregate changelog entries matching a filter into a single bundle YAML.</summary>
 	/// <remarks>
 	/// <para><b>Profile-based commands</b> (<c>bundle &lt;profile&gt; &lt;version|report&gt; [report] [--plan]</c>): filters, paths, repo metadata,
-	/// resolve, description, hide-features, and release-date behaviour come from <c>changelog.yml</c>. Only <c>--plan</c> is supported
+	/// description, hide-features, and release-date behaviour come from <c>changelog.yml</c>. Only <c>--plan</c> is supported
 	/// alongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in
 	/// configuration instead. Config is auto-discovered from <c>./changelog.yml</c> or <c>./docs/changelog.yml</c>. Use
 	/// <c>bundle.release_dates</c> or <c>bundle.profiles.&lt;name&gt;.release_dates</c> to control auto-population;
@@ -574,7 +574,6 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
 	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.source: github_release</c>.</param>
-	/// <param name="resolve">Copy the contents of each changelog file into the entries array. Uses config <c>bundle.resolve</c> or defaults to false. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.resolve</c>.</param>
 	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>, and <c>cdn_url</c> when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions. Supported in profile-based commands.</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
@@ -602,7 +601,6 @@ internal sealed partial class ChangelogCommands(
 		string? releaseVersion = null,
 		string? repo = null,
 		string? report = null,
-		bool? resolve = null,
 		CancellationToken ct = default
 	)
 	{
@@ -689,8 +687,6 @@ internal sealed partial class ChangelogCommands(
 				forbidden.Add("--repo");
 			if (!string.IsNullOrWhiteSpace(owner))
 				forbidden.Add("--owner");
-			if (resolve.HasValue)
-				forbidden.Add("--resolve / --no-resolve");
 			if (hideFeatures is { Length: > 0 })
 				forbidden.Add("--hide-features");
 			if (config != null)
@@ -901,9 +897,6 @@ internal sealed partial class ChangelogCommands(
 			return 1;
 		}
 
-		// Determine resolve: CLI --no-resolve and --resolve override config. null = use config default.
-		var shouldResolve = resolve;
-
 		var allFeatureIdsForBundle = ExpandCommaSeparated(hideFeatures);
 
 		var input = new BundleChangelogsArguments
@@ -913,7 +906,6 @@ internal sealed partial class ChangelogCommands(
 			All = all,
 			InputProducts = inputProducts,
 			OutputProducts = outputProducts,
-			Resolve = shouldResolve,
 			Prs = allPrs.Count > 0 ? allPrs.ToArray() : null,
 			Issues = allIssues.Count > 0 ? allIssues.ToArray() : null,
 			Files = allFiles.Count > 0 ? allFiles.ToArray() : null,
@@ -940,19 +932,13 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Delete changelog entry files matching a filter.</summary>
-	/// <remarks>
-	/// Blocks when a file is referenced by an unresolved bundle to avoid breaking the <c>{changelog}</c>
-	/// directive in published documentation. Pass <c>--force</c> to override.
-	/// </remarks>
 	/// <param name="profile">Optional: Profile name from bundle.profiles in config (for example, "elasticsearch-release"). When specified, the second argument is the version or promotion report URL.</param>
 	/// <param name="profileArg">Optional: Version number or promotion report URL/path when using a profile (for example, "9.2.0" or "https://buildkite.../promotion-report.html")</param>
 	/// <param name="profileReport">Optional: Promotion report, URL list file, or changelog path list file when also providing a version. When provided, the second argument must be a version string and this is the filter source.</param>
 	/// <param name="all">Remove all changelogs in the directory. Exactly one filter option must be specified: --all, --products, --prs, --issues, --report, or --files.</param>
-	/// <param name="bundlesDir">Optional: Override the directory that is scanned for bundles during the dependency check. Auto-discovered from config or fallback paths when not specified.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="directory">Optional: Directory containing changelog YAML files. Uses config bundle.directory or defaults to current directory</param>
 	/// <param name="dryRun">Print the files that would be removed without deleting them. Valid in both profile and raw mode.</param>
-	/// <param name="force">Proceed with removal even when files are referenced by unresolved bundles. Emits warnings instead of errors for each dependency. Valid in both profile and raw mode.</param>
 	/// <param name="issues">Filter by issue URLs (comma-separated) or a path to a newline-delimited file containing fully-qualified GitHub issue URLs. Can be specified multiple times.</param>
 	/// <param name="files">Filter by changelog YAML paths (comma-separated), or a path to a newline-delimited file containing changelog paths. Can be specified multiple times. Not supported in profile-based commands; pass a path list file as a positional argument instead.</param>
 	/// <param name="owner">Optional: GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
@@ -970,11 +956,9 @@ internal sealed partial class ChangelogCommands(
 		[Argument] string? profileArg = null,
 		[Argument] string? profileReport = null,
 		bool all = false,
-		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? bundlesDir = null,
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
 		[DryRun] bool dryRun = false,
-		[ConfirmationSkip] bool force = false,
 		string[]? issues = null,
 		string[]? files = null,
 		string? owner = null,
@@ -1163,8 +1147,6 @@ internal sealed partial class ChangelogCommands(
 			Owner = owner,
 			Repo = repo,
 			DryRun = dryRun,
-			BundlesDir = bundlesDir?.FullName,
-			Force = force,
 			Config = config?.FullName,
 			Profile = isProfileMode ? profile : null,
 			ProfileArgument = isProfileMode ? profileArg : null,
@@ -1180,7 +1162,7 @@ internal sealed partial class ChangelogCommands(
 	}
 
 	/// <summary>Render one or more changelog bundles to Markdown or AsciiDoc.</summary>
-	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|changelog-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Use "hide-links" for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.</param>
+	/// <param name="input">Required: Bundle input(s) in format "bundle-file-path|repo|link-visibility" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be "hide-links" or "keep-links" (default). Use "hide-links" for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.</param>
 	/// <param name="config">Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'</param>
 	/// <param name="fileType">Optional: Output file type. Valid values: "markdown", "asciidoc", or "gfm". Defaults to "markdown"</param>
 	/// <param name="hideFeatures">Filter by feature IDs (comma-separated), or a path to a newline-delimited file containing feature IDs. Can be specified multiple times. Entries with matching feature-id values will be commented out in the output.</param>
@@ -1316,7 +1298,6 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="bundlePath">Required: Path to the original bundle file to amend</param>
 	/// <param name="add">Optional: Changelog YAML paths to add. Repeat <c>--add</c> or pass a comma-separated list in one value (for example, <c>--add "file1.yaml,file2.yaml"</c>). Supports tilde (~) expansion and relative paths.</param>
 	/// <param name="remove">Optional: Changelog YAML paths to exclude from the effective bundle. Repeat <c>--remove</c> or pass a comma-separated list in one value. Supports tilde (~) expansion and relative paths.</param>
-	/// <param name="resolve">Optional: When using <c>--add</c>, inline each added changelog's content in the amend file. Use <c>--no-resolve</c> to record file references only. When omitted, inferred from the parent bundle. Does not apply to <c>--remove</c>.</param>
 	/// <param name="force">Optional: When removing, match by file name even if the bundle checksum differs from the file on disk.</param>
 	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
 	[NoOptionsInjection]
@@ -1324,7 +1305,6 @@ internal sealed partial class ChangelogCommands(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo bundlePath,
 		string[]? add = null,
 		string[]? remove = null,
-		bool? resolve = null,
 		bool force = false,
 		bool dryRun = false,
 		CancellationToken ct = default
@@ -1358,7 +1338,6 @@ internal sealed partial class ChangelogCommands(
 			BundlePath = normalizedBundlePath,
 			AddFiles = normalizedAddFiles,
 			RemoveFiles = normalizedRemoveFiles,
-			Resolve = resolve,
 			Force = force,
 			DryRun = dryRun
 		};
