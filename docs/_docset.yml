@@ -148,8 +148,7 @@ toc:
           - folder: configure
             children:
               - file: index.md
-              - file: content.md
-              - file: content-sources.md
+          - file: content-sources.md
           - file: navigation.md
           - file: urls.md
           - folder: how-to
