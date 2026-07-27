@@ -7,4 +7,4 @@ If you cloned using a certain `--environment` you must also use that same `--env
 
 Builds all the documentation sets and assembles them into a complete documentation site ready to be deployed.
 
-It uses [the site configuration files](../../documentation/configure/site/index.md) to direct how the documentation sets should be assembled.
+It uses [the site configuration files](../../documentation/assembler/configure/site/index.md) to direct how the documentation sets should be assembled.

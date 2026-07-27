@@ -5,7 +5,7 @@ You can then set up a changelog configuration file to make the content workflow 
 
 ## Before you begin
 
-1. Ensure that your products exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Products that only need release notes (not public documentation) can be added with `features: { public-reference: false }`. For more information, refer to [Products](/documentation/configure/site/products.md).
+1. Ensure that your products exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). Products that only need release notes (not public documentation) can be added with `features: { public-reference: false }`. For more information, refer to [Products](/documentation/assembler/configure/site/products.md).
 
 1. Optional: Choose the GitHub labels that you'll use to automatically derive some changelog fields.
 

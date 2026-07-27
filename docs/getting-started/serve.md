@@ -21,7 +21,7 @@ This starts a local server at [http://localhost:3000](http://localhost:3000). Op
 The development server watches your documentation directory and reflects changes instantly — no manual rebuild needed. This applies to:
 
 - **Content changes** — editing, adding, or deleting Markdown files
-- **Navigation changes** — modifying `docset.yml` or `toc.yml` (see [content set configuration](../documentation/configure/content-set/index.md) and [navigation](../documentation/configure/content-set/navigation.md))
+- **Navigation changes** — modifying `docset.yml` or `toc.yml` (see [content set configuration](../documentation/isolated/configure/content-set/index.md) and [navigation](../documentation/isolated/configure/content-set/navigation.md))
 - **File moves** — renaming or relocating files within your docs tree
 - **Configuration changes** — updating frontmatter, substitutions, or other `docset.yml` settings
 
@@ -48,5 +48,5 @@ The HUD surfaces errors and warnings ahead of time — broken links, missing fil
 ## Tips
 
 - **Port conflicts** — if port 3000 is in use, pass `--port <number>` to pick a different one.
-- **Cross-link validation** — even in local serve mode, cross-repository links are validated against published link indexes. See [isolated builds](../documentation/isolated.md) for details.
+- **Cross-link validation** — even in local serve mode, cross-repository links are validated against published link indexes. See [isolated builds](../documentation/isolated/index.md) for details.
 - **API docs** — API Explorer content is generated on startup. Use `--skip-api` for faster iteration when you're not working on API reference pages.

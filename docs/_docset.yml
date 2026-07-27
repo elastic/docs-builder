@@ -122,46 +122,61 @@ toc:
   - folder: documentation
     children:
       - file: index.md
-      - file: assembler.md
-      - file: codex.md
-      - file: isolated.md
-      - folder: configure
+      - folder: isolated
         children:
           - file: index.md
-          - folder: site
+          - folder: configure
             children:
               - file: index.md
-              - file: content.md
-              - file: navigation.md
-              - file: products.md
-              - file: versions.md
-              - file: legacy-url-mappings.md
-              - file: synonyms.md
-          - folder: content-set
+              - folder: content-set
+                children:
+                  - file: index.md
+                  - file: file-structure.md
+                  - file: attributes.md
+                  - file: navigation.md
+                  - file: extensions.md
+                  - file: cta.md
+              - file: page.md
+          - hidden: how-to/cumulative-docs/index.md
+          - hidden: how-to/cumulative-docs/guidelines.md
+          - hidden: how-to/cumulative-docs/badge-placement.md
+          - hidden: how-to/cumulative-docs/example-scenarios.md
+          - hidden: how-to/cumulative-docs/reference.md
+          - folder: how-to
             children:
-              - file: index.md
-              - file: file-structure.md
-              - file: attributes.md
-              - file: navigation.md
-              - file: extensions.md
-              - file: cta.md
-          - file: page.md
+              - file: move.md
+              - file: redirects.md
+              - hidden: locally.md
+              - hidden: on-the-web.md
+      - folder: assembler
+        children:
+          - file: index.md
           - file: content-sources.md
-      - hidden: how-to/cumulative-docs/index.md
-      - hidden: how-to/cumulative-docs/guidelines.md
-      - hidden: how-to/cumulative-docs/badge-placement.md
-      - hidden: how-to/cumulative-docs/example-scenarios.md
-      - hidden: how-to/cumulative-docs/reference.md
-      - folder: how-to
+          - folder: configure
+            children:
+              - file: index.md
+              - folder: site
+                children:
+                  - file: index.md
+                  - file: content.md
+                  - file: navigation.md
+                  - file: products.md
+                  - file: versions.md
+                  - file: legacy-url-mappings.md
+                  - file: synonyms.md
+          - folder: how-to
+            children:
+              - file: add-repo.md
+              - file: branching-strategy.md
+              - file: release-new-version.md
+          - file: infrastructure.md
+      - folder: codex
         children:
           - file: index.md
-          - file: move.md
-          - file: redirects.md
-          - file: branching-strategy.md
-          - file: add-repo.md
-          - file: release-new-version.md
-          - hidden: locally.md
-          - hidden: on-the-web.md
+          - folder: configure
+            children:
+              - file: index.md
+          - file: infrastructure.md
 
   # Structured
   - folder: data

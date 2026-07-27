@@ -118,7 +118,7 @@ Add a `## Options` section to replace the generated description for specific fla
 
 : `--environment`
   The environment to target. Must match the environment used when cloning.
-  See [environments](../../documentation/configure/site/environments.md) for available values.
+  See [environments](../../documentation/assembler/configure/site/environments.md) for available values.
 
 : `--exporters`
   Comma-separated list of exporters to enable.
