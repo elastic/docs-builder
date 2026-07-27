@@ -160,8 +160,6 @@ toc:
                   - file: index.md
                   - file: content.md
                   - file: navigation.md
-                  - file: products.md
-                  - file: versions.md
                   - file: legacy-url-mappings.md
                   - file: synonyms.md
           - folder: how-to
@@ -177,6 +175,11 @@ toc:
             children:
               - file: index.md
           - file: infrastructure.md
+      - folder: catalog
+        children:
+          - file: index.md
+          - file: products.md
+          - file: versions.md
 
   # Structured
   - folder: data

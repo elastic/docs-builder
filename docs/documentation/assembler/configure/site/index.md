@@ -8,11 +8,11 @@ The assembler configuration files define how multiple repositories are combined 
 
 - [](./content.md) — build environments and repository sources
 - [](./navigation.md) — global navigation index (`navigation.yml`)
-- [](./versions.md) — global versioning schemes (`versions.yml`)
-- [](./products.md) — product catalog metadata (`products.yml`)
 - [](./legacy-url-mappings.md) — legacy version URL support
 - [](./synonyms.md) — search synonym configuration
 
+For product and versioning metadata, see the [Catalog](../../../catalog/index.md).
+
 ## Redirects
 
-Redirects are also configured at the site level. See [redirects](../../isolated/how-to/redirects.md) for more information.
+Redirects are also configured at the site level. See [redirects](../../../isolated/how-to/redirects.md) for more information.
