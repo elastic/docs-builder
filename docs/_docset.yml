@@ -132,10 +132,6 @@ toc:
           - folder: configure
             children:
               - file: index.md
-              - folder: content-set
-                children:
-                  - file: index.md
-              - file: page.md
           - hidden: how-to/cumulative-docs/index.md
           - hidden: how-to/cumulative-docs/guidelines.md
           - hidden: how-to/cumulative-docs/badge-placement.md
