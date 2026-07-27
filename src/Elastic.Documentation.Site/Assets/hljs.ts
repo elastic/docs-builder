@@ -11,60 +11,6 @@ export function toLanguageFn(mod: unknown): LanguageFn {
     return (typeof mod === 'function' ? mod : m.default) as LanguageFn
 }
 
-// Each entry lazily imports one highlight.js language module (or the esql plugin) so
-// grammars stay out of the entry chunk until a page or message contains code.
-const languageLoaders: Record<string, () => Promise<LanguageFn>> = {
-    asciidoc: () =>
-        import('highlight.js/lib/languages/asciidoc').then(toLanguageFn),
-    bash: () => import('highlight.js/lib/languages/bash').then(toLanguageFn),
-    c: () => import('highlight.js/lib/languages/c').then(toLanguageFn),
-    csharp: () =>
-        import('highlight.js/lib/languages/csharp').then(toLanguageFn),
-    css: () => import('highlight.js/lib/languages/css').then(toLanguageFn),
-    dockerfile: () =>
-        import('highlight.js/lib/languages/dockerfile').then(toLanguageFn),
-    dos: () => import('highlight.js/lib/languages/dos').then(toLanguageFn),
-    ebnf: () => import('highlight.js/lib/languages/ebnf').then(toLanguageFn),
-    esql: () => import('@elastic/highlightjs-esql').then(toLanguageFn),
-    go: () => import('highlight.js/lib/languages/go').then(toLanguageFn),
-    gradle: () =>
-        import('highlight.js/lib/languages/gradle').then(toLanguageFn),
-    groovy: () =>
-        import('highlight.js/lib/languages/groovy').then(toLanguageFn),
-    handlebars: () =>
-        import('highlight.js/lib/languages/handlebars').then(toLanguageFn),
-    http: () => import('highlight.js/lib/languages/http').then(toLanguageFn),
-    ini: () => import('highlight.js/lib/languages/ini').then(toLanguageFn),
-    java: () => import('highlight.js/lib/languages/java').then(toLanguageFn),
-    javascript: () =>
-        import('highlight.js/lib/languages/javascript').then(toLanguageFn),
-    json: () => import('highlight.js/lib/languages/json').then(toLanguageFn),
-    kotlin: () =>
-        import('highlight.js/lib/languages/kotlin').then(toLanguageFn),
-    markdown: () =>
-        import('highlight.js/lib/languages/markdown').then(toLanguageFn),
-    nginx: () => import('highlight.js/lib/languages/nginx').then(toLanguageFn),
-    php: () => import('highlight.js/lib/languages/php').then(toLanguageFn),
-    plaintext: () =>
-        import('highlight.js/lib/languages/plaintext').then(toLanguageFn),
-    powershell: () =>
-        import('highlight.js/lib/languages/powershell').then(toLanguageFn),
-    properties: () =>
-        import('highlight.js/lib/languages/properties').then(toLanguageFn),
-    python: () =>
-        import('highlight.js/lib/languages/python').then(toLanguageFn),
-    ruby: () => import('highlight.js/lib/languages/ruby').then(toLanguageFn),
-    rust: () => import('highlight.js/lib/languages/rust').then(toLanguageFn),
-    scala: () => import('highlight.js/lib/languages/scala').then(toLanguageFn),
-    shell: () => import('highlight.js/lib/languages/shell').then(toLanguageFn),
-    sql: () => import('highlight.js/lib/languages/sql').then(toLanguageFn),
-    swift: () => import('highlight.js/lib/languages/swift').then(toLanguageFn),
-    typescript: () =>
-        import('highlight.js/lib/languages/typescript').then(toLanguageFn),
-    xml: () => import('highlight.js/lib/languages/xml').then(toLanguageFn),
-    yaml: () => import('highlight.js/lib/languages/yaml').then(toLanguageFn),
-}
-
 const CODE_BLOCK_SELECTOR = 'pre code:not([data-highlighted])'
 
 let allLanguagesReady: Promise<void> | null = null
@@ -72,11 +18,10 @@ let allLanguagesReady: Promise<void> | null = null
 function ensureHighlightReady(): Promise<void> {
     if (allLanguagesReady) return allLanguagesReady
 
-    allLanguagesReady = Promise.all(
-        Object.entries(languageLoaders).map(async ([name, loader]) => {
-            hljs.registerLanguage(name, toLanguageFn(await loader()))
-        })
-    ).then(() => {
+    allLanguagesReady = import('./hljs-languages').then(({ languages }) => {
+        for (const [name, languageFn] of Object.entries(languages)) {
+            hljs.registerLanguage(name, languageFn)
+        }
         hljs.registerAliases(['sh'], { languageName: 'shell' })
     })
 
