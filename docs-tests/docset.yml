@@ -43,6 +43,7 @@ suppress:
 
 toc:
   - file: index.md
+  - toc: nested-toc
   - file: kibana-settings-yaml-samples.md
   - file: security-settings.md
   - file: req.md
