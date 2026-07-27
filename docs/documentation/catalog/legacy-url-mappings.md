@@ -3,7 +3,11 @@ navigation_title: 'legacy-url-mappings.yml'
 ---
 # Legacy URL mappings
 
-This [`legacy-url-mappings.yml`](https://github.com/elastic/docs-builder/blob/main/config/legacy-url-mappings.yml) file manages legacy URL patterns for Elastic documentation, mapping the path of each legacy build URL to a list of documentation versions. It ensures that users can easily find previous versions of our documentation.
+:::{warning}
+This is an Elastic-specific configuration generated from the AsciiDoc migration. It should not be edited manually and is not expected to exist for other deployments of {{dbuild}}.
+:::
+
+The [`legacy-url-mappings.yml`](https://github.com/elastic/docs-builder/blob/main/config/legacy-url-mappings.yml) file manages legacy URL patterns for Elastic documentation, mapping the path of each legacy build URL to a list of documentation versions. It ensures that users can easily find previous versions of our documentation.
 
 This example maps documentation that references `elastic.co/guide/en/elasticsearch/reference/ to Elastic Stack versioned URL paths:
 

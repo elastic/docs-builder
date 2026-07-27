@@ -154,7 +154,6 @@ toc:
                   - file: index.md
                   - file: content.md
                   - file: navigation.md
-                  - file: legacy-url-mappings.md
           - folder: how-to
             children:
               - file: add-repo.md
@@ -175,6 +174,7 @@ toc:
           - file: products.md
           - file: versions.md
           - file: synonyms.md
+          - file: legacy-url-mappings.md
 
   # Structured
   - folder: data
