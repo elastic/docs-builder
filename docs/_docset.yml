@@ -159,6 +159,8 @@ toc:
           - folder: configure
             children:
               - file: index.md
+          - file: navigation.md
+          - file: urls.md
           - file: infrastructure.md
       - file: redirects.md
       - folder: catalog
