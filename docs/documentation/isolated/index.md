@@ -19,4 +19,4 @@ An isolated build can be:
 
 ## Cross-link validation
 
-Even in isolated mode, cross-repository links are validated against published link indexes from the [link service](../../development/link-infrastructure.md), ensuring your cross-references are valid without needing to clone other repositories locally.
+Even in isolated mode, cross-repository links are validated against published link indexes from the [link service](../distributed-builds.md), ensuring your cross-references are valid without needing to clone other repositories locally.

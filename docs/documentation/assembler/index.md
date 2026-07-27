@@ -20,7 +20,7 @@ Each repository defines its own content and local table of contents via `docset.
 - **Global navigation** — a unified nav tree spanning all repositories, defined centrally
 - **Redirect controls** — tighter redirect management for public-facing sites
 - **Versioning** — support for versioned documentation across products
-- **Cross-repo linking** — validated links between repositories using the [link index](../../development/link-infrastructure.md)
+- **Cross-repo linking** — validated links between repositories using the [link index](../distributed-builds.md)
 
 ## CLI commands
 
@@ -40,4 +40,4 @@ docs-builder assembler build --local
 
 ## Architecture
 
-For a deeper dive into how assembler builds work internally, see the [building blocks](../../development/building-blocks.md) overview.
+For a deeper dive into how assembler builds work internally, see the [building blocks](../distributed-builds.md) overview.

@@ -32,4 +32,4 @@ All three build modes share the same [syntax](../syntax/index.md) foundations. A
 
 Cross-repository linking is what makes distributed builds possible. When a repository builds, it publishes a **link index** — a manifest of every page and anchor it contains. Other repositories validate their cross-links against these published indexes, ensuring references stay correct even though repositories build independently.
 
-Learn more about the [link infrastructure](../development/link-infrastructure.md).
+Learn more about the [link infrastructure](./distributed-builds.md).

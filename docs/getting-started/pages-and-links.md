@@ -88,7 +88,7 @@ cross_links:
   - docs-content
 ```
 
-This tells {{dbuild}} to fetch the [link index](../development/link-infrastructure.md) for each listed repository so it can validate your cross-links at build time — even during local development.
+This tells {{dbuild}} to fetch the [link index](../documentation/distributed-builds.md) for each listed repository so it can validate your cross-links at build time — even during local development.
 
 :::{tip}
 Only list repositories you actually link to. Each entry adds a link-index fetch during builds.

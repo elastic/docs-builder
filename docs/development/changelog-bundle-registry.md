@@ -25,7 +25,7 @@ Today the `{changelog}` directive only renders bundles that live in a folder ins
 docset (default `changelog/bundles/`). That requires every consuming repository to vendor
 a copy of the bundle YAML it wants to render.
 
-The link service ([link infrastructure](/development/link-infrastructure.md)) already demonstrates
+The link service ([link infrastructure](/documentation/distributed-builds.md)) already demonstrates
 the pattern we want: an S3 bucket fronted by CloudFront, publicly readable, with a small
 JSON index at a well-known key. We apply the same approach to changelog bundles so a docset
 can render another product's release notes by pointing the directive at the CDN — no vendored
@@ -310,4 +310,4 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
 
 - [Changelog directive](/syntax/changelog.md) — current (local-folder) behavior.
 - [Publish changelogs](/data/release-notes/publish.md) — the upload workflow.
-- [Link infrastructure](/development/link-infrastructure.md) — the S3 + CloudFront pattern this reuses.
+- [Link infrastructure](/documentation/distributed-builds.md) — the S3 + CloudFront pattern this reuses.

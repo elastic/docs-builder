@@ -36,7 +36,7 @@ The assembler produces a static HTML site that can be hosted on any static file 
 
 ### Link service
 
-The [link service](../../development/link-infrastructure.md) stores link indexes published by individual repository builds. The assembler uses the link catalog to determine which repositories and commits to clone.
+The [link service](../distributed-builds.md) stores link indexes published by individual repository builds. The assembler uses the link catalog to determine which repositories and commits to clone.
 
 Required infrastructure:
 - **S3 bucket** — stores `links.json` files and the `link-index.json` catalog
