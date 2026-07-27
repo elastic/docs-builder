@@ -150,7 +150,7 @@ Controls how the "separated" entry types (`breaking-change`, `deprecation`, `kno
 
 Use dropdowns when breaking-change and deprecation entries have long `description`, `impact`, or `action` prose that benefits from being collapsed by default. Use the flattened default for compact release-notes pages where the list itself is the primary content.
 
-Entry titles may contain inline markdown markers from changelog YAML (for example, `` `setting.name` ``). Dropdown titles are plain text; see [Plain-text titles](/documentation/syntax/dropdowns.md#plain-text-titles).
+Entry titles may contain inline markdown markers from changelog YAML (for example, `` `setting.name` ``). Dropdown titles are plain text; see [Plain-text titles](/syntax/dropdowns.md#plain-text-titles).
 
 #### `:release-dates:` [release-dates]
 

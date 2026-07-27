@@ -47,7 +47,7 @@ New to docs-builder? Start here:
 
 ## Authoring & reference
 
-- **[Syntax reference](./documentation/syntax/index.md)** — Markdown syntax with MyST directives and roles.
+- **[Syntax reference](./syntax/index.md)** — Markdown syntax with MyST directives and roles.
 - **[Configuration](./documentation/configure/index.md)** — Site-level, content-set, and page-level configuration.
 - **[How-to guides](./documentation/how-to/index.md)** — Guides for managing files, repositories, and releases.
 - **[CLI reference](./cli/index.md)** — All docs-builder commands and options.

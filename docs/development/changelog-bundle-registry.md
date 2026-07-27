@@ -10,7 +10,7 @@ Old development note — likely to be deleted or substantially rewritten.
 
 This page describes how changelog **bundles** are published to a public, CDN-fronted
 S3 bucket, how the per-product `registry.json` manifest is produced, and the
-`cdn:` mode for the [`{changelog}` directive](/documentation/syntax/changelog.md) that consumes
+`cdn:` mode for the [`{changelog}` directive](/syntax/changelog.md) that consumes
 bundles directly from the CDN instead of from a local folder.
 
 :::{note}
@@ -308,6 +308,6 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
 
 ## Related
 
-- [Changelog directive](/documentation/syntax/changelog.md) — current (local-folder) behavior.
+- [Changelog directive](/syntax/changelog.md) — current (local-folder) behavior.
 - [Publish changelogs](/data/release-notes/publish.md) — the upload workflow.
 - [Link infrastructure](/development/link-infrastructure.md) — the S3 + CloudFront pattern this reuses.

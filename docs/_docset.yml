@@ -74,6 +74,50 @@ toc:
       - file: pages-and-links.md
       - file: shell-autocompletion.md
 
+  # Syntax guide
+  - folder: syntax
+    children:
+      - file: index.md
+      - file: quick-ref.md
+      - file: directives.md
+      - file: headings.md
+      - file: admonitions.md
+      - file: agent-skill.md
+      - file: applies.md
+      - file: applies-switch.md
+      - file: automated_settings.md
+      - file: buttons.md
+      - file: changelog.md
+      - file: code.md
+      - file: comments.md
+      - file: contributors.md
+      - file: csv-include.md
+      - file: dropdowns.md
+      - file: definition-lists.md
+      - file: file_inclusion.md
+      - file: footnotes.md
+      - file: frontmatter.md
+      - file: icons.md
+      - file: images.md
+      - file: videos.md
+      - file: kbd.md
+      - file: math.md
+      - file: diagrams.md
+      - file: lists.md
+      - file: task-lists.md
+      - file: line_breaks.md
+      - file: storybook.md
+      - file: links.md
+      - file: list-sub-pages.md
+      - file: page-card.md
+      - file: stepper.md
+      - file: substitutions.md
+      - file: version-variables.md
+      - file: sundries.md
+      - file: tables.md
+      - file: tabs.md
+      - file: titles.md
+
   # Documentation builds
   - folder: documentation
     children:
@@ -81,48 +125,6 @@ toc:
       - file: assembler.md
       - file: codex.md
       - file: isolated.md
-      - folder: syntax
-        children:
-          - file: index.md
-          - file: quick-ref.md
-          - file: directives.md
-          - file: headings.md
-          - file: admonitions.md
-          - file: agent-skill.md
-          - file: applies.md
-          - file: applies-switch.md
-          - file: automated_settings.md
-          - file: buttons.md
-          - file: changelog.md
-          - file: code.md
-          - file: comments.md
-          - file: contributors.md
-          - file: csv-include.md
-          - file: dropdowns.md
-          - file: definition-lists.md
-          - file: file_inclusion.md
-          - file: footnotes.md
-          - file: frontmatter.md
-          - file: icons.md
-          - file: images.md
-          - file: videos.md
-          - file: kbd.md
-          - file: math.md
-          - file: diagrams.md
-          - file: lists.md
-          - file: task-lists.md
-          - file: line_breaks.md
-          - file: storybook.md
-          - file: links.md
-          - file: list-sub-pages.md
-          - file: page-card.md
-          - file: stepper.md
-          - file: substitutions.md
-          - file: version-variables.md
-          - file: sundries.md
-          - file: tables.md
-          - file: tabs.md
-          - file: titles.md
       - folder: configure
         children:
           - file: index.md

@@ -46,7 +46,7 @@ The first option is simplest since it requires only a one-time change to your ex
 
 ### Publish bundles directly [changelog-directive]
 
-You can use the [`{changelog}` directive](/documentation/syntax/changelog.md) to derive docs from your release bundles.
+You can use the [`{changelog}` directive](/syntax/changelog.md) to derive docs from your release bundles.
 For example, update your existing release note page to include a directive like this:
 
 ```md
@@ -60,11 +60,11 @@ For example, update your existing release note page to include a directive like 
 2. You can choose to group the changelogs by their `areas`. Otherwise, they are grouped only by `type`.
 
 There are also options that affect whether to use dropdowns, include descriptions, hide links, and more.
-For full documentation and examples, refer to the [{changelog} directive syntax reference](/documentation/syntax/changelog.md).
+For full documentation and examples, refer to the [{changelog} directive syntax reference](/syntax/changelog.md).
 
 ### Create markdown output [render-changelogs]
 
-If you need Markdown output (in particular, the [custom syntax](/documentation/syntax/index.md) used in Elastic documentation), you can use the `docs-builder changelog render` command with `--file-type markdown`.
+If you need Markdown output (in particular, the [custom syntax](/syntax/index.md) used in Elastic documentation), you can use the `docs-builder changelog render` command with `--file-type markdown`.
 For example:
 
 ```sh
@@ -85,7 +85,7 @@ The command generates multiple output files:
 
 For up-to-date details, use the `-h` command option or refer to [](/cli/changelog/render.md).
 
-If you are adding this content to existing release note pages, use [file inclusions](/documentation/syntax/file_inclusion.md).
+If you are adding this content to existing release note pages, use [file inclusions](/syntax/file_inclusion.md).
 For example, each time you create a new set of markdown files, you must include it into the existing docs like this:
 
 ```md

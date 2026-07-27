@@ -341,7 +341,7 @@ See https://www.elastic.co/docs/solutions/search for more details.
 
 **Hint message**: "Autolink points to elastic.co/docs. Consider using a crosslink or relative link instead."
 
-**Why this is discouraged**: Using [crosslinks](../../syntax/links.md) or relative links allows the documentation system to validate that the link target exists and enables proper URL handling across different environments.
+**Why this is discouraged**: Using [crosslinks](../../../syntax/links.md) or relative links allows the documentation system to validate that the link target exists and enables proper URL handling across different environments.
 
 **When to suppress**: This hint can be useful to suppress when:
 

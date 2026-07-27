@@ -14,7 +14,7 @@ The new docs repository needs to satisfy these requirements:
 
 - The repository must have a `docs` folder in the root.
 - The `docs` folder must contain a valid [`docset.yml` file](../configure/content-set/navigation.md) and Markdown files.
-- Markdown files within the `docs` folder that follow the V3 format. Refer to [Syntax](../syntax/index.md).
+- Markdown files within the `docs` folder that follow the V3 format. Refer to [Syntax](../../syntax/index.md).
 - The repository must be within the Elastic organization on `GitHub` and public.
 
 ## Add the repository

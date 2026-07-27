@@ -36,4 +36,4 @@ See the [getting started guide](docs-content://get-started/introduction.md).
 
 ## Relationship to other build modes
 
-Isolated builds use the same [syntax](./syntax/index.md) and [configuration](./configure/index.md) as assembler and codex builds. Content authored for an isolated preview will render identically when assembled into a full site or published to a codex environment.
+Isolated builds use the same [syntax](../syntax/index.md) and [configuration](./configure/index.md) as assembler and codex builds. Content authored for an isolated preview will render identically when assembled into a full site or published to a codex environment.

@@ -7,7 +7,7 @@ The `{settings}` directive is generic. Although the largest current examples com
 ### Syntax
 
 ```markdown
-::::{settings} /documentation/syntax/settings-with-applies-example.yml
+::::{settings} /syntax/settings-with-applies-example.yml
 ::::
 ```
 
@@ -23,7 +23,7 @@ The `{settings}` directive is generic. Although the largest current examples com
     Settings with no `applies_to` metadata at all are always shown, regardless of the filter.
 
     ```markdown
-    ::::{settings} /documentation/syntax/settings-with-applies-example.yml
+    ::::{settings} /syntax/settings-with-applies-example.yml
     :deployment: ech
     ::::
     ```
@@ -81,7 +81,7 @@ groups:
 
 ### Example
 
-See `/documentation/syntax/settings-with-applies-example.yml` for a full, schema-compliant sample.
+See `/syntax/settings-with-applies-example.yml` for a full, schema-compliant sample.
 
 It demonstrates:
 
@@ -97,7 +97,7 @@ It demonstrates:
 
 _Everything below this line is auto-generated._
 
-::::{settings} /documentation/syntax/settings-with-applies-example.yml
+::::{settings} /syntax/settings-with-applies-example.yml
 ::::
 
 For large Kibana-exported YAML samples used in local stress tests, see `kibana-settings-yaml-samples.md` in the `docs-tests/` docset at the repository root (outside the main `docs/` folder).

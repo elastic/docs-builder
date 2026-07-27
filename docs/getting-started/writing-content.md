@@ -39,7 +39,7 @@ Every page must start with exactly one `#` heading. This becomes the page title.
 [Another page](./other-page.md)
 ```
 
-See [links](../documentation/syntax/links.md) for the full link syntax.
+See [links](../syntax/links.md) for the full link syntax.
 
 ### Lists
 
@@ -67,7 +67,7 @@ def hello():
 ```
 ````
 
-Code blocks support [syntax highlighting, callout annotations, and console examples](../documentation/syntax/code.md).
+Code blocks support [syntax highlighting, callout annotations, and console examples](../syntax/code.md).
 
 ### Quotations
 
@@ -83,7 +83,7 @@ Code blocks support [syntax highlighting, callout annotations, and console examp
 
 ### GitHub Flavored Markdown
 
-{{dbuild}} supports some [GitHub Flavored Markdown](https://github.github.com/gfm/) extensions — tables (pipe syntax) and strikethrough (`~~text~~`) — but not automatic URL linking or inline HTML. See the [full GFM support details](../documentation/syntax/index.md#github-flavored-markdown-support).
+{{dbuild}} supports some [GitHub Flavored Markdown](https://github.github.com/gfm/) extensions — tables (pipe syntax) and strikethrough (`~~text~~`) — but not automatic URL linking or inline HTML. See the [full GFM support details](../syntax/index.md#github-flavored-markdown-support).
 
 ## Directives and roles
 
@@ -126,11 +126,11 @@ Inner content
 ::::
 ```
 
-For the full list of available directives and detailed syntax, see the [syntax guide](../documentation/syntax/index.md).
+For the full list of available directives and detailed syntax, see the [syntax guide](../syntax/index.md).
 
 ## What's next
 
 - **[Pages and links](./pages-and-links.md)** — add pages to navigation and link between docs
 - **[Serve and preview](./serve.md)** — preview your docs locally with hot reload
-- **[Syntax reference](../documentation/syntax/index.md)** — full syntax documentation
-- **[Quick reference](../documentation/syntax/quick-ref.md)** — condensed cheat sheet
+- **[Syntax reference](../syntax/index.md)** — full syntax documentation
+- **[Quick reference](../syntax/quick-ref.md)** — condensed cheat sheet

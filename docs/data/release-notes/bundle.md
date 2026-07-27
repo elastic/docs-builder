@@ -436,7 +436,7 @@ When this setting is omitted entirely, no link filtering is applied.
 The bundle's changelog entries are sanitized but the individual changelog files are unchanged.
 :::
 
-If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can also configure link visibility in the [changelog directive](/documentation/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.
+If you are working in a private repo and do not want any pull request or issue links to appear (even if they target a public repo), you can also configure link visibility in the [changelog directive](/syntax/changelog.md#hide-links) and [changelog render](/cli/changelog/render.md) command.
 
 ## Next steps
 

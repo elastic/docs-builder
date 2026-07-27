@@ -98,4 +98,4 @@ Only list repositories you actually link to. Each entry adds a link-index fetch 
 
 - **[Serve and preview](./serve.md)** — preview your docs locally with hot reload
 - **[Content set configuration](../documentation/configure/content-set/index.md)** — full docset.yml reference
-- **[Links syntax](../documentation/syntax/links.md)** — complete link syntax including anchors and titles
+- **[Links syntax](../syntax/links.md)** — complete link syntax including anchors and titles

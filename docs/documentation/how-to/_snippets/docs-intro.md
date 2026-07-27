@@ -1,4 +1,4 @@
-elastic.co/docs uses our new build system, also known as "Docs V3", which uses an extended version of markdown as its markup language. Refer to our [syntax guide](/documentation/syntax/index.md) to learn more.
+elastic.co/docs uses our new build system, also known as "Docs V3", which uses an extended version of markdown as its markup language. Refer to our [syntax guide](/syntax/index.md) to learn more.
 
 Docs for {{stack}} 9.x, {{ece}} 4.x, and {{eck}} 3.x can all be found on this site. All unversioned products, such as {{ech}} and {{serverless-full}}, are also documented on elastic.co/docs.
 
