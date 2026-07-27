@@ -145,15 +145,13 @@ toc:
       - folder: assembler
         children:
           - file: index.md
-          - file: content-sources.md
           - folder: configure
             children:
               - file: index.md
-              - folder: site
-                children:
-                  - file: index.md
-                  - file: content.md
-                  - file: navigation.md
+              - file: content.md
+              - file: content-sources.md
+          - file: navigation.md
+          - file: urls.md
           - folder: how-to
             children:
               - file: add-repo.md

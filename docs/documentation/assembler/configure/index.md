@@ -2,11 +2,13 @@
 navigation_title: Configuration
 ---
 
-# Configuration
+# assembler.yml reference
 
-Site-level configuration for assembled documentation builds. These settings control how multiple repositories are combined into a unified site.
+The `assembler.yml` file defines which repositories are included in the assembled site and how they are cloned.
 
 For content-set configuration (`docset.yml`, `toc.yml`) that applies to individual repositories, see [isolated build configuration](../../isolated/configure/index.md).
 
-- **[assembler.yml](./site/index.md)** — site configuration, navigation, versions, products
-- **[Content sources](../content-sources.md)** — repository branching strategies
+For global navigation, see [navigation.yml](../navigation.md).
+
+- **[Content sources](./content.md)** — build environments and repository sources
+- **[Content source branching](../content-sources.md)** — branching strategies for content sources
