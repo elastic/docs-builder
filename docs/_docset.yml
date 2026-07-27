@@ -125,17 +125,18 @@ toc:
       - folder: isolated
         children:
           - file: index.md
+          - file: urls.md
+          - file: navigation.md
+          - file: extensions.md
+          - file: cta.md
           - folder: configure
             children:
               - file: index.md
               - folder: content-set
                 children:
                   - file: index.md
-                  - file: file-structure.md
                   - file: attributes.md
                   - file: navigation.md
-                  - file: extensions.md
-                  - file: cta.md
               - file: page.md
           - hidden: how-to/cumulative-docs/index.md
           - hidden: how-to/cumulative-docs/guidelines.md

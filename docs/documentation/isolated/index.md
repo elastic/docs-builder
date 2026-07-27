@@ -19,15 +19,4 @@ An isolated build can be:
 
 ## Cross-link validation
 
-Even in isolated mode, cross-repository links are validated. When your documentation links to another repository using cross-link syntax:
-
-```markdown
-See the [getting started guide](docs-content://get-started/introduction.md).
-```
-
-{{dbuild}} resolves these links against published link indexes from the [link service](../../development/link-infrastructure.md). This ensures your cross-references are valid without needing to clone other repositories locally.
-
-## How-to guides
-
-- **[Move files and folders](./how-to/move.md)** — move files or folders and automatically update all links
-- **[Manage redirects](./how-to/redirects.md)** — set up redirects when moving or deleting pages
+Even in isolated mode, cross-repository links are validated against published link indexes from the [link service](../../development/link-infrastructure.md), ensuring your cross-references are valid without needing to clone other repositories locally.

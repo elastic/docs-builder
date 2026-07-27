@@ -2,16 +2,13 @@
 navigation_title: docset.yml
 ---
 
-# docset.yml configuration
+# docset.yml reference
 
-The `docset.yml` file is the configuration file for a documentation set. It defines the structure, metadata, navigation, and build options for a single repository's documentation.
+The `docset.yml` file is the configuration file for a documentation set. It defines the structure, metadata, and build options for a single repository's documentation.
 
 At minimum, a documentation set needs a `docset.yml` and an `index.md` in the same folder.
 
-## Learn more
+## Sections
 
-* [File structure](./file-structure.md)
-* [Navigation](./navigation.md) — table of contents configuration
-* [Attributes](./attributes.md) — substitution variables
-* [Extensions](./extensions.md) — optional features
-* [CTA](./cta.md) — call-to-action configuration
+- **[Navigation reference](./navigation.md)** — complete `toc:` configuration reference with patterns and validation rules
+- **[Attributes](./attributes.md)** — substitution variables (`subs:`)
