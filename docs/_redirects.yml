@@ -198,5 +198,11 @@ redirects:
   'documentation/syntax/conditionals.md': 'syntax/index.md'
   'documentation/syntax/tagged_regions.md': 'syntax/file_inclusion.md'
 
+  # ── assembler content-sources/branching/release merged into environments ──
+  'documentation/assembler/content-sources.md': 'documentation/assembler/environments.md'
+  'documentation/assembler/how-to/branching-strategy.md': 'documentation/assembler/environments.md'
+  'documentation/assembler/how-to/release-new-version.md': 'documentation/assembler/environments.md'
+  'documentation/assembler/how-to/add-repo.md': 'documentation/assembler/add-repo.md'
+
   # ── testing/ → docs-tests/ (separate docset) ─────────────────────
   # Test redirect fixtures moved to docs-tests/_redirects.yml

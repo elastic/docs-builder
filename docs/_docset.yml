@@ -148,14 +148,10 @@ toc:
           - folder: configure
             children:
               - file: index.md
-          - file: content-sources.md
           - file: navigation.md
           - file: urls.md
-          - folder: how-to
-            children:
-              - file: add-repo.md
-              - file: branching-strategy.md
-              - file: release-new-version.md
+          - file: environments.md
+          - file: add-repo.md
           - file: infrastructure.md
       - folder: codex
         children:
