@@ -122,6 +122,8 @@ toc:
   - folder: documentation
     children:
       - file: index.md
+      - file: distributed-builds.md
+      - file: cross-links.md
       - folder: isolated
         children:
           - file: index.md
@@ -169,8 +171,6 @@ toc:
           - file: versions.md
           - file: synonyms.md
           - file: legacy-url-mappings.md
-      - file: cross-links.md
-      - file: distributed-builds.md
       - file: redirects.md
 
   # Structured
