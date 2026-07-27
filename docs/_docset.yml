@@ -125,13 +125,13 @@ toc:
       - folder: isolated
         children:
           - file: index.md
-          - file: urls.md
-          - file: navigation.md
-          - file: extensions.md
-          - file: cta.md
           - folder: configure
             children:
               - file: index.md
+          - file: navigation.md
+          - file: urls.md
+          - file: cta.md
+          - file: extensions.md
           - hidden: how-to/cumulative-docs/index.md
           - hidden: how-to/cumulative-docs/guidelines.md
           - hidden: how-to/cumulative-docs/badge-placement.md
