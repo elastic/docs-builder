@@ -13,7 +13,7 @@ versioning_systems:
 
 Versions set in this file are surfaced to the user via `applies_to` tags.
 
-:::{include} /release-notes/_snippets/tag-processing.md
+:::{include} /data/release-notes/_snippets/tag-processing.md
 :::
 
 See [Write cumulative documentation](https://www.elastic.co/docs/contribute-docs/how-to/cumulative-docs) for more information.

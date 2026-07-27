@@ -210,7 +210,7 @@ A hidden file can be declared in the TOC.
 
 It can't have any children and won't show up in the navigation.
 
-You can still [link to it locally](../../developer-notes.md).
+You can still [link to it locally](/developer-notes.md).
 
 #### Nesting `toc`
 

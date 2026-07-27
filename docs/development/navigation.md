@@ -32,39 +32,11 @@ In an assembler build, multiple repo trees are composed under a global site navi
 
 The navigation tree uses distinct node types:
 
-::::{grid} 2 3 5 5
-
-:::{grid-item}
-![Documentation set](images/bullet-documentation-set-navigation.svg)
-
-**Documentation set** — root of a docset's nav tree
-:::
-
-:::{grid-item}
-![Table of contents](images/bullet-table-of-contents-navigation.svg)
-
-**Table of contents** — a `toc.yml` entry point
-:::
-
-:::{grid-item}
-![Folder](images/bullet-folder-navigation.svg)
-
-**Folder** — groups pages without a landing page
-:::
-
-:::{grid-item}
-![File (leaf)](images/bullet-file-navigation-leaf.svg)
-
-**File** — a markdown page (leaf node)
-:::
-
-:::{grid-item}
-![Site navigation](images/bullet-site-navigation.svg)
-
-**Site navigation** — top-level assembler grouping
-:::
-
-::::
+- ![Documentation set](images/bullet-documentation-set-navigation.svg) **Documentation set** — root of a docset's nav tree
+- ![Table of contents](images/bullet-table-of-contents-navigation.svg) **Table of contents** — a `toc.yml` entry point
+- ![Folder](images/bullet-folder-navigation.svg) **Folder** — groups pages without a landing page
+- ![File (leaf)](images/bullet-file-navigation-leaf.svg) **File** — a markdown page (leaf node)
+- ![Site navigation](images/bullet-site-navigation.svg) **Site navigation** — top-level assembler grouping
 
 ## Two-phase loading
 

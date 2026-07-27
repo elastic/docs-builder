@@ -78,7 +78,7 @@ Refer to [CI auto-detection](/cli/changelog/add.md) for the full list of environ
 Changelog files use the following schema:
 
 :::{dropdown} Changelog schema
-::::{include} /release-notes/_snippets/changelog-fields.md
+::::{include} /data/release-notes/_snippets/changelog-fields.md
 ::::
 :::
 
