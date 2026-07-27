@@ -1,5 +1,5 @@
 ---
-navigation_title: Integrations
+navigation_title: Elastic Integrations
 ---
 
 # Integrations
