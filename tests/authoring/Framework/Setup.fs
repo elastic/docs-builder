@@ -232,14 +232,16 @@ type Setup =
             if not shouldExclude then
                 yaml.WriteLine($" - file: {relative}");
         )
+        let docsTestsRoot = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs-tests")
         let redirectFiles = ["5th-page"; "second-page"; "third-page"; "first-page"]
         redirectFiles
         |> Seq.iter(fun file ->
             let relative = $"testing/redirects/{file}.md"
             yaml.WriteLine($" - file: {relative}")
-            let fullPath = Path.Combine(root.FullName, relative)
-            let contents = File.ReadAllText fullPath
-            fileSystem.AddFile(fullPath, MockFileData(contents))
+            let mockPath = Path.Combine(root.FullName, relative)
+            let realPath = Path.Combine(docsTestsRoot, $"redirects/{file}.md")
+            let contents = File.ReadAllText realPath
+            fileSystem.AddFile(mockPath, MockFileData(contents))
         )
 
         match globalVariables with

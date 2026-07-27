@@ -267,8 +267,30 @@ redirects:
   'testing/deeply-nested/baz/qux.md': 'index.md'
   'testing/redirects/first-page.md': 'index.md'
   'testing/redirects/second-page.md': 'index.md'
-  'testing/redirects/third-page.md': 'index.md'
+  'testing/redirects/third-page.md':
+    anchors:
+      'removed-anchor':
   'testing/redirects/5th-page.md': 'index.md'
+  'testing/redirects/4th-page.md': 'testing/redirects/5th-page.md'
+  'testing/redirects/9th-page.md': '!testing/redirects/5th-page.md'
+  'testing/redirects/6th-page.md':
+  'testing/redirects/7th-page.md':
+    to: 'testing/redirects/5th-page.md'
+    anchors: '!'
+  'testing/redirects/first-page-old.md':
+    to: 'testing/redirects/second-page.md'
+    anchors:
+      'old-anchor': 'active-anchor'
+      'removed-anchor':
+  'testing/redirects/second-page-old.md':
+    many:
+      - to: "testing/redirects/second-page.md"
+        anchors:
+          "aa": "zz"
+          "removed-anchor":
+      - to: "testing/redirects/third-page.md"
+        anchors:
+          "yy": "bb"
   'testing/release-notes/index.md': 'index.md'
   'testing/release-notes/highlights.md': 'index.md'
   'testing/release-notes/breaking-changes.md': 'index.md'
