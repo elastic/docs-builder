@@ -1,18 +1,14 @@
 ---
-navigation_title: "Set up redirects"
+navigation_title: Redirects
 ---
 
-# Manage redirects across doc sets
+# Redirects
 
-When you [move](move.md) or delete pages, other [documentation sets](../configure/content-set/index.md) might still link to them. This can lead to a chicken-and-egg problem: you can't publish your changes without breaking links elsewhere.
+When you move or delete pages, other documentation sets might still link to them. Redirects let you map old paths to new targets so you can publish changes without breaking links elsewhere.
 
-Redirects let you map old links to new targets across documentation sets, so you can publish changes while updating other doc sets.
-
-## Limitations
-
-Redirects only work within Elastic Docs V3 content sets. You cannot use this method to redirect to external destinations like [API docs](https://www.elastic.co/docs/api/).
-
-For API redirects, consult with the documentation engineering team on Slack (#elastic-docs-v3).
+:::{important}
+Redirects are currently only implemented for [assembler](./assembler/index.md) and [codex](./codex/index.md) builds. Isolated builds do not process `_redirects.yml` at deploy time.
+:::
 
 For elastic.co/guide redirects, open a [web team request](http://ela.st/web-request).
 
