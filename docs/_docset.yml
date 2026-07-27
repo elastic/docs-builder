@@ -72,6 +72,7 @@ toc:
       - file: serve.md
       - file: writing-content.md
       - file: pages-and-links.md
+      - file: publish.md
       - file: shell-autocompletion.md
 
   # Syntax guide
