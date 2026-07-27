@@ -1,10 +1,12 @@
 ---
-navigation_title: Development
+navigation_title: Development Notes
 ---
 
-# Development guide
+# Development notes
 
-This section covers the internals of {{dbuild}} — the architecture, subsystems, and implementation details useful for contributors to the codebase.
+:::{warning}
+These are old development notes created during the initial development of {{dbuild}}. They are likely to be deleted or substantially rewritten. Do not rely on them as authoritative documentation.
+:::
 
 ## Architecture
 

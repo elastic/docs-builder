@@ -4,6 +4,10 @@ navigation_title: "Elasticsearch Ingest"
 
 # Elasticsearch Ingestion
 
+:::{warning}
+Old development note — likely to be deleted or substantially rewritten.
+:::
+
 ## Elasticsearch Integration
 
 The Elasticsearch integration consists of two primary exporters that work together to maintain both lexical and semantic search indices:

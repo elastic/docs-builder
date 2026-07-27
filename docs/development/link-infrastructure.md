@@ -4,6 +4,10 @@ navigation_title: "Link infrastructure"
 
 # Link infrastructure
 
+:::{warning}
+Old development note — likely to be deleted or substantially rewritten.
+:::
+
 {{dbuild}} uses a distributed link infrastructure to enable cross-repo linking without requiring repos to build together. This page covers the full publish→validate lifecycle.
 
 ## Overview

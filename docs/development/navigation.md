@@ -4,6 +4,10 @@ navigation_title: "Navigation system"
 
 # Navigation system
 
+:::{warning}
+Old development note — likely to be deleted or substantially rewritten.
+:::
+
 {{dbuild}} builds hierarchical navigation trees for documentation sites. The system supports two build modes — **isolated** (single repo) and **assembler** (multi-repo unified site) — using a two-phase loading process that separates configuration from URL calculation.
 
 ## Overview

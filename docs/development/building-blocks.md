@@ -4,6 +4,10 @@ navigation_title: "Building blocks"
 
 # Building blocks
 
+:::{warning}
+Old development note — likely to be deleted or substantially rewritten.
+:::
+
 This page provides a conceptual overview of the {{dbuild}} documentation model — how documentation sets are built, linked, and assembled into a unified site.
 
 ## Documentation set lifecycle

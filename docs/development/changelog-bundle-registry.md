@@ -4,6 +4,10 @@ navigation_title: Changelog bundle registry
 
 # Changelog bundle registry and CDN delivery
 
+:::{warning}
+Old development note — likely to be deleted or substantially rewritten.
+:::
+
 This page describes how changelog **bundles** are published to a public, CDN-fronted
 S3 bucket, how the per-product `registry.json` manifest is produced, and the
 `cdn:` mode for the [`{changelog}` directive](/documentation/syntax/changelog.md) that consumes
