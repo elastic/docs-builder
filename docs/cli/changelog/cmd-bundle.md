@@ -126,6 +126,13 @@ For standard profiles, `{version}` is copied verbatim from your command argument
 | `9.2.0` | `9.2.0` | `ga` |
 | `9.2.0-beta.1` | `9.2.0-beta.1` | `beta` |
 | `9.2.0-preview.1` | `9.2.0-preview.1` | `preview` |
+| `2026-07-21` | `2026-07-21` | `ga` |
+
+Profile mode does not accept lifecycle on the command line. For semver and date-based releases alike, set lifecycle in the profile YAML:
+
+- Omit lifecycle from the pattern (for example, `"cloud-serverless {version}"`) to leave the field out of the bundle.
+- Use `{lifecycle}` to derive it from the version or date argument (as in the table above).
+- Hardcode a lifecycle (for example, `"cloud-serverless {version} ga"` or `"cloud-serverless {version} preview"`) when you need an explicit value. Non-`ga` date-based releases are exceptional and should use a hardcoded lifecycle.
 
 For more information about acceptable product and lifecycle values, go to [Product format](#product-format).
 

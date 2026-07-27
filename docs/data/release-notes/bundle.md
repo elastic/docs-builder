@@ -152,7 +152,9 @@ bundle:
 1. This profile collects all changelogs from the `directory`.
 2. This profile collects any changelogs that have `product: cloud-serverless`, any lifecycle, and the date partially specified in the command.
 3. This profile collects any changelogs that have `product: elasticsearch`, `lifecycle: ga`, and the version specified in the command.
-4. In this case, the lifecycle is inferred from the version specified in the command. For example, if the version is `9.2.0-beta.1` the lifecycle is `beta`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference).
+4. In this case, the lifecycle is inferred from the version specified in the command. For example, if the version is `9.2.0-beta.1` the lifecycle is `beta`. ISO date arguments (for example, `2026-07-21`) derive `ga`. Refer to [](/cli/changelog/bundle.md#lifecycle-inference).
+
+For date-based and semver profiles, lifecycle is controlled only in the profile YAML: omit it from the pattern, use `{lifecycle}` to derive it, or hardcode `ga`, `beta`, or `preview`. Non-`ga` date-based releases are exceptional and should hardcode the lifecycle.
 
 :::{note}
 The `products` field determines which changelog files are gathered for consideration. You can still apply [rules](#rules) afterward to further filter changelogs from the bundle. The input stage and bundle filtering stage are conceptually separate.
