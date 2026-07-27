@@ -326,7 +326,7 @@ jobs:
       - release
       - publish-release
     if: always() && contains(needs.*.result, 'failure')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       id-token: write
     steps:
