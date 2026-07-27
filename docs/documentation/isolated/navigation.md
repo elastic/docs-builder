@@ -6,6 +6,8 @@ navigation_title: Navigation
 
 Navigation in {{dbuild}} is defined through the `toc:` section in your `docset.yml` or in separate `toc.yml` files. The table of contents controls which pages appear in the sidebar and in what order.
 
+For the complete reference of all `toc:` keys, see the [docset.yml reference](./configure/content-set/index.md).
+
 ## Basic structure
 
 ```yaml
@@ -17,13 +19,6 @@ toc:
       - file: index.md
       - file: quickstart.md
 ```
-
-## Key concepts
-
-- **`file:`** — adds a single page to the nav
-- **`folder:`** — groups pages under a collapsible section
-- **`toc:`** — references a separate `toc.yml` file for modularity
-- **`hidden:`** — includes a page in the build but hides it from the nav
 
 ## Navigation title
 
@@ -56,4 +51,78 @@ toc:
   - file: quickstart.md
 ```
 
-For the complete reference of all navigation options, patterns, and validation rules, see the [docset.yml reference](./configure/content-set/navigation.md).
+## Common patterns
+
+### Single file reference
+
+```yaml
+toc:
+  - file: index.md
+  - file: getting-started.md
+  - file: api-reference.md
+```
+
+### File with children (virtual grouping)
+
+Group related sibling files under a parent without creating a folder:
+
+```yaml
+toc:
+  - file: getting-started.md
+    children:
+      - file: installation.md
+      - file: configuration.md
+```
+
+All children must be siblings of the parent file (same directory).
+
+### Folder without explicit children
+
+Auto-include all markdown files in a folder. Useful during development:
+
+```yaml
+toc:
+  - folder: api
+```
+
+### Folder with explicit children
+
+Define exact files and ordering:
+
+```yaml
+toc:
+  - folder: api
+    children:
+      - file: index.md
+      - file: authentication.md
+      - file: endpoints.md
+```
+
+When `children` is defined, all markdown files in the folder must be listed.
+
+### Nested toc reference
+
+Include a dedicated `toc.yml` for large sections:
+
+```yaml
+toc:
+  - file: index.md
+  - toc: api-reference
+  - toc: tutorials
+```
+
+### Mixed patterns
+
+Combine patterns as needed:
+
+```yaml
+toc:
+  - file: index.md
+  - file: quick-start.md
+  - folder: guides
+    children:
+      - file: index.md
+      - file: installation.md
+  - toc: api-reference
+  - folder: troubleshooting
+```
