@@ -42,7 +42,7 @@ Repositories within a codex environment can link to each other using cross-link 
 See the [setup guide](repo-name://path/to/file.md) for details.
 ```
 
-Links are validated against the [link index](../architecture/link-index.md), ensuring references between repositories stay correct even though each repo builds independently.
+Links are validated against the [link index](../development/link-infrastructure.md), ensuring references between repositories stay correct even though each repo builds independently.
 
 ## Key differences from assembler
 

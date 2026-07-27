@@ -21,7 +21,7 @@ Today the `{changelog}` directive only renders bundles that live in a folder ins
 docset (default `changelog/bundles/`). That requires every consuming repository to vendor
 a copy of the bundle YAML it wants to render.
 
-The link service ([building block](/architecture/link-service.md)) already demonstrates
+The link service ([link infrastructure](/development/link-infrastructure.md)) already demonstrates
 the pattern we want: an S3 bucket fronted by CloudFront, publicly readable, with a small
 JSON index at a well-known key. We apply the same approach to changelog bundles so a docset
 can render another product's release notes by pointing the directive at the CDN — no vendored
@@ -29,19 +29,13 @@ copies, no cross-repo file syncing.
 
 ## Architecture
 
-```
-┌──────────────┐   changelog upload    ┌────────────────────┐   s3:ObjectCreated   ┌───────────────────┐
-│  Client CI   │  --artifact-type      │  Private bundles   │ ───────────────────▶ │ Changelog scrubber │
-│ (docs-actions)│  bundle  ───────────▶ │  S3 bucket         │                       │ Lambda             │
-└──────────────┘                       │                    │                       └─────────┬─────────┘
-       │                               │  bundle/{product}/*.yaml                             │ scrub + copy
-       │ also refreshes                │  bundle/{product}/registry.json                 │ (pass-through for
-       └──────────────────────────────▶                    │                                  │  registry.json)
-                                       └────────────────────┘                                 ▼
-                                                                                   ┌───────────────────┐
-                                                  {changelog} directive (cdn:)     │  Public bundles    │
-                                                  reads via CDN  ◀───────────────  │  S3 bucket + CDN   │
-                                                                                   └───────────────────┘
+```mermaid
+flowchart LR
+    CI["Client CI<br/>(docs-actions)"] -->|"changelog upload<br/>--artifact-type bundle"| Private["Private S3 bucket<br/>bundle/{product}/*.yaml<br/>bundle/{product}/registry.json"]
+    CI -->|"refreshes registry"| Private
+    Private -->|"s3:ObjectCreated"| Scrubber["Changelog scrubber<br/>Lambda"]
+    Scrubber -->|"scrub + copy<br/>(pass-through for registry.json)"| Public["Public S3 bucket<br/>+ CloudFront CDN"]
+    Public -->|"reads via CDN"| Directive["{changelog} directive<br/>(cdn: mode)"]
 ```
 
 1. **Producer** — `changelog upload --artifact-type bundle --target s3` (invoked by the
@@ -312,4 +306,4 @@ logic still applies via `assembler.yml`, exactly as for local bundles.
 
 - [Changelog directive](/documentation/syntax/changelog.md) — current (local-folder) behavior.
 - [Publish changelogs](/data/release-notes/publish.md) — the upload workflow.
-- [Link service](/architecture/link-service.md) — the S3 + CloudFront pattern this reuses.
+- [Link infrastructure](/development/link-infrastructure.md) — the S3 + CloudFront pattern this reuses.

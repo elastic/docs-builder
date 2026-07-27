@@ -17,18 +17,46 @@ redirects:
   'migration/guide/mapping.md': 'index.md'
   'migration/guide/how-to-set-up-docs-previews.md': 'index.md'
 
-  # ── building-blocks/ → architecture/ ────────────────────────────
-  'building-blocks/index.md': 'architecture/index.md'
-  'building-blocks/documentation-set.md': 'architecture/documentation-set.md'
-  'building-blocks/assembled-documentation.md': 'architecture/assembled-documentation.md'
-  'building-blocks/distributed-documentation.md': 'architecture/distributed-documentation.md'
-  'building-blocks/link-service.md': 'architecture/link-service.md'
-  'building-blocks/link-index.md': 'architecture/link-index.md'
-  'building-blocks/link-catalog.md': 'architecture/link-catalog.md'
-  'building-blocks/outbound-cross-links.md': 'architecture/outbound-cross-links.md'
-  'building-blocks/inbound-cross-links.md': 'architecture/inbound-cross-links.md'
-  'building-blocks/documentation-set-navigation.md': 'architecture/documentation-set-navigation.md'
-  'building-blocks/global-navigation.md': 'architecture/global-navigation.md'
+  # ── building-blocks/ → development/ ──────────────────────────────
+  'building-blocks/index.md': 'development/building-blocks.md'
+  'building-blocks/documentation-set.md': 'documentation/configure/content-set/index.md'
+  'building-blocks/assembled-documentation.md': 'documentation/assembler.md'
+  'building-blocks/distributed-documentation.md': 'documentation/index.md'
+  'building-blocks/link-service.md': 'development/link-infrastructure.md'
+  'building-blocks/link-index.md': 'development/link-infrastructure.md'
+  'building-blocks/link-catalog.md': 'development/link-infrastructure.md'
+  'building-blocks/outbound-cross-links.md': 'development/link-infrastructure.md'
+  'building-blocks/inbound-cross-links.md': 'development/link-infrastructure.md'
+  'building-blocks/documentation-set-navigation.md': 'documentation/configure/content-set/navigation.md'
+  'building-blocks/global-navigation.md': 'documentation/configure/site/navigation.md'
+
+  # ── architecture/ → development/ ───────────────────────────────
+  'architecture/index.md': 'development/index.md'
+  'architecture/documentation-set.md': 'documentation/configure/content-set/index.md'
+  'architecture/assembled-documentation.md': 'documentation/assembler.md'
+  'architecture/distributed-documentation.md': 'documentation/index.md'
+  'architecture/link-service.md': 'development/link-infrastructure.md'
+  'architecture/link-index.md': 'development/link-infrastructure.md'
+  'architecture/link-catalog.md': 'development/link-infrastructure.md'
+  'architecture/outbound-cross-links.md': 'development/link-infrastructure.md'
+  'architecture/inbound-cross-links.md': 'development/link-infrastructure.md'
+  'architecture/documentation-set-navigation.md': 'documentation/configure/content-set/navigation.md'
+  'architecture/global-navigation.md': 'documentation/configure/site/navigation.md'
+
+  # ── development/navigation/ sub-pages → development/navigation.md ──
+  'development/navigation/navigation.md': 'development/navigation.md'
+  'development/navigation/visual-walkthrough.md': 'development/navigation.md'
+  'development/navigation/first-principles.md': 'development/navigation.md'
+  'development/navigation/functional-principles.md': 'development/navigation.md'
+  'development/navigation/technical-principles.md': 'development/navigation.md'
+  'development/navigation/two-phase-loading.md': 'development/navigation.md'
+  'development/navigation/node-types.md': 'development/navigation.md'
+  'development/navigation/home-provider-architecture.md': 'development/navigation.md'
+  'development/navigation/assembler-process.md': 'development/navigation.md'
+
+  # ── development/ingest/ and link-validation/ flattened ──────────
+  'development/ingest/index.md': 'development/ingest.md'
+  'development/link-validation/link-validation.md': 'development/link-validation.md'
 
   # ── syntax/ → documentation/syntax/ ─────────────────────────────
   'syntax/index.md': 'documentation/syntax/index.md'

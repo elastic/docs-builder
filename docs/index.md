@@ -52,6 +52,6 @@ New to docs-builder? Start here:
 - **[How-to guides](./documentation/how-to/index.md)** — Guides for managing files, repositories, and releases.
 - **[CLI reference](./cli/index.md)** — All docs-builder commands and options.
 
-## Architecture
+## Development
 
-- **[Service architecture](./architecture/index.md)** — Core concepts: documentation sets, link index, cross-links, and navigation.
+- **[Development guide](./development/index.md)** — Building blocks, link infrastructure, navigation system, and contributing to docs-builder.
