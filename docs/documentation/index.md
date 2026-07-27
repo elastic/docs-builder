@@ -1,5 +1,5 @@
 ---
-navigation_title: Documentation
+navigation_title: Documentation Builds
 ---
 
 # Documentation builds

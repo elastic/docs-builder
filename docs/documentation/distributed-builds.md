@@ -1,5 +1,5 @@
 ---
-navigation_title: Distributed builds
+navigation_title: Distributed
 ---
 
 # Distributed builds
