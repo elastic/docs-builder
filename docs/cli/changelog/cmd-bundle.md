@@ -83,7 +83,7 @@ Every bundle embeds the full content of each changelog entry (`title`, `type`, `
 
 Pass `--plan` to emit GitHub Actions step outputs (`needs_network`, `needs_github_token`, `output_path`) without generating the bundle. Use this in a planning step to decide whether subsequent steps require a GitHub token or network access.
 
-For full configuration reference, see [Bundle changelogs](/contribute/bundle-changelogs.md).
+For full configuration reference, see [Bundle changelogs](/data/release-notes/bundle.md).
 
 ## Product format [product-format]
 
@@ -93,7 +93,7 @@ The `changelog bundle` command has `--input-products` and `--output-products` op
 - `target` is the target version or date (optional)
 - `lifecycle` exists in [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) (optional)
 
-You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
+You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 
 For example:
 
@@ -164,7 +164,7 @@ docs-builder changelog bundle \
 :::
 
 By default all changelogs that match PRs in the GitHub release notes are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/data/release-notes/configure-ref.md#rules-bundle) configuration settings.
 
 :::{tip}
 If you are not creating changelogs when you create your pull requests, consider the `docs-builder changelog gh-release` command as a one-shot alternative to the `changelog add` and `changelog bundle` commands.
@@ -187,7 +187,7 @@ Alternatively, you can specify a path to a newline-delimited file that contains 
 In this case, you cannot use short URLs or numbers, each line must have a full URL.
 
 By default all changelogs that match issues in the list are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/data/release-notes/configure-ref.md#rules-bundle) configuration settings.
 
 ### Bundle by pull requests [changelog-bundle-pr]
 
@@ -219,7 +219,7 @@ https://github.com/elastic/elasticsearch/pull/137126
 ```
 
 By default all changelogs that match PRs in the list are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/data/release-notes/configure-ref.md#rules-bundle) configuration settings.
 
 If you have changelog files that reference those pull requests, the command creates a file like this:
 
@@ -338,7 +338,7 @@ docs-builder changelog bundle \
 ```
 
 By default all changelogs that match PRs in the promotion report are included in the bundle.
-To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/contribute/configure-changelogs-ref.md#rules-bundle) configuration settings.
+To apply additional filtering by the changelog type, areas, or products, add [rules.bundle](/data/release-notes/configure-ref.md#rules-bundle) configuration settings.
 
 ### Bundle by file paths [changelog-bundle-files]
 
