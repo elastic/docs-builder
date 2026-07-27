@@ -35,12 +35,8 @@
 						md:px-4
 			">
 				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
-					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] justify-end mx-4 gap-4 md:col-start-2 md:row-start-1">
-						@{
-							var breadcrumbs = Model.Breadcrumbs.ToList();
-							var breadcrumbVisible = breadcrumbs.Count > 0 && (breadcrumbs.Count > 1 || Model.BuildType != BuildType.Isolated);
-						}
-						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1 @(breadcrumbVisible ? "" : "pt-6")">
+					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] lg:justify-end mx-4 gap-4 md:col-start-2 md:row-start-1">
+						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1">
 							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
 							<article id="markdown-content" class="markdown-content min-w-0">
 								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
