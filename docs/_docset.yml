@@ -162,7 +162,6 @@ toc:
           - file: navigation.md
           - file: urls.md
           - file: infrastructure.md
-      - file: redirects.md
       - folder: catalog
         children:
           - file: index.md
@@ -170,6 +169,8 @@ toc:
           - file: versions.md
           - file: synonyms.md
           - file: legacy-url-mappings.md
+      - file: cross-links.md
+      - file: redirects.md
 
   # Structured
   - folder: data
