@@ -314,3 +314,25 @@ jobs:
           gh api repos/elastic/docs-internal-workflows/dispatches \
             -f event_type=docs-builder-released \
             -F client_payload[tag_name]="$TAG_NAME"
+
+  notify-failure:
+    needs:
+      - release-drafter
+      - containers
+      - build-link-index-lambda
+      - build-changelog-scrubber-lambda
+      - deploy-link-index-updater-lambda-prod
+      - deploy-changelog-scrubber-lambda-prod
+      - release
+      - publish-release
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: elastic/docs-actions/slack/notify-status@v1
+        with:
+          channel: docs-alerts
+          status: failure
+          mention: S028C66K5EX
+          description: Release failed. Containers, binaries, Lambda deploys, or publish did not complete.
