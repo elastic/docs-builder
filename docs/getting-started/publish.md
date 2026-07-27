@@ -60,6 +60,35 @@ In your repository settings, configure GitHub Pages to deploy from GitHub Action
 
 Your documentation will be published to `https://<org>.github.io/<repo>/` on every push to `main`.
 
+## Branding
+
+{{dbuild}} is designed to be a general-purpose documentation platform, not tied to any specific organization. By default, it only applies Elastic-specific branding (logo, chrome) when the GitHub organization is `elastic`. For all other organizations, the site renders with neutral styling.
+
+To customize the look of your documentation site, add a `branding:` section to your `docset.yml`:
+
+```yaml
+branding:
+  icon: images/my-logo.svg
+  header-bg: "#1a1a2e"
+  og-image: images/social-card.png
+  favicon: favicon.ico
+  apple-touch-icon: apple-touch-icon.png
+```
+
+| Key | Description |
+|-----|-------------|
+| `icon` | Site icon displayed in the header. Path relative to your docs folder. |
+| `header-bg` | CSS colour value for the header background. Defaults to `#000000`. |
+| `og-image` | Open Graph image for social sharing. Path relative to your docs folder. |
+| `favicon` | Browser favicon. Auto-discovered from `favicon.ico`, `favicon.png`, or `favicon.svg` if not set. |
+| `apple-touch-icon` | Apple touch icon. Auto-discovered from `apple-touch-icon.png` if not set. |
+
+When `branding:` is present, all Elastic-specific chrome is suppressed — the site is fully white-labelled.
+
+:::{note}
+`branding:` cannot be combined with `features.primary-nav: true`, since the primary nav requires the Elastic global navigation.
+:::
+
 ## Assembler and codex builds
 
 Getting a repository onboarded to an [assembler build](../documentation/assembler.md) or a [codex build](../documentation/codex.md) involves additional configuration and coordination with the documentation team. These build modes are covered in their respective sections:
