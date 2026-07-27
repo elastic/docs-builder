@@ -1,3 +1,7 @@
+---
+navigation_title: Navigation
+---
+
 # `navigation.yml`
 
 The [`navigation.yml`](https://github.com/elastic/docs-builder/blob/main/config/navigation.yml) file acts as a global navigation index. Each entry points to a `toc.yml` file, which contains the navigation tree for that section. This design allows each section/project/team to manage its own navigation independently of other content sets.
