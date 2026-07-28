@@ -201,6 +201,41 @@ does not match the directory structure.
 
 A `file` can only select siblings and more deeply nested files as its children. It can't select files outside its own subtree on disk.
 
+#### Deep-linked `index.md` files
+
+A `file` entry without `children` that points at an `index.md` inside a subdirectory is treated as a single-page subsection for that directory:
+
+```yaml
+toc:
+  - file: reference/1password/index.md
+  - file: reference/activemq/index.md
+```
+
+Each entry becomes its own subsection linking to the directory's `index.md`. This is shorthand for the explicit `folder:` + `file:` form, which remains the preferred approach for folders that also have additional children:
+
+```yaml
+toc:
+  - folder: reference/1password
+    file: index.md
+  - folder: reference/activemq
+    file: index.md
+```
+
+The shorthand also works inside a parent folder's `children` list, which is the common case for a directory of single-page subsections (for example, dozens of integrations under `reference`):
+
+```yaml
+toc:
+  - folder: reference
+    file: index.md
+    children:
+      - file: 1password/index.md
+      - file: activemq/index.md
+```
+
+Each child becomes its own subsection; none is consumed as the parent's index page.
+
+If the entry declares its own `children`, it keeps the [virtual grouping](#virtual-grouping) (deep-linking) behavior instead.
+
 #### Hidden files
 
 A hidden file can be declared in the TOC. 
