@@ -19,9 +19,14 @@ interface PagefindSearch {
 }
 
 interface PagefindApi {
-    options: (options: { baseUrl: string; basePath: string }) => Promise<void>
+    options: (options: PagefindOptions) => Promise<void>
     init: () => Promise<void>
     search: (query: string) => Promise<PagefindSearch | null>
+}
+
+interface PagefindOptions {
+    baseUrl: string
+    basePath: string
 }
 
 interface StaticSearchResult {
@@ -49,15 +54,18 @@ let pagefindPromise: Promise<PagefindApi> | undefined
 
 const rootPath = config.rootPath.replace(/\/$/, '')
 
+export const createPagefindOptions = (rootPath: string): PagefindOptions => ({
+    // Indexed URLs already include the deployment root path.
+    baseUrl: '/',
+    basePath: `${rootPath}/_static/pagefind/`,
+})
+
 const loadPagefind = () => {
     pagefindPromise ??= (async () => {
         try {
             const moduleUrl = `${rootPath}/_static/pagefind/pagefind.js`
             const pagefind = (await import(moduleUrl)) as PagefindApi
-            await pagefind.options({
-                baseUrl: rootPath || '/',
-                basePath: `${rootPath}/_static/pagefind/`,
-            })
+            await pagefind.options(createPagefindOptions(rootPath))
             await pagefind.init()
             return pagefind
         } catch (error) {

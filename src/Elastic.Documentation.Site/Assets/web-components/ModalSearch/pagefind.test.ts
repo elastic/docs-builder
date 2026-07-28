@@ -1,4 +1,15 @@
-import { mapPagefindResults } from './pagefind'
+import { createPagefindOptions, mapPagefindResults } from './pagefind'
+
+describe('createPagefindOptions', () => {
+    it('does not prepend the deployment root to indexed URLs', () => {
+        expect(
+            createPagefindOptions('/elastic/docs-builder/pull/3709')
+        ).toEqual({
+            baseUrl: '/',
+            basePath: '/elastic/docs-builder/pull/3709/_static/pagefind/',
+        })
+    })
+})
 
 describe('mapPagefindResults', () => {
     it('maps matching pages into modal results', () => {
