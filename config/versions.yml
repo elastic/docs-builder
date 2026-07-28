@@ -59,7 +59,7 @@ versioning_systems:
     current: 6.26.2
   apm-agent-ruby:
     base: 4.0
-    current: 4.8.0
+    current: 4.9.0
   apm-agent-rum-js:
     base: 5.0
     current: 5.17.5
