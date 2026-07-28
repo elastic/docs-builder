@@ -2932,6 +2932,70 @@ public class BundleChangelogsTests : ChangelogTestBase
 	}
 
 	[Fact]
+	public async Task BundleChangelogs_WithProfile_DateVersionAndLifecyclePlaceholder_WritesGaLifecycle()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    serverless-release:
+			      output: "serverless-{version}.yaml"
+			      output_products: "cloud-serverless {version} {lifecycle}"
+			""";
+
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-07-21
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+
+		var prListPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(prListPath)!);
+		await FileSystem.File.WriteAllTextAsync(prListPath, "https://github.com/elastic/kibana/pull/100\n", TestContext.Current.CancellationToken);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "serverless-release",
+			ProfileArgument = "2026-07-21",
+			ProfileReport = prListPath,
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+
+		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+
+		bundleContent.Should().Contain("target: 2026-07-21");
+		bundleContent.Should().Contain("lifecycle: ga", "ISO date version args should derive ga lifecycle, not preview");
+		bundleContent.Should().NotContain("lifecycle: preview");
+	}
+
+	[Fact]
 	public async Task BundleChangelogs_WithProfile_RepoAndOwner_WritesValuesToProductEntries()
 	{
 		// Arrange - repo and owner in the profile are written to each product entry in the bundle.
