@@ -29,10 +29,10 @@ export function Calculator() {
     const [indexType, setIndexType] = useState<IndexType>('hnsw')
     const [quantization, setQuantization] = useState<Quantization>('bbq')
     const [replicas, setReplicas] = useState(1)
-    const [hnswM, setHnswM] = useState(4)
+    const [hnswM, setHnswM] = useState(16)
     const efConstruction = 100
     const [vectorsPerCluster, setVectorsPerCluster] = useState(384)
-    const [offHeapRamPercent, setOffHeapRamPercent] = useState(50)
+    const [offHeapRamPercent, setOffHeapRamPercent] = useState(10)
 
     const indexTypeOptions = useMemo(
         () => getAvailableIndexTypes(elementType),

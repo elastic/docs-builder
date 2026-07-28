@@ -146,24 +146,24 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
   if (indexType !== 'disk_bbq') {
     switch (quantization) {
       case 'int8':
-        quantDisk = V * (D + 4);
+        quantDisk = V * (D + 16);
         quantLabel = 'int8 quantized vectors';
         formulas.push(
-          `int8 quantized = V × (D + 4) = ${formatBytesString(quantDisk)}`
+          `int8 quantized = V × (D + 16) = ${formatBytesString(quantDisk)}`
         );
         break;
       case 'int4':
-        quantDisk = V * (Math.ceil(D / 2) + 4);
+        quantDisk = V * (Math.ceil(D / 2) + 16);
         quantLabel = 'int4 quantized vectors';
         formulas.push(
-          `int4 quantized = V × (⌈D/2⌉ + 4) = ${formatBytesString(quantDisk)}`
+          `int4 quantized = V × (⌈D/2⌉ + 16) = ${formatBytesString(quantDisk)}`
         );
         break;
       case 'bbq':
-        quantDisk = V * (Math.ceil(D / 8) + 14);
+        quantDisk = V * (Math.ceil(D / 64) * 8 + 14);
         quantLabel = 'BBQ quantized vectors';
         formulas.push(
-          `BBQ quantized = V × (⌈D/8⌉ + 14) = ${formatBytesString(quantDisk)}`
+          `BBQ quantized = V × (⌈D/64⌉×8 + 14) = ${formatBytesString(quantDisk)}`
         );
         break;
     }
@@ -183,16 +183,23 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     );
   } else if (indexType === 'disk_bbq') {
     const nc = Math.ceil(V / vpc);
-    bbqCentroids = nc * D * 4 + nc * (D + 14);
-    bbqVectors = V * ((Math.ceil(D / 8) + 14 + 2) * 2);
+    // Centroids: 7-bit OSQ quantized (1 byte/dim) + 16-byte correction.
+    bbqCentroids = nc * (D + 16);
+    // Cluster vectors: 1-bit codes at D≥384, else 4-bit (⌈D/2⌉); ×2 SOAR
+    // overspill upper bound; + 16-byte correction.
+    const clusterCodeBytes = D < 384 ? Math.ceil(D / 2) : Math.ceil(D / 8);
+    const clusterCodeLabel = D < 384 ? '⌈D/2⌉' : '⌈D/8⌉';
+    bbqVectors = V * 2 * (clusterCodeBytes + 16);
     indexDisk = bbqCentroids + bbqVectors;
     indexLabel = 'DiskBBQ structures';
     formulas.push(
       `DiskBBQ clusters = ⌈V / ${vpc}⌉ = ${formatGroupedInteger(nc)}`
     );
-    formulas.push(`Centroid bytes = ${formatBytesString(bbqCentroids)}`);
     formulas.push(
-      `Quantized cluster vectors = ${formatBytesString(bbqVectors)}`
+      `Centroid bytes = ⌈V/${vpc}⌉ × (D + 16) = ${formatBytesString(bbqCentroids)}`
+    );
+    formulas.push(
+      `Quantized cluster vectors = V × 2 × (${clusterCodeLabel} + 16) = ${formatBytesString(bbqVectors)}`
     );
   }
 
@@ -232,21 +239,21 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         formulas.push(`Vector RAM = ${formatBytesString(ramVectors)}`);
         break;
       case 'int8':
-        ramVectors = V * (D + 4);
+        ramVectors = V * (D + 16);
         ramVectorsLabel = 'int8 vectors in RAM';
         formulas.push(
           `Vector RAM (int8) = ${formatBytesString(ramVectors)}`
         );
         break;
       case 'int4':
-        ramVectors = V * (Math.ceil(D / 2) + 4);
+        ramVectors = V * (Math.ceil(D / 2) + 16);
         ramVectorsLabel = 'int4 vectors in RAM';
         formulas.push(
           `Vector RAM (int4) = ${formatBytesString(ramVectors)}`
         );
         break;
       case 'bbq':
-        ramVectors = V * (Math.ceil(D / 8) + 14);
+        ramVectors = V * (Math.ceil(D / 64) * 8 + 14);
         ramVectorsLabel = 'BBQ vectors in RAM';
         formulas.push(
           `Vector RAM (BBQ) = ${formatBytesString(ramVectors)}`
@@ -259,14 +266,15 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
       formulas.push(`HNSW graph RAM = ${formatBytesString(ramIndex)}`);
     }
   } else if (indexType === 'disk_bbq') {
-    const fullIndex = bbqCentroids + bbqVectors;
-    ramVectors = Math.ceil(fullIndex * 0.05);
-    ramVectorsLabel = 'DiskBBQ structures (~5% in RAM)';
+    // All centroids stay resident; only a fraction (5–10%) of the posting
+    // lists (cluster vectors) needs to be cached in off-heap RAM.
+    ramVectors = bbqCentroids + Math.ceil(bbqVectors * 0.05);
+    ramVectorsLabel = 'DiskBBQ off-heap RAM (all centroids + ~5% posting lists)';
     formulas.push(
-      `DiskBBQ RAM ≈ 5% × ${formatBytesString(fullIndex)} = ${formatBytesString(ramVectors)}`
+      `DiskBBQ RAM ≈ centroids + 5% × posting lists = ${formatBytesString(ramVectors)}`
     );
     formulas.push(
-      '  Note: 1–5% of index structure in RAM is typically sufficient'
+      '  Note: all centroids resident; 5–10% of posting lists is typically sufficient'
     );
   }
 

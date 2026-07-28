@@ -22,6 +22,28 @@ function rawBytesPerVector(elementType: string, D: number): number {
     }
 }
 
+/**
+ * Quantized code + correction bytes per vector for hnsw/flat indexes (.veq/.veb).
+ *   int8 = D + 16, int4 = ⌈D/2⌉ + 16   (3 floats + 1 int correction = 16 B)
+ *   bbq  = ⌈D/64⌉×8 + 14                (bits padded to a multiple of 64; 3 floats + 1 short = 14 B)
+ * Verified against Elasticsearch Int7uOSQVectorScorerSupplier (D + 16),
+ * Int4VectorScorerSupplier (⌈D/2⌉ + 16), ES93BinaryQuantizedVectorScorer (+14),
+ * and BQVectorUtils.discretize(D, 64). The legacy Lucene99 +4 correction is not
+ * what current int8_* / int4_* fields write.
+ */
+function quantizedBytesPerVector(quantization: string, D: number): number {
+    switch (quantization) {
+        case 'int8':
+            return D + 16
+        case 'int4':
+            return Math.ceil(D / 2) + 16
+        case 'bbq':
+            return Math.ceil(D / 64) * 8 + 14
+        default:
+            return 0
+    }
+}
+
 /** Human-readable byte formatting. */
 export function formatBytes(bytes: number): { value: string; unit: string } {
     if (bytes === 0) return { value: '0', unit: 'bytes' }
@@ -42,13 +64,19 @@ export function formatBytesString(bytes: number): string {
     return `${f.value} ${f.unit}`
 }
 
-/** DiskBBQ off-heap slider: % of quantized vectors to cache in RAM (practical range). */
+/** DiskBBQ off-heap slider: % of posting lists (cluster vectors) to cache in RAM (centroids are always fully resident). */
 export const DISKBBQ_OFF_HEAP_RAM_MIN_PERCENT = 5
-export const DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT = 50
+export const DISKBBQ_OFF_HEAP_RAM_MAX_PERCENT = 10
 
-/** DiskBBQ RAM range endpoints for hero/detail (fraction of quantized vectors cached). */
+/** DiskBBQ RAM range endpoints for hero/detail (fraction of posting lists cached; centroids always fully resident). */
 const DISKBBQ_VECTOR_CACHE_MIN_FRACTION = 0.05
-const DISKBBQ_VECTOR_CACHE_MAX_FRACTION = 0.5
+const DISKBBQ_VECTOR_CACHE_MAX_FRACTION = 0.1
+
+/**
+ * DiskBBQ cluster vectors use 1-bit codes at/above this dimension and 4-bit
+ * (⌈D/2⌉) below it (Elasticsearch DenseVectorFieldMapper: dims < 384 ? 4 : 1).
+ */
+const DISKBBQ_ONE_BIT_MIN_DIMS = 384
 
 export function clampDiskBbqOffHeapPercent(percent: number): number {
     return Math.min(
@@ -164,24 +192,24 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
     if (indexType !== 'disk_bbq') {
         switch (quantization) {
             case 'int8':
-                quantDisk = V * (D + 4)
+                quantDisk = V * quantizedBytesPerVector('int8', D)
                 quantLabel = 'int8 quantized vectors'
                 diskFormulas.push(
-                    `int8 quantized = V × (D + 4) = ${formatBytesString(quantDisk)}`
+                    `int8 quantized = V × (D + 16) = ${formatBytesString(quantDisk)}`
                 )
                 break
             case 'int4':
-                quantDisk = V * (Math.ceil(D / 2) + 4)
+                quantDisk = V * quantizedBytesPerVector('int4', D)
                 quantLabel = 'int4 quantized vectors'
                 diskFormulas.push(
-                    `int4 quantized = V × (⌈D/2⌉ + 4) = ${formatBytesString(quantDisk)}`
+                    `int4 quantized = V × (⌈D/2⌉ + 16) = ${formatBytesString(quantDisk)}`
                 )
                 break
             case 'bbq':
-                quantDisk = V * (Math.ceil(D / 8) + 14)
+                quantDisk = V * quantizedBytesPerVector('bbq', D)
                 quantLabel = 'BBQ quantized vectors'
                 diskFormulas.push(
-                    `BBQ quantized = V × (⌈D/8⌉ + 14) = ${formatBytesString(quantDisk)}`
+                    `BBQ quantized = V × (⌈D/64⌉×8 + 14) = ${formatBytesString(quantDisk)}`
                 )
                 break
         }
@@ -201,16 +229,25 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         )
     } else if (indexType === 'disk_bbq') {
         const nc = Math.ceil(V / vpc)
-        bbqCentroids = nc * D * 4 + nc * (D + 14)
-        bbqVectors = V * ((Math.ceil(D / 8) + 14 + 2) * 2)
+        // Centroids: 7-bit OSQ quantized (1 byte/dim) + 16-byte correction.
+        bbqCentroids = nc * (D + 16)
+        // Cluster vectors: 1-bit codes at D≥384, else 4-bit (⌈D/2⌉); ×2 SOAR
+        // overspill upper bound; + 16-byte correction (3 floats + 1 int).
+        const clusterCodeBytes =
+            D < DISKBBQ_ONE_BIT_MIN_DIMS ? Math.ceil(D / 2) : Math.ceil(D / 8)
+        const clusterCodeLabel =
+            D < DISKBBQ_ONE_BIT_MIN_DIMS ? '⌈D/2⌉' : '⌈D/8⌉'
+        bbqVectors = V * 2 * (clusterCodeBytes + 16)
         indexDisk = bbqCentroids + bbqVectors
         indexLabel = 'DiskBBQ structures'
         diskFormulas.push(
             `DiskBBQ clusters = ⌈V / ${vpc}⌉ = ${formatGroupedInteger(nc)}`
         )
-        diskFormulas.push(`Centroid bytes = ${formatBytesString(bbqCentroids)}`)
         diskFormulas.push(
-            `Quantized cluster vectors = ${formatBytesString(bbqVectors)}`
+            `Centroid bytes = ⌈V/${vpc}⌉ × (D + 16) = ${formatBytesString(bbqCentroids)}`
+        )
+        diskFormulas.push(
+            `Quantized cluster vectors = V × 2 × (${clusterCodeLabel} + 16) = ${formatBytesString(bbqVectors)}`
         )
     }
 
@@ -254,21 +291,21 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
                 )
                 break
             case 'int8':
-                ramVectors = V * (D + 4)
+                ramVectors = V * quantizedBytesPerVector('int8', D)
                 ramVectorsLabel = 'int8 vectors in RAM'
                 ramFormulas.push(
                     `Vector RAM (int8) = ${formatBytesString(ramVectors)}`
                 )
                 break
             case 'int4':
-                ramVectors = V * (Math.ceil(D / 2) + 4)
+                ramVectors = V * quantizedBytesPerVector('int4', D)
                 ramVectorsLabel = 'int4 vectors in RAM'
                 ramFormulas.push(
                     `Vector RAM (int4) = ${formatBytesString(ramVectors)}`
                 )
                 break
             case 'bbq':
-                ramVectors = V * (Math.ceil(D / 8) + 14)
+                ramVectors = V * quantizedBytesPerVector('bbq', D)
                 ramVectorsLabel = 'BBQ vectors in RAM'
                 ramFormulas.push(
                     `Vector RAM (BBQ) = ${formatBytesString(ramVectors)}`
@@ -291,17 +328,19 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         const ramSelected = bbqCentroids + Math.ceil(bbqVectors * pct)
         ramVectors = ramSelected
         ramVectorsLabel = 'DiskBBQ off-heap RAM'
+        const minPct = DISKBBQ_VECTOR_CACHE_MIN_FRACTION * 100
+        const maxPct = DISKBBQ_VECTOR_CACHE_MAX_FRACTION * 100
         ramFormulas.push(
-            `DiskBBQ RAM min = centroids + 5% × vectors = ${formatBytesString(diskBbqRamMin)}`
+            `DiskBBQ RAM min = centroids + ${minPct}% × posting lists = ${formatBytesString(diskBbqRamMin)}`
         )
         ramFormulas.push(
-            `DiskBBQ RAM max = centroids + 50% × vectors = ${formatBytesString(diskBbqRamMax)}`
+            `DiskBBQ RAM max = centroids + ${maxPct}% × posting lists = ${formatBytesString(diskBbqRamMax)}`
         )
         ramFormulas.push(
-            `DiskBBQ RAM (${clampDiskBbqOffHeapPercent(offHeapRamPercent)}% vectors cached) = centroids + ${clampDiskBbqOffHeapPercent(offHeapRamPercent)}% × vectors = ${formatBytesString(ramSelected)}`
+            `DiskBBQ RAM (${clampDiskBbqOffHeapPercent(offHeapRamPercent)}% posting lists cached) = centroids + ${clampDiskBbqOffHeapPercent(offHeapRamPercent)}% × posting lists = ${formatBytesString(ramSelected)}`
         )
         ramFormulas.push(
-            '  Centroids fully in RAM; cached vector fraction depends on throughput/latency goals'
+            '  All centroids stay resident; the cached posting-list fraction depends on throughput/latency goals'
         )
     }
 

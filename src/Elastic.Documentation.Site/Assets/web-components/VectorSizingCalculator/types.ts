@@ -43,7 +43,7 @@ export interface SizingResult {
     clusterRam: number
     clusterRamMin: number
     clusterRamMax: number
-    /** DiskBBQ: hero and per-replica RAM show min–max (5%–50% vector cache). */
+    /** DiskBBQ: hero and per-replica RAM show min–max (5%–10% posting-list cache). */
     usesRamRange: boolean
     /** Index copies = 1 primary + replicas. */
     totalCopies: number

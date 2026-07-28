@@ -452,18 +452,18 @@
 
     var qD=0,qL='';
     if(idx!=='disk_bbq'){switch(q){
-      case'int8':qD=V*(D+4);qL='int8 quantized vectors';F.push('int8 quantized = V \u00d7 (D + 4) = '+fs(qD));break;
-      case'int4':qD=V*(Math.ceil(D/2)+4);qL='int4 quantized vectors';F.push('int4 quantized = V \u00d7 (D/2 + 4) = '+fs(qD));break;
-      case'bbq':qD=V*(Math.ceil(D/8)+14);qL='BBQ quantized vectors';F.push('BBQ quantized = V \u00d7 (D/8 + 14) = '+fs(qD));break;
+      case'int8':qD=V*(D+16);qL='int8 quantized vectors';F.push('int8 quantized = V \u00d7 (D + 16) = '+fs(qD));break;
+      case'int4':qD=V*(Math.ceil(D/2)+16);qL='int4 quantized vectors';F.push('int4 quantized = V \u00d7 (\u2308D/2\u2309 + 16) = '+fs(qD));break;
+      case'bbq':qD=V*(Math.ceil(D/64)*8+14);qL='BBQ quantized vectors';F.push('BBQ quantized = V \u00d7 (\u2308D/64\u2309\u00d78 + 14) = '+fs(qD));break;
     }}
 
     var iD=0,iL='',bbqC=0,bbqV=0;
     if(idx==='hnsw'){iD=V*4*m;iL='HNSW graph';F.push('HNSW graph = V \u00d7 4 \u00d7 '+m+' = '+fs(iD));}
     else if(idx==='disk_bbq'){
-      var nc=Math.ceil(V/vpc);bbqC=nc*D*4+nc*(D+14);bbqV=V*((Math.ceil(D/8)+14+2)*2);
+      var nc=Math.ceil(V/vpc);bbqC=nc*(D+16);var ccb=D<384?Math.ceil(D/2):Math.ceil(D/8);var ccl=D<384?'\u2308D/2\u2309':'\u2308D/8\u2309';bbqV=V*2*(ccb+16);
       iD=bbqC+bbqV;iL='DiskBBQ structures';
       F.push('DiskBBQ clusters = ceil(V / '+vpc+') = '+nc.toLocaleString());
-      F.push('Centroid bytes = '+fs(bbqC));F.push('Quantized cluster vectors = '+fs(bbqV));
+      F.push('Centroid bytes = clusters \u00d7 (D + 16) = '+fs(bbqC));F.push('Quantized cluster vectors = V \u00d7 2 \u00d7 ('+ccl+' + 16) = '+fs(bbqV));
     }
     var tD=rawD+qD+iD; F.push('Total disk (per replica) = '+fs(tD));
 
@@ -471,15 +471,15 @@
     if(idx==='hnsw'||idx==='flat'){
       switch(q){
         case'none':rV=rawD;rVL='Raw vectors in RAM';F.push('Vector RAM = '+fs(rV));break;
-        case'int8':rV=V*(D+4);rVL='int8 vectors in RAM';F.push('Vector RAM (int8) = '+fs(rV));break;
-        case'int4':rV=V*(Math.ceil(D/2)+4);rVL='int4 vectors in RAM';F.push('Vector RAM (int4) = '+fs(rV));break;
-        case'bbq':rV=V*(Math.ceil(D/8)+14);rVL='BBQ vectors in RAM';F.push('Vector RAM (BBQ) = '+fs(rV));break;
+        case'int8':rV=V*(D+16);rVL='int8 vectors in RAM';F.push('Vector RAM (int8) = '+fs(rV));break;
+        case'int4':rV=V*(Math.ceil(D/2)+16);rVL='int4 vectors in RAM';F.push('Vector RAM (int4) = '+fs(rV));break;
+        case'bbq':rV=V*(Math.ceil(D/64)*8+14);rVL='BBQ vectors in RAM';F.push('Vector RAM (BBQ) = '+fs(rV));break;
       }
       if(idx==='hnsw'){rI=V*4*m;rIL='HNSW graph in RAM';F.push('HNSW graph RAM = '+fs(rI));}
     }else if(idx==='disk_bbq'){
-      var full=bbqC+bbqV;rV=Math.ceil(full*0.05);rVL='DiskBBQ structures (~5% in RAM)';
-      F.push('DiskBBQ RAM \u2248 5% \u00d7 '+fs(full)+' = '+fs(rV));
-      F.push('  Note: 1\u20135% of index structure in RAM is typically sufficient');
+      rV=bbqC+Math.ceil(bbqV*0.05);rVL='DiskBBQ off-heap RAM (all centroids + ~5% posting lists)';
+      F.push('DiskBBQ RAM \u2248 centroids + 5% \u00d7 posting lists = '+fs(rV));
+      F.push('  Note: all centroids resident; 5\u201310% of posting lists is typically sufficient');
     }
     var tR=rV+rI; F.push('Total off-heap RAM (per replica) = '+fs(tR));
 
