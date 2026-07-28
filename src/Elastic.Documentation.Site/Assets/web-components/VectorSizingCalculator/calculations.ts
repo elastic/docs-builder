@@ -4,6 +4,7 @@ import type {
     SizingResult,
     ValidationResult,
     BreakdownItem,
+    ComponentRow,
 } from './types'
 
 /** Return the number of raw bytes per vector based on element type + dimensions. */
@@ -154,6 +155,157 @@ export function validate(inputs: CalculatorInputs): ValidationResult {
     }
 
     return { valid: true }
+}
+
+/**
+ * Canonical Elasticsearch `index_options.type` for the selected structure +
+ * quantization, e.g. `hnsw`, `int8_flat`, `bbq_hnsw`, `bbq_disk`.
+ */
+export function deriveIndexOptionsType(
+    indexType: string,
+    quantization: string
+): string {
+    if (indexType === 'disk_bbq') return 'bbq_disk'
+    if (quantization === 'none') return indexType
+    return `${quantization}_${indexType}`
+}
+
+/** Source-precision bytes-per-dimension label for the raw `.vec` formula. */
+function elementBytesLabel(elementType: string): string {
+    switch (elementType) {
+        case 'bfloat16':
+            return '2'
+        case 'byte':
+            return '1'
+        case 'bit':
+            return '1/8'
+        default:
+            return '4'
+    }
+}
+
+/**
+ * Per-structure breakdown (per replica), mirroring the files Elasticsearch
+ * writes and reports under `off_heap.*_size_bytes`. The sum of `bytes` equals
+ * `totalDisk`; `offHeap` marks what must stay in the filesystem cache.
+ */
+function buildComponents(inputs: CalculatorInputs): ComponentRow[] {
+    const {
+        numVectors: V,
+        numDimensions: D,
+        elementType,
+        indexType,
+        quantization,
+        hnswM: m,
+        vectorsPerCluster: vpc,
+    } = inputs
+
+    const int = formatGroupedInteger
+    const rows: ComponentRow[] = []
+
+    // Raw vectors (.vec) — always written, kept for rescoring.
+    const rpv = rawBytesPerVector(elementType, D)
+    const rawResident = quantization === 'none' && indexType !== 'disk_bbq'
+    rows.push({
+        name: 'Raw vectors',
+        ext: 'vec',
+        formula:
+            elementType === 'bit'
+                ? 'V × ⌈D/8⌉'
+                : `V × D × ${elementBytesLabel(elementType)}`,
+        detail: `${int(V)} × ${rpv}`,
+        bytes: V * rpv,
+        offHeap: rawResident ? 'yes' : 'no',
+        description: rawResident
+            ? 'Full-precision vectors, scanned directly during search.'
+            : 'Full-precision vectors; kept on disk, read only for optional rescoring.',
+        source: 'LuceneFilesExtensions.java:81 · float=4 / byte=1 / bit=⌈D/8⌉ · bfloat16=2 BFloat16.java:20',
+    })
+
+    // Quantized vectors (hnsw / flat only).
+    if (indexType !== 'disk_bbq' && quantization === 'int8') {
+        rows.push({
+            name: 'int8 quantized vectors',
+            ext: 'veq',
+            formula: 'V × (D + 16)',
+            detail: `${int(V)} × (${int(D)} + 16)`,
+            bytes: V * quantizedBytesPerVector('int8', D),
+            offHeap: 'yes',
+            description:
+                '1 byte/dim + a 16-byte OSQ correction (3 floats + int component sum).',
+            source: 'DenseVectorFieldMapper.java:2095 · +16 = 3×float+int Int7uOSQVectorScorerSupplier.java:42,57',
+        })
+    } else if (indexType !== 'disk_bbq' && quantization === 'int4') {
+        rows.push({
+            name: 'int4 quantized vectors',
+            ext: 'veq',
+            formula: 'V × (⌈D/2⌉ + 16)',
+            detail: `${int(V)} × (${int(Math.ceil(D / 2))} + 16)`,
+            bytes: V * quantizedBytesPerVector('int4', D),
+            offHeap: 'yes',
+            description:
+                '0.5 byte/dim (nibble-packed) + the same 16-byte OSQ correction.',
+            source: 'DenseVectorFieldMapper.java:2290 · ⌈D/2⌉+16 Int4VectorScorerSupplier.java:49',
+        })
+    } else if (indexType !== 'disk_bbq' && quantization === 'bbq') {
+        const packed = Math.ceil(D / 64) * 8
+        rows.push({
+            name: 'BBQ quantized vectors',
+            ext: 'veb',
+            formula: 'V × (⌈D/64⌉×8 + 14)',
+            detail: `${int(V)} × (${int(packed)} + 14)`,
+            bytes: V * quantizedBytesPerVector('bbq', D),
+            offHeap: 'yes',
+            description:
+                '1 bit/dim (D padded up to a multiple of 64) + 14-byte correction (3 floats + short).',
+            source: 'ES818BinaryQuantizedVectorsWriter · +14 ES93BinaryQuantizedVectorScorer.java:23 · discretize BQVectorUtils.java:44',
+        })
+    }
+
+    // HNSW graph (.vex).
+    if (indexType === 'hnsw') {
+        rows.push({
+            name: 'HNSW graph',
+            ext: 'vex',
+            formula: 'V × 4 × m',
+            detail: `${int(V)} × 4 × ${int(m)}`,
+            bytes: V * 4 * m,
+            offHeap: 'yes',
+            description:
+                'Proximity graph, ~4 bytes per neighbour × m. Heuristic; the real .vex is varint delta-encoded and multi-level. Memory-mapped → off-heap.',
+            source: 'LuceneFilesExtensions.java:82 · m = DEFAULT_MAX_CONN = 16 DenseVectorFieldMapper.java:138',
+        })
+    }
+
+    // DiskBBQ centroids (.cenivf) + clusters (.clivf).
+    if (indexType === 'disk_bbq') {
+        const nc = Math.ceil(V / vpc)
+        rows.push({
+            name: 'DiskBBQ centroids',
+            ext: 'cenivf',
+            formula: '⌈V / C⌉ × (D + 16)',
+            detail: `${int(nc)} × (${int(D)} + 16)`,
+            bytes: nc * (D + 16),
+            offHeap: 'yes',
+            description:
+                '7-bit OSQ centroids (1 byte/dim) + 16-byte correction. Lower bound: excludes the parent centroid layer and vector→centroid lookup table.',
+            source: 'ES940DiskBBQVectorsFormat.java:55 · C = 384 (:80) · writeQuantizedValue ES940DiskBBQVectorsWriter.java:860-864',
+        })
+        const oneBit = D >= DISKBBQ_ONE_BIT_MIN_DIMS
+        const codeBytes = oneBit ? Math.ceil(D / 8) : Math.ceil(D / 2)
+        rows.push({
+            name: 'DiskBBQ clusters (quantized vectors)',
+            ext: 'clivf',
+            formula: oneBit ? 'V × 2 × (⌈D/8⌉ + 16)' : 'V × 2 × (⌈D/2⌉ + 16)',
+            detail: `${int(V)} × 2 × (${int(codeBytes)} + 16)`,
+            bytes: V * 2 * (codeBytes + 16),
+            offHeap: 'partial',
+            description: `${oneBit ? '1' : '4'}-bit OSQ vectors + 16-byte correction; D≥384 uses 1-bit, else 4-bit. The ×2 is a conservative SOAR-overspill upper bound. Only touched clusters are paged in.`,
+            source: 'ES940DiskBBQVectorsFormat.java:57 · bits DenseVectorFieldMapper.java:511 · SOAR ES940DiskBBQVectorsWriter.java:272-276',
+        })
+    }
+
+    return rows
 }
 
 /** Compute all sizing estimates. */
@@ -386,9 +538,16 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
             : `Cluster total RAM  = per-replica × ${totalCopies} copies = ${formatBytesString(clusterRam)}`
     )
 
+    const components = buildComponents(inputs)
+    const indexOptionsType = deriveIndexOptionsType(indexType, quantization)
+    const diskToRamRatioMin = totalRamMax > 0 ? totalDisk / totalRamMax : 0
+    const diskToRamRatioMax = totalRamMin > 0 ? totalDisk / totalRamMin : 0
+
     return {
         diskBreakdown,
         ramBreakdown,
+        components,
+        indexOptionsType,
         totalDisk,
         totalRam,
         totalRamMin,
@@ -398,6 +557,8 @@ export function calculate(inputs: CalculatorInputs): SizingResult | null {
         clusterRamMin,
         clusterRamMax,
         usesRamRange,
+        diskToRamRatioMin,
+        diskToRamRatioMax,
         totalCopies,
         formulas: {
             disk: diskFormulas,

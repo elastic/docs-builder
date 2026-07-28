@@ -2,7 +2,7 @@ import { formatBytesRangeLabel, formatBytesString } from '../calculations'
 import { formatGroupedInteger } from '../formatNumbers'
 import type { SizingResult, ValidationResult } from '../types'
 import { HeroSizeLine } from './HeroSizeLine'
-import { EuiHorizontalRule, EuiLink, EuiText } from '@elastic/eui'
+import { EuiHorizontalRule, EuiIcon, EuiLink, EuiText } from '@elastic/eui'
 
 interface ResultsPanelProps {
     result: SizingResult | null
@@ -26,6 +26,20 @@ function clusterResourcesLabel(replicas: number): string {
         return 'Cluster total (1 primary + 1 replica):'
     }
     return `Cluster total (1 primary + ${formatGroupedInteger(replicas)} replicas):`
+}
+
+function formatRatio(value: number): string {
+    return `${value.toFixed(value >= 10 ? 0 : 1)}×`
+}
+
+function diskToRamRatioLabel(result: SizingResult): string {
+    if (result.diskToRamRatioMin <= 0) {
+        return '—'
+    }
+    if (result.diskToRamRatioMin === result.diskToRamRatioMax) {
+        return formatRatio(result.diskToRamRatioMin)
+    }
+    return `${formatRatio(result.diskToRamRatioMin)} – ${formatRatio(result.diskToRamRatioMax)}`
 }
 
 export function ResultsPanel({
@@ -90,6 +104,12 @@ export function ResultsPanel({
                                 size="s"
                                 className="vectorSizingCalc__detailLabel"
                             >
+                                Index options type:
+                            </EuiText>
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailLabel"
+                            >
                                 Quantization:
                             </EuiText>
                             <EuiText
@@ -104,8 +124,22 @@ export function ResultsPanel({
                             >
                                 RAM per replica:
                             </EuiText>
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailLabel"
+                            >
+                                Disk : off-heap RAM:
+                            </EuiText>
                         </div>
                         <div className="vectorSizingCalc__resultsDetailValues">
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailValue"
+                            >
+                                {showBody && result
+                                    ? result.indexOptionsType
+                                    : '—'}
+                            </EuiText>
                             <EuiText
                                 size="s"
                                 className="vectorSizingCalc__detailValue"
@@ -133,8 +167,23 @@ export function ResultsPanel({
                                         : formatBytesString(result.totalRam)
                                     : '0 MiB'}
                             </EuiText>
+                            <EuiText
+                                size="s"
+                                className="vectorSizingCalc__detailValue"
+                            >
+                                {showBody && result
+                                    ? diskToRamRatioLabel(result)
+                                    : '—'}
+                            </EuiText>
                         </div>
                     </div>
+
+                    <EuiText size="xs" className="vectorSizingCalc__heapNote">
+                        <EuiIcon type="memory" size="s" /> JVM heap is transient
+                        only (per-query queues + a merge-time graph build) — it
+                        is not a persistent, index-sized structure. Size it for
+                        concurrency and merges, not for fitting the vectors.
+                    </EuiText>
 
                     <EuiHorizontalRule margin="l" />
 
