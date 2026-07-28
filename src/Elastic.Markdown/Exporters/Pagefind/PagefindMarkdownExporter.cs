@@ -39,7 +39,7 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		if (_index is null)
 		{
 			_fileSystem = fileContext.BuildContext.WriteFileSystem;
-			_index = new PagefindIndex(new PagefindIndexOptions { Language = "en" }, _fileSystem);
+			_index = new PagefindIndex(new PagefindIndexOptions { Language = "en", IndexedMetaFields = ["title"] }, _fileSystem);
 		}
 
 		var file = fileContext.SourceFile;
@@ -77,6 +77,9 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		return ValueTask.FromResult(true);
 	}
 
+	private const int MaxHeadings = 10;
+	private const int MaxBodySections = 5;
+
 	private static List<HtmlSection> BuildHtmlSections(MarkdownExportFileContext fileContext)
 	{
 		var sections = new List<HtmlSection>();
@@ -85,13 +88,18 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		if (!string.IsNullOrEmpty(file.Title))
 			sections.Add(new HtmlSection("h1", file.Title));
 
+		var headingCount = 0;
+		var bodyCount = 0;
 		var currentBodyLines = new List<string>();
 
 		foreach (var block in fileContext.Document)
 		{
 			if (block is HeadingBlock heading)
 			{
-				FlushBody(sections, currentBodyLines);
+				FlushBody(sections, currentBodyLines, ref bodyCount);
+				if (headingCount >= MaxHeadings)
+					continue;
+
 				var text = heading.GetData("header") as string ?? string.Empty;
 				if (!string.IsNullOrEmpty(text))
 				{
@@ -101,26 +109,34 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 						slugTarget = HeadingAnchorParser.InlineAnchors().Replace(slugTarget, "");
 					var id = slugTarget.Slugify();
 					sections.Add(new HtmlSection($"h{heading.Level}", text, id));
+					headingCount++;
 				}
 			}
 			else
 			{
+				if (bodyCount >= MaxBodySections)
+					continue;
+
 				var text = PlainTextExporter.ConvertBlockToPlainText(block, fileContext.BuildContext);
 				if (!string.IsNullOrEmpty(text))
 					currentBodyLines.Add(text);
 			}
 		}
 
-		FlushBody(sections, currentBodyLines);
+		FlushBody(sections, currentBodyLines, ref bodyCount);
 		return sections;
 	}
 
-	private static void FlushBody(List<HtmlSection> sections, List<string> lines)
+	private static void FlushBody(List<HtmlSection> sections, List<string> lines, ref int bodyCount)
 	{
 		if (lines.Count == 0)
 			return;
 
-		sections.Add(new HtmlSection("p", string.Join(" ", lines)));
+		if (bodyCount < MaxBodySections)
+		{
+			sections.Add(new HtmlSection("p", string.Join(" ", lines)));
+			bodyCount++;
+		}
 		lines.Clear();
 	}
 
