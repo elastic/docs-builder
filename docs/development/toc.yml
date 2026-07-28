@@ -4,3 +4,4 @@ toc:
   - file: ingest.md
   - file: essc.md
   - file: changelog-bundle-registry.md
+  - toc: link-validation

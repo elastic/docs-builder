@@ -212,14 +212,23 @@ type Setup =
         let root = fileSystem.DirectoryInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs/"));
         let redirectYaml = File.ReadAllText(Path.Combine(root.FullName, "_redirects.yml"))
         // Read the test-specific complex redirect entries from docs-tests/ and merge them
-        // into the mock's _redirects.yml. The real _redirects.yml only has simple testing/* → index.md
-        // entries that the assembler can validate; the complex entries (with anchors, many:, etc.)
-        // are needed by cross-link redirect tests but can't exist in the real file because
-        // their targets (testing/redirects/*.md) don't exist on disk.
+        // into the mock's _redirects.yml. The real _redirects.yml has simple testing/* → index.md
+        // entries for CI validation; the complex entries (with anchors, many:, etc.) are needed
+        // by cross-link redirect tests. We strip the simple entries that would conflict with the
+        // complex test entries, then append the complex ones.
         let testRedirectYaml = File.ReadAllText(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "redirects.yml"))
-        // Strip the 'redirects:' key from the test file and append entries under the real file's redirects: key
-        let testEntries = testRedirectYaml.Replace("redirects:\n", "").Replace("'redirects/", "'testing/redirects/").Replace("\"redirects/", "\"testing/redirects/").Replace("!redirects/", "!testing/redirects/")
-        let mergedRedirectYaml = redirectYaml.TrimEnd() + "\n" + testEntries
+        let testEntries = testRedirectYaml.Replace("redirects:\r\n", "").Replace("redirects:\n", "").Replace("'redirects/", "'testing/redirects/").Replace("\"redirects/", "\"testing/redirects/").Replace("!redirects/", "!testing/redirects/")
+        // Collect the test entry keys to remove their simple duplicates from the real redirects
+        let testKeys = testEntries.Split('\n') |> Array.choose (fun line ->
+            let trimmed = line.TrimStart()
+            if trimmed.StartsWith("'testing/") then Some(trimmed.Split(':').[0].Trim())
+            elif trimmed.StartsWith("\"testing/") then Some(trimmed.Split(':').[0].Trim())
+            else None)
+        let mutable filtered = redirectYaml
+        for key in testKeys do
+            // Remove lines like "  'testing/redirects/third-page.md': 'index.md'\n"
+            filtered <- filtered.Replace($"  {key}: 'index.md'\r\n", "").Replace($"  {key}: 'index.md'\n", "")
+        let mergedRedirectYaml = filtered.TrimEnd() + "\n" + testEntries
         // Write both _redirects.yml and redirects.yml so the correct one is found
         // regardless of whether the random docset name is _docset.yml or docset.yml
         fileSystem.AddFile(Path.Combine(root.FullName, "_redirects.yml"), MockFileData(mergedRedirectYaml))
