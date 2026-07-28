@@ -33,7 +33,7 @@ public class ScrubberProcessorTests
 		var reconciler = new RegistryReconciler(
 			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
 		_processor = new ScrubberProcessor(
-			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, _metrics);
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, _metrics, PrivateBucket);
 	}
 
 	private Cancel Ctx => TestContext.Current.CancellationToken;
@@ -267,6 +267,101 @@ public class ScrubberProcessorTests
 
 		failed.Should().BeEmpty();
 		_metrics.GroupReconciles.Should().Be(1);
+	}
+
+	private static ScrubberQueueMessage Reconcile(string scope, string group, int version = 1)
+	{
+		var id = $"msg-{Interlocked.Increment(ref MessageCounter)}";
+		var body = "{\"kind\":\"reconcile\",\"version\":" + version + ",\"scope\":\"" + scope +
+			"\",\"group\":\"" + group + "\",\"correlation_id\":\"test-run\"}";
+		return new ScrubberQueueMessage(id, body);
+	}
+
+	[Fact]
+	public async Task Process_ReconcileMessage_PerformsAFullGroupHeal()
+	{
+		// A full heal reconciles the union of both buckets: live private objects are (re)copied,
+		// the orphan public object is deleted, and the manifest is rebuilt — recovering drift no
+		// pending S3 event would ever repair (lost/DLQ-expired scrub events).
+		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.1.0.yaml", "one");
+		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/es-9.2.0.yaml", "two");
+		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml", "stale-copy");
+		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/orphan.yaml", "orphan");
+
+		var failed = await _processor.ProcessAsync([Reconcile("bundle", "elasticsearch")], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.ContentOf(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml").Should().Be("scrubbed: one");
+		_s3.ContentOf(PublicBucket, "bundle/elasticsearch/es-9.2.0.yaml").Should().Be("scrubbed: two");
+		_s3.Exists(PublicBucket, "bundle/elasticsearch/orphan.yaml").Should().BeFalse("nothing in the private bucket backs it");
+		PublicManifest("bundle/elasticsearch/registry.json").Bundles.Select(b => b.File)
+			.Should().BeEquivalentTo(["es-9.1.0.yaml", "es-9.2.0.yaml"]);
+	}
+
+	[Fact]
+	public async Task Process_ReconcileMessage_ForAGroupEmptyInBothBuckets_DeletesTheManifest()
+	{
+		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/registry.json",
+			/*lang=json,strict*/ """{"schema_version":1,"product":"elasticsearch","generated_at":"2026-01-01T00:00:00+00:00","bundles":[]}""");
+
+		var failed = await _processor.ProcessAsync([Reconcile("bundle", "elasticsearch")], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, "bundle/elasticsearch/registry.json").Should().BeFalse();
+	}
+
+	[Theory]
+	[InlineData("bundle", "../escape")]
+	[InlineData("bundle", "")]
+	[InlineData("changelog", "elastic/repo")]
+	[InlineData("changelog", "elastic/re po/main")]
+	[InlineData("pool", "elasticsearch")]
+	public async Task Process_MalformedReconcileMessage_IsRejected(string scope, string group)
+	{
+		var message = Reconcile(scope, group);
+
+		var failed = await _processor.ProcessAsync([message], Ctx);
+
+		failed.Should().ContainSingle().Which.Should().Be(message.MessageId);
+		_s3.Puts.Should().BeEmpty();
+		_s3.Deletes.Should().BeEmpty();
+	}
+
+	[Fact]
+	public async Task Process_ReconcileMessageWithUnsupportedVersion_IsRejected()
+	{
+		var message = Reconcile("bundle", "elasticsearch", version: 2);
+
+		var failed = await _processor.ProcessAsync([message], Ctx);
+
+		failed.Should().ContainSingle().Which.Should().Be(message.MessageId);
+	}
+
+	[Fact]
+	public async Task Process_ReconcileMessage_WithoutPrivateBucketConfigured_FailsTheMessage()
+	{
+		var reconciler = new RegistryReconciler(
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, retryBaseDelay: TimeSpan.Zero, metrics: _metrics);
+		var processor = new ScrubberProcessor(
+			NullLoggerFactory.Instance, _s3.Client, PublicBucket, _scrubber, reconciler, _metrics);
+		var message = Reconcile("bundle", "elasticsearch");
+
+		var failed = await processor.ProcessAsync([message], Ctx);
+
+		failed.Should().ContainSingle().Which.Should().Be(message.MessageId);
+	}
+
+	[Fact]
+	public async Task Process_ReconcileMessage_ForABranchWithSlashes_HealsTheRightPool()
+	{
+		_ = _s3.Seed(PrivateBucket, "changelog/elastic/repo/main/feature/entry.yaml", "entry");
+
+		var failed = await _processor.ProcessAsync([Reconcile("changelog", "elastic/repo/main/feature")], Ctx);
+
+		failed.Should().BeEmpty();
+		_s3.Exists(PublicBucket, "changelog/elastic/repo/main/feature/entry.yaml").Should().BeTrue();
+		PublicManifest("changelog/elastic/repo/main/feature/registry.json").Bundles.Select(b => b.File)
+			.Should().Equal("entry.yaml");
 	}
 
 	// language=yaml

@@ -49,7 +49,10 @@ _ = builder.Services.AddArgh(args, app =>
 	_ = app.Map<RefactorCommands>();
 	_ = app.Map<ServeCommand>();
 	_ = app.Map<IndexCommand>();
-	_ = app.MapNamespace<ChangelogCommands>("changelog");
+	_ = app.MapNamespace<ChangelogCommands>("changelog", g =>
+	{
+		_ = g.MapNamespace<ChangelogRegistryCommands>("registry");
+	});
 	_ = app.MapNamespace<InboundLinkCommands>("inbound-links");
 
 	_ = app.Map<AssembleOneShotCommand>();

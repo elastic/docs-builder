@@ -155,41 +155,124 @@ public sealed class RegistryReconciler(
 	}
 
 	/// <summary>
-	/// The group's immediate <c>.yaml</c>/<c>.yml</c> children in the public bucket. The
-	/// <c>/</c> delimiter matters: branches are stored verbatim, so without it
-	/// <c>changelog/{org}/{repo}/main/</c> would also sweep in the <c>main/feature/…</c> pool.
+	/// Read-only diagnosis: compares the group's public manifest against what a reconcile of the
+	/// current public listing would write — same listing spec, same entry rules, zero writes.
+	/// An empty result means a reconcile would be a no-op for this group.
 	/// </summary>
-	private async Task<IReadOnlyList<S3Object>> ListGroupFiles(ChangelogScope scope, Cancel ctx)
+	public async Task<IReadOnlyList<RegistryDivergence>> VerifyGroupAsync(ChangelogScope scope, Cancel ctx)
 	{
-		var request = new ListObjectsV2Request
-		{
-			BucketName = publicBucketName,
-			Prefix = scope.Prefix,
-			Delimiter = "/"
-		};
+		var listing = await ListGroupFiles(scope, ctx);
+		var existing = await FetchManifest(scope.RegistryKey, ctx);
+		var divergences = new List<RegistryDivergence>();
 
-		var files = new List<S3Object>();
-		ListObjectsV2Response response;
-		do
+		if (listing.Count == 0)
 		{
-			response = await s3Client.ListObjectsV2Async(request, ctx);
-			foreach (var obj in response.S3Objects ?? [])
+			if (existing.Exists)
 			{
-				var file = obj.Key[scope.Prefix.Length..];
-				if (!IsYamlFileName(file) || string.Equals(file, ChangelogKeys.RegistryFileName, StringComparison.Ordinal))
-					continue;
-				files.Add(obj);
-				_metrics.IncrementObjectsListed();
+				divergences.Add(new RegistryDivergence
+				{
+					Kind = RegistryDivergenceKind.Stale,
+					File = ChangelogKeys.RegistryFileName,
+					Detail = "The group holds no objects but its manifest still exists; a reconcile would delete it (absent ≠ empty for consumers)."
+				});
 			}
-			request.ContinuationToken = response.NextContinuationToken;
-		} while (response.IsTruncated == true);
+			return divergences;
+		}
 
-		return files;
+		if (!existing.Exists)
+		{
+			divergences.Add(new RegistryDivergence
+			{
+				Kind = RegistryDivergenceKind.Missing,
+				File = ChangelogKeys.RegistryFileName,
+				Detail = $"The group holds {listing.Count} object(s) but no manifest."
+			});
+			return divergences;
+		}
+
+		if (existing.Corrupt)
+		{
+			divergences.Add(new RegistryDivergence
+			{
+				Kind = RegistryDivergenceKind.Corrupt,
+				File = ChangelogKeys.RegistryFileName,
+				Detail = "The manifest cannot be parsed; a reconcile would rebuild it from the listing."
+			});
+			return divergences;
+		}
+
+		var manifest = existing.Manifest!;
+		if (manifest.SchemaVersion > Registry.CurrentSchemaVersion)
+		{
+			divergences.Add(new RegistryDivergence
+			{
+				Kind = RegistryDivergenceKind.UnsupportedSchema,
+				File = ChangelogKeys.RegistryFileName,
+				Detail = $"The manifest declares schema_version {manifest.SchemaVersion} > supported {Registry.CurrentSchemaVersion}; this tool will not touch it."
+			});
+			return divergences;
+		}
+
+		var trusted = manifest.SchemaVersion == Registry.CurrentSchemaVersion
+			&& string.Equals(manifest.Producer, Producer, StringComparison.Ordinal)
+			&& string.Equals(manifest.Product, scope.Group, StringComparison.Ordinal);
+		if (!trusted)
+		{
+			divergences.Add(new RegistryDivergence
+			{
+				Kind = RegistryDivergenceKind.Stale,
+				File = ChangelogKeys.RegistryFileName,
+				Detail = $"Manifest metadata is not this producer's (producer \"{manifest.Producer}\", product \"{manifest.Product}\"); a reconcile would rewrite it."
+			});
+		}
+
+		var (desired, _) = await BuildEntries(scope, listing, trusted ? manifest.Bundles : [], ctx);
+		var desiredByFile = desired.ToDictionary(b => b.File, b => b, StringComparer.Ordinal);
+		var manifestByFile = manifest.Bundles.ToDictionary(b => b.File, b => b, StringComparer.Ordinal);
+
+		foreach (var (file, entry) in desiredByFile)
+		{
+			if (!manifestByFile.TryGetValue(file, out var recorded))
+			{
+				divergences.Add(new RegistryDivergence
+				{
+					Kind = RegistryDivergenceKind.Missing,
+					File = file,
+					Detail = "The object exists in the public bucket but the manifest does not list it."
+				});
+			}
+			else if (!string.Equals(recorded.ETag, entry.ETag, StringComparison.Ordinal)
+				|| !string.Equals(recorded.Target, entry.Target, StringComparison.Ordinal))
+			{
+				divergences.Add(new RegistryDivergence
+				{
+					Kind = RegistryDivergenceKind.ObjectDivergent,
+					File = file,
+					Detail = $"The manifest records (target: {recorded.Target ?? "null"}, etag: {recorded.ETag}) but a reconcile would write (target: {entry.Target ?? "null"}, etag: {entry.ETag})."
+				});
+			}
+		}
+
+		foreach (var file in manifestByFile.Keys.Where(f => !desiredByFile.ContainsKey(f)))
+		{
+			divergences.Add(new RegistryDivergence
+			{
+				Kind = RegistryDivergenceKind.Stale,
+				File = file,
+				Detail = "The manifest lists an object that is no longer in the public bucket."
+			});
+		}
+
+		return divergences;
 	}
 
-	private static bool IsYamlFileName(string file) =>
-		file.Length > 0
-		&& (file.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || file.EndsWith(".yml", StringComparison.OrdinalIgnoreCase));
+	private async Task<IReadOnlyList<S3Object>> ListGroupFiles(ChangelogScope scope, Cancel ctx)
+	{
+		var files = await S3GroupListing.ListImmediateYamlObjectsAsync(s3Client, publicBucketName, scope, ctx);
+		for (var i = 0; i < files.Count; i++)
+			_metrics.IncrementObjectsListed();
+		return files;
+	}
 
 	private sealed record ManifestState(Registry? Manifest, string? ETag, bool Exists, bool Corrupt);
 

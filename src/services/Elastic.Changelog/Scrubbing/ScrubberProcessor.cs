@@ -29,7 +29,8 @@ public sealed class ScrubberProcessor(
 	string publicBucketName,
 	IChangelogContentScrubber scrubber,
 	RegistryReconciler reconciler,
-	ReconcileMetrics? metrics = null
+	ReconcileMetrics? metrics = null,
+	string? privateBucketName = null
 )
 {
 	// Bounds the reread-and-redo loop of post-write source validation. Each redo only triggers
@@ -50,6 +51,9 @@ public sealed class ScrubberProcessor(
 	{
 		public ChangelogScope Scope { get; } = scope;
 		public HashSet<string> MessageIds { get; } = [with(StringComparer.Ordinal)];
+
+		/// <summary>Set by an explicit reconcile message: object-reconcile the union of both buckets' listings first.</summary>
+		public bool FullHeal { get; set; }
 	}
 
 	/// <summary>
@@ -66,6 +70,25 @@ public sealed class ScrubberProcessor(
 
 		foreach (var message in messages)
 		{
+			// Explicit reconcile requests (elastic/docs-eng-team#688 Phase 2) are a versioned,
+			// discriminated envelope; anything else is an S3 event notification. A recognized
+			// envelope that fails strict validation is rejected to the DLQ — redelivery cannot
+			// fix a malformed message, but the DLQ alarm makes the sender bug visible.
+			if (ReconcileQueueMessage.TryRead(message.Body, out var reconcile))
+			{
+				if (!reconcile.TryResolveScope(out var scope, out var error))
+				{
+					_logger.LogError("Rejecting reconcile message {MessageId}: {Error}", message.MessageId, error);
+					_ = failedIds.Add(message.MessageId);
+					continue;
+				}
+
+				_logger.LogInformation(
+					"Reconcile message for {Scope} (correlation: {CorrelationId})", scope, reconcile.CorrelationId ?? "none");
+				AddGroup(groupWork, scope, message.MessageId).FullHeal = true;
+				continue;
+			}
+
 			try
 			{
 				var s3Event = S3EventNotification.ParseJson(message.Body);
@@ -102,6 +125,8 @@ public sealed class ScrubberProcessor(
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
+				if (work.FullHeal)
+					await HealGroupObjectsAsync(work.Scope, objectWork.Keys, ctx);
 				_ = await reconciler.ReconcileGroupAsync(work.Scope, ctx);
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
@@ -131,7 +156,7 @@ public sealed class ScrubberProcessor(
 		if (ChangelogKeys.IsRegistry(key))
 		{
 			if (hasScope)
-				AddGroup(groupWork, scope!, messageId);
+				_ = AddGroup(groupWork, scope!, messageId);
 			return;
 		}
 
@@ -157,10 +182,10 @@ public sealed class ScrubberProcessor(
 		_ = work.MessageIds.Add(messageId);
 
 		if (hasScope)
-			AddGroup(groupWork, scope!, messageId);
+			_ = AddGroup(groupWork, scope!, messageId);
 	}
 
-	private static void AddGroup(Dictionary<string, GroupWork> groupWork, ChangelogScope scope, string messageId)
+	private static GroupWork AddGroup(Dictionary<string, GroupWork> groupWork, ChangelogScope scope, string messageId)
 	{
 		if (!groupWork.TryGetValue(scope.Prefix, out var work))
 		{
@@ -168,6 +193,36 @@ public sealed class ScrubberProcessor(
 			groupWork[scope.Prefix] = work;
 		}
 		_ = work.MessageIds.Add(messageId);
+		return work;
+	}
+
+	/// <summary>
+	/// The full group heal an explicit reconcile message asks for: object-level reconcile over the
+	/// union of both buckets' group listings — scrub/copy what is live in the private bucket,
+	/// delete what is not — so lost or DLQ-expired scrub events are recoverable by message. Keys
+	/// already reconciled by this batch's own S3 events are skipped.
+	/// </summary>
+	private async Task HealGroupObjectsAsync(ChangelogScope scope, IReadOnlyCollection<string> alreadyReconciled, Cancel ctx)
+	{
+		if (privateBucketName is null)
+		{
+			throw new InvalidOperationException(
+				"A reconcile message arrived but no private bucket is configured (PRIVATE_BUCKET_NAME); cannot perform a full group heal.");
+		}
+
+		var privateObjects = await S3GroupListing.ListImmediateYamlObjectsAsync(s3Client, privateBucketName, scope, ctx);
+		var publicObjects = await S3GroupListing.ListImmediateYamlObjectsAsync(s3Client, publicBucketName, scope, ctx);
+		var keys = new SortedSet<string>(StringComparer.Ordinal);
+		keys.UnionWith(privateObjects.Select(o => o.Key));
+		keys.UnionWith(publicObjects.Select(o => o.Key));
+
+		_logger.LogInformation("Full heal of {Scope}: {Count} key(s) in the union of both buckets", scope, keys.Count);
+
+		foreach (var key in keys.Where(k => !alreadyReconciled.Contains(k)))
+		{
+			ctx.ThrowIfCancellationRequested();
+			await ReconcileObjectAsync(privateBucketName, key, ctx);
+		}
 	}
 
 	/// <summary>
