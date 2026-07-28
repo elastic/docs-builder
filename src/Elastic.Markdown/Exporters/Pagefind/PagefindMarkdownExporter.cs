@@ -7,7 +7,9 @@ using System.Text;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst.InlineParsers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using Pagefind.Net;
@@ -48,27 +50,10 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		if (url is "/docs" or "/docs/404")
 			return ValueTask.FromResult(true);
 
-		var h1 = fileContext.Document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
-		if (h1 is not null)
-			_ = fileContext.Document.Remove(h1);
-
-		var body = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
-
-		var headings = fileContext.Document.Descendants<HeadingBlock>()
-			.Select(h => h.GetData("header") as string ?? string.Empty)
-			.Where(text => !string.IsNullOrEmpty(text))
-			.ToArray();
+		var sections = BuildHtmlSections(fileContext);
 
 		var parents = navigation.GetParentsOfMarkdownFile(file).Reverse().ToArray();
 		var breadcrumbsMeta = BuildBreadcrumbsMeta(parents, fileContext.BuildContext.CanonicalBaseUrl);
-
-		var segments = new List<WeightedSegment>();
-		if (!string.IsNullOrEmpty(file.Title))
-			segments.Add(new WeightedSegment(file.Title, Weight: 7));
-		foreach (var heading in headings)
-			segments.Add(new WeightedSegment(heading, Weight: 4));
-		if (!string.IsNullOrEmpty(body))
-			segments.Add(new WeightedSegment(body, Weight: 1));
 
 		var meta = new Dictionary<string, string> { ["title"] = file.Title ?? url };
 		if (!string.IsNullOrEmpty(breadcrumbsMeta))
@@ -76,12 +61,10 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 
 		try
 		{
-			_index.AddRecord(new PagefindRecord
+			_index.AddHtmlRecord(new HtmlPageData
 			{
 				Url = url,
-				Title = file.Title ?? url,
-				Content = body,
-				WeightedSegments = segments,
+				Sections = sections,
 				Meta = meta
 			});
 			_indexed++;
@@ -92,6 +75,53 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		}
 
 		return ValueTask.FromResult(true);
+	}
+
+	private static List<HtmlSection> BuildHtmlSections(MarkdownExportFileContext fileContext)
+	{
+		var sections = new List<HtmlSection>();
+		var file = fileContext.SourceFile;
+
+		if (!string.IsNullOrEmpty(file.Title))
+			sections.Add(new HtmlSection("h1", file.Title));
+
+		var currentBodyLines = new List<string>();
+
+		foreach (var block in fileContext.Document)
+		{
+			if (block is HeadingBlock heading)
+			{
+				FlushBody(sections, currentBodyLines);
+				var text = heading.GetData("header") as string ?? string.Empty;
+				if (!string.IsNullOrEmpty(text))
+				{
+					var anchor = heading.GetData("anchor") as string;
+					var slugTarget = (anchor ?? text) ?? string.Empty;
+					if (slugTarget.Contains('$'))
+						slugTarget = HeadingAnchorParser.InlineAnchors().Replace(slugTarget, "");
+					var id = slugTarget.Slugify();
+					sections.Add(new HtmlSection($"h{heading.Level}", text, id));
+				}
+			}
+			else
+			{
+				var text = PlainTextExporter.ConvertBlockToPlainText(block, fileContext.BuildContext);
+				if (!string.IsNullOrEmpty(text))
+					currentBodyLines.Add(text);
+			}
+		}
+
+		FlushBody(sections, currentBodyLines);
+		return sections;
+	}
+
+	private static void FlushBody(List<HtmlSection> sections, List<string> lines)
+	{
+		if (lines.Count == 0)
+			return;
+
+		sections.Add(new HtmlSection("p", string.Join(" ", lines)));
+		lines.Clear();
 	}
 
 	public async ValueTask<bool> FinishExportAsync(IDirectoryInfo outputFolder, Cancel ctx)
