@@ -22,15 +22,11 @@ import {
     ATTR_URL_FULL,
 } from './telemetry/semconv'
 import { initTocNav } from './toc-nav'
-<<<<<<< HEAD
-import './web-components/VectorSizingCalculator/VectorSizingCalculatorComponent'
-=======
 import { loadWebComponents } from './web-components/loadWebComponents'
 import {
     getPathFromUrl,
     isExternalDocsUrl,
 } from './web-components/shared/htmx/utils'
->>>>>>> origin/main
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
 import { $, $optional, $$optional } from 'select-dom'

@@ -6,12 +6,7 @@
   "source": "Assets/index.js",
   "scripts": {
     "watch": "parcel watch",
-<<<<<<< HEAD
-    "build": "parcel build --no-cache && npm run copy:mermaid",
-    "copy:mermaid": "cp node_modules/@theletterf/beautiful-mermaid/dist/beautiful-mermaid.browser.global.js _static/mermaid.min.js",
-=======
     "build": "parcel build",
->>>>>>> origin/main
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
