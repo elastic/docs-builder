@@ -169,7 +169,9 @@ public record AssemblyConfiguration
 		var current = r.GetBranch(ContentSource.Current);
 		var next = r.GetBranch(ContentSource.Next);
 		var edge = r.GetBranch(ContentSource.Edge);
-		logger.LogInformation("Active content-sources for {Repository}. current: {Current}, next: {Next}, edge: {Edge}' ", repository, current, next, edge);
+		var isCdWorkflow = current == next && next == edge;
+		logger.LogInformation("Active content-sources for {Repository}. current: {Current}, next: {Next}, edge: {Edge} (branching strategy: {Strategy})",
+			repository, current, next, edge, isCdWorkflow ? "cd/continuous-deployment" : "tagged-release");
 		if (current == branchOrTag)
 		{
 			logger.LogInformation("Content-Source current: {Current} matches: {Branch}", current, branchOrTag);
